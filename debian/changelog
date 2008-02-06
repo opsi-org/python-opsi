@@ -1,3 +1,9 @@
+python-opsi (3.2.0.10-1) stable; urgency=low
+
+  * System.py 0.9.9.7
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed,  6 Feb 2008 12:35:11 +0100
+
 python-opsi (3.2.0.9-1) stable; urgency=low
 
   * System.py 0.9.9.6

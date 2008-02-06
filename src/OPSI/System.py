@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.9.6'
+__version__ = '0.9.9.7'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -573,35 +573,38 @@ def hardwareInventory(ui='default', filename=None, config=None):
 		option = None
 		optRegex = re.compile('(\s+)([^:]+):(.*)')
 		for line in execute(which("dmidecode")):
-			if not line.strip():
-				continue
-			if line.startswith('Handle'):
-				dmiType = None
-				header = False
-				option = None
-				continue
-			if header:
-				continue
-			if not dmiType:
-				dmiType = line.strip()
-				if (dmiType.lower() == 'end of table'):
-					break
-				if not dmidecode.has_key(dmiType):
-					dmidecode[dmiType] = []
-				dmidecode[dmiType].append({})
-			else:
-				match = re.search(optRegex, line)
-				if match:
-					option = match.group(2).strip()
-					value = match.group(3).strip()
-					dmidecode[dmiType][-1][option] = Tools.removeUnit(value)
-				elif option:
-					if not type(dmidecode[dmiType][-1][option]) is list:
-						if dmidecode[dmiType][-1][option]:
-							dmidecode[dmiType][-1][option] = [ dmidecode[dmiType][-1][option] ]
-						else:
-							dmidecode[dmiType][-1][option] = []
-					dmidecode[dmiType][-1][option].append(Tools.removeUnit(line.strip()))
+			try:
+				if not line.strip():
+					continue
+				if line.startswith('Handle'):
+					dmiType = None
+					header = False
+					option = None
+					continue
+				if header:
+					continue
+				if not dmiType:
+					dmiType = line.strip()
+					if (dmiType.lower() == 'end of table'):
+						break
+					if not dmidecode.has_key(dmiType):
+						dmidecode[dmiType] = []
+					dmidecode[dmiType].append({})
+				else:
+					match = re.search(optRegex, line)
+					if match:
+						option = match.group(2).strip()
+						value = match.group(3).strip()
+						dmidecode[dmiType][-1][option] = Tools.removeUnit(value)
+					elif option:
+						if not type(dmidecode[dmiType][-1][option]) is list:
+							if dmidecode[dmiType][-1][option]:
+								dmidecode[dmiType][-1][option] = [ dmidecode[dmiType][-1][option] ]
+							else:
+								dmidecode[dmiType][-1][option] = []
+						dmidecode[dmiType][-1][option].append(Tools.removeUnit(line.strip()))
+			except Exception, e:
+				logger.error("Error while parsing dmidecode output '%s': %s" % (line.strip(), e))
 		
 		# Get hw info from lshw
 		for hwClass in config:
