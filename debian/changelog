@@ -1,3 +1,10 @@
+python-opsi (3.2.0.11-1) stable; urgency=low
+
+  * Product.py 0.9.7.0: productProperty values with space characters
+  * Added interface method setProductProperty
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri,  8 Feb 2008 09:12:35 +0100
+
 python-opsi (3.2.0.10-1) stable; urgency=low
 
   * System.py 0.9.9.7

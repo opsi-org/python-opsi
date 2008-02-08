@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# auto detect encoding => äöü
 """
    ===============================================
    =            OPSI Product Module              =
@@ -10,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.6.9'
+__version__ = '0.9.7.0'
 
 # Imports
 import os
@@ -325,7 +324,7 @@ class Product:
 					value = value.replace('\n', '')
 					value = value.replace('\t', '')
 					value = value.split(',')
-					value = map ( lambda x:x.replace(" ",""), value )
+					value = map ( lambda x:x.strip(), value )
 					# Remove duplicates
 					tmp = []
 					for v in value:
