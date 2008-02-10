@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.2.6.1'
+__version__ = '0.2.6.2'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -1912,12 +1912,8 @@ class File31Backend(File, FileBackend):
 		for prop in self.getProductPropertyDefinitions_listOfHashes(productId, self.getDepotId(objectId)):
 			properties[prop['name'].lower()] = prop.get('default')
 		
-		iniFile = self.getClientIniFile(objectId)
-		try:
-			ini = self.readIniFile(iniFile)
-		except BackendIOError, e:
-			logger.warning(e)
-		
+		ini = self.readIniFile(self.getClientIniFile(objectId))
+				
 		try:
 			for (key, value) in ini.items(productId + "-install"):
 				if properties.has_key(key.lower()):
