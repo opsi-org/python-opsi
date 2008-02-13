@@ -825,7 +825,7 @@ class ProductPackageFile(ProductPackage):
 		postinst = os.path.join(self.tmpUnpackDir, 'postinst')
 		if not os.path.exists(postinst):
 			logger.warning("Postinst script '%s' does not exist" % postinst)
-			return []
+			return None
 		os.chmod(postinst, 0700)
 		
 		os.putenv('PRODUCT_ID', self.product.productId)
@@ -841,7 +841,7 @@ class ProductPackageFile(ProductPackage):
 		preinst = os.path.join(self.tmpUnpackDir, 'preinst')
 		if not os.path.exists(preinst):
 			logger.warning("Preinst script '%s' does not exist" % preinst)
-			return []
+			return None
 		os.chmod(preinst, 0700)
 		
 		os.putenv('PRODUCT_ID', self.product.productId)
