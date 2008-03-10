@@ -1,4 +1,11 @@
-python-opsi (3.2.0.14-1) feisty; urgency=low
+python-opsi (3.2.0.15-1) stable; urgency=low
+
+  * Added backend methods userIsHost() and userIsAdmin()
+  * Univention.py fixed some warnings
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 10 Mar 2008 13:03:15 +0100
+
+python-opsi (3.2.0.14-1) stable; urgency=low
 
   * System.py 0.9.9.9
      - hardwareInventory() replacing invalid tokens from lshw output
