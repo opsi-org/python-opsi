@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.4.0'
+__version__ = '0.9.4.1'
 
 # Imports
 import os, stat, types, re, socket, new
@@ -38,7 +38,7 @@ HOST_GROUP = '|HOST_GROUP|'
 
 class BackendManager(DataBackend):
 	
-	def __init__(self, username = '', password = '', address = 'localhost', 
+	def __init__(self, username = '', password = '', address = '', 
 		     configFile = None, backend = None, authRequired=True):
 		
 		self._pamService = 'common-auth'
@@ -126,6 +126,10 @@ class BackendManager(DataBackend):
 									% self.__username)
 			
 			self.__userGroups = [ HOST_GROUP ]
+			
+			if self.__username in self.getDepotIds_list():
+				self.__userGroups.append( SYSTEM_ADMIN_GROUP )
+			
 			logger.info("opsiHostKey authentication successful for host '%s'" % self.__username)
 		else:
 			# System user trying to log in with username and password
@@ -538,6 +542,235 @@ class BackendManager(DataBackend):
 			return True
 		return False
 	
+	def installPackage(self, filename, force=False, defaultProperties={}):
+		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
+		
+		if not os.path.isfile(filename):
+			raise BackendIOError("Package file '%s' does not exist" % filename)
+		
+		if not defaultProperties:
+			defaultProperties = {}
+		
+		logger.info("Installing package file '%s'" % filename)
+		
+		ppf = Product.ProductPackageFile(filename)
+		
+		depotId = socket.getfqdn()
+		depot = self.getDepot_hash(depotId)
+		
+		clientDataDir = depot['depotLocalUrl']
+		if not clientDataDir.startswith('file:///'):
+			raise BackendBadValueError("Value '%s' not allowed for depot local url (has to start with 'file:///')" % clientDataDir)
+		clientDataDir = os.path.join(clientDataDir[7:], ppf.product.productId)
+		
+		logger.info("Setting client data dir to '%s'" % clientDataDir)
+		ppf.setClientDataDir(clientDataDir)
+		
+		lockedOnDepots = self.getProductLocks_hash(depotIds = [ depotId ]).get(ppf.product.productId, [])
+		logger.info("Product currently locked on : %s" % lockedOnDepots)
+		if depotId in lockedOnDepots and not force:
+			raise BackendTemporaryError("Product '%s' currently locked on depot '%s'" % (ppf.product.productId, depotId))
+		
+		logger.info("Locking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
+		self.lockProduct(ppf.product.productId, depotIds=[ depotId ])
+		
+		try:
+			exists = ppf.product.productId in self.getProductIds_list(objectId = depotId, installationStatus = 'installed')
+			if exists:
+				logger.warning("Product '%s' already exists in database" % ppf.product.productId)
+			
+			logger.info("Checking dependencies of product '%s'" % ppf.product.productId)
+			ppf.checkDependencies(configBackend=self)
+			
+			logger.info("Running preinst of product '%s'" % ppf.product.productId)
+			for line in ppf.runPreinst():
+				logger.info(" -> %s" % line)
+			
+			if exists:
+				# Delete existing product dependencies
+				logger.info("Deleting product dependencies of product '%s'" % ppf.product.productId)
+				self.deleteProductDependency(ppf.product.productId, depotIds = [ depotId ])
+				
+				# Delete productPropertyDefinitions
+				logger.info("Deleting product property definitions of product '%s'" % ppf.product.productId)
+				self.deleteProductPropertyDefinitions(ppf.product.productId, depotIds = [ depotId ])
+				
+				# Not deleting product, because this would delete client productstates as well
+			
+			if ppf.incremental:
+				logger.info("Incremental package, not deleting old client files")
+			else:
+				logger.info("Deleting old client files")
+				ppf.deleteClientDataDir()
+			
+			logger.info("Unpacking package '%s'" % filename)
+			ppf.unpack()
+			
+			ppf.setAccessRights()
+			
+			logger.info("Cleaning up")
+			ppf.cleanup()
+			
+			logger.info("Creating product in database")
+			self.createProduct(
+					ppf.product.productType,
+					ppf.product.productId,
+					ppf.product.name,
+					ppf.product.productVersion,
+					ppf.product.packageVersion,
+					ppf.product.licenseRequired,
+					ppf.product.setupScript,
+					ppf.product.uninstallScript,
+					ppf.product.updateScript,
+					ppf.product.alwaysScript,
+					ppf.product.onceScript,
+					ppf.product.priority,
+					ppf.product.description,
+					ppf.product.advice,
+					ppf.product.productClassNames,
+					ppf.product.pxeConfigTemplate,
+					depotIds = [ depotId ] )
+			
+			
+			if (ppf.product.productType != 'server'):
+				for d in ppf.product.productDependencies:
+					self.createProductDependency(
+						d.productId,
+						d.action,
+						d.requiredProductId,
+						d.requiredProductClassId,
+						d.requiredAction,
+						d.requiredInstallationStatus,
+						d.requirementType,
+						depotIds = [ depotId ]
+					)
+			
+				properties = {}
+				for p in ppf.product.productProperties:
+					defaultValue = p.defaultValue
+					if p.name in defaultProperties.keys():
+						defaultValue = defaultProperties[p.name]
+					
+					self.createProductPropertyDefinition(
+						p.productId,
+						p.name,
+						p.description,
+						defaultValue,
+						p.possibleValues,
+						depotIds = [ depotId ]
+					)
+					properties[p.name] = defaultValue
+				
+				#if properties:
+				#	bm.setProductProperties(p.productId, properties, objectId = depotId)
+				
+				# TODO: needed?
+				logger.info("Setting product-installation-status on depot '%s' to installed" % depotId )
+				self.setProductInstallationStatus(ppf.product.productId, depotId, 'installed')
+			
+			logger.info("Running postinst of product '%s'" % ppf.product.productId)
+			for line in ppf.runPostinst():
+				logger.info(" -> %s" % line)
+			
+			logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
+			self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
+			
+		except Exception, e:
+			try:
+				logger.info("Cleaning up")
+				ppf.cleanup()
+				# TODO: unlock if failed?
+				logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
+				self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
+			except Exception, e2:
+				logger.eroror(e2)
+			logger.logException(e)
+			raise e
+	
+	def uninstallPackage(self, productId, force=False, deleteFiles=True):
+		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
+		
+		logger.info("Uninstalling package '%s'" % productId)
+		
+		depotId = socket.getfqdn()
+		depot = self.getDepot_hash(depotId)
+		
+		if not productId in self.getProductIds_list(objectId = depotId, installationStatus = 'installed'):
+			return
+		
+		lockedOnDepots = self.getProductLocks_hash(depotIds = [ depotId ]).get(productId, [])
+		logger.info("Product currently locked on : %s" % lockedOnDepots)
+		if depotId in lockedOnDepots and not force:
+			raise BackendTemporaryError("Product '%s' currently locked on depot '%s'" % (productId, depotId))
+		
+		self.lockProduct(productId, depotIds=[ depotId ])
+		
+		logger.debug("Deleting product '%s'" % productId)
+		
+		self.setProductInstallationStatus(productId, objectId = depotId, installationStatus = 'uninstalled')
+		self.deleteProductDependency(productId, depotIds = [ depotId ])
+		self.deleteProductProperties(productId, objectId = depotId)
+		self.deleteProduct(productId, depotIds = [ depotId ])
+		
+		if deleteFiles:
+			clientDataDir = depot['depotLocalUrl']
+			if not clientDataDir.startswith('file:///'):
+				raise BackendBadValueError("Value '%s' not allowed for depot local url (has to start with 'file:///')" % clientDataDir)
+			clientDataDir = os.path.join(clientDataDir[7:], productId)
+			
+			logger.info("Deleting client data dir '%s'" % clientDataDir)
+			rmdir(clientDataDir, recursive=True)
+		
+		self.unlockProduct(productId, depotIds=[ depotId ])
+		
+	
+	def areDepotsSynchronous(self, depotIds=[]):
+		knownDepotIds = self.getDepotIds_list()
+		if not depotIds:
+			depotIds = knownDepotIds
+		
+		if not type(depotIds) in (list, tuple):
+			raise BackendBadValueError("Type of depotIds has to be list")
+		
+		#locks = self.getProductLocks_hash(depotIds = depotIds)
+		
+		products = {}
+		for depotId in depotIds:
+			if not depotId in knownDepotIds:
+				raise BackendMissingDataError("Unkown depot '%s'" % depotId)
+			for productId in self.getProductIds_list(objectId = depotId):
+				if not productId in products.keys():
+					products[productId] = {
+						'productVersion': None,
+						'packageVersion': None
+					}
+		
+		logger.info("Known product ids: %s" ', '.join(products.keys()))
+		for depotId in depotIds:
+			logger.info("Processing depot '%s'" % depotId)
+			for productId in products.keys():
+				try:
+					product = self.getProduct_hash(productId = productId, depotId = depotId)
+				except Exception, e:
+					logger.notice("Depots %s not synchronous: product '%s' not available on depot '%s': %s" \
+						% (', '.join(depotIds), productId, depotId, e))
+					return False
+				logger.debug("Product info for product '%s' on depot '%s': %s" % (productId, depotId, product))
+				if not products[productId]['productVersion']:
+					products[productId]['productVersion'] = product.get('productVersion')
+				elif (products[productId]['productVersion'] != product.get('productVersion')):
+					logger.notice("Depots %s not synchronous: product '%s': product version seen: '%s', product version on depot '%s': '%s'" \
+						% (', '.join(depotIds), productId, products[productId]['productVersion'], depotId, product.get('productVersion')))
+					return False
+				
+				if not products[productId]['packageVersion']:
+					products[productId]['packageVersion'] = product.get('packageVersion')
+				elif (products[productId]['packageVersion'] != product.get('packageVersion')):
+					logger.notice("Depots %s not synchronous: product '%s': package version seen: '%s', package version on depot '%s': '%s'" \
+						% (', '.join(depotIds), productId, products[productId]['packageVersion'], depotId, product.get('packageVersion')))
+					return False
+		return True
+		
 	def getPossibleMethods_listOfHashes(self):
 		''' This function returns a list of available interface methods.
 		The methods are defined by hashes containing the keys "name" and
@@ -577,5 +810,5 @@ class BackendManager(DataBackend):
 		methodList.sort()
 		return methodList
 	
-
+	
 	

@@ -46,14 +46,14 @@ binary23-stamp:
 	install -m 0644 gettext/opsi_ui.mo     debian/python${v23}-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
 	mkdir -p debian/python${v23}-opsi/etc/opsi/backendManager.d
 	for i in `(cd files/backendManager.d; ls *.conf)`; do install -m 0644 files/backendManager.d/$$i debian/python${v23}-opsi/etc/opsi/backendManager.d/$$i; done
-	install -m 0644 files/opsi.conf debian/python${v23}-opsi/etc/opsi/opsi.conf
 	mkdir -p debian/python${v23}-opsi/etc/opsi/hwaudit/locales
 	chmod -R 755 debian/python${v23}-opsi/etc/opsi/hwaudit
 	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python${v23}-opsi/etc/opsi/hwaudit/opsihwaudit.conf
 	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python${v23}-opsi/etc/opsi/hwaudit/locales/; done
 	mkdir -p debian/python${v23}-opsi/etc/ldap/schema
 	install -m 0644 files/opsi.schema debian/python${v23}-opsi/etc/ldap/schema/opsi.schema
-	install -m 0755 files/share/init-opsi-mysql-db.py debian/python${v23}-opsi/usr/share/python-opsi/
+	mkdir -p debian/python${v23}-opsi/usr/share/opsi
+	install -m 0755 files/share/init-opsi-mysql-db.py debian/python${v23}-opsi/usr/share/opsi/
 	echo $(OPSI_VERSION) > debian/python${v23}-opsi/etc/opsi/version
 	
 binary24-stamp:
@@ -64,13 +64,13 @@ binary24-stamp:
 	install -m 0644 gettext/opsi_ui.mo     debian/python${v24}-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
 	mkdir -p debian/python${v24}-opsi/etc/opsi/backendManager.d
 	for i in `(cd files/backendManager.d; ls *.conf)`; do install -m 0644 files/backendManager.d/$$i debian/python${v24}-opsi/etc/opsi/backendManager.d/$$i; done
-	install -m 0644 files/opsi.conf debian/python${v24}-opsi/etc/opsi/opsi.conf
 	mkdir -p debian/python${v24}-opsi/etc/opsi/hwaudit/locales
 	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python${v24}-opsi/etc/opsi/hwaudit/opsihwaudit.conf
 	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python${v24}-opsi/etc/opsi/hwaudit/locales/; done
 	mkdir -p debian/python${v24}-opsi/etc/ldap/schema
 	install -m 0644 files/opsi.schema debian/python${v24}-opsi/etc/ldap/schema/opsi.schema
-	install -m 0755 files/share/init-opsi-mysql-db.py debian/python${v24}-opsi/usr/share/python-opsi/
+	mkdir -p debian/python${v24}-opsi/usr/share/opsi
+	install -m 0755 files/share/init-opsi-mysql-db.py debian/python${v24}-opsi/usr/share/opsi/
 	echo $(OPSI_VERSION) > debian/python${v24}-opsi/etc/opsi/version
 	
 binary-stamp:
@@ -81,13 +81,13 @@ binary-stamp:
 	install -m 0644 gettext/opsi_ui.mo     debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
 	mkdir -p debian/python-opsi/etc/opsi/backendManager.d
 	for i in `(cd files/backendManager.d; ls *.conf)`; do install -m 0644 files/backendManager.d/$$i debian/python-opsi/etc/opsi/backendManager.d/; done
-	install -m 0644 files/opsi.conf debian/python-opsi/etc/opsi/opsi.conf
 	mkdir -p debian/python-opsi/etc/opsi/hwaudit/locales
 	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
 	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done
 	mkdir -p debian/python-opsi/etc/ldap/schema
 	install -m 0644 files/opsi.schema debian/python-opsi/etc/ldap/schema/opsi.schema
-	install -m 0755 files/share/init-opsi-mysql-db.py debian/python-opsi/usr/share/python-opsi/
+	mkdir -p debian/python-opsi/usr/share/opsi
+	install -m 0755 files/share/init-opsi-mysql-db.py debian/python-opsi/usr/share/opsi/
 	echo $(OPSI_VERSION) > debian/python-opsi/etc/opsi/version
 	
 binary-indep: build-indep binary-indep-stamp

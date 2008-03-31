@@ -16,15 +16,14 @@ databaseHost = 'localhost'
 databaseName = 'opsi'
 databaseUser = 'opsi'
 databasePass = 'opsi'
-adminUser = 'opsi'
-adminPass = 'opsi'
+adminUser = 'root'
+adminPass = 'password'
 
 try:
 	print ""
 	print "*******************************************************************************"
 	print "*  This tool will create an initial mysql database for use as opsi backend.   *"
 	print "* The config file " +        backendConfigFile         + " will be recreated. *"
-	print "*  !!! WARNING: An existing database with the same name will be dropped !!!   *"
 	print "*                 =>>> Press <CTRL> + <C> to abort <<<=                       *"
 	print "*******************************************************************************"
 	print ""
@@ -54,29 +53,20 @@ try:
 	uin = getpass.getpass('')
 	if uin: databasePass = uin
 	
+	print ""
+	
 	# Connect to database host
 	logger.notice("Connecting to host '%s' as user '%s'" % (databaseHost, adminUser))
 	db = MySQLdb.connect( host = databaseHost, user = adminUser, passwd = adminPass )
 	
-	try:
-		# Drop database if exists
-		db.query('DROP DATABASE %s;' % databaseName)
-	except OperationalError, e:
-		if (e[0] != 1008):
-			# 1008: database does not exist
-			raise
-	
-	try:
-		# Drop opsi user if exists
-		db.query('DROP USER %s@%s;' % (databaseUser, databaseHost))
-	except OperationalError, e:
-		if (e[0] != 1396):
-			# 1396: user does not exist
-			raise
-	
 	# Create opsi database and user
 	logger.notice("Creating database '%s' and user '%s'" % (databaseName, databaseUser))
-	db.query('CREATE DATABASE %s DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;' % databaseName)
+	try:
+		db.query('CREATE DATABASE %s DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;' % databaseName)
+	except ProgrammingError, e:
+		if (e[0] != 1007):
+			# 1007: database exists
+			raise
 	db.query('USE %s;' % databaseName)
 	db.query('GRANT ALL ON %s .* TO %s@%s IDENTIFIED BY \'%s\'' \
 			% (databaseName, databaseUser, databaseHost, databasePass));

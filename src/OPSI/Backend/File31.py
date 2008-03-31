@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.2.6.3'
+__version__ = '0.2.6.5'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -43,7 +43,7 @@ from OPSI.Backend.Backend import *
 from OPSI.Backend.File import *
 from OPSI.Logger import *
 from OPSI.Product import *
-from OPSI.System import mkdir
+from OPSI.System import mkdir, rmdir
 from OPSI import Tools
 
 # Get logger instance
@@ -78,6 +78,7 @@ class File31Backend(File, FileBackend):
 			self.__depotConfigDir = windefaultdir + '\\opsi\\config\\depots'
 			self.__clientTemplatesDir = windefaultdir + '\\opsi\\config\\templates'
 			self.__defaultClientTemplateFile = windefaultdir + '\\opsi\\config\\templates\\pcproto.ini'
+			self.__productLockFile = windefaultdir + '\\opsi\\config\\depots\\product.locks'
 		else:
 			self.__pckeyFile = '/etc/opsi/pckeys'
 			self.__passwdFile = '/etc/opsi/passwd'
@@ -89,6 +90,7 @@ class File31Backend(File, FileBackend):
 			self.__depotConfigDir = '/var/lib/opsi/config/depots'
 			self.__clientTemplatesDir = '/var/lib/opsi/config/templates'
 			self.__defaultClientTemplateFile = '/var/lib/opsi/config/templates/pcproto.ini'
+			self.__productLockFile = '/var/lib/opsi/config/depots/product.locks'
 		
 		# Parse arguments
 		for (option, value) in args.items():
@@ -103,6 +105,7 @@ class File31Backend(File, FileBackend):
 			elif (option.lower() == 'depotconfigdir'): 		self.__depotConfigDir = value
 			elif (option.lower() == 'clienttemplatesdir'): 	self.__clientTemplatesDir = value
 			elif (option.lower() == 'defaultclienttemplatefile'): 	self.__defaultClientTemplateFile = value
+			elif (option.lower() == 'productlockfile'): 		self.__productLockFile = value
 			elif (option.lower() == 'fileopentimeout'): 		self.__fileOpenTimeout = value
 			else:
 				logger.warning("Unknown argument '%s' passed to File31Backend constructor" % option)
@@ -327,7 +330,7 @@ class File31Backend(File, FileBackend):
 				continue
 		
 		if networkConfig['depotId']:
-			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])['urlForClient']
+			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])['depotRemoteUrl']
 		
 		# Check if all needed values are set
 		if (not networkConfig['opsiServer']
@@ -436,6 +439,10 @@ class File31Backend(File, FileBackend):
 	
 	def setHostLastSeen(self, hostId, timestamp):
 		logger.debug("Setting last-seen timestamp for host '%s' to '%s'" % (hostId, timestamp))
+		
+		if hostId in self.getDepotIds_list():
+			# TODO
+			return
 		
 		iniFile = self.getClientIniFile(hostId)
 		
@@ -626,14 +633,20 @@ class File31Backend(File, FileBackend):
 	def getHost_hash(self, hostId):
 		logger.info("Getting infos for host '%s'" % hostId)
 		
-		if hostId in self._aliaslist():
-			return { "hostId": hostId, "description": "Depotserver", "notes": "", "lastSeen": "" }
+		#if hostId in self._aliaslist():
+		#	return { "hostId": hostId, "description": "Depotserver", "notes": "", "lastSeen": "" }
 		
 		info = {
 			"hostId": 	hostId,
 			"description":	"",
 			"notes":	"",
 			"lastSeen":	"" }
+		
+		if hostId in self.getDepotIds_list():
+			depot = self.getDepot_hash(hostId)
+			info['description'] = depot.get('description')
+			info['notes'] = depot.get('notes')
+			return info
 		
 		iniFile = self.getClientIniFile(hostId)
 		ini = self.readIniFile(iniFile)
@@ -657,9 +670,6 @@ class File31Backend(File, FileBackend):
 		
 		if (serverId and serverId != self.getServerId()):
 			raise BackendMissingDataError("Can only access data on server: %s" % self.getServerId())
-		
-		if not depotId:
-			depotId = self.getDepotId()
 		
 		if productId:
 			productId = productId.lower()
@@ -706,12 +716,13 @@ class File31Backend(File, FileBackend):
 						logger.error("Skipping hostId: '%s': %s" % (hostId, e))
 		
 		# Filter by depot-id
-		filteredHostIds = []
-		for hostId in hostIds:
-			if (self.getDepotId(hostId) == depotId):
-				filteredHostIds.append(hostId)
-		hostIds = filteredHostIds
-		
+		if depotId:
+			filteredHostIds = []
+			for hostId in hostIds:
+				if (self.getDepotId(hostId) == depotId):
+					filteredHostIds.append(hostId)
+			hostIds = filteredHostIds
+			
 		# Filter by product state
 		if installationStatus or actionRequest or productVersion or packageVersion:
 			filteredHostIds = []
@@ -783,6 +794,16 @@ class File31Backend(File, FileBackend):
 		
 	def getClientIds_list(self, serverId=None, depotId=None, groupId=None, productId=None, installationStatus=None, actionRequest=None, productVersion=None, packageVersion=None):
 		clientIds = []
+		
+		if not depotId and not groupId and not productId and not installationStatus and not actionRequest and not productVersion and not packageVersion:
+			try:
+				for f in os.listdir(self.__clientConfigDir):
+					if f.endswith('.ini'):
+						clientIds.append(self.getHostId(f))
+			except OSError, e:
+				raise BackendIOError(e)
+			return clientIds
+		
 		for info in self.getClients_listOfHashes(serverId, depotId, groupId, productId, installationStatus, actionRequest, productVersion, packageVersion):
 			clientIds.append( info.get('hostId') )
 		return clientIds
@@ -796,15 +817,60 @@ class File31Backend(File, FileBackend):
 		parts = serverId.split('.')
 		if (len(parts) < 3):
 			serverId = parts[0] + '.' + self._defaultDomain
-		return serverId
+		return serverId.lower()
+	
+	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None):
+		depotId = depotName + '.' + domain
+		depotId = self._preProcessHostId(depotId)
+		if depotId in self.getDepotIds_list():
+			raise BackendBadValueError("Depot '%s' already exists" % depotId)
+		for i in (depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl):
+			if not i.startswith('file:///') and not i.startswith('smb://') and \
+			   not i.startswith('http://') and not i.startswith('https://') and \
+			   not i.startswith('webdav://') and not i.startswith('webdavs://'):
+				raise BackendBadValueError("Bad url '%s'" % i)
+		if not re.search('\d+\.\d+\.\d+\.\d+\/\d+', network):
+			raise BackendBadValueError("Bad network '%s'" % network)
+		if not description:
+			description = ''
+		if not notes:
+			notes = ''
+		
+		# Create config directory for depot
+		depotPath = os.path.join(self.__depotConfigDir, depotId)
+		os.mkdir(depotPath)
+		os.chmod(depotPath, 0770)
+		
+		# Create depot ini file
+		depotIniFile = self.getDepotIniFile(depotId)
+		self.createFile(depotIniFile, mode=0660)
+		
+		ini = self.readIniFile(depotIniFile)
+		ini.add_section('depotshare')
+		ini.set('depotshare', 'localurl', depotLocalUrl)
+		ini.set('depotshare', 'remoteurl', depotRemoteUrl)
+		
+		ini.add_section('repository')
+		ini.set('repository', 'localurl', repositoryLocalUrl)
+		ini.set('repository', 'remoteurl', repositoryRemoteUrl)
+		
+		ini.add_section('depotserver')
+		ini.set('depotserver', 'network', network )
+		ini.set('depotserver', 'description', description )
+		ini.set('depotserver', 'notes', notes )
+		
+		# Write back ini file
+		self.writeIniFile(depotIniFile, ini)
+		
+		return depotId
 	
 	def getDepotIds_list(self):
 		depotIds = []
 		for d in os.listdir(self.__depotConfigDir):
 			if os.path.isdir( os.path.join(self.__depotConfigDir, d) ):
-				depotIds.append(d)
+				depotIds.append( d.lower() )
 		return depotIds
-		
+	
 	def getDepotId(self, clientId=None):
 		depotId = self.getServerId()
 		if clientId:
@@ -827,10 +893,23 @@ class File31Backend(File, FileBackend):
 		
 		info = {}
 		try:
-			info['urlForClient'] = ini.get('depotshare', 'urlforclient')
+			info['depotLocalUrl'] 		= ini.get('depotshare', 'localurl')
+			info['depotRemoteUrl'] 		= ini.get('depotshare', 'remoteurl')
+			info['repositoryLocalUrl'] 	= ini.get('repository', 'localurl')
+			info['repositoryRemoteUrl'] 	= ini.get('repository', 'remoteurl')
+			info['network'] 		= ini.get('depotserver', 'network')
+			info['description'] 		= ini.get('depotserver', 'description')
+			info['notes'] 			= ini.get('depotserver', 'notes')
 		except Exception, e:
 			raise BackendIOError("Failed to get info for depot-id '%s': %s" % (depotId, e))
 		return info
+	
+	def deleteDepot(self, depotId):
+		depotId = self._preProcessHostId(depotId)
+		if not depotId in self.getDepotIds_list():
+			logger.error("Cannot delte depot '%s': does not exist" % depotId)
+			return
+		rmdir( os.path.join(self.__depotConfigDir, depotId), recursive=True )
 	
 	def getOpsiHostKey(self, hostId):
 		hostId = hostId.lower()
@@ -943,7 +1022,7 @@ class File31Backend(File, FileBackend):
 		ini = self.readIniFile(iniFile)
 		
 		if not ini.has_section('info'):
-			ini.add_Section('info')
+			ini.add_section('info')
 		ini.set('info', 'macaddress', ', '.join(macs))
 		
 		# Write back ini file
@@ -1040,7 +1119,86 @@ class File31Backend(File, FileBackend):
 	# -------------------------------------------------
 	# -     PRODUCT FUNCTIONS                         -
 	# -------------------------------------------------
+	def lockProduct(self, productId, depotIds=[]):
+		if not productId:
+			raise BackendBadValueError("Product id empty")
+		productId = productId.lower()
+		if not depotIds:
+			depotIds = self.getDepotIds_list()
+		if type(depotIds) not in (list, tuple):
+			depotIds = [ depotIds ]
+		
+		logger.debug("Locking product '%s' on depots: %s" % (productId, depotIds))
+		
+		newDepotIds = []
+		for depotId in depotIds:
+			try:
+				self.getProduct_hash(productId = productId, depotId = depotId)
+				newDepotIds.append(depotId)
+			except BackendMissingDataError, e:
+				logger.warning("Depot '%s': %s" % (depotId, e))
+		depotIds = newDepotIds
+		
+		if not depotIds:
+			#raise BackendMissingDataError("Product '%s' not installed on any of the given depots" % productId)
+			logger.warning("Product '%s' not installed on any of the given depots" % productId)
+			return
+		
+		if not os.path.exists(self.__productLockFile):
+			self.createFile(self.__productLockFile, mode=0660)
+		
+		ini = self.readIniFile(self.__productLockFile)
+		
+		if not ini.has_section(productId):
+			ini.add_section(productId)
+		for depotId in depotIds:
+			ini.set(productId, depotId, 'locked')
+		
+		self.writeIniFile(self.__productLockFile, ini)
+		
+	def unlockProduct(self, productId, depotIds=[]):
+		productId = productId.lower()
+		if not depotIds:
+			depotIds = self.getDepotIds_list()
+		if type(depotIds) not in (list, tuple):
+			depotIds = [ depotIds ]
+		
+		logger.debug("Unlocking product '%s' on depots: %s" % (productId, depotIds))
+		
+		if not os.path.exists(self.__productLockFile):
+			self.createFile(self.__productLockFile, mode=0660)
+		
+		ini = self.readIniFile(self.__productLockFile)
+		
+		if not ini.has_section(productId):
+			return
+		
+		for depotId in depotIds:
+			if ini.has_option(productId, depotId):
+				ini.remove_option(productId, depotId)
+		
+		if not ini.items(productId):
+			ini.remove_section(productId)
+		
+		self.writeIniFile(self.__productLockFile, ini)
 	
+	def getProductLocks_hash(self, depotIds=[]):
+		locks = {}
+		if not depotIds:
+			depotIds = self.getDepotIds_list()
+		if type(depotIds) not in (list, tuple):
+			depotIds = [ depotIds ]
+		if not os.path.exists(self.__productLockFile):
+			self.createFile(self.__productLockFile, mode=0660)
+		
+		ini = self.readIniFile(self.__productLockFile)
+		
+		for productId in ini.sections():
+			locks[productId] = []
+			for (depotId, value) in ini.items(productId):
+				locks[productId].append(depotId)
+		return locks
+		
 	def createProduct(self, productType, productId, name, productVersion, packageVersion, licenseRequired=0,
 			   setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
 			   priority=0, description="", advice="", productClassNames=(), pxeConfigTemplate='', depotIds=[]):
@@ -1105,8 +1263,8 @@ class File31Backend(File, FileBackend):
 					ini.set('%s_product_states' % productType, productId, 'not_installed:none')
 				
 				self.writeIniFile( self.getClientIniFile(clientId), ini)
-		
-		
+	
+	
 	def deleteProduct(self, productId, depotIds=[]):
 		
 		productId = productId.lower()

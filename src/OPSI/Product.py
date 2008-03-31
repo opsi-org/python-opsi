@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.8.0'
+__version__ = '0.9.8.3'
 
 # Imports
 import os
@@ -464,12 +464,15 @@ class ProductPackage:
 		if not product or not product.productId:
 			raise Exception('Product ID is not set')
 		self.product = product
-		self.clientDataDir = os.path.join(opsiConfig.getDepotDir(), self.product.productId)
+		self.clientDataDir = os.path.join('/tmp', self.product.productId)
 		self.controlFile = None
 		self.accessRights = {}
 		self.customName = None
 		self.incremental = False
 		self.dependencies = []
+	
+	def setClientDataDir(self, clientDataDir):
+		self.clientDataDir = clientDataDir
 	
 	def lock(self):
 		lockFile = os.path.join(LOCK_DIR, 'lock.' + self.product.productId)
@@ -508,15 +511,20 @@ class ProductPackage:
 		if os.path.isfile(lockFile):
 			os.unlink(lockFile)
 	
-	def checkDependencies(self):
+	def checkDependencies(self, configBackend=None):
 		logger.info("Checking package dependencies")
 		for dependency in self.dependencies:
 			package = dependency.get('package')
 			version = dependency.get('version')
-			clientDataDir = os.path.join(opsiConfig.getDepotDir(), package)
-			if not os.path.isdir(clientDataDir):
-				raise Exception("Dependent package '%s' not found at '%s'" % (package, clientDataDir))
-			
+			clientDataDir = ''
+			if configBackend:
+				if not package in configBackend.getProductIds_list():
+					raise Exception("Dependent package '%s' not installed" % package)
+			else:
+				clientDataDir = os.path.join( os.path.dirname(self.clientDataDir), package)
+				if not os.path.isdir(clientDataDir):
+					raise Exception("Dependent package '%s' not found at '%s'" % (package, clientDataDir))
+				
 			if not version:
 				logger.info("Fulfilled product dependency '%s'" % package)
 				continue
@@ -530,17 +538,22 @@ class ProductPackage:
 			condition = match.group(1)
 			requiredVersion = match.group(2)
 			
-			controlFile = None
-			for f in os.listdir(clientDataDir):
-				if f.startswith(package) and f.endswith('.control'):
-					controlFile = os.path.join(clientDataDir, f)
-			if not controlFile:
-				raise Exception("Control-file of dependent package '%s' not found in '%s'" % (package, clientDataDir))
-			
-			dependendPackage = ProductPackage(Product(package))
-			dependendPackage.controlFile = controlFile
-			dependendPackage.readControlFile()
-			availableVersion = dependendPackage.product.productVersion + '-' + dependendPackage.product.packageVersion
+			availableVersion = ''
+			if configBackend:
+				productInfo = configBackend.getProduct_hash(package)
+				availableVersion = productInfo.get('productVersion', '') + '-' + productInfo.get('packageVersion', '')
+			else:
+				controlFile = None
+				for f in os.listdir(clientDataDir):
+					if f.startswith(package) and f.endswith('.control'):
+						controlFile = os.path.join(clientDataDir, f)
+				if not controlFile:
+					raise Exception("Control-file of dependent package '%s' not found in '%s'" % (package, clientDataDir))
+				
+				dependendPackage = ProductPackage(Product(package))
+				dependendPackage.controlFile = controlFile
+				dependendPackage.readControlFile()
+				availableVersion = dependendPackage.product.productVersion + '-' + dependendPackage.product.packageVersion
 			
 			if Tools.compareVersions(availableVersion, condition, requiredVersion):
 				logger.info("Fulfilled product dependency '%s %s %s' (available version: %s)" \
@@ -760,7 +773,7 @@ class ProductPackageSource(ProductPackage):
 					if os.path.isdir(source):
 						continue
 					if (name == 'CLIENT_DATA'):
-						destination = os.path.join(opsiConfig.getDepotDir(), self.product.productId, destination)
+						destination = os.path.join(self.clientDataDir, destination)
 					else:
 						destination = os.path.join('/', destination)
 					try:
@@ -805,11 +818,11 @@ class ProductPackageFile(ProductPackage):
 		self.tmpUnpackDir = os.path.join( self.tempDir, 'unpack.%s.%s' % (self.product.productId, Tools.randomString(5)) )
 		
 		# Unpack and read control file
-		self.lock()
+		#self.lock()
 		self.unpack(dataArchives = False)
-		self.unlock()
+		#self.unlock()
 				
-		self.clientDataDir = os.path.join(opsiConfig.getDepotDir(), self.product.productId)
+		self.clientDataDir = os.path.join('/tmp', self.product.productId)
 		
 		
 		
@@ -825,7 +838,7 @@ class ProductPackageFile(ProductPackage):
 		postinst = os.path.join(self.tmpUnpackDir, 'postinst')
 		if not os.path.exists(postinst):
 			logger.warning("Postinst script '%s' does not exist" % postinst)
-			return None
+			return []
 		os.chmod(postinst, 0700)
 		
 		os.putenv('PRODUCT_ID', self.product.productId)
@@ -841,7 +854,7 @@ class ProductPackageFile(ProductPackage):
 		preinst = os.path.join(self.tmpUnpackDir, 'preinst')
 		if not os.path.exists(preinst):
 			logger.warning("Preinst script '%s' does not exist" % preinst)
-			return None
+			return []
 		os.chmod(preinst, 0700)
 		
 		os.putenv('PRODUCT_ID', self.product.productId)
@@ -922,23 +935,25 @@ class ProductPackageFile(ProductPackage):
 		
 		prevUmask = os.umask(0077)
 		# Create temporary directory
-		#if os.path.exists(self.tmpUnpackDir):
-		#	rmdir(self.tmpUnpackDir, recursive=True)
-		#os.mkdir(self.tmpUnpackDir)
-		if not os.path.exists(self.tmpUnpackDir):
-			os.mkdir(self.tmpUnpackDir)
-			os.umask(prevUmask)
-			
-			try:
+		if os.path.exists(self.tmpUnpackDir):
+			rmdir(self.tmpUnpackDir, recursive=True)
+		os.umask(prevUmask)
+		os.mkdir(self.tmpUnpackDir)
+		try:
+			if dataArchives:
 				logger.notice("Extracting archive content to: '%s'" % self.tmpUnpackDir)
 				Tools.extractArchive(self.packageFile, chdir=self.tmpUnpackDir)
-			except Exception, e:
-				self.cleanup()
-				raise Exception("Failed to extract '%s': %s" % (self.packageFile, e))
+			else:
+				logger.notice("Extracting partial archive content to: '%s'" % self.tmpUnpackDir)
+				Tools.extractArchive(self.packageFile, chdir=self.tmpUnpackDir, patterns=["OPSI.*"])
+		except Exception, e:
+			self.cleanup()
+			raise Exception("Failed to extract '%s': %s" % (self.packageFile, e))
 		
 		self.customName = None
 		
 		for f in os.listdir(self.tmpUnpackDir):
+			logger.debug("Archive content: %s" % f)
 			if not f.endswith('cpio.gz') and not f.endswith('tar.gz') and f.endswith('cpio') and not f.endswith('tar'):
 				logger.warning("Unkown content in archive: %s" % f)
 			if f.endswith('.gz'):
@@ -955,8 +970,8 @@ class ProductPackageFile(ProductPackage):
 		
 		names = ['OPSI']
 		if dataArchives:
-			mkdir( os.path.join(opsiConfig.getDepotDir(), self.product.productId) )
-			self.installedFiles.append( os.path.join(opsiConfig.getDepotDir(), self.product.productId) )
+			mkdir( self.clientDataDir )
+			self.installedFiles.append( self.clientDataDir )
 			names.extend( ['SERVER_DATA', 'CLIENT_DATA'] )
 		
 		
@@ -1040,7 +1055,7 @@ class ProductPackageFile(ProductPackage):
 			
 			(mode, group) = (None, None)
 			
-			if not filename.startswith(opsiConfig.getDepotDir()):
+			if not filename.startswith( self.clientDataDir ):
 				continue
 			
 			group = DEFAULT_CLIENT_DATA_GROUP

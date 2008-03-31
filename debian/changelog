@@ -1,3 +1,15 @@
+python-opsi (3.3.0.0~a2-1) unstable; urgency=low
+
+  * Major changes in product/package handling
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 27 Mar 2008 15:58:19 +0100
+
+python-opsi (3.3.0.0~a1-1) unstable; urgency=low
+
+  * MySQL Backend for hardware audit and software audit
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 12 Mar 2008 15:51:43 +0100
+
 python-opsi (3.2.0.15-1) stable; urgency=low
 
   * Added backend methods userIsHost() and userIsAdmin()

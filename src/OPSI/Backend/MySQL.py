@@ -35,7 +35,9 @@ class MySQL:
 							host = address,
 							user = username,
 							passwd = password,
-							db = database )
+							db = database,
+							use_unicode = True,
+							charset = 'utf8' )
 		except Exception, e:
 			raise BackendIOError("Failed to connect to database '%s' address '%s': %s" % (database, address, e))
 		
@@ -43,12 +45,12 @@ class MySQL:
 		
 	def db_query(self, query):
 		logger.debug2("db_query: %s" % query)
-		self.__cursor__.execute(query)
+		self.db_execute(query)
 		return self.__cursor__.rowcount
 		
 	def db_getSet(self, query):
 		logger.debug2("db_getSet: %s" % query)
-		self.__cursor__.execute(query)
+		self.db_execute(query)
 		valueSet = self.__cursor__.fetchall()
 		if not valueSet:
 			logger.debug("No result for query '%s'" % query)
@@ -57,7 +59,7 @@ class MySQL:
 		
 	def db_getRow(self, query):
 		logger.debug2("db_getRow: %s" % query)
-		self.__cursor__.execute(query)
+		self.db_execute(query)
 		row = self.__cursor__.fetchone()
 		if not row:
 			logger.debug("No result for query '%s'" % query)
@@ -76,12 +78,17 @@ class MySQL:
 				values += "%s, " % value
 		query = "INSERT INTO `%s` (%s) VALUES (%s);" % (table, colNames[:-2], values[:-2])
 		logger.debug2("db_insert: %s" % query)
-		self.__cursor__.execute(query)
+		self.db_execute(query)
 		return self.__cursor__.lastrowid
 		#return self.__cursor__.rowcount
 		
 	#def db_update(self, table, valueHash):
 	#	pass
+	
+	def db_execute(self, query):
+		if not type(query) is unicode:
+			query = unicode(query, 'utf-8')
+		return self.__cursor__.execute(query)
 	
 	def db_info(self):
 		return self.__conn__.info()
@@ -124,11 +131,14 @@ class MySQLBackend(DataBackend):
 		
 		warnings.showwarning = self._showwarning
 		self.__mysql__ = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
-		 
+		
 		
 	def _showwarning(self, message, category, filename, lineno, file=None):
 		#logger.warning("%s (file: %s, line: %s)" % (message, filename, lineno))
-		logger.warning(message)
+		if str(message).startswith('Data truncated for column'):
+			logger.error(message)
+		else:
+			logger.warning(message)
 	
 	def _writeToServer_(self, queries):
 		for query in queries.split(';'):
@@ -154,7 +164,7 @@ class MySQLBackend(DataBackend):
 			logger.debug('Creating table HOST')
 			self._writeToServer_('CREATE TABLE HOST (host_id INT NOT NULL AUTO_INCREMENT, hostId varchar(50) NOT NULL, PRIMARY KEY(`host_id`) ) ENGINE = MYISAM;')
 		
-		# Hardware audit database
+		# Hardware audit database (utf-8 encoded)
 		opsiHWAuditConf = self.getOpsiHWAuditConf()
 		for config in opsiHWAuditConf:
 			hwClass = config['Class']['Opsi']
@@ -240,10 +250,12 @@ class MySQLBackend(DataBackend):
 			softwareTable  =  'CREATE TABLE `SOFTWARE` (\n' + \
 						'`software_id` INT NOT NULL AUTO_INCREMENT,\n' + \
 						'PRIMARY KEY( `software_id` ),\n' + \
-						'`softwareId` varchar(50) NOT NULL,\n' + \
+						'`softwareId` varchar(100) NOT NULL,\n' + \
 						'`displayName` varchar(100),\n' + \
 						'`displayVersion` varchar(100),\n' + \
-						'`uninstallString` varchar(100)\n' + \
+						'`uninstallString` varchar(200),\n' + \
+						'`binaryName` varchar(100),\n' + \
+						'`installSize` BIGINT\n' + \
 					   ') ENGINE = MYISAM ;\n'
 			logger.debug(softwareTable)
 			self._writeToServer_(softwareTable)
@@ -257,13 +269,15 @@ class MySQLBackend(DataBackend):
 							'`audit_firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
 							'`audit_lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
 							'`audit_state` TINYINT NOT NULL,\n' + \
-							'`usageFrequency` int NOT NULL DEFAULT -1\n' + \
+							'`usageFrequency` int NOT NULL DEFAULT -1,\n' + \
+							'`lastUsed` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\'\n' + \
 						') ENGINE = MYISAM ;\n'
 			logger.debug(softwareConfigTable)
 			self._writeToServer_(softwareConfigTable)
 	
 	def getSoftwareInformation_hash(self, hostId):
-		hostId = hostId.lower()
+		hostId = self._preProcessHostId(hostId)
+		
 		info = {}
 		hostDbId = self.__mysql__.db_getRow("SELECT `host_id` FROM `HOST` WHERE `hostId`='%s'" % hostId).get('host_id')
 		if not hostDbId:
@@ -288,6 +302,10 @@ class MySQLBackend(DataBackend):
 					continue
 				if (value == None):
 					value = ""
+				if (key == 'lastUsed'):
+					value = str(value)
+				if type(value) is unicode:
+					value = value.encode('utf-8')
 				softwareInfo[key] = value
 				
 			# Add general hardware device information
@@ -296,6 +314,8 @@ class MySQLBackend(DataBackend):
 				if key in ('software_id'):
 					# Filter out this information
 					continue
+				if type(value) is unicode:
+					value = value.encode('utf-8')
 				if key in ('softwareId'):
 					softwareId = value
 					continue
@@ -306,11 +326,13 @@ class MySQLBackend(DataBackend):
 			if softwareId and softwareInfo:
 				info[softwareId] = softwareInfo
 		
+		if not info:
+			return info
 		info['SCANPROPERTIES'] = {'scantime': time.strftime("%Y-%m-%d %H:%M:%S", scantime) }
 		return info
 	
 	def setSoftwareInformation(self, hostId, info):
-		hostId = hostId.lower()
+		hostId = self._preProcessHostId(hostId)
 		if not type(info) is dict:
 			raise BackendBadValueError("Software information must be dict")
 		
@@ -346,7 +368,7 @@ class MySQLBackend(DataBackend):
 				if (type(opsiValue) == type(None)):
 					continue
 				
-				if opsiName in ('displayName', 'displayVersion'):
+				if opsiName in ('displayName', 'displayVersion', 'uninstallString', 'installSize', 'binaryName'):
 					# This is a general (unchangeable) software information, put it into the software table
 					if type(opsiValue) is unicode:
 						software[opsiName] = opsiValue.encode('utf-8')
@@ -384,7 +406,7 @@ class MySQLBackend(DataBackend):
 				swId = current[0]['software_id']
 			else:
 				# Softwaree does not exist in database, create
-				logger.debug("Adding software to database")
+				logger.info("Adding software to database")
 				swId = self.__mysql__.db_insert('SOFTWARE', software)
 			
 			# Update / insert software configuration into database
@@ -397,6 +419,9 @@ class MySQLBackend(DataBackend):
 			query = 'SELECT `config_id` FROM `SOFTWARE_CONFIG` WHERE'
 			for (k, v) in softwareConfig.items():
 				if k in ('audit_firstseen', 'audit_lastseen', 'audit_state'):
+					continue
+				if k in ('usageFrequency', 'lastUsed'):
+					# Update only, do not create new entry in history
 					continue
 				if type(v) is type(''):
 					# String-value
@@ -416,10 +441,16 @@ class MySQLBackend(DataBackend):
 					logger.warning("Redundant entries in software config database: table 'SOFTWARE', config_ids: %s" \
 								% ', '.join(confIds) )
 				confId = current[0]['config_id']
-				self.__mysql__.db_query("UPDATE `SOFTWARE_CONFIG` SET `audit_lastseen`='%s' WHERE `config_id` = %d;" % (scantime, confId))
+				# Update config
+				self.__mysql__.db_query("UPDATE `SOFTWARE_CONFIG` SET " + \
+								"`audit_lastseen`='%s', `usageFrequency`=%d, `lastUsed`='%s' WHERE `config_id` = %d;" \
+								% (	scantime, 
+									softwareConfig.get('usageFrequency', -1),
+									softwareConfig.get('lastUsed', '0000-00-00 00:00:00'),
+									confId ) )
 			else:
 				# Host specific software config does not exist in database, create
-				logger.debug("Adding host specific software config to database")
+				logger.info("Adding host specific software config to database")
 				confId = self.__mysql__.db_insert("SOFTWARE_CONFIG", softwareConfig)
 			# Add config_id to the list of active software configurations
 			configIdsSeen.append(confId)
@@ -433,10 +464,13 @@ class MySQLBackend(DataBackend):
 				self.__mysql__.db_query("UPDATE `SOFTWARE_CONFIG` SET `audit_state` = 0 WHERE `config_id` = %d;" % config['config_id'])
 	
 	def deleteSoftwareInformation(self, hostId):
-		hostId = hostId.lower()
+		hostId = self._preProcessHostId(hostId)
+	
+	def getHardwareInformation_listOfHashes(self, hostId):
+		return []
 	
 	def getHardwareInformation_hash(self, hostId):
-		hostId = hostId.lower()
+		hostId = self._preProcessHostId(hostId)
 		info = {}
 		hostDbId = self.__mysql__.db_getRow("SELECT `host_id` FROM `HOST` WHERE `hostId`='%s'" % hostId).get('host_id')
 		if not hostDbId:
@@ -464,11 +498,15 @@ class MySQLBackend(DataBackend):
 						continue
 					if (value == None):
 						value = ""
+					if type(value) is unicode:
+						value = value.encode('utf-8')
 					device[key] = value
 				
 				# Add general hardware device information
 				hardware = self.__mysql__.db_getRow("SELECT * FROM `HARDWARE_DEVICE_%s` WHERE `hardware_id`='%s'" % (hwClass, hwConfig['hardware_id']))
 				for (key, value) in hardware.items():
+					if type(value) is unicode:
+						value = value.encode('utf-8')
 					if key in ('hardware_id'):
 						# Filter out this information
 						continue
@@ -481,11 +519,13 @@ class MySQLBackend(DataBackend):
 			if devices:
 				info[hwClass] = devices
 		
+		if not info:
+			return info
 		info['SCANPROPERTIES'] = [ {'scantime': time.strftime("%Y-%m-%d %H:%M:%S", scantime) } ]
 		return info
 	
 	def setHardwareInformation(self, hostId, info):
-		hostId = hostId.lower()
+		hostId = self._preProcessHostId(hostId)
 		if not type(info) is dict:
 			raise BackendBadValueError("Hardware information must be dict")
 		
@@ -571,7 +611,7 @@ class MySQLBackend(DataBackend):
 					hwId = current[0]['hardware_id']
 				else:
 					# Hardware device does not exist in database, create
-					logger.debug("Adding hardware device to database")
+					logger.info("Adding hardware device to database")
 					hwId = self.__mysql__.db_insert('HARDWARE_DEVICE_' + hwClass, hardwareDevice)
 				
 				# Update / insert hardware configuration into database
@@ -606,7 +646,7 @@ class MySQLBackend(DataBackend):
 					self.__mysql__.db_query("UPDATE `HARDWARE_CONFIG_%s` SET `audit_lastseen`='%s' WHERE `config_id` = %d;" % (hwClass, scantime, confId))
 				else:
 					# Host specific hardware config does not exist in database, create
-					logger.debug("Adding host specific hardware config to database")
+					logger.info("Adding host specific hardware config to database")
 					confId = self.__mysql__.db_insert("HARDWARE_CONFIG_%s" % hwClass, hardwareConfig)
 				# Add config_id to the list of active hardware configurations
 				configIdsSeen.append(confId)
@@ -620,7 +660,7 @@ class MySQLBackend(DataBackend):
 					self.__mysql__.db_query("UPDATE `HARDWARE_CONFIG_%s` SET `audit_state` = 0 WHERE `config_id` = %d;" % (hwClass, config['config_id']))
 	
 	def deleteHardwareInformation(self, hostId):
-		hostId = hostId.lower()
+		hostId = self._preProcessHostId(hostId)
 	
 	def exit(self):
 		self.__mysql__.db_close()

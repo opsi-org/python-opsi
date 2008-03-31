@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# auto detect encoding => äöü
 """
    ==============================================
    =             OPSI Logger Module             =
@@ -10,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.6.1'
+__version__ = '0.9.6.3'
 
 #Imports
 import os
@@ -214,6 +213,9 @@ class LoggerImplementation:
 		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
 		self.__consoleLevel = level
 	
+	def getConsoleLevel(self):
+		return self.__consoleLevel
+	
 	def setLogFile(self, logFile, currentThread=False):
 		''' Set the filename of logfile. '''
 		if currentThread:
@@ -232,7 +234,7 @@ class LoggerImplementation:
 		else:
 			logFile = self.__logFile
 		if not os.path.isabs(linkFile):
-			linkFile = os.path.join( os.path.dirname(logFile), linkFile)
+			linkFile = os.path.join( os.path.dirname(logFile), linkFile )
 		
 		try:
 			if (logFile == linkFile):
@@ -279,7 +281,9 @@ class LoggerImplementation:
 		    not self.univentionLogger_priv):
 			    return
 		
-		if type(message) not in (str, unicode):
+		if type(message) is unicode:
+			message = message.encode('utf-8')
+		if not type(message) is str:
 			message = "%s" % message
 		levelname = ''
 		color = COLOR_NORMAL

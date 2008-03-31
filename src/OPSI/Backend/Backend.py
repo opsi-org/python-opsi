@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.8.1'
+__version__ = '0.9.8.3'
 
 # Imports
 import socket, re
@@ -78,6 +78,10 @@ class genericError(Exception):
 		else:
 			return "%s" % self.ExceptionShortDescription
 
+class BackendError(genericError):
+	""" Exception raised if there is an error in the backend. """
+	ExceptionShortDescription = "Backend error"
+
 class BackendIOError(genericError):
 	""" Exception raised if there is a read or write error in the backend. """
 	ExceptionShortDescription = "Backend I/O error"
@@ -97,6 +101,10 @@ class BackendAuthenticationError(genericError):
 class BackendPermissionDeniedError(genericError):
 	""" Exception raised if a permission is denied. """
 	ExceptionShortDescription = "Backend permission denied error"
+
+class BackendTemporaryError(genericError):
+	""" Exception raised if a temporary error occurs. """
+	ExceptionShortDescription = "Backend temporary error"
 
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -151,8 +159,7 @@ class Backend:
 			if (a != '127.0.0.1'):
 				return a
 		return '127.0.0.1'
-
-
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      CLASS DATABACKEND                                             =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -160,7 +167,7 @@ class DataBackend(Backend):
 	
 	def __init__(self, username = '', password = '', address = '', backendManager=None, args={}):
 		Backend.__init__(self, username, password, address, backendManager, args)
-		
+	
 	def createOpsiBase(self):
 		pass
 	
@@ -172,6 +179,11 @@ class DataBackend(Backend):
 	
 	def getPossibleRequirementTypes_list(self):
 		return Product.POSSIBLE_REQUIREMENT_TYPES
+	
+	def _preProcessHostId(self, hostId):
+		if (hostId.split('.') < 3):
+			raise BackendBadValueError("Bad host id '%s'" % hostId)
+		return hostId.lower()
 	
 	def getOpsiHWAuditConf(self, lang=None):
 		if not lang:

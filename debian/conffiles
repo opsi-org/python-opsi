@@ -1,4 +1,3 @@
-etc/opsi/opsi.conf
 etc/opsi/hwaudit/opsihwaudit.conf
 etc/opsi/backendManager.d/10_file.conf
 etc/opsi/backendManager.d/11_ldap.conf
