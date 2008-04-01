@@ -10,13 +10,14 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 # Imports
 import socket
 
 # OPSI imports
 from OPSI.Backend.Backend import *
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import *
 
 # Get logger instance
@@ -44,6 +45,20 @@ class OpsiPXEConfdBackend(Backend):
 				logger.warning("Unknown argument '%s' passed to OpsiPXEConfdBackend constructor" % option)
 	
 	def setPXEBootConfiguration(self, hostId, args={}):
+		depotId = self.__backendManager.getDepotId(hostId)
+		logger.debug("setPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
+		if (depotId != socket.getfqdn()):
+			logger.info("setPXEBootConfiguration: forwarding request to depot '%s'" % depotId)
+			be = None
+			try:
+				be = JSONRPCBackend(username = depotId, password = self.__backendManager.getOpsiHostKey(depotId), address = depotId)
+				res = be.setPXEBootConfiguration(hostId, args)
+				be.exit()
+				return res
+			except:
+				if be: be.exit()
+				raise
+			
 		cmd = 'set %s' % hostId
 		for (k,v) in args.items():
 			cmd += ' %s' % k
@@ -58,6 +73,20 @@ class OpsiPXEConfdBackend(Backend):
 			raise BackendIOError("Failed to set PXE boot configuration: %s" % e)
 		
 	def unsetPXEBootConfiguration(self, hostId):
+		depotId = self.__backendManager.getDepotId(hostId)
+		logger.debug("unsetPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
+		if (depotId != socket.getfqdn()):
+			logger.info("unsetPXEBootConfiguration: forwarding request to depot '%s'" % depotId)
+			be = None
+			try:
+				be = JSONRPCBackend(username = depotId, password = self.__backendManager.getOpsiHostKey(depotId), address = depotId)
+				res = be.unsetPXEBootConfiguration(hostId)
+				be.exit()
+				return res
+			except:
+				if be: be.exit()
+				raise
+		
 		cmd = 'unset %s' % hostId
 		try:
 			sc = ServerConnection(self.__port)

@@ -1,14 +1,21 @@
 python-opsi (3.3.0.0~a2-1) unstable; urgency=low
 
   * Major changes in product/package handling
+  * OpsiPXEConfd backend can forward requests to other depots
 
- -- Jan Schneider <j.schneider@uib.de>  Thu, 27 Mar 2008 15:58:19 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue,  1 Apr 2008 11:48:46 +0200
 
 python-opsi (3.3.0.0~a1-1) unstable; urgency=low
 
   * MySQL Backend for hardware audit and software audit
 
  -- Jan Schneider <j.schneider@uib.de>  Wed, 12 Mar 2008 15:51:43 +0100
+
+ python-opsi (3.2.0.16-1) stable; urgency=low
+
+  * JSONRPC - fixed bug in retry request
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 31 Mar 2008 10:44:44 +0200
 
 python-opsi (3.2.0.15-1) stable; urgency=low
 

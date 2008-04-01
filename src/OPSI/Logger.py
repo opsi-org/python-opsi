@@ -220,11 +220,11 @@ class LoggerImplementation:
 		''' Set the filename of logfile. '''
 		if currentThread:
 			self._setThreadConfig('logFile', logFile)
-			self.info("Now using log-file: '%s' for thread %s" \
+			self.info("Now using log-file '%s' for thread %s" \
 				% (logFile, thread.get_ident()))
 		else:
 			self.__logFile = logFile
-			self.info("Now using log-file: '%s'" % self.__logFile)
+			self.info("Now using log-file '%s'" % self.__logFile)
 	
 	def linkLogFile(self, linkFile, currentThread=False):
 		''' Set the filename of logfile. '''
