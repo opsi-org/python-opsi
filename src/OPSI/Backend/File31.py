@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.2.6.7'
+__version__ = '0.2.6.8'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -150,6 +150,11 @@ class File31Backend(File, FileBackend):
 		if not objectId:
 			objectId = self.getServerId()
 		
+		configNew = {}
+		for (key, value) in config.items():
+			configNew[key.lower()] = value
+		config = configNew
+		
 		iniFile = ''
 		if (objectId == self.getServerId()) or (objectId == self._defaultDomain):
 			# General config for server/domain => edit general.ini
@@ -158,6 +163,7 @@ class File31Backend(File, FileBackend):
 			# General config for special host => edit <hostname>.ini
 			ini = self.readIniFile(self.__globalConfigFile)
 			for (key, value) in ini.items('generalconfig'):
+				key = key.lower()
 				if not config.has_key(key):
 					continue
 				if (value == config[key]):
@@ -174,11 +180,12 @@ class File31Backend(File, FileBackend):
 		# Delete section generalConfig if exists
 		if ini.has_section("generalconfig"):
 			ini.remove_section("generalconfig")
-		ini.add_section("generalconfig")
-		
-		for (key, value) in config.items():
-			ini.set('generalconfig', key, value)
-		
+		if config:
+			ini.add_section("generalconfig")
+			
+			for (key, value) in config.items():
+				ini.set('generalconfig', key, value)
+			
 		# Write back ini file
 		self.writeIniFile(iniFile, ini)
 	
@@ -255,6 +262,19 @@ class File31Backend(File, FileBackend):
 		if not objectId:
 			objectId = self.getServerId()
 		
+		configNew = {}
+		for (key, value) in config.items():
+			key = key.lower()
+			if key not in (	'opsiserver', 'utilsdrive', 'depotdrive', 'configdrive', 'utilsurl', 'depoturl', 'configurl', \
+						'depotid', 'windomain', 'nextbootservertype', 'nextbootserviceurl' ):
+				logger.error("Unknown networkConfig key '%s'" % key)
+				continue
+			if (key == 'depoturl'):
+				logger.error("networkConfig: Setting key 'depotUrl' is no longer supported, use depotId")
+				continue
+			configNew[key] = value
+		config = configNew
+		
 		iniFile = ''
 		if (objectId == self.getServerId()) or (objectId == self._defaultDomain):
 			# Network config for server/domain => edit general.ini
@@ -263,6 +283,7 @@ class File31Backend(File, FileBackend):
 			# Network config for special host => edit <hostname>.ini
 			ini = self.readIniFile(self.__globalConfigFile)
 			for (key, value) in ini.items('networkconfig'):
+				key = key.lower()
 				if not config.has_key(key):
 					continue
 				if (value == config[key]):
@@ -279,17 +300,10 @@ class File31Backend(File, FileBackend):
 		# Delete section generalConfig if exists
 		if ini.has_section("networkconfig"):
 			ini.remove_section("networkconfig")
-		ini.add_section("networkconfig")
-		
-		for (key, value) in config.items():
-			if key not in (	'opsiServer', 'utilsDrive', 'depotDrive', 'configDrive', 'utilsUrl', 'depotUrl', 'configUrl', \
-					'depotId', 'winDomain', 'nextBootServerType', 'nextBootServiceURL' ):
-				logger.error("Unknown networkConfig key '%s'" % key)
-				continue
-			if (key == 'depotUrl'):
-				logger.error("networkConfig: Setting key 'depotUrl' is no longer supported, use depotId")
-				continue
-			ini.set('networkconfig', key, value)
+		if config:
+			ini.add_section("networkconfig")
+			for (key, value) in config.items():
+				ini.set('networkconfig', key, value)
 		
 		# Write back ini file
 		self.writeIniFile(iniFile, ini)
@@ -310,7 +324,7 @@ class File31Backend(File, FileBackend):
 			'depotDrive':	'',
 			'configDrive':	'',
 			'utilsUrl':	'',
-			'depotId':	self.getDepotId(objectId),
+			'depotId':	self.getDepotId(), # leave this as default !
 			'depotUrl':	'',
 			'configUrl':	'',
 			'winDomain':	'',
