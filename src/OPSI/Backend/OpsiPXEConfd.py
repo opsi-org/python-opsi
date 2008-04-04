@@ -49,15 +49,30 @@ class OpsiPXEConfdBackend(Backend):
 		logger.debug("setPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
 		if (depotId != socket.getfqdn()):
 			logger.info("setPXEBootConfiguration: forwarding request to depot '%s'" % depotId)
-			be = None
+			import httplib, urllib, base64, json
+			socket.setdefaulttimeout(5)
+			opsiHostKey = self.__backendManager._execMethod(self.__backendManager.defaultBackend, 'getOpsiHostKey', depotId)
+			logger.debug("Connecting to '%s:%d'" % (depotId, 4447))
+			res = {}
+			isRetry = False
 			try:
-				be = JSONRPCBackend(username = depotId, password = self.__backendManager.getOpsiHostKey(depotId), address = depotId)
-				res = be.setPXEBootConfiguration(hostId, args)
-				be.exit()
-				return res
-			except:
-				if be: be.exit()
-				raise
+				con = httplib.HTTPSConnection(depotId, 4447)
+				con.putrequest('GET', '/rpc?' + urllib.quote(json.write( {"id": 1, "method": "setPXEBootConfiguration", "params": [ hostId, args ] } )))
+				con.putheader('Authorization', 'Basic '+ base64.encodestring(urllib.unquote(depotId + ':' + opsiHostKey)).strip() )
+				con.endheaders()
+				res = json.read( con.getresponse().read() )
+			except socket.sslerror:
+				if isRetry:
+					raise BackendIOError("Request on depot '%s' timed out" % depotId)
+				else:
+					isRetry = True
+					time.sleep(2)
+					logger.error("Request on depot '%s' timed out, retrying" % depotId)
+				
+			if res.get('error'):
+				logger.error("Request failed on depot '%s': %s" % (depotId, res['error']))
+				raise BackendIOError(res['error'])
+			return res.get('result')
 			
 		cmd = 'set %s' % hostId
 		for (k,v) in args.items():
@@ -77,15 +92,30 @@ class OpsiPXEConfdBackend(Backend):
 		logger.debug("unsetPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
 		if (depotId != socket.getfqdn()):
 			logger.info("unsetPXEBootConfiguration: forwarding request to depot '%s'" % depotId)
-			be = None
+			import httplib, urllib, base64, json
+			socket.setdefaulttimeout(5)
+			opsiHostKey = self.__backendManager._execMethod(self.__backendManager.defaultBackend, 'getOpsiHostKey', depotId)
+			logger.debug("Connecting to '%s:%d'" % (depotId, 4447))
+			res = {}
+			isRetry = False
 			try:
-				be = JSONRPCBackend(username = depotId, password = self.__backendManager.getOpsiHostKey(depotId), address = depotId)
-				res = be.unsetPXEBootConfiguration(hostId)
-				be.exit()
-				return res
-			except:
-				if be: be.exit()
-				raise
+				con = httplib.HTTPSConnection(depotId, 4447)
+				con.putrequest('GET', '/rpc?' + urllib.quote(json.write( {"id": 1, "method": "unsetPXEBootConfiguration", "params": [ hostId ] } )))
+				con.putheader('Authorization', 'Basic '+ base64.encodestring(urllib.unquote(depotId + ':' + opsiHostKey)).strip() )
+				con.endheaders()
+				res = json.read( con.getresponse().read() )
+			except socket.sslerror:
+				if isRetry:
+					raise BackendIOError("Request on depot '%s' timed out" % depotId)
+				else:
+					isRetry = True
+					time.sleep(2)
+					logger.error("Request on depot '%s' timed out, retrying" % depotId)
+				
+			if res.get('error'):
+				logger.error("Request failed on depot '%s': %s" % (depotId, res['error']))
+				raise BackendIOError(res['error'])
+			return res.get('result')
 		
 		cmd = 'unset %s' % hostId
 		try:

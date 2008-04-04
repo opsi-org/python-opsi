@@ -13,7 +13,7 @@
 __version__ = '0.9.5'
 
 # Imports
-import json, base64, urllib, httplib, new, stat
+import json, base64, urllib, httplib, new, stat, socket, random
 
 # OPSI imports
 from OPSI.Backend.Backend import *
@@ -46,6 +46,7 @@ class JSONRPCBackend(DataBackend):
 		self.__defaultHttpsPort = 4447
 		self.__protocol = 'https'
 		self.__method = METHOD_POST
+		self.__timeout = 10
 		
 		# Parse arguments
 		for (option, value) in args.items():
@@ -57,6 +58,7 @@ class JSONRPCBackend(DataBackend):
 				if not self.__password:			self.__password = value
 			elif (option.lower() == 'defaultdomain'): 	self.__defaultDomain = value
 			elif (option.lower() == 'sessionid'): 		self.__sessionId = value
+			elif (option.lower() == 'timeout'): 		self.__timeout = value
 			elif (option.lower() == 'method'):
 				if (value.lower() == 'get'):
 					self.__method = METHOD_GET
@@ -73,6 +75,13 @@ class JSONRPCBackend(DataBackend):
 			else:
 				self.__address = '%s://%s:4444/rpc' % (self.__protocol, self.__address)
 		
+		try:
+			self.possibleMethods = self.__backendManager.getPossibleMethods_listOfHashes()
+		except Exception, e:
+			self.possibleMethods = []
+			logger.debug("Failed to get possible methods from backend manager")
+		
+		socket.setdefaulttimeout(self.__timeout)
 		self._connect()
 	
 	def _connect(self):
@@ -94,7 +103,7 @@ class JSONRPCBackend(DataBackend):
 		self.__baseUrl = '/' + '/'.join(parts[3:])
 		
 		# Connect to host
-		self.possibleMethods = []
+		#self.possibleMethods = []
 		
 		try:
 			if (self.__protocol == 'https'):
@@ -105,7 +114,8 @@ class JSONRPCBackend(DataBackend):
 				self.__connection = httplib.HTTPConnection(host, port)
 			
 			#self._jsonRPC('authenticated')
-			self.possibleMethods = self._jsonRPC('getPossibleMethods_listOfHashes', retry=False)
+			if not self.possibleMethods:
+				self.possibleMethods = self._jsonRPC('getPossibleMethods_listOfHashes', retry=False)
 			
 			logger.info( "Successfully connected to '%s:%s'" % (host, port) ) 
 		except Exception, e:
@@ -193,6 +203,7 @@ class JSONRPCBackend(DataBackend):
 	
 	def __request(self, baseUrl, query='', retry=True, filehandle = None):
 		''' Do a http request '''
+		logger.debug('__request start')
 		contentLength = 0
 		if filehandle:
 			if (self.__method == METHOD_GET):
@@ -219,6 +230,7 @@ class JSONRPCBackend(DataBackend):
 				self.__connection.putheader('content-length', str( contentLength + len(query) ))
 			
 			# Add some http headers
+			logger.debug2("Adding headers")
 			self.__connection.putheader('Accept', 'application/json-rpc')
 			self.__connection.putheader('Accept', 'text/plain')
 			if self.__sessionId:
@@ -230,12 +242,16 @@ class JSONRPCBackend(DataBackend):
 			self.__connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth).strip() )
 			
 			self.__connection.endheaders()
+			
 			if (self.__method == METHOD_POST):
+				logger.debug2("Sending query")
 				self.__connection.send(query)
+				logger.debug2("Query sent")
 				if filehandle:
 					self.__connection.send(filehandle.read())
 			
 			# Get response
+			logger.debug2("Waiting for respose")
 			response = self.__connection.getresponse()
 			
 			# Get cookie from header
@@ -243,9 +259,11 @@ class JSONRPCBackend(DataBackend):
 			if cookie:
 				# Store sessionId cookie 
 				self.__sessionId = cookie.split(';')[0].strip()
-		
+			
+			logger.debug2('__request end')
 		except Exception, e:
 			if retry:
+				logger.debug2('__request end')
 				logger.warning("Requesting base-url '%s', query '%s' failed: %s" % (baseUrl, query, e))
 				logger.notice("Trying to reconnect...")
 				self._connect()

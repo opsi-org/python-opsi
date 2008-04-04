@@ -139,6 +139,7 @@ class BackendManager(DataBackend):
 			logger.info("Operating System authentication successful for user '%s', groups '%s'" \
 								% (self.__username, ','.join(self.__userGroups)))
 	
+		
 	
 	'''- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	-                                    Private Methods                                                 -
