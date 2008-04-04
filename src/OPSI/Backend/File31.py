@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.2.6.6'
+__version__ = '0.2.6.7'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -155,7 +155,13 @@ class File31Backend(File, FileBackend):
 			# General config for server/domain => edit general.ini
 			iniFile = self.__globalConfigFile
 		else:
-			# General config for specific client => edit <hostname>.ini
+			# General config for special host => edit <hostname>.ini
+			ini = self.readIniFile(self.__globalConfigFile)
+			for (key, value) in ini.items('generalconfig'):
+				if not config.has_key(key):
+					continue
+				if (value == config[key]):
+					del config[key]
 			iniFile = self.getClientIniFile(objectId)
 		
 		# Read the ini file or create if not exists
@@ -251,9 +257,10 @@ class File31Backend(File, FileBackend):
 		
 		iniFile = ''
 		if (objectId == self.getServerId()) or (objectId == self._defaultDomain):
+			# Network config for server/domain => edit general.ini
 			iniFile = self.__globalConfigFile
 		else:
-			# General config for special host => edit <hostname>.ini
+			# Network config for special host => edit <hostname>.ini
 			ini = self.readIniFile(self.__globalConfigFile)
 			for (key, value) in ini.items('networkconfig'):
 				if not config.has_key(key):
