@@ -684,7 +684,7 @@ class BackendManager(DataBackend):
 				logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
 				self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
 			except Exception, e2:
-				logger.eroror(e2)
+				logger.error(e2)
 			logger.logException(e)
 			raise e
 	

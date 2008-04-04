@@ -899,6 +899,7 @@ class File31Backend(File, FileBackend):
 		return depotIds
 	
 	def getDepotId(self, clientId=None):
+		logger.debug('getDepotId()')
 		depotId = self.getServerId()
 		if clientId:
 			depotId = self.getNetworkConfig_hash(objectId = clientId).get('depotId', self.getServerId())
@@ -909,6 +910,7 @@ class File31Backend(File, FileBackend):
 		return depotId
 	
 	def getDepot_hash(self, depotId):
+		logger.debug('getDepot_hash()')
 		depotIniFile = self.getDepotIniFile(depotId)
 		if not os.path.exists(depotIniFile):
 			raise BackendMissingDataError("Failed to get info for depot-id '%s': File '%s' not found" % (depotId, depotIniFile))

@@ -325,8 +325,11 @@ def extractArchive(filename, format=None, chdir=None, exitOnErr=True, patterns=[
 		elif (format == 'tar.bz2'):
 			System.execute('%s --bzip2 --extract --file "%s" %s' \
 				% (System.which('tar'), filename, exclude), exitOnErr = exitOnErr)
-	finally:
+	except Exception, e:
+		logger.error("Failed to extract '%s': %s" % (filename, e))
 		if prevDir: os.chdir(prevDir)
+	if prevDir: os.chdir(prevDir)
+	
 	
 def getArchiveContent(filename, format=None):
 	if not format:
