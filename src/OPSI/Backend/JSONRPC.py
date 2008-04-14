@@ -1,16 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# auto detect encoding => äöü
 """
-   ==============================================
-   =            OPSI JSONRPC Module             =
-   ==============================================
+   = = = = = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - JSONRPC Module    =
+   = = = = = = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.5'
+__version__ = '0.9.5.1'
 
 # Imports
 import json, base64, urllib, httplib, new, stat, socket, random
@@ -157,9 +179,16 @@ class JSONRPCBackend(DataBackend):
 		    returns the result as a JSON object. '''
 		
 		if method in ('installPackage', 'uninstallPackage'):
-			socket.setdefaulttimeout(10000)
-		else:
+			# Execution of these methods can take very long
+			if socket.getdefaulttimeout():
+				# A timeout is set, remove the timeout and reconnect
+				socket.setdefaulttimeout(None)
+				self.__connect()
+		
+		elif not socket.getdefaulttimeout():
+			# No timeout is set, set timeout and reconnect
 			socket.setdefaulttimeout(self.__timeout)
+			self.__connect()
 		
 		# Get params
 		params = []

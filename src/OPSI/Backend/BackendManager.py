@@ -9,7 +9,7 @@
    @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.9.4.1'
+__version__ = '0.9.4.2'
 
 # Imports
 import os, stat, types, re, socket, new
@@ -275,9 +275,9 @@ class BackendManager(DataBackend):
 				''' Callback conversation function '''
 				response = []
 				for query, qt in queryList:
-					if (qt == PAM.PAM_PROMPT_ECHO_ON or qt == PAM.PAM_PROMPT_ECHO_OFF):
+					if (qt == PAM.PAM_PROMPT_ECHO_ON) or (qt == PAM.PAM_PROMPT_ECHO_OFF):
 						response.append((_.password, 0))
-					elif qt == PAM.PAM_PROMPT_ERROR_MSG or type == PAM.PAM_PROMPT_TEXT_INFO:
+					elif (qt == PAM.PAM_ERROR_MSG) or (qt == PAM.PAM_TEXT_INFO):
 						response.append(('', 0))
 					else:
 						return None
