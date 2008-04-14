@@ -145,6 +145,8 @@ class MySQLBackend(DataBackend):
 			if query.strip():
 				self.__mysql__.db_query(query + ' ;')
 	
+	def createMergedTable(self):
+		
 	def createOpsiBase(self):
 		# Hardware audit database
 		tables = {}
@@ -274,7 +276,16 @@ class MySQLBackend(DataBackend):
 						') ENGINE = MYISAM ;\n'
 			logger.debug(softwareConfigTable)
 			self._writeToServer_(softwareConfigTable)
-	
+		
+		# Create merged hardware info table
+		properties = {}
+		for config in opsiHWAuditConf:
+			for value in config['Values']:
+				if properties.has_key(value['Opsi']) and (properties[value['Opsi']] != value['Type']):
+					logger.error("Got duplicate property '%s' of different types" % (value['Opsi']))
+				properties[value['Opsi']] = value['Type']
+		logger.error(properties)
+		
 	def getSoftwareInformation_hash(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.5.1'
+__version__ = '0.9.5.4'
 
 # Imports
 import json, base64, urllib, httplib, new, stat, socket, random
@@ -68,7 +68,7 @@ class JSONRPCBackend(DataBackend):
 		self.__defaultHttpsPort = 4447
 		self.__protocol = 'https'
 		self.__method = METHOD_POST
-		self.__timeout = 30
+		self.__timeout = None
 		
 		# Parse arguments
 		for (option, value) in args.items():
@@ -179,16 +179,19 @@ class JSONRPCBackend(DataBackend):
 		    returns the result as a JSON object. '''
 		
 		if method in ('installPackage', 'uninstallPackage'):
-			# Execution of these methods can take very long
-			if socket.getdefaulttimeout():
-				# A timeout is set, remove the timeout and reconnect
-				socket.setdefaulttimeout(None)
-				self.__connect()
+			retry = False
+			## Execution of these methods can take very long
+			#if socket.getdefaulttimeout():
+			#	# A timeout is set, remove the timeout and reconnect
+			#	logger.warning("Setting socket timeout to None")
+			#	socket.setdefaulttimeout(None)
+			#	self._connect()
 		
-		elif not socket.getdefaulttimeout():
-			# No timeout is set, set timeout and reconnect
-			socket.setdefaulttimeout(self.__timeout)
-			self.__connect()
+		#elif not socket.getdefaulttimeout():
+		#	# No timeout is set, set timeout and reconnect
+		#	logger.warning("Setting socket timeout to %d" % self.__timeout)
+		#	socket.setdefaulttimeout(self.__timeout)
+		#	self._connect()
 		
 		# Get params
 		params = []
