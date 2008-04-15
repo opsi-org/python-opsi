@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.6'
+__version__ = '0.9.8.7'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -286,7 +286,10 @@ def createArchive(filename, fileList, format='cpio', dereference = False, chdir=
 def extractArchive(filename, format=None, chdir=None, exitOnErr=True, patterns=[]):
 	prevDir = None
 	if chdir:
-		prevDir = os.path.abspath(os.getcwd())
+		try:
+			prevDir = os.path.abspath(os.getcwd())
+		except:
+			pass
 		logger.debug("Changing to directory '%s'" % chdir)
 		os.chdir(chdir)
 	
