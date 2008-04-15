@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.5'
+__version__ = '0.9.8.6'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -350,9 +350,17 @@ def extractArchive(filename, format=None, chdir=None, exitOnErr=True, patterns=[
 				% (System.which('tar'), filename, exclude), exitOnErr = exitOnErr)
 	except Exception, e:
 		logger.error("Failed to extract '%s': %s" % (filename, e))
-		if prevDir: os.chdir(prevDir)
-		raise
-	if prevDir: os.chdir(prevDir)
+		if prevDir:
+			try:
+				os.chdir(prevDir)
+			except:
+				pass
+		raise e
+	if prevDir:
+		try:
+			os.chdir(prevDir)
+		except:
+			pass
 	
 	
 def getArchiveContent(filename, format=None):
