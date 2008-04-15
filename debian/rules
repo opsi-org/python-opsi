@@ -54,6 +54,7 @@ binary23-stamp:
 	install -m 0644 files/opsi.schema debian/python${v23}-opsi/etc/ldap/schema/opsi.schema
 	mkdir -p debian/python${v23}-opsi/usr/share/opsi
 	install -m 0755 files/share/init-opsi-mysql-db.py debian/python${v23}-opsi/usr/share/opsi/
+	install -m 0755 files/share/register-depot.py debian/python${v23}-opsi/usr/share/opsi/
 	echo $(OPSI_VERSION) > debian/python${v23}-opsi/etc/opsi/version
 	
 binary24-stamp:
@@ -71,6 +72,7 @@ binary24-stamp:
 	install -m 0644 files/opsi.schema debian/python${v24}-opsi/etc/ldap/schema/opsi.schema
 	mkdir -p debian/python${v24}-opsi/usr/share/opsi
 	install -m 0755 files/share/init-opsi-mysql-db.py debian/python${v24}-opsi/usr/share/opsi/
+	install -m 0755 files/share/register-depot.py debian/python${v24}-opsi/usr/share/opsi/
 	echo $(OPSI_VERSION) > debian/python${v24}-opsi/etc/opsi/version
 	
 binary-stamp:
@@ -88,6 +90,7 @@ binary-stamp:
 	install -m 0644 files/opsi.schema debian/python-opsi/etc/ldap/schema/opsi.schema
 	mkdir -p debian/python-opsi/usr/share/opsi
 	install -m 0755 files/share/init-opsi-mysql-db.py debian/python-opsi/usr/share/opsi/
+	install -m 0755 files/share/register-depot.py debian/python-opsi/usr/share/opsi/
 	echo $(OPSI_VERSION) > debian/python-opsi/etc/opsi/version
 	
 binary-indep: build-indep binary-indep-stamp

@@ -872,8 +872,6 @@ class File31Backend(File, FileBackend):
 	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None):
 		depotId = depotName + '.' + domain
 		depotId = self._preProcessHostId(depotId)
-		if depotId in self.getDepotIds_list():
-			raise BackendBadValueError("Depot '%s' already exists" % depotId)
 		for i in (depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl):
 			if not i.startswith('file:///') and not i.startswith('smb://') and \
 			   not i.startswith('http://') and not i.startswith('https://') and \
@@ -888,7 +886,8 @@ class File31Backend(File, FileBackend):
 		
 		# Create config directory for depot
 		depotPath = os.path.join(self.__depotConfigDir, depotId)
-		os.mkdir(depotPath)
+		if not os.path.exists(depotPath):
+			os.mkdir(depotPath)
 		try:
 			os.chmod(depotPath, 0770)
 		except:
@@ -896,18 +895,22 @@ class File31Backend(File, FileBackend):
 		
 		# Create depot ini file
 		depotIniFile = self.getDepotIniFile(depotId)
-		self.createFile(depotIniFile, mode=0660)
+		if not os.path.exists(depotIniFile):
+			self.createFile(depotIniFile, mode=0660)
 		
 		ini = self.readIniFile(depotIniFile)
-		ini.add_section('depotshare')
+		if not ini.has_section('depotshare'):
+			ini.add_section('depotshare')
 		ini.set('depotshare', 'localurl', depotLocalUrl)
 		ini.set('depotshare', 'remoteurl', depotRemoteUrl)
 		
-		ini.add_section('repository')
+		if not ini.has_section('repository'):
+			ini.add_section('repository')
 		ini.set('repository', 'localurl', repositoryLocalUrl)
 		ini.set('repository', 'remoteurl', repositoryRemoteUrl)
 		
-		ini.add_section('depotserver')
+		if not ini.has_section('depotserver'):
+			ini.add_section('depotserver')
 		ini.set('depotserver', 'network', network )
 		ini.set('depotserver', 'description', description )
 		ini.set('depotserver', 'notes', notes )
