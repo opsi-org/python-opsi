@@ -1,15 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   ========================================
-   =          OPSI MySQL Module           =
-   ========================================
+   = = = = = = = = = = = = = = = = = =
+   =   opsi python library - MySQL   =
+   = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
-   @author: Patrick Ohler <p.ohler@uib.de>, Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
+   @author: Jan Schneider <j.schneider@uib.de>
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.2'
+__version__ = '0.2.2'
 
 # Imports
 import MySQLdb, warnings, time
@@ -71,11 +94,11 @@ class MySQL:
 		colNames = values = ''
 		for (key, value) in valueHash.items():
 			colNames += "`%s`, " % key
-			if type(value) is type(''):
-				# String-value
-				values += "\'%s\', " % value.replace("'", "\\\'")
-			else:
+			if type(value) in (float, long, int, bool):
 				values += "%s, " % value
+			else:
+				values += "\'%s\', " % ('%s' %value).replace("'", "\\\'")
+			
 		query = "INSERT INTO `%s` (%s) VALUES (%s);" % (table, colNames[:-2], values[:-2])
 		logger.debug2("db_insert: %s" % query)
 		self.db_execute(query)
@@ -145,8 +168,28 @@ class MySQLBackend(DataBackend):
 			if query.strip():
 				self.__mysql__.db_query(query + ' ;')
 	
-	def createMergedTable(self):
-		
+	def updateHardwareInfoTable(self, hostDbId = None):
+		if hostDbId:
+			self._writeToServer_('DELETE FROM `HARDWARE_INFO` WHERE host_id = %d;' % hostDbId)
+		else:
+			self._writeToServer_('TRUNCATE TABLE HARDWARE_INFO;')
+		for config in self.getOpsiHWAuditConf():
+			hwClass = config['Class']['Opsi']
+			
+			# Get all active (audit_state=1) hardware configurations of this hardware class (and host)
+			res = []
+			if hostDbId:
+				res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `audit_state`= 1 AND `host_id` = %d" % (hwClass, hostDbId))
+			else:
+				res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `audit_state`= 1" % hwClass)
+			
+			for hwConfig in res:
+				hardware = self.__mysql__.db_getRow("SELECT * FROM `HARDWARE_DEVICE_%s` WHERE `hardware_id`='%s'" \
+									% (hwClass, hwConfig['hardware_id']))
+				hwConfig.update(hardware)
+				hwConfig['hardware_class'] = hwClass
+				self.__mysql__.db_insert( "HARDWARE_INFO", hwConfig )
+			
 	def createOpsiBase(self):
 		# Hardware audit database
 		tables = {}
@@ -282,9 +325,74 @@ class MySQLBackend(DataBackend):
 		for config in opsiHWAuditConf:
 			for value in config['Values']:
 				if properties.has_key(value['Opsi']) and (properties[value['Opsi']] != value['Type']):
-					logger.error("Got duplicate property '%s' of different types" % (value['Opsi']))
+					type1 = properties[value['Opsi']].strip()
+					type2 = value['Type'].strip()
+					try:
+						(type1, size1) = type1[:-1].split('(')
+						(type2, size2) = type2[:-1].split('(')
+						if (type1 != type2):
+							raise Exception('')
+					except:
+						raise BackendBadValueError("Got duplicate property '%s' of different types: %s, %s" \
+										% (value['Opsi'], type1, type2))
+					size1 = int(size1)
+					size2 = int(size2)
+					logger.warning("Got duplicate property '%s' of same type '%s' but different sizes: %s, %s" \
+										% (value['Opsi'], type1, size1, size2))
+					if (size1 > size2):
+						logger.warning("Using type %s(%d) for property '%s'" % (type1, size1, value['Opsi']))
+						continue
+					else:
+						logger.warning("Using type %s(%d) for property '%s'" % (type1, size2, value['Opsi']))
 				properties[value['Opsi']] = value['Type']
-		logger.error(properties)
+				
+		logger.debug("Merged properties: %s" % properties)
+		
+		table = ''
+		tableExists = 'HARDWARE_INFO' in tables.keys()
+		if tableExists:
+			table = 'ALTER TABLE `HARDWARE_INFO`\n'
+		else:
+			#'`info_id` INT NOT NULL AUTO_INCREMENT,\n' + \
+			table = 'CREATE TABLE `HARDWARE_INFO` (\n' + \
+					'`config_id` INT NOT NULL,\n' + \
+					'`host_id` INT NOT NULL,\n' + \
+					'`hardware_id` INT NOT NULL,\n' + \
+					'`hardware_class` VARCHAR(50) NOT NULL,\n' + \
+					'PRIMARY KEY( `config_id`, `host_id`, `hardware_class`, `hardware_id` ),\n' + \
+					'`audit_firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+					'`audit_lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+					'`audit_state` TINYINT NOT NULL,\n'
+		
+		for p in properties.keys():
+			if tableExists:
+				if value['Opsi'] in tables['HARDWARE_INFO']:
+					# Column exists => change
+					table += 'CHANGE `%s` `%s` %s NULL,\n' % (p, p, properties[p])
+				else:
+					# Column does not exist => add
+					table += 'ADD `%s` %s NULL,\n' % (p, properties[p])
+			else:
+				table += '`%s` %s NULL,\n' % (p, properties[p])
+		
+		# Remove leading and trailing whitespace
+		table = table.strip()
+		
+		# Remove trailing comma
+		if (table[-1] == ','):
+			table = table[:-1]
+		
+		# Finish sql query
+		if tableExists:
+			table += ' ;\n'
+		else:
+			table += '\n) ENGINE = MYISAM ;\n'
+		
+		# Log sql query
+		logger.debug(table)
+		
+		# Execute sql query
+		self._writeToServer_(table)
 		
 	def getSoftwareInformation_hash(self, hostId):
 		hostId = self._preProcessHostId(hostId)
@@ -669,7 +777,9 @@ class MySQLBackend(DataBackend):
 					logger.notice("Hardware config with config_id %d vanished (table HARDWARE_CONFIG_%s), updating audit_state" \
 								% (config['config_id'], hwClass))
 					self.__mysql__.db_query("UPDATE `HARDWARE_CONFIG_%s` SET `audit_state` = 0 WHERE `config_id` = %d;" % (hwClass, config['config_id']))
-	
+		
+		self.updateHardwareInfoTable(hostDbId)
+		
 	def deleteHardwareInformation(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 	

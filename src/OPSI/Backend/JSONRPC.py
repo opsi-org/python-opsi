@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - JSONRPC Module    =
-   = = = = = = = = = = = = = = = = = = = = = = =
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - JSONRPC   =
+   = = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org

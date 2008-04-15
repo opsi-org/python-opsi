@@ -1,15 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   ===============================================
-   =            OPSI Product Module              =
-   ===============================================
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Product   =
+   = = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.3'
+__version__ = '0.9.8.5'
 
 # Imports
 import os
@@ -21,7 +44,6 @@ else:
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.System import *
-from OPSI.Config import OpsiConfig
 from OPSI import Tools
 if os.name == 'nt':
 	from _winreg import *
@@ -31,13 +53,9 @@ logger = Logger()
 
 # Globals
 if os.name == 'posix':
-	PRODUCTS_SOURCE_DIR = '/home/root/BK-ServerInstallation'
 	LOCK_DIR = '/tmp'
 else:
-	PRODUCTS_SOURCE_DIR = 'C:\opsidemo'
 	LOCK_DIR = 'C:\tmp'
-
-opsiConfig = OpsiConfig()
 
 ARCHIVE_FORMAT = 'cpio'
 #ARCHIVE_FORMAT = 'tar'
@@ -152,9 +170,6 @@ class Product:
 			raise Exception ("Bad value '%s' for product id" % productId)
 		
 		self.productId = productId
-		self.filesFile = os.path.join( PRODUCTS_SOURCE_DIR, self.productId, self.productId + '.files')
-		self.filelistFile = os.path.join(PRODUCTS_SOURCE_DIR, self.productId, self.productId + ".filelist")
-		self.productSourceDir = os.path.join(PRODUCTS_SOURCE_DIR, self.productId)
 	
 	def setProductType(self, productType):
 		if not productType in POSSIBLE_PRODUCT_TYPES:
