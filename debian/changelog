@@ -1,21 +1,13 @@
-python-opsi (3.3.0.0~a4-1) unstable; urgency=low
+python-opsi (3.3.0.0-1) stable; urgency=low
 
-  * Fixes
-
- -- Jan Schneider <j.schneider@uib.de>  Mon, 14 Apr 2008 11:21:01 +0200
-
-python-opsi (3.3.0.0~a2-1) unstable; urgency=low
-
+  * Multidepot support
   * Major changes in product/package handling
   * OpsiPXEConfd backend can forward requests to other depots
-
- -- Jan Schneider <j.schneider@uib.de>  Tue,  1 Apr 2008 11:48:46 +0200
-
-python-opsi (3.3.0.0~a1-1) unstable; urgency=low
-
   * MySQL Backend for hardware audit and software audit
+  * Removed Reinstmgr Backend
+  * Logger can handle special configuration for class instances
 
- -- Jan Schneider <j.schneider@uib.de>  Wed, 12 Mar 2008 15:51:43 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 15 Apr 2008 13:42:27 +0200
 
  python-opsi (3.2.0.16-1) stable; urgency=low
 
