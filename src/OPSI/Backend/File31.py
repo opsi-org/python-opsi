@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.6.9'
+__version__ = '0.2.7.0'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -889,7 +889,10 @@ class File31Backend(File, FileBackend):
 		# Create config directory for depot
 		depotPath = os.path.join(self.__depotConfigDir, depotId)
 		os.mkdir(depotPath)
-		os.chmod(depotPath, 0770)
+		try:
+			os.chmod(depotPath, 0770)
+		except:
+			pass
 		
 		# Create depot ini file
 		depotIniFile = self.getDepotIniFile(depotId)
@@ -1303,7 +1306,10 @@ class File31Backend(File, FileBackend):
 			if not os.path.exists(productDir):
 				mkdir(productDir, mode = 0770 | stat.S_ISGID)
 			product.writeControlFile( os.path.join(productDir, productId) )
-			os.chmod( os.path.join(productDir, productId), 0660 )
+			try:
+				os.chmod( os.path.join(productDir, productId), 0660 )
+			except:
+				pass
 			
 			for clientId in self.getClientIds_list(serverId = None, depotId = depotId):
 				ini = self.readIniFile( self.getClientIniFile(clientId) )
