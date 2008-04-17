@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.5.4'
+__version__ = '0.9.5.5'
 
 # Imports
 import json, base64, urllib, httplib, new, stat, socket, random
@@ -178,7 +178,7 @@ class JSONRPCBackend(DataBackend):
 		''' This function executes a JSON-RPC and
 		    returns the result as a JSON object. '''
 		
-		if method in ('installPackage', 'uninstallPackage'):
+		if method in ('installPackage', 'uninstallPackage', 'getMD5Sum'):
 			retry = False
 			## Execution of these methods can take very long
 			#if socket.getdefaulttimeout():
