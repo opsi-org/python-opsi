@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.4.4'
+__version__ = '0.9.4.5'
 
 # Imports
 import os, stat, types, re, socket, new
@@ -480,8 +480,15 @@ class BackendManager(DataBackend):
 				logger.debug("%s: exit()" % name)
 				instance.exit()
 	
-	def getHostRSAPublicKey(self):
+	def getMD5Sum(self, filename):
+		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
 		
+		try:
+			return md5sum(filename)
+		except Exception, e:
+			raise BackendIOError("Failed to get md5sum: %s" % e)
+		
+	def getHostRSAPublicKey(self):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP, HOST_GROUP)
 		
 		f = open(self._sshRSAPublicKeyFile, 'r')
@@ -490,7 +497,6 @@ class BackendManager(DataBackend):
 		return data
 	
 	def getPcpatchRSAPrivateKey(self):
-		
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP, HOST_GROUP)
 		
 		if (os.name != 'posix'):
