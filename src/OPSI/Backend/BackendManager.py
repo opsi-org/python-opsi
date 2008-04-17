@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.4.3'
+__version__ = '0.9.4.4'
 
 # Imports
 import os, stat, types, re, socket, new
@@ -632,9 +632,6 @@ class BackendManager(DataBackend):
 			
 			ppf.setAccessRights()
 			
-			logger.info("Cleaning up")
-			ppf.cleanup()
-			
 			logger.info("Creating product in database")
 			self.createProduct(
 					ppf.product.productType,
@@ -695,6 +692,9 @@ class BackendManager(DataBackend):
 			logger.info("Running postinst of product '%s'" % ppf.product.productId)
 			for line in ppf.runPostinst():
 				logger.info(" -> %s" % line)
+			
+			logger.info("Cleaning up")
+			ppf.cleanup()
 			
 			logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
 			self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
