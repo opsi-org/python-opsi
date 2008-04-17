@@ -1,8 +1,9 @@
 python-opsi (3.3.0.1-1) stable; urgency=high
 
-  * Ficed postinst bug in BackendManager
+  * Fixed postinst bug in BackendManager
+  * Added method getMD5Sum()
 
- -- Jan Schneider <j.schneider@uib.de>  Thu, 17 Apr 2008 15:49:19 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 17 Apr 2008 16:16:55 +0200
 
 python-opsi (3.3.0.0-1) stable; urgency=low
 
