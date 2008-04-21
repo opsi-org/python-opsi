@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.4.5'
+__version__ = '0.9.4.6'
 
 # Imports
 import os, stat, types, re, socket, new
@@ -479,6 +479,20 @@ class BackendManager(DataBackend):
 			if instance:
 				logger.debug("%s: exit()" % name)
 				instance.exit()
+	
+	def checkForErrors(self):
+		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
+		
+		res = {}
+		for (name, backend) in self.backends.items():
+			if not backend.get('load', False):
+				continue
+			res[name] = []
+			instance = backend.get('instance')
+			if instance:
+				logger.debug("%s: checkForErrors()" % name)
+				res[name] = instance.checkForErrors()
+		return res
 	
 	def getMD5Sum(self, filename):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)

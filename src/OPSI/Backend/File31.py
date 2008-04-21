@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.0'
+__version__ = '0.2.7.1'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -151,6 +151,108 @@ class File31Backend(File, FileBackend):
 			raise BackendIOError("Failed to get aliaslist for hostname '%s': %s" % (hostname, e))
 		
 		return aliaslist
+	
+	def checkForErrors(self):
+		import stat, grp, pwd
+		errors = []
+		(pcpatchUid, pcpatchGid, opsiconfdUid) = (-1, -1, -1)
+		try:
+			pcpatchUid = pwd.getpwnam('pcpatch')[2]
+		except KeyError:
+			errors.append('User pcpatch does not exist')
+			logger.error('User pcpatch does not exist')
+		try:
+			opsiconfdUid = pwd.getpwnam('opsiconfd')[2]
+		except KeyError:
+			errors.append('User opsiconfd does not exist')
+			logger.error('User opsiconfd does not exist')
+		try:
+			pcpatchGid = grp.getgrnam('pcpatch')[2]
+		except KeyError:
+			errors.append('Group pcpatch does not exist')
+			logger.error('Group pcpatch does not exist')
+		
+		for f in [self.__pckeyFile, self.__passwdFile]:
+			if not os.path.isfile(f):
+				errors.append("File '%s' does not exist" % f)
+				logger.error("File '%s' does not exist" % f)
+			statinfo = os.stat(f)
+			if (pcpatchGid > -1) and (statinfo[stat.ST_GID] != pcpatchGid):
+				errors.append("File '%s' should be owned by group pcpatch" % f)
+				logger.error("File '%s' should be owned by group pcpatch" % f)
+			if (00660 != stat.S_IMODE(statinfo[stat.ST_MODE])):
+				errors.append("Bad permissions for file '%s', should be 0660" % f)
+				logger.error("Bad permissions for file '%s', should be 0660" % f)
+		
+		for depotId in self.getDepotIds_list():
+			info = self.getDepot_hash(depotId)
+			if not info['depotLocalUrl'].startswith('file://'):
+				errors.append("Bad url '%s' for depotLocalUrl on depot '%s'" % (info['depotLocalUrl'], depotId))
+				logger.error("Bad url '%s' for depotLocalUrl on depot '%s'" % (info['depotLocalUrl'], depotId))
+			elif (depotId == self.getDepotId()):
+				path = info['depotLocalUrl'][7:]
+				statinfo = os.stat(path)
+				if (pcpatchGid > -1) and (statinfo[stat.ST_GID] != pcpatchGid):
+					errors.append("Directory '%s' should be owned by group pcpatch" % path)
+					logger.error("Directory '%s' should be owned by group pcpatch" % path)
+				if (02770 != stat.S_IMODE(statinfo[stat.ST_MODE])):
+					errors.append("Bad permissions for directory '%s', should be 2770" % path)
+					logger.error("Bad permissions for directory '%s', should be 2770" % path)
+				for d in os.listdir(path):
+						d = os.path.join(path, d)
+						if not os.path.isdir(d):
+							continue
+						statinfo = os.stat(d)
+						if (pcpatchGid > -1) and (statinfo[stat.ST_GID] != pcpatchGid):
+							errors.append("Directory '%s' should be owned by group pcpatch" % d)
+							logger.error("Directory '%s' should be owned by group pcpatch" % d)
+						if (00770 != stat.S_IMODE(statinfo[stat.ST_MODE])):
+							errors.append("Bad permissions for directory '%s', should be 0770" % d)
+							logger.error("Bad permissions for directory '%s', should be 0770" % d)
+				
+			if not info['repositoryLocalUrl'].startswith('file://'):
+				errors.append("Bad url '%s' for repositoryLocalUrl on depot '%s'" % (info['repositoryLocalUrl'], depotId))
+				logger.error("Bad url '%s' for repositoryLocalUrl on depot '%s'" % (info['repositoryLocalUrl'], depotId))
+			elif (depotId == self.getDepotId()):
+				path = info['repositoryLocalUrl'][7:]
+				if not os.path.isdir(path):
+					errors.append("Directory '%s' for repositoryLocalUrl does not exist on depot '%s'" % (path, depotId))
+					logger.error("Directory '%s' for repositoryLocalUrl does not exist on depot '%s'" % (path, depotId))
+				else:
+					statinfo = os.stat(path)
+					if (pcpatchGid > -1) and (statinfo[stat.ST_GID] != pcpatchGid):
+						errors.append("Directory '%s' should be owned by group pcpatch" % path)
+						logger.error("Directory '%s' should be owned by group pcpatch" % path)
+					if (02770 != stat.S_IMODE(statinfo[stat.ST_MODE])):
+						errors.append("Bad permissions for directory '%s', should be 2770" % path)
+						logger.error("Bad permissions for directory '%s', should be 2770" % path)
+					for f in os.listdir(path):
+						if f.startswith('.'):
+							continue
+						f = os.path.join(path, f)
+						statinfo = os.stat(f)
+						if (opsiconfdUid > -1) and (statinfo[stat.ST_UID] != opsiconfdUid):
+							errors.append("File '%s' should be owned by opsiconfd" % f)
+							logger.error("File '%s' should be owned by opsiconfd" % f)
+						if (00600 != stat.S_IMODE(statinfo[stat.ST_MODE])):
+							errors.append("Bad permissions for file '%s', should be 0600" % f)
+							logger.error("Bad permissions for file '%s', should be 0600" % f)
+		
+		try:
+			self.getClients_listOfHashes()
+		except Exception, e:
+			errors.append(str(e))
+			logger.error(str(e))
+		
+		for depotId in self.getDepotIds_list():
+			for productId in self.getProductIds_list(objectId = depotId):
+				try:
+					self.getProduct_hash(productId = productId, depotId = depotId)
+				except Exception, e:
+					errors.append(str(e))
+					logger.error(str(e))
+		
+		return errors
 	
 	def getHostId(self, iniFile):
 		parts = iniFile.lower().split('.')

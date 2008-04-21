@@ -38,6 +38,8 @@ import sys, os, getpass, socket
 
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import *
+from OPSI import Tools
+from OPSI.System import *
 
 logger = Logger()
 logger.setConsoleLevel(LOG_NOTICE)
@@ -59,6 +61,9 @@ description = 'Depotserver %s' % depotName
 notes = ''         
 
 try:
+	if (os.getuid() != 0):
+		raise Exception(_("Please run this script as user root!"))
+	
 	print ""
 	print "*********************************************************************************"
 	print "*         This tool will register the current server as depotserver.            *"
@@ -80,6 +85,17 @@ try:
 	uin = getpass.getpass('')
 	if uin: adminPass = uin
 	
+	# Connect to config server
+	logger.notice("Connecting to host '%s' as user '%s'" % (configServer, adminUser))
+	be = JSONRPCBackend(address = configServer, username = adminUser, password = adminPass )
+	try:
+		depot = be.getDepot_hash(fqdn)
+		network = depot.get('network', network)
+		description = depot.get('description', description)
+		notes = depot.get('notes', notes)
+	except:
+		pass
+	
 	print " The subnet this depotserver is resonsible for [%s]: " % network,
 	uin = sys.stdin.readline().strip()
 	if uin: network = uin
@@ -93,10 +109,6 @@ try:
 	if uin: notes = uin
 	
 	print ""
-	
-	# Connect to config server
-	logger.notice("Connecting to host '%s' as user '%s'" % (configServer, adminUser))
-	be = JSONRPCBackend(address = configServer, username = adminUser, password = adminPass )
 	
 	# Create depot server
 	logger.notice("Creating depot '%s'" % fqdn)
@@ -114,11 +126,24 @@ try:
 	hostKey = be.getOpsiHostKey(depotId)
 	be.exit()
 	
-	# Test connection / credentials
-	logger.notice("Testing connection")
+	# Test connection / credentials / setting pcpatch password
+	logger.notice("Testing connection and setting pcpatch password")
+	
 	be = JSONRPCBackend(address = configServer, username = depotId, password = hostKey )
+	
+	password = Tools.blowfishDecrypt(hostKey, be.getPcpatchPassword(depotId))
+	
+	f = os.popen(which('chpasswd'), 'w')
+	f.write("pcpatch:%s\n" % password)
+	f.close()
+	
+	f = os.popen('%s -a -s pcpatch 1>/dev/null 2>/dev/null' % which('smbpasswd'), 'w')
+	f.write("%s\n%s\n" % (password, password))
+	f.close()
+	
 	be.exit()
-	logger.notice("Connection / credentials ok!")
+	
+	logger.notice("Connection / credentials ok, pcpatch password set!")
 	
 	# Connection ok, write backend config
 	logger.notice("Creating jsonrpc backend config file %s" % backendConfigFile)

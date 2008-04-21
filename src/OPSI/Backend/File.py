@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.7.2'
+__version__ = '0.9.7.3'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO
@@ -380,6 +380,11 @@ class FileBackend(File, DataBackend):
 			if (path not in [self.__pclogDir, self.__depotDir]):
 				for filename in os.listdir(path):
 					if not os.path.isdir(os.path.join(path, filename)):
+						if filename.startswith('.'):
+							continue
+						if not filename.endswith('.ini') and not filename.endswith('.sysconf'):
+							errors.append("Not an ini file: '%s'" % os.path.join(path, filename))
+							continue
 						files.append(os.path.join(path, filename))
 		
 		for f in files:

@@ -17,7 +17,7 @@ case "$1" in
 		groupadd opsiadmin
 	fi
 	
-	adduser opsiconfd shadow  1>/dev/null 2>/dev/null || true
+	adduser pcpatch shadow  1>/dev/null 2>/dev/null || true
 	
 	chown -R pcpatch:pcpatch /etc/opsi/backendManager.d
 	chmod 660 /etc/opsi/backendManager.d/*
@@ -30,15 +30,12 @@ case "$1" in
 	chown pcpatch:pcpatch /etc/opsi/passwd
 	chmod 660 /etc/opsi/passwd
 	
-	chown pcpatch:pcpatch /etc/opsi/opsi.conf
-	chmod 660 /etc/opsi/opsi.conf
-	
 	if [ -d /var/lib/opsi ]; then
 		chown pcpatch:pcpatch /var/lib/opsi
 		chmod 2750 /var/lib/opsi
 	fi
 	
-	for i in 3 5; do
+	for i in 3 4 5; do
 		test -e /usr/lib/python2.$i/site-packages/OPSI && rm -Rf /usr/lib/python2.$i/site-packages/OPSI
 	done
 	
@@ -63,4 +60,3 @@ esac
 if [ "$1" = "configure" ] && which update-python-modules >/dev/null 2>&1; then
 	update-python-modules -i /usr/share/python-support/python-opsi
 fi
-

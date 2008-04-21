@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.5.4.1'
+__version__ = '0.5.4.2'
 
 # Imports
 import re, socket, time
@@ -117,8 +117,6 @@ class DHCPDBackend(Backend):
 		if not re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ipAddress):
 			raise BackendBadValueError("Bad ipaddress '%s'" % ipAddress)
 		
-		
-		
 		conf = Config(self._dhcpdConfigFile)
 		fixedAddress = ipAddress
 		if (self._fixedAddressFormat == 'FQDN'):
@@ -137,6 +135,36 @@ class DHCPDBackend(Backend):
 		conf.writeConfig()
 		self._restartDhcpd()
 	
+	def setNetworkConfig(self, config, objectId = None):
+		depotIp = None
+		for (key, value) in config.items():
+			key = key.lower()
+			if (key == 'depotid'):
+				depotIp = socket.gethostbyname(value)
+		if not depotIp:
+			return
+		
+		conf = Config(self._dhcpdConfigFile)
+		try:
+			host = conf.getHost( self.getHostname(objectId) )
+		except BackendMissingDataError, e:
+			return
+		
+		# example: {'hardware': 'ethernet 00:01:01:01:01:01', 'fixed-address': 'test.uib.local', 'next-server': '192.168.1.1', 'filename': 'linux/pxelinux.0'}
+		if (host.get('next-server', '') == depotIp):
+			return
+		
+		host['next-server'] = depotIp
+		
+		try:
+			conf.modifyHost(hostname = self.getHostname(objectId), parameters = host)
+		except Exception, e:
+			logger.error(e)
+			raise
+		
+		conf.writeConfig()
+		self._restartDhcpd()
+
 	def _restartDhcpd(self):
 		if self._reloadConfigCommand:
 			# thread-safe
@@ -453,8 +481,40 @@ class Config(File):
 		
 		for block in hostBlocks:
 			block.parentBlock.removeComponent(block)
+	
+	def modifyHost(self, hostname, parameters):
+		if not self._parsed:
+			# Parse dhcpd.conf
+			self._parseConfig()
 		
-
+		logger.notice("Modifying host '%s' in dhcpd config file '%s'" % (hostname, self._configFile))
+		hostBlocks = []
+		for block in self._globalBlock.getBlocks('host', recursive = True):
+			if (block.settings[1] == hostname):
+				hostBlocks.append(block)
+			else:
+				for (key, value) in block.getParameters_hash().items():
+					if (key == 'fixed-address') and (value == hostname):
+						hostBlocks.append(block)
+		if (len(hostBlocks) != 1):
+			raise BackendMissingDataError("Host '%s' found %d times" % (hostname, len(hostBlocks)))
+		
+		hostBlock = hostBlocks[0]
+		hostBlock.removeComponents()
+		
+		for (key, value) in parameters.items():
+			parameters[key] = Parameter(-1, None, key, value).asHash()[key]
+		
+		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
+			if not parameters.has_key(key):
+				continue
+			if (parameters[key] == value):
+				del parameters[key]
+		
+		for (key, value) in parameters.items():
+			hostBlock.addComponent(
+				Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
+		
 class Component:
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
@@ -546,6 +606,14 @@ class Block(Component):
 		self.lineRefs = {}
 		self.components = []
 	
+	def getComponents(self):
+		return self.components
+	
+	def removeComponents(self):
+		logger.debug("Removing components: %s" % self.components)
+		for c in list(self.components):
+			self.removeComponent(c)
+			
 	def addComponent(self, component):
 		self.components.append(component)
 		if not self.lineRefs.has_key(component.startLine):
@@ -561,8 +629,8 @@ class Block(Component):
 		if (index < 0):
 			raise BackendMissingDataError("Component '%s' not found")
 		del self.components[index]
-		
 		index = -1
+		
 		if self.lineRefs.has_key(component.startLine):
 			for i in range(len(self.lineRefs[component.startLine])):
 				if (self.lineRefs[component.startLine][i] == component):
@@ -570,7 +638,7 @@ class Block(Component):
 					break
 		if (index >= 0):
 			del self.lineRefs[component.startLine][index]
-	
+		
 	def getOptions_hash(self, inherit = None):
 		options = {}
 		for component in self.components:

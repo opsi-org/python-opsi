@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.4'
+__version__ = '0.9.8.5'
 
 # Imports
 import socket, re
@@ -142,7 +142,7 @@ class Backend:
 		pass
 	
 	def checkForErrors(self):
-		pass
+		return []
 	
 	def getDomain(self, hostId = None):
 		''' Returns the domain of a host specified by an id. '''
