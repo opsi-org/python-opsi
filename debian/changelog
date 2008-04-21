@@ -1,3 +1,9 @@
+python-opsi (3.3.0.2-1) stable; urgency=low
+
+  * MySQL Backend 0.2.3
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 21 Apr 2008 16:11:48 +0200
+
 python-opsi (3.3.0.1-1) stable; urgency=high
 
   * Fixed postinst bug in BackendManager

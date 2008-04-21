@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.1'
+__version__ = '0.2.7.2'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -397,6 +397,9 @@ class File31Backend(File, FileBackend):
 			if (key == 'depoturl'):
 				logger.error("networkConfig: Setting key 'depotUrl' is no longer supported, use depotId")
 				continue
+			if key in ('configurl', 'utilsurl'):
+				logger.error("networkConfig: Setting key '%s' is no longer supported" % key)
+				continue
 			configNew[key] = value
 		config = configNew
 		
@@ -482,8 +485,10 @@ class File31Backend(File, FileBackend):
 				continue
 		
 		if networkConfig['depotId']:
-			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])['depotRemoteUrl']
-		
+			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])
+			networkConfig['utilsUrl'] = 'smb://%s/opt_pcbin/utils' % networkConfig['depotId'].split('.')[0]
+			networkConfig['configUrl'] = 'smb://%s/opt_pcbin/pcpatch' % networkConfig['depotId'].split('.')[0]
+			
 		# Check if all needed values are set
 		if (not networkConfig['opsiServer']
 		    or not networkConfig['utilsDrive'] or not networkConfig['depotDrive'] 
