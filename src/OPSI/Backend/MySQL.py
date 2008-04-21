@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 # Imports
 import MySQLdb, warnings, time
@@ -179,9 +179,11 @@ class MySQLBackend(DataBackend):
 			# Get all active (audit_state=1) hardware configurations of this hardware class (and host)
 			res = []
 			if hostDbId:
-				res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `audit_state`= 1 AND `host_id` = %d" % (hwClass, hostDbId))
+				#res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `audit_state`= 1 AND `host_id` = %d" % (hwClass, hostDbId))
+				res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `host_id` = %d" % (hwClass, hostDbId))
 			else:
-				res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `audit_state`= 1" % hwClass)
+				#res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s` WHERE `audit_state`= 1" % hwClass)
+				res = self.__mysql__.db_getSet("SELECT * FROM `HARDWARE_CONFIG_%s`" % hwClass)
 			
 			for hwConfig in res:
 				hardware = self.__mysql__.db_getRow("SELECT * FROM `HARDWARE_DEVICE_%s` WHERE `hardware_id`='%s'" \
@@ -364,7 +366,9 @@ class MySQLBackend(DataBackend):
 					'`audit_lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
 					'`audit_state` TINYINT NOT NULL,\n'
 		
-		for p in properties.keys():
+		pNames = properties.keys()
+		pNames.sort()
+		for p in pNames:
 			if tableExists:
 				if value['Opsi'] in tables['HARDWARE_INFO']:
 					# Column exists => change
