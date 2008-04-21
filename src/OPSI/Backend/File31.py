@@ -485,7 +485,7 @@ class File31Backend(File, FileBackend):
 				continue
 		
 		if networkConfig['depotId']:
-			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])
+			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])['depotRemoteUrl']
 			networkConfig['utilsUrl'] = 'smb://%s/opt_pcbin/utils' % networkConfig['depotId'].split('.')[0]
 			networkConfig['configUrl'] = 'smb://%s/opt_pcbin/pcpatch' % networkConfig['depotId'].split('.')[0]
 			
