@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.0.0'
+__version__ = '1.0.0.2'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -154,9 +154,10 @@ def execute(cmd, nowait=False, wait=1, getHandle=False, logLevel=LOG_DEBUG, exit
 							curErrLine += string
 							if (curErrLine.find('\n') != -1):
 								if exitOnErr:
-									if (logLevel == LOG_CONFIDENTIAL):
-										cmd = '***********************'
-									raise Exception("Command '%s' failed: %s" % (cmd, curErrLine) )
+									if (type(exitOnErr) is bool) or (type(exitOnErr) in (str, type(re.compile(''))) and re.search(exitOnErr, curErrLine)):
+										if (logLevel == LOG_CONFIDENTIAL):
+											cmd = '***********************'
+										raise Exception("Command '%s' failed: %s" % (cmd, curErrLine) )
 								lines = curErrLine.split('\n')
 								for i in range(len(lines)):
 									if (i == len(lines)-1):

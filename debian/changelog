@@ -1,3 +1,9 @@
+python-opsi (3.3.0.3-1) stable; urgency=low
+
+  * Fixed unpack of SERVER_DATA
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 22 Apr 2008 18:00:03 +0200
+
 python-opsi (3.3.0.2-1) stable; urgency=low
 
   * MySQL Backend 0.2.3

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.7'
+__version__ = '0.9.8.9'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -284,6 +284,7 @@ def createArchive(filename, fileList, format='cpio', dereference = False, chdir=
 	return filename
 
 def extractArchive(filename, format=None, chdir=None, exitOnErr=True, patterns=[]):
+	os.putenv("LC_ALL", "C")
 	prevDir = None
 	if chdir:
 		try:
@@ -333,10 +334,16 @@ def extractArchive(filename, format=None, chdir=None, exitOnErr=True, patterns=[
 					if not re.search(p, f):
 						exclude += ' --exclude="%s"' % f
 		if (format == 'cpio'):
+			if exitOnErr:
+				# No not exist if error is "operation not permitted"
+				exitOnErr = re.compile('(?!(?:^.*operation not permitted.*$))(^.*$)', re.IGNORECASE)
 			System.execute('%s "%s" | %s --quiet -idum %s' \
 				% (System.which('cat'), filename, System.which('cpio'), ' '.join(patterns)), exitOnErr = exitOnErr)
 			
 		elif (format == 'cpio.gz'):
+			if exitOnErr:
+				# No not exist if error is "operation not permitted"
+				exitOnErr = re.compile('(?!(?:^.*operation not permitted.*$))(^.*$)', re.IGNORECASE)
 			System.execute('%s "%s" | %s | %s --quiet -idum %s' \
 				% (System.which('cat'), filename, System.which('gunzip'), System.which('cpio'), ' '.join(patterns)), exitOnErr = exitOnErr)
 		
