@@ -1,15 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   ==============================================
-   =             OPSI DHCPD Module              =
-   ==============================================
+   = = = = = = = = = = = = = = = = = =
+   =   opsi python library - DHCPD   =
+   = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.5.4'
+__version__ = '0.5.4.3'
 
 # Imports
 import re, socket, time
@@ -94,8 +117,6 @@ class DHCPDBackend(Backend):
 		if not re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ipAddress):
 			raise BackendBadValueError("Bad ipaddress '%s'" % ipAddress)
 		
-		
-		
 		conf = Config(self._dhcpdConfigFile)
 		fixedAddress = ipAddress
 		if (self._fixedAddressFormat == 'FQDN'):
@@ -114,6 +135,36 @@ class DHCPDBackend(Backend):
 		conf.writeConfig()
 		self._restartDhcpd()
 	
+	def setNetworkConfig(self, config, objectId = None):
+		depotIp = None
+		for (key, value) in config.items():
+			key = key.lower()
+			if (key == 'depotid'):
+				depotIp = socket.gethostbyname(value)
+		if not depotIp:
+			return
+		
+		conf = Config(self._dhcpdConfigFile)
+		try:
+			host = conf.getHost( self.getHostname(objectId) )
+		except BackendMissingDataError, e:
+			return
+		
+		# example: {'hardware': 'ethernet 00:01:01:01:01:01', 'fixed-address': 'test.uib.local', 'next-server': '192.168.1.1', 'filename': 'linux/pxelinux.0'}
+		if (host.get('next-server', '') == depotIp):
+			return
+		
+		host['next-server'] = depotIp
+		
+		try:
+			conf.modifyHost(hostname = self.getHostname(objectId), parameters = host)
+		except Exception, e:
+			logger.error(e)
+			raise
+		
+		conf.writeConfig()
+		self._restartDhcpd()
+
 	def _restartDhcpd(self):
 		if self._reloadConfigCommand:
 			# thread-safe
@@ -250,8 +301,8 @@ class Config(File):
 								else:
 									quote = "'"
 							elif re.search('\s', l):
-								if quote:
-									current += l
+								#if quote:
+								current += l
 							elif (l == ','):
 								if quote:
 									current += l
@@ -263,7 +314,9 @@ class Config(File):
 						if current:
 							values.append(current)
 						value = values
-					
+						for i in range(len(values)):
+							values[i] = values[i].strip()
+						
 					if isOption:
 						self._currentBlock.addComponent(
 							Option(
@@ -430,8 +483,40 @@ class Config(File):
 		
 		for block in hostBlocks:
 			block.parentBlock.removeComponent(block)
+	
+	def modifyHost(self, hostname, parameters):
+		if not self._parsed:
+			# Parse dhcpd.conf
+			self._parseConfig()
 		
-
+		logger.notice("Modifying host '%s' in dhcpd config file '%s'" % (hostname, self._configFile))
+		hostBlocks = []
+		for block in self._globalBlock.getBlocks('host', recursive = True):
+			if (block.settings[1] == hostname):
+				hostBlocks.append(block)
+			else:
+				for (key, value) in block.getParameters_hash().items():
+					if (key == 'fixed-address') and (value == hostname):
+						hostBlocks.append(block)
+		if (len(hostBlocks) != 1):
+			raise BackendMissingDataError("Host '%s' found %d times" % (hostname, len(hostBlocks)))
+		
+		hostBlock = hostBlocks[0]
+		hostBlock.removeComponents()
+		
+		for (key, value) in parameters.items():
+			parameters[key] = Parameter(-1, None, key, value).asHash()[key]
+		
+		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
+			if not parameters.has_key(key):
+				continue
+			if (parameters[key] == value):
+				del parameters[key]
+		
+		for (key, value) in parameters.items():
+			hostBlock.addComponent(
+				Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
+		
 class Component:
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
@@ -493,7 +578,8 @@ class Option(Component):
 			value = self.value[i]
 			if re.match('.*[\'/\\\].*', value) or \
 			   re.match('^\w+\.\w+$', value) or \
-			   self.key.endswith('-name'):
+			   self.key.endswith('-name') or \
+			   self.key.endswith('-identifier'):
 				value = '"%s"' % value
 			if (i+1 < len(self.value)):
 				value += ', '
@@ -523,6 +609,14 @@ class Block(Component):
 		self.lineRefs = {}
 		self.components = []
 	
+	def getComponents(self):
+		return self.components
+	
+	def removeComponents(self):
+		logger.debug("Removing components: %s" % self.components)
+		for c in list(self.components):
+			self.removeComponent(c)
+			
 	def addComponent(self, component):
 		self.components.append(component)
 		if not self.lineRefs.has_key(component.startLine):
@@ -538,8 +632,8 @@ class Block(Component):
 		if (index < 0):
 			raise BackendMissingDataError("Component '%s' not found")
 		del self.components[index]
-		
 		index = -1
+		
 		if self.lineRefs.has_key(component.startLine):
 			for i in range(len(self.lineRefs[component.startLine])):
 				if (self.lineRefs[component.startLine][i] == component):
@@ -547,7 +641,7 @@ class Block(Component):
 					break
 		if (index >= 0):
 			del self.lineRefs[component.startLine][index]
-	
+		
 	def getOptions_hash(self, inherit = None):
 		options = {}
 		for component in self.components:
