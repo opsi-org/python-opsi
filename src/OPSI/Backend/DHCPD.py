@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.5.4.2'
+__version__ = '0.5.4.3'
 
 # Imports
 import re, socket, time
@@ -301,8 +301,8 @@ class Config(File):
 								else:
 									quote = "'"
 							elif re.search('\s', l):
-								if quote:
-									current += l
+								#if quote:
+								current += l
 							elif (l == ','):
 								if quote:
 									current += l
@@ -314,7 +314,9 @@ class Config(File):
 						if current:
 							values.append(current)
 						value = values
-					
+						for i in range(len(values)):
+							values[i] = values[i].strip()
+						
 					if isOption:
 						self._currentBlock.addComponent(
 							Option(
@@ -576,7 +578,8 @@ class Option(Component):
 			value = self.value[i]
 			if re.match('.*[\'/\\\].*', value) or \
 			   re.match('^\w+\.\w+$', value) or \
-			   self.key.endswith('-name'):
+			   self.key.endswith('-name') or \
+			   self.key.endswith('-identifier'):
 				value = '"%s"' % value
 			if (i+1 < len(self.value)):
 				value += ', '
