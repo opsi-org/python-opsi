@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.7'
+__version__ = '0.9.8.1'
 
 #Imports
 import os
@@ -259,9 +259,14 @@ class LoggerImplementation:
 		if currentThread:
 			logFile = self._getThreadConfig('logFile')
 		elif object:
-			logFile = self._getObjectConfig('logFile')
+			logFile = self._getObjectConfig(id(object), 'logFile')
 		else:
 			logFile = self.__logFile
+		
+		if not logFile:
+			self.error("Cannot create symlink '%s': log-file unkown" % linkFile)
+			return
+		
 		if not os.path.isabs(linkFile):
 			linkFile = os.path.join( os.path.dirname(logFile), linkFile )
 		
@@ -542,11 +547,14 @@ class LoggerImplementation:
 		''' Log an exception. '''
 		self.log(LOG_CRITICAL, 'Traceback:')
 		# Traceback
-		while (tb != None):
-			f = tb.tb_frame
-			c = f.f_code
-			self.log(LOG_CRITICAL, "     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-			tb = tb.tb_next
+		try:
+			while (tb != None):
+				f = tb.tb_frame
+				c = f.f_code
+				self.log(LOG_CRITICAL, "     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
+				tb = tb.tb_next
+		except Exception, e:
+			self.log(LOG_CRITICAL, "    Failed to log traceback for '%s': %s" % (tb, e))
 	
 	def confidential( self, message ):
 		''' Log a confidential message. '''

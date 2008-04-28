@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 
 # Imports
 import MySQLdb, warnings, time
@@ -53,12 +53,18 @@ logger = Logger()
 class MySQL:
 	def __init__(self, username = 'root', password = '', address = 'localhost', database = 'opsi'):
 		self.__conn__ = None
+		self.__username__ = username
+		self.__password__ = password
+		self.__address__ = address
+		self.__database__ = database
+		
+	def connect(self):
 		try:
 			self.__conn__ = MySQLdb.connect(
-							host = address,
-							user = username,
-							passwd = password,
-							db = database,
+							host = self.__address__,
+							user = self.__username__,
+							passwd = self.__password__,
+							db = self.__database__,
 							use_unicode = True,
 							charset = 'utf8' )
 		except Exception, e:
@@ -109,17 +115,25 @@ class MySQL:
 	#	pass
 	
 	def db_execute(self, query):
+		if not self.__conn__:
+			self.connect()
 		if not type(query) is unicode:
 			query = unicode(query, 'utf-8')
 		return self.__cursor__.execute(query)
 	
 	def db_info(self):
+		if not self.__conn__:
+			self.connect()
 		return self.__conn__.info()
 	
 	def db_warning_count(self):
+		if not self.__conn__:
+			self.connect()
 		return self.__conn__.warning_count()
 		
 	def db_close(self):
+		if not self.__conn__:
+			return
 		logger.debug("Closing database connection")
 		self.__cursor__.close()
 		self.__conn__.commit()
