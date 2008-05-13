@@ -1,15 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   ==============================================
-   =            OPSI Backend Module             =
-   ==============================================
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Backend   =
+   = = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.1'
+__version__ = '0.9.8.5'
 
 # Imports
 import socket, re
@@ -78,6 +101,10 @@ class genericError(Exception):
 		else:
 			return "%s" % self.ExceptionShortDescription
 
+class BackendError(genericError):
+	""" Exception raised if there is an error in the backend. """
+	ExceptionShortDescription = "Backend error"
+
 class BackendIOError(genericError):
 	""" Exception raised if there is a read or write error in the backend. """
 	ExceptionShortDescription = "Backend I/O error"
@@ -98,6 +125,10 @@ class BackendPermissionDeniedError(genericError):
 	""" Exception raised if a permission is denied. """
 	ExceptionShortDescription = "Backend permission denied error"
 
+class BackendTemporaryError(genericError):
+	""" Exception raised if a temporary error occurs. """
+	ExceptionShortDescription = "Backend temporary error"
+
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                        CLASS BACKEND                                               =
@@ -111,7 +142,7 @@ class Backend:
 		pass
 	
 	def checkForErrors(self):
-		pass
+		return []
 	
 	def getDomain(self, hostId = None):
 		''' Returns the domain of a host specified by an id. '''
@@ -151,8 +182,7 @@ class Backend:
 			if (a != '127.0.0.1'):
 				return a
 		return '127.0.0.1'
-
-
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      CLASS DATABACKEND                                             =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -160,7 +190,7 @@ class DataBackend(Backend):
 	
 	def __init__(self, username = '', password = '', address = '', backendManager=None, args={}):
 		Backend.__init__(self, username, password, address, backendManager, args)
-		
+	
 	def createOpsiBase(self):
 		pass
 	
@@ -172,6 +202,11 @@ class DataBackend(Backend):
 	
 	def getPossibleRequirementTypes_list(self):
 		return Product.POSSIBLE_REQUIREMENT_TYPES
+	
+	def _preProcessHostId(self, hostId):
+		if (hostId.split('.') < 3):
+			raise BackendBadValueError("Bad host id '%s'" % hostId)
+		return hostId.lower()
 	
 	def getOpsiHWAuditConf(self, lang=None):
 		if not lang:

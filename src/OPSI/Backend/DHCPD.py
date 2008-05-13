@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.5.4.3'
+__version__ = '0.5.4.4'
 
 # Imports
 import re, socket, time
@@ -97,6 +97,41 @@ class DHCPDBackend(Backend):
 		logger.info("Returning mac addresses: [ %s ]" % host['hardware'].split()[1].lower())
 		
 		return [ host['hardware'].split()[1].lower() ]
+	
+	def setMacAddresses(self, hostId, macs=[]):
+		
+		logger.info("Setting mac addresses for host '%s'" % hostId)
+		
+		if not macs:
+			raise BackendBadValueError("No mac address given")
+		if (len(macs) > 1):
+			raise BackendBadValueError("More than one mac address given, not supported by DHCPD backend")
+		
+		hardwareAddress = macs[0].lower()
+		if not re.search('^[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}$', hardwareAddress):
+			raise BackendBadValueError("Bad hardware ethernet address '%s'" % hardwareAddress)
+		
+		conf = Config(self._dhcpdConfigFile)
+		host = None
+		try:
+			host = conf.getHost( self.getHostname(hostId) )
+		except BackendMissingDataError, e:
+			raise BackendMissingDataError("Host '%s' not found in configuration" % hostId)
+		
+		# example: {'hardware': 'ethernet 00:01:01:01:01:01', 'fixed-address': 'test.uib.local', 'next-server': '192.168.1.1', 'filename': 'linux/pxelinux.0'}
+		if (host.get('hardware', '') == "ethernet %s" % hardwareAddress):
+			return
+		
+		host['hardware'] = "ethernet %s" % hardwareAddress
+		
+		try:
+			conf.modifyHost(hostname = self.getHostname(hostId), parameters = host)
+		except Exception, e:
+			logger.error(e)
+			raise
+		
+		conf.writeConfig()
+		self._restartDhcpd()
 		
 	def createClient(self, clientName, domain = None, description = None, notes = None, ipAddress = None, hardwareAddress = None):
 		if not hardwareAddress:
@@ -490,6 +525,7 @@ class Config(File):
 			self._parseConfig()
 		
 		logger.notice("Modifying host '%s' in dhcpd config file '%s'" % (hostname, self._configFile))
+		
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive = True):
 			if (block.settings[1] == hostname):
@@ -498,8 +534,10 @@ class Config(File):
 				for (key, value) in block.getParameters_hash().items():
 					if (key == 'fixed-address') and (value == hostname):
 						hostBlocks.append(block)
+					elif (key == 'hardware') and (value.lower() == parameters.get('hardware')):
+						raise BackendBadValueError("The host '%s' uses the same hardware ethernet address" % block.settings[1])
 		if (len(hostBlocks) != 1):
-			raise BackendMissingDataError("Host '%s' found %d times" % (hostname, len(hostBlocks)))
+			raise BackendBadValueError("Host '%s' found %d times" % (hostname, len(hostBlocks)))
 		
 		hostBlock = hostBlocks[0]
 		hostBlock.removeComponents()

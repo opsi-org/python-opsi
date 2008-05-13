@@ -1,19 +1,41 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# auto detect encoding => äöü
 """
-   ==============================================
-   =            OPSI JSONRPC Module             =
-   ==============================================
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - JSONRPC   =
+   = = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.5'
+__version__ = '0.9.5.5'
 
 # Imports
-import json, base64, urllib, httplib, new, stat
+import json, base64, urllib, httplib, new, stat, socket, random
 
 # OPSI imports
 from OPSI.Backend.Backend import *
@@ -46,6 +68,7 @@ class JSONRPCBackend(DataBackend):
 		self.__defaultHttpsPort = 4447
 		self.__protocol = 'https'
 		self.__method = METHOD_POST
+		self.__timeout = None
 		
 		# Parse arguments
 		for (option, value) in args.items():
@@ -57,6 +80,7 @@ class JSONRPCBackend(DataBackend):
 				if not self.__password:			self.__password = value
 			elif (option.lower() == 'defaultdomain'): 	self.__defaultDomain = value
 			elif (option.lower() == 'sessionid'): 		self.__sessionId = value
+			elif (option.lower() == 'timeout'): 		self.__timeout = value
 			elif (option.lower() == 'method'):
 				if (value.lower() == 'get'):
 					self.__method = METHOD_GET
@@ -73,6 +97,13 @@ class JSONRPCBackend(DataBackend):
 			else:
 				self.__address = '%s://%s:4444/rpc' % (self.__protocol, self.__address)
 		
+		try:
+			self.possibleMethods = self.__backendManager.getPossibleMethods_listOfHashes()
+		except Exception, e:
+			self.possibleMethods = []
+			logger.debug("Failed to get possible methods from backend manager")
+		
+		socket.setdefaulttimeout(self.__timeout)
 		self._connect()
 	
 	def _connect(self):
@@ -94,7 +125,7 @@ class JSONRPCBackend(DataBackend):
 		self.__baseUrl = '/' + '/'.join(parts[3:])
 		
 		# Connect to host
-		self.possibleMethods = []
+		#self.possibleMethods = []
 		
 		try:
 			if (self.__protocol == 'https'):
@@ -105,7 +136,8 @@ class JSONRPCBackend(DataBackend):
 				self.__connection = httplib.HTTPConnection(host, port)
 			
 			#self._jsonRPC('authenticated')
-			self.possibleMethods = self._jsonRPC('getPossibleMethods_listOfHashes', retry=False)
+			if not self.possibleMethods:
+				self.possibleMethods = self._jsonRPC('getPossibleMethods_listOfHashes', retry=False)
 			
 			logger.info( "Successfully connected to '%s:%s'" % (host, port) ) 
 		except Exception, e:
@@ -146,9 +178,23 @@ class JSONRPCBackend(DataBackend):
 		''' This function executes a JSON-RPC and
 		    returns the result as a JSON object. '''
 		
+		if method in ('installPackage', 'uninstallPackage', 'getMD5Sum'):
+			retry = False
+			## Execution of these methods can take very long
+			#if socket.getdefaulttimeout():
+			#	# A timeout is set, remove the timeout and reconnect
+			#	logger.warning("Setting socket timeout to None")
+			#	socket.setdefaulttimeout(None)
+			#	self._connect()
+		
+		#elif not socket.getdefaulttimeout():
+		#	# No timeout is set, set timeout and reconnect
+		#	logger.warning("Setting socket timeout to %d" % self.__timeout)
+		#	socket.setdefaulttimeout(self.__timeout)
+		#	self._connect()
+		
 		# Get params
 		params = []
-		filehandle = None
 		logger.debug("Options: %s" % options)
 		if options.has_key('params'):
 			ps = options['params']
@@ -158,49 +204,28 @@ class JSONRPCBackend(DataBackend):
 			for p in ps:
 				if (p == '__UNDEF__'):
 					p = None
-				if (type(p) == file):
-					if filehandle:
-						raise BackendBadValueError("Only one filehandle param allowed")
-					filehandle = p
-					p = '__BINARY_DATA__'
 				logger.debug2("Appending param: %s, type: %s" % (p, type(p)))
 				params.append(p)
 		
 		# Create json-rpc object
 		jsonrpc = json.write( {"id": 1, "method": method, "params": params } )
-		logger.info("jsonrpc string: %s" % jsonrpc)
+		logger.debug("jsonrpc string: %s" % jsonrpc)
 		
-		logger.info("requesting: base-url '%s', query '%s', filehandle: %s" % (self.__baseUrl, jsonrpc, filehandle))
-		response = self.__request(self.__baseUrl, jsonrpc, retry=retry, filehandle=filehandle)
-		
-		logger.debug2("Got response: %s" % response)
+		logger.debug("requesting: base-url '%s', query '%s'" % (self.__baseUrl, jsonrpc))
+		response = self.__request(self.__baseUrl, jsonrpc, retry=retry )
 		
 		# Read response
 		if json.read(response).get('error'):
-			error = json.read(response).get('error')
-			# Trying to raise the same Exception type/class
-			exception = None
-			try:
-				logger.debug2('eval %s("%s")' % (error['class'], error['message'].replace('"', '\\"')) )
-				exception = eval('%s("%s")' % (error['class'], error['message'].replace('"', '\\"')) )
-			except Exception, e:
-				logger.debug2("Eval failed: %s" % e)
-				raise Exception(error)
-			raise exception
-			
+			# Error occurred => raise BackendIOError
+			raise Exception( json.read(response).get('error') )
+		
 		# Return result as json object
 		return json.read(response).get('result', None)
 	
-	def __request(self, baseUrl, query='', retry=True, filehandle = None):
+	def __request(self, baseUrl, query='', retry=True):
 		''' Do a http request '''
-		contentLength = 0
-		if filehandle:
-			if (self.__method == METHOD_GET):
-				raise BackendIOError("Cannot use http method get to send binary data")
-			fs = os.stat(filehandle.name)
-			logger.debug("Length of binary data to send: %d" % fs[stat.ST_SIZE])
-			contentLength += fs[stat.ST_SIZE]
 		
+		#logger.debug("__request(%s)" % request)
 		response = None
 		try:
 			if (self.__method == METHOD_GET):
@@ -212,11 +237,8 @@ class JSONRPCBackend(DataBackend):
 			else:
 				logger.debug("Using method POST")
 				self.__connection.putrequest('POST', baseUrl)
-				if filehandle:
-					self.__connection.putheader('content-type', 'multipart/opsi; data-offset=%s' % len(query))
-				else:
-					self.__connection.putheader('content-type', 'application/json-rpc')
-				self.__connection.putheader('content-length', str( contentLength + len(query) ))
+				self.__connection.putheader('content-type', 'application/json-rpc')
+				self.__connection.putheader('content-length', str(len(query)))
 			
 			# Add some http headers
 			self.__connection.putheader('Accept', 'application/json-rpc')
@@ -232,8 +254,6 @@ class JSONRPCBackend(DataBackend):
 			self.__connection.endheaders()
 			if (self.__method == METHOD_POST):
 				self.__connection.send(query)
-				if filehandle:
-					self.__connection.send(filehandle.read())
 			
 			# Get response
 			response = self.__connection.getresponse()
@@ -259,10 +279,7 @@ class JSONRPCBackend(DataBackend):
 			return response.read()
 		except Exception, e:
 			raise BackendIOError("Cannot read '%s'" % e)
-	
-	#def installPackage(self, filename, data):
-	#	print type(data)
-	
+
 	def getPossibleMethods_listOfHashes(self):
 		return self.possibleMethods
 		

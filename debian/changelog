@@ -1,4 +1,66 @@
-python-opsi (3.2.0.16-1) stable; urgency=low
+python-opsi (3.3.0.8-1) stable; urgency=low
+
+  * added interface method setMacAddress()
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 13 May 2008 13:39:56 +0200
+
+python-opsi (3.3.0.7-1) stable; urgency=low
+
+  * setMacAddresses() implemented in DHCPD-Backend
+  * added methods readLog(), writeLog()
+  * Fixed bug in System.py
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon,  5 May 2008 13:26:45 +0200
+
+python-opsi (3.3.0.6-1) stable; urgency=low
+
+  * Fixed several bugs
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri,  2 May 2008 14:05:46 +0200
+
+python-opsi (3.3.0.5-1) stable; urgency=low
+
+  * Fixed bug in Logger linkLogFile()
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 24 Apr 2008 17:08:12 +0200
+
+python-opsi (3.3.0.4-1) stable; urgency=low
+
+  * MySQL lacy connect
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 23 Apr 2008 16:25:33 +0200
+
+python-opsi (3.3.0.3-1) stable; urgency=low
+
+  * Fixed unpack of SERVER_DATA
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 22 Apr 2008 18:00:03 +0200
+
+python-opsi (3.3.0.2-1) stable; urgency=low
+
+  * MySQL Backend 0.2.3
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 21 Apr 2008 16:11:48 +0200
+
+python-opsi (3.3.0.1-1) stable; urgency=high
+
+  * Fixed postinst bug in BackendManager
+  * Added method getMD5Sum()
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 17 Apr 2008 16:16:55 +0200
+
+python-opsi (3.3.0.0-1) stable; urgency=low
+
+  * Multidepot support
+  * Major changes in product/package handling
+  * OpsiPXEConfd backend can forward requests to other depots
+  * MySQL Backend for hardware audit and software audit
+  * Removed Reinstmgr Backend
+  * Logger can handle special configuration for class instances
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 15 Apr 2008 13:42:27 +0200
+
+ python-opsi (3.2.0.16-1) stable; urgency=low
 
   * JSONRPC - fixed bug in retry request
 

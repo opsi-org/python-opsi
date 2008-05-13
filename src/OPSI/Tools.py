@@ -1,16 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# auto detect encoding => äöü
 """
-   ==============================================
-   =             OPSI Tools Module              =
-   ==============================================
+   = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Tools   =
+   = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.3'
+__version__ = '0.9.8.9'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -162,14 +184,14 @@ def compareVersions(v1, condition, v2):
 				if (cv1 == ''): cv1 = chr(1)
 				if (cv2 == ''): cv2 = chr(1)
 				if (cv1 == cv2):
-					#logger.debug("%s == %s => continue" % (cv1, cv2))
+					logger.debug2("%s == %s => continue" % (cv1, cv2))
 					continue
 				
 				if type(cv1) is not int: cv1 = "'%s'" % cv1
 				if type(cv2) is not int: cv2 = "'%s'" % cv2
 				
 				b = eval( "%s %s %s" % (cv1, condition, cv2) )
-				#logger.debug("%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
+				logger.debug2("%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
 				if not b:
 					logger.debug("Unfulfilled condition: %s-%s %s %s-%s" \
 						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
@@ -261,63 +283,99 @@ def createArchive(filename, fileList, format='cpio', dereference = False, chdir=
 	
 	return filename
 
-def extractArchive(filename, format=None, chdir=None, exitOnErr=True):
+def extractArchive(filename, format=None, chdir=None, exitOnErr=True, patterns=[]):
+	os.putenv("LC_ALL", "C")
+	prevDir = None
 	if chdir:
+		try:
+			prevDir = os.path.abspath(os.getcwd())
+		except:
+			pass
+		logger.debug("Changing to directory '%s'" % chdir)
 		os.chdir(chdir)
 	
-	if not format:
-		if filename.lower().endswith('cpio.gz'):
-			format = 'cpio.gz'
-		elif filename.lower().endswith('cpio'):
-			format = 'cpio'
-		elif filename.lower().endswith('tar.gz'):
-			format = 'tar.gz'
-		elif filename.lower().endswith('tar.bz2'):
-			format = 'tar.bz2'
-		elif filename.lower().endswith('tar'):
-			format = 'tar'
-		else:
-			f = open(filename)
-			data = f.read(6)
-			if data in ('070701', '070702', '070707'):
-				format = 'cpio'
-			else:
-				f.seek(257)
-				data = f.read(5)
-				if (data == 'ustar'):
-					format = 'tar'
-			f.close()
-		
+	try:
 		if not format:
-			raise Exception("Unknown format")
+			logger.debug2("Testing archive format")
+			if filename.lower().endswith('cpio.gz'):
+				format = 'cpio.gz'
+			elif filename.lower().endswith('cpio'):
+				format = 'cpio'
+			elif filename.lower().endswith('tar.gz'):
+				format = 'tar.gz'
+			elif filename.lower().endswith('tar.bz2'):
+				format = 'tar.bz2'
+			elif filename.lower().endswith('tar'):
+				format = 'tar'
+			else:
+				f = open(filename)
+				data = f.read(6)
+				if data in ('070701', '070702', '070707'):
+					format = 'cpio'
+				else:
+					f.seek(257)
+					data = f.read(5)
+					if (data == 'ustar'):
+						format = 'tar'
+				f.close()
+			
+			if not format:
+				raise Exception("Unknown format")
+			
+		if not format in ['cpio', 'cpio.gz', 'tar', 'tar.gz', 'tar.bz2']:
+			raise Exception("Unsupported archive format '%s'" % format)
 		
-	if not format in ['cpio', 'cpio.gz', 'tar', 'tar.gz', 'tar.bz2']:
-		raise Exception("Unsupported archive format '%s'" % format)
-	
-	logger.notice("Extracting archive '%s', format: %s" % (filename, format))
-	
-	if (format == 'cpio'):
-		System.execute('%s "%s" | %s --quiet -idum' \
-			% (System.which('cat'), filename, System.which('cpio')), exitOnErr = exitOnErr)
+		logger.notice("Extracting archive '%s', format: %s" % (filename, format))
 		
-	elif (format == 'cpio.gz'):
-		System.execute('%s "%s" | %s | %s --quiet -idum' \
-			% (System.which('cat'), filename, System.which('gunzip'), System.which('cpio')), exitOnErr = exitOnErr )
+		exclude = ''
+		if format.startswith('tar') and patterns:
+			for f in getArchiveContent(filename):
+				for p in patterns:
+					if not re.search(p, f):
+						exclude += ' --exclude="%s"' % f
+		if (format == 'cpio'):
+			if exitOnErr:
+				# No not exist if error is "operation not permitted"
+				exitOnErr = re.compile('(?!(?:^.*operation not permitted.*$))(^.*$)', re.IGNORECASE)
+			System.execute('%s "%s" | %s --quiet -idum %s' \
+				% (System.which('cat'), filename, System.which('cpio'), ' '.join(patterns)), exitOnErr = exitOnErr)
+			
+		elif (format == 'cpio.gz'):
+			if exitOnErr:
+				# No not exist if error is "operation not permitted"
+				exitOnErr = re.compile('(?!(?:^.*operation not permitted.*$))(^.*$)', re.IGNORECASE)
+			System.execute('%s "%s" | %s | %s --quiet -idum %s' \
+				% (System.which('cat'), filename, System.which('gunzip'), System.which('cpio'), ' '.join(patterns)), exitOnErr = exitOnErr)
+		
+		elif (format == 'tar'):
+			System.execute('%s --extract --file "%s" %s' \
+				% (System.which('tar'), filename, exclude), exitOnErr = exitOnErr)
+		
+		elif (format == 'tar.gz'):
+			System.execute('%s --gunzip --extract --file "%s" %s' \
+				% (System.which('tar'), filename, exclude), exitOnErr = exitOnErr)
+		
+		elif (format == 'tar.bz2'):
+			System.execute('%s --bzip2 --extract --file "%s" %s' \
+				% (System.which('tar'), filename, exclude), exitOnErr = exitOnErr)
+	except Exception, e:
+		logger.error("Failed to extract '%s': %s" % (filename, e))
+		if prevDir:
+			try:
+				os.chdir(prevDir)
+			except:
+				pass
+		raise e
+	if prevDir:
+		try:
+			os.chdir(prevDir)
+		except:
+			pass
 	
-	elif (format == 'tar'):
-		System.execute('%s --extract --file "%s"' \
-			% (System.which('tar'), filename), exitOnErr = exitOnErr)
-	
-	elif (format == 'tar.gz'):
-		System.execute('%s --gunzip --extract --file "%s"' \
-			% (System.which('tar'), filename), exitOnErr = exitOnErr)
-	
-	elif (format == 'tar.bz2'):
-		System.execute('%s --bzip2 --extract --file "%s"' \
-			% (System.which('tar'), filename), exitOnErr = exitOnErr)
 	
 def getArchiveContent(filename, format=None):
 	if not format:
+		logger.debug2("Testing archive format")
 		if filename.lower().endswith('cpio.gz'):
 			format = 'cpio.gz'
 		elif filename.lower().endswith('cpio'):

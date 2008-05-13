@@ -1,4 +1,10 @@
-#! /bin/sh -e
+#! /bin/bash -e
+
+# = = = = = = = = = = = = = = = = = = = = = = =
+# =  Copyright (C) 2006, 2007, 2008 uib GmbH  =
+# =           http://www.uib.de               =
+# =          All rights reserved.             =
+# = = = = = = = = = = = = = = = = = = = = = = =
 
 . /usr/share/debconf/confmodule
 
@@ -29,9 +35,6 @@ case "$1" in
 	test -e /etc/opsi/passwd || touch /etc/opsi/passwd
 	chown pcpatch:pcpatch /etc/opsi/passwd
 	chmod 660 /etc/opsi/passwd
-	
-	chown pcpatch:pcpatch /etc/opsi/opsi.conf
-	chmod 660 /etc/opsi/opsi.conf
 	
 	if [ -d /var/lib/opsi ]; then
 		chown pcpatch:pcpatch /var/lib/opsi

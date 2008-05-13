@@ -1,16 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# auto detect encoding => äöü
 """
-   ==============================================
-   =             OPSI Logger Module             =
-   ==============================================
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Logger    =
+   = = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.6.1'
+__version__ = '0.9.8.1'
 
 #Imports
 import os
@@ -122,6 +144,7 @@ class LoggerImplementation:
 		self.__univentionClass = None
 		self.__univentionFormat = 'opsi: %M'
 		self.__threadConfig = {}
+		self.__objectConfig = {}
 		self.__stdout = VirtFile(self, LOG_NOTICE)
 		self.__stderr = VirtFile(self, LOG_ERROR)
 	
@@ -214,25 +237,38 @@ class LoggerImplementation:
 		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
 		self.__consoleLevel = level
 	
-	def setLogFile(self, logFile, currentThread=False):
+	def getConsoleLevel(self):
+		return self.__consoleLevel
+	
+	def setLogFile(self, logFile, currentThread=False, object=None):
 		''' Set the filename of logfile. '''
 		if currentThread:
 			self._setThreadConfig('logFile', logFile)
-			self.info("Now using log-file: '%s' for thread %s" \
+			self.info("Now using log-file '%s' for thread %s" \
 				% (logFile, thread.get_ident()))
+		elif object:
+			self._setObjectConfig(id(object), 'logFile', logFile)
+			self.info("Now using log-file '%s' for object 0x%x" % (logFile, id(object)))
 		else:
 			self.__logFile = logFile
-			self.info("Now using log-file: '%s'" % self.__logFile)
+			self.info("Now using log-file '%s'" % self.__logFile)
 	
-	def linkLogFile(self, linkFile, currentThread=False):
+	def linkLogFile(self, linkFile, currentThread=False, object=None):
 		''' Set the filename of logfile. '''
 		logFile = None
 		if currentThread:
 			logFile = self._getThreadConfig('logFile')
+		elif object:
+			logFile = self._getObjectConfig(id(object), 'logFile')
 		else:
 			logFile = self.__logFile
+		
+		if not logFile:
+			self.error("Cannot create symlink '%s': log-file unkown" % linkFile)
+			return
+		
 		if not os.path.isabs(linkFile):
-			linkFile = os.path.join( os.path.dirname(logFile), linkFile)
+			linkFile = os.path.join( os.path.dirname(logFile), linkFile )
 		
 		try:
 			if (logFile == linkFile):
@@ -250,7 +286,14 @@ class LoggerImplementation:
 		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
 		self.__fileLevel = level
 	
-	def exit(self):
+	def exit(self, object=None):
+		if object:
+			if self.__objectConfig.has_key(id(object)):
+				self.debug("Deleting config of object 0x%x" % id(object))
+				del self.__objectConfig[id(object)]
+			for objectId in self.__objectConfig.keys():
+				self.debug2("Got special config for object 0x%x" % objectId)
+			
 		threadId = str(long(thread.get_ident()))
 		if self.__threadConfig.has_key(threadId):
 			self.debug("Deleting config of thread %s" % threadId)
@@ -263,12 +306,26 @@ class LoggerImplementation:
 		if not self.__threadConfig.has_key(threadId):
 			self.__threadConfig[threadId] = {}
 		self.__threadConfig[threadId][key] = value
-		
-	def _getThreadConfig(self, key):
+	
+	def _getThreadConfig(self, key = None):
 		threadId = str(long(thread.get_ident()))
 		if not self.__threadConfig.has_key(threadId):
 			return None
+		if not key:
+			return self.__threadConfig[threadId]
 		return self.__threadConfig[threadId].get(key)
+	
+	def _setObjectConfig(self, objectId, key, value):
+		if not self.__objectConfig.has_key(objectId):
+			self.__objectConfig[objectId] = {}
+		self.__objectConfig[objectId][key] = value
+	
+	def _getObjectConfig(self, objectId, key = None):
+		if not self.__objectConfig.has_key(objectId):
+			return None
+		if not key:
+			return self.__objectConfig[objectId]
+		return self.__objectConfig[objectId].get(key)
 	
 	def log(self, level, message):
 		''' Log a message '''
@@ -279,7 +336,9 @@ class LoggerImplementation:
 		    not self.univentionLogger_priv):
 			    return
 		
-		if type(message) not in (str, unicode):
+		if type(message) is unicode:
+			message = message.encode('utf-8')
+		if not type(message) is str:
 			message = "%s" % message
 		levelname = ''
 		color = COLOR_NORMAL
@@ -316,25 +375,28 @@ class LoggerImplementation:
 			levelname = 'comment'
 			color = COMMENT_COLOR
 		
-		try:
-			raise Exception
-		except Exception:
-			try:
-				frame = sys.exc_traceback.tb_frame
-				frame = frame.f_back
-				frame = frame.f_back
-				#function = frame.f_code.co_name
-				linenumber = str(frame.f_lineno)
-				filename = frame.f_code.co_filename
-				filename = os.path.basename(filename)
-			except:
-				pass
-			
+		filename = os.path.basename( sys._getframe(2).f_code.co_filename )
+		linenumber = str( sys._getframe(2).f_lineno )
+		
+		specialConfig = self._getThreadConfig()
+		if not specialConfig and self.__objectConfig:
+			# Ouch, this hurts...
+			f = sys._getframe(2)
+			while (f != None):
+				obj = f.f_locals.get('self')
+				if obj:
+					c = self._getObjectConfig(id(obj))
+					if c:
+						specialConfig = c
+						break
+				f = f.f_back
+		
 		if (level <= self.__consoleLevel):
 			# Log to terminal
-			m = self._getThreadConfig('consoleFormat')
-			if not m:
-				m = self.__consoleFormat
+			m = self.__consoleFormat
+			if specialConfig:
+				m = specialConfig.get('consoleFormat', m)
+			
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -348,16 +410,16 @@ class LoggerImplementation:
 				print >> sys.stderr, m
 		
 		if (level <= self.__fileLevel):
-			logFile = self._getThreadConfig('logFile')
-			if not logFile:
-				logFile = self.__logFile
+			# Log to file
+			logFile = self.__logFile
+			if specialConfig:
+				logFile = specialConfig.get('logFile', logFile)
 			if not logFile:
 				return
 			
-			# Log to file
-			m = self._getThreadConfig('fileFormat')
-			if not m:
-				m = self.__fileFormat
+			m = self.__fileFormat
+			if specialConfig:
+				m = specialConfig.get('fileFormat', m)
 			
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
@@ -366,7 +428,6 @@ class LoggerImplementation:
 			m = m.replace('%M', message)
 			m = m.replace('%F', filename)
 			m = m.replace('%N', linenumber)
-			
 			
 			# Open the file
 			lf = None
@@ -410,9 +471,10 @@ class LoggerImplementation:
 		
 		if (level <= self.__syslogLevel):
 			# Log to syslog
-			m = self._getThreadConfig('syslogFormat')
-			if not m:
-				m = self.__syslogFormat
+			m = self.__syslogFormat
+			if specialConfig:
+				m = specialConfig.get('syslogFormat', m)
+			
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -446,9 +508,10 @@ class LoggerImplementation:
 		
 		if (self.univentionLogger_priv):
 			# univention log
-			m = self._getThreadConfig('univentionFormat')
-			if not m:
-				m = self.__univentionFormat
+			m = self.__univentionFormat
+			if specialConfig:
+				m = specialConfig.get('univentionFormat', m)
+			
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -484,11 +547,14 @@ class LoggerImplementation:
 		''' Log an exception. '''
 		self.log(LOG_CRITICAL, 'Traceback:')
 		# Traceback
-		while (tb != None):
-			f = tb.tb_frame
-			c = f.f_code
-			self.log(LOG_CRITICAL, "     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
-			tb = tb.tb_next
+		try:
+			while (tb != None):
+				f = tb.tb_frame
+				c = f.f_code
+				self.log(LOG_CRITICAL, "     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
+				tb = tb.tb_next
+		except Exception, e:
+			self.log(LOG_CRITICAL, "    Failed to log traceback for '%s': %s" % (tb, e))
 	
 	def confidential( self, message ):
 		''' Log a confidential message. '''

@@ -1,15 +1,38 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   ==============================================
-   =            OPSI System Module              =
-   ==============================================
+   = = = = = = = = = = = = = = = = = =
+   =   opsi python library - System  =
+   = = = = = = = = = = = = = = = = = =
    
-   @copyright:	uib - http://www.uib.de - <info@uib.de>
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006, 2007, 2008 uib GmbH
+   
+   http://www.uib.de/d
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU GPL, see COPYING for details.
+   @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.0.0'
+__version__ = '1.0.0.5'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -131,9 +154,10 @@ def execute(cmd, nowait=False, wait=1, getHandle=False, logLevel=LOG_DEBUG, exit
 							curErrLine += string
 							if (curErrLine.find('\n') != -1):
 								if exitOnErr:
-									if (logLevel == LOG_CONFIDENTIAL):
-										cmd = '***********************'
-									raise Exception("Command '%s' failed: %s" % (cmd, curErrLine) )
+									if (type(exitOnErr) is bool) or (type(exitOnErr) in (str, type(re.compile(''))) and re.search(exitOnErr, curErrLine)):
+										if (logLevel == LOG_CONFIDENTIAL):
+											cmd = '***********************'
+										raise Exception("Command '%s' failed: %s" % (cmd, curErrLine) )
 								lines = curErrLine.split('\n')
 								for i in range(len(lines)):
 									if (i == len(lines)-1):
@@ -333,7 +357,13 @@ def copy(src, dst, ui='default'):
 				size =  str( size ) + " Byte"
 			progress.addText("[1] %s (%s)\n" % ( os.path.basename(src), size ) )
 		mkdir(os.path.dirname(dst), ui=None)
-		shutil.copy2(src, dst)
+		try:
+			shutil.copy2(src, dst)
+		except os.error, e:
+			if (e.errno != 1):
+				raise
+			# Operation not permitted
+			logger.warning(e)
 		if progress:
 			progress.setState(1)
 			progress.hide()
@@ -384,11 +414,14 @@ def copyTree(src, dst, symlinks=False, current=0, total=1, progress=None):
 				if progress:
 					progress.setState(current)
 					
-		except (IOError, os.error), why:
-			raise Exception("Failed to copy: %s" % why)
-			#errors.append((srcname, dstname, why))
-	#if errors:
-	#	raise Exception(errors)
+		except os.error, e:
+			if (e.errno != 1):
+				raise
+			# Operation not permitted
+			logger.warning(e)
+		except IOError, e:
+			raise Exception("Failed to copy: %s" % e)
+		
 	return current
 
 def mkdir(newDir, mode=0750, ui='default'):
@@ -411,8 +444,14 @@ def mkdir(newDir, mode=0750, ui='default'):
 			mkdir(head, mode=mode, ui=ui)
 		if tail:
 			os.mkdir(newDir)
-			os.chmod(newDir, mode)
-
+			try:
+				os.chmod(newDir, mode)
+			except os.error, e:
+				if (e.errno != 1):
+					raise
+				# Operation not permitted
+				logger.warning("Failed to chmod %s (%s): %s" % (newDir, mode, e))
+				
 def rmdir(path, recursive=False, ui='default'):
 	try:
 		if recursive:
@@ -1898,7 +1937,7 @@ class Harddisk:
 	def createFilesystem(self, partition, fs = None, ui='default'):
 		if ui == 'default': ui=userInterface
 		if not fs:
-			fs = getPartition(partition)['fs']
+			fs = self.getPartition(partition)['fs']
 		fs = fs.lower()
 		
 		if not fs in ['fat32', 'ntfs', 'linux-swap', 'ext2', 'ext3', 'reiserfs', 'reiser4', 'xfs']:
@@ -1916,6 +1955,9 @@ class Harddisk:
 			options = ''
 			if fs in ['ext2', 'ext3', 'ntfs']:
 				options = '-F'
+				if (fs == 'ntfs'):
+					# quick format
+					options += ' -Q'
 			elif fs in ['xfs', 'reiserfs', 'reiser4']:
 				options = '-f'
 			cmd = ( "mkfs.%s %s %s" % (fs, options, self.getPartition(partition)['device']) )
