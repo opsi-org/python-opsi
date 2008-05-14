@@ -1075,6 +1075,8 @@ class File31Backend(File, FileBackend):
 			info['notes'] 			= ini.get('depotserver', 'notes')
 			if ini.has_option('repository', 'maxbandwidth'):
 				info['repositoryMaxBandwidth'] = int(ini.get('repository', 'maxbandwidth'))
+			else:
+				info['repositoryMaxBandwidth'] = 0
 		except Exception, e:
 			raise BackendIOError("Failed to get info for depot-id '%s': %s" % (depotId, e))
 		return info

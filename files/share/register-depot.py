@@ -94,6 +94,7 @@ try:
 		network = depot.get('network', network)
 		description = depot.get('description', description)
 		notes = depot.get('notes', notes)
+		maxBandwidth = depot.get('repositoryMaxBandwidth', maxBandwidth)
 	except:
 		pass
 	
