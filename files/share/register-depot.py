@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0'
+__version__ = '1.1'
 
 import sys, os, getpass, socket
 
@@ -203,6 +203,7 @@ try:
 	print >> f, "self.pckeyBackend          = BACKEND_JSONRPC"
 	print >> f, "self.swinventBackend       = BACKEND_JSONRPC"
 	print >> f, "self.hwinventBackend       = BACKEND_JSONRPC"
+	print >> f, "self.loggingBackend        = BACKEND_JSONRPC"
 	f.close()
 	
 except KeyboardInterrupt:

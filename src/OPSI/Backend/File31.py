@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.5'
+__version__ = '0.2.7.6'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -1532,7 +1532,7 @@ class File31Backend(File, FileBackend):
 			raise BackendIOError(e)
 		
 		if not productFile:
-			raise BackendMissingDataError("Product '%s' not found" % productId)
+			raise BackendMissingDataError("Product '%s' not found on depot '%s'" % (productId, depotId))
 		
 		timestamp = Tools.timestamp( os.path.getmtime(productFile) ) 
 		

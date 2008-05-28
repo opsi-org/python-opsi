@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.0.5'
+__version__ = '1.0.0.6'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -554,7 +554,32 @@ def getHarddisks(ui='default'):
 		raise Exception('No harddisks found!')
 	
 	return disks
-	
+
+def getDiskSpaceUsage(path, ui='default'):
+	disk = os.statvfs(path)
+	info = {}
+	info['capacity'] = disk.f_bsize * disk.f_blocks
+	info['available'] = disk.f_bsize * disk.f_bavail
+	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
+	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
+	logger.info("Disk space usage for path '%s': %s" % (path, info))
+	return info
+
+def getDevice(path, ui='default'):
+	(mountPoint, device) = ('', '')
+	f = open('/etc/mtab')
+	for line in f.readlines():
+		line = line.strip()
+		if not line or line.startswith("#"):
+			continue
+		(dev, mp, foo) = line.split(None, 2)
+		if path.startswith(mp) and (len(mp) > len(mountPoint)):
+			mountPoint = mp
+			device = dev
+	f.close()
+	logger.info("Filesystem for path '%s' is on device '%s'" % (path, device))
+	return device
+
 def hardwareInventory(ui='default', filename=None, config=None):
 	if ui == 'default': ui=userInterface
 	
