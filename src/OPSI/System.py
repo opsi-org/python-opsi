@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.0.6'
+__version__ = '1.0.0.7'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -607,7 +607,7 @@ def hardwareInventory(ui='default', filename=None, config=None):
 		
 		# Read output from lshw
 		xmlOut = '\n'.join(execute("%s -xml 2>/dev/null" % which("lshw"), capturestderr=False))
-		xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08), '.', xmlOut)
+		xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xef), '.', xmlOut)
 		dom = xml.dom.minidom.parseString( xmlOut.encode("utf-8") )
 		
 		# Read output from lspci
