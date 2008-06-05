@@ -1,3 +1,23 @@
+python-opsi (3.3.0.14-1) stable; urgency=low
+
+  * System.py 1.0.1
+  * interface method getDepot_hash returns depot's ip 
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 05 Jun 2008 16:16:46 +0200
+
+python-opsi (3.3.0.13-1) stable; urgency=low
+
+  * System.py 1.0.0.8
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 29 May 2008 14:40:20 +0200
+
+python-opsi (3.3.0.12-1) stable; urgency=low
+
+  * System.py 1.0.0.7
+  * File31.py 0.2.7.7 
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 29 May 2008 13:40:01 +0200
+
 python-opsi (3.3.0.11-1) stable; urgency=low
 
   * changed logging

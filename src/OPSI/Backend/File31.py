@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.6'
+__version__ = '0.2.7.7'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -2250,7 +2250,8 @@ class File31Backend(File, FileBackend):
 		for prop in self.getProductPropertyDefinitions_listOfHashes(productId, self.getDepotId(objectId)):
 			properties[prop['name'].lower()] = prop.get('default')
 		
-		ini = self.readIniFile(self.getClientIniFile(objectId))
+		iniFile = self.getClientIniFile(objectId)
+		ini = self.readIniFile(iniFile)
 				
 		try:
 			for (key, value) in ini.items(productId + "-install"):
