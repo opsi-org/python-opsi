@@ -1418,10 +1418,11 @@ def runDosemu(harddisk = None, todo = ()):
 	logger.debug("runDosemu(): end")
 
 def getBlockDeviceBusType(device):
-	(devs, type) = ([], '')
+	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
+	(devs, type) = ([], None)
 	for line in execute('%s --disk --cdrom' % which('hwinfo')):
 		if not re.search('^\s+', line):
-			(devs, type) = ([], '')
+			(devs, type) = ([], None)
 			continue
 		
 		match = re.search('^\s+Device Files:(.*)$', line)
