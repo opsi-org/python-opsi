@@ -1,3 +1,11 @@
+python-opsi (3.3.0.15-1) stable; urgency=low
+
+  * System.py 1.1.0
+      LD_PRELOAD now set temporary while running subprocesses
+      new methods getBlockDeviceBusType(), Harddisk.getBusType()
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 12 Jun 2008 17:35:19 +0200
+
 python-opsi (3.3.0.14-1) stable; urgency=low
 
   * System.py 1.0.1

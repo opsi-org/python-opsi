@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -1416,7 +1416,28 @@ def runDosemu(harddisk = None, todo = ()):
 	#execute('%s -F %s rows %s cols %s' % (which('stty'), tty, rows, cols))
 	
 	logger.debug("runDosemu(): end")
-	
+
+def getBlockDeviceBusType(device):
+	(devs, type) = ([], '')
+	for line in execute('%s --disk --cdrom' % which('hwinfo')):
+		if not re.search('^\s+', line):
+			(devs, type) = ([], '')
+			continue
+		
+		match = re.search('^\s+Device Files:(.*)$', line)
+		if match:
+			devs = match.group(1).split(',')
+			for i in range(len(devs)):
+				devs[i] = devs[i].strip()
+		
+		match = re.search('^\s+Attached to:\s+[^\(]+\((\S+)\s*', line)
+		if match:
+			type = match.group(1)
+		
+		if devs and device in devs and type:
+			logger.info("Bus type of device '%s' is '%s'" % (device, type))
+			return type
+
 # ======================================================================================================
 # =                                       CLASS HARDDISK                                               =
 # ======================================================================================================
@@ -1437,9 +1458,13 @@ class Harddisk:
 		self.label = None
 		self.size = -1		# unit MB
 		self.partitions = []
+		self.ldPreload = None
 		
 		self.useBIOSGeometry()
 		self.readPartitionTable()
+	
+	def getBusType(self):
+		return getBlockDeviceBusType(self.device)
 		
 	def useBIOSGeometry(self):
 		# Make sure your kernel supports edd (CONFIG_EDD=y/m) and module is loaded if not compiled in
@@ -1449,25 +1474,9 @@ class Harddisk:
 		except Exception, e:
 			logger.error(e)
 			return
-		
-		#for d in os.listdir('/sys/firmware/edd'):
-		#	try:
-		#		f = open('/sys/firmware/edd/%s/interface' % d)
-		#		interface = f.read()
-		#		f.close()
-		#		if (interface == 'SCSI'):
-		#			# ms-sys -p --fat32 /dev/sdxn will fail with current version of geo_override.so
-		#			# ( Failed writing number of heads to /dev/sdxn )
-		#			logger.warning("Found SCSI device '%s', will not preload geo_override!" % d)
-		#			return
-		#		
-		#	except Exception, e:
-		#		logger.error("Failed to get bus info for device '%s': %s" % (d, e) )
-		
 		# geo_override.so will affect all devices !
 		logger.info("Using geo_override.so for all disks.")
-		os.putenv("LD_PRELOAD", GEO_OVERWRITE_SO)
-		
+		self.ldPreload = GEO_OVERWRITE_SO
 		
 	def getSignature(self):
 		hd = posix.open('%s' % self.device, posix.O_RDONLY)
@@ -1494,6 +1503,8 @@ class Harddisk:
 	
 	def readPartitionTable(self):
 		self.partitions = []
+		if self.ldPreload:
+			os.putenv("LD_PRELOAD", self.ldPreload)
 		
 		result = execute(which('sfdisk') + ' -l ' + self.device)
 		for line in result:
@@ -1578,6 +1589,8 @@ class Harddisk:
 									    self.partitions[p]['secEnd'], self.partitions[p]['secSize']) )
 							break
 		
+		if self.ldPreload:
+			os.unsetenv("LD_PRELOAD")
 		
 	def writePartitionTable(self):
 		logger.debug("Partition table to write to disk")
@@ -1605,7 +1618,11 @@ class Harddisk:
 			
 		cmd +=  '" | %s -D %s' % (which('sfdisk'), self.device)
 		
+		if self.ldPreload:
+			os.putenv("LD_PRELOAD", self.ldPreload)
 		execute(cmd)
+		if self.ldPreload:
+			os.unsetenv("LD_PRELOAD")
 	
 	
 	def deletePartitionTable(self, ui='default'):
@@ -1615,11 +1632,14 @@ class Harddisk:
 										% self.device)
 		logger.info("Deleting partition table on '%s'." % self.device)
 		cmd = which('dd') + ' if=/dev/zero of=' + self.device +' bs=512 count=1'
+		if self.ldPreload:
+			os.putenv("LD_PRELOAD", self.ldPreload)
 		execute(cmd)
 		
 		logger.info("Forcing kernel to reread partition table of '%s'." % self.device)
 		execute(which('sfdisk') + ' --re-read %s' % self.device)
-		
+		if self.ldPreload:
+			os.unsetenv("LD_PRELOAD")
 		self.label = None
 		self.partitions = []
 	
@@ -1784,7 +1804,12 @@ class Harddisk:
 		
 		cmd = "%s %s %s" % (which('ms-sys'), mbrType, self.device)
 		try:
+			
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
 			result = execute(cmd)
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
 		except Exception, e:
 			logger.error("Cannot write mbr: %s" % e)
 			raise Exception ("Cannot write mbr: %s" % e)
@@ -1805,7 +1830,11 @@ class Harddisk:
 		
 		cmd = "%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
 		try:
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
 			result = execute(cmd)
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
 			if (result[0].find('successfully') == -1):
 				raise Exception(result)
 			
@@ -2038,7 +2067,11 @@ class Harddisk:
 				options = '-f'
 			cmd = ( "mkfs.%s %s %s" % (fs, options, self.getPartition(partition)['device']) )
 		
+		if self.ldPreload:
+			os.putenv("LD_PRELOAD", self.ldPreload)
 		execute(cmd)
+		if self.ldPreload:
+			os.unsetenv("LD_PRELOAD")
 		self.readPartitionTable()
 		
 		
@@ -2058,10 +2091,15 @@ class Harddisk:
 		if ui: ui.getMessageBox().addText(_("Resizing filesystem on partition '%s' (%s) to %s MB.\n") \
 							% (self.getPartition(partition)['device'], fs, (size/(1000*1000))) )
 		
+		if self.ldPreload:
+			os.putenv("LD_PRELOAD", self.ldPreload)
+		
 		if (fs.lower() == 'ntfs'):
 			cmd = ( "%s --force --size %s %s" % (which('ntfsresize'), size, self.getPartition(partition)['device']) )
 			execute(cmd)
 		
+		if self.ldPreload:
+			os.unsetenv("LD_PRELOAD")
 		
 	def saveImage(self, partition, imageFile, ui='default'):
 		if ui == 'default': ui=userInterface
@@ -2076,6 +2114,9 @@ class Harddisk:
 							% (part['device'], imageFile) )
 		
 		if (part['fs'].lower() == 'ntfs'):
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
+			
 			pipe = ''
 			if imageFile.startswith('|'):
 				pipe = imageFile
@@ -2157,6 +2198,8 @@ class Harddisk:
 			if handle: handle.close	
 			if progress: progress.hide()
 			
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
 		else:
 			raise Exception("Unsupported filesystem '%s'." % part['fs'])
 	
@@ -2217,6 +2260,9 @@ class Harddisk:
 			raise
 		
 		if (imageType == 'ntfsclone'):
+			
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
 			
 			logger.info("Restoring ntfsclone-image '%s' to '%s'" % \
 							(imageFile, self.getPartition(partition)['device']) )
@@ -2279,6 +2325,9 @@ class Harddisk:
 			time.sleep(3)
 			if handle: handle.close	
 			if progress: progress.hide()
+			
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
 			
 			self.setNTFSPartitionStartSector(partition, ui=ui)
 			self.resizeFilesystem(partition, fs='ntfs', ui=ui)
