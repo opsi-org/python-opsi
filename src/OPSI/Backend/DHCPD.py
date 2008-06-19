@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.5.4.5'
+__version__ = '0.5.4.6'
 
 # Imports
 import re, socket, time
@@ -87,6 +87,7 @@ class DHCPDBackend(Backend):
 	
 	def getMacAddresses_list(self, hostId):
 		''' Get host's mac address from dhcpd config '''
+		hostId = self._preProcessHostId(hostId)
 		
 		conf = Config(self._dhcpdConfigFile)
 		host = conf.getHost( self.getHostname(hostId) )
@@ -99,6 +100,7 @@ class DHCPDBackend(Backend):
 		return [ host['hardware'].split()[1].lower() ]
 	
 	def setMacAddresses(self, hostId, macs=[]):
+		hostId = self._preProcessHostId(hostId)
 		
 		logger.info("Setting mac addresses for host '%s'" % hostId)
 		
@@ -116,7 +118,15 @@ class DHCPDBackend(Backend):
 		try:
 			host = conf.getHost( self.getHostname(hostId) )
 		except BackendMissingDataError, e:
-			raise BackendMissingDataError("Host '%s' not found in configuration" % hostId)
+			#raise BackendMissingDataError("Host '%s' not found in dhcpd configuration" % hostId)
+			logger.warning("Host '%s' not found in dhcpd configuration, trying to create" % hostId)
+			self.createClient(
+				clientName	= hostId.split('.')[0],
+				domain		= '.'.join(hostId.split('.')[1:]),
+				hardwareAddress	= hardwareAddress
+			)
+			return
+			
 		
 		# example: {'hardware': 'ethernet 00:01:01:01:01:01', 'fixed-address': 'test.uib.local', 'next-server': '192.168.1.1', 'filename': 'linux/pxelinux.0'}
 		if (host.get('hardware', '') == "ethernet %s" % hardwareAddress):
@@ -139,11 +149,13 @@ class DHCPDBackend(Backend):
 			return
 			#raise BackendBadValueError("Hardware ethernet address not specified")
 		hardwareAddress = hardwareAddress.lower()
+		clientName = clientName.lower()
 		if not re.search('^[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}:[a-f\d]{2}$', hardwareAddress):
 			raise BackendBadValueError("Bad hardware ethernet address '%s'" % hardwareAddress)
 		
 		if not domain:
 			domain = self._defaultDomain
+		domain = domain.lower()
 		if not ipAddress:
 			ipAddress = socket.gethostbyname("%s.%s" % (clientName, domain))
 			if not re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ipAddress):
@@ -161,6 +173,7 @@ class DHCPDBackend(Backend):
 		self._restartDhcpd()
 		
 	def deleteClient(self, clientId):
+		clientId = self._preProcessHostId(clientId)
 		conf = Config(self._dhcpdConfigFile)
 		try:
 			conf.deleteHost( hostname = self.getHostname(clientId) )
@@ -181,6 +194,7 @@ class DHCPDBackend(Backend):
 		
 		conf = Config(self._dhcpdConfigFile)
 		try:
+			objectId = self._preProcessHostId(objectId)
 			host = conf.getHost( self.getHostname(objectId) )
 		except BackendMissingDataError, e:
 			return

@@ -1066,8 +1066,257 @@ class UniventionBackend(OPSI.Backend.LDAP.LDAPBackend):
 			
 		container.writeToDirectory(self._ldap)
 
+
+
+
 # ======================================================================================================
 # =                                    CLASS POLICYSEARCH                                              =
+# ======================================================================================================
+
+class LDAPPolicySearch:
+	def __init__(self, ldapSession, dn, policyContainer = None, policyFilter = None, independenceAttribute = None,
+		     maxLevel = 100, policyReferenceObjectClass = 'opsiPolicyReference', policyReferenceAttributeName = 'opsiPolicyReference'):
+		''' 
+		Search policies for an ldap-object given by dn. Specify a 
+		policyContainer to ignore policies outside this container.
+		Specify a policyFilter to ignore policies which do not
+		match the filter. An independenceAttribute can be given 
+		to treat policies of the same type as independent if this 
+		attribute differs.
+		'''
+		
+		self.ldapSession = ldapSession
+		self.dn = dn
+		self.policyContainer = policyContainer
+		self.policyFilter = policyFilter
+		self.independenceAttribute = independenceAttribute
+		self.maxLevel = maxLevel
+		self.policyReferenceObjectClass = policyReferenceObjectClass
+		self.policyReferenceAttributeName = policyReferenceAttributeName
+		self.policyObjectClass = 'univentionPolicy'
+		
+		return self.search()
+		
+	def search(self):
+		self._policies = []
+		self._joinedAttributes = {}
+		
+		referencePriorities = [[]]
+		
+		dnPath = self.dn.split(',')
+		for i in range( len(dnPath) ):
+			dnPath[i] = dnPath[i].strip()
+			referencePriorities.append([])
+		
+		# The closer a policy is connected to an ldap object (policyReference) the higher its priority
+		for i in range( len(dnPath)-1 ):
+			# Search all policy references, and sort by priority
+			
+			currentDn = ','.join(dnPath[i:])
+			
+			if (i > self.maxLevel-1):
+				logger.debug( "Omitting dn '%s', maxLevel: %s" % (currentDn, self.maxLevel) )
+				continue
+			
+			logger.debug( "Searching policy references for dn '%s'" % currentDn )
+			try:
+				result = self.ldapSession.search(	
+						baseDn     = currentDn,
+						scope      = ldap.SCOPE_BASE,
+						filter     = "(&(ObjectClass=%s)(%s=*))" \
+							% (self.policyReferenceObjectClass, self.policyReferenceAttributeName),
+						attributes = [ self.policyReferenceAttributeName ] )
+			except BackendMissingDataError, e:
+				logger.debug( "No policy references found!" )
+				continue
+			
+			for j in range( len(result[0][1][self.policyReferenceAttributeName]) ):
+				if self.policyContainer and not result[0][1][self.policyReferenceAttributeName][j].endswith(self.policyContainer):
+					logger.debug("Omitting policy reference '%s': does not match policyContainer" \
+							% result[0][1][self.policyReferenceAttributeName][j])
+					continue
+				logger.debug( "Policy reference found: '%s', priority: %s" % (result[0][1][self.policyReferenceAttributeName][j], i) )
+				referencePriorities[i].append( result[0][1][self.policyReferenceAttributeName][j] )
+		
+		policyResult = {}
+		
+		# Examine all found policies
+		# Start with the lowest priority
+		for i in range (len(referencePriorities)-1, -1, -1):
+			if (referencePriorities[i] == []):
+				# No policy references of that priority found
+				continue
+			
+			for j in range( len(referencePriorities[i]) ):
+				
+				filter = "(ObjectClass=%s)" % self.policyObjectClass
+				if (self.policyFilter):
+					# Use the filter passed to constructor
+					filter = self.policyFilter
+				
+				logger.debug("Searching in baseDN '%s', filter: %s" % 
+						(referencePriorities[i][j], filter) )
+				
+				# Read the policy object
+				try:
+					objectSearch = ObjectSearch(
+								self.ldapSession, 
+								referencePriorities[i][j], 
+								scope = ldap.SCOPE_BASE, 
+								filter = filter )
+					policy = objectSearch.getObject()
+					policy.readFromDirectory(self.ldapSession)
+				except BackendIOError, e:
+					logger.warning("Cannot read policy '%s' from LDAP" % 
+								referencePriorities[i][j])
+					continue
+				except BackendMissingDataError, e:
+					logger.debug("Policy '%s' does not match filter '%s'\n" % 
+								(referencePriorities[i][j], filter) )
+					continue
+				
+				# Policy matches filter and was successfully read
+				logger.debug("Processing matching policy '%s'\n" % policy.getDn() )
+				
+				# Sort policies by their type (objectClass)
+				policyType = None
+				for objectClass in policy.getObjectClasses():
+					if (objectClass != self.policyObjectClass):# and objectClass.startswith(self.policyObjectClass):
+						policyType = objectClass
+				
+				if not policyType:
+					logger.error("Cannot get policy-type for policy: '%s'" % policy.getDn())
+					continue
+				
+				# Group policies by an attribute
+				# Attributes of policies in the same group will overwrite each other by priority
+				policyGroup = 'default'
+				if (self.independenceAttribute):
+					# An independence attribute was passed to the constructor
+					policyGroup = policy.getAttribute(self.independenceAttribute)
+					if not policyGroup:
+						logger.error("Independence attribute given, cannot read attribute '%s' from policy '%s'" \
+								% (self.independenceAttribute, policy.getDn()) )
+						continue
+				
+				if not policyResult.has_key(policyType):
+					policyResult[policyType] = {}
+				
+				policyResult[policyType][policyGroup] = policy
+				
+				logger.debug("Current policy result: %s" % policyResult)
+				
+				for (key, value) in policy.getAttributeDict().items():
+					if ( key in ('cn', 'objectClass', 'emptyAttributes', 
+						     'fixedAttributes', 'prohibitedObjectClasses',
+						     'requiredObjectClasses', 'overwritePolicies') ): 	
+						continue
+					
+					if (key == 'opsiKeyValuePair'):
+						if type(value) != type(()) and type(value) != type([]):
+							value = [ value ]
+						for v in value:
+							key = v
+							pos = v.find('=')
+							if (pos != -1):
+								key = v[:pos]
+								v = v[pos+1:]
+							else:
+								v = None
+							# joinedAttributes can be overwritten by policies with a higher priority
+							logger.debug("joinedAttributes: (opsiKeyValuePair) setting key '%s' to value '%s'" \
+									% (key, v) )
+							self._joinedAttributes[key] = { 'value': v, 'policy': policy.getDn() }
+					else:
+						# joinedAttributes can be overwritten by policies with a higher priority
+						logger.debug("joinedAttributes: setting key '%s' to value '%s'" \
+									% (key, value) )
+						self._joinedAttributes[key] = { 'value': value, 'policy': policy.getDn() }
+		
+		for policyType in policyResult:
+			if ( len(policyResult[policyType].values()) < 1 ): continue
+			for policy in policyResult[policyType].values():
+				self._policies.append(policy)
+				
+		if not self._policies:
+			raise BackendMissingDataError("No policy found for: %s, con: %s, fil: %s, ia: %s, ml: %s" \
+						% (self.dn, self.policyContainer, self.policyFilter, self.independenceAttribute, self.maxLevel) )
+		
+		logger.debug("= = = = = = = = = = = < policy search result > = = = = = = = = = = =" )
+		for policy in self._policies:
+			logger.debug(policy.getDn())
+		logger.debug("= = = = = = = = = = = = < joined attributes > = = = = = = = = = = = =" )
+		for (key, value) in self._joinedAttributes.items():
+			logger.debug("'%s' = '%s'" % (key, value['value']))
+		logger.debug("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = " )
+	
+	def getDns(self):
+		''' Returns the dns of all objects found. '''
+		return self.getReferences()
+	
+	def getDn(self):
+		''' Returns the dn of the first object found. '''
+		refs = self.getReferences()
+		if ( len(refs) >= 1 ):
+			return refs[0]
+	
+	def getReferences(self):
+		''' Get references to all policies found. '''
+		references = []
+		for policy in self._policies:
+			references.append(policy.getDn())
+		return references
+	
+	def getObjects(self):
+		''' Returns all policies found as Object instances. '''
+		if ( len(self._policies) <= 0 ):
+			raise BackendMissingDataError("No policy found")
+		return self._policies
+	
+	def getObject(self):
+		''' Returns first policy found as Object instance. '''
+		if ( len(self._policies) <= 0 ):
+			raise BackendMissingDataError("No policy found")
+		if ( len(self._policies) > 1 ):
+			logger.warning("More than one existing Policy!")
+		return self._policies[0]
+	
+	def getResult(self):
+		''' Returns joined attributes of all policies found. '''
+		return self._joinedAttributes
+		
+	def getAttributeDict(self, valuesAsList=False):
+		''' Returns all joined attributes as a dict. '''
+		attributes = {}
+		if ( len(self._policies) > 1 ):
+			logger.warning("More than one existing Policy!")
+		for (key, value) in self._joinedAttributes.items():
+			if (valuesAsList and value['value'] != type(())) and (value['value'] != type([])):
+				attributes[key] = [ value['value'] ]
+			else:
+				attributes[key] = value['value']
+		return attributes
+	
+	def getAttribute(self, attribute, default=None, valuesAsList=False ):
+		''' Returns a specific attribute of the joined attributes
+		    Set valuesAsList to a boolean true value to get a list,
+		    even if there is only one attribute value. '''
+		attributes = self.getAttributeDict()
+		if not attributes.has_key(attribute):
+			if default:
+				return default
+			raise BackendMissingDataError("Attribute '%s' does not exist" % attribute)
+		if ( type (attributes[attribute]) != type(()) and 
+		     type (attributes[attribute]) != type([]) and valuesAsList):
+			return [ attributes[attribute] ]
+		else:
+			return attributes[attribute]
+
+
+
+
+# ======================================================================================================
+# =                             CLASS UNIVENTIONPOLICYSEARCH                                           =
 # ======================================================================================================
 
 class UniventionPolicySearch(OPSI.Backend.LDAP.LDAPPolicySearch):

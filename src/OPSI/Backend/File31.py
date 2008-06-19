@@ -321,9 +321,11 @@ class File31Backend(File, FileBackend):
 	# -     GENERAL CONFIG                            -
 	# -------------------------------------------------
 	def setGeneralConfig(self, config, objectId = None):
-		
 		if not objectId:
+			# Set global (server)
 			objectId = self.getServerId()
+		
+		objectId = objectId.lower()
 		
 		configNew = {}
 		for (key, value) in config.items():
@@ -366,7 +368,10 @@ class File31Backend(File, FileBackend):
 	
 	def getGeneralConfig_hash(self, objectId = None):
 		if not objectId:
+			# Get global (server)
 			objectId = self.getServerId()
+		
+		objectId = objectId.lower()
 		
 		iniFiles = [ os.path.join(self.__globalConfigFile) ]
 		if (objectId != self.getServerId()) and (objectId != self._defaultDomain):
@@ -490,6 +495,7 @@ class File31Backend(File, FileBackend):
 		
 		if not objectId:
 			objectId = self.getServerId()
+		objectId = objectId.lower()
 		
 		iniFiles = [ os.path.join(self.__globalConfigFile) ]
 		if (objectId != self.getServerId()) and (objectId != self._defaultDomain):
@@ -548,6 +554,7 @@ class File31Backend(File, FileBackend):
 		return networkConfig
 	
 	def deleteNetworkConfig(self, objectId):
+		objectId = objectId.lower()
 		iniFile = ''
 		if (objectId == self.getServerId()) or (objectId == self._defaultDomain):
 			iniFile = self.__globalConfigFile
@@ -761,6 +768,13 @@ class File31Backend(File, FileBackend):
 	
 	def setHardwareInformation(self, hostId, info):
 		hostId = hostId.lower()
+		
+		# Time of scan (may be overwritten by SCANPROPERTIES)
+		scantime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+		try:
+			scantime = info['SCANPROPERTIES'][0]['scantime']
+		except:
+			pass
 		
 		if not type(info) is dict:
 			raise BackendBadValueError("Hardware information must be dict")
@@ -984,6 +998,8 @@ class File31Backend(File, FileBackend):
 		return serverId.lower()
 	
 	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None, maxBandwidth=0):
+		if not re.search(HOST_NAME_REGEX, depotName):
+			raise BackendBadValueError("Unallowed char in hostname")
 		depotId = depotName + '.' + domain
 		depotId = self._preProcessHostId(depotId)
 		for i in (depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl):
@@ -1046,6 +1062,7 @@ class File31Backend(File, FileBackend):
 		logger.debug('getDepotId()')
 		depotId = self.getServerId()
 		if clientId:
+			clientId = self._preProcessHostId(clientId)
 			depotId = self.getNetworkConfig_hash(objectId = clientId).get('depotId', self.getServerId())
 		depotIds = self.getDepotIds_list()
 		if depotId not in depotIds:
@@ -1054,7 +1071,7 @@ class File31Backend(File, FileBackend):
 		return depotId
 	
 	def getDepot_hash(self, depotId):
-		logger.debug('getDepot_hash()')
+		depotId = self._preProcessHostId(depotId)
 		depotIniFile = self.getDepotIniFile(depotId)
 		if not os.path.exists(depotIniFile):
 			raise BackendMissingDataError("Failed to get info for depot-id '%s': File '%s' not found" % (depotId, depotIniFile))
@@ -1424,6 +1441,7 @@ class File31Backend(File, FileBackend):
 			self.writeIniFile( self.__defaultClientTemplateFile, ini)
 		
 		for depotId in depotIds:
+			depotId = depotId.lower()
 			productDir = os.path.join(self.__depotConfigDir, depotId, 'products', productType)
 			if not os.path.exists(productDir):
 				mkdir(productDir, mode = 0770 | stat.S_ISGID)
@@ -1466,6 +1484,7 @@ class File31Backend(File, FileBackend):
 		
 		errorList = []
 		for depotId in depotIds:
+			depotId = depotId.lower()
 			productType = None
 			productDir = None
 			if productId in self.getProductIds_list('localboot', depotId):
@@ -1563,6 +1582,8 @@ class File31Backend(File, FileBackend):
 		if not objectId:
 			objectId = self.getDepotId()
 		
+		objectId = objectId.lower()
+		
 		if objectId in self.getDepotIds_list():
 			depotDir = os.path.join(self.__depotConfigDir, objectId, 'products')
 			if not os.path.exists(depotDir):
@@ -1615,8 +1636,8 @@ class File31Backend(File, FileBackend):
 	
 	
 	def getProductInstallationStatus_hash(self, productId, objectId):
-		
 		productId = productId.lower()
+		objectId = objectId.lower()
 		
 		status = { 
 			'productId':		productId,
@@ -1670,6 +1691,7 @@ class File31Backend(File, FileBackend):
 		return status
 	
 	def getProductInstallationStatus_listOfHashes(self, objectId):
+		objectId = objectId.lower()
 		
 		installationStatus = []
 		
@@ -1677,7 +1699,7 @@ class File31Backend(File, FileBackend):
 			for productId in self.getProductIds_list(None, objectId):
 				p = self.getProduct_hash(productId)
 				installationStatus.append( { 
-					'productId': productId,
+					'productId': 		productId,
 					'productVersion':	p['productVersion'],
 					'packageVersion':	p['packageVersion'],
 					'lastStateChange':	p['creationTimestamp'],
@@ -1798,10 +1820,10 @@ class File31Backend(File, FileBackend):
 				     packageVersion = ini.get('%s-state' % productId, 'packageversion', '')
 		
 		if (installationStatus == 'undefined') and currentInstallationStatus:
-				installationStatus = currentInstallationStatus
+			installationStatus = currentInstallationStatus
 		
 		if (actionRequest == 'undefined') and currentActionRequest:
-				actionRequest = currentActionRequest
+			actionRequest = currentActionRequest
 		
 		logger.info("Setting product installation status '%s', product action request '%s' for product '%s'" \
 					% (installationStatus, actionRequest, productId))
@@ -1865,9 +1887,11 @@ class File31Backend(File, FileBackend):
 		
 		if not productId:
 			return POSSIBLE_FORCED_PRODUCT_ACTIONS
+		productId = productId.lower()
 		
 		if not depotId:
 			depotId = self.getDepotId()
+		depotId = depotId.lower()
 		
 		actions = ['none']
 		product = self.getProduct_hash(productId, depotId)
@@ -1882,6 +1906,7 @@ class File31Backend(File, FileBackend):
 		
 		if not depotId:
 			depotId = self.getDepotId()
+		depotId = depotId.lower()
 		
 		actions = {}
 		
@@ -1891,6 +1916,8 @@ class File31Backend(File, FileBackend):
 		return actions
 	
 	def getProductActionRequests_listOfHashes(self, clientId):
+		
+		clientId = self._preProcessHostId(clientId)
 		
 		actionRequests = []
 		
@@ -1916,9 +1943,11 @@ class File31Backend(File, FileBackend):
 	
 	def getDefaultNetBootProductId(self, clientId):
 		
+		clientId = self._preProcessHostId(clientId)
+		
 		netBootProduct = self.getGeneralConfig(clientId).get('os')
 		
-		if not netBootProduct:	
+		if not netBootProduct:
 			raise BackendMissingDataError("No default netboot product for client '%s' found in generalConfig" % clientId )
 		return netBootProduct
 	
@@ -1938,6 +1967,8 @@ class File31Backend(File, FileBackend):
 		depotIds = self.getDepotIds_list()
 		
 		for objectId in objectIds:
+			objectId = objectId.lower()
+			
 			isDepot = (objectId in depotIds)
 			
 			logger.info("Getting product states for host '%s'" % objectId)
@@ -2051,6 +2082,7 @@ class File31Backend(File, FileBackend):
 	def getProductPropertyDefinitions_hash(self, depotId=None):
 		if not depotId:
 			depotId = self.getDepotId()
+		depotId = depotId.lower()
 		
 		definitions = {}
 		productFiles = []
@@ -2086,6 +2118,7 @@ class File31Backend(File, FileBackend):
 		productId = productId.lower()
 		if not depotId:
 			depotId = self.getDepotId()
+		depotId = depotId.lower()
 		
 		definitions = []
 		productFile = None
@@ -2121,11 +2154,14 @@ class File31Backend(File, FileBackend):
 	
 	def deleteProductPropertyDefinition(self, productId, name, depotIds=[]):
 		productId = productId.lower()
+		name = name.lower()
 		
 		if not depotIds:
 			depotIds = self.getDepotIds_list()
 		
 		for depotId in depotIds:
+			depotId = depotId.lower()
+			
 			productFile = None
 			num = -1
 			try:
@@ -2173,6 +2209,8 @@ class File31Backend(File, FileBackend):
 			depotIds = self.getDepotIds_list()
 		
 		for depotId in depotIds:
+			depotId = depotId.lower()
+			
 			productFile = None
 			try:
 				for d in ('localboot', 'netboot'):
@@ -2197,12 +2235,13 @@ class File31Backend(File, FileBackend):
 			
 		
 	def createProductPropertyDefinition(self, productId, name, description=None, defaultValue=None, possibleValues=[], depotIds=[]):
-		
 		productId = productId.lower()
+		name = name.lower()
 		if not depotIds:
 			depotIds = self.getDepotIds_list()
 		
 		for depotId in depotIds:
+			depotId = depotId.lower()
 			productFile = None
 			try:
 				for d in ('localboot', 'netboot'):
@@ -2239,6 +2278,7 @@ class File31Backend(File, FileBackend):
 		
 		if not objectId:
 			objectId = self.getDepotId()
+		objectId = objectId.lower()
 		
 		properties = {}
 		
@@ -2276,6 +2316,7 @@ class File31Backend(File, FileBackend):
 		
 		if not objectId:
 			objectId = self.getDepotId()
+		objectId = objectId.lower()
 		
 		if objectId in self.getDepotIds_list():
 			propDefs = self.getProductPropertyDefinitions_listOfHashes(productId, objectId)
@@ -2317,7 +2358,7 @@ class File31Backend(File, FileBackend):
 		property = property.lower()
 		if not objectId:
 			objectId = self.getDepotId()
-		
+		objectId = objectId.lower()
 		
 		iniFiles = []
 		if objectId in self.getDepotIds_list():
@@ -2365,6 +2406,7 @@ class File31Backend(File, FileBackend):
 		productId = productId.lower()
 		if not objectId:
 			objectId = self.getDepotId()
+		objectId = objectId.lower()
 		
 		iniFiles = []
 		if objectId in self.getDepotIds_list():
@@ -2534,6 +2576,8 @@ class File31Backend(File, FileBackend):
 	
 	def createLicenseKey(self, productId, licenseKey):
 		productId = productId.lower()
+		# TODO: productLicenses for each depot ?
+		raise NotImplementedError("createLicenseKey() not yet implemeted in File31 backend")
 		
 		# Read the ini file or create if not exists
 		try:
@@ -2551,27 +2595,9 @@ class File31Backend(File, FileBackend):
 		# Write back ini file
 		self.writeIniFile(self.__licensesFile, ini)
 		
-	def getLicenseKeys_listOfHashes(self, productId):
-		productId = productId.lower()
-		
-		# Read the ini file
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError, e:
-			logger.error("Cannot get license keys for product '%s': %s" % (productId, e))
-			return []
-		
-		if not ini.has_section(productId):
-			logger.error("Cannot get license keys for product '%s': Section missing" % productId)
-			return []
-		
-		licenses = []
-		for (key, value) in ini.items(productId):
-			licenses.append( { "licenseKey": key, "hostId": value } )
-		return licenses
-
 	def getLicenseKey(self, productId, clientId):
 		productId = productId.lower()
+		clientId = self._preProcessHostId(clientId)
 		
 		for (key, value) in self.getProductProperties_hash(productId, clientId).items():
 			if (key.lower() == 'productkey'):
@@ -2593,6 +2619,26 @@ class File31Backend(File, FileBackend):
 		
 		raise BackendMissingDataError("No more licenses available for product '%s'" % productId)
 	
+	def getLicenseKeys_listOfHashes(self, productId):
+		productId = productId.lower()
+		
+		return []
+		
+		# Read the ini file
+		try:
+			ini = self.readIniFile(self.__licensesFile)
+		except BackendIOError, e:
+			logger.error("Cannot get license keys for product '%s': %s" % (productId, e))
+			return []
+		
+		if not ini.has_section(productId):
+			logger.error("Cannot get license keys for product '%s': Section missing" % productId)
+			return []
+		
+		licenses = []
+		for (key, value) in ini.items(productId):
+			licenses.append( { "licenseKey": key, "hostId": value } )
+		return licenses
 	
 	def deleteLicenseKey(self, productId, licenseKey):
 		productId = productId.lower()
