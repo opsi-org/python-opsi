@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9'
+__version__ = '0.9.0.1'
 
 # Imports
 import ldap, ldap.modlist, re
@@ -67,20 +67,9 @@ class LDAPBackend(DataBackend):
 		self._hostsContainerDn = 'cn=hosts,' + self._opsiBaseDn
 		self._groupsContainerDn = 'cn=groups,' + self._opsiBaseDn
 		self._productsContainerDn = 'cn=products,' + self._opsiBaseDn
-		#self._productDependenciesContainerDn = 'cn=productDependencies,' + self._opsiBaseDn
 		self._productClassesContainerDn = 'cn=productClasses,' + self._opsiBaseDn
-		#self._productClassDependenciesContainerDn = 'cn=productClassDependencies,' + self._opsiBaseDn
 		self._productLicensesContainerDn = 'cn=productLicenses,' + self._opsiBaseDn
 		self._productStatesContainerDn = 'cn=productStates,' + self._opsiBaseDn
-		#self._policiesContainerDn = 'cn=policies,' + self._opsiBaseDn
-		#self._productPropertyPoliciesContainerDn = 'cn=productProperties,' + self._policiesContainerDn 
-		#self._productDeploymentPoliciesContainerDn = 'cn=productDeployments,' + self._policiesContainerDn 
-		#self._networkConfigPoliciesContainerDn = 'cn=networkConfigs,' + self._policiesContainerDn 
-		#self._generalConfigPoliciesContainerDn = 'cn=generalConfigs,' + self._policiesContainerDn 
-		#self._policyReferenceAttributeName = 'opsiPolicyReference'
-		#self._policyReferenceObjectClass = 'opsiPolicyReference'
-		
-		### NEW ###
 		self._generalConfigsContainerDn = 'cn=generalConfigs,' + self._opsiBaseDn
 		self._networkConfigsContainerDn = 'cn=networkConfigs,' + self._opsiBaseDn
 		self._productPropertiesContainerDn = 'cn=productProperties,' + self._opsiBaseDn
@@ -88,33 +77,30 @@ class LDAPBackend(DataBackend):
 		self._hostAttributeNotes = 'opsiNotes'
 		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
 		self._hostAttributeIpAddress = 'opsiIpAddress'
-		###########
 		
 		self._defaultDomain = None
 		
 		# Parse arguments
 		for (option, value) in args.items():
-			if   (option.lower() == 'basedn'):					self._baseDn = value
-			elif (option.lower() == 'opsibasedn'):					self._opsiBaseDn = value
-			elif (option.lower() == 'hostscontainerdn'):				self._hostsContainerDn = value
-			elif (option.lower() == 'groupscontainerdn'):				self._groupsContainerDn = value
-			elif (option.lower() == 'productscontainerdn'):			self._productsContainerDn = value
-			elif (option.lower() == 'productdependenciescontainerdn'):		self._productDependenciesContainerDn = value
-			elif (option.lower() == 'productclassescontainerdn'):			self._productClassesContainerDn = value
-			elif (option.lower() == 'productclassdependenciescontainerdn'):	self._productClassDependenciesContainerDn = value
-			elif (option.lower() == 'productlicensescontainerdn'):			self._productLicensesContainerDn = value
-			elif (option.lower() == 'policiescontainerdn'):			self._policiesContainerDn = value
-			elif (option.lower() == 'productpropertypoliciescontainerdn'):	self._productPropertyPoliciesContainerDn = value
-			elif (option.lower() == 'productstatescontainerdn'):			self._productStatesContainerDn = value
-			elif (option.lower() == 'productdeploymentpoliciescontainerdn'):	self._productDeploymentPoliciesContainerDn = value
-			elif (option.lower() == 'networkconfigpoliciescontainerdn'):		self._networkConfigPoliciesContainerDn = value
-			elif (option.lower() == 'generalconfigpoliciescontainerdn'):		self._generalConfigPoliciesContainerDn = value
-			elif (option.lower() == 'defaultdomain'): 				self._defaultDomain = value
-			elif (option.lower() == 'host'):					self._address = value
-			elif (option.lower() == 'binddn'):					self._username = value
-			elif (option.lower() == 'bindpw'):					self._password = value
-			elif (option.lower() == 'policyreferenceattributename'):		self._policyReferenceAttributeName = value
-			elif (option.lower() == 'policyreferenceobjectclass'):			self._policyReferenceObjectClass = value
+			if   (option.lower() == 'basedn'):				self._baseDn = value
+			elif (option.lower() == 'opsibasedn'):				self._opsiBaseDn = value
+			elif (option.lower() == 'hostscontainerdn'):			self._hostsContainerDn = value
+			elif (option.lower() == 'groupscontainerdn'):			self._groupsContainerDn = value
+			elif (option.lower() == 'productscontainerdn'):		self._productsContainerDn = value
+			elif (option.lower() == 'productclassescontainerdn'):		self._productClassesContainerDn = value
+			elif (option.lower() == 'productlicensescontainerdn'):		self._productLicensesContainerDn = value
+			elif (option.lower() == 'productstatescontainerdn'):		self._productStatesContainerDn = value
+			elif (option.lower() == 'generalconfigscontainerdn'):		self._generalConfigsContainerDn = value
+			elif (option.lower() == 'networkconfigscontainerdn'):		self._networkConfigsContainerDn = value
+			elif (option.lower() == 'productpropertiescontainerdn'):	self._productPropertiesContainerDn = value
+			elif (option.lower() == 'hostattributedescription'):		self._hostAttributeDescription = value
+			elif (option.lower() == 'hostattributenotes'):			self._hostAttributeNotes = value
+			elif (option.lower() == 'hostattributehardwareaddress'):	self._hostAttributeHardwareAddress = value
+			elif (option.lower() == 'hostattributeipaddress'):		self._hostAttributeIpAddress = value
+			elif (option.lower() == 'defaultdomain'): 			self._defaultDomain = value
+			elif (option.lower() == 'host'):				self._address = value
+			elif (option.lower() == 'binddn'):				self._username = value
+			elif (option.lower() == 'bindpw'):				self._password = value
 			else:
 				logger.warning("Unknown argument '%s' passed to LDAPBackend constructor" % option)
 		
@@ -131,6 +117,11 @@ class LDAPBackend(DataBackend):
 	
 	def exit(self):
 		self._ldap.disconnect()
+	
+	def deleteOpsiBase(self):
+		base = Object(dself._opsiBaseDn)
+		if base.exists(self._ldap):
+			base.deleteFromDirectory(self._ldap, recursive = True)
 	
 	def createOpsiBase(self):
 		# Create some containers
@@ -193,7 +184,7 @@ class LDAPBackend(DataBackend):
 	# -------------------------------------------------
 	# -     GENERAL CONFIG                            -
 	# -------------------------------------------------
-	def setGeneralConfig(self, config, objectId = None): # OK
+	def setGeneralConfig(self, config, objectId = None):
 		if not objectId:
 			# Set global (server)
 			objectId = self.getServerId()
@@ -220,6 +211,7 @@ class LDAPBackend(DataBackend):
 		if generalConfigObj.exists(self._ldap):
 			generalConfigObj.deleteFromDirectory(self._ldap)
 		if not config:
+			logger.info("No need to write host specific general config: does not differ from default")
 			return
 		
 		# Create new generalconfig object
@@ -231,7 +223,7 @@ class LDAPBackend(DataBackend):
 		# Write config object to ldap
 		generalConfigObj.writeToDirectory(self._ldap)
 		
-	def getGeneralConfig_hash(self, objectId = None): # OK
+	def getGeneralConfig_hash(self, objectId = None):
 		if not objectId:
 			# Get global (server)
 			objectId = self.getServerId()
@@ -259,7 +251,7 @@ class LDAPBackend(DataBackend):
 		
 		return generalConfig
 	
-	def deleteGeneralConfig(self, objectId): # OK
+	def deleteGeneralConfig(self, objectId):
 		if (objectId == self._defaultDomain):
 			objectId = self.getServerId()
 		
@@ -272,12 +264,14 @@ class LDAPBackend(DataBackend):
 	# -------------------------------------------------
 	# -     NETWORK FUNCTIONS                         -
 	# -------------------------------------------------
-	def setNetworkConfig(self, config, objectId = None): # OK
+	def setNetworkConfig(self, config, objectId = None):
 		if not objectId:
 			# Set global (server)
 			objectId = self.getServerId()
 		
 		objectId = objectId.lower()
+		if (objectId == self._defaultDomain):
+			objectId = self.getServerId()
 		
 		configNew = {}
 		for (key, value) in config.items():
@@ -306,10 +300,11 @@ class LDAPBackend(DataBackend):
 					del config[key]
 			networkConfigObj = Object( 'cn=%s,%s' % ( objectId, self._networkConfigsContainerDn ) )
 		
-		# Delete generalconfig object
+		# Delete networkconfig object
 		if networkConfigObj.exists(self._ldap):
 			networkConfigObj.deleteFromDirectory(self._ldap)
 		if not config:
+			logger.info("No need to write host specific network config: does not differ from default")
 			return
 		
 		# Create new generalconfig object
@@ -317,9 +312,9 @@ class LDAPBackend(DataBackend):
 		
 		for (key, value) in config.items():
 			if (key == 'opsiserver'):
-				networkConfigObj.setAttribute('opsiConfigserverReference', self.getgetHostDn(value))
+				networkConfigObj.setAttribute('opsiConfigserverReference', self.getHostDn(value))
 			elif (key == 'depotid'):
-				networkConfigObj.setAttribute('opsiDepotserverReference', self.getgetHostDn(value))
+				networkConfigObj.setAttribute('opsiDepotserverReference', self.getHostDn(value))
 			elif (key == 'configdrive'):
 				networkConfigObj.setAttribute('opsiConfigDrive', value)
 			elif (key == 'utilsdrive'):
@@ -336,11 +331,13 @@ class LDAPBackend(DataBackend):
 		# Write config object to ldap
 		networkConfigObj.writeToDirectory(self._ldap)
 		
-	def getNetworkConfig_hash(self, objectId = None): # OK
+	def getNetworkConfig_hash(self, objectId = None):
 		
 		if not objectId:
 			objectId = self.getServerId()
 		objectId = objectId.lower()
+		if (objectId == self._defaultDomain):
+			objectId = self.getServerId()
 		
 		networkConfig = { 
 			'opsiServer': 	self.getServerId(objectId),
@@ -386,8 +383,21 @@ class LDAPBackend(DataBackend):
 					else:
 						# cut "opsiX" from key
 						networkConfig[key[4].lower() + key[5:]] = value
-	
-	def deleteNetworkConfig(self, objectId): # OK
+		
+		if networkConfig['depotId']:
+			networkConfig['depotUrl'] = self.getDepot_hash(networkConfig['depotId'])['depotRemoteUrl']
+			networkConfig['utilsUrl'] = 'smb://%s/opt_pcbin/utils' % networkConfig['depotId'].split('.')[0]
+			networkConfig['configUrl'] = 'smb://%s/opt_pcbin/pcpatch' % networkConfig['depotId'].split('.')[0]
+			
+		# Check if all needed values are set
+		if (not networkConfig['opsiServer']
+		    or not networkConfig['utilsDrive'] or not networkConfig['depotDrive'] 
+		    or not networkConfig['utilsUrl'] or not networkConfig['depotUrl'] ):
+			logger.warning("Networkconfig for object '%s' incomplete" % objectId)
+		
+		return networkConfig
+		
+	def deleteNetworkConfig(self, objectId):
 		if (objectId == self._defaultDomain):
 			objectId = self.getServerId()
 		
@@ -400,7 +410,7 @@ class LDAPBackend(DataBackend):
 	# -------------------------------------------------
 	# -     HOST FUNCTIONS                            -
 	# -------------------------------------------------
-	def createServer(self, serverName, domain, description=None, notes=None): # OK
+	def createServer(self, serverName, domain, description=None, notes=None):
 		if not re.search(HOST_NAME_REGEX, serverName):
 			raise BackendBadValueError("Unallowed char in hostname")
 		
@@ -432,7 +442,7 @@ class LDAPBackend(DataBackend):
 		
 		return hostId
 	
-	def createClient(self, clientName, domain=None, description=None, notes=None, ipAddress=None, hardwareAddress=None): # OK
+	def createClient(self, clientName, domain=None, description=None, notes=None, ipAddress=None, hardwareAddress=None):
 		if not re.search(HOST_NAME_REGEX, clientName):
 			raise BackendBadValueError("Unallowed char in hostname")
 		
@@ -474,7 +484,7 @@ class LDAPBackend(DataBackend):
 		
 		return hostId
 	
-	def _deleteHost(self, hostId): # OK
+	def _deleteHost(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		
 		host = Object( self.getHostDn(hostId) )
@@ -482,7 +492,7 @@ class LDAPBackend(DataBackend):
 		# Delete product states container
 		productStatesContainer = Object("cn=%s,%s" % (hostId, self._productStatesContainerDn))
 		if productStatesContainer.exists(self._ldap):
-			productStatesCont.deleteFromDirectory(self._ldap, recursive = True)
+			productStatesContainer.deleteFromDirectory(self._ldap, recursive = True)
 		
 		# Delete client from groups
 		groups = []
@@ -496,20 +506,20 @@ class LDAPBackend(DataBackend):
 		for group in groups:
 			logger.info("Removing host '%s' from group '%s'" % (hostId, group.getCn()))
 			group.readFromDirectory(self._ldap)
-			group.deleteAttributeValue('uniqueMember', client.getDn())
+			group.deleteAttributeValue('uniqueMember', host.getDn())
 			group.writeToDirectory(self._ldap)
 		
 		# Delete host object and possible childs
 		if host.exists(self._ldap):
 			host.deleteFromDirectory(self._ldap, recursive = True)
 	
-	def deleteServer(self, serverId): # OK
+	def deleteServer(self, serverId):
 		return self._deleteHost(serverId)
 	
-	def deleteClient(self, clientId): # OK
+	def deleteClient(self, clientId):
 		return self._deleteHost(clientId)
 	
-	def setHostLastSeen(self, hostId, timestamp): # OK
+	def setHostLastSeen(self, hostId, timestamp):
 		hostId = self._preProcessHostId(hostId)
 		logger.debug("Setting last-seen timestamp for host '%s' to '%s'" % (hostId, timestamp))
 		host = Object( self.getHostDn(hostId) )
@@ -517,7 +527,7 @@ class LDAPBackend(DataBackend):
 		host.setAttribute('opsiLastSeenTimestamp', [ timestamp ])
 		host.writeToDirectory(self._ldap)
 	
-	def setHostDescription(self, hostId, description): # OK
+	def setHostDescription(self, hostId, description):
 		hostId = self._preProcessHostId(hostId)
 		logger.debug("Setting description for host '%s' to '%s'" % (hostId, description))
 		host = Object( self.getHostDn(hostId) )
@@ -528,7 +538,7 @@ class LDAPBackend(DataBackend):
 			host.setAttribute(self._hostAttributeDescription, [ ])
 		host.writeToDirectory(self._ldap)
 	
-	def setHostNotes(self, hostId, notes): # OK
+	def setHostNotes(self, hostId, notes):
 		hostId = self._preProcessHostId(hostId)
 		logger.debug("Setting notes for host '%s' to '%s'" % (hostId, notes))
 		host = Object( self.getHostDn(hostId) )
@@ -539,7 +549,7 @@ class LDAPBackend(DataBackend):
 			host.setAttribute(self._hostAttributeNotes, [ notes ])
 		host.writeToDirectory(self._ldap)
 	
-	def getHost_hash(self, hostId): # OK
+	def getHost_hash(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
 		host.readFromDirectory(self._ldap, 'description', 'opsiNotes', 'opsiLastSeenTimestamp')
@@ -549,16 +559,23 @@ class LDAPBackend(DataBackend):
 				'lastSeen':	host.getAttribute('opsiLastSeenTimestamp', "") }
 	
 	def getClients_listOfHashes(self, serverId = None, depotId=None, groupId = None, productId = None, installationStatus = None, actionRequest = None, productVersion = None, packageVersion = None):
-		# TODO: groups
+		
+		if (serverId and serverId != self.getServerId()):
+			raise BackendMissingDataError("Can only access data on server: %s" % self.getServerId())
+		
+		if depotId:
+			depotId = depotId.lower()
+		
 		if productId:
 			productId = productId.lower()
 		
 		if groupId and not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
 		
+		# Get host dn list by depot
 		hostDns = []
-		if not serverId:
-			# No server id given => search all registered clients
+		if not depotId:
+			# No depot id given => search all registered clients
 			try:
 				# Search all opsiClient objects in host container
 				search = ObjectSearch(self._ldap, self.getHostContainerDn(), filter='(objectClass=opsiClient)')
@@ -566,45 +583,50 @@ class LDAPBackend(DataBackend):
 				# No client found
 				logger.warning("No clients found in LDAP")
 				return []
-			# Map client dns to client ids
-			
 			hostDns = search.getDns()
 		
 		else:
-			# Specific server given => only search connected clients
-			# Create LDAP object
-			server = Object( self.getHostDn(serverId) )
-			# Try if exists in LDAP
-			server.readFromDirectory(self._ldap, 'dn')
-			
-			# Search all opsiClient objects in host container of server's domain
-			clients = []
-			try:
-				search = ObjectSearch(self._ldap, self.getHostContainerDn( self.getDomain(serverId) ), filter='(objectClass=opsiClient)')
-				clients = search.getObjects()
-			except BackendMissingDataError:
-				logger.warning("No clients found in LDAP")
-				return []
-			
-			for client in clients:
+			# Depot given => only search connected clients
+			depotDn = self.getHostDn(depotId)
+			networkConfigObj = Object( 'cn=%s,%s' % ( self.getServerId(), self._networkConfigsContainerDn ) )
+			networkConfigObj.readFromDirectory(self._ldap, 'opsiDepotserverReference')
+			defaultDepotDn = networkConfigObj.getAttribute('opsiDepotserverReference')
+			defaultDepot = (depotDn == defaultDepotDn)
+			if defaultDepot:
+				excludeDns = []
 				try:
-					# Get client's networkConfig policy
-					policySearch = PolicySearch(
-							self._ldap, client.getDn(),
-							policyContainer = self._networkConfigPoliciesContainerDn,
-							policyFilter = '(&(objectClass=opsiPolicyNetworkConfig)(opsiConfigserverReference=%s))' % server.getDn(),
-							policyReferenceObjectClass = '',#self._policyReferenceObjectClass,
-							policyReferenceAttributeName = '')#self._policyReferenceAttributeName )
-					policy = policySearch.getObject()				
-				except (BackendMissingDataError, BackendIOError), e:
-					logger.warning("Error while searching policy: %s" % e)
-					continue
-				if not policy.getAttribute('opsiConfigserverReference'):
-					continue
-				if ( policy.getAttribute('opsiConfigserverReference') == server.getDn() ):
-					# Client is connected to the specified server
-					hostDns.append(client.getDn())
+					search = ObjectSearch(
+							self._ldap,
+							self._networkConfigsContainerDn,
+							filter='(&(objectClass=opsiNetworkConfig)(!(opsiDepotserverReference=%s)))' % defaultDepotDn)
+					for clientId in search.getCns():
+						excludeDns.append( self.getHostDn(clientId) )
+				except BackendMissingDataError:
+					pass
+				
+				try:
+					# Search all opsiClient objects in host container
+					search = ObjectSearch(self._ldap, self.getHostContainerDn(), filter='(objectClass=opsiClient)')
+				except BackendMissingDataError:
+					# No client found
+					logger.warning("No clients found in LDAP")
+					return []
+				for hostDn in search.getDns():
+					if hostDn in excludeDns:
+						continue
+					hostDns.append(hostDn)
+			else:
+				try:
+					search = ObjectSearch(
+							self._ldap,
+							self._networkConfigsContainerDn,
+							filter='(&(objectClass=opsiNetworkConfig)(opsiDepotserverReference=%s))' % depotDn)
+					for clientId in search.getCns():
+						hostDns.append( self.getHostDn(clientId) )
+				except BackendMissingDataError:
+					pass
 		
+		# Filter by group
 		if groupId:
 			filteredHostDns = []
 			group = Object( "cn=%s,%s" % (groupId, self._groupsContainerDn) )
@@ -618,8 +640,9 @@ class LDAPBackend(DataBackend):
 					filteredHostDns.append(member)
 			hostDns = filteredHostDns
 		
+		# Filter by product state
 		if installationStatus or actionRequest or productVersion or packageVersion:
-			filteredHostDns = []
+			filteredHostIds = []
 			
 			productVersionC = None
 			productVersionS = None
@@ -641,56 +664,54 @@ class LDAPBackend(DataBackend):
 				packageVersionC = match.group(1)
 				packageVersionS = match.group(2)
 			
-			logger.info("Filtering hostIds by productId: '%s', installationStatus: '%s', actionRequest: '%s'" \
-				% (productId, installationStatus, actionRequest))
+			logger.info("Filtering hostIds by productId: '%s', installationStatus: '%s', actionRequest: '%s', productVersion: '%s', packageVersion: '%s'" \
+				% (productId, installationStatus, actionRequest, productVersion, packageVersion))
 			
+			hostIds = []
 			for hostDn in hostDns:
-				# Search product ldap-object
-				filter = '(&(objectClass=opsiProductState)(opsiHostReference=%s))' % hostDn
-				if productId:
-					filter = '(&%s(cn=%s))' % (filter, productId)
-				if installationStatus:
-					filter = '(&%s(opsiProductInstallationStatus=%s))' % (filter, installationStatus)
-				# TODO: action by policy
-				if actionRequest:
-					filter = '(&%s(opsiProductActionRequestForced=%s))' % (filter, actionRequest)
-				
-				logger.debug("ProductStates filter: '%s'" % filter)
-				
-				try:
-					hostCn = ((hostDn.split(','))[0].split('='))[1].strip()
-					productStateSearch = ObjectSearch(
-								self._ldap, 
-								"cn=%s,%s" % (hostCn, self._productStatesContainerDn),
-								filter = filter )
-					
-					state = productStateSearch.getObject()
-					state.readFromDirectory(self._ldap, 'opsiProductVersion', 'opsiPackageVersion')
-					if productVersion not in ('', None):
-						v = state.getAttribute('opsiProductVersion', '0')
-						if not v: v = '0'
-						if not Tools.compareVersions(v, productVersionC, productVersionS):
+				hostIds.append( self.getHostId(hostDn) )
+			
+			productStates = self.getProductStates_hash(hostIds)
+			for hostId in hostIds:
+				if productStates.has_key(hostId):
+					for state in productStates[hostId]:
+						if productId and (state.get('productId') != productId):
 							continue
-					if packageVersion not in ('', None):
-						v = state.getAttribute('opsiPackageVersion', '0')
-						if not v: v = '0'
-						if not Tools.compareVersions(v, packageVersionC, packageVersionS):
+						
+						if installationStatus and (installationStatus != state['installationStatus']):
 							continue
-					
-					logger.info("Host '%s' matches filter" % hostDn)
-					filteredHostDns.append(hostDn)
-				except BackendMissingDataError:
-					pass
-				
-					
-			hostDns = filteredHostDns
+						
+						if actionRequest and (actionRequest != state['actionRequest']):
+							continue
+						
+						if productVersion not in ('', None):
+							v = state.get('productVersion')
+							if not v: v = '0'
+							if not Tools.compareVersions(v, productVersionC, productVersionS):
+								continue
+						if packageVersion not in ('', None):
+							v = state.get('packageVersion')
+							if not v: v = '0'
+							if not Tools.compareVersions(v, packageVersionC, packageVersionS):
+								continue
+							
+						logger.info("Host %s matches filter" % hostId)
+						filteredHostIds.append(hostId)
+						break
+				else:
+					logger.warning("Cannot get installationStatus/actionRequests for host '%s': %s" 
+								% (hostId, e) )
+			
+			hostDns = []
+			for hostId in filteredHostIds:
+				hostDns.append( self.getHostDn(hostId) )
 		
 		infos = []
 		for hostDn in hostDns:
 			host = Object(hostDn)
-			host.readFromDirectory(self._ldap, 'description', 'opsiNotes', 'opsiLastSeenTimestamp')
+			host.readFromDirectory(self._ldap, 'opsiHostId', 'description', 'opsiNotes', 'opsiLastSeenTimestamp')
 			infos.append( { 
-				'hostId': 	self.getHostId(host.getDn()),
+				'hostId': 	host.getAttribute('opsiHostId', self.getHostId(host.getDn())),
 				'description':	host.getAttribute('description', ""),
 				'notes':	host.getAttribute('opsiNotes', ""),
 				'lastSeen':	host.getAttribute('opsiLastSeenTimestamp', "") } )
@@ -702,7 +723,7 @@ class LDAPBackend(DataBackend):
 			clientIds.append( info.get('hostId') )
 		return clientIds
 	
-	def getServerIds_list(self): # OK
+	def getServerIds_list(self):
 		# Search all ldap-objects of type opsiConfigserver in the host container
 		search = None
 		try:
@@ -717,26 +738,14 @@ class LDAPBackend(DataBackend):
 		return ids
 		
 	def getServerId(self, clientId=None):
-		if not clientId:
-			(name, aliaslist, addresslist) = socket.gethostbyname_ex(socket.gethostname())
-			if ( len(name.split('.')) > 1 ):
-				self.fqdn = name
-			else:
-				raise Exception("Failed to get my own fully qualified domainname")
-			return name
-		
-		# Get opsiConfigserverReference from client's policy
-		clientDn = self.getHostDn(clientId)
-		policySearch = PolicySearch(	self._ldap, clientDn,
-						policyContainer = self._networkConfigPoliciesContainerDn,
-						policyFilter = '(objectClass=opsiPolicyNetworkConfig)',
-						policyReferenceObjectClass = '',#self._policyReferenceObjectClass,
-						policyReferenceAttributeName = '')#self._policyReferenceAttributeName )
-		serverDn = policySearch.getAttribute('opsiConfigserverReference')
-		# Return server's id
-		return self.getHostId(serverDn)
+		# Return hostid of localhost
+		serverId = socket.getfqdn()
+		parts = serverId.split('.')
+		if (len(parts) < 3):
+			serverId = parts[0] + '.' + self._defaultDomain
+		return serverId.lower()
 	
-	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None, maxBandwidth=0): # OK
+	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None, maxBandwidth=0):
 		if not re.search(HOST_NAME_REGEX, depotName):
 			raise BackendBadValueError("Unallowed char in hostname")
 		hostId = self._preProcessHostId(depotName + '.' + domain)
@@ -782,12 +791,12 @@ class LDAPBackend(DataBackend):
 		depot.writeToDirectory(self._ldap)
 		
 		# Create product states container
-		self.createOrganizationalRole("cn=%s,%s" % (hostId, self._productStatesContainerDn))
+		#self.createOrganizationalRole("cn=%s,%s" % (hostId, self._productStatesContainerDn))
 		self.createOrganizationalRole("cn=%s,%s" % (hostId, self._productsContainerDn))
 		
 		return hostId
 	
-	def getDepotIds_list(self): # OK
+	def getDepotIds_list(self):
 		search = None
 		try:
 			search = ObjectSearch(self._ldap, self.getHostContainerDn(), filter='(objectClass=opsiDepotserver)')
@@ -801,15 +810,21 @@ class LDAPBackend(DataBackend):
 		return ids
 	
 	def getDepotId(self, clientId=None):
+		depotId = self.getServerId()
 		if clientId:
 			clientId = self._preProcessHostId(clientId)
-		return
+			depotId = self.getNetworkConfig_hash(objectId = clientId).get('depotId', self.getServerId())
+		depotIds = self.getDepotIds_list()
+		if depotId not in depotIds:
+			raise BackendMissingDataError("Configured depotId '%s' for host '%s' not in list of known depotIds %s" \
+								% (depotId, clientId, depotIds) )
+		return depotId
 	
-	def getDepot_hash(self, depotId): # OK
+	def getDepot_hash(self, depotId):
 		depotId = self._preProcessHostId(depotId)
 		depot = Object( self.getHostDn(depotId) )
 		if not depot.exists(self._ldap):
-			raise BackendMissingDataError("Failed to get info for depot-id '%s': File '%s' not found" % (depotId, depotIniFile))
+			raise BackendMissingDataError("Failed to get info for depot-id '%s': depot does not exist" % depotId)
 		
 		depot.readFromDirectory(self._ldap)
 		return {
@@ -825,19 +840,23 @@ class LDAPBackend(DataBackend):
 	
 	def deleteDepot(self, depotId):
 		depotId = self._preProcessHostId(depotId)
-		if not depotId in self.getDepotIds_list():
-			logger.error("Cannot delte depot '%s': does not exist" % depotId)
+		depot = Object( self.getHostDn(depotId) )
+		if not depot.exists(self._ldap):
+			logger.error("Cannot delete depot '%s': does not exist" % depotId)
 			return
-		rmdir( os.path.join(self.__depotConfigDir, depotId), recursive=True )
+		depot.deleteFromDirectory(self._ldap)
 		
-	def getOpsiHostKey(self, hostId): # OK
+	def getOpsiHostKey(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
 		# Read client ldap-object from Backend (attribute opsiHostKey only)
 		host.readFromDirectory(self._ldap, 'opsiHostKey')
-		return host.getAttribute('opsiHostKey')
+		try:
+			return host.getAttribute('opsiHostKey')
+		except BackendMissingDataError:
+			raise BackendMissingDataError("Cannot find opsiHostKey for host '%s': %s" % (hostId, e))
 		
-	def setOpsiHostKey(self, hostId, opsiHostKey): # OK
+	def setOpsiHostKey(self, hostId, opsiHostKey):
 		hostId = self._preProcessHostId(hostId)
 		logger.debug("Setting host key for host '%s'" % hostId)
 		host = Object( self.getHostDn(hostId) )
@@ -848,7 +867,7 @@ class LDAPBackend(DataBackend):
 		# Write object to ldap
 		host.writeToDirectory(self._ldap)
 	
-	def deleteOpsiHostKey(self, hostId): # OK
+	def deleteOpsiHostKey(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		logger.debug("Deleting host key for host '%s'" % hostId)
 		host = Object( self.getHostDn(hostId) )
@@ -859,7 +878,20 @@ class LDAPBackend(DataBackend):
 		# Write object to ldap
 		host.writeToDirectory(self._ldap)
 	
-	def createGroup(self, groupId, members = [], description = ""): # OK
+	def getMacAddresses_list(self, hostId):
+		hostId = self._preProcessHostId(hostId)
+		host = Object( self.getHostDn(hostId) )
+		host.readFromDirectory(self._ldap, 'opsiHardwareAddress')
+		return host.getAttribute('opsiHardwareAddress', valuesAsList = True)
+		
+	def setMacAddresses(self, hostId, macs=[]):
+		hostId = self._preProcessHostId(hostId)
+		host = Object( self.getHostDn(hostId) )
+		host.readFromDirectory(self._ldap)
+		host.setAttribute('opsiHardwareAddress', macs)
+		host.writeToDirectory(self._ldap)
+		
+	def createGroup(self, groupId, members = [], description = ""):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
 		
@@ -877,7 +909,7 @@ class LDAPBackend(DataBackend):
 			group.setAttribute('description', [ description ])
 		group.writeToDirectory(self._ldap)
 		
-	def getGroupIds_list(self): # OK
+	def getGroupIds_list(self):
 		try:
 			search = ObjectSearch(self._ldap, self._groupsContainerDn, filter='(objectClass=opsiGroup)')
 			groupIds = search.getCns()
@@ -886,7 +918,7 @@ class LDAPBackend(DataBackend):
 			logger.warning("No groups found: %s" % e)
 			return []
 	
-	def deleteGroup(self, groupId): # OK
+	def deleteGroup(self, groupId):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
 		
@@ -900,15 +932,27 @@ class LDAPBackend(DataBackend):
 	# -------------------------------------------------
 	# -     PASSWORD FUNCTIONS                        -
 	# -------------------------------------------------
-	def getPcpatchPassword(self, hostId): # OK
+	def getPcpatchPassword(self, hostId):
 		hostId = self._preProcessHostId(hostId)
-		host = Object( self.getHostDn(hostId) )
-		# Read client ldap-object from Backend (attribute opsiPcpatchPassword only)
-		host.readFromDirectory(self._ldap, 'opsiPcpatchPassword')
-		return host.getAttribute('opsiPcpatchPassword')
+		if (hostId == self.getServerId()):
+			host = Object( self.getHostDn(hostId) )
+			# Read client ldap-object from Backend (attribute opsiPcpatchPassword only)
+			host.readFromDirectory(self._ldap, 'opsiPcpatchPassword')
+			try:
+				return host.getAttribute('opsiPcpatchPassword')
+			except BackendMissingDataError:
+				raise Exception("Failed to get pcpatch password for host '%s'" % hostId)
+		else:
+			# TODO: move to backendManager / backendManager-config
+			cleartext = Tools.blowfishDecrypt( self.getOpsiHostKey(self.getServerId(hostId)), self.getPcpatchPassword(self.getServerId(hostId)) )
+			return Tools.blowfishEncrypt( self.getOpsiHostKey(hostId), cleartext )
 	
-	def setPcpatchPassword(self, hostId, password): # OK
+	def setPcpatchPassword(self, hostId, password):
 		hostId = self._preProcessHostId(hostId)
+		if (hostId != self.getServerId()):
+			# Not storing client passwords they will be calculated on the fly
+			return
+		
 		host = Object( self.getHostDn(hostId) )
 		# Read client ldap-object from Backend
 		host.readFromDirectory(self._ldap)
@@ -920,9 +964,66 @@ class LDAPBackend(DataBackend):
 	# -------------------------------------------------
 	# -     PRODUCT FUNCTIONS                         -
 	# -------------------------------------------------
+	def lockProduct(self, productId, depotIds=[]):
+		if not productId:
+			raise BackendBadValueError("Product id empty")
+		productId = productId.lower()
+		if not depotIds:
+			depotIds = self.getDepotIds_list()
+		if type(depotIds) not in (list, tuple):
+			depotIds = [ depotIds ]
+		
+		logger.debug("Locking product '%s' on depots: %s" % (productId, depotIds))
+		
+		for depotId in depotIds:
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				continue
+			product.readFromDirectory(self._ldap)
+			product.setAttribute('opsiProductIsLocked', [ 'TRUE' ])
+			product.writeToDirectory(self._ldap)
+		
+	def unlockProduct(self, productId, depotIds=[]):
+		productId = productId.lower()
+		if not depotIds:
+			depotIds = self.getDepotIds_list()
+		if type(depotIds) not in (list, tuple):
+			depotIds = [ depotIds ]
+		
+		logger.debug("Unlocking product '%s' on depots: %s" % (productId, depotIds))
+		
+		for depotId in depotIds:
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				continue
+			product.readFromDirectory(self._ldap)
+			product.setAttribute('opsiProductIsLocked', [ 'FALSE' ])
+			product.writeToDirectory(self._ldap)
+		
+	def getProductLocks_hash(self, depotIds=[]):
+		locks = {}
+		if not depotIds:
+			depotIds = self.getDepotIds_list()
+		if type(depotIds) not in (list, tuple):
+			depotIds = [ depotIds ]
+		
+		try:
+			search = ObjectSearch(
+				self._ldap,
+				self._productsContainerDn,
+				filter='(&(objectClass=opsiProduct)(opsiProductIsLocked=TRUE))'
+			)
+			for product in search.getObjects():
+				if not locks.has_key(product.getCn()):
+					locks[product.getCn()] = []
+				locks[product.getCn()].append(product.getParent().getParent().getCn())
+		except BackendMissingDataError,e:
+			logger.info("No product locks found")
+		return locks
+		
 	def createProduct(self, productType, productId, name, productVersion, packageVersion, licenseRequired=0,
 			   setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-			   priority=0, description="", advice="", productClassNames=(), pxeConfigTemplate='', depotIds=[]): # OK
+			   priority=0, description="", advice="", productClassNames=(), pxeConfigTemplate='', depotIds=[]):
 		""" Creates a new product. """
 		
 		if not re.search(PRODUCT_ID_REGEX, productId):
@@ -930,10 +1031,15 @@ class LDAPBackend(DataBackend):
 		
 		productId = productId.lower()
 		
+		objectClass = 'opsiProduct'
 		if (productType == 'server'):
 			logger.warning("Nothing to do for product type 'server'")
 			return
-		elif productType not in ['localboot', 'netboot']:
+		elif (productType == 'localboot'):
+			objectClass = 'opsiLocalbootProduct'
+		elif (productType == 'netboot'):
+			objectClass = 'opsiNetbootProduct'
+		else:
 			raise BackendBadValueError("Unknown product type '%s'" % productType)
 		
 		if not depotIds:
@@ -941,11 +1047,11 @@ class LDAPBackend(DataBackend):
 		
 		for depotId in depotIds:
 			depotId = depotId.lower()
-			self.createOrganizationalRole( 'cn=%s,%s' % (depotId, self._productStatesContainerDn) )
-			self.createOrganizationalRole( 'cn=%s,cn=%s,%s' % (productType, depotId, self._productStatesContainerDn) )
-			product = Object( "cn=%s,cn=%s,cn=%s,%s" % (productId, productType, depotId, self._productsContainerDn) )
+			self.createOrganizationalRole( 'cn=%s,%s' % (depotId, self._productsContainerDn) )
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
 			if product.exists(self._ldap):
 				product.deleteFromDirectory(self._ldap, recursive = True)
+			product.new(objectClass)
 			
 			# Set product attributes
 			product.setAttribute('opsiProductName', [ name ])
@@ -999,7 +1105,7 @@ class LDAPBackend(DataBackend):
 			# TODO: productStates
 			#for clientId in self.getClientIds_list(serverId = None, depotId = depotId):
 		
-	def deleteProduct(self, productId, depotIds=[]): # OK
+	def deleteProduct(self, productId, depotIds=[]):
 		productId = productId.lower()
 		
 		if not depotIds:
@@ -1007,27 +1113,20 @@ class LDAPBackend(DataBackend):
 		
 		for depotId in depotIds:
 			depotId = depotId.lower()
-			try:
-				search = ObjectSearch(
-					self._ldap,
-					"cn=%s,%s" % (depotId, self._productsContainerDn),
-					filter='(&(objectClass=opsiProduct)(cn=%s))' % productId
-				)
-				product = search.getObject()
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if product.exists(self._ldap):
 				product.deleteFromDirectory(self._ldap, recursive = True)
-			except BackendMissingDataError,e:
-				# Not found
-				pass
 		
-	def getProduct_hash(self, productId, depotId=None): # OK
+	def getProduct_hash(self, productId, depotId=None):
 		productId = productId.lower()
+		if not depotId:
+			depotId = self.getDepotId()
+		depotId = depotId.lower()
+		
 		# Search product object
-		search = ObjectSearch(
-				self._ldap,
-				"cn=%s,%s" % (depotId, self._productsContainerDn),
-				filter='(&(objectClass=opsiProduct)(cn=%s))' % productId
-		)
-		product = search.getObject()
+		product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+		if not product.exists(self._ldap):
+			raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
 		product.readFromDirectory(self._ldap)
 		
 		# Product found => get all attributes
@@ -1069,7 +1168,7 @@ class LDAPBackend(DataBackend):
 			"pxeConfigTemplate":		attributes.get('opsiPxeConfigTemplate', '') }
 	
 	
-	def getProductIds_list(self, productType=None, objectId=None, installationStatus=None): # OK
+	def getProductIds_list(self, productType=None, objectId=None, installationStatus=None):
 		
 		productIds = []
 		if not objectId:
@@ -1077,20 +1176,19 @@ class LDAPBackend(DataBackend):
 		
 		objectId = objectId.lower()
 		
+		objectClass = 'opsiProduct'
+		if (productType == 'localboot'):
+			objectClass = 'opsiLocalBootProduct'
+		if (productType == 'netboot'):
+			objectClass = 'opsiNetBootProduct'
+		if (productType == 'server'):
+			objectClass = 'opsiServerProduct'
+		
 		if objectId in self.getDepotIds_list():
-			
-			objectClass = 'opsiProduct'
-			if (productType == 'localboot'):
-				objectClass = 'opsiLocalBootProduct'
-			if (productType == 'netboot'):
-				objectClass = 'opsiNetBootProduct'
-			if (productType == 'server'):
-				objectClass = 'opsiServerProduct'
-			
 			try:
 				search = ObjectSearch(
 						self._ldap,
-						"cn=%s,%s" % (depotId, self._productsContainerDn),
+						"cn=%s,%s" % (objectId, self._productsContainerDn),
 						filter = '(objectClass=%s)' % objectClass
 				)
 				productIds.extend( search.getCns() )
@@ -1100,12 +1198,16 @@ class LDAPBackend(DataBackend):
 		else:
 			# Get host object
 			host = Object( self.getHostDn(objectId) )
+			depotId = self.getDepotId(objectId)
+			if (depotId == objectId):
+				# Avoid loops
+				raise BackendBadValueError("DepotId for host '%s' is '%s'" % (objectId, depotId))
 			
 			productStates = []
 			try:
 				filter='(objectClass=opsiProductState)'
 				if installationStatus:
-					filter='(&(objectClass=opsiProductState)(opsiProductInstallationStatus=%s))' % installationStatus
+					filter='(objectClass=opsiProductState)'
 				
 				productStateSearch = ObjectSearch(
 							self._ldap,
@@ -1113,8 +1215,9 @@ class LDAPBackend(DataBackend):
 							filter = filter )
 				productStates = productStateSearch.getObjects()
 			except BackendMissingDataError:
-				return productIds
+				pass
 			
+			productsFound = []
 			for productState in productStates:
 				productState.readFromDirectory(self._ldap)
 				try:
@@ -1125,16 +1228,23 @@ class LDAPBackend(DataBackend):
 						logger.debug("Object classes of '%s': %s" \
 							% (product.getDn(), product.getObjectClasses()))
 						if (objectClass == 'opsiProduct') or objectClass in product.getObjectClasses():
-							productIds.append( product.getCn() )
+							productsFound.append(product.getCn())
+							if not installationStatus or (productState.getAttribute('opsiProductInstallationStatus') == installationStatus):
+								productIds.append( product.getCn() )
 				except (BackendMissingDataError, BackendIOError):
 					continue
+			
+			if not installationStatus or installationStatus in ['not_installed']:
+				for productId in self.getProductIds_list(productType, depotId):
+					if not productId in productsFound:
+						productIds.append(productId)
 		
 		logger.debug("Products matching installationStatus '%s' on objectId '%s': %s" \
 						% (installationStatus, objectId, productIds))
 		return productIds
 	
 	
-	def getProductInstallationStatus_hash(self, productId, objectId): # OK
+	def getProductInstallationStatus_hash(self, productId, objectId):
 		productId = productId.lower()
 		objectId = objectId.lower()
 		
@@ -1171,7 +1281,7 @@ class LDAPBackend(DataBackend):
 		
 		return status
 	
-	def getProductInstallationStatus_listOfHashes(self, objectId): # OK
+	def getProductInstallationStatus_listOfHashes(self, objectId):
 		objectId = objectId.lower()
 		
 		installationStatus = []
@@ -1223,7 +1333,7 @@ class LDAPBackend(DataBackend):
 		return installationStatus
 		
 	
-	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", licenseKey=""): # OK
+	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", licenseKey=""):
 		productId = productId.lower()
 		
 		if objectId in self.getDepotIds_list():
@@ -1252,17 +1362,10 @@ class LDAPBackend(DataBackend):
 		if not lastStateChange:
 			lastStateChange = Tools.timestamp()
 		
-		product = None
-		try:
-			search = ObjectSearch(
-				self._ldap,
-				"cn=%s,%s" % (depotId, self._productsContainerDn),
-				filter='(&(objectClass=opsiProduct)(cn=%s))' % productId
-			)
-			product = search.getObject()
-			product.readFromDirectory(self._ldap, 'opsiProductVersion', 'opsiPackageVersion')
-		except Exception, e:
-			raise BackendBadValueError("Product '%s' does not exist: %s" % (productId, e))
+		product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+		if not product.exists(self._ldap):
+			raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
+		product.readFromDirectory(self._ldap, 'opsiProductVersion', 'opsiPackageVersion')
 		
 		# Create productState container for selected host
 		self.createOrganizationalRole( 'cn=%s,%s' % (objectId, self._productStatesContainerDn) )
@@ -1316,6 +1419,7 @@ class LDAPBackend(DataBackend):
 		#	productState.setAttribute( 'opsiProductActionRequestForced', [ actionRequest ] )
 		
 		productState.setAttribute( 'opsiProductActionRequestForced', [ actionRequest ] )
+		productState.setAttribute( 'opsiProductInstallationStatus', [ installationStatus ] )
 		
 		productState.setAttribute( 'opsiHostReference', 	[ self.getHostDn(objectId) ] )
 		productState.setAttribute( 'opsiProductReference', 	[ product.getDn() ] )
@@ -1382,10 +1486,10 @@ class LDAPBackend(DataBackend):
 		#
 		#productState.writeToDirectory(self._ldap)
 		
-	def setProductInstallationStatus(self, productId, objectId, installationStatus, policyId="", licenseKey=""): # OK
+	def setProductInstallationStatus(self, productId, objectId, installationStatus, policyId="", licenseKey=""):
 		self.setProductState(productId, objectId, installationStatus = installationStatus, licenseKey = licenseKey)
 	
-	def getPossibleProductActions_list(self, productId=None, depotId=None): # OK
+	def getPossibleProductActions_list(self, productId=None, depotId=None):
 		
 		if not productId:
 			return POSSIBLE_FORCED_PRODUCT_ACTIONS
@@ -1397,11 +1501,9 @@ class LDAPBackend(DataBackend):
 		
 		actions = ['none'] # ['none', 'by_policy']
 		# Get product object
-		search = ObjectSearch(
-				self._ldap,
-				"cn=%s,%s" % (depotId, self._productsContainerDn),
-				filter='(&(objectClass=opsiProduct)(cn=%s))' % productId)
-		product = search.getObject()
+		product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+		if not product.exists(self._ldap):
+			raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
 		
 		# Read needed product object values from ldap
 		product.readFromDirectory(self._ldap, 'opsiSetupScript', 'opsiUninstallScript', 'opsiUpdateScript', 'opsiOnceScript', 'opsiAlwaysScript')
@@ -1419,7 +1521,7 @@ class LDAPBackend(DataBackend):
 		return actions
 	
 	
-	def getPossibleProductActions_hash(self, depotId=None): # OK
+	def getPossibleProductActions_hash(self, depotId=None):
 		
 		if not depotId:
 			depotId = self.getDepotId()
@@ -1454,7 +1556,7 @@ class LDAPBackend(DataBackend):
 		
 		return actions
 	
-	def getProductActionRequests_listOfHashes(self, clientId): # OK
+	def getProductActionRequests_listOfHashes(self, clientId):
 		
 		clientId = self._preProcessHostId(clientId)
 		
@@ -1489,7 +1591,7 @@ class LDAPBackend(DataBackend):
 		return actionRequests
 		
 	
-	def getDefaultNetBootProductId(self, clientId): # OK
+	def getDefaultNetBootProductId(self, clientId):
 		
 		clientId = self._preProcessHostId(clientId)
 		
@@ -1499,13 +1601,13 @@ class LDAPBackend(DataBackend):
 			raise BackendMissingDataError("No default netboot product for client '%s' found in generalConfig" % clientId )
 		return netBootProduct
 	
-	def setProductActionRequest(self, productId, clientId, actionRequest): # OK
+	def setProductActionRequest(self, productId, clientId, actionRequest):
 		self.setProductState(productId, clientId, actionRequest = actionRequest)
 	
-	def unsetProductActionRequest(self, productId, clientId): # OK
+	def unsetProductActionRequest(self, productId, clientId):
 		self.setProductState(productId, clientId, actionRequest="none")
 	
-	def _getProductStates_hash(self, objectIds = [], productType = None): # OK
+	def _getProductStates_hash(self, objectIds = [], productType = None):
 		result = {}
 		if not objectIds or ( (len(objectIds) == 1) and not objectIds[0] ):
 			objectIds = self.getClientIds_list()
@@ -1522,6 +1624,10 @@ class LDAPBackend(DataBackend):
 		if (productType == 'server'):
 			objectClass = 'opsiServerProduct'
 		
+		productInfoCache = {}
+		for depotId in depotIds:
+			productInfoCache[depotId] = {}
+		
 		for objectId in objectIds:
 			objectId = objectId.lower()
 			result[objectId] = []
@@ -1533,64 +1639,82 @@ class LDAPBackend(DataBackend):
 			if not isDepot:
 				depotId = self.getDepotId(objectId)
 			
-			search = None
-			try:
-				search = ObjectSearch(
-					self._ldap,
-					"cn=%s,%s" % (depotId, self._productsContainerDn),
-					filter='(objectClass=%s)' % objectClass
-				)
-			except BackendMissingDataError, e:
-				logger.warning("No products found for depot '%s' (objectClass: %s)" % (depotId, objectClass))
-				continue
-				
-			for product in search.getObjects():
-				product.readFromDirectory(self._ldap, 'opsiProductVersion', 'opsiPackageVersion', 'opsiProductCreationTimestamp')
-				productId = product.getCn()
-				if isDepot:
+			if not productInfoCache[depotId]:
+				logger.info("Filling product info cache for depot '%s'" % depotId)
+				search = None
+				try:
+					search = ObjectSearch(
+						self._ldap,
+						"cn=%s,%s" % (depotId, self._productsContainerDn),
+						filter='(objectClass=%s)' % objectClass
+					)
+				except BackendMissingDataError, e:
+					logger.warning("No products found for depot '%s' (objectClass: %s)" % (depotId, objectClass))
+					continue
+					
+				for product in search.getObjects():
+					product.readFromDirectory(self._ldap, 'opsiProductVersion', 'opsiPackageVersion', 'opsiProductCreationTimestamp')
+					productId = product.getCn()
+					productInfoCache[depotId][productId] = {
+								'productVersion':	product.getAttribute('opsiProductVersion', ''),
+								'packageVersion':	product.getAttribute('opsiPackageVersion', ''),
+								'lastStateChange':	product.getAttribute('opsiProductCreationTimestamp')
+					}
+			
+			if isDepot:
+				for (productId, productInfo) in productInfoCache[depotId].items():
 					result[objectId].append( { 	'productId':		productId, 
 									'installationStatus':	'installed',
 									'actionRequest':	'none',
-									'productVersion':	product.getAttribute('opsiProductVersion', ''),
-									'packageVersion':	product.getAttribute('opsiPackageVersion', ''),
-									'lastStateChange':	product.getAttribute('opsiProductCreationTimestamp') } )
-				else:
+									'productVersion':	productInfo['productVersion'],
+									'packageVersion':	productInfo['packageVersion'],
+									'lastStateChange':	productInfo['lastStateChange'] } )
+				continue
+			else:
+				cns = []
+				try:
+					# Not using opsiProductReference in search because
+					# this could miss some products if client moved from an other depot
+					productStateSearch = ObjectSearch(
+							self._ldap, 
+							'cn=%s,%s' % (objectId, self._productStatesContainerDn),
+							filter='(objectClass=opsiProductState)'
+					)
+					cns = productStateSearch.getCns()
+				
+				except BackendMissingDataError, e:
+					logger.info("No product state objects found for host '%s': %s" % (objectId, e))
+				
+				for (productId, productInfo) in productInfoCache[depotId].items():
 					state = { 	'productId':		productId, 
 							'installationStatus':	'undefined',
 							'actionRequest':	'undefined',
-							'productVersion':	product.getAttribute('opsiProductVersion', ''),
-							'packageVersion':	product.getAttribute('opsiPackageVersion', ''),
+							'productVersion':	productInfo['productVersion'],
+							'packageVersion':	productInfo['packageVersion'],
 							'lastStateChange':	'' }
 					
-					try:
-						# Not using opsiProductReference in search because
-						# this could miss some products if client moved from an other depot
-						productStateSearch = ObjectSearch(
-									self._ldap, 
-									'cn=%s,%s' % (objectId, self._productStatesContainerDn),
-									filter='(&(objectClass=opsiProductState)(cn=%s))' % productId)
-						productState = productStateSearch.getObject()
+					if productId in cns:
+						productState = Object("cn=%s,cn=%s,%s"  % (productId, objectId, self._productStatesContainerDn))
+						productState.readFromDirectory(self._ldap)
 						state['actionRequest'] = productState.getAttribute('opsiProductActionRequestForced', 'undefined')
 						state['installationStatus'] = productState.getAttribute('opsiProductInstallationStatus', 'undefined')
 						state['productVersion'] = productState.getAttribute('opsiProductVersion', '')
 						state['packageVersion'] = productState.getAttribute('opsiPackageVersion', '')
 						state['lastStateChange'] = productState.getAttribute('lastStateChange', '')
 						state['deploymentTimestamp'] = productState.getAttribute('opsiProductDeploymentTimestamp', '')
-					except BackendMissingDataError, e:
-						pass
 					result[objectId].append( state )
 		return result
 		
-	def getNetBootProductStates_hash(self, objectIds = []): # OK
+	def getNetBootProductStates_hash(self, objectIds = []):
 		return self._getProductStates_hash(objectIds, 'netboot')
 		
-	def getLocalBootProductStates_hash(self, objectIds = []): # OK
+	def getLocalBootProductStates_hash(self, objectIds = []):
 		return self._getProductStates_hash(objectIds, 'localboot')
 		
-	def getProductStates_hash(self, objectIds = []): # OK
+	def getProductStates_hash(self, objectIds = []):
 		return self._getProductStates_hash(objectIds)
 	
-	def getProductPropertyDefinitions_hash(self, depotId=None): # OK
+	def getProductPropertyDefinitions_hash(self, depotId=None):
 		if not depotId:
 			depotId = self.getDepotId()
 		depotId = depotId.lower()
@@ -1628,7 +1752,7 @@ class LDAPBackend(DataBackend):
 		
 		return definitions
 	
-	def getProductPropertyDefinitions_listOfHashes(self, productId, depotId=None): # OK
+	def getProductPropertyDefinitions_listOfHashes(self, productId, depotId=None):
 		productId = productId.lower()
 		if not depotId:
 			depotId = self.getDepotId()
@@ -1636,15 +1760,13 @@ class LDAPBackend(DataBackend):
 		
 		definitions = []
 		
+		product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+		if not product.exists(self._ldap):
+			raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
+		
 		# Search product property definition
 		search = None
 		try:
-			productSearch = ObjectSearch(
-					self._ldap,
-					"cn=%s,%s" % (depotId, self._productsContainerDn),
-					filter='(&(objectClass=opsiProduct)(cn=%s))' % productId )
-			product = productSearch.getObject()
-			
 			search = ObjectSearch(	self._ldap, 
 						"cn=productPropertyDefinitions,%s" % product.getDn(),
 						filter='(objectClass=opsiProductPropertyDefinition)')
@@ -1660,7 +1782,7 @@ class LDAPBackend(DataBackend):
 					"description":	
 						propertyDefinition.getAttribute("description", ""),
 					"default":	
-						propertyDefinition.getAttribute("opsiProductPropertyDefaultValue", None),
+						propertyDefinition.getAttribute("opsiProductPropertyDefaultValue", ""),
 					"values":
 						propertyDefinition.getAttribute("opsiProductPropertyPossibleValue", [], valuesAsList=True),
 				}
@@ -1668,7 +1790,7 @@ class LDAPBackend(DataBackend):
 		
 		return definitions
 	
-	def deleteProductPropertyDefinition(self, productId, name, depotIds=[]): # OK
+	def deleteProductPropertyDefinition(self, productId, name, depotIds=[]):
 		productId = productId.lower()
 		name = name.lower()
 		
@@ -1678,15 +1800,12 @@ class LDAPBackend(DataBackend):
 		for depotId in depotIds:
 			depotId = depotId.lower()
 			
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
 			# Search product property object
 			search = None
 			try:
-				productSearch = ObjectSearch(
-					self._ldap,
-					"cn=%s,%s" % (depotId, self._productsContainerDn),
-					filter='(&(objectClass=opsiProduct)(cn=%s))' % productId )
-				product = productSearch.getObject()
-				
 				search = ObjectSearch(	self._ldap, 
 							"cn=productPropertyDefinitions,%s" % product.getDn(),
 							filter='(&(objectClass=opsiProductPropertyDefinition)(cn=%s))' % name)
@@ -1701,7 +1820,7 @@ class LDAPBackend(DataBackend):
 			self.deleteChildlessObject("cn=productPropertyDefinitions,cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn))
 		
 	
-	def deleteProductPropertyDefinitions(self, productId, depotIds=[]): # OK
+	def deleteProductPropertyDefinitions(self, productId, depotIds=[]):
 		
 		productId = productId.lower()
 		if not depotIds:
@@ -1709,13 +1828,10 @@ class LDAPBackend(DataBackend):
 		
 		for depotId in depotIds:
 			depotId = depotId.lower()
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
 			try:
-				productSearch = ObjectSearch(
-						self._ldap,
-						"cn=%s,%s" % (depotId, self._productsContainerDn),
-						filter='(&(objectClass=opsiProduct)(cn=%s))' % productId )
-				product = productSearch.getObject()
-				
 				container = Object("cn=productPropertyDefinitions,%s" % product.getDn())
 				if container.exists(self._ldap):
 					container.deleteFromDirectory(self._ldap, recursive = True)
@@ -1723,7 +1839,7 @@ class LDAPBackend(DataBackend):
 			except BackendMissingDataError, e:
 				continue
 		
-	def createProductPropertyDefinition(self, productId, name, description=None, defaultValue=None, possibleValues=[], depotIds=[]): # OK
+	def createProductPropertyDefinition(self, productId, name, description=None, defaultValue=None, possibleValues=[], depotIds=[]):
 		productId = productId.lower()
 		name = name.lower()
 		if not depotIds:
@@ -1732,14 +1848,8 @@ class LDAPBackend(DataBackend):
 		for depotId in depotIds:
 			depotId = depotId.lower()
 			
-			# Search product object
-			search = None
-			try:
-				search = ObjectSearch(	self._ldap,
-							'cn=%s,%s' % (depotId, self._productsContainerDn),
-							filter='(&(objectClass=opsiProduct)(cn=%s))' % productId)
-				product = search.getObject()
-			except BackendMissingDataError:
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
 				logger.warning("Failed to create productPropertyDefinition '%s': product '%s' not found on depot '%s'" \
 							% (name, productId, depotId))
 				continue
@@ -1767,7 +1877,7 @@ class LDAPBackend(DataBackend):
 			
 			propertyDefinition.writeToDirectory(self._ldap)
 		
-	def getProductProperties_hash(self, productId, objectId = None): # OK
+	def getProductProperties_hash(self, productId, objectId = None):
 		productId = productId.lower()
 		
 		if not objectId:
@@ -1786,13 +1896,16 @@ class LDAPBackend(DataBackend):
 		
 		productProperty = Object("cn=%s,cn=%s,%s" % (productId, objectId, self._productPropertiesContainerDn))
 		if productProperty.exists(self._ldap):
+			productProperty.readFromDirectory(self._ldap)
 			for (key, value) in productProperty.getAttributeDict(unpackOpsiKeyValuePairs=True).items():
+				if (value == None):
+					value = ""
 				if key.lower() in properties.keys():
 					properties[key.lower()] = value
 		return properties
 	
 	
-	def setProductProperties(self, productId, properties, objectId = None): # OK
+	def setProductProperties(self, productId, properties, objectId = None):
 		productId = productId.lower()
 		
 		props = {}
@@ -1818,15 +1931,29 @@ class LDAPBackend(DataBackend):
 							possibleValues =	propDefs[i].get('values'),
 							depotIds =		[ objectId ])
 		else:
+			depotId = self.getDepotId(objectId)
+			
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
+			
+			for prop in self.getProductPropertyDefinitions_listOfHashes(productId, depotId):
+				if properties.has_key(prop['name'].lower()) and (properties[prop['name'].lower()] == prop.get('default')):
+					del properties[prop['name'].lower()]
+			
+			self.createOrganizationalRole("cn=%s,%s" % (objectId, self._productPropertiesContainerDn))
+			
 			productProperty = Object("cn=%s,cn=%s,%s" % (productId, objectId, self._productPropertiesContainerDn))
 			if productProperty.exists(self._ldap):
 				productProperty.deleteFromDirectory(self._ldap)
-			productProperty.new('opsiProductProperty')
-			for (key, value) in properties.items():
-				productProperty.addAttributeValue('opsiKeyValuePair', '%s=%s' % (key, value))
-			productProperty.writeToDirectory(self._ldap)
+			if properties:
+				productProperty.new('opsiProductProperty')
+				productProperty.setAttribute('opsiProductReference', product.getDn())
+				for (key, value) in properties.items():
+					productProperty.addAttributeValue('opsiKeyValuePair', '%s=%s' % (key, value))
+				productProperty.writeToDirectory(self._ldap)
 		
-	def deleteProductProperty(self, productId, property, objectId = None): # OK
+	def deleteProductProperty(self, productId, property, objectId = None):
 		productId = productId.lower()
 		property = property.lower()
 		if not objectId:
@@ -1852,7 +1979,7 @@ class LDAPBackend(DataBackend):
 			productProperty.setAttribute('opsiKeyValuePairs', newOpsiKeyValuePairs)
 			productProperty.writeToDirectory(self._ldap)
 	
-	def deleteProductProperties(self, productId, objectId = None): # OK
+	def deleteProductProperties(self, productId, objectId = None):
 		productId = productId.lower()
 		if not objectId:
 			objectId = self.getDepotId()
@@ -1860,26 +1987,22 @@ class LDAPBackend(DataBackend):
 		
 		clientIds = [ objectId ]
 		if objectId in self.getDepotIds_list():
-			try:
-				productSearch = ObjectSearch(
-						self._ldap,
-						"cn=%s,%s" % (depotId, self._productsContainerDn),
-						filter='(&(objectClass=opsiProduct)(cn=%s))' % productId )
-				product = productSearch.getObject()
-				
-				container = Object("cn=productPropertyDefinitions,%s" % product.getDn())
-				if container.exists(self._ldap):
-					container.deleteFromDirectory(self._ldap, recursive = True)
-				clientIds = self.getClientIds_list(None, objectId)
-			except BackendMissingDataError, e:
-				pass
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if product.exists(self._ldap):
+				try:
+					container = Object("cn=productPropertyDefinitions,%s" % product.getDn())
+					if container.exists(self._ldap):
+						container.deleteFromDirectory(self._ldap, recursive = True)
+					clientIds = self.getClientIds_list(None, objectId)
+				except BackendMissingDataError, e:
+					pass
 		
 		for clientId in clientIds:
 			productProperty = Object("cn=%s,cn=%s,%s" % (productId, objectId, self._productPropertiesContainerDn))
 			if productProperty.exists(self._ldap):
 				productProperty.deleteFromDirectory(self._ldap)
 		
-	def getProductDependencies_listOfHashes(self, productId = None, depotId=None): # OK
+	def getProductDependencies_listOfHashes(self, productId = None, depotId=None):
 		if productId:
 			productId = productId.lower()
 		
@@ -1961,7 +2084,7 @@ class LDAPBackend(DataBackend):
 		# Return all dependencies as a list of hashes (dicts)
 		return dependencyList
 	
-	def createProductDependency(self, productId, action, requiredProductId="", requiredProductClassId="", requiredAction="", requiredInstallationStatus="", requirementType="", depotIds=[]): # OK
+	def createProductDependency(self, productId, action, requiredProductId="", requiredProductClassId="", requiredAction="", requiredInstallationStatus="", requirementType="", depotIds=[]):
 		
 		productId = productId.lower()
 		requiredProductId = requiredProductId.lower()
@@ -1975,11 +2098,9 @@ class LDAPBackend(DataBackend):
 			raise BackendBadValueError(e)
 		
 		for depotId in depotIds:
-			productSearch = ObjectSearch(
-					self._ldap,
-					"cn=%s,%s" % (depotId, self._productsContainerDn),
-					filter='(&(objectClass=opsiProduct)(cn=%s))' % productId )
-			product = productSearch.getObject()
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
 			
 			requiredProduct = None
 			requiredProductClass = None
@@ -1989,21 +2110,24 @@ class LDAPBackend(DataBackend):
 			
 			if pd.requiredProductId:
 				containerDn = "cn=productDependencies,%s" % product.getDn()
-				dn = "cn=%s,%s" % (pd.requiredProductId, self._productsContainerDn)
+				dn = "cn=%s,cn=%s,%s" % (pd.requiredProductId, depotId, self._productsContainerDn)
 				#requiredProduct.readFromDirectory(self._ldap, 'dn') # Test if exists
-				cn = requiredProduct.getCn()
 				requiredProduct = Object( dn )
+				cn = requiredProduct.getCn()
 			else:
 				containerDn = "cn=productClassDependencies,%s" % product.getDn()
 				dn = "cn=%s,%s" % (pd.requiredProductClassId, self._productsContainerDn)
 				requiredProductClass = Object( dn )
 				#requiredProductClass.readFromDirectory(self._ldap, 'dn') # Test if exists
+				requiredProductClass = Object( dn )
 				cn = requiredProductClass.getCn()
 			
 			self.createOrganizationalRole(containerDn)
+			containerDn = "cn=%s,%s" % (action, containerDn)
+			self.createOrganizationalRole(containerDn)
 			
 			# Dependency object
-			productDependency = Object("cn=%s,cn=%s,%s" % (cn, action, containerDn))
+			productDependency = Object("cn=%s,%s" % (cn, containerDn))
 			if productDependency.exists(self._ldap):
 				productDependency.deleteFromDirectory(self._ldap)
 			
@@ -2031,7 +2155,7 @@ class LDAPBackend(DataBackend):
 			# Write dependency to ldap
 			productDependency.writeToDirectory(self._ldap)
 	
-	def deleteProductDependency(self, productId, action="", requiredProductId="", requiredProductClassId="", requirementType="", depotIds=[]): # OK
+	def deleteProductDependency(self, productId, action="", requiredProductId="", requiredProductClassId="", requirementType="", depotIds=[]):
 		productId = productId.lower()
 		requiredProductId = requiredProductId.lower()
 		
@@ -2046,11 +2170,9 @@ class LDAPBackend(DataBackend):
 			depotIds = self.getDepotIds_list()
 		
 		for depotId in depotIds:
-			productSearch = ObjectSearch(
-					self._ldap,
-					"cn=%s,%s" % (depotId, self._productsContainerDn),
-					filter='(&(objectClass=opsiProduct)(cn=%s))' % productId )
-			product = productSearch.getObject()
+			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			if not product.exists(self._ldap):
+				raise BackendMissingDataError("Product '%s' does not exists on depot '%s'" % (productId, depotId))
 			
 			# Search dependency objects
 			productDependencies = []
@@ -2233,10 +2355,10 @@ class LDAPBackend(DataBackend):
 		''' This method will add a oprganizational role object
 		    with the specified DN, if it does not already exist. '''
 		organizationalRole = Object(dn)
-		logger.info("Trying to create organizational role '%s'" % dn)
 		if organizationalRole.exists(self._ldap):
 			logger.info("Organizational role '%s' already exists" % dn)
 		else:
+			logger.info("Creating organizational role '%s'" % dn)
 			organizationalRole.new('organizationalRole')
 			organizationalRole.writeToDirectory(self._ldap)
 		logger.info("Organizational role '%s' created" % dn)
@@ -2312,9 +2434,11 @@ class LDAPObject:
 	
 	def exists(self, ldapSession):
 		try:
-			objectSearch = ObjectSearch(ldapSession, self._dn)
-		except:
+			objectSearch = ObjectSearch(ldapSession, self._dn, scope=ldap.SCOPE_BASE)
+		except BackendMissingDataError:
+			logger.debug("exists(): object '%s' does not exist" % self._dn)
 			return False
+		logger.debug("exists(): object '%s' does exist" % self._dn)
 		return True
 	
 	def getContainer(self):
@@ -2494,20 +2618,17 @@ class LDAPObjectSearch:
 		# Storage for matching DNs
 		self._dns = []
 		self._ldap = ldapSession
+		
+		# Execute search
 		try:
-			# Execute search
 			result = self._ldap.search( 	baseDn = baseDn, 
 							scope = scope, 
 							filter = filter, 
 							attributes = ['dn'] )
-		except ldap.LDAPError, e:
-			# Failed
+		except Exception, e:
+			logger.debug("LDAPObjectSearch search error: %s" % e)
 			raise
 		
-		#if (result == []):
-		#	# Nothing found
-		#	raise BackendMissingDataError("Cannot find Object in baseDn '%s' matching filter '%s'" 
-		#					% (baseDn, filter))
 		for r in result:
 			logger.debug( "Found dn: %s" % r[0] )
 			self._dns.append(r[0])
@@ -2619,12 +2740,14 @@ class LDAPSession:
 					% (baseDn, scope, filter, attributes) )
 		try:
 			result = self._ldap.search_s(baseDn, scope, filter, attributes)
-		except ldap.LDAPError, e:
-			if (e.__class__ == ldap.FILTER_ERROR):
-				# Bad search filter
-				logger.critical("Bad search filter: '%s' " % e)
+		except Exception, e:
+			logger.debug("LDAP search error %s: %s" % (e.__class__, e))
+			if (e.__class__ == ldap.NO_SUCH_OBJECT):
+				raise BackendMissingDataError("No results for search in baseDn: '%s', filter: '%s', scope: %s" \
+					% (baseDn, filter, scope) )
 			
-			raise BackendMissingDataError("Error searching in baseDn '%s', filter '%s', scope %s : %s" \
+			logger.critical("LDAP search error %s: %s" % (e.__class__, e))
+			raise BackendIOError("Error searching in baseDn '%s', filter '%s', scope %s : %s" \
 					% (baseDn, filter, scope, e) )
 		if (result == []):
 			raise BackendMissingDataError("No results for search in baseDn: '%s', filter: '%s', scope: %s" \
@@ -2683,47 +2806,525 @@ ObjectSearch = LDAPObjectSearch
 Session = LDAPSession
 
 if (__name__ == "__main__"):
-	defaultDomain = "uib.local"
+	
+	print "This test will destroy your ldap tree!"
+	print "Do you want to continue (NO/yes): ",
+	if (sys.stdin.readline().strip() != 'yes'):
+		sys.exit(0)
+	print ""
+	
+	serverId = socket.getfqdn()
+	serverName = serverId.split('.')[0]
+	defaultDomain = '.'.join( serverId.split('.')[1:] )
 	be = LDAPBackend(
 			username = 'cn=admin,dc=uib,dc=local',
 			password = 'linux123',
 			address = '127.0.0.1',
 			args = { "defaultDomain": defaultDomain }
 	)
+	
+	print "Deleting base"
+	be.deleteOpsiBase()
+	
 	print "Creating base"
 	be.createOpsiBase()
+	
 	print "Creating server"
-	hostId = be.createServer( serverName = "test-server", domain = defaultDomain, description = "Test Config Server", notes = "Note 1\nNote 2\n" )
-	print "Creating depot"
-	hostId = be.createDepot( depotName = "test-server", domain = defaultDomain, depotLocalUrl = 'file:///opt/pcbin/install', depotRemoteUrl = "smb://test-server/opt_pcbin/install", repositoryLocalUrl="file:///var/lib/opsi/products", repositoryRemoteUrl="webdavs://%s:4447/products" % hostId, network = "192.168.1.0/24", maxBandwidth=10000)
+	hostId = be.createServer( serverName = serverName, domain = defaultDomain, description = "Test Config Server", notes = "Note 1\nNote 2\n" )
+	serverKey = '00000000001111111111222222222233'
+	be.setOpsiHostKey(hostId, serverKey)
+	be.setPcpatchPassword(hostId, Tools.blowfishEncrypt(serverKey, 'pcpatch'))
+	
+	print "Creating depots"
+	be.createDepot( depotName = serverName, domain = defaultDomain, depotLocalUrl = 'file:///opt/pcbin/install', depotRemoteUrl = "smb://%s/opt_pcbin/install" % serverName, repositoryLocalUrl="file:///var/lib/opsi/products", repositoryRemoteUrl="webdavs://%s:4447/products" % serverId, network = "192.168.1.0/24", maxBandwidth=10000)
+	be.createDepot( depotName = "test-depot", domain = defaultDomain, depotLocalUrl = 'file:///opt/pcbin/install', depotRemoteUrl = "smb://test-depot/opt_pcbin/install", repositoryLocalUrl="file:///var/lib/opsi/products", repositoryRemoteUrl="webdavs://test-depot.%s:4447/products" % defaultDomain, network = "192.168.2.0/24", maxBandwidth=0)
+	
 	print "Getting servers"
-	print "  =>>>", be.getServerIds_list()
+	serverIds = be.getServerIds_list()
+	print "  =>>>", serverIds
+	assert len(serverIds) == 1
+	assert serverId in serverIds
+	
 	print "Getting depots"
-	print "  =>>>", be.getDepotIds_list()
-	print "Getting depot info for %s" % hostId
-	print "  =>>>", be.getDepot_hash( depotId = hostId )
-	print "Creating client"
-	hostId = be.createClient( clientName = "test-client", domain = defaultDomain, description = "Test Client", notes = "Note 1\nNote 2\n", ipAddress = "192.168.1.100", hardwareAddress = "00:00:01:02:03:04" )
-	print "Getting host info for %s" % hostId
-	print "  =>>>", be.getHost_hash( hostId = hostId )
-	print "Getting generalconfig for %s" % defaultDomain
-	print "  =>>>", be.getGeneralConfig_hash(objectId = defaultDomain)
+	depotIds = be.getDepotIds_list()
+	print "  =>>>", depotIds
+	assert len(depotIds) == 2
+	assert serverId in depotIds
+	assert 'test-depot.%s' % defaultDomain in depotIds
+	
+	for depotId in depotIds:
+		print "Getting depot info for %s" % depotId
+		print "  =>>>", be.getDepot_hash( depotId = depotId )
+	
+	print "Creating clients"
+	be.createClient( clientName = "test-client1", domain = defaultDomain, description = "Test Client 1", notes = "Note 1\nNote 2\n", ipAddress = "192.168.1.101", hardwareAddress = "01:00:00:00:00:01" )
+	be.createClient( clientName = "test-client2", domain = defaultDomain, description = "Test Client 2", notes = "Note 1\nNote 2\n", ipAddress = "192.168.1.102", hardwareAddress = "02:00:00:00:00:02" )
+	be.createClient( clientName = "test-client3", domain = defaultDomain, description = "Test Client 3", notes = "Note 1\nNote 2\n", ipAddress = "192.168.1.103", hardwareAddress = "03:00:00:00:00:03" )
+	be.createClient( clientName = "test-client4", domain = defaultDomain, description = "Test Client 4", notes = "Note 1\nNote 2\n", ipAddress = "192.168.1.104", hardwareAddress = "04:00:00:00:00:04" )
+	
+	print "Deleting client 'test-client4.%s'" % defaultDomain
+	be.deleteClient('test-client4.%s' % defaultDomain)
+	
+	print "Getting clients"
+	clientIds = be.getClientIds_list()
+	print "  =>>>", clientIds
+	assert len(clientIds) == 3
+	assert 'test-client1.%s' % defaultDomain in clientIds
+	assert 'test-client2.%s' % defaultDomain in clientIds
+	assert 'test-client3.%s' % defaultDomain in clientIds
+	
+	for clientId in clientIds:
+		print "Getting host info for %s" % clientId
+		print "  =>>>", be.getHost_hash( hostId = clientId )
+	
+	lastseen = '20080808010101'
+	description = 'A test description'
+	notes = ' Some \n notes! ! ! '
+	
+	print "Setting lastseen to '%s' for client '%s'" % (lastseen, clientId)
+	be.setHostLastSeen(clientId, lastseen)
+	
+	print "Setting description to '%s' for client '%s'" % (description, clientId)
+	be.setHostDescription(clientId, description)
+	
+	print "Setting notes to '%s' for client '%s'" % (notes, clientId)
+	be.setHostNotes(clientId, notes)
+	
+	print "Getting host info for %s" % clientId
+	info = be.getHost_hash( hostId = clientId )
+	print "  =>>>", info
+	assert info['lastSeen'] == lastseen
+	assert info['description'] == description
+	assert info['notes'] == notes
+	
+	
+	# opsi host keys / passwords
+	opsiHostKey = '01234567890123456789012345678901'
+	print "Setting opsi host key for client '%s' to '%s'" % (clientId, opsiHostKey)
+	be.setOpsiHostKey(clientId, opsiHostKey)
+	print "Getting opsi host key for client '%s'" % clientId
+	hk = be.getOpsiHostKey(clientId)
+	assert hk == opsiHostKey
+	print "Deleting opsi host key for client '%s'" % clientId
+	be.deleteOpsiHostKey(clientId)
+	print "Getting opsi host key for client '%s'" % clientId
+	hk = be.getOpsiHostKey(clientId)
+	assert hk == ''
+	print "Setting opsi host key for client '%s' to '%s'" % (clientId, opsiHostKey)
+	be.setOpsiHostKey(clientId, opsiHostKey)
+	
+	passwd = 'XXXXXXXXXXXXXXX'
+	print "Setting pcpatch password for client '%s' to '%s'" % (clientId, passwd)
+	be.setPcpatchPassword(clientId, passwd)
+	print "Getting pcpatch password of client '%s'" % clientId
+	p = be.getPcpatchPassword(clientId)
+	print "  =>>>", p
+	assert p == passwd
+	
+	# GeneralConfig
 	print "Deleting generalconfig for %s" % defaultDomain
 	be.deleteGeneralConfig(objectId = defaultDomain)
-	print "Setting generalconfig for %s" % defaultDomain
-	be.setGeneralConfig( config = { "test1": "test1", "test2": ["test2"] } , objectId = defaultDomain)
+	
 	print "Getting generalconfig for %s" % defaultDomain
-	print "  =>>>", be.getGeneralConfig_hash(objectId = defaultDomain)
-	print "Setting generalconfig for %s" % hostId
-	be.setGeneralConfig( config = { "test1": "test1", "test2": hostId } , objectId = hostId)
-	print "Getting generalconfig for %s" % hostId
-	print "  =>>>", be.getGeneralConfig_hash(objectId = hostId)
-	be.setGeneralConfig( config = { "test1": "test1", "test2": ["test2"] } , objectId = hostId)
-	print "Getting generalconfig for %s" % hostId
-	print "  =>>>", be.getGeneralConfig_hash(objectId = hostId)
+	config = be.getGeneralConfig_hash(objectId = defaultDomain)
+	print "  =>>>", config
+	assert config == {}
 	
+	generalConfig = { "var1": "test1", "var2": "test2" }
+	print "Setting generalconfig for %s to %s" % (defaultDomain, generalConfig)
+	be.setGeneralConfig( config = generalConfig, objectId = defaultDomain)
 	
+	print "Getting generalconfig for %s" % defaultDomain
+	config = be.getGeneralConfig_hash(objectId = defaultDomain)
+	print "  =>>>", config
+	assert config == generalConfig
 	
+	clientGeneralConfig = { "var1": "test1", "var2": "test xxxxxxxxxxxxxxxx" }
+	print "Setting generalconfig for %s to %s" % (clientId, clientGeneralConfig)
+	be.setGeneralConfig( config = clientGeneralConfig , objectId = clientId)
+	
+	print "Getting generalconfig for %s" % clientId
+	config = be.getGeneralConfig_hash(objectId = clientId)
+	print "  =>>>", config
+	assert config == clientGeneralConfig
+	
+	print "Deleting generalconfig for %s" % clientId
+	be.deleteGeneralConfig(objectId = clientId)
+	
+	print "Getting generalconfig for %s" % clientId
+	config = be.getGeneralConfig_hash(objectId = clientId)
+	print "  =>>>", config
+	assert config == generalConfig
+	
+	# NetworkConfig
+	print "Deleting networkconfig for %s" % defaultDomain
+	be.deleteNetworkConfig(objectId = defaultDomain)
+	
+	print "Getting networkconfig for %s" % defaultDomain
+	config = be.getNetworkConfig_hash(objectId = defaultDomain)
+	print "  =>>>", config
+	
+	networkConfig = {
+		'depotDrive': 'O:',
+		'utilsDrive': 'U:',
+		'configDrive': 'X:',
+		'winDomain': 'OPSIWG',
+		'nextBootServiceURL': 'https://%s:4447' % serverId,
+		'nextBootServerType': 'service',
+		'depotId': serverId
+	}
+	
+	print "Setting networkConfig to %s" % networkConfig
+	be.setNetworkConfig( config = networkConfig)
+	
+	print "Getting networkConfig"
+	config = be.getNetworkConfig_hash()
+	print "  =>>>", config
+	assert config['depotDrive'] == networkConfig['depotDrive']
+	assert config['utilsDrive'] == networkConfig['utilsDrive']
+	assert config['configDrive'] == networkConfig['configDrive']
+	assert config['winDomain'] == networkConfig['winDomain']
+	assert config['nextBootServiceURL'] == networkConfig['nextBootServiceURL']
+	assert config['depotId'] == networkConfig['depotId']
+	
+	clientNetworkConfig = {
+		'depotDrive': 'T:',
+		'utilsDrive': 'T:',
+		'configDrive': 'T:',
+		'winDomain': 'DIFFERS',
+		'nextBootServiceURL': 'https://%s:4447' % serverId,
+		'nextBootServerType': 'service',
+		'depotId': depotId
+	}
+	print "Setting networkConfig for %s to %s" % (clientId, clientNetworkConfig)
+	be.setNetworkConfig( config = clientNetworkConfig , objectId = clientId)
+	
+	print "Getting networkConfig for %s" % clientId
+	config = be.getNetworkConfig_hash(objectId = clientId)
+	print "  =>>>", config
+	assert config['depotDrive'] == clientNetworkConfig['depotDrive']
+	assert config['utilsDrive'] == clientNetworkConfig['utilsDrive']
+	assert config['configDrive'] == clientNetworkConfig['configDrive']
+	assert config['winDomain'] == clientNetworkConfig['winDomain']
+	assert config['nextBootServiceURL'] == clientNetworkConfig['nextBootServiceURL']
+	assert config['depotId'] == clientNetworkConfig['depotId']
+	
+	print "Deleting networkConfig for %s" % clientId
+	be.deleteNetworkConfig(objectId = clientId)
+	
+	print "Getting networkConfig for %s" % clientId
+	config = be.getNetworkConfig_hash(objectId = clientId)
+	print "  =>>>", config
+	assert config['depotDrive'] == networkConfig['depotDrive']
+	assert config['utilsDrive'] == networkConfig['utilsDrive']
+	assert config['configDrive'] == networkConfig['configDrive']
+	assert config['winDomain'] == networkConfig['winDomain']
+	assert config['nextBootServiceURL'] == networkConfig['nextBootServiceURL']
+	assert config['depotId'] == networkConfig['depotId']
+	
+	print "Setting networkConfig for %s to %s" % (clientId, clientNetworkConfig)
+	be.setNetworkConfig( config = clientNetworkConfig , objectId = clientId)
+	
+	# Products
+	print "Creating products"
+	
+	localBootProduct = Product(
+			productType		= 'localboot',
+			productId		= 'lb',
+			name			= 'Localboot product',
+			productVersion		= '2.0',
+			packageVersion		= '2',
+			licenseRequired		= '0',
+			setupScript		= 'setup.ins',
+			uninstallScript		= 'uninstall.ins',
+			updateScript		= 'update.ins',
+			alwaysScript		= 'always.ins',
+			onceScript		= 'once.ins',
+			priority		= -10,
+			description		= 'a test localboot product',
+			advice			= 'Advice for lb',
+			productClassNames	= ['localboot', 'test-products'],
+			pxeConfigTemplate	= None )
+	
+	be.createProduct(
+			productType 		= localBootProduct.productType,
+			productId		= localBootProduct.productId,
+			name			= localBootProduct.name	,
+			productVersion		= localBootProduct.productVersion,
+			packageVersion		= localBootProduct.packageVersion,
+			licenseRequired		= localBootProduct.licenseRequired,
+			setupScript		= localBootProduct.setupScript,
+			uninstallScript		= localBootProduct.uninstallScript,
+			updateScript		= localBootProduct.updateScript,
+			alwaysScript		= localBootProduct.alwaysScript,
+			onceScript		= localBootProduct.onceScript,
+			priority		= localBootProduct.priority,
+			description		= localBootProduct.description,
+			advice			= localBootProduct.advice,
+			productClassNames	= localBootProduct.productClassNames,
+			pxeConfigTemplate	= localBootProduct.pxeConfigTemplate,
+			depotIds		= []
+	)
+	
+	localBootProduct2 = Product(
+			productType		= 'localboot',
+			productId		= 'lb2',
+			name			= 'Localboot product 2',
+			productVersion		= '1.0',
+			packageVersion		= '12',
+			licenseRequired		= '1',
+			setupScript		= 'setup.ins',
+			uninstallScript		= 'uninstall.ins',
+			updateScript		= 'update.ins',
+			alwaysScript		= 'always.ins',
+			onceScript		= 'once.ins',
+			priority		= 0,
+			description		= 'second localboot product',
+			advice			= 'Advice for lb2',
+			productClassNames	= ['localboot', 'test-products', 'lb2'],
+			pxeConfigTemplate	= None )
+	
+	be.createProduct(
+			productType 		= localBootProduct2.productType,
+			productId		= localBootProduct2.productId,
+			name			= localBootProduct2.name	,
+			productVersion		= localBootProduct2.productVersion,
+			packageVersion		= localBootProduct2.packageVersion,
+			licenseRequired		= localBootProduct2.licenseRequired,
+			setupScript		= localBootProduct2.setupScript,
+			uninstallScript		= localBootProduct2.uninstallScript,
+			updateScript		= localBootProduct2.updateScript,
+			alwaysScript		= localBootProduct2.alwaysScript,
+			onceScript		= localBootProduct2.onceScript,
+			priority		= localBootProduct2.priority,
+			description		= localBootProduct2.description,
+			advice			= localBootProduct2.advice,
+			productClassNames	= localBootProduct2.productClassNames,
+			pxeConfigTemplate	= localBootProduct2.pxeConfigTemplate,
+			depotIds		= [ depotId ]
+	)
+	
+	netBootProduct = Product(
+			productType		= 'netboot',
+			productId		= 'nb',
+			name			= 'Netboot product',
+			productVersion		= '1.1',
+			packageVersion		= '4',
+			licenseRequired		= '1',
+			setupScript		= 'setup.py',
+			uninstallScript		= '',
+			updateScript		= '',
+			alwaysScript		= '',
+			onceScript		= '',
+			priority		= 10,
+			description		= 'a test netboot product',
+			advice			= 'Advice for nb',
+			productClassNames	= ['netboot', 'test-products'],
+			pxeConfigTemplate	= 'nb_pxe_template' )
+	
+	be.createProduct(
+			productType 		= netBootProduct.productType,
+			productId		= netBootProduct.productId,
+			name			= netBootProduct.name	,
+			productVersion		= netBootProduct.productVersion,
+			packageVersion		= netBootProduct.packageVersion,
+			licenseRequired		= netBootProduct.licenseRequired,
+			setupScript		= netBootProduct.setupScript,
+			uninstallScript		= netBootProduct.uninstallScript,
+			updateScript		= netBootProduct.updateScript,
+			alwaysScript		= netBootProduct.alwaysScript,
+			onceScript		= netBootProduct.onceScript,
+			priority		= netBootProduct.priority,
+			description		= netBootProduct.description,
+			advice			= netBootProduct.advice,
+			productClassNames	= netBootProduct.productClassNames,
+			pxeConfigTemplate	= netBootProduct.pxeConfigTemplate,
+			depotIds		= []
+	)
+	
+	print "Getting product-ids for %s" % serverId
+	productIds = be.getProductIds_list(productType=None, objectId=serverId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId not in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Getting localboot product-ids for %s" % serverId
+	productIds = be.getProductIds_list(productType='localboot', objectId=serverId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId not in productIds
+	assert netBootProduct.productId not in productIds
+	
+	print "Getting netboot product-ids for %s" % serverId
+	productIds = be.getProductIds_list(productType='netboot', objectId=serverId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId not in productIds
+	assert localBootProduct2.productId not in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Getting product-ids for %s" % depotId
+	productIds = be.getProductIds_list(productType=None, objectId=depotId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Locking product 'nb' on all depots"
+	be.lockProduct(productId='nb')
+	
+	print "Getting product locks"
+	locks = be.getProductLocks_hash()
+	print "  =>>>", locks
+	
+	print "Unlocking product 'nb' on depot %s" % serverId
+	be.unlockProduct(productId='nb', depotIds = [ serverId ])
+	
+	print "Getting product locks"
+	locks = be.getProductLocks_hash()
+	print "  =>>>", locks
+	
+	print "Unlocking product 'nb' on all depots"
+	be.unlockProduct(productId='nb')
+	
+	print "Getting product locks"
+	locks = be.getProductLocks_hash()
+	print "  =>>>", locks
+	
+	print "Getting product-ids for %s" % clientId
+	productIds = be.getProductIds_list(productType=None, objectId=clientId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Getting localboot product-ids for %s" % clientId
+	productIds = be.getProductIds_list(productType='localboot', objectId=clientId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId in productIds
+	assert netBootProduct.productId not in productIds
+	
+	print "Getting netboot product-ids for %s" % clientId
+	productIds = be.getProductIds_list(productType='netboot', objectId=clientId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId not in productIds
+	assert localBootProduct2.productId not in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Setting product installation status for client %s" % clientId
+	be.setProductInstallationStatus('lb', clientId, 'installed')
+	be.setProductInstallationStatus('nb', clientId, 'installed')
+	
+	print "Getting localboot product-ids for %s" % clientId
+	productIds = be.getProductIds_list(productType='localboot', objectId=clientId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId in productIds
+	assert netBootProduct.productId not in productIds
+	
+	print "Getting netboot product-ids for %s" % clientId
+	productIds = be.getProductIds_list(productType='netboot', objectId=clientId, installationStatus=None)
+	print "  =>>>", productIds
+	assert localBootProduct.productId not in productIds
+	assert localBootProduct2.productId not in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Getting product-ids with status 'installed' for %s" % clientId
+	productIds = be.getProductIds_list(productType=None, objectId=clientId, installationStatus='installed')
+	print "  =>>>", productIds
+	assert localBootProduct.productId in productIds
+	assert localBootProduct2.productId not in productIds
+	assert netBootProduct.productId in productIds
+	
+	print "Getting product-ids with status 'not_installed' for %s" % clientId
+	productIds = be.getProductIds_list(productType=None, objectId=clientId, installationStatus='not_installed')
+	print "  =>>>", productIds
+	assert localBootProduct.productId not in productIds
+	assert localBootProduct2.productId in productIds
+	assert netBootProduct.productId not in productIds
+	
+	print "Getting product states hash for %s" % clientId
+	states = be.getProductStates_hash(objectIds = [ clientId ])
+	print "  =>>>", states
+	
+	# Groups
+	print "Creating groups"
+	be.createGroup('group 1', members = ['test-client1.%s' % defaultDomain, 'test-client2.%s' % defaultDomain ], description = "client 1 & 2")
+	be.createGroup('group 2', members = ['test-client2.%s' % defaultDomain, 'test-client3.%s' % defaultDomain ], description = "client 2 & 3")
+	
+	print "Getting groups"
+	groupIds = be.getGroupIds_list()
+	print "  =>>>", groupIds
+	assert len(groupIds) == 2
+	assert 'group 1' in groupIds
+	assert 'group 2' in groupIds
+	
+	print "Deleting group 1"
+	be.deleteGroup('group 1')
+	
+	print "Getting groups"
+	groupIds = be.getGroupIds_list()
+	print "  =>>>", groupIds
+	assert len(groupIds) == 1
+	assert 'group 2' in groupIds
+	
+	print "Getting members of group 2"
+	hostIds = be.getClientIds_list(serverId = None, depotId=None, groupId = 'group 2', productId = None, installationStatus = None, actionRequest = None, productVersion = None, packageVersion = None)
+	print "  =>>>", hostIds
+	assert len(hostIds) == 2
+	assert 'test-client2.%s' % defaultDomain in hostIds
+	assert 'test-client3.%s' % defaultDomain in hostIds
+	
+	sys.exit(0)
+	
+        #deleteServer(self, serverId):
+        #getClients_listOfHashes(self, serverId = None, depotId=None, groupId = None, productId = None, installationStatus = None, actionRequest = None, productVersion = None, packageVersion = None):
+        #getClientIds_list(self, serverId = None, depotId=None, groupId = None, productId = None, installationStatus = None, actionRequest = None, productVersion = None, packageVersion = None):
+        #getServerIds_list(self):
+        #getServerId(self, clientId=None):
+        #createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None, maxBandwidth=0):
+        #getDepotIds_list(self):
+        #getDepotId(self, clientId=None):
+        #getDepot_hash(self, depotId):
+        #deleteDepot(self, depotId):
+	 
+        #createProduct(self, productType, productId, name, productVersion, packageVersion, licenseRequired=0,
+        #deleteProduct(self, productId, depotIds=[]):
+        #getProduct_hash(self, productId, depotId=None):
+        #getProductIds_list(self, productType=None, objectId=None, installationStatus=None):
+        #getProductInstallationStatus_hash(self, productId, objectId):
+        #getProductInstallationStatus_listOfHashes(self, objectId):
+        #setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", licenseKey=""):
+        #setProductInstallationStatus(self, productId, objectId, installationStatus, policyId="", licenseKey=""):
+        #getPossibleProductActions_list(self, productId=None, depotId=None):
+        #getPossibleProductActions_hash(self, depotId=None):
+        #getProductActionRequests_listOfHashes(self, clientId):
+        #getDefaultNetBootProductId(self, clientId):
+        #setProductActionRequest(self, productId, clientId, actionRequest):
+        #unsetProductActionRequest(self, productId, clientId):
+        #_getProductStates_hash(self, objectIds = [], productType = None):
+        #getNetBootProductStates_hash(self, objectIds = []):
+        #getLocalBootProductStates_hash(self, objectIds = []):
+        #getProductStates_hash(self, objectIds = []):
+        #getProductPropertyDefinitions_hash(self, depotId=None):
+        #getProductPropertyDefinitions_listOfHashes(self, productId, depotId=None):
+        #deleteProductPropertyDefinition(self, productId, name, depotIds=[]):
+        #deleteProductPropertyDefinitions(self, productId, depotIds=[]):
+        #createProductPropertyDefinition(self, productId, name, description=None, defaultValue=None, possibleValues=[], depotIds=[]):
+        #getProductProperties_hash(self, productId, objectId = None):
+        #setProductProperties(self, productId, properties, objectId = None):
+        #deleteProductProperty(self, productId, property, objectId = None):
+        #deleteProductProperties(self, productId, objectId = None):
+        #getProductDependencies_listOfHashes(self, productId = None, depotId=None):
+        #createProductDependency(self, productId, action, requiredProductId="", requiredProductClassId="", requiredAction="", requiredInstallationStatus="", requirementType="", depotIds=[]):
+        #deleteProductDependency(self, productId, action="", requiredProductId="", requiredProductClassId="", requirementType="", depotIds=[]):
+        #createLicenseKey(self, productId, licenseKey):
+        #getLicenseKey(self, productId, clientId):
+        #getLicenseKeys_listOfHashes(self, productId):
+        #deleteLicenseKey(self, productId, licenseKey):
+        #getProductClassIds_list(self):
+
 	
 	
 	

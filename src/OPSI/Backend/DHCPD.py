@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.5.4.6'
+__version__ = '0.5.5'
 
 # Imports
 import re, socket, time
@@ -482,24 +482,34 @@ class Config(File):
 				parentBlock = block
 		
 		# Search the right group for the host
+		bestGroup = None
+		bestMatchCount = 0
 		for block in parentBlock.getBlocks('group'):
-			parametersMatch = True
+			matchCount = 0
 			blockParameters = block.getParameters_hash(inherit = 'global')
-			if not blockParameters:
-				# No parameters set, so why group the hosts?
-				parametersMatch = False
-			else:
+			if blockParameters:
 				# Block has parameters set, check if they match the hosts parameters
 				for (key, value) in blockParameters.items():
 					if not parameters.has_key(key):
 						continue
-						#parametersMatch = False
-						#break
 					if (parameters[key] == value):
-						del parameters[key]
-			if parametersMatch:
-				#logger.info("Found matching group.")
-				parentBlock = block
+						matchCount += 1
+					else:
+						matchCount -= 1
+			
+			if (matchCount > bestMatchCount) or (matchCount >= 0 and not bestGroup):
+				matchCount = bestMatchCount
+				bestGroup = block
+		
+		if bestGroup:
+			parentBlock = bestGroup
+		
+		# Remove parameters which are already defined in parents
+		blockParameters = parentBlock.getParameters_hash(inherit = 'global')
+		if blockParameters:
+			for (key, value) in blockParameters.items():
+				if parameters.has_key(key) and (parameters[key] == value):
+					del parameters[key]
 		
 		hostBlock = Block(	startLine = -1,
 					parentBlock = parentBlock,

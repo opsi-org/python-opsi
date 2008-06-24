@@ -849,6 +849,9 @@ class File31Backend(File, FileBackend):
 		if (serverId and serverId != self.getServerId()):
 			raise BackendMissingDataError("Can only access data on server: %s" % self.getServerId())
 		
+		if depotId:
+			depotId = depotId.lower()
+		
 		if productId:
 			productId = productId.lower()
 		
@@ -927,6 +930,7 @@ class File31Backend(File, FileBackend):
 			
 			logger.info("Filtering hostIds by productId: '%s', installationStatus: '%s', actionRequest: '%s', productVersion: '%s', packageVersion: '%s'" \
 				% (productId, installationStatus, actionRequest, productVersion, packageVersion))
+			
 			productStates = self.getProductStates_hash(hostIds)
 			for hostId in hostIds:
 				if productStates.has_key(hostId):
@@ -1101,7 +1105,7 @@ class File31Backend(File, FileBackend):
 	def deleteDepot(self, depotId):
 		depotId = self._preProcessHostId(depotId)
 		if not depotId in self.getDepotIds_list():
-			logger.error("Cannot delte depot '%s': does not exist" % depotId)
+			logger.error("Cannot delete depot '%s': does not exist" % depotId)
 			return
 		rmdir( os.path.join(self.__depotConfigDir, depotId), recursive=True )
 	
@@ -1268,8 +1272,8 @@ class File31Backend(File, FileBackend):
 	# -------------------------------------------------
 	def getPcpatchPassword(self, hostId):
 		# Open global.sysconf and hosts sysconfig file and read pcpatchpass option from section shareinfo
-		
-		if hostId in self._aliaslist():
+		hostId = self._preProcessHostId(hostId)
+		if (hostId == self.getServerId()):
 			password = None
 			
 			f = open(self.__passwdFile)
@@ -1289,8 +1293,8 @@ class File31Backend(File, FileBackend):
 			return Tools.blowfishEncrypt( self.getOpsiHostKey(hostId), cleartext )
 	
 	def setPcpatchPassword(self, hostId, password):
-		
-		if hostId not in self._aliaslist():
+		hostId = self._preProcessHostId(hostId)
+		if (hostId != self.getServerId()):
 			# Not storing client passwords they will be calculated on the fly
 			return
 		
@@ -1534,6 +1538,7 @@ class File31Backend(File, FileBackend):
 		productId = productId.lower()
 		if not depotId:
 			depotId = self.getDepotId()
+		depotId = depotId.lower()
 		
 		productFile = None
 		
