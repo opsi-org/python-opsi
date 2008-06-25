@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -392,36 +392,34 @@ def copyTree(src, dst, symlinks=False, current=0, total=1, progress=None):
 	for name in names:
 		srcname = os.path.join(src, name)
 		dstname = os.path.join(dst, name)
-		try:
-			if symlinks and os.path.islink(srcname):
-				linkto = os.readlink(srcname)
-				os.symlink(linkto, dstname)
-			elif os.path.isdir(srcname):
-				current = copyTree(srcname, dstname, symlinks, current, total, progress)
-			else:
-				if progress:
-					size = os.stat(srcname)[6]
-					if size > 1024*1024:
-						size =  str( size/(1024*1024) ) + " MByte"
-					elif size > 1024:
-						size =  str( size/(1024) ) + " kByte"
-					else:
-						size =  str( size ) + " Byte"
-					progress.addText("[%s] %s (%s)\n" % 
-						( current+1, name, size ) )
+		if symlinks and os.path.islink(srcname):
+			linkto = os.readlink(srcname)
+			os.symlink(linkto, dstname)
+		elif os.path.isdir(srcname):
+			current = copyTree(srcname, dstname, symlinks, current, total, progress)
+		else:
+			if progress:
+				size = os.stat(srcname)[6]
+				if size > 1024*1024:
+					size =  str( size/(1024*1024) ) + " MByte"
+				elif size > 1024:
+					size =  str( size/(1024) ) + " kByte"
+				else:
+					size =  str( size ) + " Byte"
+				progress.addText("[%d] %s (%s)\n" % 
+					( current+1, name, size ) )
+			try:
 				shutil.copy2(srcname, dstname)
-				current += 1
-				if progress:
-					progress.setState(current)
-					
-		except os.error, e:
-			if (e.errno != 1):
-				raise
-			# Operation not permitted
-			logger.warning(e)
-		except IOError, e:
-			raise Exception("Failed to copy: %s" % e)
-		
+			except os.error, e:
+				if (e.errno != 1):
+					raise
+				# Operation not permitted
+				logger.warning(e)
+			except IOError, e:
+				raise Exception("Failed to copy: %s" % e)
+			current += 1
+			if progress:
+				progress.setState(current)
 	return current
 
 def mkdir(newDir, mode=0750, ui='default'):
