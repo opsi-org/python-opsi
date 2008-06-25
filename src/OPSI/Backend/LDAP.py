@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.0.1'
+__version__ = '0.9.0.3'
 
 # Imports
 import ldap, ldap.modlist, re
@@ -1987,7 +1987,7 @@ class LDAPBackend(DataBackend):
 		
 		clientIds = [ objectId ]
 		if objectId in self.getDepotIds_list():
-			product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
+			product = Object( "cn=%s,cn=%s,%s" % (productId, objectId, self._productsContainerDn) )
 			if product.exists(self._ldap):
 				try:
 					container = Object("cn=productPropertyDefinitions,%s" % product.getDn())
@@ -2730,16 +2730,28 @@ class LDAPSession:
 	
 	def disconnect(self):
 		''' Disconnect from ldap server '''
-		self._ldap.unbind()
-	
+		if self._ldap:
+			try:
+				self._ldap.unbind()
+			except Exception, e:
+				pass
+		
 	def search(self, baseDn, scope, filter, attributes):
 		''' This function is used to search in a ldap directory. '''
 		self._commandCount += 1
 		self._searchCount += 1
 		logger.debug("Searching in baseDn: %s, scope: %s, filter: '%s', attributes: '%s' " \
 					% (baseDn, scope, filter, attributes) )
+		result = []
 		try:
-			result = self._ldap.search_s(baseDn, scope, filter, attributes)
+			try:
+				result = self._ldap.search_s(baseDn, scope, filter, attributes)
+			except ldap.LDAPError, e:
+				if (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					result = self._ldap.search_s(baseDn, scope, filter, attributes)
 		except Exception, e:
 			logger.debug("LDAP search error %s: %s" % (e.__class__, e))
 			if (e.__class__ == ldap.NO_SUCH_OBJECT):
@@ -2760,7 +2772,14 @@ class LDAPSession:
 		self._deleteCount += 1
 		logger.debug("Deleting Object from LDAP, dn: '%s'" % dn)
 		try:
-			self._ldap.delete_s(dn)
+			try:
+				self._ldap.delete_s(dn)
+			except ldap.LDAPError, e:
+				if (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					self._ldap.delete_s(dn)
 		except ldap.LDAPError, e:
 			raise BackendIOError(e)
 	
@@ -2778,7 +2797,14 @@ class LDAPSession:
 			return
 		logger.debug("Modifying Object in LDAP, dn: '%s'" % dn)
 		try:
-			self._ldap.modify_s(dn,attrs)
+			try:
+				self._ldap.modify_s(dn,attrs)
+			except ldap.LDAPError, e:
+				if (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					self._ldap.modify_s(dn,attrs)
 		except ldap.LDAPError, e:
 			raise BackendIOError(e)
 		except TypeError, e:
@@ -2794,7 +2820,14 @@ class LDAPSession:
 		logger.debug("Adding Object to LDAP, dn: '%s'" % dn)
 		logger.debug("attrs: '%s'" % attrs)
 		try:
-			self._ldap.add_s(dn,attrs)
+			try:
+				self._ldap.add_s(dn,attrs)
+			except ldap.LDAPError, e:
+				if (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					self._ldap.add_s(dn,attrs)
 		except ldap.LDAPError, e:
 			raise BackendIOError(e)
 		except TypeError, e:

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.4.9'
+__version__ = '0.9.5'
 
 # Imports
 import os, stat, types, re, socket, new
@@ -802,7 +802,7 @@ class BackendManager(DataBackend):
 						'packageVersion': None
 					}
 		
-		logger.info("Known product ids: %s" ', '.join(products.keys()))
+		logger.info("Known product ids: %s" % ', '.join(products.keys()))
 		for depotId in depotIds:
 			logger.info("Processing depot '%s'" % depotId)
 			for productId in products.keys():
