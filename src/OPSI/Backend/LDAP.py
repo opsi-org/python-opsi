@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.0.3'
+__version__ = '0.9.1.1'
 
 # Imports
 import ldap, ldap.modlist, re
@@ -43,6 +43,7 @@ from OPSI.Backend.Backend import *
 from OPSI.Logger import *
 from OPSI.Product import *
 from OPSI import Tools
+from OPSI import System
 
 # Get logger instance
 logger = Logger()
@@ -73,34 +74,55 @@ class LDAPBackend(DataBackend):
 		self._generalConfigsContainerDn = 'cn=generalConfigs,' + self._opsiBaseDn
 		self._networkConfigsContainerDn = 'cn=networkConfigs,' + self._opsiBaseDn
 		self._productPropertiesContainerDn = 'cn=productProperties,' + self._opsiBaseDn
-		self._hostAttributeDescription = 'description'
+		self._hostAttributeDescription = 'opsiDescription'
 		self._hostAttributeNotes = 'opsiNotes'
 		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
 		self._hostAttributeIpAddress = 'opsiIpAddress'
-		
+		self._createClientCommand = ''
+		self._deleteClient = True
+		self._deleteClientCommand = ''
+		self._createServerCommand = ''
+		self._deleteServer = False
+		self._deleteServerCommand = ''
+		self._clientObjectSearchFilter = ''
+		self._serverObjectSearchFilter = ''
 		self._defaultDomain = None
 		
 		# Parse arguments
 		for (option, value) in args.items():
-			if   (option.lower() == 'basedn'):				self._baseDn = value
-			elif (option.lower() == 'opsibasedn'):				self._opsiBaseDn = value
-			elif (option.lower() == 'hostscontainerdn'):			self._hostsContainerDn = value
-			elif (option.lower() == 'groupscontainerdn'):			self._groupsContainerDn = value
-			elif (option.lower() == 'productscontainerdn'):		self._productsContainerDn = value
-			elif (option.lower() == 'productclassescontainerdn'):		self._productClassesContainerDn = value
-			elif (option.lower() == 'productlicensescontainerdn'):		self._productLicensesContainerDn = value
-			elif (option.lower() == 'productstatescontainerdn'):		self._productStatesContainerDn = value
-			elif (option.lower() == 'generalconfigscontainerdn'):		self._generalConfigsContainerDn = value
-			elif (option.lower() == 'networkconfigscontainerdn'):		self._networkConfigsContainerDn = value
-			elif (option.lower() == 'productpropertiescontainerdn'):	self._productPropertiesContainerDn = value
-			elif (option.lower() == 'hostattributedescription'):		self._hostAttributeDescription = value
-			elif (option.lower() == 'hostattributenotes'):			self._hostAttributeNotes = value
-			elif (option.lower() == 'hostattributehardwareaddress'):	self._hostAttributeHardwareAddress = value
-			elif (option.lower() == 'hostattributeipaddress'):		self._hostAttributeIpAddress = value
-			elif (option.lower() == 'defaultdomain'): 			self._defaultDomain = value
-			elif (option.lower() == 'host'):				self._address = value
-			elif (option.lower() == 'binddn'):				self._username = value
-			elif (option.lower() == 'bindpw'):				self._password = value
+			if   (option.lower() == 'basedn'):					self._baseDn = value
+			elif (option.lower() == 'opsibasedn'):					self._opsiBaseDn = value
+			elif (option.lower() == 'hostscontainerdn'):				self._hostsContainerDn = value
+			elif (option.lower() == 'groupscontainerdn'):				self._groupsContainerDn = value
+			elif (option.lower() == 'productscontainerdn'):			self._productsContainerDn = value
+			elif (option.lower() == 'productclassescontainerdn'):			self._productClassesContainerDn = value
+			elif (option.lower() == 'productlicensescontainerdn'):			self._productLicensesContainerDn = value
+			elif (option.lower() == 'productstatescontainerdn'):			self._productStatesContainerDn = value
+			elif (option.lower() == 'generalconfigscontainerdn'):			self._generalConfigsContainerDn = value
+			elif (option.lower() == 'networkconfigscontainerdn'):			self._networkConfigsContainerDn = value
+			elif (option.lower() == 'productpropertiescontainerdn'):		self._productPropertiesContainerDn = value
+			elif (option.lower() == 'hostattributedescription'):			self._hostAttributeDescription = value
+			elif (option.lower() == 'hostattributenotes'):				self._hostAttributeNotes = value
+			elif (option.lower() == 'hostattributehardwareaddress'):		self._hostAttributeHardwareAddress = value
+			elif (option.lower() == 'hostattributeipaddress'):			self._hostAttributeIpAddress = value
+			elif (option.lower() == 'clientobjectsearchfilter'):
+				if value:							self._clientObjectSearchFilter = value
+			elif (option.lower() == 'serverobjectsearchfilter'):
+				if value:							self._serverObjectSearchFilter = value
+			elif (option.lower() == 'createclientcommand'):
+				if value:							self._createClientCommand = value
+			elif (option.lower() == 'deleteclient'):				self._deleteClient = value
+			elif (option.lower() == 'deleteclientcommand'):
+				if value:							self._deleteClientCommand = value
+			elif (option.lower() == 'createservercommand'):
+				if value:							self._createServerCommand = value
+			elif (option.lower() == 'deleteserver'):				self._deleteServer = value
+			elif (option.lower() == 'deleteservercommand'):
+				if value:							self._deleteServerCommand = value
+			elif (option.lower() == 'defaultdomain'): 				self._defaultDomain = value
+			elif (option.lower() == 'host'):					self._address = value
+			elif (option.lower() == 'binddn'):					self._username = value
+			elif (option.lower() == 'bindpw'):					self._password = value
 			else:
 				logger.warning("Unknown argument '%s' passed to LDAPBackend constructor" % option)
 		
@@ -165,8 +187,8 @@ class LDAPBackend(DataBackend):
 					filter='(&(objectClass=opsiHost)(opsiHostId=%s))' % hostId)
 			return search.getDn()
 		except BackendMissingDataError, e:
-			#raise BackendMissingDataError("Host '%s' does not exist: %s" % (hostId, e))
-			return "cn=%s,%s" % (hostId, self.getHostContainerDn(domain) )
+			raise BackendMissingDataError("Host '%s' does not exist: %s" % (hostId, e))
+			#return "cn=%s,%s" % (hostId, self.getHostContainerDn(domain) )
 	
 	def getObjectDn(self, objectId):
 		''' Get a object's DN by object's ID. '''
@@ -420,7 +442,32 @@ class LDAPBackend(DataBackend):
 		hostId = self._preProcessHostId(serverName + '.' + domain)
 		
 		# Create or update server object
-		server = Object( self.getHostDn(hostId) )
+		server = None
+		try:
+			server = Object( self.getHostDn(hostId) )
+		except BackendMissingDataError:
+			# Host not found
+			if self._serverObjectSearchFilter:
+				filter = self._serverObjectSearchFilter
+				filter = filter.replace('%name%', serverName.lower())
+				filter = filter.replace('%domain%', domain.lower())
+				try:
+					search = ObjectSearch(self._ldap, self.getHostContainerDn(domain), filter=filter)
+					server = search.getObject()
+				except BackendMissingDataError, e:
+					if self._createServerCommand:
+						cmd = self._createServerCommand
+						cmd = cmd.replace('%name%', clientName.lower())
+						cmd = cmd.replace('%domain%', domain.lower())
+						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
+						
+						search = ObjectSearch(self._ldap, self.getHostContainerDn(domain), filter=filter)
+						server = search.getObject()
+					else:
+						raise
+			else:
+				server = Object( "cn=%s,%s" % (hostId, self.getHostContainerDn(domain) ) )
+		
 		if server.exists(self._ldap):
 			server.readFromDirectory(self._ldap)
 			server.addObjectClass('opsiDepotserver')
@@ -452,7 +499,38 @@ class LDAPBackend(DataBackend):
 		hostId = self._preProcessHostId(clientName + '.' + domain)
 		
 		# Create or update client object
-		client = Object( self.getHostDn(hostId) )
+		client = None
+		try:
+			client = Object( self.getHostDn(hostId) )
+			logger.notice("Client %s already exists, recreating" % hostId)
+		except BackendMissingDataError:
+			# Host not found
+			if self._clientObjectSearchFilter:
+				filter = self._clientObjectSearchFilter
+				filter = filter.replace('%name%', clientName.lower())
+				filter = filter.replace('%domain%', domain.lower())
+				try:
+					search = ObjectSearch(self._ldap, self.getHostContainerDn(domain), filter=filter)
+					client = search.getObject()
+				except BackendMissingDataError, e:
+					if self._createClientCommand:
+						if not hardwareAddress: hardwareAddress = ''
+						if not ipAddress: ipAddress = ''
+						
+						cmd = self._createClientCommand
+						cmd = cmd.replace('%name%', clientName.lower())
+						cmd = cmd.replace('%domain%', domain.lower())
+						cmd = cmd.replace('%mac%', hardwareAddress.lower())
+						cmd = cmd.replace('%ip%', ipAddress.lower())
+						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
+						
+						search = ObjectSearch(self._ldap, self.getHostContainerDn(domain), filter=filter)
+						client = search.getObject()
+					else:
+						raise
+			else:
+				client = Object( "cn=%s,%s" % (hostId, self.getHostContainerDn(domain) ) )
+		
 		if client.exists(self._ldap):
 			client.readFromDirectory(self._ldap)
 			client.addObjectClass('opsiClient')
@@ -462,20 +540,12 @@ class LDAPBackend(DataBackend):
 		client.setAttribute('opsiHostId', [ hostId ])
 		if description:
 			client.setAttribute(self._hostAttributeDescription, [ description ])
-		else:
-			client.setAttribute(self._hostAttributeDescription, [ ])
 		if notes:
 			client.setAttribute(self._hostAttributeNotes, [ notes ])
-		else:
-			client.setAttribute(self._hostAttributeNotes, [ ])
 		if ipAddress:
 			client.setAttribute(self._hostAttributeIpAddress, [ ipAddress ])
-		else:
-			client.setAttribute(self._hostAttributeIpAddress, [ ])
 		if hardwareAddress:
 			client.setAttribute(self._hostAttributeHardwareAddress, [ hardwareAddress ])
-		else:
-			client.setAttribute(self._hostAttributeHardwareAddress, [ ])
 		
 		client.writeToDirectory(self._ldap)
 		
@@ -484,41 +554,107 @@ class LDAPBackend(DataBackend):
 		
 		return hostId
 	
-	def _deleteHost(self, hostId):
-		hostId = self._preProcessHostId(hostId)
+	def deleteServer(self, serverId):
+		serverId = self._preProcessHostId(serverId)
 		
-		host = Object( self.getHostDn(hostId) )
+		server = None
+		try:
+			server = Object( self.getHostDn(serverId) )
+		except BackendMissingDataError:
+			pass
 		
 		# Delete product states container
-		productStatesContainer = Object("cn=%s,%s" % (hostId, self._productStatesContainerDn))
+		productStatesContainer = Object("cn=%s,%s" % (serverId, self._productStatesContainerDn))
 		if productStatesContainer.exists(self._ldap):
 			productStatesContainer.deleteFromDirectory(self._ldap, recursive = True)
 		
-		# Delete client from groups
-		groups = []
-		try:
-			search = ObjectSearch(self._ldap, self._groupsContainerDn, 
-						filter='(&(objectClass=opsiGroup)(uniqueMember=%s))' % host.getDn())
-			groups = search.getObjects()
-		except BackendMissingDataError, e:
-			pass
-		
-		for group in groups:
-			logger.info("Removing host '%s' from group '%s'" % (hostId, group.getCn()))
-			group.readFromDirectory(self._ldap)
-			group.deleteAttributeValue('uniqueMember', host.getDn())
-			group.writeToDirectory(self._ldap)
-		
-		# Delete host object and possible childs
-		if host.exists(self._ldap):
-			host.deleteFromDirectory(self._ldap, recursive = True)
-	
-	def deleteServer(self, serverId):
-		return self._deleteHost(serverId)
+		if server:
+			# Delete server from groups
+			groups = []
+			try:
+				search = ObjectSearch(self._ldap, self._groupsContainerDn, 
+							filter='(&(objectClass=opsiGroup)(uniqueMember=%s))' % server.getDn())
+				groups = search.getObjects()
+			except BackendMissingDataError, e:
+				pass
+			
+			for group in groups:
+				logger.info("Removing host '%s' from group '%s'" % (serverId, group.getCn()))
+				group.readFromDirectory(self._ldap)
+				group.deleteAttributeValue('uniqueMember', server.getDn())
+				group.writeToDirectory(self._ldap)
+			
+			if self._deleteServer:
+				# Delete server
+				if self._deleteServerCommand:
+					cmd = self._deleteServerCommand
+					cmd = cmd.replace('%name%', serverId.split('.')[0])
+					cmd = cmd.replace('%domain%', '.'.join(serverId.split('.')[1:]))
+					cmd = cmd.replace('%dn%',  server.getDn())
+					System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
+				elif server.exists(self._ldap):
+					# Delete host object and possible childs
+					server.deleteFromDirectory(self._ldap, recursive = True)
+			elif server.exists(self._ldap):
+				logger.info("Removing opsi objectClasses from object '%s'" % server.getDn())
+				server.readFromDirectory(self._ldap)
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+					server.setAttribute(attr, [])
+				server.removeObjectClass('opsiConfigserver')
+				server.removeObjectClass('opsiDepotserver')
+				server.removeObjectClass('opsiHost')
+				server.writeToDirectory(self._ldap)
 	
 	def deleteClient(self, clientId):
-		return self._deleteHost(clientId)
-	
+		clientId = self._preProcessHostId(clientId)
+		
+		client = None
+		try:
+			client = Object( self.getHostDn(clientId) )
+		except BackendMissingDataError:
+			pass
+		
+		# Delete product states container
+		productStatesContainer = Object("cn=%s,%s" % (clientId, self._productStatesContainerDn))
+		if productStatesContainer.exists(self._ldap):
+			productStatesContainer.deleteFromDirectory(self._ldap, recursive = True)
+		
+		if client:
+			# Delete client from groups
+			groups = []
+			try:
+				search = ObjectSearch(self._ldap, self._groupsContainerDn, 
+							filter='(&(objectClass=opsiGroup)(uniqueMember=%s))' % client.getDn())
+				groups = search.getObjects()
+			except BackendMissingDataError, e:
+				pass
+			
+			for group in groups:
+				logger.info("Removing host '%s' from group '%s'" % (clientId, group.getCn()))
+				group.readFromDirectory(self._ldap)
+				group.deleteAttributeValue('uniqueMember', client.getDn())
+				group.writeToDirectory(self._ldap)
+			
+			if self._deleteClient:
+				# Delete client
+				if self._deleteClientCommand:
+					cmd = self._deleteClientCommand
+					cmd = cmd.replace('%name%', clientId.split('.')[0])
+					cmd = cmd.replace('%domain%', '.'.join(clientId.split('.')[1:]))
+					cmd = cmd.replace('%dn%', client.getDn())
+					System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
+				elif client.exists(self._ldap):
+					# Delete host object and possible childs
+					client.deleteFromDirectory(self._ldap, recursive = True)
+			elif client.exists(self._ldap):
+				logger.info("Removing opsi objectClasses from object '%s'" % client.getDn())
+				client.readFromDirectory(self._ldap)
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+					client.setAttribute(attr, [])
+				client.removeObjectClass('opsiClient')
+				client.removeObjectClass('opsiHost')
+				client.writeToDirectory(self._ldap)
+			
 	def setHostLastSeen(self, hostId, timestamp):
 		hostId = self._preProcessHostId(hostId)
 		logger.debug("Setting last-seen timestamp for host '%s' to '%s'" % (hostId, timestamp))
@@ -552,7 +688,7 @@ class LDAPBackend(DataBackend):
 	def getHost_hash(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
-		host.readFromDirectory(self._ldap, 'description', 'opsiNotes', 'opsiLastSeenTimestamp')
+		host.readFromDirectory(self._ldap, self._hostAttributeDescription, self._hostAttributeNotes, 'opsiLastSeenTimestamp')
 		return { 	'hostId': 	hostId,
 				'description':	host.getAttribute(self._hostAttributeDescription, ""),
 				'notes':	host.getAttribute(self._hostAttributeNotes, ""),
@@ -709,11 +845,11 @@ class LDAPBackend(DataBackend):
 		infos = []
 		for hostDn in hostDns:
 			host = Object(hostDn)
-			host.readFromDirectory(self._ldap, 'opsiHostId', 'description', 'opsiNotes', 'opsiLastSeenTimestamp')
+			host.readFromDirectory(self._ldap, 'opsiHostId', self._hostAttributeDescription, self._hostAttributeNotes, 'opsiLastSeenTimestamp')
 			infos.append( { 
 				'hostId': 	host.getAttribute('opsiHostId', self.getHostId(host.getDn())),
-				'description':	host.getAttribute('description', ""),
-				'notes':	host.getAttribute('opsiNotes', ""),
+				'description':	host.getAttribute(self._hostAttributeDescription, ""),
+				'notes':	host.getAttribute(self._hostAttributeNotes, ""),
 				'lastSeen':	host.getAttribute('opsiLastSeenTimestamp', "") } )
 		return infos
 	
@@ -764,7 +900,32 @@ class LDAPBackend(DataBackend):
 			maxBandwidth = 0
 		
 		# Create or update depot object
-		depot = Object( self.getHostDn(hostId) )
+		depot = None
+		try:
+			depot = Object( self.getHostDn(hostId) )
+		except BackendMissingDataError:
+			# Host not found
+			if self._serverObjectSearchFilter:
+				filter = self._serverObjectSearchFilter
+				filter = filter.replace('%name%', depotName.lower())
+				filter = filter.replace('%domain%', domain.lower())
+				try:
+					search = ObjectSearch(self._ldap, self.getHostContainerDn(domain), filter=filter)
+					depot = search.getObject()
+				except BackendMissingDataError, e:
+					if self._createServerCommand:
+						cmd = self._createServerCommand
+						cmd = cmd.replace('%name%', clientName.lower())
+						cmd = cmd.replace('%domain%', domain.lower())
+						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
+						
+						search = ObjectSearch(self._ldap, self.getHostContainerDn(domain), filter=filter)
+						depot = search.getObject()
+					else:
+						raise
+			else:
+				depot = Object( "cn=%s,%s" % (hostId, self.getHostContainerDn(domain) ) )
+		
 		exists = depot.exists(self._ldap)
 		if exists:
 			depot.readFromDirectory(self._ldap)
@@ -839,12 +1000,39 @@ class LDAPBackend(DataBackend):
 		}
 	
 	def deleteDepot(self, depotId):
+		
 		depotId = self._preProcessHostId(depotId)
-		depot = Object( self.getHostDn(depotId) )
-		if not depot.exists(self._ldap):
-			logger.error("Cannot delete depot '%s': does not exist" % depotId)
-			return
-		depot.deleteFromDirectory(self._ldap)
+		depot = None
+		try:
+			depot = Object( self.getHostDn(depotId) )
+		except BackendMissingDataError:
+			pass
+		
+		# Delete product container
+		productsContainer = Object("cn=%s,%s" % (depotId, self._productsContainerDn))
+		if productsContainer.exists(self._ldap):
+			productsContainer.deleteFromDirectory(self._ldap, recursive = True)
+		
+		if depot:
+			if self._deleteServer:
+				# Delete server
+				if self._deleteServerCommand:
+					cmd = self._deleteServerCommand
+					cmd = cmd.replace('%name%', depotId.split('.')[0])
+					cmd = cmd.replace('%domain%', '.'.join(depotId.split('.')[1:]))
+					cmd = cmd.replace('%dn%',  depot.getDn())
+					System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
+				elif depot.exists(self._ldap):
+					# Delete host object and possible childs
+					server.deleteFromDirectory(self._ldap, recursive = True)
+			elif depot.exists(self._ldap):
+				logger.info("Removing opsi objectClasses from object '%s'" % depot.getDn())
+				depot.readFromDirectory(self._ldap)
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+					depot.setAttribute(attr, [])
+				depot.removeObjectClass('opsiDepotserver')
+				depot.removeObjectClass('opsiHost')
+				depot.writeToDirectory(self._ldap)
 		
 	def getOpsiHostKey(self, hostId):
 		hostId = self._preProcessHostId(hostId)
@@ -881,14 +1069,14 @@ class LDAPBackend(DataBackend):
 	def getMacAddresses_list(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
-		host.readFromDirectory(self._ldap, 'opsiHardwareAddress')
-		return host.getAttribute('opsiHardwareAddress', valuesAsList = True)
+		host.readFromDirectory(self._ldap, self._hostAttributeHardwareAddress)
+		return host.getAttribute(self._hostAttributeHardwareAddress, valuesAsList = True)
 		
 	def setMacAddresses(self, hostId, macs=[]):
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
 		host.readFromDirectory(self._ldap)
-		host.setAttribute('opsiHardwareAddress', macs)
+		host.setAttribute(self._hostAttributeHardwareAddress, macs)
 		host.writeToDirectory(self._ldap)
 		
 	def createGroup(self, groupId, members = [], description = ""):
@@ -943,9 +1131,13 @@ class LDAPBackend(DataBackend):
 			except BackendMissingDataError:
 				raise Exception("Failed to get pcpatch password for host '%s'" % hostId)
 		else:
-			# TODO: move to backendManager / backendManager-config
-			cleartext = Tools.blowfishDecrypt( self.getOpsiHostKey(self.getServerId(hostId)), self.getPcpatchPassword(self.getServerId(hostId)) )
-			return Tools.blowfishEncrypt( self.getOpsiHostKey(hostId), cleartext )
+			serverId = self._backendManager.getServerId(hostId)
+			if (serverId == hostId):
+				# Avoid loops
+				raise BackendError("Bad backend configuration: server of host '%s' is '%s', current server id is '%s'" \
+								% (hostId, serverId, self.getServerId()))
+			cleartext = Tools.blowfishDecrypt( self._backendManager.getOpsiHostKey(serverId), self.getPcpatchPassword(serverId) )
+			return Tools.blowfishEncrypt( self._backendManager.getOpsiHostKey(hostId), cleartext )
 	
 	def setPcpatchPassword(self, hostId, password):
 		hostId = self._preProcessHostId(hostId)
@@ -1595,7 +1787,7 @@ class LDAPBackend(DataBackend):
 		
 		clientId = self._preProcessHostId(clientId)
 		
-		netBootProduct = self.getGeneralConfig(clientId).get('os')
+		netBootProduct = self.getGeneralConfig_hash(clientId).get('os')
 		
 		if not netBootProduct:
 			raise BackendMissingDataError("No default netboot product for client '%s' found in generalConfig" % clientId )
@@ -2412,8 +2604,16 @@ class LDAPObject:
 	def addObjectClass(self, objectClass):
 		try:
 			self.addAttributeValue('objectClass', objectClass)
-		except Exception:
-			pass
+		except Exception, e:
+			logger.warning("Failed to add objectClass '%s' to '%s': %s" \
+						% (objectClass, self.getDn(), e) )
+		
+	def removeObjectClass(self, objectClass):
+		try:
+			self.deleteAttributeValue('objectClass', objectClass)
+		except Exception, e:
+			logger.warning("Failed to delete objectClass '%s' from '%s': %s" \
+						% (objectClass, self.getDn(), e) )
 	
 	def getCn(self):
 		''' Returns the RDN without type.
@@ -2507,6 +2707,7 @@ class LDAPObject:
 
 	def writeToDirectory(self, ldapSession):
 		''' Writes the object to the ldap tree. '''
+		logger.info("Writing object %s to directory" % self.getDn())
 		if self._existsInBackend:
 			if not self._readAllAttributes:
 				raise BackendIOError("Not all attributes have been read from backend - not writing to backend!")
@@ -2581,13 +2782,15 @@ class LDAPObject:
 	
 	def deleteAttributeValue(self, attribute, value):
 		''' Delete a value from the list of attribute values. '''
+		logger.debug("Deleting value '%s' of attribute '%s' on object '%s'" % (value, attribute, self.getDn()))
 		if not self._new.has_key(attribute):
-			logger.warning("Failed to delete value '%s' of attribute '%s': does not exists" % (attribute, value))
+			logger.warning("Failed to delete value '%s' of attribute '%s': does not exists" % (value, attribute))
 			return
 		for i in range( len(self._new[attribute]) ):
+			logger.debug2("Testing if value '%s' of attribute '%s' == '%s'" % (self._new[attribute][i], attribute, value))
 			if (self._new[attribute][i] == value):
 				del self._new[attribute][i]
-				logger.debug("Value '%s' of attribute '%s' successfuly deleted" % (attribute, value))
+				logger.debug("Value '%s' of attribute '%s' successfuly deleted" % (value, attribute))
 				return
 	
 	def _encodeValue(self, value):
@@ -2752,6 +2955,8 @@ class LDAPSession:
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
 					result = self._ldap.search_s(baseDn, scope, filter, attributes)
+				else:
+					raise
 		except Exception, e:
 			logger.debug("LDAP search error %s: %s" % (e.__class__, e))
 			if (e.__class__ == ldap.NO_SUCH_OBJECT):
@@ -2780,6 +2985,8 @@ class LDAPSession:
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
 					self._ldap.delete_s(dn)
+				else:
+					raise
 		except ldap.LDAPError, e:
 			raise BackendIOError(e)
 	
@@ -2805,6 +3012,8 @@ class LDAPSession:
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
 					self._ldap.modify_s(dn,attrs)
+				else:
+					raise
 		except ldap.LDAPError, e:
 			raise BackendIOError(e)
 		except TypeError, e:
@@ -2828,6 +3037,8 @@ class LDAPSession:
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
 					self._ldap.add_s(dn,attrs)
+				else:
+					raise
 		except ldap.LDAPError, e:
 			raise BackendIOError(e)
 		except TypeError, e:

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.7'
+__version__ = '0.2.7.9'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -598,8 +598,10 @@ class File31Backend(File, FileBackend):
 		clientId = clientName.lower() + '.' + domain.lower()
 		iniFile = self.getClientIniFile(clientId)
 		
-		# Copy the client configuration prototype
-		if not os.path.exists(iniFile):
+		if os.path.exists(iniFile):
+			logger.notice("Client %s already exists, recreating" % clientId)
+		else:
+			# Copy the client configuration prototype
 			self.createFile(iniFile, mode=0660)
 			globalConfig = self.openFile(self.__defaultClientTemplateFile)
 			try:
@@ -616,11 +618,12 @@ class File31Backend(File, FileBackend):
 		ini = self.readIniFile(iniFile)
 		if not ini.has_section('info'):
 			ini.add_section('info')
-		ini.set("info", "description", description.replace('\n', '\\n').replace('%', ''))
-		ini.set("info", "notes", notes.replace('\n', '\\n').replace('%', ''))
-		ini.set('info', 'macaddress', hardwareAddress)
-		ini.set("info", "lastseen", '')
-		
+		if description:
+			ini.set("info", "description", description.replace('\n', '\\n').replace('%', ''))
+		if notes:
+			ini.set("info", "notes", notes.replace('\n', '\\n').replace('%', ''))
+		if hardwareAddress:
+			ini.set('info', 'macaddress', hardwareAddress)
 		
 		self.writeIniFile(iniFile, ini)
 		
@@ -714,6 +717,10 @@ class File31Backend(File, FileBackend):
 		if not type(info) is dict:
 			raise BackendBadValueError("Software information must be dict")
 		
+		# Time of scan
+		if not info.has_key('SCANPROPERTIES') or not info['SCANPROPERTIES']:
+			info['SCANPROPERTIES'] = { 'scantime': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) }
+		
 		self.deleteSoftwareInformation(hostId)
 		
 		iniFile = "%s.sw" % os.path.join(self.__auditInfoDir, hostId)
@@ -725,7 +732,7 @@ class File31Backend(File, FileBackend):
 		for (key, value) in info.items():
 			ini.add_section(key)
 			for (k, v) in value.items():
-				ini.set(key, k, v)
+				ini.set(key, str(k), str(v))
 		
 		self.writeIniFile(iniFile, ini)
 	
@@ -769,12 +776,9 @@ class File31Backend(File, FileBackend):
 	def setHardwareInformation(self, hostId, info):
 		hostId = hostId.lower()
 		
-		# Time of scan (may be overwritten by SCANPROPERTIES)
-		scantime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-		try:
-			scantime = info['SCANPROPERTIES'][0]['scantime']
-		except:
-			pass
+		# Time of scan
+		if not info.has_key('SCANPROPERTIES') or not info['SCANPROPERTIES']:
+			info['SCANPROPERTIES'] = [ { 'scantime': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) } ]
 		
 		if not type(info) is dict:
 			raise BackendBadValueError("Hardware information must be dict")
@@ -1288,9 +1292,13 @@ class File31Backend(File, FileBackend):
 			return password
 		
 		else:
-			# TODO: move to backendManager / backendManager-config
-			cleartext = Tools.blowfishDecrypt( self.getOpsiHostKey(self.getServerId(hostId)), self.getPcpatchPassword(self.getServerId(hostId)) )
-			return Tools.blowfishEncrypt( self.getOpsiHostKey(hostId), cleartext )
+			serverId = self._backendManager.getServerId(hostId)
+			if (serverId == hostId):
+				# Avoid loops
+				raise BackendError("Bad backend configuration: server of host '%s' is '%s', current server id is '%s'" \
+								% (hostId, serverId, self.getServerId()))
+			cleartext = Tools.blowfishDecrypt( self._backendManager.getOpsiHostKey(serverId), self.getPcpatchPassword(serverId) )
+			return Tools.blowfishEncrypt( self._backendManager.getOpsiHostKey(hostId), cleartext )
 	
 	def setPcpatchPassword(self, hostId, password):
 		hostId = self._preProcessHostId(hostId)

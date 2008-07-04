@@ -1,3 +1,19 @@
+python-opsi (3.3.0.19-1) stable; urgency=low
+
+  * LDAP.py 0.9.1.1
+  * Univention.py 0.5
+  * File31.py 0.2.7.9
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 03 Jul 2008 13:46:13 +0200
+
+python-opsi (3.3.0.18-1) stable; urgency=low
+
+  * File.py 0.9.7.3
+  * LDAP.py 0.9.0.3
+  * Product.py 0.9.8.8
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 26 Jun 2008 09:36:36 +0200
+
 python-opsi (3.3.0.17-1) stable; urgency=low
 
   * LDAP Backend rewritten
