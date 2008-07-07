@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 
 # Imports
 import socket
@@ -67,6 +67,8 @@ class OpsiPXEConfdBackend(Backend):
 				logger.warning("Unknown argument '%s' passed to OpsiPXEConfdBackend constructor" % option)
 	
 	def setPXEBootConfiguration(self, hostId, args={}):
+		if not args:
+			args = {}
 		depotId = self.__backendManager.getDepotId(hostId)
 		logger.debug("setPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
 		if (depotId != socket.getfqdn()):

@@ -32,10 +32,11 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.5'
+__version__ = '0.9.6'
 
 # Imports
-import os, stat, types, re, socket, new
+import os, stat, types, re, socket, new, base64
+import librsync
 
 # OS dependend imports
 if os.name == 'posix':
@@ -504,6 +505,44 @@ class BackendManager(DataBackend):
 			return res
 		except Exception, e:
 			raise BackendIOError("Failed to get md5sum: %s" % e)
+	
+	def librsyncSignature(self, filename):
+		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
+		
+		(f, sf) = (None, None)
+		try:
+			f = open(filename, 'rb')
+			sf = librsync.SigFile(f)
+			sig = base64.encodestring(sf.read())
+			f.close()
+			sf.close()
+			return sig
+		except Exception, e:
+			if f: f.close()
+			if sf: sf.close()
+			raise BackendIOError("Failed to get librsync signature: %s" % e)
+		
+	def librsyncPatchFile(self, oldfile, deltafile, newfile):
+		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
+		
+		logger.debug("librsyncPatchFile: %s, %s, %s" % (oldfile, deltafile, newfile))
+		(of, df, nf, pf) = (None, None, None, None)
+		try:
+			of = open(oldfile, "rb")
+			df = open(deltafile, "rb")
+			nf = open(newfile, "wb")
+			pf = librsync.PatchedFile(of, df)
+			nf.write(pf.read())
+			nf.close()
+			pf.close()
+			df.close()
+			of.close()
+		except Exception, e:
+			if nf: nf.close()
+			if pf: pf.close()
+			if df: df.close()
+			if of: of.close()
+			raise BackendIOError("Failed to patch file: %s" % e)
 	
 	def getDiskSpaceUsage(self, path):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
