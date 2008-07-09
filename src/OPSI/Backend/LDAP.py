@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.1.2'
+__version__ = '0.9.1.4'
 
 # Imports
 import ldap, ldap.modlist, re
@@ -60,7 +60,7 @@ class LDAPBackend(DataBackend):
 		self._username = username
 		self._password = password
 		
-		self._backendManager = backendManager
+		self.__backendManager = backendManager
 		
 		# Default values
 		self._baseDn = 'dc=uib,dc=local'
@@ -1073,6 +1073,8 @@ class LDAPBackend(DataBackend):
 		return host.getAttribute(self._hostAttributeHardwareAddress, valuesAsList = True)
 		
 	def setMacAddresses(self, hostId, macs=[]):
+		for i in range(len(macs)):
+			macs[i] = macs[i].lower()
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
 		host.readFromDirectory(self._ldap)
