@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
    = = = = = = = = = = = = = = = = = =
-   =   opsi python library - System  =
+   =   opsi python library - Posix   =
    = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
@@ -10,7 +10,7 @@
    
    Copyright (C) 2006, 2007, 2008 uib GmbH
    
-   http://www.uib.de/d
+   http://www.uib.de/
    
    All rights reserved.
    
@@ -32,18 +32,19 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.3'
+__version__ = '1.1.5'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
+import copy as pycopy
 if (os.name == 'posix'):
 	import posix, fcntl
 else:
 	import win32file
 
 # OPSI imports
-from Logger import *
-import Tools
+from OPSI.Logger import *
+from OPSI.Tools import *
 
 # Get Logger instance
 logger = Logger()
@@ -219,7 +220,7 @@ def getKernelParams():
 	return params
 
 
-def getDHCPResult(retry=5):
+def getDHCPResult(retry=3):
 	"""
 	Reads DHCP result from pump
 	returns possible key/values:
@@ -258,10 +259,10 @@ def getDHCPResult(retry=5):
 					interface[keyValue[0].replace(' ','').lower()] = keyValue[1].strip().split()[0]
 			except Exception, e:
 				logger.warning("Pump failed: %s" % e)
-				try:
-					execute( '%s -i %s' % (which('pump'), interface['device']) )
-				except Exception, e:
-					logger.warning("Pump failed: %s" % e)
+				#try:
+				#	execute( '%s -i %s' % (which('pump'), interface['device']) )
+				#except Exception, e:
+				#	logger.warning("Pump failed: %s" % e)
 				i += 1
 			else:
 				i = retry
@@ -478,11 +479,12 @@ def mount(dev, mountpoint, ui='default', **options):
 		# Do not log smb password
 		logLevel = LOG_CONFIDENTIAL
 		
-		match = re.search('^smb:(//[^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			#fs = '-t smbfs'
 			fs = '-t cifs'
-			dev = match.group(1)
+			parts = match.group(1).split('/')
+			dev = '//%s/%s' % (parts[0], parts[1])
 		else:
 			raise Exception("Bad smb uri '%s'" % dev)
 		
@@ -684,7 +686,117 @@ def hardwareInventory(ui='default', filename=None, config=None):
 			lspci[busId]['subsystemVendorId'] = match.group(1)
 			lspci[busId]['subsystemDeviceId'] = match.group(2)
 	logger.debug("Parsed lspci info:")
-	logger.debug(Tools.objectToBeautifiedText(lspci))
+	logger.debug(objectToBeautifiedText(lspci))
+	
+	# Read output from lsusb
+	lsusb = {}
+	busId = None
+	devId = None
+	indent = -1
+	currentKey = None
+	status = False
+	
+	devRegex = re.compile('^Bus\s+(\d+)\s+Device\s+(\d+)\:\s+ID\s+([\da-fA-F]{4})\:([\da-fA-F]{4})\s*(.*)$')
+	descriptorRegex = re.compile('^(\s*)(.*)\s+Descriptor\:\s*$')
+	deviceStatusRegex = re.compile('^(\s*)Device\s+Status\:\s+(\S+)\s*$')
+	deviceQualifierRegex = re.compile('^(\s*)Device\s+Qualifier\s+.*\:\s*$')
+	keyRegex = re.compile('^(\s*)([^\:]+)\:\s*$')
+	keyValueRegex = re.compile('^(\s*)(\S+)\s+(.*)$')
+	
+	for line in execute("%s -v" % which("lsusb")):
+		if not line.strip() or (line.find('** UNAVAILABLE **') != -1):
+			continue
+		match = re.search(devRegex, line)
+		if match:
+			busId = match.group(1)
+			devId = match.group(2)
+			descriptor = None
+			indent = -1
+			currentKey = None
+			status = False
+			logger.debug("Device: %s:%s" % (busId, devId))
+			lsusb[busId+":"+devId] = {
+				'device': {},
+				'configuration': {},
+				'interface': {},
+				'endpoint': [],
+				'hid device': {},
+				'hub': {},
+				'qualifier': {},
+				'status': {}
+			}
+			continue
+		
+		if status:
+			lsusb[busId+":"+devId]['status'].append(line.strip())
+			continue
+		
+		match = re.search(deviceStatusRegex, line)
+		if match:
+			status = True
+			lsusb[busId+":"+devId]['status'] = [ match.group(2) ]
+			continue
+		
+		match = re.search(deviceQualifierRegex, line)
+		if match:
+			descriptor = 'qualifier'
+			logger.debug("Qualifier")
+			currentKey = None
+			indent = -1
+			continue
+		
+		match = re.search(descriptorRegex, line)
+		if match:
+			descriptor = match.group(2).strip().lower()
+			logger.debug("Descriptor: %s" % descriptor)
+			if type(lsusb[busId+":"+devId][descriptor]) is list:
+				lsusb[busId+":"+devId][descriptor].append({})
+			currentKey = None
+			indent = -1
+			continue
+		
+		if not descriptor:
+			logger.error("No descriptor")
+			continue
+		
+		if not lsusb[busId+":"+devId].has_key(descriptor):
+			logger.error("Unkown descriptor '%s'" % descriptor)
+			continue
+		
+		(key, value) = ('', '')
+		match = re.search(keyRegex, line)
+		if match:
+			key = match.group(2)
+			indent = len(match.group(1))
+		else:
+			match = re.search(keyValueRegex, line)
+			if match:
+				if (indent >= 0) and (len(match.group(1)) > indent):
+					key = currentKey
+					value = match.group(0).strip()
+				else:
+					(key, value) = (match.group(2), match.group(3).strip())
+					indent = len(match.group(1))
+		
+		logger.debug("key: '%s', value: '%s'" % (key, value))
+		
+		if not key or not value:
+			continue
+		
+		currentKey = key
+		if type(lsusb[busId+":"+devId][descriptor]) is list:
+			if not lsusb[busId+":"+devId][descriptor][-1].has_key(key):
+				lsusb[busId+":"+devId][descriptor][-1][key] = [ ]
+			lsusb[busId+":"+devId][descriptor][-1][key].append(value)
+		
+		else:
+			if not lsusb[busId+":"+devId][descriptor].has_key(key):
+				lsusb[busId+":"+devId][descriptor][key] = [ ]
+			lsusb[busId+":"+devId][descriptor][key].append(value)
+		
+		
+	logger.debug("Parsed lsusb info:")
+	logger.debug(objectToBeautifiedText(lsusb))
 	
 	# Read output from dmidecode
 	dmidecode = {}
@@ -715,20 +827,20 @@ def hardwareInventory(ui='default', filename=None, config=None):
 				if match:
 					option = match.group(2).strip()
 					value = match.group(3).strip()
-					dmidecode[dmiType][-1][option] = Tools.removeUnit(value)
+					dmidecode[dmiType][-1][option] = removeUnit(value)
 				elif option:
 					if not type(dmidecode[dmiType][-1][option]) is list:
 						if dmidecode[dmiType][-1][option]:
 							dmidecode[dmiType][-1][option] = [ dmidecode[dmiType][-1][option] ]
 						else:
 							dmidecode[dmiType][-1][option] = []
-					dmidecode[dmiType][-1][option].append(Tools.removeUnit(line.strip()))
+					dmidecode[dmiType][-1][option].append(removeUnit(line.strip()))
 		except Exception, e:
 			logger.error("Error while parsing dmidecode output '%s': %s" % (line.strip(), e))
 	logger.debug("Parsed dmidecode info:")
-	logger.debug(Tools.objectToBeautifiedText(dmidecode))
+	logger.debug(objectToBeautifiedText(dmidecode))
 	
-	# Get hw info from lshw
+	# Build hw info structure
 	for hwClass in config:
 		
 		if not hwClass.get('Class') or not hwClass['Class'].get('Opsi') or not hwClass['Class'].get('Linux'):
@@ -894,10 +1006,40 @@ def hardwareInventory(ui='default', filename=None, config=None):
 							if device[attribute['Opsi']]:
 								break
 					opsiValues[hwClass['Class']['Opsi']].append(device)
+		
+		# Get hw info from lsusb
+		elif linuxClass.startswith('[lsusb]'):
+			opsiValues[opsiClass] = []
+			for (busId, dev) in lsusb.items():
+				device = {}
+				for attribute in hwClass['Values']:
+					if not attribute.get('Linux'):
+						continue
+					try:
+						value = pycopy.deepcopy(dev)
+						for key in (attribute['Linux'].split('/')):
+							method = None
+							if (key.find('.') != -1):
+								(key, method) = key.split('.', 1)
+							if not type(value) is dict or not value.has_key(key):
+								logger.error("Key '%s' not found" % key)
+								value = ''
+								break
+							value = value[key]
+							if type(value) is list:
+								value = ', '.join(value)
+							if method:
+								value = eval("value.%s" % method)
+							
+						device[attribute['Opsi']] = value
+					except Exception, e:
+						logger.warning(e)
+						device[attribute['Opsi']] = ''
+				opsiValues[opsiClass].append(device)
 	
 	opsiValues['SCANPROPERTIES'] = [ { "scantime": time.strftime("%Y-%m-%d %H:%M:%S") } ]
 	
-	logger.debug("Result of hardware inventory:\n" + Tools.objectToBeautifiedText(opsiValues))
+	logger.debug("Result of hardware inventory:\n" + objectToBeautifiedText(opsiValues))
 	
 	return opsiValues
 	
