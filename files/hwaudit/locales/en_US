@@ -100,6 +100,7 @@ USB_DEVICE.deviceId = Device ID
 USB_DEVICE.usbRelease = USB release
 USB_DEVICE.maxPower = Maximum power
 USB_DEVICE.interfaceClass = Interface class
+USB_DEVICE.interfaceSubClass = Interface sub class
 USB_DEVICE.interfaceProtocol = Interface protocol
 USB_DEVICE.status = Status
 MONITOR = Monitor
