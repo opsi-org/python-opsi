@@ -77,10 +77,20 @@ class PROCESSENTRY32(Structure):
                  ("dwFlags", c_ulong),
                  ("szExeFile", c_char * 260)]
 
+#def setWallpaper(filename):
+#	win32gui.SystemParametersInfo ( win32con.SPI_SETDESKWALLPAPER, filename, win32con.SPIF_SENDCHANGE )
+
 def getRegistryValue(key, subKey, valueName):
 	hkey = _winreg.OpenKey(key, subKey)
 	(value, type) = _winreg.QueryValueEx(hkey, valueName)
 	return value
+
+def setRegistryValue(key, subKey, valueName, value):
+	hkey = _winreg.OpenKey(key, subKey, 0, _winreg.KEY_WRITE)
+	if type(value) is int:
+		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_DWORD, value)
+	else:
+		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
 
 def mount(dev, mountpoint, ui='default', **options):
 	#if ui == 'default': ui=userInterface
@@ -132,6 +142,24 @@ def mount(dev, mountpoint, ui='default', **options):
 			logger.error("Cannot mount: %s" % e)
 			raise Exception ("Cannot mount: %s" % e)
 
+def umount(mountpoint, ui='default'):
+	#if ui == 'default': ui=userInterface
+	#if ui: ui.getMessageBox().addText(_("Umounting '%s'.\n") % mountpoint)
+	
+	try:
+		# Remove connection and update user profile (remove persistent connection)
+		win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
+	except pywintypes.error, details:
+		if (details[0] == 2250):
+			# Not connected
+			logger.warning("Failed to umount '%s': %s" % (mountpoint, e))
+		else:
+			raise
+	
+	except Exception, e:
+		logger.error("Failed to umount '%s': %s" % (mountpoint, e))
+		raise Exception ("Failed to umount '%s': %s" % (mountpoint, e))
+	
 def getActiveConsoleSessionId():
 	return windll.kernel32.WTSGetActiveConsoleSessionId()
 	
@@ -146,24 +174,48 @@ def logonUser(username, password, domain=None):
 	return impersonated_user_handler
 
 def logoffCurrentUser():
+	logger.notice("Logging off current user")
 	#win32api.ExitWindows()
 	#win32api.ExitWindowsEx(0)
 	## Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
 	#win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
+	#runAsSystemInSession(
+	#		command              = "logoff.exe",
+	#		sessionId            = getActiveConsoleSessionId(),
+	#		waitForProcessEnding = False )
 	runAsSystemInSession(
-			command 	= "logoff.exe",
-			sessionId 	= getActiveConsoleSessionId() )
+			command              = 'shutdown.exe /l',
+			sessionId            = getActiveConsoleSessionId(),
+			waitForProcessEnding = False )
 	
 def lockWorkstation():
 	#windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
 	#windll.user32.LockWorkStation()
 	runAsSystemInSession(
-			command		= "rundll32.exe user32.dll,LockWorkStation",
-			sessionId	= getActiveConsoleSessionId() )
+			command              = "rundll32.exe user32.dll,LockWorkStation",
+			sessionId            = getActiveConsoleSessionId(),
+			waitForProcessEnding = False )
 
-def getActiveDesktop():
-	raise NotImplementedError
-	
+def reboot(wait=10):
+	logger.notice("Rebooting in %s seconds" % wait)
+	wait = int(wait)
+	runAsSystemInSession(
+			command              = 'shutdown.exe /r /c "Opsi reboot" /t %d ' % wait,
+			sessionId            = getActiveConsoleSessionId(),
+			waitForProcessEnding = False )
+
+def shutdown(wait=10):
+	logger.notice("Shutting down in %s seconds" % wait)
+	wait = int(wait)
+	runAsSystemInSession(
+			command              = 'shutdown.exe /s /c "Opsi shutdown" /t %d ' % wait,
+			sessionId            = getActiveConsoleSessionId(),
+			waitForProcessEnding = False )
+
+def getActiveDesktopName():
+	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
+	return win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME)
+
 def createWindowStation(name):
 	sa = pywintypes.SECURITY_ATTRIBUTES()
 	sa.bInheritHandle = 1
@@ -261,7 +313,9 @@ def terminateProcess(hProcess):
 	win32process.TerminateProcess(hProcess, exitCode)
 	return exitCode
 
-def runAsSystem(self, command, waitForProcessEnding=True):
+def runAsSystem(command, waitForProcessEnding=True):
+	logger.notice("Executing: %s" % command)
+	
 	sessionId = 1
 	
 	s = win32process.STARTUPINFO()
@@ -295,7 +349,6 @@ def runAsSystem(self, command, waitForProcessEnding=True):
 	
 	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
 	
-	logger.notice("Executing: %s" % command)
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(hUserTokenDup,None,command,None,None,0,dwCreationFlags,None,None,s)
 	#win32process.CreateProcess(None,command,None,None,0,dwCreationFlags,None,None,s)
 	logger.notice("Process runnig: %s" % hProcess)
@@ -307,6 +360,7 @@ def runAsSystem(self, command, waitForProcessEnding=True):
 	logger.notice("Process ended: %s" % hProcess)
 	
 def runAsSystemInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
+	logger.notice("Executing: %s" % command)
 	if not type(sessionId) is int or (sessionId < 0):
 		sessionId = getActiveConsoleSessionId()
 	if not desktop:
@@ -346,7 +400,6 @@ def runAsSystemInSession(command, sessionId = None, desktop = "default", duplica
 	
 	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
 	
-	logger.notice("Executing: %s" % command)
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(hUserTokenDup,None,command,None,None,0,dwCreationFlags,None,None,s)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
