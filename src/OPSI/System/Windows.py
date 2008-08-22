@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 # Imports
 import re, os, time
@@ -152,7 +152,7 @@ def umount(mountpoint, ui='default'):
 	except pywintypes.error, details:
 		if (details[0] == 2250):
 			# Not connected
-			logger.warning("Failed to umount '%s': %s" % (mountpoint, e))
+			logger.warning("Failed to umount '%s': %s" % (mountpoint, details))
 		else:
 			raise
 	
@@ -200,7 +200,7 @@ def reboot(wait=10):
 	logger.notice("Rebooting in %s seconds" % wait)
 	wait = int(wait)
 	runAsSystemInSession(
-			command              = 'shutdown.exe /r /c "Opsi reboot" /t %d ' % wait,
+			command              = 'shutdown.exe /r /c "Opsi reboot" /t %d' % wait,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
 
@@ -208,7 +208,7 @@ def shutdown(wait=10):
 	logger.notice("Shutting down in %s seconds" % wait)
 	wait = int(wait)
 	runAsSystemInSession(
-			command              = 'shutdown.exe /s /c "Opsi shutdown" /t %d ' % wait,
+			command              = 'shutdown.exe /s /c "Opsi shutdown" /t %d' % wait,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
 
@@ -246,7 +246,7 @@ def createDesktop(name, cmd):
 def getPids(process, sessionId = None):
 	if not sessionId:
 		sessionId = getActiveConsoleSessionId()
-	logger.notice("Searching pid of process %s in session %d" % (process, sessionId))
+	logger.info("Searching pids of process name %s in session %d" % (process, sessionId))
 	processIds = []
 	CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
 	Process32First = windll.kernel32.Process32First
@@ -255,16 +255,16 @@ def getPids(process, sessionId = None):
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
 	pe32 = PROCESSENTRY32()
 	pe32.dwSize = sizeof(PROCESSENTRY32)
-	logger.info("Getting first process")
+	logger.debug2("Getting first process")
 	if ( Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE ):
 		logger.error("Failed to get first process")
 		return
 	while True:
-		logger.debug("   got process %s" % pe32.szExeFile)
+		logger.debug2("   got process %s" % pe32.szExeFile)
 		if (pe32.szExeFile == process):
 			sid = win32ts.ProcessIdToSessionId(pe32.th32ProcessID)
 			pid = pe32.th32ProcessID
-			logger.notice("Found process %s with pid %d in session %d" % (process, pid, sid))
+			logger.info("Found process %s with pid %d in session %d" % (process, pid, sid))
 			if (sid == sessionId):
 				processIds.append(pid)
 		if Process32Next(hProcessSnap, byref(pe32)) == win32con.FALSE:
@@ -351,13 +351,14 @@ def runAsSystem(command, waitForProcessEnding=True):
 	
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(hUserTokenDup,None,command,None,None,0,dwCreationFlags,None,None,s)
 	#win32process.CreateProcess(None,command,None,None,0,dwCreationFlags,None,None,s)
-	logger.notice("Process runnig: %s" % hProcess)
+	logger.info("Process startet, pid: %d" % dwProcessId)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
-	logger.info("Waiting for process ending: %s" % hProcess)
+	logger.info("Waiting for process ending: %d" % dwProcessId)
 	while win32event.WaitForSingleObject(hProcess, 0):
 		time.sleep(0.1)
-	logger.notice("Process ended: %s" % hProcess)
+	logger.notice("Process ended: %d" % dwProcessId)
+	
 	
 def runAsSystemInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
 	logger.notice("Executing: %s" % command)
@@ -401,12 +402,13 @@ def runAsSystemInSession(command, sessionId = None, desktop = "default", duplica
 	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
 	
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(hUserTokenDup,None,command,None,None,0,dwCreationFlags,None,None,s)
+	logger.info("Process startet, pid: %d" % dwProcessId)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
-	logger.info("Waiting for process ending: %s" % hProcess)
+	logger.info("Waiting for process ending: %d" % dwProcessId)
 	while win32event.WaitForSingleObject(hProcess, 0):
 		time.sleep(0.1)
-	logger.notice("Process ended: %s" % hProcess)
+	logger.notice("Process ended: %d" % dwProcessId)
 	
 	
 def getWindowsInSession(sessionId):

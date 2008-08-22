@@ -54,16 +54,20 @@ import ctypes
 def _async_raise(tid, excobj):
 	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
 	if (res == 0):
+		logger.error("_async_raise: nonexistent thread id")
 		raise ValueError("nonexistent thread id")
 	elif (res > 1):
 		# """if it returns a number greater than one, you're in trouble, 
 		# and you should call it again with exc=NULL to revert the effect"""
 		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+		logger.error("_async_raise: PyThreadState_SetAsyncExc failed")
 		raise SystemError("PyThreadState_SetAsyncExc failed")
  
 class KillableThread(threading.Thread):
 	def raise_exc(self, excobj):
-		assert self.isAlive(), "thread must be started"
+		if not self.isAlive():
+			logger.error("Cannot terminate, thread must be started")
+			return
 		for tid, tobj in threading._active.items():
 			if tobj is self:
 				_async_raise(tid, excobj)
