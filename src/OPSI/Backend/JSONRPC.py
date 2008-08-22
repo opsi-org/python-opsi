@@ -268,12 +268,12 @@ class JSONRPCBackend(DataBackend):
 		
 		except Exception, e:
 			if retry:
-				logger.warning("Requesting '%s', query '%s' failed: %s, trying to reconnect" % (self.__address, query, e))
+				logger.warning("Requesting '%s' failed: %s, trying to reconnect" % (self.__address, e))
 				self._connect()
 				return self.__request(baseUrl, query=query, retry=False)
 			else:
 				logger.logException(e)
-				raise BackendIOError("Requesting '%s', query '%s' failed: %s" % (self.__address, query, e))
+				raise BackendIOError("Requesting '%s' failed: %s" % (self.__address, e))
 		
 		try:
 			# Return response content (body)
