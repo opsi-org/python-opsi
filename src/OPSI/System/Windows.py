@@ -93,7 +93,7 @@ def setRegistryValue(key, subKey, valueName, value):
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
 
 def getProgramFilesDir():
-	return getRegistryValue(HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows\\CurrentVersion', 'ProgramFilesDir'):
+	return getRegistryValue(HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows\\CurrentVersion', 'ProgramFilesDir')
 
 def mount(dev, mountpoint, ui='default', **options):
 	#if ui == 'default': ui=userInterface
