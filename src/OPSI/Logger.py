@@ -399,7 +399,7 @@ class LoggerImplementation:
 		
 		if (level < LOG_CONFIDENTIAL):
 			for string in self.__confidentialStrings:
-				message = message.replace(string)
+				message = message.replace(string, '*** confidential ***')
 		
 		levelname = ''
 		color = COLOR_NORMAL
