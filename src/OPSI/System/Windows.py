@@ -92,6 +92,9 @@ def setRegistryValue(key, subKey, valueName, value):
 	else:
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
 
+def getProgramFilesDir():
+	return getRegistryValue(HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows\\CurrentVersion', 'ProgramFilesDir'):
+
 def mount(dev, mountpoint, ui='default', **options):
 	#if ui == 'default': ui=userInterface
 	fs = ''
@@ -127,16 +130,16 @@ def mount(dev, mountpoint, ui='default', **options):
 				logger.info(e)
 			
 			logger.notice("Mounting '%s' to '%s'" % (dev, mountpoint))
-			#win32wnet.WNetAddConnection2(
-			#	win32netcon.RESOURCETYPE_DISK,
-			#	mountpoint,
-			#	dev,
-			#	None,
-			#	options['username'],
-			#	options['password'],
-			#	0
-			#)
-			os.system("net use %s %s %s /USER:%s /PERSISTENT:NO" % (mountpoint, dev, options['password'], options['username']))
+			# Mount not persistent
+			win32wnet.WNetAddConnection2(
+				win32netcon.RESOURCETYPE_DISK,
+				mountpoint,
+				dev,
+				None,
+				options['username'],
+				options['password'],
+				0
+			)
 			
 		except Exception, e:
 			logger.error("Cannot mount: %s" % e)
