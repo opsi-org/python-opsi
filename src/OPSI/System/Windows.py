@@ -80,6 +80,26 @@ class PROCESSENTRY32(Structure):
 #def setWallpaper(filename):
 #	win32gui.SystemParametersInfo ( win32con.SPI_SETDESKWALLPAPER, filename, win32con.SPIF_SENDCHANGE )
 
+def getFileVersionInfo(filename):
+	(lang, codepage) = win32api.GetFileVersionInfo(filename, '\\VarFileInfo\\Translation')[0]
+	path = u'\\StringFileInfo\\%04X%04X\\%%s' % (lang, codepage)
+	info = {
+		'CompanyName':      win32api.GetFileVersionInfo(filename, path % 'CompanyName'),
+		'SpecialBuild':     win32api.GetFileVersionInfo(filename, path % 'SpecialBuild'),
+		'Comments':         win32api.GetFileVersionInfo(filename, path % 'Comments'),
+		'FileDescription':  win32api.GetFileVersionInfo(filename, path % 'FileDescription'),
+		'FileVersion':      win32api.GetFileVersionInfo(filename, path % 'FileVersion'),
+		'InternalName':     win32api.GetFileVersionInfo(filename, path % 'InternalName'),
+		'LegalCopyright':   win32api.GetFileVersionInfo(filename, path % 'LegalCopyright'),
+		'LegalTrademarks':  win32api.GetFileVersionInfo(filename, path % 'LegalTrademarks'),
+		'OriginalFilename': win32api.GetFileVersionInfo(filename, path % 'OriginalFilename'),
+		'PrivateBuild':     win32api.GetFileVersionInfo(filename, path % 'PrivateBuild'),
+		'ProductName':      win32api.GetFileVersionInfo(filename, path % 'ProductName'),
+		'ProductVersion':   win32api.GetFileVersionInfo(filename, path % 'ProductVersion'),
+	}
+	logger.debug("File version info for '%s': %s" % (filename, info))
+	return info
+
 def getRegistryValue(key, subKey, valueName):
 	hkey = _winreg.OpenKey(key, subKey)
 	(value, type) = _winreg.QueryValueEx(hkey, valueName)
