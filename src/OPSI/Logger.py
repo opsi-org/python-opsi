@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.5'
+__version__ = '0.9.8.6'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
@@ -167,6 +167,7 @@ class LoggerImplementation:
 		self.univentionLogger_priv = None
 		self.__univentionClass = None
 		self.__univentionFormat = 'opsi: %M'
+		self.__confidentialStrings = []
 		self.__threadConfig = {}
 		self.__objectConfig = {}
 		self.__stdout = VirtFile(self, LOG_NOTICE)
@@ -179,6 +180,19 @@ class LoggerImplementation:
 	
 	def getStdout(self):
 		return self.__stdout
+	
+	def setConfidentialStrings(self, strings):
+		if not type(strings) in (list, tuple):
+			strings = [ str(strings) ]
+		self.__confidentialStrings = []
+		for string in strings:
+			self.addConfidentialString(string)
+	
+	def addConfidentialString(self, string):
+		string = str(string)
+		if string in self.__confidentialStrings:
+			return
+		self.__confidentialStrings.append(string)
 	
 	def setLogFormat(self, format, currentThread=False, object=None):
 		self.setConsoleFormat(format, currentThread, object)
@@ -383,7 +397,9 @@ class LoggerImplementation:
 		if not type(message) is str:
 			message = "%s" % message
 		
-		#self.__loggerSubject.setMessage(message)
+		if (level < LOG_CONFIDENTIAL):
+			for string in self.__confidentialStrings:
+				message = message.replace(string)
 		
 		levelname = ''
 		color = COLOR_NORMAL
