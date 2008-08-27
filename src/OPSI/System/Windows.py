@@ -49,6 +49,7 @@ import win32process
 import win32api
 import win32security
 import win32gui
+import win32net
 import win32wnet
 import win32netcon
 import _winreg
@@ -161,6 +162,7 @@ def mount(dev, mountpoint, ui='default', **options):
 				0
 			)
 			
+			
 		except Exception, e:
 			logger.error("Cannot mount: %s" % e)
 			raise Exception ("Cannot mount: %s" % e)
@@ -185,28 +187,35 @@ def umount(mountpoint, ui='default'):
 	
 def getActiveConsoleSessionId():
 	return windll.kernel32.WTSGetActiveConsoleSessionId()
-	
-def logonUser(username, password, domain=None):
-	impersonated_user_handler = win32security.LogonUser(
-		username,
-		domain,
-		password,
-		win32con.LOGON32_LOGON_INTERACTIVE,
-		win32con.LOGON32_PROVIDER_DEFAULT)
-	win32security.ImpersonateLoggedOnUser(impersonated_user_handler)
-	return impersonated_user_handler
 
+def impersonateUser(username, password, domain=None):
+	if not domain:
+		domain = win32api.GetComputerName()
+	handle = win32security.LogonUser(
+			username,
+			domain,
+			password,
+			win32con.LOGON32_LOGON_INTERACTIVE,
+			win32con.LOGON32_PROVIDER_DEFAULT)
+	win32security.ImpersonateLoggedOnUser(handle)
+	logger.info("Impersonated user '%s'" % win32api.GetUserName())
+	return handle
+
+def unimpersonateUser(handle):
+	win32security.RevertToSelf()
+	handle.Close()
+	
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
 	#win32api.ExitWindows()
 	#win32api.ExitWindowsEx(0)
 	## Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
 	#win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
-	#runAsSystemInSession(
+	#runInSession(
 	#		command              = "logoff.exe",
 	#		sessionId            = getActiveConsoleSessionId(),
 	#		waitForProcessEnding = False )
-	runAsSystemInSession(
+	runInSession(
 			command              = 'shutdown.exe /l',
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -214,7 +223,7 @@ def logoffCurrentUser():
 def lockWorkstation():
 	#windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
 	#windll.user32.LockWorkStation()
-	runAsSystemInSession(
+	runInSession(
 			command              = "rundll32.exe user32.dll,LockWorkStation",
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -222,7 +231,7 @@ def lockWorkstation():
 def reboot(wait=10):
 	logger.notice("Rebooting in %s seconds" % wait)
 	wait = int(wait)
-	runAsSystemInSession(
+	runInSession(
 			command              = 'shutdown.exe /r /c "Opsi reboot" /t %d' % wait,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -230,7 +239,7 @@ def reboot(wait=10):
 def shutdown(wait=10):
 	logger.notice("Shutting down in %s seconds" % wait)
 	wait = int(wait)
-	runAsSystemInSession(
+	runInSession(
 			command              = 'shutdown.exe /s /c "Opsi shutdown" /t %d' % wait,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -336,54 +345,7 @@ def terminateProcess(hProcess):
 	win32process.TerminateProcess(hProcess, exitCode)
 	return exitCode
 
-def runAsSystem(command, waitForProcessEnding=True):
-	logger.notice("Executing: %s" % command)
-	
-	sessionId = 1
-	
-	s = win32process.STARTUPINFO()
-	s.lpDesktop = desktop = 'winsta0\\winlogon'
-	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS|win32con.CREATE_NEW_CONSOLE
-	
-	s = win32process.STARTUPINFO()
-	s.lpDesktop = desktop
-	
-	hProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, getPid(process = "winlogon.exe", sessionId = sessionId))
-	hPToken = win32security.OpenProcessToken(
-				hProcess,
-				win32con.TOKEN_ADJUST_PRIVILEGES|win32con.TOKEN_QUERY|\
-				win32con.TOKEN_DUPLICATE|win32con.TOKEN_ASSIGN_PRIMARY|\
-				win32con.TOKEN_READ|win32con.TOKEN_WRITE) # win32con.TOKEN_ADJUST_SESSIONID
-	
-	id = win32security.LookupPrivilegeValue(None, win32security.SE_DEBUG_NAME)
-	
-	newPrivileges = [(id, win32security.SE_PRIVILEGE_ENABLED)]
-	
-	hUserTokenDup = win32security.DuplicateTokenEx(
-		ExistingToken = hPToken,
-		DesiredAccess = win32con.MAXIMUM_ALLOWED,
-		ImpersonationLevel = win32security.SecurityIdentification,
-		TokenType = ntsecuritycon.TokenPrimary,
-		TokenAttributes = None )
-	
-	# Adjust Token privilege
-	
-	win32security.SetTokenInformation(hUserTokenDup, ntsecuritycon.TokenSessionId, sessionId)
-	
-	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
-	
-	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(hUserTokenDup,None,command,None,None,0,dwCreationFlags,None,None,s)
-	#win32process.CreateProcess(None,command,None,None,0,dwCreationFlags,None,None,s)
-	logger.info("Process startet, pid: %d" % dwProcessId)
-	if not waitForProcessEnding:
-		return (hProcess, hThread, dwProcessId, dwThreadId)
-	logger.info("Waiting for process ending: %d" % dwProcessId)
-	while win32event.WaitForSingleObject(hProcess, 0):
-		time.sleep(0.1)
-	logger.notice("Process ended: %d" % dwProcessId)
-	
-	
-def runAsSystemInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
+def runInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
 	logger.notice("Executing: %s" % command)
 	if not type(sessionId) is int or (sessionId < 0):
 		sessionId = getActiveConsoleSessionId()
@@ -392,13 +354,11 @@ def runAsSystemInSession(command, sessionId = None, desktop = "default", duplica
 	if (desktop.find('\\') == -1):
 		desktop = 'winsta0\\' + desktop
 	
-	##############hUserToken = win32ts.WTSQueryUserToken(sessionId)
 	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS|win32con.CREATE_NEW_CONSOLE
 	
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
-	# Start maximized does not work?
-	s.wShowWindow = win32con.SW_MAXIMIZE
+	#s.wShowWindow = win32con.SW_MAXIMIZE
 	
 	hProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, getPid(process = duplicateFrom, sessionId = sessionId))
 	hPToken = win32security.OpenProcessToken(
@@ -459,3 +419,58 @@ def getWindowsInSession(sessionId):
 	except Exception, e:
 		logger.error(e)
 
+def getAdminGroupName():
+	subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, \
+	           ntsecuritycon.DOMAIN_ALIAS_RID_ADMINS
+	sidAdmins = win32security.SID(ntsecuritycon.SECURITY_NT_AUTHORITY, subAuths)
+	groupName = win32security.LookupAccountSid(None, sidAdmins)[0]
+	logger.info("Admin group name is '%s'" % groupName)
+	return groupName
+
+
+def createUser(username, password, groups = []):
+	servername = "\\\\" + win32api.GetComputerName()
+	
+	userData = {}
+	userData['name'] = username
+	userData['full_name'] = ""
+	userData['password'] = password
+	userData['flags'] = win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT
+	userData['priv'] = win32netcon.USER_PRIV_USER
+	userData['home_dir'] = None
+	userData['home_dir_drive'] = None
+	userData['primary_group_id'] = ntsecuritycon.DOMAIN_GROUP_RID_USERS
+	userData['password_expired'] = 1 # User must change password next logon.
+	
+	#win32net.NetUserAdd(serverName, 3, userData)
+	win32net.NetUserAdd(servername, 1, userData)
+	if not groups:
+		return
+	u = { 'domainandname': username }
+	for group in groups:
+		logger.info("Adding user '%s' to group '%s'" % (username, group))
+		win32net.NetLocalGroupAddMembers(servername, group, 3, [ u ])
+		
+	
+def deleteUser(username):
+	servername = "\\\\" + win32api.GetComputerName()
+	try:
+		win32net.NetUserDel(servername, username)
+	except win32net.error:
+		pass
+
+def existsUser(username):
+	servername = "\\\\" + win32api.GetComputerName()
+	for user in win32net.NetUserEnum(servername, 0)[0]:
+		if (user.get('name') == username):
+			return True
+	return False
+	
+	
+	
+	
+	
+	
+	
+	
+	

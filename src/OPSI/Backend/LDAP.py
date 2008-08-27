@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.1.4'
+__version__ = '0.9.1.5'
 
 # Imports
 import ldap, ldap.modlist, re
@@ -1883,8 +1883,8 @@ class LDAPBackend(DataBackend):
 					state = { 	'productId':		productId, 
 							'installationStatus':	'undefined',
 							'actionRequest':	'undefined',
-							'productVersion':	productInfo['productVersion'],
-							'packageVersion':	productInfo['packageVersion'],
+							'productVersion':	'',
+							'packageVersion':	'',
 							'lastStateChange':	'' }
 					
 					if productId in cns:
