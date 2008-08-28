@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.0.3'
+__version__ = '0.1'
 
 # Imports
 import re, os, time
@@ -81,6 +81,9 @@ class PROCESSENTRY32(Structure):
 #def setWallpaper(filename):
 #	win32gui.SystemParametersInfo ( win32con.SPI_SETDESKWALLPAPER, filename, win32con.SPIF_SENDCHANGE )
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                               INFO                                                -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getFileVersionInfo(filename):
 	(lang, codepage) = win32api.GetFileVersionInfo(filename, '\\VarFileInfo\\Translation')[0]
 	path = u'\\StringFileInfo\\%04X%04X\\%%s' % (lang, codepage)
@@ -101,6 +104,40 @@ def getFileVersionInfo(filename):
 	logger.debug("File version info for '%s': %s" % (filename, info))
 	return info
 
+def getProgramFilesDir():
+	return getRegistryValue(HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows\\CurrentVersion', 'ProgramFilesDir')
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                            HELPERS                                                -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def copyACL(src, dest):
+	revision = src.GetAclRevision()
+	logger.debug("copyACL: ace count is %s" % src.GetAceCount())
+	for i in range(src.GetAceCount()):
+		logger.debug("copyACL: processing ace #%s" % i)
+		ace = src.GetAce(i)
+		logger.debug("copyACL: ace: %s" % str(ace))
+		# XXX: Not sure if these are actually correct.
+		# See http://aspn.activestate.com/ASPN/docs/ActivePython/2.4/pywin32/PyACL__GetAce_meth.html
+		if   (ace[0][0] == win32con.ACCESS_ALLOWED_ACE_TYPE):
+			dest.AddAccessAllowedAce(revision, ace[1], ace[2])
+		elif (ace[0][0] == win32con.ACCESS_DENIED_ACE_TYPE):
+			dest.AddAccessDeniedAce(revision, ace[1], ace[2])
+		elif (ace[0][0] == win32con.SYSTEM_AUDIT_ACE_TYPE):
+			dest.AddAuditAccessAce(revision, ace[1], ace[2], 1, 1)
+		elif (ace[0][0] == win32con.ACCESS_ALLOWED_OBJECT_ACE_TYPE):
+			dest.AddAccessAllowedObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4])
+		elif (ace[0][0] == win32con.ACCESS_DENIED_OBJECT_ACE_TYPE):
+			dest.AddAccessDeniedObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4])
+		elif (ace[0][0] == win32con.SYSTEM_AUDIT_OBJECT_ACE_TYPE):
+			dest.AddAuditAccessObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4], 1, 1)
+	return src.GetAceCount()
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                             REGISTRY                                              -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getRegistryValue(key, subKey, valueName):
 	hkey = _winreg.OpenKey(key, subKey)
 	(value, type) = _winreg.QueryValueEx(hkey, valueName)
@@ -113,9 +150,10 @@ def setRegistryValue(key, subKey, valueName, value):
 	else:
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
 
-def getProgramFilesDir():
-	return getRegistryValue(HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows\\CurrentVersion', 'ProgramFilesDir')
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                            FILESYSTEMS                                            -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def mount(dev, mountpoint, ui='default', **options):
 	#if ui == 'default': ui=userInterface
 	fs = ''
@@ -184,38 +222,29 @@ def umount(mountpoint, ui='default'):
 	except Exception, e:
 		logger.error("Failed to umount '%s': %s" % (mountpoint, e))
 		raise Exception ("Failed to umount '%s': %s" % (mountpoint, e))
-	
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                               SESSION / WINSTA / DESKTOP HANDLING                                 -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getActiveConsoleSessionId():
 	return windll.kernel32.WTSGetActiveConsoleSessionId()
 
-def impersonateUser(username, password, domain=None):
-	if not domain:
-		domain = win32api.GetComputerName()
-	handle = win32security.LogonUser(
-			username,
-			domain,
-			password,
-			win32con.LOGON32_LOGON_INTERACTIVE,
-			win32con.LOGON32_PROVIDER_DEFAULT)
-	win32security.ImpersonateLoggedOnUser(handle)
-	logger.info("Impersonated user '%s'" % win32api.GetUserName())
-	return handle
+def getActiveDesktopName():
+	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
+	return win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME)
 
-def unimpersonateUser(handle):
-	win32security.RevertToSelf()
-	handle.Close()
-	
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
 	#win32api.ExitWindows()
 	#win32api.ExitWindowsEx(0)
 	## Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
 	#win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
-	#runInSession(
+	#runCommandInSession(
 	#		command              = "logoff.exe",
 	#		sessionId            = getActiveConsoleSessionId(),
 	#		waitForProcessEnding = False )
-	runInSession(
+	runCommandInSession(
 			command              = 'shutdown.exe /l',
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -223,7 +252,7 @@ def logoffCurrentUser():
 def lockWorkstation():
 	#windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
 	#windll.user32.LockWorkStation()
-	runInSession(
+	runCommandInSession(
 			command              = "rundll32.exe user32.dll,LockWorkStation",
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -231,7 +260,7 @@ def lockWorkstation():
 def reboot(wait=10):
 	logger.notice("Rebooting in %s seconds" % wait)
 	wait = int(wait)
-	runInSession(
+	runCommandInSession(
 			command              = 'shutdown.exe /r /c "Opsi reboot" /t %d' % wait,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
@@ -239,14 +268,10 @@ def reboot(wait=10):
 def shutdown(wait=10):
 	logger.notice("Shutting down in %s seconds" % wait)
 	wait = int(wait)
-	runInSession(
+	runCommandInSession(
 			command              = 'shutdown.exe /s /c "Opsi shutdown" /t %d' % wait,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
-
-def getActiveDesktopName():
-	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
-	return win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME)
 
 def createWindowStation(name):
 	sa = pywintypes.SECURITY_ATTRIBUTES()
@@ -274,6 +299,125 @@ def createDesktop(name, cmd):
 	prc_info = win32process.CreateProcess(None, cmd, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', s)
 	return hdesk
 
+def addUserToDesktop(desktop, userSid):
+	'''
+	Adds the given PySID representing a user to the given desktop's
+	discretionary access-control list. The old security descriptor for
+	desktop is returned.
+	'''
+	
+	desktopAll  = 	win32con.DESKTOP_CREATEMENU      | \
+			win32con.DESKTOP_CREATEWINDOW    | \
+			win32con.DESKTOP_ENUMERATE       | \
+			win32con.DESKTOP_HOOKCONTROL     | \
+			win32con.DESKTOP_JOURNALPLAYBACK | \
+			win32con.DESKTOP_JOURNALRECORD   | \
+			win32con.DESKTOP_READOBJECTS     | \
+			win32con.DESKTOP_SWITCHDESKTOP   | \
+			win32con.DESKTOP_WRITEOBJECTS    | \
+			win32con.DELETE                  | \
+			win32con.READ_CONTROL            | \
+			win32con.WRITE_DAC               | \
+			win32con.WRITE_OWNER
+	
+	securityDesc = win32security.GetUserObjectSecurity(desktop,
+					win32con.DACL_SECURITY_INFORMATION)
+
+	# Get discretionary access-control list (DACL) for desktop.
+	acl = securityDesc.GetSecurityDescriptorDacl()
+	
+	# Create a new access control list for desktop.
+	newAcl = win32security.ACL()
+	
+	if acl:
+		copyACL(acl, newAcl)
+
+	# Add the ACE for user_sid to the desktop.
+	ace0Index = newAcl.GetAceCount()
+	newAcl.AddAccessAllowedAce(win32con.ACL_REVISION, desktopAll, userSid)
+	
+	# Create a new security descriptor and set its new DACL.
+	newSecurityDesc = win32security.SECURITY_DESCRIPTOR()
+	newSecurityDesc.SetSecurityDescriptorDacl(True, newAcl, False)
+	
+	# Set the new security descriptor for desktop.
+	win32security.SetUserObjectSecurity(desktop,
+			win32con.DACL_SECURITY_INFORMATION,
+			newSecurityDesc)
+	
+	return [ ace0Index ]
+
+
+def addUserToWindowStation(winsta, userSid):
+	'''
+	Adds the given PySID representing a user to the given window station's
+	discretionary access-control list. The old security descriptor for
+	winsta is returned.
+	'''
+	
+	winstaAll  =	win32con.WINSTA_ACCESSCLIPBOARD   | \
+			win32con.WINSTA_ACCESSGLOBALATOMS | \
+			win32con.WINSTA_CREATEDESKTOP     | \
+			win32con.WINSTA_ENUMDESKTOPS      | \
+			win32con.WINSTA_ENUMERATE         | \
+			win32con.WINSTA_EXITWINDOWS       | \
+			win32con.WINSTA_READATTRIBUTES    | \
+			win32con.WINSTA_READSCREEN        | \
+			win32con.WINSTA_WRITEATTRIBUTES   | \
+			win32con.DELETE                   | \
+			win32con.READ_CONTROL             | \
+			win32con.WRITE_DAC                | \
+			win32con.WRITE_OWNER
+	
+	genericAccess = win32con.GENERIC_READ    | \
+			win32con.GENERIC_WRITE   | \
+			win32con.GENERIC_EXECUTE | \
+			win32con.GENERIC_ALL
+	
+	# Get the security description for winsta.
+	securityDesc = win32security.GetUserObjectSecurity(
+						winsta,
+						win32con.DACL_SECURITY_INFORMATION)
+	
+	# Get discretionary access-control list (DACL) for winsta.
+	acl = securityDesc.GetSecurityDescriptorDacl()
+	
+	# Create a new access control list for winsta.
+	newAcl = win32security.ACL()
+	
+	if acl:
+		copyACL(acl, newAcl)
+	
+	# Add the first ACE for userSid to the window station.
+	ace0Index = newAcl.GetAceCount()
+	aceFlags   = 	win32con.CONTAINER_INHERIT_ACE | \
+			win32con.INHERIT_ONLY_ACE      | \
+			win32con.OBJECT_INHERIT_ACE
+	newAcl.AddAccessAllowedAceEx(win32con.ACL_REVISION, aceFlags, genericAccess, userSid)
+	
+	# Add the second ACE for userSid to the window station.
+	ace1Index = newAcl.GetAceCount()
+	aceFlags = win32con.NO_PROPAGATE_INHERIT_ACE
+	newAcl.AddAccessAllowedAceEx(win32con.ACL_REVISION, aceFlags, winstaAll, userSid)
+	
+	# Create a new security descriptor and set its new DACL.
+	# NOTE: Simply creating a new security descriptor and assigning it as
+	# the security descriptor for winsta (without setting the DACL) is
+	# sufficient to allow windows to be opened, but that is probably not
+	# providing any kind of security on winsta.
+	newSecurityDesc = win32security.SECURITY_DESCRIPTOR()
+	newSecurityDesc.SetSecurityDescriptorDacl(True, newAcl, False)
+	
+	# Set the new security descriptor for winsta.
+	win32security.SetUserObjectSecurity(	winsta,
+						win32con.DACL_SECURITY_INFORMATION,
+						newSecurityDesc)
+	
+	return [ ace0Index, ace1Index ]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                        PROCESS HANDLING                                           -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def getPids(process, sessionId = None):
 	if not sessionId:
@@ -345,7 +489,7 @@ def terminateProcess(hProcess):
 	win32process.TerminateProcess(hProcess, exitCode)
 	return exitCode
 
-def runInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
+def runCommandInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
 	logger.notice("Executing: %s" % command)
 	if not type(sessionId) is int or (sessionId < 0):
 		sessionId = getActiveConsoleSessionId()
@@ -392,41 +536,10 @@ def runInSession(command, sessionId = None, desktop = "default", duplicateFrom =
 	while win32event.WaitForSingleObject(hProcess, 0):
 		time.sleep(0.1)
 	logger.notice("Process ended: %d" % dwProcessId)
-	
-	
-def getWindowsInSession(sessionId):
-	try:
-		windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
-		hWndDesktop = win32gui.GetDesktopWindow()
-		logger.debug("hWndDesktop: %s" % hWndDesktop)
-		hWndChild = win32gui.GetWindow(hWndDesktop, win32con.GW_CHILD)
-		logger.debug("hWndChild: %s" % hWndChild)
-		hWndChildProcessIDs = win32process.GetWindowThreadProcessId(hWndChild)
-		logger.debug("hWndChildProcessIDs: %s" % hWndChildProcessIDs)
-		for hWndChildProcessID in hWndChildProcessIDs:
-			logger.debug("hWndChildProcessID: %s" % hWndChildProcessID)
-			#sid = win32ts.ProcessIdToSessionId(hWndChildProcessID)
-			#logger.debug("Runnig in session %d" % sid)
-			logger.debug("Process name: %s" % getProcessName(hWndChildProcessID))
-		#while hWndChild:
-		#	hWndChild = win32gui.GetWindow(hWndChild, win32con.GW_CHILD)
-		#	logger.debug("hWndChild: %s" % hWndChild)
-		#	hWndChildProcessIDs = win32process.GetWindowThreadProcessId(hWndChild)
-		#	for hWndChildProcessID in hWndChildProcessIDs:
-		#		logger.debug("hWndChildProcessID: %s" % hWndChildProcessID)
-		#		logger.debug("Process name: %s" % getProcessName(hWndChildProcessID))
-		
-	except Exception, e:
-		logger.error(e)
 
-def getAdminGroupName():
-	subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, \
-	           ntsecuritycon.DOMAIN_ALIAS_RID_ADMINS
-	sidAdmins = win32security.SID(ntsecuritycon.SECURITY_NT_AUTHORITY, subAuths)
-	groupName = win32security.LookupAccountSid(None, sidAdmins)[0]
-	logger.info("Admin group name is '%s'" % groupName)
-	return groupName
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                     USER / GROUP HANDLING                                         -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def createUser(username, password, groups = []):
 	servername = "\\\\" + win32api.GetComputerName()
@@ -465,12 +578,122 @@ def existsUser(username):
 		if (user.get('name') == username):
 			return True
 	return False
+
+def getUserSidFromHandle(userHandle):
+	tic = win32security.GetTokenInformation(userHandle, ntsecuritycon.TokenGroups)
+	for (sid, flags) in tic:
+		if (flags & win32con.SE_GROUP_LOGON_ID):
+			return sid
+
+def getAdminGroupName():
+	subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, \
+	           ntsecuritycon.DOMAIN_ALIAS_RID_ADMINS
+	sidAdmins = win32security.SID(ntsecuritycon.SECURITY_NT_AUTHORITY, subAuths)
+	groupName = win32security.LookupAccountSid(None, sidAdmins)[0]
+	logger.info("Admin group name is '%s'" % groupName)
+	return groupName
+
+class Impersonate:
+	def __init__(self, username, password, desktop = "default"):
+		if not existsUser(username):
+			raise Exception("User '%s' does not exists" % username)
+		self.username = username
+		self.password = password
+		if not desktop:
+			desktop = "default"
+		if (desktop.find('\\') == -1):
+			desktop = 'winsta0\\' + desktop
+		(self.winsta, self.desktop) = desktop.split('\\', 1)
+		self.domain = win32api.GetComputerName()
+		self.userHandle = None
+		self.saveWindowStation = None 
+		self.saveDesktop = None
+		self.newWindowStation = None
+		self.newDesktop = None
+		
+	def start(self):
+		try:
+			self.userHandle = win32security.LogonUser(
+					self.username,
+					self.domain,
+					self.password,
+					win32con.LOGON32_LOGON_INTERACTIVE,
+					win32con.LOGON32_PROVIDER_DEFAULT)
+			
+			userSid = getUserSidFromHandle(self.userHandle)
+			if not userSid:
+				raise Exception("Failed to determine sid of user '%s'" % self.username)
+			logger.debug("Got sid of user '%s'" % self.username)
+			
+			self.saveWindowStation = win32service.GetProcessWindowStation()
+			logger.debug("Got current window station")
+			
+			self.saveDesktop = win32service.GetThreadDesktop(win32api.GetCurrentThreadId())
+			logger.debug("Got current desktop")
+			
+			self.newWindowStation = win32service.OpenWindowStation(
+							self.winsta,
+							False,
+							win32con.READ_CONTROL |
+							win32con.WRITE_DAC)
+			
+			self.newWindowStation.SetProcessWindowStation()
+			logger.debug("Process window station set")
+				
+			self.newDesktop = win32service.OpenDesktop(
+							self.desktop,
+							win32con.DF_ALLOWOTHERACCOUNTHOOK, #0,
+							False,
+							win32con.READ_CONTROL |
+							win32con.WRITE_DAC |
+							win32con.DESKTOP_READOBJECTS |
+							win32con.DESKTOP_WRITEOBJECTS)
+			self.newDesktop.SetThreadDesktop()
+			logger.debug("Thread desktop set")
+			
+			winstaAceIndices = addUserToWindowStation(self.newWindowStation, userSid)
+			logger.debug("Added user to window station")
+				
+			desktopAceIndices = addUserToDesktop(self.newDesktop, userSid)
+			logger.debug("Added user to desktop")
+			
+			win32security.ImpersonateLoggedOnUser(self.userHandle)
+			logger.debug("User imersonated")
+		except Exception, e:
+			logger.logException(e)
+			self.end()
+			raise
 	
+	def runCommand(self, command, waitForProcessEnding=True):
+		dwCreationFlags = win32process.CREATE_NEW_CONSOLE
+		
+		s = win32process.STARTUPINFO()
+		s.dwFlags = win32process.STARTF_USESHOWWINDOW ^ win32con.STARTF_USESTDHANDLES
+		s.wShowWindow = win32con.SW_NORMAL
+		s.lpDesktop = self.winsta + '\\' + self.desktop
+		
+		logger.notice("Running command '%s' as user '%s' on desktop '%s'" % (command, self.username, self.desktop))
+		
+		(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
+					self.userHandle, None, command, None, None, 0, dwCreationFlags, None, None, s)
+		logger.info("Process startet, pid: %d" % dwProcessId)
+		if not waitForProcessEnding:
+			win32security.RevertToSelf()
+			return (hProcess, hThread, dwProcessId, dwThreadId)
+		logger.info("Waiting for process ending: %d" % dwProcessId)
+		while win32event.WaitForSingleObject(hProcess, 0):
+			time.sleep(0.1)
+		logger.notice("Process ended: %d" % dwProcessId)
+
+	def end(self):
+		if self.userHandle:        self.userHandle.Close()
+		win32security.RevertToSelf()
+		if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
+		if self.saveDesktop:       self.saveDesktop.SetThreadDesktop()
+		if self.newWindowStation:  self.newWindowStation.CloseWindowStation()
+		if self.newDesktop:        self.newDesktop.CloseDesktop()
 	
-	
-	
-	
-	
-	
-	
-	
+	def __del__(self):
+		self.end()
+
+
