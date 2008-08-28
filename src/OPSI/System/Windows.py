@@ -244,8 +244,17 @@ def logoffCurrentUser():
 	#		command              = "logoff.exe",
 	#		sessionId            = getActiveConsoleSessionId(),
 	#		waitForProcessEnding = False )
+	command = ''
+	if (sys.getwindowsversion()[0] == 5):
+		# NT5: XP
+		command = 'logoff.exe'
+	elif (sys.getwindowsversion()[0] == 6):
+		# NT6: Vista
+		command = 'shutdown.exe /l'
+	else:
+		raise Exception("Operating system not supported")
 	runCommandInSession(
-			command              = 'shutdown.exe /l',
+			command              = command,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
 	
@@ -260,16 +269,33 @@ def lockWorkstation():
 def reboot(wait=10):
 	logger.notice("Rebooting in %s seconds" % wait)
 	wait = int(wait)
+	command = ''
+	if (sys.getwindowsversion()[0] == 5):
+		# NT5: XP
+		command = 'shutdown.exe /l /r /t:%d "Opsi reboot" /y /c' % wait
+	elif (sys.getwindowsversion()[0] == 6):
+		# NT6: Vista
+		command = 'shutdown.exe /r /c "Opsi reboot" /t %d' % wait
+	else:
+		raise Exception("Operating system not supported")
 	runCommandInSession(
-			command              = 'shutdown.exe /r /c "Opsi reboot" /t %d' % wait,
+			command              = command,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
 
 def shutdown(wait=10):
 	logger.notice("Shutting down in %s seconds" % wait)
 	wait = int(wait)
+	if (sys.getwindowsversion()[0] == 5):
+		# NT5: XP
+		command = 'shutdown.exe /l /s /t:%d "Opsi shutdown" /y /c' % wait
+	elif (sys.getwindowsversion()[0] == 6):
+		# NT6: Vista
+		command = 'shutdown.exe /s /c "Opsi shutdown" /t %d' % wait
+	else:
+		raise Exception("Operating system not supported")
 	runCommandInSession(
-			command              = 'shutdown.exe /s /c "Opsi shutdown" /t %d' % wait,
+			command              = command,
 			sessionId            = getActiveConsoleSessionId(),
 			waitForProcessEnding = False )
 
