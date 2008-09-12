@@ -37,6 +37,10 @@ binary-stamp:
 	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Backend
 	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/System
 	for i in `(cd src; find OPSI -name "*.py")`; do install -m 0755 src/$$i debian/python-opsi/usr/share/python-support/python-opsi/$$i; done
+	mkdir debian/python-opsi/usr/share/python-support/python-opsi/OPSI/dav
+	cp -r src/twisted-web2-dav/* debian/python-opsi/usr/share/python-support/python-opsi/OPSI/dav/
+	find debian/python-opsi/usr/share/python-support/python-opsi/OPSI/dav -name '.svn' -exec rm -rf '{}' \; 2>/dev/null || true
+	find debian/python-opsi/usr/share/python-support/python-opsi/OPSI/dav -name '*~' -exec rm -f '{}' \; 2>/dev/null || true
 	mkdir -p debian/python-opsi/usr/share/locale/de/LC_MESSAGES
 	install -m 0644 gettext/opsi_system.mo debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
 	install -m 0644 gettext/opsi_ui.mo     debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo

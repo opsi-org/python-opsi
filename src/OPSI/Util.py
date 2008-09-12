@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 # Imports
 import json, threading
@@ -86,15 +86,19 @@ class KillableThread(threading.Thread):
 # =       Subjects                                                                    =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 class Subject(object):
-	def __init__(self, id):
+	def __init__(self, id, type='', **args):
 		self._id = id
 		self._observers = []
+		self._type = type
 	
 	def getId(self):
 		return self._id
 	
-	def getType(self):
+	def getClass(self):
 		return self.__class__.__name__
+	
+	def getType(self):
+		return self._type
 	
 	def attachObserver(self, observer):
 		if not observer in self._observers:
@@ -105,19 +109,28 @@ class Subject(object):
 			self._observers.remove(observer)
 	
 	def serializable(self):
-		return { "id": self.getId(), "type": self.getType() }
+		return { "id": self.getId(), "type": self.getType(), "class": self.getClass() }
 	
 class MessageSubject(Subject):
-	def __init__(self, id):
-		Subject.__init__(self, id)
+	def __init__(self, id, type='', **args):
+		Subject.__init__(self, id, type, **args)
 		self._message = ""
-	
-	def setMessage(self, message):
+		self._severity = 0
+		if args.has_key('message'):
+			self._message = args['message']
+		if args.has_key('severity'):
+			self._severity = args['severity']
+		
+	def setMessage(self, message, severity = 0):
 		self._message = str(message)
+		self._severity = severity
 		self._notifyMessageChanged(message)
-	
+		
 	def getMessage(self):
 		return self._message
+	
+	def getSeverity(self):
+		return self._severity
 	
 	def _notifyMessageChanged(self, message):
 		for o in self._observers:
@@ -126,15 +139,22 @@ class MessageSubject(Subject):
 	def serializable(self):
 		s = Subject.serializable(self)
 		s['message'] = self.getMessage()
+		s['severity'] = self.getSeverity()
 		return s
 
 class ChoiceSubject(MessageSubject):
-	def __init__(self, id):
-		MessageSubject.__init__(self, id)
+	def __init__(self, id, type='', **args):
+		MessageSubject.__init__(self, id, type, **args)
 		self._message = ""
 		self._choices = []
 		self._selectedIndex = -1
 		self._callbacks = []
+		if args.has_key('choices'):
+			self._choices = args['choices']
+		if args.has_key('selectedIndex'):
+			self._selectedIndex = args['selectedIndex']
+		if args.has_key('callbacks'):
+			self._callbacks = args['callbacks']
 		
 	def setSelectedIndex(self, selectedIndex):
 		if not type(selectedIndex) is int:
@@ -183,7 +203,92 @@ class ChoiceSubject(MessageSubject):
 		s['choices'] = self.getChoices()
 		s['selectedIndex'] = self.getSelectedIndex()
 		return s
+
+class ProgressSubject(MessageSubject):
+	def __init__(self, id, type='', **args):
+		MessageSubject.__init__(self, id, type, **args)
+		self._end = 0
+		self._percent = 0
+		self._state = 0
+		self._timeStarted = long(time.time())
+		self._timeSpend = 0
+		self._timeLeft = 0
+		self._timeFired = 0
+		self._speed = 0
+		if args.has_key('end'):
+			self._end = args['end']
+			if (self._end < 0): self._end = 0
+		if args.has_key('percent'):
+			self._percent = args['percent']
+		if args.has_key('state'):
+			self._state = args['state']
+		if args.has_key('timeStarted'):
+			self._timeStarted = args['timeStarted']
+		if args.has_key('timeSpend'):
+			self._timeSpend = args['timeSpend']
+		if args.has_key('timeLeft'):
+			self._timeLeft = args['timeLeft']
+		if args.has_key('timeFired'):
+			self._timeFired = args['timeFired']
+		if args.has_key('speed'):
+			self._speed = args['speed']
 	
+	def setEnd(self, end):
+		self._end = end
+		if (self._end < 0):
+			self._end = 0
+	
+	def setState(self, state):
+		if (state < 0): state = 0
+		if (state > self._end): state = self._end
+		self._state = state
+		
+		now = long(time.time())
+		if (self._timeFired != now) or (self._state == self._end):
+			if (self._end == 0):
+				self._percent = 100
+			else:
+				self._percent = float(100)*(float(self._state) / float(self._end))
+			
+			self._timeSpend = now - self._timeStarted
+			if self._timeSpend:
+				self._speed = int(self._state/self._timeSpend)
+				self._timeLeft = ((self._end-self._state)/self._speed)
+			
+			self._timeFired = now
+			self._notifyProgressChanged(self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
+	
+	def addToState(self, amount):
+		self.setState(self._state + amount)
+	
+	def getState(self):
+		return self._state
+	
+	def getPercent(self):
+		return self._percent
+	
+	def getTimeSpend(self):
+		return self._timeSpend
+		
+	def getTimeLeft(self):
+		return self._timeLeft
+		
+	def getSpeed(self):
+		return self._speed
+		
+	def _notifyProgressChanged(self, state, percent, timeSpend, timeLeft, speed):
+		for o in self._observers:
+			o.progressChanged(self, state, percent, timeSpend, timeLeft, speed)
+	
+	def serializable(self):
+		s = MessageSubject.serializable(self)
+		s['state'] = self.getState()
+		s['percent'] = self.getPercent()
+		s['timeSpend'] = self.getTimeSpend()
+		s['timeLeft'] = self.getTimeLeft()
+		s['speed'] = self.getSpeed()
+		return s
+
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # =       Observers                                                                   =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -203,14 +308,44 @@ class ChoiceObserver(MessageObserver):
 	
 	def choicesChanged(self, subject, choices):
 		pass
-	
-class NotificationObserver(ChoiceObserver):
+
+class ProgressObserver(MessageObserver):
 	def __init__(self):
 		pass
 	
+	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+		pass
+
+class SubjectsObserver(ChoiceObserver, ProgressObserver):
+	def __init__(self):
+		self._subjects = []
+	
+	def setSubjects(self, subjects):
+		for subject in self._subjects:
+			subject.detachObserver(self)
+		self._subjects = subjects
+		for subject in self._subjects:
+			subject.attachObserver(self)
+		self.subjectsChanged(self._subjects)
+	
+	def addSubject(self, subject):
+		if not subject in self._subjects:
+			self._subjects.append(subject)
+			subject.attachObserver(self)
+		self.subjectsChanged(self._subjects)
+	
+	def removeSubject(self, subject):
+		if subject in self._subjects:
+			subject.detachObserver(self)
+			self._subjects.remove(subject)
+		self.subjectsChanged(self._subjects)
+	
+	def getSubjects(self):
+		return self._subjects
+	
 	def subjectsChanged(self, subjects):
 		pass
-	
+
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # =       Notification server                                                         =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -225,24 +360,13 @@ class NotificationServerProtocol(LineReceiver):
 	def lineReceived(self, line):
 		self.factory.rpc(self, line)
 
-class NotificationServerFactory(ServerFactory, NotificationObserver):
+class NotificationServerFactory(ServerFactory, SubjectsObserver):
 	protocol = NotificationServerProtocol
 	
 	def __init__(self):
 		self.clients = []
 		self._subjects = []
 		self._rpcs = {}
-	
-	def setSubjects(self, subjects):
-		for subject in self._subjects:
-			subject.detachObserver(self)
-		self._subjects = subjects
-		for subject in self._subjects:
-			subject.attachObserver(self)
-		self.subjectsChanged(subjects)
-	
-	def getSubjects(self):
-		return self._subjects
 	
 	def connectionMade(self, client):
 		logger.info("client connection made")
@@ -320,30 +444,32 @@ class NotificationServerFactory(ServerFactory, NotificationObserver):
 			client.sendLine( json.write( {"id": None, "method": name, "params": params } ) )
 
 
-class NotificationServer(threading.Thread):
+class NotificationServer(threading.Thread, SubjectsObserver):
 	def __init__(self, address, port, subjects):
 		threading.Thread.__init__(self)
 		self._address = address
 		if not self._address:
 			self._address = '0.0.0.0'
 		self._port = int(port)
-		self._subjects = subjects
-		self._factory = NotificationServerFactory()
-		self._factory.setSubjects(self._subjects)
+		elf._factory = NotificationServerFactory()
+		self._factory.setSubjects(subjects)
 	
 	def getFactory(self):
 		return self._factory
 	
+	
+	def setSubjects(self, subjects):
+		return self._factory.setSubjects(subjects)
+		
 	def addSubject(self, subject):
-		if not subject in self._subjects:
-			self._subjects.append(subject)
-		self._factory.setSubjects(self._subjects)
+		return self._factory.addSubject(subject)
 		
 	def removeSubject(self, subject):
-		if subject in self._subjects:
-			self._subjects.remove(subject)
-		self._factory.setSubjects(self._subjects)
-		
+		return self._factory.removeSubject(subject)
+	
+	def getSubjects(self):
+		return self._factory.getSubjects()
+	
 	def run(self):
 		logger.info("Notification server starting")
 		try:

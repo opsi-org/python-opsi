@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.6'
+__version__ = '0.9.9'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
@@ -119,20 +119,29 @@ COMMENT_COLOR = COLOR_LIGHT_CYAN
 class LoggerSubject:
 	def __init__(self):
 		self._observers = []
+		self._message = ""
+		self._severity = 0
 	
 	def getId(self):
 		return 'logger'
 	
 	def getType(self):
+		return 'Logger'
+	
+	def getClass(self):
 		return 'MessageSubject'
 	
-	def setMessage(self, message):
+	def setMessage(self, message, severity = 0):
 		self._message = str(message)
+		self._severity = severity
 		for o in self._observers:
 			o.messageChanged(self, message)
 	
 	def getMessage(self):
 		return self._message
+	
+	def getSeverity(self):
+		return self._severity
 	
 	def attachObserver(self, observer):
 		if not observer in self._observers:
@@ -142,9 +151,8 @@ class LoggerSubject:
 		if observer in self._observers:
 			self._observers.remove(observer)
 	
-	
 	def serializable(self):
-		return { "message": self.getMessage(), "id": self.getId(), "type": self.getType() }
+		return { "message": self.getMessage(), "severity": self.getSeverity(), "id": self.getId(), "class": self.getClass(), "type": self.getType() }
 	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS LOGGERIMPLEMENTATION                                       =
@@ -157,6 +165,7 @@ class LoggerImplementation:
 		self.__syslogLevel = LOG_NONE
 		self.__consoleLevel = LOG_NONE
 		self.__fileLevel = LOG_NONE
+		self.__messageSubjectLevel = LOG_NONE
 		self.__fileColor = False
 		self.__consoleColor = False
 		self.__logFile = logFile
@@ -164,6 +173,7 @@ class LoggerImplementation:
 		self.__consoleFormat = '%M'
 		self.__consoleStdout = False
 		self.__fileFormat = '%D [%L] %M (%F|%N)'
+		self.__messageSubjectFormat = '%M'
 		self.univentionLogger_priv = None
 		self.__univentionClass = None
 		self.__univentionFormat = 'opsi: %M'
@@ -173,7 +183,7 @@ class LoggerImplementation:
 		self.__stdout = VirtFile(self, LOG_NOTICE)
 		self.__stderr = VirtFile(self, LOG_ERROR)
 		self.__lock = threading.Lock()
-		#self.__loggerSubject = LoggerSubject()
+		self.__loggerSubject = LoggerSubject()
 		
 	def getStderr(self):
 		return self.__stderr
@@ -234,14 +244,22 @@ class LoggerImplementation:
 		else:
 			self.__univentionFormat = format
 	
+	def setMessageSubjectFormat(self, format, currentThread=False, object=None):
+		if currentThread:
+			self._setThreadConfig('messageSubjectFormat', format)
+		elif object:
+			self._setObjectConfig(id(object), 'messageSubjectFormat', format)
+		else:
+			self.__messageSubjectFormat = format
+		
 	def setUniventionLogger(self, logger):
 		self.univentionLogger_priv = logger
 	
 	def setUniventionClass(self, c):
 		self.__univentionClass = c
 	
-	#def getMessageSubject(self):
-	#	return self.__loggerSubject
+	def getMessageSubject(self):
+		return self.__loggerSubject
 	
 	def setColor(self, color):
 		''' Enable or disable ansi color output '''
@@ -283,6 +301,11 @@ class LoggerImplementation:
 		else:
 			#not yet implemented
 			pass
+	
+	def setMessageSubjectLevel(self, level = LOG_NONE):
+		if (level < LOG_NONE):  level = LOG_NONE
+		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
+		self.__messageSubjectLevel = level
 	
 	def setConsoleLevel(self, level = LOG_NONE):
 		''' Maximum level of messages to print to stderr
@@ -384,13 +407,12 @@ class LoggerImplementation:
 	def log(self, level, message):
 		''' Log a message '''
 		
-		if (level > self.__consoleLevel and 
+		if (level > self.__messageSubjectLevel and
+		    level > self.__consoleLevel and 
 		    level > self.__fileLevel and 
 		    level > self.__syslogLevel and
 		    not self.univentionLogger_priv):
 			    return
-		
-		self.__lock.acquire()
 		
 		if type(message) is unicode:
 			message = message.encode('utf-8')
@@ -451,6 +473,22 @@ class LoggerImplementation:
 						specialConfig = c
 						break
 				f = f.f_back
+		
+		if (level <= self.__messageSubjectLevel):
+			m = self.__messageSubjectFormat
+			if specialConfig:
+				m = specialConfig.get('messageSubjectFormat', m)
+			
+			m = m.replace('%D', datetime)
+			m = m.replace('%T', threadId)
+			m = m.replace('%l', str(level))
+			m = m.replace('%L', levelname)
+			m = m.replace('%M', message)
+			m = m.replace('%F', filename)
+			m = m.replace('%N', linenumber)
+			self.__loggerSubject.setMessage(m, level)
+			
+		#self.__lock.acquire()
 		
 		if (level <= self.__consoleLevel):
 			# Log to terminal
@@ -601,7 +639,7 @@ class LoggerImplementation:
 			elif (level == LOG_COMMENT):
 				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 		
-		self.__lock.release()
+		#self.__lock.release()
 	
 	def logException(self, e):
 		self.logTraceback(sys.exc_info()[2])

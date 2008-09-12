@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.6.2'
+__version__ = '0.9.6.3'
 
 # Imports
 import os, stat, types, re, socket, new, base64
@@ -527,6 +527,13 @@ class BackendManager(DataBackend):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
 		
 		logger.debug("librsyncPatchFile: %s, %s, %s" % (oldfile, deltafile, newfile))
+		if (oldfile == newfile):
+			raise BackendBadValueError("oldfile and newfile are the same file")
+		if (deltafile == newfile):
+			raise BackendBadValueError("deltafile and newfile are the same file")
+		if (deltafile == oldfile):
+			raise BackendBadValueError("oldfile and deltafile are the same file")
+		
 		(of, df, nf, pf) = (None, None, None, None)
 		try:
 			of = open(oldfile, "rb")
