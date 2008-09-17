@@ -7,7 +7,7 @@
 #
 
 Name:           python-opsi
-BuildRequires:  pam-devel
+BuildRequires:  python-devel
 Url:            http://www.opsi.org
 License:        GPL v2 or later
 Group:          Development/Libraries/Python
@@ -15,12 +15,9 @@ AutoReqProv:    on
 Version:        3.0.0.25
 Release:        1
 Summary:        opsi python library
-%define tarname none
+%define tarname python-opsi
 Source:         %{tarname}-%{version}.tar.bz2
-Source2:        setup.py
-Patch:          %{tarname}-%{version}.patch
-Patch1:         %{tarname}-%{version}-dl.patch
-Patch2:         %{tarname}-%{version}-dealloc.patch
+#Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %{py_requires}
 
@@ -28,16 +25,13 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 This package contains the OPSI python library.
 
 %debug_package
+
 %prep
+
 %setup -n %{tarname}-%{version}
-#cp %{S:2} .
-%patch
-%patch1
-%patch2
-#rm examples/pamexample
 
 %build
-#export CFLAGS="$RPM_OPT_FLAGS" 
+export CFLAGS="$RPM_OPT_FLAGS" 
 python setup.py build
 
 %install
@@ -47,9 +41,12 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=
 rm -rf $RPM_BUILD_ROOT
 
 %files -f INSTALLED_FILES
+
 %defattr(-,root,root)
+
 #%doc AUTHORS NEWS README ChangeLog COPYING
 #%doc examples
+
 %changelog
 * Wed Sep 17 2008 - j.schneider@uib.de
 - created new package
