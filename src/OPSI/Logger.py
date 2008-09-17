@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9'
+__version__ = '0.9.9.1'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
@@ -200,6 +200,8 @@ class LoggerImplementation:
 	
 	def addConfidentialString(self, string):
 		string = str(string)
+		if not string:
+			raise ValueError("Cannot use empty string as confidential string")
 		if string in self.__confidentialStrings:
 			return
 		self.__confidentialStrings.append(string)
