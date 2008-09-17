@@ -17,9 +17,9 @@ setup (
 		'OPSI',
 		'OPSI.Backend',
 		'OPSI.System',
-		'dav',
-		'dav.element',
-		'dav.method',
+		'OPSI.dav',
+		'OPSI.dav.element',
+		'OPSI.dav.method',
 	],
 	#data_files=[
 	#	('/usr/share/locale/de/LC_MESSAGES opsi_system.mo', ['gettext/opsi_system.mo', 'gettext/opsi_ui.mo'])
