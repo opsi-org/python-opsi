@@ -7,33 +7,24 @@
 # = = = = = = = = = = = = = = = = = = = = = = =
 
 case "$1" in
-    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
-	
+	upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
 	;;
-    remove)
 	
+	remove)
 	;;
-
-     purge)
-     	if [ ! -z "`getent passwd pcpatch`" ]; then
-		userdel pcpatch
-	fi
 	
-	if [ ! -z "`getent group pcpatch`" ]; then
-		groupdel pcpatch
-	fi
-	
-	test -e /etc/opsi/pckeys && rm -f /etc/opsi/pckeys
-	
+	purge)
+		[ -z "`getent passwd pcpatch`" ] || userdel pcpatch
+		[ -z "`getent group pcpatch`" ] || groupdel pcpatch
+		[ -e /etc/opsi/pckeys] && rm -f /etc/opsi/pckeys
 	;;
-    *)
-        echo "postrm called with unknown argument \`$1'" >&2
-        exit 1
+	
+	*)
+		echo "postrm called with unknown argument \`$1'" >&2
+		exit 1
 	;;
 
 esac
 
-if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
-	. /usr/share/debconf/confmodule
-	db_purge
-fi
+#DEBHELPER#
+
