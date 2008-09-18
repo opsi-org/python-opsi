@@ -8,7 +8,7 @@
 
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel
-Requires:       python-json
+Requires:       python-crypto python-json python-ldap python-newt python-pam python-pyopenssl, python-mysqldb, duplicity
 Url:            http://www.opsi.org
 License:        GPL v2 or later
 Group:          Productivity/Networking/Opsi
