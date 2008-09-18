@@ -37,16 +37,16 @@ install-python%: install-prereq
 
 install-indep:
 	mkdir -p debian/python-opsi/usr/share/locale/de/LC_MESSAGES
-	install -m 0644 gettext/opsi_system.mo debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
-	install -m 0644 gettext/opsi_ui.mo     debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
+	install -m 0644 gettext/opsi_system.mo debian/python-opsi/usr/share/locale/de/LC_MESSAGES/
+	install -m 0644 gettext/opsi_ui.mo     debian/python-opsi/usr/share/locale/de/LC_MESSAGES/
 	mkdir -p debian/python-opsi/etc/opsi/backendManager.d
 	for i in `(cd files/backendManager.d; ls *.conf)`; do install -m 0644 files/backendManager.d/$$i debian/python-opsi/etc/opsi/backendManager.d/; done
 	mkdir -p debian/python-opsi/etc/opsi/hwaudit/locales
-	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
+	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/
 	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done
 	mkdir -p debian/python-opsi/etc/ldap/schema
-	install -m 0644 files/opsi.schema debian/python-opsi/etc/ldap/schema/opsi.schema
-	install -m 0644 files/opsi-standalone.schema debian/python-opsi/etc/ldap/schema/opsi-standalone.schema
+	install -m 0644 files/opsi.schema debian/python-opsi/etc/ldap/schema/
+	install -m 0644 files/opsi-standalone.schema debian/python-opsi/etc/ldap/schema/
 	mkdir -p debian/python-opsi/usr/share/opsi
 	install -m 0755 files/share/init-opsi-mysql-db.py debian/python-opsi/usr/share/opsi/
 	install -m 0755 files/share/register-depot.py debian/python-opsi/usr/share/opsi/

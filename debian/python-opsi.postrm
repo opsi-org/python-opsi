@@ -16,7 +16,7 @@ case "$1" in
 	purge)
 		[ -z "`getent passwd pcpatch`" ] || userdel pcpatch
 		[ -z "`getent group pcpatch`" ] || groupdel pcpatch
-		[ -e /etc/opsi/pckeys] && rm -f /etc/opsi/pckeys
+		[ -e /etc/opsi/pckeys ] && rm -f /etc/opsi/pckeys
 	;;
 	
 	*)
