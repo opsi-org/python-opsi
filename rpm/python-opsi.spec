@@ -7,7 +7,7 @@
 #
 
 Name:           python-opsi
-BuildRequires:  python-devel
+BuildRequires:  python-devel gettext-devel
 Requires:       python-json
 Url:            http://www.opsi.org
 License:        GPL v2 or later
@@ -22,19 +22,27 @@ Source:         %{tarname}-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %{py_requires}
 
+# ===[ description ]================================
 %description
 This package contains the OPSI python library.
 
+# ===[ debug_package ]==============================
 %debug_package
 
+# ===[ prep ]=======================================
 %prep
 
+# ===[ setup ]======================================
 %setup -n %{tarname}-%{version}
 
+# ===[ build ]======================================
 %build
 export CFLAGS="$RPM_OPT_FLAGS" 
 python setup.py build
+msgfmt -o gettext/opsi_system.mo gettext/opsi_system_de.po
+msgfmt -o gettext/opsi_ui.mo gettext/opsi_ui_de.po
 
+# ===[ install ]====================================
 %install
 # install python files and record installed files in INSTALLED_FILES
 python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
@@ -53,11 +61,51 @@ mkdir -p $RPM_BUILD_ROOT/usr/share/opsi
 install -m 0755 files/share/init-opsi-mysql-db.py $RPM_BUILD_ROOT/usr/share/opsi/
 install -m 0755 files/share/register-depot.py $RPM_BUILD_ROOT/usr/share/opsi/
 echo %{version} > $RPM_BUILD_ROOT/etc/opsi/version
+mkdir -p $RPM_BUILD_ROOT/var/lib/opsi
 
-
+# ===[ clean ]======================================
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+
+# ===[ post ]=======================================
+%post
+if [ -z "`getent group pcpatch`" ]; then
+	groupadd -g 992 pcpatch
+fi
+
+if [ -z "`getent passwd pcpatch`" ]; then
+	useradd -u 992 -g 992 -d /var/lib/opsi -s /bin/bash pcpatch
+fi
+
+if [ -z "`getent group opsiadmin`" ]; then
+	groupadd opsiadmin
+fi
+
+chown -R pcpatch:pcpatch /etc/opsi/backendManager.d
+chmod 660 /etc/opsi/backendManager.d/*
+
+test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
+chown pcpatch:pcpatch /etc/opsi/pckeys
+chmod 660 /etc/opsi/pckeys
+
+test -e /etc/opsi/passwd || touch /etc/opsi/passwd
+chown pcpatch:pcpatch /etc/opsi/passwd
+chmod 660 /etc/opsi/passwd
+
+if [ -d /var/lib/opsi ]; then
+	chown pcpatch:pcpatch /var/lib/opsi
+	chmod 2750 /var/lib/opsi
+fi
+
+# ===[ postun ]========================================
+%postun
+[ -z "`getent passwd pcpatch`" ] || userdel pcpatch
+[ -z "`getent group pcpatch`" ] || groupdel pcpatch
+[ -e /etc/opsi/pckeys] && rm -f /etc/opsi/pckeys
+
+
+# ===[ files ]==========================================
 %files -f INSTALLED_FILES
 # default attributes
 %defattr(-,root,root)
@@ -91,8 +139,19 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/opsi/register-depot.py
 
 # directories
-%dir /etc/opsi
+%dir /var/lib/opsi
 
+
+# ===[ changelog ]=======================================
 %changelog
 * Wed Sep 17 2008 - j.schneider@uib.de
 - created new package
+
+
+
+
+
+
+
+
+
