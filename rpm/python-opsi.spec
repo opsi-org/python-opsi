@@ -8,7 +8,7 @@
 
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel
-Requires:       python-crypto python-json python-ldap python-newt python-pam python-pyopenssl, python-mysqldb, duplicity
+Requires:       python-curses python-crypto python-json python-ldap python-newt python-pam python-openssl python-mysql duplicity
 Url:            http://www.opsi.org
 License:        GPL v2 or later
 Group:          Productivity/Networking/Opsi
@@ -101,7 +101,7 @@ fi
 %postun
 [ -z "`getent passwd pcpatch`" ] || userdel pcpatch
 [ -z "`getent group pcpatch`" ] || groupdel pcpatch
-[ -e /etc/opsi/pckeys] && rm -f /etc/opsi/pckeys
+[ -e /etc/opsi/pckeys ] && rm -f /etc/opsi/pckeys
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
