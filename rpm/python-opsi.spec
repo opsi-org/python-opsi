@@ -11,7 +11,7 @@ BuildRequires:  python-devel gettext-devel
 Requires:       python-json
 Url:            http://www.opsi.org
 License:        GPL v2 or later
-Group:          Development/Libraries/Python
+Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
 Version:        3.0.0.25
 Release:        1
@@ -67,7 +67,6 @@ mkdir -p $RPM_BUILD_ROOT/var/lib/opsi
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-
 # ===[ post ]=======================================
 %post
 if [ -z "`getent group pcpatch`" ]; then
@@ -98,14 +97,13 @@ if [ -d /var/lib/opsi ]; then
 	chmod 2750 /var/lib/opsi
 fi
 
-# ===[ postun ]========================================
+# ===[ postun ]=====================================
 %postun
 [ -z "`getent passwd pcpatch`" ] || userdel pcpatch
 [ -z "`getent group pcpatch`" ] || groupdel pcpatch
 [ -e /etc/opsi/pckeys] && rm -f /etc/opsi/pckeys
 
-
-# ===[ files ]==========================================
+# ===[ files ]======================================
 %files -f INSTALLED_FILES
 # default attributes
 %defattr(-,root,root)
@@ -141,8 +139,7 @@ fi
 # directories
 %dir /var/lib/opsi
 
-
-# ===[ changelog ]=======================================
+# ===[ changelog ]==================================
 %changelog
 * Wed Sep 17 2008 - j.schneider@uib.de
 - created new package
