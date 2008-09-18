@@ -6,8 +6,9 @@ rpmdir=${topdir}/RPMS
 sourcedir=${topdir}/SOURCES
 specdir=${topdir}/SPECS
 srcrpmdir=${topdir}/SRPMS
-version=`grep -i ^Version  rpm/python-opsi.spec | awk '{ print $2 }'`
-tmpdir=/tmp/python-opsi-${version}
+packagename=python-opsi
+version=`grep -i ^Version  rpm/${packagename}.spec | awk '{ print $2 }'`
+tmpdir=/tmp/${packagename}-${version}
 cwd=`pwd`
 dir=${cwd}/`dirname $0`
 
@@ -20,11 +21,11 @@ test -e $tmpdir && rm -rf $tmpdir
 mkdir $tmpdir
 cp -r src files gettext setup.py ${tmpdir}/
 cd ${tmpdir}/..
-tar cjvf ${sourcedir}/python-opsi-${version}.tar.bz2 python-opsi-${version}
+tar cjvf ${sourcedir}/${packagename}-${version}.tar.bz2 ${packagename}-${version}
 rm -rf $tmpdir
 cd $dir
 
-cp python-opsi.spec $specdir/
-rpmbuild -ba $specdir/python-opsi.spec
+cp ${packagename}.spec $specdir/
+rpmbuild -ba $specdir/${packagename}.spec
 
 cd $cwd
