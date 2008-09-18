@@ -101,7 +101,8 @@ fi
 %postun
 [ -z "`getent passwd pcpatch`" ] || userdel pcpatch
 [ -z "`getent group pcpatch`" ] || groupdel pcpatch
-[ -e /etc/opsi/pckeys ] && rm -f /etc/opsi/pckeys
+[ -z "`getent group opsiadmin`" ] || groupdel opsiadmin
+#[ -e /etc/opsi/pckeys ] && rm -f /etc/opsi/pckeys
 
 # ===[ files ]======================================
 %files -f INSTALLED_FILES
