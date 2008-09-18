@@ -80,46 +80,18 @@ rm -rf $RPM_BUILD_ROOT
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US
+%config /etc/openldap/schema/opsi.schema
+%config /etc/openldap/schema/opsi-standalone.schema
+%config /etc/opsi/version
 
 # other files
 /usr/share/locale/de/LC_MESSAGES/opsi_system.mo
 /usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
-/etc/openldap/schema/opsi.schema
-/etc/openldap/schema/opsi-standalone.schema
+/usr/share/opsi/init-opsi-mysql-db.py
+/usr/share/opsi/register-depot.py
 
-/usr/bin/omshell
-%dir /var/lib/dhcp
-%doc %{_mandir}/man1/omshell.1.gz
-%doc %{_mandir}/man5/dhcp-eval.5.gz
-%{susefw2dir}/dhcp-server
-%defattr(-,root,root)
-%doc clearip reset-ip
-%doc dnscompr.py
-/usr/sbin/dhcpd
-/usr/sbin/dhcpd.bsd
-/usr/sbin/rcdhcpd
-/usr/sbin/svtest
-%config /usr/sbin/dhcpsync
-%config /usr/sbin/leasestate
-%config /usr/sbin/listlease
-%config /usr/sbin/leases.awk
-%config /etc/init.d/dhcpd
-%dir /var/lib/dhcp/var
-%dir /var/lib/dhcp/var/run
-%attr(755,dhcpd,root) %dir /var/lib/dhcp/db
-%dir /var/lib/dhcp/etc
-%dir /var/lib/dhcp/dev
-%doc %{_mandir}/man5/dhcpd.conf.5.gz
-%doc %{_mandir}/man5/dhcp-options.5.gz
-%doc %{_mandir}/man5/dhcpd.leases.5.gz
-%doc %{_mandir}/man8/dhcpd.8.gz
-%doc %{_mandir}/man8/dhcpsync.8.gz
-%doc dhcpd.conf LIESMICH.%VENDOR README.%VENDOR README.upgrade 3.0b1-lease-convert DDNS-howto.txt genDDNSKey.sh
-%doc examples
-%doc contrib/ms2isc
-
-#%doc AUTHORS NEWS README ChangeLog COPYING
-#%doc examples
+# directories
+%dir /etc/opsi
 
 %changelog
 * Wed Sep 17 2008 - j.schneider@uib.de
