@@ -20,6 +20,7 @@ Summary:        opsi python library
 Source:         %{tarname}-%{version}.tar.bz2
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+BuildArch:      noarch
 %{py_requires}
 
 # ===[ description ]================================
