@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.6'
+__version__ = '1.1.7'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -81,7 +81,7 @@ def setUI(ui):
 
 def which(cmd):
 	if not WHICH_CACHE.has_key(cmd):
-		w = os.popen('%s "%s"' % (BIN_WHICH, cmd))
+		w = os.popen('%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
 		path = w.readline().strip()
 		w.close()
 		if not path:
