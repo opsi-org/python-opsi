@@ -53,7 +53,7 @@ install -m 0644 gettext/opsi_ui.mo     $RPM_BUILD_ROOT/usr/share/locale/de/LC_ME
 mkdir -p $RPM_BUILD_ROOT/etc/opsi/backendManager.d
 for i in `(cd files/backendManager.d; ls *.conf)`; do install -m 0644 files/backendManager.d/$i $RPM_BUILD_ROOT/etc/opsi/backendManager.d/; done
 cat files/backendManager.d/13_dhcpd.conf \
-    | sed 's#"dhcpdConfigFile":.*#"dhcpdConfigFile":         "/etc/dhcpd.conf"#' \
+    | sed 's#"dhcpdConfigFile":.*#"dhcpdConfigFile":         "/etc/dhcpd.conf",#' \
     | sed 's#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' \
     > $RPM_BUILD_ROOT/etc/opsi/backendManager.d/13_dhcpd.conf
 mkdir -p $RPM_BUILD_ROOT/etc/opsi/hwaudit/locales
