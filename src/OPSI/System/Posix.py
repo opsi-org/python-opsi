@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.7'
+__version__ = '1.1.8'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal
@@ -1614,24 +1614,20 @@ class Harddisk:
 		if start.lower().endswith('m') or start.lower().endswith('mb'):
 			match = re.search('^(\d+)\D', start)
 			start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
-			
 		elif start.lower().endswith('%'):
 			match = re.search('^(\d+)\D', start)
 			start = int(round( (float(match.group(1))/100) * self.cylinders ))
 		else:
-			raise Exception("Unsupported unit '%s' (please use MB or %)" % start)
-		
+			start = int(start)
 		
 		if end.lower().endswith('m') or end.lower().endswith('mb'):
 			match = re.search('^(\d+)\D', end)
 			end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
-			
 		elif end.lower().endswith('%'):
 			match = re.search('^(\d+)\D', end)
 			end = int(round( (float(match.group(1))/100) * self.cylinders ))
 		else:
-			raise Exception("Unsupported unit '%s' (please use MB or %)" % end)
-		
+			end = int(end)
 		
 		if (start < 1):
 			# Lowest possible cylinder is 1
