@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_cgi -*-
+# -*- test-case-name: OPSI.web2.test.test_cgi -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -22,11 +22,11 @@ from twisted.internet import defer, protocol, reactor
 from twisted.python import log, filepath
 
 # Sibling Imports
-from twisted.web2 import http
-from twisted.web2 import resource
-from twisted.web2 import responsecode
-from twisted.web2 import server
-from twisted.web2 import stream
+from OPSI.web2 import http
+from OPSI.web2 import resource
+from OPSI.web2 import responsecode
+from OPSI.web2 import server
+from OPSI.web2 import stream
 
 
 headerNameTranslation = ''.join([c.isalnum() and c.upper() or '_' for c in map(chr, range(256))])

@@ -45,10 +45,10 @@ from twisted.python import log
 from twisted.python.filepath import FilePath
 from twisted.python.failure import Failure
 from twisted.internet.defer import succeed, deferredGenerator, waitForDeferred
-from twisted.web2 import responsecode
-from twisted.web2.http import StatusResponse, HTTPError
-from twisted.web2.stream import FileStream, readIntoFile
-from twisted.web2.dav.http import ResponseQueue, statusForFailure
+from OPSI.web2 import responsecode
+from OPSI.web2.http import StatusResponse, HTTPError
+from OPSI.web2.stream import FileStream, readIntoFile
+from OPSI.web2.dav.http import ResponseQueue, statusForFailure
 
 def delete(uri, filepath, depth="infinity"):
     """

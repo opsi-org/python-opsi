@@ -1,6 +1,6 @@
 from twisted.internet import protocol
-from twisted.web2 import responsecode
-from twisted.web2.channel import cgi as cgichannel
+from OPSI.web2 import responsecode
+from OPSI.web2.channel import cgi as cgichannel
 
 
 class SCGIChannelRequest(cgichannel.BaseCGIChannelRequest):

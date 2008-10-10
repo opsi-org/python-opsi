@@ -3,7 +3,7 @@
 
 """
 
-twisted.web2.test: unittests for the Twisted Web2, Web Server Framework
+OPSI.web2.test: unittests for the Twisted Web2, Web Server Framework
 
 """
 

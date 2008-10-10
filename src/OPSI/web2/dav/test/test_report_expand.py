@@ -24,9 +24,9 @@
 
 from twisted.trial.unittest import SkipTest
 
-import twisted.web2.dav.test.util
+import OPSI.web2.dav.test.util
 
-class REPORT_expand(twisted.web2.dav.test.util.TestCase):
+class REPORT_expand(OPSI.web2.dav.test.util.TestCase):
     """
     DAV:expand-property REPORT request
     """

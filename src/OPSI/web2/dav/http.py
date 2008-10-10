@@ -38,11 +38,11 @@ import errno
 
 from twisted.python import log
 from twisted.python.failure import Failure
-from twisted.web2 import responsecode
-from twisted.web2.iweb import IResponse
-from twisted.web2.http import Response, HTTPError, StatusResponse
-from twisted.web2.http_headers import MimeType
-from twisted.web2.dav import davxml
+from OPSI.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.http import Response, HTTPError, StatusResponse
+from OPSI.web2.http_headers import MimeType
+from OPSI.web2.dav import davxml
 
 ##
 # Generating and tweaking responses

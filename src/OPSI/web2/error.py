@@ -2,11 +2,11 @@
 # See LICENSE for details.
 
 """
-Default error output filter for twisted.web2.
+Default error output filter for OPSI.web2.
 """
 
-from twisted.web2 import stream, http_headers
-from twisted.web2.responsecode import *
+from OPSI.web2 import stream, http_headers
+from OPSI.web2.responsecode import *
 
 # 300 - Should include entity with choices
 # 301 -

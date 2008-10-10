@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_httpauth -*-
+# -*- test-case-name: OPSI.web2.test.test_httpauth -*-
 
 """
 Wrapper Resources for rfc2617 HTTP Auth.
@@ -6,10 +6,10 @@ Wrapper Resources for rfc2617 HTTP Auth.
 from zope.interface import implements, directlyProvides
 from twisted.cred import error, credentials
 from twisted.python import failure
-from twisted.web2 import responsecode
-from twisted.web2 import http
-from twisted.web2 import iweb
-from twisted.web2.auth.interfaces import IAuthenticatedRequest
+from OPSI.web2 import responsecode
+from OPSI.web2 import http
+from OPSI.web2 import iweb
+from OPSI.web2.auth.interfaces import IAuthenticatedRequest
 
 class UnauthorizedResponse(http.StatusResponse):
     """A specialized response class for generating www-authenticate headers
@@ -46,7 +46,7 @@ class HTTPAuthResource(object):
     def __init__(self, wrappedResource, credentialFactories,
                  portal, interfaces):
         """
-        @param wrappedResource: A L{twisted.web2.iweb.IResource} to be returned
+        @param wrappedResource: A L{OPSI.web2.iweb.IResource} to be returned
                                 from locateChild and render upon successful
                                 authentication.
 

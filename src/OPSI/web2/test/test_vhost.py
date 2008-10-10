@@ -1,10 +1,10 @@
-from twisted.web2.test.test_server import BaseCase, BaseTestResource
-from twisted.web2 import resource
-from twisted.web2 import vhost
-from twisted.web2 import http, responsecode
-from twisted.web2 import iweb
-from twisted.web2 import stream
-from twisted.web2 import http_headers
+from OPSI.web2.test.test_server import BaseCase, BaseTestResource
+from OPSI.web2 import resource
+from OPSI.web2 import vhost
+from OPSI.web2 import http, responsecode
+from OPSI.web2 import iweb
+from OPSI.web2 import stream
+from OPSI.web2 import http_headers
 
 class HostResource(BaseTestResource):
     addSlash=True

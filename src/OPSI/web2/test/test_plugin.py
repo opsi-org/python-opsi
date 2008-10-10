@@ -1,6 +1,6 @@
 from twisted.trial import unittest
-from twisted.web2 import resource, http
-from twisted.web2 import plugin
+from OPSI.web2 import resource, http
+from OPSI.web2 import plugin
 
 class MyDefaultResource(plugin.PluginResource):
     def render(self, req):

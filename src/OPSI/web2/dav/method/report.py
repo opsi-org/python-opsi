@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_report -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_report -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -33,11 +33,11 @@ import string
 
 from twisted.python import log
 from twisted.internet.defer import deferredGenerator, waitForDeferred
-from twisted.web2 import responsecode
-from twisted.web2.http import HTTPError, StatusResponse
-from twisted.web2.dav import davxml
-from twisted.web2.dav.http import ErrorResponse
-from twisted.web2.dav.util import davXMLFromStream
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import ErrorResponse
+from OPSI.web2.dav.util import davXMLFromStream
 
 def http_REPORT(self, request):
     """

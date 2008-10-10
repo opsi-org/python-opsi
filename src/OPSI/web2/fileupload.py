@@ -6,9 +6,9 @@ import urllib
 import tempfile
 
 from twisted.internet import defer
-from twisted.web2.stream import IStream, FileStream, BufferedStream, readStream
-from twisted.web2.stream import generatorToStream, readAndDiscard
-from twisted.web2 import http_headers
+from OPSI.web2.stream import IStream, FileStream, BufferedStream, readStream
+from OPSI.web2.stream import generatorToStream, readAndDiscard
+from OPSI.web2 import http_headers
 from cStringIO import StringIO
 
 ###################################

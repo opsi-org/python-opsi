@@ -37,17 +37,17 @@ import urllib
 from zope.interface import implements
 from twisted.python import log
 from twisted.internet.defer import maybeDeferred, succeed
-from twisted.web2 import responsecode
-from twisted.web2.dav import davxml
-from twisted.web2.dav.davxml import dav_namespace, lookupElement
-from twisted.web2.dav.idav import IDAVResource
-from twisted.web2.dav.noneprops import NonePropertyStore
-from twisted.web2.dav.util import unimplemented
-from twisted.web2.http import HTTPError, RedirectResponse, StatusResponse
-from twisted.web2.http_headers import generateContentType
-from twisted.web2.iweb import IResponse
-from twisted.web2.resource import LeafResource
-from twisted.web2.static import MetaDataMixin, StaticRenderMixin
+from OPSI.web2 import responsecode
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.davxml import dav_namespace, lookupElement
+from OPSI.web2.dav.idav import IDAVResource
+from OPSI.web2.dav.noneprops import NonePropertyStore
+from OPSI.web2.dav.util import unimplemented
+from OPSI.web2.http import HTTPError, RedirectResponse, StatusResponse
+from OPSI.web2.http_headers import generateContentType
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.resource import LeafResource
+from OPSI.web2.static import MetaDataMixin, StaticRenderMixin
 
 twisted_dav_namespace = "http://twistedmatrix.com/xml_namespace/dav/"
 twisted_private_namespace = "http://twistedmatrix.com/xml_namespace/dav/private/"

@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_report_expand -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_report_expand -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -32,10 +32,10 @@ __all__ = ["report_DAV__expand_property"]
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.internet.defer import deferredGenerator, waitForDeferred
-from twisted.web2 import responsecode
-from twisted.web2.dav import davxml
-from twisted.web2.dav.http import statusForFailure
-from twisted.web2.dav.davxml import dav_namespace
+from OPSI.web2 import responsecode
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import statusForFailure
+from OPSI.web2.dav.davxml import dav_namespace
 
 def report_DAV__expand_property(self, request, expand_property):
     """

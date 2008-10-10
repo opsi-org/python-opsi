@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_log -*-
+# -*- test-case-name: OPSI.web2.test.test_log -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -7,7 +7,7 @@
 import time
 from twisted.python import log as tlog
 from twisted.internet import defer
-from twisted.web2 import iweb, stream, resource
+from OPSI.web2 import iweb, stream, resource
 from zope.interface import implements, Attribute, Interface
 
 class _LogByteCounter(object):

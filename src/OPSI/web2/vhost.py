@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_vhost -*-
+# -*- test-case-name: OPSI.web2.test.test_vhost -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -15,10 +15,10 @@ from twisted.internet import address
 from twisted.python import log
 
 # Sibling Imports
-from twisted.web2 import resource
-from twisted.web2 import responsecode
-from twisted.web2 import iweb
-from twisted.web2 import http
+from OPSI.web2 import resource
+from OPSI.web2 import responsecode
+from OPSI.web2 import iweb
+from OPSI.web2 import http
 
 class NameVirtualHost(resource.Resource):
     """Resource in charge of dispatching requests to other resources based on
@@ -35,7 +35,7 @@ class NameVirtualHost(resource.Resource):
         """
         @param default: The default resource to be served when encountering an
             unknown hostname.
-        @type default: L{twisted.web2.iweb.IResource} or C{None}
+        @type default: L{OPSI.web2.iweb.IResource} or C{None}
         """
         resource.Resource.__init__(self)
         self.hosts = {}
@@ -56,9 +56,9 @@ class NameVirtualHost(resource.Resource):
         @param name: The FQDN to be matched to the 'Host' header.
         @type name: C{str}
 
-        @param resrc: The L{twisted.web2.iweb.IResource} to be served as the
+        @param resrc: The L{OPSI.web2.iweb.IResource} to be served as the
             given hostname.
-        @type resource: L{twisted.web2.iweb.IResource}
+        @type resource: L{OPSI.web2.iweb.IResource}
         """
         self.hosts[name] = resrc
 
@@ -116,7 +116,7 @@ class AutoVHostURIRewrite(object):
     def __init__(self, resource, sendsRealHost=False):
         """
         @param resource: The resource to serve after mutating the request.
-        @type resource: L{twisted.web2.iweb.IResource}
+        @type resource: L{OPSI.web2.iweb.IResource}
         
         @param sendsRealHost: If True then the proxy will be expected to send the
             HTTP 'Host' header that was sent by the requesting client.
@@ -208,7 +208,7 @@ class VHostURIRewrite(object):
         @type uri: C{str}
         
         @param resource: The resource to serve after mutating the request.
-        @type resource: L{twisted.web2.iweb.IResource}
+        @type resource: L{OPSI.web2.iweb.IResource}
         """
 
         self.resource = resource

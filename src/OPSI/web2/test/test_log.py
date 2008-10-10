@@ -1,8 +1,8 @@
 # Copyright (c) 2001-2007 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
-from twisted.web2 import log, resource, http
-from twisted.web2.test.test_server import BaseCase, BaseTestResource
+from OPSI.web2 import log, resource, http
+from OPSI.web2.test.test_server import BaseCase, BaseTestResource
 
 from twisted.python import log as tlog
 

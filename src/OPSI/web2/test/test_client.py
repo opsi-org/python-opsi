@@ -2,12 +2,12 @@ from twisted.python import failure
 
 from twisted.internet import protocol, interfaces, defer
 
-from twisted.web2.client import http
-from twisted.web2 import http_headers
+from OPSI.web2.client import http
+from OPSI.web2 import http_headers
 
-from twisted.web2 import stream
+from OPSI.web2 import stream
 
-from twisted.web2.test.test_http import LoopbackRelay, HTTPTests, TestConnection
+from OPSI.web2.test.test_http import LoopbackRelay, HTTPTests, TestConnection
 
 class TestServer(protocol.Protocol):
     data = ""

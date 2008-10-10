@@ -23,9 +23,9 @@
 ##
 
 from twisted.trial.unittest import SkipTest
-import twisted.web2.dav.test.util
+import OPSI.web2.dav.test.util
 
-class LOCK_UNLOCK(twisted.web2.dav.test.util.TestCase):
+class LOCK_UNLOCK(OPSI.web2.dav.test.util.TestCase):
     """
     LOCK, UNLOCK requests
     """

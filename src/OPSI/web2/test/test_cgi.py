@@ -3,9 +3,9 @@ import sys, os
 from twisted.trial import unittest
 from twisted.internet import reactor, interfaces, defer
 from twisted.python import util
-from twisted.web2 import twcgi, server, http, iweb
-from twisted.web2 import stream
-from twisted.web2.test.test_server import SimpleRequest
+from OPSI.web2 import twcgi, server, http, iweb
+from OPSI.web2 import stream
+from OPSI.web2.test.test_server import SimpleRequest
 
 DUMMY_CGI = '''
 print "Header: OK"
@@ -43,7 +43,7 @@ def readStreamToString(s):
     """
     Read all data from a stream into a string.
 
-    @param s: a L{twisted.web2.stream.IByteStream} to read from.
+    @param s: a L{OPSI.web2.stream.IByteStream} to read from.
     @return: a L{Deferred} results in a str
     """
     allData = []
@@ -178,7 +178,7 @@ if not interfaces.IReactorProcess.providedBy(reactor):
 
 class CGIDirectoryTest(CGITestBase):
     """
-    Test cases for twisted.web2.twcgi.CGIDirectory
+    Test cases for OPSI.web2.twcgi.CGIDirectory
     """
 
     def setUp(self):

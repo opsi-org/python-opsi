@@ -1,10 +1,10 @@
 import os
 
-from twisted.web2.test.test_server import BaseCase
-from twisted.web2 import static
-from twisted.web2 import http_headers
-from twisted.web2 import stream
-from twisted.web2 import iweb
+from OPSI.web2.test.test_server import BaseCase
+from OPSI.web2 import static
+from OPSI.web2 import http_headers
+from OPSI.web2 import stream
+from OPSI.web2 import iweb
 
 class TestData(BaseCase):
     def setUp(self):

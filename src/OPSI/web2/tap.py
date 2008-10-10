@@ -6,8 +6,8 @@ from twisted.application import internet, service, strports
 from twisted.scripts.mktap import IServiceMaker
 from twisted.plugin import IPlugin
 
-from twisted.web2 import static, iweb, log, server, channel, vhost
-from twisted.web2.dav import static as dav_static
+from OPSI.web2 import static, iweb, log, server, channel, vhost
+from OPSI.web2.dav import static as dav_static
 
 class Options(usage.Options):
     optParameters = [["port", "p", "8080",
@@ -97,7 +97,7 @@ Or to serve a specific host name as a dynamic resource:
         self['root'].processors[ext] = reflect.namedClass(klass)
 
     def opt_class(self, className):
-        """A class that will be used to serve the root resource.  Must implement twisted.web2.iweb.IResource and take no arguments.
+        """A class that will be used to serve the root resource.  Must implement OPSI.web2.iweb.IResource and take no arguments.
         """
         if self['root']:
             raise usage.UsageError("You may only have one root resource.")

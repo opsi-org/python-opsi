@@ -49,8 +49,8 @@ import xml.dom.minidom
 import datetime
 
 from twisted.python import log
-from twisted.web2.http_headers import parseDateTime
-from twisted.web2.dav.element.util import PrintXML, decodeXMLName
+from OPSI.web2.http_headers import parseDateTime
+from OPSI.web2.dav.element.util import PrintXML, decodeXMLName
 
 ##
 # Base XML elements

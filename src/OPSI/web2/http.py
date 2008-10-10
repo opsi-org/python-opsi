@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_http -*-
+# -*- test-case-name: OPSI.web2.test.test_http -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -22,11 +22,11 @@ from twisted.python import log, components
 from zope.interface import implements
 
 # sibling imports
-from twisted.web2 import responsecode
-from twisted.web2 import http_headers
-from twisted.web2 import iweb
-from twisted.web2 import stream
-from twisted.web2.stream import IByteStream
+from OPSI.web2 import responsecode
+from OPSI.web2 import http_headers
+from OPSI.web2 import iweb
+from OPSI.web2 import stream
+from OPSI.web2.stream import IByteStream
 
 defaultPortForScheme = {'http': 80, 'https':443, 'ftp':21}
 
@@ -88,11 +88,11 @@ class Response(object):
         @type code: C{int}
         
         @param headers: Headers to be sent to the client.
-        @type headers: C{dict}, L{twisted.web2.http_headers.Headers}, or 
+        @type headers: C{dict}, L{OPSI.web2.http_headers.Headers}, or 
             C{None}
         
         @param stream: Content body to send to the HTTP client
-        @type stream: L{twisted.web2.stream.IByteStream}
+        @type stream: L{OPSI.web2.stream.IByteStream}
         """
 
         if code is not None:
@@ -457,7 +457,7 @@ class Request(object):
         d.addCallback(self._finished).addErrback(self._error)
 
     
-from twisted.web2 import compat
+from OPSI.web2 import compat
 components.registerAdapter(compat.makeOldRequestAdapter, iweb.IRequest, iweb.IOldRequest)
 components.registerAdapter(compat.OldNevowResourceAdapter, iweb.IOldNevowResource, iweb.IResource)
 components.registerAdapter(Response, int, iweb.IResponse)

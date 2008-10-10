@@ -30,11 +30,11 @@ __all__ = ["DAVPrincipalResource"]
 
 from zope.interface import implements
 from twisted.internet.defer import maybeDeferred
-from twisted.web2.dav import davxml
-from twisted.web2.dav.davxml import dav_namespace
-from twisted.web2.dav.idav import IDAVPrincipalResource
-from twisted.web2.dav.resource import DAVLeafResource
-from twisted.web2.dav.util import unimplemented
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.davxml import dav_namespace
+from OPSI.web2.dav.idav import IDAVPrincipalResource
+from OPSI.web2.dav.resource import DAVLeafResource
+from OPSI.web2.dav.util import unimplemented
 
 class DAVPrincipalResource (DAVLeafResource):
     """

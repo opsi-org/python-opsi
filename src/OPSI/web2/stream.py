@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_stream -*-
+# -*- test-case-name: OPSI.web2.test.test_stream -*-
 
 """
 The stream module provides a simple abstraction of streaming
@@ -920,7 +920,7 @@ def generatorToStream(fun):
     takes care of ensuring that the input is not a deferred before
     you see it.
     
-    >>> from twisted.web2 import stream
+    >>> from OPSI.web2 import stream
     >>> from string import maketrans
     >>> alphabet = 'abcdefghijklmnopqrstuvwxyz'
     >>>

@@ -26,7 +26,7 @@
 WebDAV methods.
 
 Modules in this package provide the implementation of
-twisted.web2.dav.static.DAVFile's dispatched methods.
+OPSI.web2.dav.static.DAVFile's dispatched methods.
 """
 
 __all__ = [

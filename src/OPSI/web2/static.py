@@ -12,8 +12,8 @@ import tempfile
 import md5
 
 # Sibling Imports
-from twisted.web2 import http_headers, resource
-from twisted.web2 import http, iweb, stream, responsecode, server, dirlist
+from OPSI.web2 import http_headers, resource
+from OPSI.web2 import http, iweb, stream, responsecode, server, dirlist
 
 # Twisted Imports
 from twisted.python import filepath
@@ -590,7 +590,7 @@ def getTypeAndEncoding(filename, types, encodings, defaultType):
 if __name__ == '__builtin__':
     # Running from twistd -y
     from twisted.application import service, strports
-    from twisted.web2 import server
+    from OPSI.web2 import server
     res = File('/')
     application = service.Application("demo")
     s = strports.service('8080', server.Site(res))

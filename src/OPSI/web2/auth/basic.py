@@ -1,7 +1,7 @@
-# -*- test-case-name: twisted.web2.test.test_httpauth -*-
+# -*- test-case-name: OPSI.web2.test.test_httpauth -*-
 
 from twisted.cred import credentials, error
-from twisted.web2.auth.interfaces import ICredentialFactory
+from OPSI.web2.auth.interfaces import ICredentialFactory
 
 from zope.interface import implements
 

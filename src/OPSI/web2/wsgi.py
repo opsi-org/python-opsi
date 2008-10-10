@@ -8,11 +8,11 @@ from zope.interface import implements
 
 from twisted.internet import defer
 from twisted.python import log, failure
-from twisted.web2 import http
-from twisted.web2 import iweb
-from twisted.web2 import server
-from twisted.web2 import stream
-from twisted.web2.twcgi import createCGIEnvironment
+from OPSI.web2 import http
+from OPSI.web2 import iweb
+from OPSI.web2 import server
+from OPSI.web2 import stream
+from OPSI.web2.twcgi import createCGIEnvironment
 
 
 class AlreadyStartedResponse(Exception):

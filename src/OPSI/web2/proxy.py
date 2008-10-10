@@ -21,9 +21,9 @@ ReverseProxy is used on the server end.
 """
 
 # twisted imports
-from twisted.web2 import http
+from OPSI.web2 import http
 from twisted.internet import reactor, protocol
-from twisted.web2 import resource, server
+from OPSI.web2 import resource, server
 from zope.interface import implements, Interface
 
 # system imports
@@ -126,7 +126,7 @@ class Proxy(http.HTTPChannel):
     Since it inherits from twisted.protocols.http.HTTPChannel, to use it you
     should do something like this::
 
-        from twisted.web2 import http
+        from OPSI.web2 import http
         f = http.HTTPFactory()
         f.protocol = Proxy
 

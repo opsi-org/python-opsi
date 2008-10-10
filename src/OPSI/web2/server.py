@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_server -*-
+# -*- test-case-name: OPSI.web2.test.test_server -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -22,12 +22,12 @@ from twisted.internet import defer
 from twisted.python import log, failure
 
 # Sibling Imports
-from twisted.web2 import http, iweb, fileupload, responsecode
-from twisted.web2 import http_headers
-from twisted.web2.filter.range import rangefilter
-from twisted.web2 import error
+from OPSI.web2 import http, iweb, fileupload, responsecode
+from OPSI.web2 import http_headers
+from OPSI.web2.filter.range import rangefilter
+from OPSI.web2 import error
 
-from twisted.web2 import version as web2_version
+from OPSI.web2 import version as web2_version
 from twisted import __version__ as twisted_version
 
 VERSION = "Twisted/%s TwistedWeb/%s" % (twisted_version, web2_version)

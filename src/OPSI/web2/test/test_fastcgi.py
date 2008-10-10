@@ -1,6 +1,6 @@
 
 from twisted.trial import unittest
-from twisted.web2.channel import fastcgi
+from OPSI.web2.channel import fastcgi
 from twisted.python import util
 
 class FCGI(unittest.TestCase):

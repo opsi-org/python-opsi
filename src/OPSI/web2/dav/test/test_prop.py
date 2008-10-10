@@ -25,31 +25,31 @@
 import random
 
 from twisted.trial.unittest import SkipTest
-from twisted.web2 import responsecode
-from twisted.web2.iweb import IResponse
-from twisted.web2.stream import MemoryStream
-from twisted.web2 import http_headers
-from twisted.web2.dav import davxml
-from twisted.web2.dav.resource import DAVResource
-from twisted.web2.dav.davxml import dav_namespace, lookupElement
-from twisted.web2.dav.util import davXMLFromStream
-from twisted.web2.test.test_server import SimpleRequest
-from twisted.web2.dav.test.util import serialize
-import twisted.web2.dav.test.util
+from OPSI.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.stream import MemoryStream
+from OPSI.web2 import http_headers
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.resource import DAVResource
+from OPSI.web2.dav.davxml import dav_namespace, lookupElement
+from OPSI.web2.dav.util import davXMLFromStream
+from OPSI.web2.test.test_server import SimpleRequest
+from OPSI.web2.dav.test.util import serialize
+import OPSI.web2.dav.test.util
 
 live_properties = [lookupElement(qname)() for qname in DAVResource.liveProperties if qname[0] == dav_namespace]
 
 #
 # See whether dead properties are available
 #
-from twisted.web2.dav.noneprops import NonePropertyStore
-from twisted.web2.dav.static import DeadPropertyStore
+from OPSI.web2.dav.noneprops import NonePropertyStore
+from OPSI.web2.dav.static import DeadPropertyStore
 if DeadPropertyStore == NonePropertyStore:
     have_dead_properties = False
 else:
     have_dead_properties = True
 
-class PROP(twisted.web2.dav.test.util.TestCase):
+class PROP(OPSI.web2.dav.test.util.TestCase):
     """
     PROPFIND, PROPPATCH requests
     """

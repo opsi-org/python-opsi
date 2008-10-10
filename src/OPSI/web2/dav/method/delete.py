@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_delete -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_delete -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -30,9 +30,9 @@ WebDAV DELETE method
 __all__ = ["http_DELETE"]
 
 from twisted.python import log
-from twisted.web2 import responsecode
-from twisted.web2.http import HTTPError
-from twisted.web2.dav.fileop import delete
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError
+from OPSI.web2.dav.fileop import delete
 
 def http_DELETE(self, request):
     """

@@ -35,31 +35,31 @@ See RFC 3253: http://www.ietf.org/rfc/rfc3253.txt (WebDAV + Versioning)
 See RFC 3744: http://www.ietf.org/rfc/rfc3744.txt (WebDAV ACLs)
 """
 
-from twisted.web2.dav.element.parser import registerElements, WebDAVDocument, lookupElement
-from twisted.web2.dav.element.util import encodeXMLName, decodeXMLName
+from OPSI.web2.dav.element.parser import registerElements, WebDAVDocument, lookupElement
+from OPSI.web2.dav.element.util import encodeXMLName, decodeXMLName
 
 #
 # Import all XML element definitions
 #
 
-from twisted.web2.dav.element.base    import *
-from twisted.web2.dav.element.rfc2518 import *
-from twisted.web2.dav.element.rfc3253 import *
-from twisted.web2.dav.element.rfc3744 import *
+from OPSI.web2.dav.element.base    import *
+from OPSI.web2.dav.element.rfc2518 import *
+from OPSI.web2.dav.element.rfc3253 import *
+from OPSI.web2.dav.element.rfc3744 import *
 
 #
 # Register all XML elements with the parser
 #
 
-import twisted.web2.dav.element.base
-import twisted.web2.dav.element.rfc2518
-import twisted.web2.dav.element.rfc3253
-import twisted.web2.dav.element.rfc3744
+import OPSI.web2.dav.element.base
+import OPSI.web2.dav.element.rfc2518
+import OPSI.web2.dav.element.rfc3253
+import OPSI.web2.dav.element.rfc3744
 
 __all__ = (
-    registerElements(twisted.web2.dav.element.base   ) +
-    registerElements(twisted.web2.dav.element.rfc2518) +
-    registerElements(twisted.web2.dav.element.rfc3253) +
-    registerElements(twisted.web2.dav.element.rfc3744) +
+    registerElements(OPSI.web2.dav.element.base   ) +
+    registerElements(OPSI.web2.dav.element.rfc2518) +
+    registerElements(OPSI.web2.dav.element.rfc3253) +
+    registerElements(OPSI.web2.dav.element.rfc3744) +
     ["registerElements", "WebDAVDocument", "lookupElement", "encodeXMLName", "decodeXMLName"]
 )

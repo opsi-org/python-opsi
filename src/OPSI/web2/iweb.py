@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test -*-
+# -*- test-case-name: OPSI.web2.test -*-
 
 """
     I contain the interfaces for several web related objects including IRequest

@@ -25,16 +25,16 @@
 import os
 import filecmp
 
-from twisted.web2 import responsecode
-from twisted.web2.iweb import IResponse
-from twisted.web2.stream import FileStream
-from twisted.web2.http import HTTPError
+from OPSI.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.stream import FileStream
+from OPSI.web2.http import HTTPError
 
-import twisted.web2.dav.test.util
-from twisted.web2.test.test_server import SimpleRequest
-from twisted.web2.dav.test.util import serialize
+import OPSI.web2.dav.test.util
+from OPSI.web2.test.test_server import SimpleRequest
+from OPSI.web2.dav.test.util import serialize
 
-class PUT(twisted.web2.dav.test.util.TestCase):
+class PUT(OPSI.web2.dav.test.util.TestCase):
     """
     PUT request
     """

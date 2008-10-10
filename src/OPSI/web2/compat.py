@@ -5,7 +5,7 @@ from urllib import quote, string
 import UserDict, math, time
 from cStringIO import StringIO
 
-from twisted.web2 import http_headers, iweb, stream, responsecode
+from OPSI.web2 import http_headers, iweb, stream, responsecode
 from twisted.internet import defer, address
 from twisted.python import components
 from twisted.spread import pb
@@ -123,7 +123,7 @@ class OldRequestAdapter(pb.Copyable, components.Componentized, object):
     host = property(_getHost)
     
     def __init__(self, request):
-        from twisted.web2 import http
+        from OPSI.web2 import http
         components.Componentized.__init__(self)
         self.request = request
         self.response = http.Response(stream=stream.ProducerStream())
@@ -367,7 +367,7 @@ class OldNevowResourceAdapter(object):
         delattr(self.__original, name)
 
     def locateChild(self, ctx, segments):
-        from twisted.web2.server import parsePOSTData
+        from OPSI.web2.server import parsePOSTData
         request = iweb.IRequest(ctx)
         if request.method == "POST":
             return parsePOSTData(request).addCallback(
@@ -375,7 +375,7 @@ class OldNevowResourceAdapter(object):
         return self.__original.locateChild(ctx, segments)
     
     def renderHTTP(self, ctx):
-        from twisted.web2.server import parsePOSTData
+        from OPSI.web2.server import parsePOSTData
         request = iweb.IRequest(ctx)
         if request.method == "POST":
             return parsePOSTData(request).addCallback(self.__reallyRender, ctx)

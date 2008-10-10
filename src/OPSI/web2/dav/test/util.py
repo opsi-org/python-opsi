@@ -32,9 +32,9 @@ from random import randrange, choice
 from twisted.python import log
 from twisted.trial import unittest
 from twisted.internet.defer import Deferred
-from twisted.web2.dav.fileop import rmdir
-from twisted.web2.dav.util import joinURL
-from twisted.web2.dav.static import DAVFile
+from OPSI.web2.dav.fileop import rmdir
+from OPSI.web2.dav.util import joinURL
+from OPSI.web2.dav.static import DAVFile
 
 class TodoTest(Exception):
     pass

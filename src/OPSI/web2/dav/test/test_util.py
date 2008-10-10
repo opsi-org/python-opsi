@@ -23,7 +23,7 @@
 ##
 
 from twisted.trial import unittest
-from twisted.web2.dav import util
+from OPSI.web2.dav import util
 
 class Utilities(unittest.TestCase):
     """

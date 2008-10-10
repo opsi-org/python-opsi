@@ -23,5 +23,5 @@
 ##
 
 """
-Tests for twisted.web2.dav.
+Tests for OPSI.web2.dav.
 """

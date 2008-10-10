@@ -2,8 +2,8 @@ from twisted.internet import defer
 from twisted.trial import unittest
 from twisted.internet.defer import waitForDeferred, deferredGenerator
 
-from twisted.web2 import stream, fileupload
-from twisted.web2.http_headers import MimeType
+from OPSI.web2 import stream, fileupload
+from OPSI.web2.http_headers import MimeType
 
 class TestStream(stream.SimpleStream):
     """A stream that reads less data at a time than it could."""

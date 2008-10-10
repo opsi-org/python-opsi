@@ -1,12 +1,12 @@
 """
-A test harness for the twisted.web2 server.
+A test harness for the OPSI.web2 server.
 """
 
 from zope.interface import implements
 
 from twisted.python import components
-from twisted.web2 import http, http_headers, iweb, server
-from twisted.web2 import resource, stream, compat
+from OPSI.web2 import http, http_headers, iweb, server
+from OPSI.web2 import resource, stream, compat
 from twisted.trial import unittest, util
 from twisted.internet import reactor, defer, address, error as ti_error
 

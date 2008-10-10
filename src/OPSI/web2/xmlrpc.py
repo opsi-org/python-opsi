@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_xmlrpc -*-
+# -*- test-case-name: OPSI.web2.test.test_xmlrpc -*-
 #
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
@@ -15,8 +15,8 @@ Maintainer: U{Itamar Shtull-Trauring<mailto:twisted@itamarst.org>}
 import xmlrpclib
 
 # Sibling Imports
-from twisted.web2 import resource, stream
-from twisted.web2 import responsecode, http, http_headers
+from OPSI.web2 import resource, stream
+from OPSI.web2 import responsecode, http, http_headers
 from twisted.internet import defer
 from twisted.python import log, reflect
 

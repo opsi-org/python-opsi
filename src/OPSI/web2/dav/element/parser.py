@@ -40,8 +40,8 @@ import StringIO
 import xml.dom.minidom
 import xml.sax
 
-from twisted.web2.dav.element.base import *
-from twisted.web2.dav.element.util import PrintXML, encodeXMLName
+from OPSI.web2.dav.element.base import *
+from OPSI.web2.dav.element.util import PrintXML, encodeXMLName
 
 ##
 # Parsing

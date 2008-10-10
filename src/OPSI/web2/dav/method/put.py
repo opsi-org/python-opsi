@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_put -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_put -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -30,9 +30,9 @@ WebDAV PUT method
 __all__ = ["preconditions_PUT", "http_PUT"]
 
 from twisted.python import log
-from twisted.web2 import responsecode
-from twisted.web2.http import HTTPError, StatusResponse
-from twisted.web2.dav.fileop import put
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav.fileop import put
 
 def preconditions_PUT(self, request):
     if self.fp.exists():

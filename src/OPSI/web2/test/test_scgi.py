@@ -3,16 +3,16 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.internet.address import IPv4Address
 
-from twisted.web2.test.test_http import LoopbackRelay, TestConnection
-from twisted.web2.test.test_http import TestClient, HTTPTests, TestRequest
+from OPSI.web2.test.test_http import LoopbackRelay, TestConnection
+from OPSI.web2.test.test_http import TestClient, HTTPTests, TestRequest
 
-from twisted.web2.test.test_client import TestServer, ClientTests
-from twisted.web2.test.test_server import SimpleRequest
+from OPSI.web2.test.test_client import TestServer, ClientTests
+from OPSI.web2.test.test_server import SimpleRequest
 
-from twisted.web2 import server
-from twisted.web2 import http_headers
-from twisted.web2 import stream
-from twisted.web2 import twscgi
+from OPSI.web2 import server
+from OPSI.web2 import http_headers
+from OPSI.web2 import stream
+from OPSI.web2 import twscgi
 
 def parseSCGIHeaders(headers):
     return zip(*[iter(headers.split(':', 1)[1].split('\x00'))]*2)

@@ -2,12 +2,12 @@ import md5
 from twisted.internet import address
 from twisted.trial import unittest
 from twisted.cred import error
-from twisted.web2 import http, responsecode
-from twisted.web2.auth import basic, digest, wrapper
-from twisted.web2.auth.interfaces import IAuthenticatedRequest, IHTTPUser
-from twisted.web2.test.test_server import SimpleRequest
+from OPSI.web2 import http, responsecode
+from OPSI.web2.auth import basic, digest, wrapper
+from OPSI.web2.auth.interfaces import IAuthenticatedRequest, IHTTPUser
+from OPSI.web2.test.test_server import SimpleRequest
 
-from twisted.web2.test import test_server
+from OPSI.web2.test import test_server
 
 import base64
 

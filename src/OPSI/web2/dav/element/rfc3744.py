@@ -30,7 +30,7 @@ This module provides XML element definitions for use with WebDAV.
 See RFC 3744: http://www.ietf.org/rfc/rfc3744.txt
 """
 
-from twisted.web2.dav.element.base import *
+from OPSI.web2.dav.element.base import *
 
 ##
 # Section 3 (Privileges)

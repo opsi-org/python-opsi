@@ -26,13 +26,13 @@ import os
 import urllib
 import md5
 
-import twisted.web2.dav.test.util
-from twisted.web2 import responsecode
-from twisted.web2.test.test_server import SimpleRequest
-from twisted.web2.dav.test.util import dircmp, serialize
-from twisted.web2.dav.fileop import rmdir
+import OPSI.web2.dav.test.util
+from OPSI.web2 import responsecode
+from OPSI.web2.test.test_server import SimpleRequest
+from OPSI.web2.dav.test.util import dircmp, serialize
+from OPSI.web2.dav.fileop import rmdir
 
-class COPY(twisted.web2.dav.test.util.TestCase):
+class COPY(OPSI.web2.dav.test.util.TestCase):
     """
     COPY request
     """

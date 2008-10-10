@@ -22,12 +22,12 @@
 # DRI: Wilfredo Sanchez, wsanchez@apple.com
 ##
 
-from twisted.web2.iweb import IResponse
+from OPSI.web2.iweb import IResponse
 
-import twisted.web2.dav.test.util
-from twisted.web2.test.test_server import SimpleRequest
+import OPSI.web2.dav.test.util
+from OPSI.web2.test.test_server import SimpleRequest
 
-class OPTIONS(twisted.web2.dav.test.util.TestCase):
+class OPTIONS(OPSI.web2.dav.test.util.TestCase):
     """
     OPTIONS request
     """

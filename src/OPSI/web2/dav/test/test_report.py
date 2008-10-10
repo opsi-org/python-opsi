@@ -22,15 +22,15 @@
 # DRI: Wilfredo Sanchez, wsanchez@apple.com
 ##
 
-from twisted.web2.iweb import IResponse
-from twisted.web2.stream import MemoryStream
-from twisted.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.stream import MemoryStream
+from OPSI.web2 import responsecode
 
-import twisted.web2.dav.test.util
-from twisted.web2.test.test_server import SimpleRequest
-from twisted.web2.dav import davxml
+import OPSI.web2.dav.test.util
+from OPSI.web2.test.test_server import SimpleRequest
+from OPSI.web2.dav import davxml
 
-class REPORT(twisted.web2.dav.test.util.TestCase):
+class REPORT(OPSI.web2.dav.test.util.TestCase):
     """
     REPORT request
     """

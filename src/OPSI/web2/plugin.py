@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_plugin -*-
+# -*- test-case-name: OPSI.web2.test.test_plugin -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -9,7 +9,7 @@ Example Usage:
 root.putChild('test', resourcePlugger('TestResource'))
 """
 
-from twisted.web2 import resource, http, iweb
+from OPSI.web2 import resource, http, iweb
 from twisted.plugin import getPlugins
 from twisted.python.reflect import namedClass
 

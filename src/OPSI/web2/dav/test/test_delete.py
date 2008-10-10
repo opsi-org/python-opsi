@@ -26,13 +26,13 @@ import os
 import urllib
 import random
 
-from twisted.web2 import responsecode
-from twisted.web2.iweb import IResponse
-from twisted.web2.test.test_server import SimpleRequest
-from twisted.web2.dav.test.util import serialize
-import twisted.web2.dav.test.util
+from OPSI.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.test.test_server import SimpleRequest
+from OPSI.web2.dav.test.util import serialize
+import OPSI.web2.dav.test.util
 
-class DELETE(twisted.web2.dav.test.util.TestCase):
+class DELETE(OPSI.web2.dav.test.util.TestCase):
     """
     DELETE request
     """

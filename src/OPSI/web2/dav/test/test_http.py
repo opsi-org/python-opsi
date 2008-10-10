@@ -25,12 +25,12 @@
 import errno
 
 from twisted.python.failure import Failure
-from twisted.web2 import responsecode
-from twisted.web2.http import HTTPError
-from twisted.web2.dav.http import ErrorResponse, statusForFailure
-import twisted.web2.dav.test.util
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError
+from OPSI.web2.dav.http import ErrorResponse, statusForFailure
+import OPSI.web2.dav.test.util
 
-class HTTP(twisted.web2.dav.test.util.TestCase):
+class HTTP(OPSI.web2.dav.test.util.TestCase):
     """
     HTTP Utilities
     """

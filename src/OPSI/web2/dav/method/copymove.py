@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_copy,twisted.web2.dav.test.test_move -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_copy,OPSI.web2.dav.test.test_move -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -30,14 +30,14 @@ WebDAV COPY and MOVE methods.
 __all__ = ["http_COPY", "http_MOVE"]
 
 from twisted.python import log
-from twisted.web2 import responsecode
-from twisted.web2.http import HTTPError, StatusResponse
-from twisted.web2.filter.location import addLocation
-from twisted.web2.dav.idav import IDAVResource
-from twisted.web2.dav.fileop import copy, move
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.filter.location import addLocation
+from OPSI.web2.dav.idav import IDAVResource
+from OPSI.web2.dav.fileop import copy, move
 
 # FIXME: This is circular
-import twisted.web2.dav.static
+import OPSI.web2.dav.static
 
 def http_COPY(self, request):
     """
@@ -147,7 +147,7 @@ def _prepareForCopy(destination, destination_uri, request, depth):
     # So far, we need: .exists(), .fp.parent()
     #
 
-    if not isinstance(destination, twisted.web2.dav.static.DAVFile):
+    if not isinstance(destination, OPSI.web2.dav.static.DAVFile):
         log.err("DAV copy between non-DAVFile DAV resources isn't implemented")
         raise HTTPError(StatusResponse(
             responsecode.NOT_IMPLEMENTED,

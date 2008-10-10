@@ -39,7 +39,7 @@ __all__ = [
 try:
     import xml.dom.ext as ext
 except ImportError:
-    import twisted.web2.dav.element.xmlext as ext
+    import OPSI.web2.dav.element.xmlext as ext
 
 def PrintXML(document, stream):
     document.normalize()

@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_server -*-
+# -*- test-case-name: OPSI.web2.test.test_server -*-
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # See LICENSE for details.
 
@@ -9,7 +9,7 @@ I hold the lowest-level L{Resource} class and related mix-in classes.
 # System Imports
 from zope.interface import implements
 
-from twisted.web2 import iweb, http, server, responsecode
+from OPSI.web2 import iweb, http, server, responsecode
 
 class RenderMixin(object):
     """

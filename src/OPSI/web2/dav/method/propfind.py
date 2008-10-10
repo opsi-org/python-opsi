@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_prop.PROP.test_PROPFIND -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_prop.PROP.test_PROPFIND -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -32,12 +32,12 @@ __all__ = ["http_PROPFIND"]
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.internet.defer import deferredGenerator, waitForDeferred
-from twisted.web2.http import HTTPError
-from twisted.web2 import responsecode
-from twisted.web2.http import StatusResponse
-from twisted.web2.dav import davxml
-from twisted.web2.dav.http import MultiStatusResponse, statusForFailure
-from twisted.web2.dav.util import normalizeURL, joinURL, davXMLFromStream
+from OPSI.web2.http import HTTPError
+from OPSI.web2 import responsecode
+from OPSI.web2.http import StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import MultiStatusResponse, statusForFailure
+from OPSI.web2.dav.util import normalizeURL, joinURL, davXMLFromStream
 
 def http_PROPFIND(self, request):
     """

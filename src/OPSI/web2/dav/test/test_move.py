@@ -24,14 +24,14 @@
 
 import os
 
-from twisted.web2 import responsecode
+from OPSI.web2 import responsecode
 
-import twisted.web2.dav.test.util
-import twisted.web2.dav.test.test_copy
-from twisted.web2.dav.test.util import serialize
-from twisted.web2.dav.test.test_copy import sumFile
+import OPSI.web2.dav.test.util
+import OPSI.web2.dav.test.test_copy
+from OPSI.web2.dav.test.util import serialize
+from OPSI.web2.dav.test.test_copy import sumFile
 
-class MOVE(twisted.web2.dav.test.util.TestCase):
+class MOVE(OPSI.web2.dav.test.util.TestCase):
     """
     MOVE request
     """
@@ -106,4 +106,4 @@ class MOVE(twisted.web2.dav.test.util.TestCase):
         return serialize(self.send, work(self, test, dst=os.path.join(self.docroot, "elvislives!")))
 
 def work(self, test, overwrite=None, dst=None):
-    return twisted.web2.dav.test.test_copy.work(self, test, overwrite, dst, depths=(None,))
+    return OPSI.web2.dav.test.test_copy.work(self, test, overwrite, dst, depths=(None,))

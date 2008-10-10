@@ -1,4 +1,4 @@
-from twisted.web2.test.test_server import BaseCase
+from OPSI.web2.test.test_server import BaseCase
 import sys
 
 try:

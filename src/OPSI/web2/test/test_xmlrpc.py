@@ -9,11 +9,11 @@
 
 import xmlrpclib
 
-from twisted.web2 import xmlrpc
-from twisted.web2.xmlrpc import XMLRPC, addIntrospection
+from OPSI.web2 import xmlrpc
+from OPSI.web2.xmlrpc import XMLRPC, addIntrospection
 from twisted.internet import defer
 
-from twisted.web2.test.test_server import BaseCase
+from OPSI.web2.test.test_server import BaseCase
 
 class TestRuntimeError(RuntimeError):
     """

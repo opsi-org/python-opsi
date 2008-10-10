@@ -40,9 +40,9 @@ if getattr(xattr, 'xattr', None) is None:
     raise ImportError("wrong xattr package imported")
 
 from twisted.python import log
-from twisted.web2 import responsecode
-from twisted.web2.http import HTTPError, StatusResponse
-from twisted.web2.dav import davxml
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav import davxml
 
 class xattrPropertyStore (object):
     """

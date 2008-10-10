@@ -6,7 +6,7 @@ from twisted.python import log
 from zope.interface import Interface, Attribute, implements
 
 from twisted.python.util import sibpath
-from twisted.web2 import stream
+from OPSI.web2 import stream
 
 def bufstr(data):
     try:
@@ -515,7 +515,7 @@ class ProducerStreamTestCase(unittest.TestCase):
         return d
 
 
-from twisted.web2.stream import *
+from OPSI.web2.stream import *
 class CompoundStreamTest:
     """
     CompoundStream lets you combine many streams into one continuous stream.
@@ -591,7 +591,7 @@ class CompoundStreamTest:
     """
 
 
-__doctests__ = ['twisted.web2.test.test_stream', 'twisted.web2.stream']
+__doctests__ = ['OPSI.web2.test.test_stream', 'OPSI.web2.stream']
 # TODO: 
 # CompoundStreamTest
 # more tests for ProducerStreamTest

@@ -5,7 +5,7 @@ from zope.interface import implements
 
 from twisted.internet import protocol, address
 from twisted.internet import reactor, interfaces
-from twisted.web2 import http, http_headers, server, responsecode
+from OPSI.web2 import http, http_headers, server, responsecode
 
 class BaseCGIChannelRequest(protocol.Protocol):
     implements(interfaces.IHalfCloseableProtocol)
@@ -131,7 +131,7 @@ def startCGI(site):
     hook up your site object with the incoming request.
 
     E.g.:
-    >>> from twisted.web2 import channel, server
+    >>> from OPSI.web2 import channel, server
     >>> if __name__ == '__main__':
     ...     channel.startCGI(server.Site(myToplevelResource))
     

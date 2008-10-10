@@ -2,10 +2,10 @@ from zope.interface import implements
 
 from twisted.internet import defer, protocol
 from twisted.protocols import basic, policies
-from twisted.web2 import stream as stream_mod, http, http_headers, responsecode
-from twisted.web2.channel import http as httpchan
-from twisted.web2.channel.http import PERSIST_NO_PIPELINE, PERSIST_PIPELINE
-from twisted.web2.client import interfaces
+from OPSI.web2 import stream as stream_mod, http, http_headers, responsecode
+from OPSI.web2.channel import http as httpchan
+from OPSI.web2.channel.http import PERSIST_NO_PIPELINE, PERSIST_PIPELINE
+from OPSI.web2.client import interfaces
 
 #from twisted.python.util import tracer
 
@@ -30,11 +30,11 @@ class ClientRequest(object):
         @param headers: Headers to be sent to the server.  It is important to 
             note that this object does not create any implicit headers.  So it 
             is up to the HTTP Client to add required headers such as 'Host'.
-        @type headers: C{dict}, L{twisted.web2.http_headers.Headers}, or 
+        @type headers: C{dict}, L{OPSI.web2.http_headers.Headers}, or 
             C{None}
     
         @param stream: Content body to send to the remote HTTP server.
-        @type stream: L{twisted.web2.stream.IByteStream}
+        @type stream: L{OPSI.web2.stream.IByteStream}
         """
 
         self.method = method
@@ -265,7 +265,7 @@ class HTTPClientProtocol(basic.LineReceiver, policies.TimeoutMixin, object):
         @type closeAfter: C{bool}
 
         @return: L{twisted.internet.defer.Deferred} 
-        @callback: L{twisted.web2.http.Response} from the server.
+        @callback: L{OPSI.web2.http.Response} from the server.
         """
 
         # Assert we're in a valid state to submit more

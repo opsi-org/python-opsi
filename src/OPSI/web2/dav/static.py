@@ -29,24 +29,24 @@ WebDAV-aware static resources.
 __all__ = ["DAVFile"]
 
 from twisted.python import log
-from twisted.web2.static import File
-from twisted.web2.dav import davxml
-from twisted.web2.dav.idav import IDAVResource
-from twisted.web2.dav.resource import DAVResource
-from twisted.web2.dav.util import bindMethods
+from OPSI.web2.static import File
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.idav import IDAVResource
+from OPSI.web2.dav.resource import DAVResource
+from OPSI.web2.dav.util import bindMethods
 
 try:
-    from twisted.web2.dav.xattrprops import xattrPropertyStore as DeadPropertyStore
+    from OPSI.web2.dav.xattrprops import xattrPropertyStore as DeadPropertyStore
 except ImportError:
     log.msg("No dead property store available; using nonePropertyStore.")
     log.msg("Setting of dead properties will not be allowed.")
-    from twisted.web2.dav.noneprops import NonePropertyStore as DeadPropertyStore
+    from OPSI.web2.dav.noneprops import NonePropertyStore as DeadPropertyStore
 
 class DAVFile (DAVResource, File):
     """
     WebDAV-accessible File resource.
 
-    Extends twisted.web2.static.File to handle WebDAV methods.
+    Extends OPSI.web2.static.File to handle WebDAV methods.
     """
     def __init__(self, path,
                  defaultType="text/plain",
@@ -178,6 +178,6 @@ class DAVFile (DAVResource, File):
 # Attach method handlers to DAVFile
 #
 
-import twisted.web2.dav.method
+import OPSI.web2.dav.method
 
-bindMethods(twisted.web2.dav.method, DAVFile)
+bindMethods(OPSI.web2.dav.method, DAVFile)

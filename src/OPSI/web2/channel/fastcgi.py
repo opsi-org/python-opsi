@@ -1,5 +1,5 @@
 """
-   Twisted.web2 FastCGI backend support.
+   OPSI.web2 FastCGI backend support.
 """
 
 """
@@ -27,8 +27,8 @@ name/values can be split between two packets. (Yes, this means
 """
 
 from twisted.internet import protocol
-from twisted.web2 import responsecode
-from twisted.web2.channel import cgi
+from OPSI.web2 import responsecode
+from OPSI.web2.channel import cgi
 
 class FastCGIError(Exception):
     pass
@@ -322,7 +322,7 @@ class FastCGIFactory(protocol.ServerFactory):
 
 # import socket
 # import fcntl
-# from twisted.web2 import tcp
+# from OPSI.web2 import tcp
 
 # class ExistingFDTCPPort(tcp.Port):
 #     def __init__(self, socknum, factory):

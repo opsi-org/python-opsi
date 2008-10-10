@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.dav.test.test_lock -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_lock -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -29,7 +29,7 @@ WebDAV LOCK and UNLOCK methods
 
 __all__ = ["http_LOCK", "http_UNLOCK"]
 
-from twisted.web2 import responsecode
+from OPSI.web2 import responsecode
 
 def http_LOCK(self, request):
     """

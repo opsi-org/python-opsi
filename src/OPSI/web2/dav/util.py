@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_util -*-
+# -*- test-case-name: OPSI.web2.test.test_util -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -47,9 +47,9 @@ import posixpath # Careful; this module is not documented as public API
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.internet.defer import succeed
-from twisted.web2.stream import readStream
+from OPSI.web2.stream import readStream
 
-from twisted.web2.dav import davxml
+from OPSI.web2.dav import davxml
 
 ##
 # Reading request body

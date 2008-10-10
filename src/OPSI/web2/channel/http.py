@@ -6,9 +6,9 @@ from zope.interface import implements
 from twisted.python import log
 from twisted.internet import interfaces, protocol, reactor
 from twisted.protocols import policies, basic
-from twisted.web2 import responsecode
-from twisted.web2 import http_headers
-from twisted.web2 import http
+from OPSI.web2 import responsecode
+from OPSI.web2 import http_headers
+from OPSI.web2 import http
 
 PERSIST_NO_PIPELINE, PERSIST_PIPELINE = (1,2)
 

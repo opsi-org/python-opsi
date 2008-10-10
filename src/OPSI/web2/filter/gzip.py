@@ -1,7 +1,7 @@
 from __future__ import generators
 import struct
 import zlib
-from twisted.web2 import stream
+from OPSI.web2 import stream
 
 # TODO: ungzip (can any browsers actually generate gzipped
 # upload data?) But it's necessary for client anyways.

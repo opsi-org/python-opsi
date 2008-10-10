@@ -1,4 +1,4 @@
-# -*- test-case-name: twisted.web2.test.test_httpauth -*-
+# -*- test-case-name: OPSI.web2.test.test_httpauth -*-
 
 """
 Implementation of RFC2617: HTTP Digest Authentication
@@ -10,7 +10,7 @@ import time
 from twisted.cred import credentials, error
 from zope.interface import implements, Interface
 
-from twisted.web2.auth.interfaces import ICredentialFactory
+from OPSI.web2.auth.interfaces import ICredentialFactory
 
 import md5, sha
 import random, sys
@@ -307,7 +307,7 @@ class DigestCredentialFactory(object):
         @type response: C{str}
         @param response: A string of comma seperated key=value pairs
 
-        @type request: L{twisted.web2.server.Request}
+        @type request: L{OPSI.web2.server.Request}
         @param request: the request being processed
 
         @return: L{DigestedCredentials}

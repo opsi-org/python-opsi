@@ -30,9 +30,9 @@ This module provides XML element definitions for use with WebDAV.
 See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt
 """
 
-from twisted.web2 import responsecode
-from twisted.web2.dav.element.base import *
-from twisted.web2.http_headers import MimeType
+from OPSI.web2 import responsecode
+from OPSI.web2.dav.element.base import *
+from OPSI.web2.http_headers import MimeType
 
 ##
 # Section 12
@@ -295,7 +295,7 @@ class Status (WebDAVTextElement):
     def fromResponseCode(clazz, code):
         """
         code must be an integer response code in
-        twisted.web2.responsecode.RESPONSES.keys()
+        OPSI.web2.responsecode.RESPONSES.keys()
         """
         if code not in responsecode.RESPONSES:
             raise ValueError("Invalid response code: %r" % (code,))

@@ -1,8 +1,8 @@
 from twisted.trial import unittest
 import random, time
 
-from twisted.web2 import http_headers
-from twisted.web2.http_headers import Cookie, HeaderHandler
+from OPSI.web2 import http_headers
+from OPSI.web2.http_headers import Cookie, HeaderHandler
 from twisted.python import util
 
 class parsedvalue:

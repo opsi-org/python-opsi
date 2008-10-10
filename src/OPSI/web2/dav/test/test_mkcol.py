@@ -24,14 +24,14 @@
 
 import os
 
-from twisted.web2 import responsecode
-from twisted.web2.iweb import IResponse
-from twisted.web2.stream import MemoryStream
-from twisted.web2.dav.fileop import rmdir
-from twisted.web2.test.test_server import SimpleRequest
-import twisted.web2.dav.test.util
+from OPSI.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.stream import MemoryStream
+from OPSI.web2.dav.fileop import rmdir
+from OPSI.web2.test.test_server import SimpleRequest
+import OPSI.web2.dav.test.util
 
-class MKCOL(twisted.web2.dav.test.util.TestCase):
+class MKCOL(OPSI.web2.dav.test.util.TestCase):
     """
     MKCOL request
     """

@@ -6,8 +6,8 @@ import time, sys
 from zope.interface import implements
 
 from twisted.trial import unittest
-from twisted.web2 import http, http_headers, responsecode, error, iweb, stream
-from twisted.web2 import channel
+from OPSI.web2 import http, http_headers, responsecode, error, iweb, stream
+from OPSI.web2 import channel
 
 from twisted.internet import reactor, protocol, address, interfaces, utils
 from twisted.internet import defer

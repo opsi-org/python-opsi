@@ -25,7 +25,7 @@
 """
 WebDAV XML Glue.
 
-Modules in this package provide the implementation of twisted.web2.dav.davxml.
+Modules in this package provide the implementation of OPSI.web2.dav.davxml.
 """
 
 __all__ = [

@@ -1,13 +1,13 @@
 from __future__ import generators
 
 import time
-from twisted.web2.test.test_server import BaseCase
-from twisted.web2 import resource
+from OPSI.web2.test.test_server import BaseCase
+from OPSI.web2 import resource
 from twisted.internet import reactor, interfaces
 from twisted.python import log
 
 if interfaces.IReactorThreads(reactor, None) is not None:
-    from twisted.web2.wsgi import WSGIResource as WSGI
+    from OPSI.web2.wsgi import WSGIResource as WSGI
 else:
     WSGI = None
 
