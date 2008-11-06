@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.7.1'
+__version__ = '0.9.7.2'
 
 # Imports
 import os, stat, types, re, socket, new, base64
@@ -741,6 +741,7 @@ class BackendManager(DataBackend):
 					ppf.product.advice,
 					ppf.product.productClassNames,
 					ppf.product.pxeConfigTemplate,
+					ppf.product.windowsSoftwareIds,
 					depotIds = [ depotId ] )
 			
 			

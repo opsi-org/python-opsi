@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.9'
+__version__ = '0.9.9'
 
 # Imports
 import os
@@ -110,7 +110,9 @@ class Product:
 	
 	def __init__(self, productId="", productType=None, name='', productVersion='', packageVersion='', licenseRequired=False,
 			   setupScript='', uninstallScript='', updateScript='', alwaysScript='', onceScript='', 
-			   priority=0, description='', advice='', productClassNames=[], pxeConfigTemplate=''):
+			   priority=0, description='', advice='', productClassNames=[], pxeConfigTemplate='',
+			   windowsSoftwareIds=[]):
+		
 		self.productId = productId
 		self.productType = productType
 		self.name = name
@@ -127,6 +129,7 @@ class Product:
 		self.advice = advice
 		self.productClassNames = productClassNames
 		self.pxeConfigTemplate = pxeConfigTemplate
+		self.windowsSoftwareIds = windowsSoftwareIds
 		
 		if not self.productVersion:
 			self.productVersion = '1.0'
@@ -164,6 +167,8 @@ class Product:
 			self.setProductClassNames(self.productClassNames)
 		if self.pxeConfigTemplate:
 			self.setPxeConfigTemplate(self.pxeConfigTemplate)
+		if self.windowsSoftwareIds:
+			self.setWindowsSoftwareIds(self.windowsSoftwareIds)
 		
 	def setProductId(self, productId):
 		if not re.search(PRODUCT_ID_REGEX, productId):
@@ -225,6 +230,9 @@ class Product:
 			return
 		self.pxeConfigTemplate = pxeConfigTemplate
 	
+	def setWindowsSoftwareIds(self, windowsSoftwareIds):
+		self.windowsSoftwareIds = windowsSoftwareIds
+	
 	def setSetupScript(self, setupScript):
 		self.setupScript = setupScript
 	
@@ -274,7 +282,12 @@ class Product:
 					section = 'product'
 					result.append({ 'section': section })
 					continue
-					
+				
+				elif (line.rstrip().lower() == '[windows]'):
+					section = 'windows'
+					result.append({ 'section': section })
+					continue
+				
 				elif (line.rstrip().lower() == '[productdependency]'):
 					section = 'productdependency'
 					result.append({ 'section': section })
@@ -309,6 +322,10 @@ class Product:
 						 'alwaysscript', 'oncescript']):
 					option = key
 				
+				elif (section == 'windows' and key in \
+						['softwareids']):
+					option = key
+				
 				elif (section == 'productdependency' and key in \
 						['action', 'requiredproduct', 'requiredclass', 
 						 'requiredstatus', 'requiredaction', 'requirementtype']):
@@ -336,7 +353,8 @@ class Product:
 					
 					elif (section['section'] == 'product' and option == 'productclasses') or \
 					     (section['section'] == 'package' and option == 'depends') or \
-					     (section['section'] == 'productproperty' and option == 'values'):
+					     (section['section'] == 'productproperty' and option == 'values') or \
+					     (section['section'] == 'windows' and option == 'softwareids'):
 						value = value.replace('\n', '')
 						value = value.replace('\t', '')
 						value = value.split(',')
@@ -377,9 +395,13 @@ class Product:
 						self.setOnceScript( section['oncescript'] )
 						if section.get('pxeconfigtemplate'):
 							self.setPxeConfigTemplate( section['pxeconfigtemplate'] )
-						
+					
 					except Exception, e:
 						raise Exception("Missing option %s in control file '%s'" % (e, controlFile) )
+				
+				elif (section['section'] == 'windows'):
+					if section.get('softwareids'):
+						self.setWindowsSoftwareIds( section['softwareids'] )
 			
 			for section in result:
 				if (section['section'] == 'productproperty'):
@@ -448,6 +470,9 @@ class Product:
 		lines.append( 'onceScript: %s' % self.onceScript )
 		if (self.productType == 'netboot'):
 			lines.append( 'pxeConfigTemplate: %s' % self.pxeConfigTemplate )
+		lines.append( '' )
+		lines.append( '[Windows]' )
+		lines.append( 'softwareIds: %s' % ', '.join(self.windowsSoftwareId) )
 		
 		if (self.productType != 'server'):
 			for dependency in self.productDependencies:
