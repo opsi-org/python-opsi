@@ -1,3 +1,9 @@
+python-opsi (3.3.0.29-1) stable; urgency=low
+
+  * Fixed bug in Product.py (Product instance has no attribute 'windowsSoftwareId')
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 21 Nov 2008 23:06:59 +0100
+
 python-opsi (3.3.0.28-1) stable; urgency=low
 
   * Added maxSize param to readLog()

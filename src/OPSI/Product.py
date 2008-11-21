@@ -472,7 +472,7 @@ class Product:
 			lines.append( 'pxeConfigTemplate: %s' % self.pxeConfigTemplate )
 		lines.append( '' )
 		lines.append( '[Windows]' )
-		lines.append( 'softwareIds: %s' % ', '.join(self.windowsSoftwareId) )
+		lines.append( 'softwareIds: %s' % ', '.join(self.windowsSoftwareIds) )
 		
 		if (self.productType != 'server'):
 			for dependency in self.productDependencies:
