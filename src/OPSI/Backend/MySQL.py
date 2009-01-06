@@ -447,7 +447,14 @@ class MySQLBackend(DataBackend):
 		
 		# Execute sql query
 		self._writeToServer_(table)
-		
+	
+	def getClientIds_list(self, serverId = None, depotId = None, groupId = None, productId = None, installationStatus = None, actionRequest = None, productVersion = None, packageVersion = None):
+		clientIds = []
+		# TODO
+		for res in self.__mysql__.db_getSet("SELECT hostId FROM `HOST`"):
+			clientIds.append(res['hostId'].encode('utf-8'))
+		return clientIds
+	
 	def getSoftwareInformation_hash(self, hostId):
 		hostId = self._preProcessHostId(hostId)
 		
@@ -641,8 +648,12 @@ class MySQLBackend(DataBackend):
 		hostDbId = self.__mysql__.db_getRow("SELECT `host_id` FROM `HOST` WHERE `hostId`='%s'" % hostId).get('host_id')
 		if hostDbId:
 			self.__mysql__.db_delete('SOFTWARE_CONFIG', '`host_id` = %d;' % hostDbId)
-			if not self.__mysql__.db_getRow('SELECT `host_id` FROM `HARDWARE_CONFIG` WHERE `host_id` = %d;' % hostDbId):
-				self.__mysql__.db_delete('HOST', '`host_id` = %d;' % hostDbId)
+			for config in self.getOpsiHWAuditConf():
+				if self.__mysql__.db_getRow('SELECT `host_id` FROM HARDWARE_CONFIG_%s WHERE `host_id` = %d' % (config['Class']['Opsi'], hostDbId)):
+					return
+			if self.__mysql__.db_getRow('SELECT `host_id` FROM HARDWARE_INFO WHERE `host_id` = %d' % hostDbId):
+				return
+			self.__mysql__.db_delete('HOST', '`host_id` = %d' % hostDbId)
 		
 	# -------------------------------------------------
 	# -     Hardware Inventory                        -
@@ -846,9 +857,11 @@ class MySQLBackend(DataBackend):
 		hostId = self._preProcessHostId(hostId)
 		hostDbId = self.__mysql__.db_getRow("SELECT `host_id` FROM `HOST` WHERE `hostId`='%s'" % hostId).get('host_id')
 		if hostDbId:
-			self.__mysql__.db_delete('HARDWARE_CONFIG', '`host_id` = %d;' % hostDbId)
+			for config in self.getOpsiHWAuditConf():
+				self.__mysql__.db_delete('HARDWARE_CONFIG_%s' % config['Class']['Opsi'], '`host_id` = %d' % hostDbId)
+			self.__mysql__.db_delete('HARDWARE_INFO', '`host_id` = %d' % hostDbId)
 			if not self.__mysql__.db_getRow('SELECT `host_id` FROM `SOFTWARE_CONFIG` WHERE `host_id` = %d;' % hostDbId):
-				self.__mysql__.db_delete('HOST', '`host_id` = %d;' % hostDbId)
+				self.__mysql__.db_delete('HOST', '`host_id` = %d' % hostDbId)
 	
 	def exit(self):
 		self.__mysql__.db_close()
