@@ -2,8 +2,9 @@ python-opsi (3.3.0.32-1) stable; urgency=low
 
   * Posix 1.1.11
       hardwareInventory(): added alsa hdaudio information
+  * opsihwaudit.conf: added class HDAUDIO_DEVICE 
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 06 Jan 2009 11:34:42 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 06 Jan 2009 11:49:47 +0100
 
 python-opsi (3.3.0.31-1) stable; urgency=low
 
