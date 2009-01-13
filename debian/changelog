@@ -1,3 +1,11 @@
+python-opsi (3.3.1.0-1) stable; urgency=low
+
+  * changed signature of methods getClientIds_list, getClients_listOfHashes
+      depotid=None => depotIds=[]
+  * added creation timestamp to host hash
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 13 Jan 2009 12:42:41 +0100
+
 python-opsi (3.3.0.32-1) stable; urgency=low
 
   * Posix 1.1.11

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.7.5'
+__version__ = '0.9.7.6'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, codecs
@@ -943,7 +943,8 @@ class FileBackend(File, DataBackend):
 			"hostId": 	hostId,
 			"description":	"",
 			"notes":	"",
-			"lastSeen":	"" }
+			"lastSeen":	"",
+			"created":	"" }
 		
 		ini = self.readIniFile( os.path.join(self.__pcpatchDir, self.getIniFile(hostId)) )
 		
@@ -993,7 +994,7 @@ class FileBackend(File, DataBackend):
 				logger.info("Host lookup not yet implemented for this OS")
 		return info
 		
-	def getClients_listOfHashes(self, serverId=None, depotId=None, groupId=None, productId=None, installationStatus=None, actionRequest=None, productVersion=None, packageVersion=None):
+	def getClients_listOfHashes(self, serverId=None, depotIds=[], groupId=None, productId=None, installationStatus=None, actionRequest=None, productVersion=None, packageVersion=None):
 		""" Returns a list of client-ids which are connected 
 		    to the server with the specified server-id. 
 		    If no server is specified, all registered clients are returned """
@@ -1101,18 +1102,21 @@ class FileBackend(File, DataBackend):
 			hostIds = filteredHostIds
 		
 		infos = []
+		defaultDepotId = self.getDepotId()
 		for hostId in hostIds:
 			try:
-				infos.append( self.getHost_hash(hostId) )
+				info = self.getHost_hash(hostId)
+				info['depotId'] = defaultDepotId
+				infos.append(info)
 			except BackendIOError, e:
 				logger.error(e)
 		
 		return infos
 		
 		
-	def getClientIds_list(self, serverId=None, depotId=None, groupId=None, productId=None, installationStatus=None, actionRequest=None, productVersion=None, packageVersion=None):
+	def getClientIds_list(self, serverId=None, depotIds=[], groupId=None, productId=None, installationStatus=None, actionRequest=None, productVersion=None, packageVersion=None):
 		clientIds = []
-		for info in self.getClients_listOfHashes(serverId, depotId, groupId, productId, installationStatus, actionRequest, productVersion, packageVersion):
+		for info in self.getClients_listOfHashes(serverId, depotIds, groupId, productId, installationStatus, actionRequest, productVersion, packageVersion):
 			clientIds.append( info.get('hostId') )
 		return clientIds
 
