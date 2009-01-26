@@ -659,7 +659,7 @@ def getAdminGroupName():
 class Impersonate:
 	def __init__(self, username, password, desktop = "default"):
 		if not existsUser(username):
-			raise Exception("User '%s' does not exists" % username)
+			raise Exception("User '%s' does not exist" % username)
 		self.username = username
 		self.password = password
 		if not desktop:

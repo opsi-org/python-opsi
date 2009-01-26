@@ -1,3 +1,19 @@
+python-opsi (3.3.1.0-3) stable; urgency=low
+
+  * BackendManager.py 0.9.9
+      new methods adjustProductActionRequests, adjustProductStates
+  * File.py 0.9.7.9
+      pathnams.ini fixes
+  * new version of config file 50_interface.conf
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 26 Jan 2009 11:54:04 +0100
+
+python-opsi (3.3.1.0-2) stable; urgency=low
+
+  * Fix
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 14 Jan 2009 17:57:18 +0100
+
 python-opsi (3.3.1.0-1) stable; urgency=low
 
   * changed signature of methods getClientIds_list, getClients_listOfHashes
