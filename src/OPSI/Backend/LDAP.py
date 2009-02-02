@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.1.10'
+__version__ = '0.9.1.11'
 
 # Imports
 import ldap, ldap.modlist, re
@@ -622,6 +622,9 @@ class LDAPBackend(DataBackend):
 		if productStatesContainer.exists(self._ldap):
 			productStatesContainer.deleteFromDirectory(self._ldap, recursive = True)
 		
+		self.deleteGeneralConfig(clientId)
+		self.deleteNetworkConfig(clientId)
+		
 		if client:
 			# Delete client from groups
 			groups = []
@@ -756,9 +759,12 @@ class LDAPBackend(DataBackend):
 							self._networkConfigsContainerDn,
 							filter='(&(objectClass=opsiNetworkConfig)(opsiDepotserverReference=%s))' % depotDn)
 					for clientId in search.getCns():
-						hostDn = self.getHostDn(clientId)
-						hostDns.append(hostDn)
-						hostDnToDepotId[hostDn] = depotId
+						try:
+							hostDn = self.getHostDn(clientId)
+							hostDns.append(hostDn)
+							hostDnToDepotId[hostDn] = depotId
+						except Exception, e:
+							logger.error("Host '%s' not found" % clientId)
 				except BackendMissingDataError:
 					pass
 		

@@ -1,3 +1,12 @@
+python-opsi (3.3.1.0-4) stable; urgency=low
+
+  * Bugfixes in:
+      - Windows.py
+      - LDAP.py
+      - BackendManager.py
+  
+ -- Jan Schneider <schneider@pcbon14.uib.local>  Mon, 02 Feb 2009 11:40:47 +0100
+
 python-opsi (3.3.1.0-3) stable; urgency=low
 
   * BackendManager.py 0.9.9

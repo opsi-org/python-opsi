@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9'
+__version__ = '0.9.9.1'
 
 # Imports
 import os, stat, types, re, socket, new, base64
@@ -893,6 +893,8 @@ class BackendManager(DataBackend):
 	
 	def adjustProductStates(self, productStates, objectIds=[], options={}):
 		logger.debug("adjusting product states")
+		if not options:
+			return productStates
 		for (key, values) in options.items():
 			if (key == 'actionProcessingFilter'):
 				logger.debug("action processing filter found")
@@ -913,6 +915,8 @@ class BackendManager(DataBackend):
 		
 	def adjustProductActionRequests(self, productActionRequests, hostId='', options={}):
 		logger.debug("adjusting product action requests")
+		if not options:
+			return productActionRequests
 		for (key, values) in options.items():
 			if (key == 'actionProcessingFilter'):
 				logger.debug("action processing filter found")
