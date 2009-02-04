@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.21'
+__version__ = '0.2.7.22'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -430,6 +430,7 @@ class File31Backend(File, FileBackend):
 			ini = self.readIniFile(iniFile)
 		except BackendIOError, e:
 			logger.warning("Cannot delete general config for object '%s': %s" % (objectId, e))
+			return
 		
 		# Delete section shareinfo if exists
 		if ini.has_section("generalconfig"):
@@ -566,6 +567,7 @@ class File31Backend(File, FileBackend):
 			ini = self.readIniFile(iniFile)
 		except BackendIOError, e:
 			logger.warning("Cannot delete network config for object '%s': %s" % (objectId, e))
+			return
 		
 		# Delete section shareinfo if exists
 		if ini.has_section("networkconfig"):

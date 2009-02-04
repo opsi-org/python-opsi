@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 # Imports
 import re, os, time, socket
@@ -277,8 +277,12 @@ def logoffCurrentUser():
 	#		waitForProcessEnding = False )
 	command = ''
 	if (sys.getwindowsversion()[0] == 5):
-		# NT5: XP
-		command = 'logoff.exe'
+		if (sys.getwindowsversion()[1] == 0):
+			# NT5.0: win2k
+			raise NotImplemented("Not available on win2k")
+		else:
+			# NT5.1: XP
+			command = 'logoff.exe'
 	elif (sys.getwindowsversion()[0] == 6):
 		# NT6: Vista
 		command = 'shutdown.exe /l'

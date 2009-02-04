@@ -1,11 +1,18 @@
+python-opsi (3.3.1.0-51) stable; urgency=low
+
+  * File31.py 0.2.7.22
+  * Windows.py 0.1.5 
+
+ -- Jan Schneider <schneider@pcbon14.uib.local>  Wed, 04 Feb 2009 14:51:24 +0100
+
 python-opsi (3.3.1.0-4) stable; urgency=low
 
   * Bugfixes in:
       - Windows.py
       - LDAP.py
       - BackendManager.py
-  
- -- Jan Schneider <schneider@pcbon14.uib.local>  Mon, 02 Feb 2009 11:40:47 +0100
+
+ -- Jan Schneider <schneider@pcbon14.uib.local>  Wed, 04 Feb 2009 14:50:08 +0100
 
 python-opsi (3.3.1.0-3) stable; urgency=low
 
