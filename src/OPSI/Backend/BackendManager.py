@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.1'
+__version__ = '0.9.9.3'
 
 # Imports
 import os, stat, types, re, socket, new, base64
@@ -41,9 +41,9 @@ from duplicity import librsync
 # OS dependend imports
 if os.name == 'posix':
 	import pwd, grp
-else:
-	import win32security
-	from _winreg import *
+#else:
+#	import win32security
+#	from _winreg import *
 
 # OPSI imports
 from OPSI.Product import *
@@ -69,15 +69,15 @@ class BackendManager(DataBackend):
 		self._pamService = 'common-auth'
 		self._sshRSAPublicKeyFile = '/etc/ssh/ssh_host_rsa_key.pub'
 		
-		if os.name == 'nt':
-			try:
-				regroot = ConnectRegistry(None,HKEY_LOCAL_MACHINE)
-				regpath = "SOFTWARE\\opsi.org\\opsiconfd"
-				reg = OpenKey(regroot,regpath)
-				windefaultdir = QueryValueEx(reg,"BaseDir")[0]
-			except:
-				windefaultdir = 'C:\\Programme\\opsi.org\\opsiconfd'
-			configFile = windefaultdir+'\\backendManager.conf'
+		#if os.name == 'nt':
+		#	try:
+		#		regroot = ConnectRegistry(None,HKEY_LOCAL_MACHINE)
+		#		regpath = "SOFTWARE\\opsi.org\\opsiconfd"
+		#		reg = OpenKey(regroot,regpath)
+		#		windefaultdir = QueryValueEx(reg,"BaseDir")[0]
+		#	except:
+		#		windefaultdir = 'C:\\Programme\\opsi.org\\opsiconfd'
+		#	configFile = windefaultdir+'\\backendManager.conf'
 		
 		if not configFile:
 			configFile = '/etc/opsi/backendManager.d'
@@ -87,7 +87,7 @@ class BackendManager(DataBackend):
 		''' 
 		The constructor of the class BackendManager creates an instance of the
 		class and initializes the backends to use. It will also read the values
-		from the config file (default: /etc/opsi/backendManager.conf).
+		from the config file (default: /etc/opsi/backendManager.d).
 		'''
 		
 		self.__authRequired = authRequired
@@ -122,8 +122,8 @@ class BackendManager(DataBackend):
 		
 		# Now read the config file to overwrite the defaults
 		self._readConfigFile()
-		if os.name == 'nt':
-			self.__readConfigFromReg()
+		#if os.name == 'nt':
+		#	self.__readConfigFromReg()
 		
 		logger.info("Using default domain '%s'" % self.defaultDomain)
 		
@@ -175,9 +175,19 @@ class BackendManager(DataBackend):
 		    to the function groups according to the configuration '''
 		
 		backendsUsed = []
+		if self.forcedBackend:
+			backendType = self.forcedBackend
+			if isinstance(self.forcedBackend, DataBackend):
+				backendType = str(self.forcedBackend.__class__).split('.')[-1][:-7]
+			if not backendType in self.backends.keys():
+				self.backends[backendType] = {}
+		
 		for (key, value) in self.backends.items():
 			if self.forcedBackend:
-				if (self.forcedBackend != key):
+				if isinstance(self.forcedBackend, DataBackend):
+					if (key != str(self.forcedBackend.__class__).split('.')[-1][:-7]):
+						continue
+				elif (self.forcedBackend != key):
 					continue
 			
 			elif not value.get('load', False):
@@ -194,25 +204,35 @@ class BackendManager(DataBackend):
 			
 			logger.info("Backend config for '%s': %s" % (key, self.backends[key]['config']) )
 			
-			exec('from %s import %sBackend' % (key, key))
-			exec('b = %sBackend(	address 	= "%s", \
-						username 	= "%s", \
-						password 	= "%s", \
-						args 		= %s, \
-						backendManager	= self )' \
-				% (	key,
-					self.__address,
-					self.__username,
-					self.__password,
-					self.backends[key]['config'] ) )
+			if not isinstance(self.forcedBackend, DataBackend):
+				exec('from %s import %sBackend' % (key, key))
+				exec('b = %sBackend(	address 	= "%s", \
+							username 	= "%s", \
+							password 	= "%s", \
+							args 		= %s, \
+							backendManager	= self )' \
+					% (	key,
+						self.__address,
+						self.__username,
+						self.__password,
+						self.backends[key]['config'] ) )
+				self.backends[key]['instance'] = b
+			else:
+				self.backends[key]['instance'] = self.forcedBackend
+				self.forcedBackend = key
 			
-			self.backends[key]['instance'] = b
 			backendsUsed.append(key)
-			logger.info("Using backend %s." % b.__class__)
+			logger.info("Using backend %s." % self.backends[key]['instance'].__class__)
 			
 			if self.forcedBackend:
-				for (n, t) in b.__class__.__dict__.items():
+				methods = []
+				for pm in self.getPossibleMethods_listOfHashes():
+					methods.append(pm['name'])
+				
+				for (n, t) in self.backends[key]['instance'].__class__.__dict__.items():
 					if ( (type(t) == types.FunctionType or type(t) == types.MethodType ) and not n.startswith('_') ):
+						if n in methods:
+							continue
 						argCount = t.func_code.co_argcount
 						args = list(t.func_code.co_varnames[1:argCount])
 						argDefaults = t.func_defaults
@@ -225,7 +245,7 @@ class BackendManager(DataBackend):
 								else:
 									argsWithDefaults[offset+i] = "%s=%s" % (args[offset+i], argDefaults[i])
 						
-						logger.debug("Overwriting instance method '%s'" % n)
+						logger.debug("Adding instance method '%s'" % n)
 						argString = ''
 						if (len(args) > 0):
 							argString = ', ' + ', '.join(args)
@@ -722,6 +742,8 @@ class BackendManager(DataBackend):
 			ppf.unpack()
 			
 			ppf.setAccessRights()
+			
+			ppf.writeFileInfoFile()
 			
 			logger.info("Creating product in database")
 			self.createProduct(

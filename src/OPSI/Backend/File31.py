@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.7.22'
+__version__ = '0.2.8'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -117,22 +117,30 @@ class File31Backend(File, FileBackend):
 			self.__productLockFile = '/var/lib/opsi/config/depots/product.locks'
 			self.__auditInfoDir = '/var/lib/opsi/audit'
 		
+		# Return hostid of localhost
+		self.__serverId = socket.getfqdn()
+		parts = self.__serverId.split('.')
+		if (len(parts) < 3):
+			self.__serverId = parts[0] + '.' + self._defaultDomain
+		self.__serverId = self.__serverId.lower()
+		
 		# Parse arguments
 		for (option, value) in args.items():
 			if   (option.lower() == 'logdir'):			self.__logDir = value
 			elif (option.lower() == 'pckeyfile'):			self.__pckeyFile = value
 			elif (option.lower() == 'passwdfile'):			self.__passwdFile = value
-			elif (option.lower() == 'groupsfile'): 		self.__groupsFile = value
+			elif (option.lower() == 'groupsfile'): 			self.__groupsFile = value
 			elif (option.lower() == 'licensesfile'): 		self.__licensesFile = value
 			elif (option.lower() == 'defaultdomain'): 		self._defaultDomain = value
 			elif (option.lower() == 'clientconfigdir'): 		self.__clientConfigDir = value
 			elif (option.lower() == 'globalconfigfile'):		self.__globalConfigFile = value
 			elif (option.lower() == 'depotconfigdir'): 		self.__depotConfigDir = value
 			elif (option.lower() == 'auditinfodir'): 		self.__auditInfoDir = value
-			elif (option.lower() == 'clienttemplatesdir'): 	self.__clientTemplatesDir = value
+			elif (option.lower() == 'clienttemplatesdir'): 		self.__clientTemplatesDir = value
 			elif (option.lower() == 'defaultclienttemplatefile'): 	self.__defaultClientTemplateFile = value
 			elif (option.lower() == 'productlockfile'): 		self.__productLockFile = value
 			elif (option.lower() == 'fileopentimeout'): 		self.__fileOpenTimeout = value
+			elif (option.lower() == 'serverid'): 			self.__serverId = value
 			else:
 				logger.warning("Unknown argument '%s' passed to File31Backend constructor" % option)
 		
@@ -155,6 +163,28 @@ class File31Backend(File, FileBackend):
 		
 		return aliaslist
 	
+	def createOpsiBase(self):
+		if not os.path.exists(self.__logDir):
+			os.mkdir(self.__logDir)
+		if not os.path.exists(self.__clientConfigDir):
+			os.mkdir(self.__clientConfigDir)
+		if not os.path.exists(self.__depotConfigDir):
+			os.mkdir(self.__depotConfigDir)
+		if not os.path.exists(self.__clientTemplatesDir):
+			os.mkdir(self.__clientTemplatesDir)
+		if not os.path.exists(self.__auditInfoDir):
+			os.mkdir(self.__auditInfoDir)
+		if not os.path.exists(self.__pckeyFile):
+			File().createFile(filename = self.__pckeyFile, mode = 0660)
+		if not os.path.exists(self.__passwdFile):
+			File().createFile(filename = self.__passwdFile, mode = 0660)
+		if not os.path.exists(self.__groupsFile):
+			File().createFile(filename = self.__groupsFile, mode = 0660)
+		if not os.path.exists(self.__defaultClientTemplateFile):
+			File().createFile(filename = self.__defaultClientTemplateFile, mode = 0660)
+		if not os.path.exists(self.__globalConfigFile):
+			File().createFile(filename = self.__globalConfigFile, mode = 0660)
+		
 	def checkForErrors(self):
 		import stat, grp, pwd
 		errors = []
@@ -897,7 +927,7 @@ class File31Backend(File, FileBackend):
 					logger.notice("Skipping host '%s' in group '%s' (value = 0)" % (key, groupId))
 					continue
 				if ( key.find(self._defaultDomain) == -1):
-					key = '.'.join(key, self._defaultDomain)
+					key += self._defaultDomain
 				try:
 					hostIds.append( key.encode('ascii') )
 				except Exception, e:
@@ -1014,12 +1044,7 @@ class File31Backend(File, FileBackend):
 		return [ self.getServerId() ]
 	
 	def getServerId(self, clientId=None):
-		# Return hostid of localhost
-		serverId = socket.getfqdn()
-		parts = serverId.split('.')
-		if (len(parts) < 3):
-			serverId = parts[0] + '.' + self._defaultDomain
-		return serverId.lower()
+		return self.__serverId
 	
 	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None, maxBandwidth=0):
 		if not re.search(HOST_NAME_REGEX, depotName):

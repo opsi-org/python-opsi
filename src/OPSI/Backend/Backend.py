@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.8.6'
+__version__ = '0.9.8.7'
 
 # Imports
 import socket, re
@@ -73,6 +73,11 @@ HARDWARE_CLASSES = (	'UNKNOWN',
 			'PORT_CONNECTOR',
 			'HARDDISK' )
 
+SOFTWARE_LICENSE_TYPES = ( 'OEM', 'RETAIL', 'VOLUME' )
+SOFTWARE_LICENSE_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
+SOFTWARE_LICENSE_KEY_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
+LICENSE_CONTRACT_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
+LICENSE_POOL_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
 GROUP_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
 HOST_NAME_REGEX = re.compile("^[a-zA-Z0-9\_\-]+$")
 CLIENT_NAME_REGEX = HOST_NAME_REGEX
@@ -108,6 +113,10 @@ class BackendError(genericError):
 class BackendIOError(genericError):
 	""" Exception raised if there is a read or write error in the backend. """
 	ExceptionShortDescription = "Backend I/O error"
+
+class BackendReferentialIntegrityError(genericError):
+	""" Exception raised if there is a referential integration error occurs in the backend. """
+	ExceptionShortDescription = "Backend referential integrity error"
 
 class BackendBadValueError(genericError):
 	""" Exception raised if a malformed value is found. """
