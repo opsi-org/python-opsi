@@ -35,7 +35,7 @@
 __version__ = '0.2'
 
 # Imports
-import json, threading, ctypes, re, stat, base64, urllib
+import json, threading, re, stat, base64, urllib
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 from httplib import HTTPConnection, HTTPSConnection
@@ -51,6 +51,7 @@ logger = Logger()
 
 
 def _async_raise(tid, excobj):
+	import ctypes
 	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
 	if (res == 0):
 		logger.error("_async_raise: nonexistent thread id")

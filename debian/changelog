@@ -1,3 +1,19 @@
+python-opsi (3.3.1.2-1) stable; urgency=low
+
+  * Posix.py 1.1.12
+     - createPartition: lowest possible start sector now 0
+  * Util.py 0.2
+  * BackendManager.py 0.9.9.3
+     - possibility to pass forced backend instance to constructor 
+  * Cache.py 0.1 (starting a new data backend)
+  * Backend.py 0.9.9
+  * Product.py 1.1.1
+     - introducing file-info-file
+  * Tools.py 0.9.9.2
+     - includeDir, includeFile parms for findFile
+
+ -- Jan Schneider <schneider@pcbon14.uib.local>  Tue, 17 Feb 2009 10:28:12 +0100
+
 python-opsi (3.3.1.1-1) stable; urgency=low
 
   * Product.py 1.0.1

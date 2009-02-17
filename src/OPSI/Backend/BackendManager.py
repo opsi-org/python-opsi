@@ -56,6 +56,7 @@ from OPSI import System
 logger = Logger()
 
 HOST_GROUP = '|HOST_GROUP|'
+SYSTEM_ADMIN_GROUP = 'opsiadmin'
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
@@ -219,7 +220,15 @@ class BackendManager(DataBackend):
 				self.backends[key]['instance'] = b
 			else:
 				self.backends[key]['instance'] = self.forcedBackend
-				self.forcedBackend = key
+				self.forcedBackend         = key
+				self.defaultBackend        = key
+				self.clientManagingBackend = key
+				self.pxebootconfBackend    = key
+				self.passwordBackend       = key
+				self.pckeyBackend          = key
+				self.swinventBackend       = key
+				self.hwinventBackend       = key
+				self.loggingBackend        = key
 			
 			backendsUsed.append(key)
 			logger.info("Using backend %s." % self.backends[key]['instance'].__class__)
@@ -327,7 +336,7 @@ class BackendManager(DataBackend):
 					elif (type == PAM.PAM_PROMPT_ECHO_OFF):
 						response.append((_.password, 0))
 					elif (type == PAM.PAM_PROMPT_ERROR_MSG) or (type == PAM.PAM_PROMPT_TEXT_INFO):
-						print query
+						#print query
 						response.append(('', 0));
 					else:
 						return None
@@ -741,9 +750,9 @@ class BackendManager(DataBackend):
 			logger.info("Unpacking package '%s'" % filename)
 			ppf.unpack()
 			
-			ppf.setAccessRights()
-			
 			ppf.writeFileInfoFile()
+			
+			ppf.setAccessRights()
 			
 			logger.info("Creating product in database")
 			self.createProduct(
@@ -915,8 +924,13 @@ class BackendManager(DataBackend):
 	
 	def adjustProductStates(self, productStates, objectIds=[], options={}):
 		logger.debug("adjusting product states")
+		if not productStates:
+			return {}
+		if not objectIds:
+			raise BackendBadValueError("No object ids given")
 		if not options:
-			return productStates
+			options = {}
+		
 		for (key, values) in options.items():
 			if (key == 'actionProcessingFilter'):
 				logger.debug("action processing filter found")
@@ -931,29 +945,124 @@ class BackendManager(DataBackend):
 									productStates[hostId][i]['actionRequest'] = 'none'
 					else:
 						logger.warning("adjustProductStates: unkown key '%s' in %s options" % (k, key))
+			elif key in ('ignoreDependencies', 'ignorePriorities'):
+				continue
 			else:
 				logger.warning("adjustProductStates: unkown key '%s' in options" % key)
+		
+		if options.get('ignoreDependencies', False) and options.get('ignorePriorities', False):
+			return productStates
+		
+		opts = dict(options)
+		opts['ignoreDependencies'] = True
+		opts['ignorePriorities'] = True
+		allProductStates = self.getProductStates_hash(objectIds, options=opts)
+		
+		for hostId in objectIds:
+			
+			products = {}
+			for productState in allProductStates[hostId]:
+				productId = productState['productId']
+				products[productId] = self.getProduct_hash(productId)
+				products[productId]['dependencies'] = self.getProductDependencies_listOfHashes(productId)
+				products[productId]['installationStatus'] = productState['installationStatus']
+				for ps in productStates[hostId]:
+					if (ps['productId'] == productId):
+						if ps.get('installationStatus'):
+							products[productId]['installationStatus'] = ps['installationStatus']
+						if ps.get('actionRequest'):
+							products[productId]['actionRequest'] = ps['actionRequest']
+						break
+			
+			# Sort by priority
+			if not options.get('ignorePriorities', False):
+				newProductStates = {}
+				for ps in productStates[hostId]:
+					if (ps['actionRequest'] == 'none'):
+						continue
+					priority = int(products[ps['productId']]['priority'])
+					if not newProductStates.has_key(priority):
+						newProductStates[priority] = []
+					newProductStates[priority].append(ps)
+				productStates[hostId] = []
+				priorities = newProductStates.keys()
+				priorities.sort()
+				priorities.reverse()
+				for priority in priorities:
+					productStates[hostId].extend(newProductStates[priority])
+			
+			# Add dependent products
+			if not options.get('ignoreDependencies', False):
+				def addProductActionRequest(pss, actionRequest, productId, products, indent=0):
+					for ps in pss:
+						if (ps['productId'] == productId):
+							if (actionRequest == ps['actionRequest']):
+								return
+							else:
+								raise BackendUnaccomplishableError("Cannot fulfill actions '%s' and '%s' for product '%s'" \
+													% (actionRequest, ps['actionRequest'], productId))
+							
+					logger.info("%sAdding action request '%s' for product '%s'" % ('   '*indent, actionRequest, productId))
+					
+					(before, after) = ([], [])
+					for dependency in products[productId]['dependencies']:
+						if (dependency['action'] != actionRequest):
+							continue
+						if not products.has_key(dependency['requiredProductId']):
+							logger.error("Got a dependency to an unkown product %s, ignoring!" % dependency['requiredProductId'])
+							continue
+						requiredAction = dependency['requiredAction']
+						insert = 'before'
+						if requiredAction:
+							if (dependency.get('requirementType') == 'after'):
+								insert = 'after'
+						else:
+							if (dependency['requiredInstallationStatus'] == products[dependency['requiredProductId']]['installationStatus']):
+								continue
+							elif (dependency['requiredInstallationStatus'] == 'installed'):
+								requiredAction = 'setup'
+							elif (dependency['requiredInstallationStatus'] == 'not_installed'):
+								requiredAction = 'uninstall'
+						if (insert == 'after'):
+							after.append({'requiredProductId': dependency['requiredProductId'], 'requiredAction': requiredAction})
+						else:
+							before.append({'requiredProductId': dependency['requiredProductId'], 'requiredAction': requiredAction})
+					
+					for a in after:
+						for ps in pss:
+							if (ps['productId'] == a['requiredProductId']):
+								pss.remove(ps)
+								break
+					for pid in before:
+						addProductActionRequest(pss, pid['requiredAction'], pid['requiredProductId'], products, indent+1)
+					pss.append({'productId': productId, 'actionRequest': actionRequest})
+					for pid in after:
+						addProductActionRequest(pss, pid['requiredAction'], pid['requiredProductId'], products, indent+1)
+					
+					logger.info("%sAdded action request '%s' for product '%s'" % ('   '*indent, actionRequest, productId))
+					
+				newProductStates = []
+				for ps in productStates[hostId]:
+					if (ps['actionRequest'] == 'none'):
+						continue
+					addProductActionRequest(newProductStates, ps['actionRequest'], ps['productId'], products)
+				productStates[hostId] = newProductStates
 		return productStates
 		
 	def adjustProductActionRequests(self, productActionRequests, hostId='', options={}):
 		logger.debug("adjusting product action requests")
+		if not productActionRequests:
+			return []
+		if not hostId:
+			raise BackendBadValueError("No host id given")
 		if not options:
-			return productActionRequests
-		for (key, values) in options.items():
-			if (key == 'actionProcessingFilter'):
-				logger.debug("action processing filter found")
-				for (k, v) in values.items():
-					if (k == "productIds"):
-						productIds = v
-						if not type(productIds) is list:
-							productIds = [productIds]
-						for i in range(len(productActionRequests)):
-							if not productActionRequests[i]['productId'] in productIds:
-								productActionRequests[i]['actionRequest'] = 'none'
-					else:
-						logger.warning("adjustProductStates: unkown key '%s' in %s options" % (k, key))
-			else:
-				logger.warning("adjustProductStates: unkown key '%s' in options" % key)
+			options = {}
+		
+		productStates = {}
+		productStates[hostId] = productActionRequests
+		productActionRequests = []
+		for productState in self.adjustProductStates(productStates = productStates, objectIds = [hostId], options = options)[hostId]:
+			productActionRequests.append( {'productId': productState['productId'], 'actionRequest': productState['actionRequest']} )
 		return productActionRequests
 	
 	def getPossibleMethods_listOfHashes(self):

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1'
+__version__ = '1.1.1'
 
 # Imports
 import os
@@ -1126,7 +1126,7 @@ class ProductPackageFile(ProductPackage):
 					co.write(ci.read())
 					co.close()
 					ci.close()
-					#self.installedFiles.append( os.path.join(self.clientDataDir, cfName) )
+					self.installedFiles.append( os.path.join(self.clientDataDir, cfName) )
 					
 		if self.installedFiles:
 			self.installedFiles.sort()
@@ -1171,6 +1171,7 @@ class ProductPackageFile(ProductPackage):
 			else:
 				f.write("%s '%s' %s %s\n" % (type, filename[cut:].replace('\'', '\\\''), size, md5) )
 		f.close()
+		self.installedFiles.append( os.path.join(self.clientDataDir, '%s.files' % self.product.productId) )
 		
 	def setAccessRights(self):
 		logger.notice("Setting access rights of files")
