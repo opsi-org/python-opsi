@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 # Imports
 import os
@@ -715,6 +715,9 @@ class ProductPackage:
 		
 		cf.close()
 	
+	def writeControlFile(self):
+		self.product.writeControlFile(self.controlFile)
+	
 class ProductPackageSource(ProductPackage):
 	def __init__(self, sourceDir, tempDir = None, customName = None, customOnly = False, packageFileDestDir = None):
 		self.product = None
@@ -911,8 +914,7 @@ class ProductPackageFile(ProductPackage):
 				
 		self.clientDataDir = os.path.join('/tmp', self.product.productId)
 		
-		
-		
+	
 	def install(self):
 		self.checkDependencies()
 		self.runPreinst()
@@ -957,10 +959,13 @@ class ProductPackageFile(ProductPackage):
 		if os.path.isdir(self.tmpUnpackDir):
 			rmdir(self.tmpUnpackDir, recursive=True)
 	
-	
-	def unpackSource(self, sourceDir=''):
+	def unpackSource(self, sourceDir='', newProductId=''):
 		if not sourceDir:
 			raise Exception("Failed to unpack source: no destination directory given.")
+		
+		oldProductId = self.product.productId
+		if newProductId:
+			self.product.setProductId(newProductId)
 		
 		sourceDir = os.path.join(sourceDir, self.product.productId)
 		
@@ -1016,8 +1021,19 @@ class ProductPackageFile(ProductPackage):
 		if not os.path.isdir( os.path.join(sourceDir, 'SERVER_DATA') ):
 			os.mkdir( os.path.join(sourceDir, 'SERVER_DATA') )
 		
-		
-		
+		if newProductId:
+			self.controlFile = os.path.join(sourceDir, 'OPSI', 'control')
+			self.readControlFile()
+			self.product.setProductId(newProductId)
+			for scriptName in ('setupScript', 'uninstallScript', 'updateScript', 'alwaysScript', 'onceScript'):
+				script = getattr(self.product, scriptName)
+				if not script:
+					continue
+				newScript = script.replace(oldProductId, newProductId)
+				os.rename(os.path.join(sourceDir, 'CLIENT_DATA', script), os.path.join(sourceDir, 'CLIENT_DATA', newScript))
+				setattr(self.product, scriptName, newScript)
+			self.writeControlFile()
+			
 	def unpack(self, dataArchives=True):
 		
 		prevUmask = os.umask(0077)

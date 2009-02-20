@@ -32,10 +32,11 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.3'
+__version__ = '0.9.9.5'
 
 # Imports
 import os, stat, types, re, socket, new, base64
+import copy as pycopy
 from duplicity import librsync
 
 # OS dependend imports
@@ -931,6 +932,148 @@ class BackendManager(DataBackend):
 		if not options:
 			options = {}
 		
+		options['processPriorities'] = options.get('processPriorities', True)
+		options['processDependencies'] = options.get('processDependencies', False)
+		options['forceAccorateSequence'] = options.get('forceAccorateSequence', False)
+		
+		if options['processPriorities'] or options['processDependencies']:
+			opts = dict(options)
+			opts['processPriorities'] = False
+			opts['processDependencies'] = False
+			allProductStates = self.getProductStates_hash(objectIds, options=opts)
+			
+			# TODO: optimize for speed
+			allProducts = {}
+			allProductDependencies = {}
+			hostToDepot = {}
+			for hostId in objectIds:
+				depotId = self.getDepotId(hostId)
+				hostToDepot[hostId] = depotId
+				if depotId in allProducts.keys():
+					continue
+				allProducts[depotId] = {}
+				allProductDependencies[depotId] = {}
+				for productId in self.getProductIds_list(objectId = depotId):
+					allProducts[depotId][productId] = self.getProduct_hash(productId = productId, depotId = depotId)
+					allProductDependencies[depotId][productId] = self.getProductDependencies_listOfHashes(productId = productId, depotId = depotId)
+				
+			for hostId in objectIds:
+				products = {}
+				sequence = []
+				for productState in allProductStates[hostId]:
+					productId = productState['productId']
+					sequence.append(productId)
+					depotId = hostToDepot[hostId]
+					products[productId] = pycopy.deepcopy(allProducts[depotId][productId])
+					products[productId]['state'] = productState
+					products[productId]['dependencies'] = pycopy.deepcopy(allProductDependencies[depotId][productId])
+					for ps in productStates[hostId]:
+						if (ps['productId'] == productId):
+							if ps.get('installationStatus'):
+								products[productId]['state']['installationStatus'] = ps['installationStatus']
+							if ps.get('actionRequest'):
+								products[productId]['state']['actionRequest'] = ps['actionRequest']
+							break
+				
+				if options['processPriorities']:
+					# Sort by priority
+					priorityToProductIds = {}
+					sequence = []
+					for (productId, product) in products.items():
+						priority = int(products[productId]['priority'])
+						if not priorityToProductIds.has_key(priority):
+							priorityToProductIds[priority] = []
+						priorityToProductIds[priority].append(productId)
+					priorities = priorityToProductIds.keys()
+					priorities.sort()
+					priorities.reverse()
+					for priority in priorities:
+						sequence.extend(priorityToProductIds[priority])
+				
+					logger.debug("Sequence after priority sorting:")
+					for productId in sequence:
+						logger.debug("   %s (%s)" % (productId, products[productId]['priority']))
+					
+				if options['processDependencies']:
+					# Add dependent products
+					def addActionRequest(productId, actionRequest):
+						logger.debug("Adding action request '%s' for product '%s'" % (actionRequest, productId))
+						products[productId]['state']['actionRequest'] = actionRequest
+						for dependency in products[productId]['dependencies']:
+							if (dependency['action'] != actionRequest):
+								continue
+							if not products.has_key(dependency['requiredProductId']):
+								logger.warning("Got a dependency to an unkown product %s, ignoring!" % dependency['requiredProductId'])
+								continue
+							logger.debug("   Product '%s' defines a dependency to product '%s' for action '%s'" \
+									% (productId, dependency['requiredProductId'], actionRequest))
+							requiredAction = dependency['requiredAction']
+							if not requiredAction:
+								if (dependency['requiredInstallationStatus'] == products[dependency['requiredProductId']]['state']['installationStatus']):
+									continue
+								elif (dependency['requiredInstallationStatus'] == 'installed'):
+									requiredAction = 'setup'
+								elif (dependency['requiredInstallationStatus'] == 'not_installed'):
+									requiredAction = 'uninstall'
+							if (products[dependency['requiredProductId']]['state']['actionRequest'] == requiredAction):
+								continue
+							elif products[dependency['requiredProductId']]['state']['actionRequest'] not in ('undefined', 'none'):
+								raise BackendUnaccomplishableError("Cannot fulfill actions '%s' and '%s' for product '%s'" \
+									% (products[dependency['requiredProductId']]['state']['actionRequest'], requiredAction, dependency['requiredProductId']))
+							addActionRequest(dependency['requiredProductId'], requiredAction)
+					
+					for (productId, product) in products.items():
+						if product['state']['actionRequest'] in ('none', 'undefined'):
+							continue
+						addActionRequest(productId, product['state']['actionRequest'])
+				
+					# Sort by dependencies
+					for run in (1, 2):
+						for (productId, product) in products.items():
+							if product['state']['actionRequest'] in ('none', 'undefined'):
+								continue
+							logger.debug("Correcting sequence of action request '%s' for product '%s'" % (product['state']['actionRequest'], productId))
+							for dependency in products[productId]['dependencies']:
+								if (dependency['action'] != product['state']['actionRequest']):
+									continue
+								if not products.has_key(dependency['requiredProductId']):
+									logger.warning("Got a dependency to an unkown product %s, ignoring!" % dependency['requiredProductId'])
+									continue
+								logger.debug("   Product '%s' defines a dependency to product '%s' for action '%s'" \
+										% (productId, dependency['requiredProductId'], product['state']['actionRequest']))
+								if not dependency['requirementType']:
+									continue
+								(ppos, dpos) = (0, 0)
+								for i in range(len(sequence)):
+									if (sequence[i] == productId):
+										ppos = i
+									elif (sequence[i] == dependency['requiredProductId']):
+										dpos = i
+								if (dependency['requirementType'] == 'before') and (ppos < dpos):
+									if (run == 2):
+										raise BackendUnaccomplishableError("Cannot resolve sequence for products '%s', '%s'" \
+														% (productId, dependency['requiredProductId']))
+									sequence.remove(dependency['requiredProductId'])
+									sequence.insert(ppos, dependency['requiredProductId'])
+								elif (dependency['requirementType'] == 'after') and (dpos < ppos):
+									if (run == 2):
+										raise BackendUnaccomplishableError("Cannot resolve sequence for products '%s', '%s'" \
+														% (productId, dependency['requiredProductId']))
+									sequence.remove(dependency['requiredProductId'])
+									sequence.insert(ppos+1, dependency['requiredProductId'])
+						logger.debug("Sequence after dependency sorting (run %d):" % run)
+						for productId in sequence:
+							logger.debug("   %s (%s)" % (productId, products[productId]['priority']))
+						if not options['forceAccorateSequence']:
+							break
+						
+				productStates[hostId] = []
+				for productId in sequence:
+					state = products[productId]['state']
+					state['productId'] = productId
+					productStates[hostId].append(state)
+		
+		# Other options
 		for (key, values) in options.items():
 			if (key == 'actionProcessingFilter'):
 				logger.debug("action processing filter found")
@@ -945,108 +1088,9 @@ class BackendManager(DataBackend):
 									productStates[hostId][i]['actionRequest'] = 'none'
 					else:
 						logger.warning("adjustProductStates: unkown key '%s' in %s options" % (k, key))
-			elif key in ('ignoreDependencies', 'ignorePriorities'):
-				continue
-			else:
+			elif not key in ('processDependencies', 'processPriorities', 'forceAccorateSequence'):
 				logger.warning("adjustProductStates: unkown key '%s' in options" % key)
 		
-		if options.get('ignoreDependencies', False) and options.get('ignorePriorities', False):
-			return productStates
-		
-		opts = dict(options)
-		opts['ignoreDependencies'] = True
-		opts['ignorePriorities'] = True
-		allProductStates = self.getProductStates_hash(objectIds, options=opts)
-		
-		for hostId in objectIds:
-			
-			products = {}
-			for productState in allProductStates[hostId]:
-				productId = productState['productId']
-				products[productId] = self.getProduct_hash(productId)
-				products[productId]['dependencies'] = self.getProductDependencies_listOfHashes(productId)
-				products[productId]['installationStatus'] = productState['installationStatus']
-				for ps in productStates[hostId]:
-					if (ps['productId'] == productId):
-						if ps.get('installationStatus'):
-							products[productId]['installationStatus'] = ps['installationStatus']
-						if ps.get('actionRequest'):
-							products[productId]['actionRequest'] = ps['actionRequest']
-						break
-			
-			# Sort by priority
-			if not options.get('ignorePriorities', False):
-				newProductStates = {}
-				for ps in productStates[hostId]:
-					if (ps['actionRequest'] == 'none'):
-						continue
-					priority = int(products[ps['productId']]['priority'])
-					if not newProductStates.has_key(priority):
-						newProductStates[priority] = []
-					newProductStates[priority].append(ps)
-				productStates[hostId] = []
-				priorities = newProductStates.keys()
-				priorities.sort()
-				priorities.reverse()
-				for priority in priorities:
-					productStates[hostId].extend(newProductStates[priority])
-			
-			# Add dependent products
-			if not options.get('ignoreDependencies', False):
-				def addProductActionRequest(pss, actionRequest, productId, products, indent=0):
-					for ps in pss:
-						if (ps['productId'] == productId):
-							if (actionRequest == ps['actionRequest']):
-								return
-							else:
-								raise BackendUnaccomplishableError("Cannot fulfill actions '%s' and '%s' for product '%s'" \
-													% (actionRequest, ps['actionRequest'], productId))
-							
-					logger.info("%sAdding action request '%s' for product '%s'" % ('   '*indent, actionRequest, productId))
-					
-					(before, after) = ([], [])
-					for dependency in products[productId]['dependencies']:
-						if (dependency['action'] != actionRequest):
-							continue
-						if not products.has_key(dependency['requiredProductId']):
-							logger.error("Got a dependency to an unkown product %s, ignoring!" % dependency['requiredProductId'])
-							continue
-						requiredAction = dependency['requiredAction']
-						insert = 'before'
-						if requiredAction:
-							if (dependency.get('requirementType') == 'after'):
-								insert = 'after'
-						else:
-							if (dependency['requiredInstallationStatus'] == products[dependency['requiredProductId']]['installationStatus']):
-								continue
-							elif (dependency['requiredInstallationStatus'] == 'installed'):
-								requiredAction = 'setup'
-							elif (dependency['requiredInstallationStatus'] == 'not_installed'):
-								requiredAction = 'uninstall'
-						if (insert == 'after'):
-							after.append({'requiredProductId': dependency['requiredProductId'], 'requiredAction': requiredAction})
-						else:
-							before.append({'requiredProductId': dependency['requiredProductId'], 'requiredAction': requiredAction})
-					
-					for a in after:
-						for ps in pss:
-							if (ps['productId'] == a['requiredProductId']):
-								pss.remove(ps)
-								break
-					for pid in before:
-						addProductActionRequest(pss, pid['requiredAction'], pid['requiredProductId'], products, indent+1)
-					pss.append({'productId': productId, 'actionRequest': actionRequest})
-					for pid in after:
-						addProductActionRequest(pss, pid['requiredAction'], pid['requiredProductId'], products, indent+1)
-					
-					logger.info("%sAdded action request '%s' for product '%s'" % ('   '*indent, actionRequest, productId))
-					
-				newProductStates = []
-				for ps in productStates[hostId]:
-					if (ps['actionRequest'] == 'none'):
-						continue
-					addProductActionRequest(newProductStates, ps['actionRequest'], ps['productId'], products)
-				productStates[hostId] = newProductStates
 		return productStates
 		
 	def adjustProductActionRequests(self, productActionRequests, hostId='', options={}):

@@ -32,11 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.1.11'
+__version__ = '0.9.1.12'
 
 # Imports
 import ldap, ldap.modlist, re
-import copy as pycopy
 
 # OPSI imports
 from OPSI.Backend.Backend import *
