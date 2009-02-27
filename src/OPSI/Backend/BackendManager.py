@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.5'
+__version__ = '0.9.9.6'
 
 # Imports
 import os, stat, types, re, socket, new, base64
@@ -844,7 +844,7 @@ class BackendManager(DataBackend):
 		depot = self.getDepot_hash(depotId)
 		
 		if not productId in self.getProductIds_list(objectId = depotId, installationStatus = 'installed'):
-			return
+			raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 		
 		lockedOnDepots = self.getProductLocks_hash(depotIds = [ depotId ]).get(productId, [])
 		logger.info("Product currently locked on : %s" % lockedOnDepots)

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9'
+__version__ = '0.9.9.1'
 
 # Imports
 import socket, re
@@ -77,7 +77,6 @@ HARDWARE_CLASSES = (	'UNKNOWN',
 
 SOFTWARE_LICENSE_TYPES = ( 'OEM', 'RETAIL', 'VOLUME' )
 SOFTWARE_LICENSE_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
-SOFTWARE_LICENSE_KEY_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
 LICENSE_CONTRACT_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
 LICENSE_POOL_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
 GROUP_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\.\-]+$")
@@ -468,6 +467,14 @@ class DataBackendReplicator(object):
 				newDepotId = depotId
 				if self.__newServerId and (self.__oldServerId == depotId):
 					newDepotId = self.__newServerId
+					oldServerName = self.__oldServerId.split('.')[0]
+					newServerName = self.__newServerId.split('.')[0]
+					if depot.get('depotRemoteUrl'):
+						depot['depotRemoteUrl'] = depot['depotRemoteUrl'].replace(self.__oldServerId, self.__newServerId)
+						depot['depotRemoteUrl'] = depot['depotRemoteUrl'].replace(oldServerName, newServerName)
+					if depot.get('repositoryRemoteUrl'):
+						depot['repositoryRemoteUrl'] = depot['repositoryRemoteUrl'].replace(self.__oldServerId, self.__newServerId)
+						depot['repositoryRemoteUrl'] = depot['repositoryRemoteUrl'].replace(oldServerName, newServerName)
 				
 				depotName = newDepotId.split('.')[0]
 				domain = '.'.join( newDepotId.split('.')[1:] )
