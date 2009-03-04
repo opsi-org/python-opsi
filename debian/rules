@@ -26,9 +26,11 @@ build-indep-stamp:
 	touch build-indep-stamp
 
 clean:
+	rm -rf debian/python-opsi || true
 	rm debian/files || true
 	rm -f *-stamp || true
-	
+	rm -rf build* || true
+
 binary: binary-arch binary-indep
 
 binary-arch: build-arch binary-stamp
