@@ -32,19 +32,20 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.6'
+__version__ = '1.0'
 
 # Imports
-import os, stat, types, re, socket, new, base64
+import os, stat, types, re, socket, new, base64, md5
 import copy as pycopy
 from duplicity import librsync
+from twisted.conch.ssh import keys
 
 # OS dependend imports
-if os.name == 'posix':
+if (os.name == 'posix'):
 	import pwd, grp
-#else:
-#	import win32security
-#	from _winreg import *
+else:
+	import win32security
+	from _winreg import *
 
 # OPSI imports
 from OPSI.Product import *
@@ -58,6 +59,8 @@ logger = Logger()
 
 HOST_GROUP = '|HOST_GROUP|'
 SYSTEM_ADMIN_GROUP = 'opsiadmin'
+OPSI_VERSION_FILE='/etc/opsi/version'
+OPSI_MODULES_FILE='/etc/opsi/modules'
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
@@ -1109,6 +1112,64 @@ class BackendManager(DataBackend):
 			productActionRequests.append( {'productId': productState['productId'], 'actionRequest': productState['actionRequest']} )
 		return productActionRequests
 	
+	def getOpsiInformation_hash(self):
+		opsiVersion = 'unknown'
+		try:
+			f = open(OPSI_VERSION_FILE, 'r')
+			opsiVersion = f.readline().strip()
+			f.close()
+		except Exception, e:
+			logger.error("Failed to read version info from file '%s': %s" % (OPSI_VERSION_FILE, e))
+		
+		modules = {}
+		try:
+			modules['valid'] = False
+			f = open(OPSI_MODULES_FILE, 'r')
+			for line in f.readlines():
+				line = line.strip()
+				if (line.find('=') == -1):
+					logger.error("Found bad line '%s' in modules file '%s'" % (line, OPSI_MODULES_FILE))
+					continue
+				(module, state) = line.split('=', 1)
+				module = module.strip().lower()
+				state = state.strip()
+				if (module == 'signature'):
+					modules[module] = long(state)
+					continue
+				if (module == 'customer'):
+					modules[module] = state
+					continue
+				state = state.lower()
+				if not state in ('yes', 'no'):
+					logger.error("Found bad line '%s' in modules file '%s'" % (line, OPSI_MODULES_FILE))
+					continue
+				modules[module] = (state == 'yes')
+			f.close()
+			if not modules.get('signature'):
+				raise Exception('Signature not found')
+			if not modules.get('customer'):
+				raise Exception('Customer not found')
+			
+			publicKey = keys.getPublicKeyObject(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
+			data = ''
+			mks = modules.keys()
+			mks.sort()
+			for module in mks:
+				if module in ('valid', 'signature'):
+					continue
+				val = modules[module]
+				if (val == False): val = 'no'
+				if (val == True):  val = 'yes'
+				data += module.lower().strip() + ' = ' + val + '\r\n'
+			modules['valid'] = bool(publicKey.verify(md5.new(data).digest(), [ modules['signature'] ]))
+		except Exception, e:
+			logger.error("Failed to read opsi modules file '%s': %s" % (OPSI_MODULES_FILE, e))
+		
+		return {
+			"opsiVersion": opsiVersion,
+			"modules":     modules
+		}
+		
 	def getPossibleMethods_listOfHashes(self):
 		''' This function returns a list of available interface methods.
 		The methods are defined by hashes containing the keys "name" and

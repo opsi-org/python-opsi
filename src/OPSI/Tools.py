@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.5'
+__version__ = '0.9.9.6'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -868,12 +868,15 @@ def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=Non
 		
 		# Patch winnt.sif
 		if sifFile:
+			logger.notice("Registering textmode drivers in sif file '%s'" % sifFile)
 			lines = []
 			massStorageDriverLines = []
 			oemBootFileLines = []
 			section = ''
 			sif = open(sifFile, 'r')
-			for line in sif.readline():
+			for line in sif.readlines():
+				if line.strip():
+					logger.debug2("Current sif file content: %s" % line.rstrip())
 				if line.strip().startswith('['):
 					section = line.strip().lower()[1:-1]
 					if section in ('massstoragedrivers', 'oembootfiles'):
@@ -887,21 +890,27 @@ def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=Non
 				lines.append(line)
 			sif.close()
 			
+			logger.info("Patching sections for driver '%s'" % description)
+			
 			if not massStorageDriverLines:
-				massStorageDriverLines = ['\r\n[MassStorageDrivers]\r\n']
-			massStorageDriverLines.append('"%s" = OEM\r' % description)
+				massStorageDriverLines = ['\r\n', '[MassStorageDrivers]\r\n']
+			massStorageDriverLines.append('"%s" = OEM\r\n' % description)
 			
 			if not oemBootFileLines:
-				oemBootFileLines = ['\r\n[OEMBootFiles]\r\n']
+				oemBootFileLines = ['\r\n', '[OEMBootFiles]\r\n']
 			for obf in oemBootFiles:
-				oemBootFiles.append(obf)
+				oemBootFileLines.append('%s\r\n' % obf)
 			
+			logger.debug("Patching [MassStorageDrivers] in file '%s':" % sifFile)
+			logger.debug(massStorageDriverLines)
 			lines.extend(massStorageDriverLines)
-			lines.extend(oemBootFiles)
+			logger.debug("Patching [OEMBootFiles] in file '%s':" % sifFile)
+			logger.debug(oemBootFileLines)
+			lines.extend(oemBootFileLines)
 			
 			sif = open(sifFile, 'w')
 			sif.writelines(lines)
-			winntsif.close()
+			sif.close()
 		
 def integrateAdditionalDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageObserver=None, progressObserver=None):
 	logger.info("Adding additional drivers")

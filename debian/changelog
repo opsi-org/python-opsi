@@ -1,3 +1,12 @@
+python-opsi (3.3.1.4-1) stable; urgency=low
+
+  * Tools.py 0.9.9.6
+      - fixed text mode driver integration
+  * BackendManager.py 1.0
+      - introducing method getOpsiInformation_hash
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 04 Mar 2009 12:32:32 +0100
+
 python-opsi (3.3.1.3-1) stable; urgency=low
 
   * Product.py 1.1.2
@@ -6,7 +15,7 @@ python-opsi (3.3.1.3-1) stable; urgency=low
   * Tools.py 0.9.9.4
   * Util.py 0.2.1
   
- -- Jan Schneider <schneider@pcbon14.uib.local>  Tue, 24 Feb 2009 14:02:42 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 24 Feb 2009 14:02:42 +0100
 
 python-opsi (3.3.1.2-1) stable; urgency=low
 
@@ -22,7 +31,7 @@ python-opsi (3.3.1.2-1) stable; urgency=low
   * Tools.py 0.9.9.2
      - includeDir, includeFile parms for findFile
 
- -- Jan Schneider <schneider@pcbon14.uib.local>  Tue, 17 Feb 2009 10:28:12 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 17 Feb 2009 10:28:12 +0100
 
 python-opsi (3.3.1.1-1) stable; urgency=low
 
@@ -37,7 +46,7 @@ python-opsi (3.3.1.0-5) stable; urgency=low
   * File31.py 0.2.7.22
   * Windows.py 0.1.5 
 
- -- Jan Schneider <schneider@pcbon14.uib.local>  Wed, 04 Feb 2009 14:51:24 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 04 Feb 2009 14:51:24 +0100
 
 python-opsi (3.3.1.0-4) stable; urgency=low
 
@@ -46,7 +55,7 @@ python-opsi (3.3.1.0-4) stable; urgency=low
       - LDAP.py
       - BackendManager.py
 
- -- Jan Schneider <schneider@pcbon14.uib.local>  Wed, 04 Feb 2009 14:50:08 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 04 Feb 2009 14:50:08 +0100
 
 python-opsi (3.3.1.0-3) stable; urgency=low
 

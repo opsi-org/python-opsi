@@ -57,8 +57,8 @@ def _async_raise(tid, excobj):
 		logger.error("_async_raise: nonexistent thread id")
 		raise ValueError("nonexistent thread id")
 	elif (res > 1):
-		# """if it returns a number greater than one, you're in trouble, 
-		# and you should call it again with exc=NULL to revert the effect"""
+		# if it returns a number greater than one, you're in trouble,
+		# and you should call it again with exc=NULL to revert the effect
 		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
 		logger.error("_async_raise: PyThreadState_SetAsyncExc failed")
 		raise SystemError("PyThreadState_SetAsyncExc failed")
