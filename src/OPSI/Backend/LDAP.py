@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.1.12'
+__version__ = '1.0'
 
 # Imports
-import ldap, ldap.modlist, re
+import ldap, ldap.modlist, re, json
 
 # OPSI imports
 from OPSI.Backend.Backend import *
@@ -93,9 +93,8 @@ class LDAPBackend(DataBackend):
 			elif (option.lower() == 'opsibasedn'):					self._opsiBaseDn = value
 			elif (option.lower() == 'hostscontainerdn'):				self._hostsContainerDn = value
 			elif (option.lower() == 'groupscontainerdn'):				self._groupsContainerDn = value
-			elif (option.lower() == 'productscontainerdn'):			self._productsContainerDn = value
+			elif (option.lower() == 'productscontainerdn'):				self._productsContainerDn = value
 			elif (option.lower() == 'productclassescontainerdn'):			self._productClassesContainerDn = value
-			elif (option.lower() == 'productlicensescontainerdn'):			self._productLicensesContainerDn = value
 			elif (option.lower() == 'productstatescontainerdn'):			self._productStatesContainerDn = value
 			elif (option.lower() == 'generalconfigscontainerdn'):			self._generalConfigsContainerDn = value
 			elif (option.lower() == 'networkconfigscontainerdn'):			self._networkConfigsContainerDn = value
@@ -301,11 +300,8 @@ class LDAPBackend(DataBackend):
 						'depotid', 'windomain', 'nextbootservertype', 'nextbootserviceurl' ):
 				logger.error("Unknown networkConfig key '%s'" % key)
 				continue
-			if (key == 'depoturl'):
-				logger.error("networkConfig: Setting key 'depotUrl' is no longer supported, use depotId")
-				continue
-			if key in ('configurl', 'utilsurl'):
-				logger.error("networkConfig: Setting key '%s' is no longer supported" % key)
+			if key in ('depoturl', 'configurl', 'utilsurl'):
+				logger.warning("networkConfig: Setting key '%s' is no longer supported" % key)
 				continue
 			configNew[key] = value
 		config = configNew
@@ -586,7 +582,22 @@ class LDAPBackend(DataBackend):
 				group.deleteAttributeValue('uniqueMember', server.getDn())
 				group.writeToDirectory(self._ldap)
 			
-			if self._deleteServer:
+			deleteServer = self._deleteServer
+			if not deleteServer and server.exists(self._ldap):
+				logger.info("Removing opsi objectClasses from object '%s'" % server.getDn())
+				server.readFromDirectory(self._ldap)
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+					server.setAttribute(attr, [])
+				server.removeObjectClass('opsiConfigserver')
+				server.removeObjectClass('opsiDepotserver')
+				server.removeObjectClass('opsiHost')
+				if not server.getObjectClasses():
+					# No object classes left => delete object
+					deleteServer = True
+				else:
+					server.writeToDirectory(self._ldap)
+			
+			if deleteServer:
 				# Delete server
 				if self._deleteServerCommand:
 					cmd = self._deleteServerCommand
@@ -597,15 +608,6 @@ class LDAPBackend(DataBackend):
 				elif server.exists(self._ldap):
 					# Delete host object and possible childs
 					server.deleteFromDirectory(self._ldap, recursive = True)
-			elif server.exists(self._ldap):
-				logger.info("Removing opsi objectClasses from object '%s'" % server.getDn())
-				server.readFromDirectory(self._ldap)
-				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
-					server.setAttribute(attr, [])
-				server.removeObjectClass('opsiConfigserver')
-				server.removeObjectClass('opsiDepotserver')
-				server.removeObjectClass('opsiHost')
-				server.writeToDirectory(self._ldap)
 	
 	def deleteClient(self, clientId):
 		clientId = self._preProcessHostId(clientId)
@@ -722,8 +724,13 @@ class LDAPBackend(DataBackend):
 		hostDns = []
 		hostDnToDepotId = {}
 		networkConfigObj = Object( 'cn=%s,%s' % ( self.getServerId(), self._networkConfigsContainerDn ) )
-		networkConfigObj.readFromDirectory(self._ldap, 'opsiDepotserverReference')
-		defaultDepotDn = networkConfigObj.getAttribute('opsiDepotserverReference')
+		try:
+			networkConfigObj.readFromDirectory(self._ldap, 'opsiDepotserverReference')
+			defaultDepotDn = networkConfigObj.getAttribute('opsiDepotserverReference')
+		except Exception, e:
+			logger.warning("Failed to read default networkconfig: %s" % e)
+			defaultDepotDn = ''
+		
 		for depotId in depotIds:
 			logger.debug("Searching clients connected to depot '%s'" % depotId)
 			depotDn = self.getHostDn(depotId)
@@ -770,16 +777,21 @@ class LDAPBackend(DataBackend):
 		# Filter by group
 		if groupId:
 			filteredHostDns = []
-			group = Object( "cn=%s,%s" % (groupId, self._groupsContainerDn) )
+			group = None
 			try:
+				search = ObjectSearch(self._ldap, self._groupsContainerDn, filter='(&(objectClass=opsiGroup)(cn=%s))' % groupId)
+				group = search.getObject()
 				group.readFromDirectory(self._ldap)
 			except BackendMissingDataError, e:
 				raise BackendMissingDataError("Group '%s' not found: %s" % (groupId, e))
 			
-			for member in group.getAttribute('uniqueMember', valuesAsList=True):
-				if member in hostDns and not member in filteredHostDns:
-					filteredHostDns.append(member)
-			hostDns = filteredHostDns
+			try:
+				for member in group.getAttribute('uniqueMember', valuesAsList=True):
+					if member in hostDns and not member in filteredHostDns:
+						filteredHostDns.append(member)
+				hostDns = filteredHostDns
+			except BackendMissingDataError, e:
+				logger.warning("Group '%s' is empty" % groupId)
 		
 		# Filter by product state
 		if installationStatus or actionRequest or productVersion or packageVersion:
@@ -1020,7 +1032,21 @@ class LDAPBackend(DataBackend):
 			productsContainer.deleteFromDirectory(self._ldap, recursive = True)
 		
 		if depot:
-			if self._deleteServer:
+			deleteServer = self._deleteServer
+			if not deleteServer and depot.exists(self._ldap):
+				logger.info("Removing opsi objectClasses from object '%s'" % depot.getDn())
+				depot.readFromDirectory(self._ldap)
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+					depot.setAttribute(attr, [])
+				depot.removeObjectClass('opsiDepotserver')
+				depot.removeObjectClass('opsiHost')
+				if not depot.getObjectClasses():
+					# No object classes left => delete object
+					deleteServer = True
+				else:
+					depot.writeToDirectory(self._ldap)
+			
+			if deleteServer:
 				# Delete server
 				if self._deleteServerCommand:
 					cmd = self._deleteServerCommand
@@ -1031,14 +1057,6 @@ class LDAPBackend(DataBackend):
 				elif depot.exists(self._ldap):
 					# Delete host object and possible childs
 					depot.deleteFromDirectory(self._ldap, recursive = True)
-			elif depot.exists(self._ldap):
-				logger.info("Removing opsi objectClasses from object '%s'" % depot.getDn())
-				depot.readFromDirectory(self._ldap)
-				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
-					depot.setAttribute(attr, [])
-				depot.removeObjectClass('opsiDepotserver')
-				depot.removeObjectClass('opsiHost')
-				depot.writeToDirectory(self._ldap)
 		
 	def getOpsiHostKey(self, hostId):
 		hostId = self._preProcessHostId(hostId)
@@ -1047,7 +1065,7 @@ class LDAPBackend(DataBackend):
 		host.readFromDirectory(self._ldap, 'opsiHostKey')
 		try:
 			return host.getAttribute('opsiHostKey')
-		except BackendMissingDataError:
+		except BackendMissingDataError, e:
 			raise BackendMissingDataError("Cannot find opsiHostKey for host '%s': %s" % (hostId, e))
 		
 	def setOpsiHostKey(self, hostId, opsiHostKey):
@@ -1076,7 +1094,16 @@ class LDAPBackend(DataBackend):
 		hostId = self._preProcessHostId(hostId)
 		host = Object( self.getHostDn(hostId) )
 		host.readFromDirectory(self._ldap, self._hostAttributeHardwareAddress)
-		return host.getAttribute(self._hostAttributeHardwareAddress, valuesAsList = True)
+		try:
+			return host.getAttribute(self._hostAttributeHardwareAddress, valuesAsList = True)
+		except BackendMissingDataError:
+			return []
+		
+	def getMacAddress(self, hostId):
+		macs = self.getMacAddresses_list(hostId)
+		if macs:
+			return macs[0]
+		return ''
 		
 	def setMacAddresses(self, hostId, macs=[]):
 		for i in range(len(macs)):
@@ -1087,14 +1114,24 @@ class LDAPBackend(DataBackend):
 		host.setAttribute(self._hostAttributeHardwareAddress, macs)
 		host.writeToDirectory(self._ldap)
 		
-	def createGroup(self, groupId, members = [], description = ""):
+	def createGroup(self, groupId, members = [], description = "", parentGroupId=""):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
+		if parentGroupId and not re.search(GROUP_ID_REGEX, parentGroupId):
+			raise BackendBadValueError("Bad parent-group-id: '%s'" % parentGroupId)
 		
 		self.deleteGroup(groupId)
 		
 		# Create group object
-		group = Object( "cn=%s,%s" % (groupId, self._groupsContainerDn) )
+		containerDn = self._groupsContainerDn
+		if parentGroupId:
+			try:
+				search = ObjectSearch(self._ldap, self._groupsContainerDn, filter='(&(objectClass=opsiGroup)(cn=%s))' % parentGroupId)
+				containerDn = search.getDn()
+			except BackendMissingDataError, e:
+				raise BackendMissingDataError("Parent group '%s' not found" % parentGroupId)
+		
+		group = Object( "cn=%s,%s" % (groupId, containerDn) )
 		group.new('opsiGroup')
 		#search = ObjectSearch(self._ldap, self.getHostContainerDn(), filter='(objectClass=opsiClient)')
 		if ( type(members) != type([]) and type(members) != type(()) ):
@@ -1114,6 +1151,25 @@ class LDAPBackend(DataBackend):
 			logger.warning("No groups found: %s" % e)
 			return []
 	
+	def getHostGroupTree_hash(self):
+		groups = {}
+		try:
+			search = ObjectSearch(self._ldap, self._groupsContainerDn, filter='(objectClass=opsiGroup)')
+			for group in search.getDns():
+				group = group[:-1*(len(self._groupsContainerDn)+1)]
+				group = group.split(',')
+				group.reverse()
+				cg = groups
+				for g in group:
+					g = g.split('=', 1)[1]
+					if not cg.has_key(g):
+						cg[g] = {}
+					cg = cg[g]
+					
+		except BackendMissingDataError, e:
+			logger.warning("No groups found: %s" % e)
+		return groups
+		
 	def deleteGroup(self, groupId):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
@@ -1122,9 +1178,15 @@ class LDAPBackend(DataBackend):
 		group = Object( "cn=%s,%s" % (groupId, self._groupsContainerDn) )
 		
 		# Delete group object from ldap if exists
-		if group.exists(self._ldap):
+		if not group.exists(self._ldap):
+			return
+		try:
+			search = ObjectSearch(self._ldap, group.getDn(), filter='(objectClass=*)')
+		except BackendMissingDataError:
 			group.deleteFromDirectory(self._ldap)
-	
+			return
+		raise BackendIOError("Cannot delete group '%s': groups has child groups")
+		
 	# -------------------------------------------------
 	# -     PASSWORD FUNCTIONS                        -
 	# -------------------------------------------------
@@ -1427,7 +1489,7 @@ class LDAPBackend(DataBackend):
 		if not objectId:
 			objectId = self.getDepotId()
 		
-		objectId = objectId.lower()
+		objectId = self._preProcessHostId(objectId)
 		
 		objectClass = 'opsiProduct'
 		if (productType == 'localboot'):
@@ -1499,7 +1561,7 @@ class LDAPBackend(DataBackend):
 	
 	def getProductInstallationStatus_hash(self, productId, objectId):
 		productId = productId.lower()
-		objectId = objectId.lower()
+		objectId = self._preProcessHostId(objectId)
 		
 		status = { 
 			'productId':		productId,
@@ -1535,7 +1597,7 @@ class LDAPBackend(DataBackend):
 		return status
 	
 	def getProductInstallationStatus_listOfHashes(self, objectId):
-		objectId = objectId.lower()
+		objectId = self._preProcessHostId(objectId)
 		
 		installationStatus = []
 		
@@ -1554,8 +1616,8 @@ class LDAPBackend(DataBackend):
 		for productId in self.getProductIds_list(None, self.getDepotId(objectId)):
 			installationStatus.append( { 
 					'productId':		productId,
-					'installationStatus':	'undefined',
-					'actionRequest':	'undefined',
+					'installationStatus':	'not_installed',
+					'actionRequest':	'none',
 					'productVersion':	'',
 					'packageVersion':	'',
 					'lastStateChange':	'' 
@@ -1586,21 +1648,18 @@ class LDAPBackend(DataBackend):
 		return installationStatus
 		
 	
-	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", licenseKey=""):
+	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", productActionProgress={}):
 		productId = productId.lower()
+		objectId = self._preProcessHostId(objectId)
 		
 		if objectId in self.getDepotIds_list():
 			return
 		
 		depotId = self.getDepotId(objectId)
+		productType = self.getProductType(productId = productId, depotId = depotId)
 		
-		productType = None
-		if productId in self.getProductIds_list('netboot', depotId):
-			productType = 'netboot'
-		elif productId in self.getProductIds_list('localboot', depotId):
-			productType = 'localboot'
-		else:
-			raise Exception("product '%s': is neither localboot nor netboot product" % productId)
+		if not productActionProgress:
+			productActionProgress = {}
 		
 		if not installationStatus:
 			installationStatus = 'undefined'
@@ -1673,6 +1732,7 @@ class LDAPBackend(DataBackend):
 		
 		productState.setAttribute( 'opsiProductActionRequestForced', [ actionRequest ] )
 		productState.setAttribute( 'opsiProductInstallationStatus', [ installationStatus ] )
+		productState.setAttribute( 'opsiProductActionProgress', [ json.write(productActionProgress) ] )
 		
 		productState.setAttribute( 'opsiHostReference', 	[ self.getHostDn(objectId) ] )
 		productState.setAttribute( 'opsiProductReference', 	[ product.getDn() ] )
@@ -1686,62 +1746,34 @@ class LDAPBackend(DataBackend):
 		
 		productState.writeToDirectory(self._ldap)
 		
-		return
-		###############################################################
-		# Get licenseReference by licenseKey
-		#licenseReference = None
-		#if licenseKey:
-		#	search = ObjectSearch(self._ldap, "cn=%s,%s" % (product.getCn(), self._productLicensesContainerDn), 
-		#				filter='(&(objectClass=opsiProductLicense)(licenseKey=%s))' % licenseKey)
-		#	licenseReference = search.getDn()
-		#
-		## Get deploymentPolicy timestamp
-		#deploymentTimestamp = None
-		#deploymentPolicy = None
-		#if policyId:
-		#	deploymentPolicy = Object(deploymentPolicyDn)
-		#	deploymentPolicy.readFromDirectory(self._ldap, 'opsiProductDeploymentTimestamp')
-		#	deploymentTimestamp = deploymentPolicy.getAttribute('opsiProductDeploymentTimestamp')
 		
-		## Search for actionRequests resulting from policies
-		#if actionRequest:
-		#	policyActionRequest = None
-		#	try:
-		#		policySearch = PolicySearch(	self._ldap, host.getDn(),
-		#					policyContainer = self._productDeploymentPoliciesContainerDn,
-		#					policyFilter = '(&(objectClass=opsiPolicyProductDeployment)(opsiProductReference=%s))' % product.getDn(),
-		#					independenceAttribute = 'cn',
-		#					policyReferenceObjectClass = self._policyReferenceObjectClass,
-		#					policyReferenceAttributeName = self._policyReferenceAttributeName )
-		#		
-		#		policyActionRequest = self._getProductActionRequestFromPolicy(policySearch.getObject(), host.getDn())
-		#	
-		#	except BackendMissingDataError, e:
-		#		# No deployment policy exists for host and product
-		#		pass
-		#	
-		#	if (policyActionRequest and policyActionRequest == actionRequest):
-		#		# ActionRequest matches action resulting from policy => not forcing an actionRequest !
-		#		logger.info("Will not force actionRequest '%s', policy produces the same actionRequest." % actionRequest)
-		#		actionRequest = ''
-		#
-		#if installationStatus in ['not_installed', 'uninstalled']:
-		#	logger.info("License key assignement for host '%s' and product '%s' removed" \
-		#							% (objectId, productId) )
-		#	productState.setAttribute( 'licenseReference', [ ] )
-		#elif licenseReference:
-		#	productState.setAttribute( 'licenseReference', [ licenseReference ] )
-		#
-		#if deploymentPolicy:
-		#	productState.setAttribute( 'opsiProductDeploymentPolicyReference', [ deploymentPolicy.getDn() ] )
-		#if deploymentTimestamp:
-		#	productState.setAttribute( 'opsiProductDeploymentTimestamp', [ deploymentTimestamp ] )	
-		#
-		#productState.writeToDirectory(self._ldap)
-		
-	def setProductInstallationStatus(self, productId, objectId, installationStatus, policyId="", licenseKey=""):
-		self.setProductState(productId, objectId, installationStatus = installationStatus, licenseKey = licenseKey)
+	def setProductInstallationStatus(self, productId, objectId, installationStatus):
+		self.setProductState(productId, objectId, installationStatus = installationStatus)
 	
+	def setProductActionProgress(self, productId, hostId, productActionProgress):
+		productId = productId.lower()
+		hostId = self._preProcessHostId(hostId)
+		if not productActionProgress:
+			productActionProgress = {}
+		
+		if hostId in self.getDepotIds_list():
+			return
+		
+		logger.info("Setting product action progress '%s' for host '%s', product '%s'" \
+					% (productActionProgress, hostId, productId))
+		
+		# Create productState container for selected host
+		self.createOrganizationalRole( 'cn=%s,%s' % (hostId, self._productStatesContainerDn) )
+		
+		# Create or load productState object and set the needed attributes
+		productState = Object( 'cn=%s,cn=%s,%s' % (productId, hostId, self._productStatesContainerDn) )
+		if not productState.exists(self._ldap):
+			self.setProductState(self, productId = productId, objectId = hostId, installationStatus="not_installed", actionRequest="none")
+		
+		productState.readFromDirectory(self._ldap)
+		productState.setAttribute( 'opsiProductActionProgress', [ json.write(productActionProgress) ] )
+		productState.writeToDirectory(self._ldap)
+		
 	def getPossibleProductActions_list(self, productId=None, depotId=None):
 		
 		if not productId:
@@ -1752,7 +1784,7 @@ class LDAPBackend(DataBackend):
 			depotId = self.getDepotId()
 		depotId = depotId.lower()
 		
-		actions = ['none'] # ['none', 'by_policy']
+		actions = ['none']
 		# Get product object
 		product = Object( "cn=%s,cn=%s,%s" % (productId, depotId, self._productsContainerDn) )
 		if not product.exists(self._ldap):
@@ -1834,7 +1866,7 @@ class LDAPBackend(DataBackend):
 				continue
 			
 			if (actionRequest == 'undefined'):
-				continue
+				actionRequest = 'none'
 			
 			# An actionRequest is forced
 			product = Object( productState.getAttribute('opsiProductReference') )
@@ -1940,8 +1972,9 @@ class LDAPBackend(DataBackend):
 				
 				for (productId, productInfo) in productInfoCache[depotId].items():
 					state = { 	'productId':		productId, 
-							'installationStatus':	'undefined',
-							'actionRequest':	'undefined',
+							'installationStatus':	'not_installed',
+							'actionRequest':	'none',
+							'productActionProgress':{},
 							'productVersion':	'',
 							'packageVersion':	'',
 							'lastStateChange':	'' }
@@ -1949,8 +1982,11 @@ class LDAPBackend(DataBackend):
 					if productId in cns:
 						productState = Object("cn=%s,cn=%s,%s"  % (productId, objectId, self._productStatesContainerDn))
 						productState.readFromDirectory(self._ldap)
-						state['actionRequest'] = productState.getAttribute('opsiProductActionRequestForced', 'undefined')
-						state['installationStatus'] = productState.getAttribute('opsiProductInstallationStatus', 'undefined')
+						state['actionRequest'] = productState.getAttribute('opsiProductActionRequestForced', 'none')
+						state['installationStatus'] = productState.getAttribute('opsiProductInstallationStatus', 'not_installed')
+						state['productActionProgress'] = productState.getAttribute( 'opsiProductActionProgress', {} )
+						if state['productActionProgress']:
+							state['productActionProgress'] = json.read( state['productActionProgress'] )
 						state['productVersion'] = productState.getAttribute('opsiProductVersion', '')
 						state['packageVersion'] = productState.getAttribute('opsiPackageVersion', '')
 						state['lastStateChange'] = productState.getAttribute('lastStateChange', '')
@@ -2473,129 +2509,6 @@ class LDAPBackend(DataBackend):
 				#	parent = parent.getParent()
 				#	self.deleteChildlessObject( parent.getDn() )
 	
-	def createLicenseKey(self, productId, licenseKey):
-		productId = productId.lower()
-		# TODO: productLicenses as product child objects in ldap tree ?
-		raise NotImplementedError("createLicenseKey() not yet implemeted in LDAP backend")
-		
-		# Search product object
-		search = ObjectSearch(self._ldap, self._productsContainerDn, filter='(&(objectClass=opsiProduct)(cn=%s))' % productId)
-		product = search.getObject()
-		
-		# Create organizational role with same cn as product beneath license container
-		self.createOrganizationalRole( "cn=%s,%s" % (product.getCn(), self._productLicensesContainerDn) )
-		
-		# Create license's cn from licensekey
-		licenseCn = licenseKey.replace(':','')
-		licenseCn = licenseCn.replace('-','')
-		licenseCn = licenseCn.replace(' ','')
-		licenseCn = licenseCn.replace('/','')
-		licenseCn = licenseCn.replace('\\','')
-		
-		# Create license object
-		productLicense = Object( "cn=%s,cn=%s,%s" % (licenseCn, productId, self._productLicensesContainerDn) )
-		productLicense.new('opsiProductLicense')
-		
-		# Set object attributes
-		productLicense.setAttribute('licenseKey', [ licenseKey ])
-		productLicense.setAttribute('opsiProductReference', [ product.getDn() ])
-		
-		# Write object to ldap
-		productLicense.writeToDirectory(self._ldap)
-	
-	
-	def getLicenseKey(self, productId, clientId):
-		productId = productId.lower()
-		clientId = self._preProcessHostId(clientId)
-		
-		logger.debug("Searching licensekey for host '%s' and product '%s'" % (clientId, productId))
-		
-		freeLicenses = []
-		for license in self.getLicenseKeys_listOfHashes(productId):
-			hostId = license.get('hostId', '')
-			if not hostId:
-				freeLicenses.append(license.get('licenseKey', ''))
-			elif (hostId == clientId):
-				logger.info("Returning licensekey for product '%s' which is assigned to host '%s'"
-						% (productId, clientId))
-				return license.get('licenseKey', '')
-		
-		if (len(freeLicenses) <= 0):
-			for (key, value) in self.getProductProperties_hash(productId, clientId).items():
-				if (key.lower() == 'productkey'):
-					freeLicenses.append(value)
-		
-		if (len(freeLicenses) > 0):
-			logger.debug( "%s free license(s) found for product '%s'" % (len(freeLicenses), productId) )
-			return freeLicenses[0]
-		
-		raise BackendMissingDataError("No more licenses available for product '%s'" % productId)
-		
-	def getLicenseKeys_listOfHashes(self, productId):
-		productId = productId.lower()
-		
-		return []
-		
-		# Search product object
-		search = ObjectSearch(self._ldap, self._productsContainerDn, filter='(&(objectClass=opsiProduct)(cn=%s))' % productId)
-		product = search.getObject()
-		
-		result = []
-		licenses = {}
-		try:
-			search = ObjectSearch(self._ldap, "cn=%s,%s" % (product.getCn(), self._productLicensesContainerDn),
-				      				filter='(objectClass=opsiProductLicense)')
-			
-			for license in search.getObjects():
-				license.readFromDirectory(self._ldap)
-				licenses[license.getDn()] = { "licenseKey": license.getAttribute('licenseKey'), 'hostId': '' }
-		
-		except BackendMissingDataError, e:
-			return result
-		
-		
-		# Search all use licenses (referenced in productStates)
-		try:
-			productStateSearch = ObjectSearch(
-						self._ldap,
-						self._productStatesContainerDn,
-						filter='(&(objectClass=opsiProductState)(licenseReference=*))')
-			
-			productStates = productStateSearch.getObjects()
-			for productState in productStates:
-				
-				productState.readFromDirectory(self._ldap, 'licenseReference', 'opsiHostReference')
-				hostId = self.getHostId( productState.getAttribute('opsiHostReference') )
-				licenseReference = productState.getAttribute('licenseReference')
-				
-				try:
-					search = ObjectSearch(	self._ldap, licenseReference, filter='(objectClass=opsiProductLicense)')
-				except BackendMissingDataError, e:
-					logger.error("Host '%s' references the not existing license '%s'" % (hostId, licenseReference))
-					continue
-				
-				if licenses.has_key(licenseReference):
-					licenses[licenseReference]['hostId'] = hostId
-		
-		except BackendMissingDataError, e:
-			pass
-		
-		
-		for (key, value) in licenses.items():
-			result.append(value)
-		
-		return result
-	
-	def deleteLicenseKey(self, productId, licenseKey):
-		productId = productId.lower()
-		search = ObjectSearch(self._ldap, self._productsContainerDn, filter='(&(objectClass=opsiProduct)(cn=%s))' % productId)
-		product = search.getObject()
-		
-		search = ObjectSearch(self._ldap, "cn=%s,%s" % (product.getCn(), self._productLicensesContainerDn),
-			      				filter='(&(objectClass=opsiProductLicense)(licenseKey=%s))' % licenseKey)
-		
-		search.getObject().deleteFromDirectory(self._ldap)
-	
 	def getProductClassIds_list(self):
 		search = ObjectSearch(self._ldap, self._productClassesContainerDn,
 				      		filter='(objectClass=opsiProductClass)')
@@ -2637,8 +2550,7 @@ class LDAPBackend(DataBackend):
 			return False
 		search.getObject().deleteFromDirectory(self._ldap)
 		return True
-
-
+	
 
 
 

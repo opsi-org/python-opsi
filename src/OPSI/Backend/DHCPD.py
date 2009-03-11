@@ -93,11 +93,17 @@ class DHCPDBackend(Backend):
 		host = conf.getHost( self.getHostname(hostId) )
 		
 		if not host or not host.has_key('hardware'):
-			raise BackendMissingDataError("Cannot get mac-address for host '%s'" % hostId)
+			return []
 		
 		logger.info("Returning mac addresses: [ %s ]" % host['hardware'].split()[1].lower())
 		
 		return [ host['hardware'].split()[1].lower() ]
+	
+	def getMacAddress(self, hostId):
+		macs = self.getMacAddresses_list(hostId)
+		if macs:
+			return macs[0]
+		return ''
 	
 	def setMacAddresses(self, hostId, macs=[]):
 		hostId = self._preProcessHostId(hostId)

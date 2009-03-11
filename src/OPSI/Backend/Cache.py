@@ -235,7 +235,7 @@ class CacheBackend(DataBackend):
 			except Exception, e:
 				if self.__mainOnly:
 					raise
-				logger.info("Main backend failed, using cache: %s" % e)
+				logger.warning("Main backend failed, using cache: %s" % e)
 		
 		logger.notice('Executing on cache backend: %s(%s)' % (method, str(params)[1:-1]))
 		be = self.__workBackend

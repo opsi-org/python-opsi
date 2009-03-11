@@ -1,3 +1,9 @@
+python-opsi (3.4.0.0-a1) unstable; urgency=low
+
+  * Introducing license management
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 04 Mar 2009 14:04:07 +0100
+
 python-opsi (3.3.1.4-1) stable; urgency=low
 
   * Tools.py 0.9.9.6

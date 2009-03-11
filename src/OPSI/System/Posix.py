@@ -468,21 +468,6 @@ def mkdir(newDir, mode=0750, ui='default'):
 				# Operation not permitted
 				logger.warning("Failed to chmod %s (%s): %s" % (newDir, mode, e))
 				
-def rmdir(path, recursive=False, ui='default'):
-	try:
-		if recursive:
-			for root, dirs, files in os.walk(path, topdown=False):
-				for name in files:
-					os.remove(os.path.join(root, name))
-				for name in dirs:
-					if os.path.islink( os.path.join(root, name) ):
-						os.remove(os.path.join(root, name))
-					else:
-						os.rmdir(os.path.join(root, name))
-		os.rmdir(path)
-	except Exception, e:
-		raise Exception("Failed to delete directory '%s': %s" % (path, e))
-	
 def mount(dev, mountpoint, ui='default', **options):
 	if ui == 'default': ui=userInterface
 	fs = ''

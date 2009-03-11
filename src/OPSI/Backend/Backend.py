@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.1'
+__version__ = '1.0'
 
 # Imports
 import socket, re
@@ -142,6 +142,10 @@ class BackendTemporaryError(genericError):
 class BackendUnaccomplishableError(genericError):
 	""" Exception raised if a temporary error occurs. """
 	ExceptionShortDescription = "Backend unaccomplishable error"
+
+class BackendModuleDisabledError(genericError):
+	""" Exception raised if a needed module is disabled. """
+	ExceptionShortDescription = "Backend module disabled error"
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                        CLASS BACKEND                                               =
@@ -313,7 +317,24 @@ class DataBackend(Backend):
 				logger.error("Error in config file '%s': %s" % (OPSI_HW_AUDIT_CONF_FILE, e))
 		
 		return classes
-
+	
+	def getProductType(self, productId, depotId):
+		productId = productId.lower()
+		productType = None
+		if productId in self.getProductIds_list('netboot', depotId):
+			productType = 'netboot'
+		elif productId in self.getProductIds_list('localboot', depotId):
+			productType = 'localboot'
+		else:
+			raise Exception("product '%s': is neither localboot nor netboot product" % productId)
+		return productType
+	
+	def setPXEBootConfiguration(self, hostId, args={}):
+		pass
+	
+	def unsetPXEBootConfiguration(self, hostId):
+		pass
+	
 class DataBackendReplicator(object):
 	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True):
 		self.__readBackend  = readBackend
@@ -326,25 +347,31 @@ class DataBackendReplicator(object):
 		self.__clientIds = {}
 		self.__groupIds = []
 		self.__productIds = {}
-		self.__progressSubject = ProgressSubject(id='replicator')
+		self.__overallProgressSubject = ProgressSubject(id='overall_replication', title='Replicating', end=100, fireAlways=True)
+		self.__currentProgressSubject = ProgressSubject(id='current_replication', fireAlways=True)
 		
-	def getServersIds(self):
-		if not self.__serverIds:
-			self.__serverIds = self.__readBackend.getServerIds_list()
+	def getCurrentProgressSubject(self):
+		return self.__currentProgressSubject
+	
+	def getOverallProgressSubject(self):
+		return self.__overallProgressSubject
+	
+	def getServerId(self):
+		return self.getServerIds()[0]
+	
+	def getServerIds(self):
 		return self.__serverIds
 	
 	def getDepotIds(self):
-		if not self.__depotIds:
-			self.__depotIds = self.__readBackend.getDepotIds_list()
 		return self.__depotIds
 	
 	def getClientIds(self, depotIds=[]):
-		if not self.__clientIds:
-			for depotId in self.getDepotIds():
-				self.__clientIds[depotId] = self.__readBackend.getClientIds_list(depotIds = [ depotId ])
+		if not type(depotIds) is list: depotIds = [ depotIds ]
+		if not depotIds:
+			depotIds = self.getDepotIds()
 		clientIds = []
 		for (depotId, ids) in self.__clientIds.items():
-			if not depotIds or depotId in depotIds:
+			if depotId in depotIds:
 				clientIds.extend(ids)
 		return clientIds
 	
@@ -370,63 +397,138 @@ class DataBackendReplicator(object):
 		return productIds
 	
 	def replicate(self, depotIds=[], clientIds=[], productIds=[]):
-		if depotIds:
-			self.__depotIds = depotIds
-		if clientIds:
-			for depotId in self.getDepotIds():
-				self.__clientIds[depotId] = []
-				for clientId in self.__readBackend.getClientIds_list(depotIds = [ depotId ]):
-					if clientId in clientIds:
-						self.__clientIds[depotId].append(clientId)
-		if productIds:
-			for depotId in self.getDepotIds():
-				self.__productIds[depotId] = {}
-				for productType in ('localboot', 'netboot'):
-					self.__productIds[depotId][productType] = []
-					for productId in self.__readBackend.getProductIds_list(productType = productType, objectId = depotId):
-						if productId in productIds:
-							self.__productIds[depotId][productType].append(productId)
-		self.createOpsiBase()
+		if not type(depotIds)   is list: depotIds   = [ depotIds ]
+		if not type(clientIds)  is list: clientIds  = [ clientIds ]
+		if not type(productIds) is list: productIds = [ productIds ]
 		
+		# Servers
+		self.__serverIds = self.__readBackend.getServerIds_list()
+		
+		# Depots
+		knownDepotIds = self.__readBackend.getDepotIds_list()
+		if depotIds:
+			for depotId in depotIds:
+				if depotId in knownDepotIds:
+					self.__depotIds.append(depotId)
+		else:
+			self.__depotIds = knownDepotIds
+		
+		# Clients
+		knownClientIds = {}
+		for depotId in self.getDepotIds():
+			knownClientIds[depotId] = []
+			for clientId in self.__readBackend.getClientIds_list(depotIds = [ depotId ]):
+				if self.__newServerId and (clientId == self.__newServerId):
+					continue
+				knownClientIds[depotId].append(clientId)
+		if clientIds:
+			for clientId in clientIds:
+				for depotId in depotIds:
+					self.__clientIds[depotId] = []
+					if clientId in knownClientIds[depotId]:
+						self.__clientIds[depotId].append(clientId)
+						break
+		else:
+			self.__clientIds = knownClientIds
+		
+		# Products
+		knownProductIds = {}
+		for depotId in self.getDepotIds():
+			knownProductIds[depotId] = {}
+			for productType in ('localboot', 'netboot'):
+				knownProductIds[depotId][productType] = []
+				for productId in self.__readBackend.getProductIds_list(productType = productType, objectId = depotId):
+					knownProductIds[depotId][productType].append(productId)
+		if productIds:
+			for productId in productIds:
+				for depotId in depotIds:
+					self.__productIds[depotId] = {}
+					for productType in ('localboot', 'netboot'):
+						self.__productIds[depotId][productType] = []
+						if productId in knownProductIds[depotId][productType]:
+							self.__productIds[depotId][productType].append(productId)
+							break
+		else:
+			self.__productIds = knownProductIds
+		
+		# Create opsi base
+		self.createOpsiBase()
+		self.__overallProgressSubject.setState(1)
+		
+		# Clean up new backend
 		if self.__cleanupFirst:
 			self.deleteGeneralConfigs()
+			self.__overallProgressSubject.setState(2)
 			self.deleteNetworkConfigs()
+			self.__overallProgressSubject.setState(3)
 			self.deleteProducts()
+			self.__overallProgressSubject.setState(4)
 			self.deleteClients()
+			self.__overallProgressSubject.setState(5)
 			self.deleteGroups()
+			self.__overallProgressSubject.setState(6)
 			self.deleteServers()
+			self.__overallProgressSubject.setState(7)
 			self.deleteDepots()
 		
+		# Replicate
+		self.__overallProgressSubject.setState(10)
 		self.replicateServers()
+		self.__overallProgressSubject.setState(15)
 		self.replicateDepots()
+		self.__overallProgressSubject.setState(20)
 		self.replicateClients()
+		self.__overallProgressSubject.setState(30)
 		self.replicateGroups()
+		self.__overallProgressSubject.setState(35)
 		self.replicateGeneralConfigs()
+		self.__overallProgressSubject.setState(45)
 		self.replicateNetworkConfigs()
+		self.__overallProgressSubject.setState(55)
 		self.replicateProducts()
+		self.__overallProgressSubject.setState(60)
 		self.replicateProductStates()
+		self.__overallProgressSubject.setState(80)
 		self.replicateProductProperties()
+		self.__overallProgressSubject.setState(100)
 		
 	def createOpsiBase(self):
-		logger.info("Creating opsi base")
-		self.__progressSubject.setMessage("Creating opsi base.")
+		logger.info("Creating opsi base for write backend %s" % self.__writeBackend)
+		self.__overallProgressSubject.setMessage("Creating opsi base.")
+		self.__currentProgressSubject.reset()
+		self.__currentProgressSubject.setEnd(1)
+		
 		self.__writeBackend.createOpsiBase()
+		
+		self.__currentProgressSubject.setState(1)
 	
 	def deleteServers(self):
 		logger.info("Deleting servers")
-		self.__progressSubject.setMessage("Deleting servers.")
+		self.__overallProgressSubject.setMessage("Deleting servers.")
+		self.__currentProgressSubject.reset()
+		self.__currentProgressSubject.setEnd(1)
+		
 		for serverId in self.__writeBackend.getServerIds_list():
 			self.__writeBackend.deleteServer(serverId)
-	
+		
+		self.__currentProgressSubject.setState(1)
+		
 	def replicateServers(self):
 		logger.info("Replicating servers")
-		self.__progressSubject.setMessage("Replicating servers.")
-		serverIds = self.getServersIds()
+		self.__overallProgressSubject.setMessage("Replicating servers.")
+		self.__currentProgressSubject.reset()
+		
+		serverIds = self.getServerIds()
+		if (len(serverIds) > 1):
+			raise NotImplemented("Repication of more than one server not supported")
+		
+		self.__currentProgressSubject.setEnd(len(serverIds))
+		
 		for i in range(len(serverIds)):
 			serverId = serverIds[i]
 			server = self.__readBackend.getHost_hash(serverId)
 			logger.info("      Replicating server '%s' (%s/%s)" % (server.get('hostId'), i+1, len(serverIds)))
-			self.__progressSubject.setMessage("      Replicating server '%s' (%s/%s)" % (server.get('hostId'), i+1, len(serverIds)))
+			self.__currentProgressSubject.setMessage("      Replicating server '%s' (%s/%s)" % (server.get('hostId'), i+1, len(serverIds)))
 			try:
 				newServerId = server.get('hostId')
 				if self.__newServerId:
@@ -446,23 +548,32 @@ class DataBackendReplicator(object):
 			except Exception, e:
 				logger.error(e)
 				raise
+			self.__currentProgressSubject.addToState(1)
 	
 	def deleteDepots(self):
 		logger.info("Deleting depots")
-		self.__progressSubject.setMessage("Deleting depots.")
-		for depotId in self.__writeBackend.getDepotIds_list():
+		self.__overallProgressSubject.setMessage("Deleting depots.")
+		self.__currentProgressSubject.reset()
+		
+		depotIds = self.__writeBackend.getDepotIds_list()
+		self.__currentProgressSubject.setEnd(len(depotIds))
+		for depotId in depotIds:
 			self.__writeBackend.deleteDepot(depotId)
-	
+			self.__currentProgressSubject.addToState(1)
+		
 	def replicateDepots(self):
 		logger.info("Replicating depots")
-		self.__progressSubject.setMessage("Replicating depots.")
+		self.__overallProgressSubject.setMessage("Replicating depots.")
+		self.__currentProgressSubject.reset()
+		
 		depotIds = self.getDepotIds()
+		self.__currentProgressSubject.setEnd(len(depotIds))
 		for i in range(len(depotIds)):
 			depotId = depotIds[i]
 			depot = self.__readBackend.getDepot_hash(depotId)
 			host = self.__readBackend.getHost_hash(depotId)
 			logger.info("      Replicating depot '%s' (%s/%s)" % (depotId, i+1, len(depotIds)) )
-			self.__progressSubject.setMessage("      Replicating depot '%s' (%s/%s)" % (depotId, i+1, len(depotIds)) )
+			self.__currentProgressSubject.setMessage("      Replicating depot '%s' (%s/%s)" % (depotId, i+1, len(depotIds)) )
 			try:
 				newDepotId = depotId
 				if self.__newServerId and (self.__oldServerId == depotId):
@@ -496,23 +607,32 @@ class DataBackendReplicator(object):
 			except Exception, e:
 				logger.error(e)
 				raise Exception("Failed to convert depot '%s': %s" % (depotId, e))
+			self.__currentProgressSubject.addToState(1)
 	
 	def deleteClients(self):
 		logger.info("Deleting clients")
-		self.__progressSubject.setMessage("Deleting clients.")
-		for clientId in self.__writeBackend.getClientIds_list():
+		self.__overallProgressSubject.setMessage("Deleting clients.")
+		self.__currentProgressSubject.reset()
+		
+		clientIds = self.__writeBackend.getClientIds_list()
+		self.__currentProgressSubject.setEnd(len(clientIds))
+		for clientId in clientIds:
 			self.__writeBackend.deleteClient(clientId)
-	
+			self.__currentProgressSubject.addToState(1)
+		
 	def replicateClients(self):
 		logger.info("Replicating clients")
-		self.__progressSubject.setMessage("Replicating clients.")
+		self.__overallProgressSubject.setMessage("Replicating clients.")
+		self.__currentProgressSubject.reset()
+		
 		clientIds = self.getClientIds()
+		self.__currentProgressSubject.setEnd(len(clientIds))
 		for i in range(len(clientIds)):
 			clientId = clientIds[i]
 			client = self.__readBackend.getHost_hash(clientId)
 			hardwareAddress = self.__readBackend.getMacAddress(clientId)
 			logger.info("      Replicating client '%s' (%s/%s)" % (client.get('hostId'), i+1, len(clientIds)) )
-			self.__progressSubject.setMessage("      Replicating client '%s' (%s/%s)" % (client.get('hostId'), i+1, len(clientIds)) )
+			self.__currentProgressSubject.setMessage("      Replicating client '%s' (%s/%s)" % (client.get('hostId'), i+1, len(clientIds)) )
 			try:
 				clientName = client.get('hostId').split('.')[0]
 				domain = '.'.join( client.get('hostId').split('.')[1:] )
@@ -528,29 +648,38 @@ class DataBackendReplicator(object):
 				
 				opsiHostKey = self.__readBackend.getOpsiHostKey( client.get('hostId') )
 				self.__writeBackend.setOpsiHostKey( client.get('hostId'), opsiHostKey )
-				serverKey = self.__writeBackend.getOpsiHostKey( self.__writeBackend.getServerId(client.get('hostId')) )
-				encryptedPcpatchPass = self.__writeBackend.getPcpatchPassword( self.__writeBackend.getServerId(client.get('hostId')) )
+				serverKey = self.__writeBackend.getOpsiHostKey( self.getServerId() )
+				encryptedPcpatchPass = self.__writeBackend.getPcpatchPassword( self.getServerId() )
 				self.__writeBackend.setPcpatchPassword( client.get('hostId'), Tools.blowfishEncrypt(opsiHostKey, Tools.blowfishDecrypt(serverKey, encryptedPcpatchPass)) )
 			
 			except Exception, e:
 				logger.error(e)
 				raise
+			self.__currentProgressSubject.addToState(1)
 		
 	def deleteGroups(self):
 		logger.info("Deleting groups")
-		self.__progressSubject.setMessage("Deleting groups.")
-		for groupId in self.__writeBackend.getGroupIds_list():
+		self.__overallProgressSubject.setMessage("Deleting groups.")
+		self.__currentProgressSubject.reset()
+		
+		groupIds = self.__writeBackend.getGroupIds_list()
+		self.__currentProgressSubject.setEnd(len(groupIds))
+		for groupId in groupIds:
 			self.__writeBackend.deleteGroup(groupId)
+			self.__currentProgressSubject.addToState(1)
 		
 	def replicateGroups(self):
 		logger.info("Replicating groups")
-		self.__progressSubject.setMessage("Replicating groups.")
+		self.__overallProgressSubject.setMessage("Replicating groups.")
+		self.__currentProgressSubject.reset()
+		
 		knownClientIds = self.getClientIds()
 		groupIds = self.getGroupIds()
+		self.__currentProgressSubject.setEnd(len(groupIds))
 		for i in range(len(groupIds)):
 			groupId = groupIds[i]
 			logger.info("      Converting group '%s' (%s/%s)" % (groupId, i+1, len(groupIds)) )
-			self.__progressSubject.setMessage("      Converting group '%s' (%s/%s)" % (groupId, i+1, len(groupIds)) )
+			self.__currentProgressSubject.setMessage("      Converting group '%s' (%s/%s)" % (groupId, i+1, len(groupIds)) )
 			clientIds = []
 			for clientId in self.__readBackend.getClientIds_list(groupId = groupId):
 				if self.__newServerId and (self.__newServerId == clientId):
@@ -566,26 +695,42 @@ class DataBackendReplicator(object):
 			except Exception, e:
 				logger.error(e)
 				raise
+			self.__currentProgressSubject.addToState(1)
 	
 	def deleteGeneralConfigs(self):
 		logger.info("Deleting general configs")
-		self.__progressSubject.setMessage("Deleting general configs.")
-		self.__writeBackend.deleteGeneralConfig(self.__writeBackend.getServerId())
-		for clientId in self.__writeBackend.getClientIds_list():
+		self.__overallProgressSubject.setMessage("Deleting general configs.")
+		self.__currentProgressSubject.reset()
+		
+		clientIds = self.__writeBackend.getClientIds_list()
+		self.__currentProgressSubject.setEnd(len(clientIds)+1)
+		try:
+			self.__writeBackend.deleteGeneralConfig(self.getServerId())
+		except BackendMissingDataError, e:
+			pass
+		self.__currentProgressSubject.addToState(1)
+		for clientId in clientIds:
 			try:
 				self.__writeBackend.deleteGeneralConfig(clientId)
-			except Exception, e:
-				logger.error(e)
-				raise
+			except BackendMissingDataError, e:
+				pass
+			self.__currentProgressSubject.addToState(1)
 		
 	def replicateGeneralConfigs(self):
 		logger.info("Replicating general configs")
-		self.__progressSubject.setMessage("Replicating general configs.")
+		self.__overallProgressSubject.setMessage("Replicating general configs.")
+		self.__currentProgressSubject.reset()
+		
+		clientIds = self.__writeBackend.getClientIds_list()
+		self.__currentProgressSubject.setEnd(len(clientIds)+1)
+		
 		generalConfig = self.__readBackend.getGeneralConfig_hash()
 		self.__writeBackend.setGeneralConfig(generalConfig)
-		for clientId in self.getClientIds():
+		self.__currentProgressSubject.addToState(1)
+		
+		for clientId in clientIds:
 			logger.info("      Searching general config for client '%s'" % clientId)
-			self.__progressSubject.setMessage("      Searching general config for client '%s'" % clientId)
+			self.__currentProgressSubject.setMessage("      Searching general config for client '%s'" % clientId)
 			
 			gc = self.__readBackend.getGeneralConfig_hash(clientId)
 			new = False
@@ -600,23 +745,39 @@ class DataBackendReplicator(object):
 				
 			if new:
 				logger.info("            Converting general config")
-				self.__progressSubject.setMessage("            Converting general config.")
+				self.__currentProgressSubject.setMessage("            Converting general config.")
 				self.__writeBackend.setGeneralConfig(gc , clientId)
+			self.__currentProgressSubject.addToState(1)
 	
 	def deleteNetworkConfigs(self):
 		logger.info("Deleting network configs")
-		self.__progressSubject.setMessage("Deleting network configs.")
-		self.__writeBackend.deleteNetworkConfig(self.__writeBackend.getServerId())
-		for clientId in self.__writeBackend.getClientIds_list():
+		self.__overallProgressSubject.setMessage("Deleting network configs.")
+		self.__currentProgressSubject.reset()
+		
+		clientIds = self.__writeBackend.getClientIds_list()
+		self.__currentProgressSubject.setEnd(len(clientIds)+1)
+		
+		try:
+			self.__writeBackend.deleteNetworkConfig(self.getServerId())
+		except BackendMissingDataError, e:
+			pass
+		self.__currentProgressSubject.addToState(1)
+		
+		for clientId in clientIds:
 			try:
 				self.__writeBackend.deleteNetworkConfig(clientId)
 			except Exception, e:
-				logger.error(e)
-				raise
+				pass
+			self.__currentProgressSubject.addToState(1)
 	
 	def replicateNetworkConfigs(self):
 		logger.info("Replicating network configs")
-		self.__progressSubject.setMessage("Replicating network configs.")
+		self.__overallProgressSubject.setMessage("Replicating network configs.")
+		self.__currentProgressSubject.reset()
+		
+		clientIds = self.getClientIds()
+		self.__currentProgressSubject.setEnd(len(clientIds)+1)
+		
 		networkConfig = self.__readBackend.getNetworkConfig_hash()
 		if self.__newServerId:
 			networkConfig['opsiServer'] = self.__newServerId
@@ -624,10 +785,11 @@ class DataBackendReplicator(object):
 				networkConfig['depotId'] = self.__newServerId
 		
 		self.__writeBackend.setNetworkConfig(networkConfig)
+		self.__currentProgressSubject.addToState(1)
 		
-		for clientId in self.getClientIds():
+		for clientId in clientIds:
 			logger.info("      Searching network config for client '%s'" % clientId)
-			self.__progressSubject.setMessage("      Searching network config for client '%s'" % clientId)
+			self.__currentProgressSubject.setMessage("      Searching network config for client '%s'" % clientId)
 			
 			nc = self.__readBackend.getNetworkConfig_hash(clientId)
 			if self.__newServerId:
@@ -646,15 +808,22 @@ class DataBackendReplicator(object):
 				
 			if new:
 				logger.info("            Converting network config")
-				self.__progressSubject.setMessage("            Converting network config.")
+				self.__currentProgressSubject.setMessage("            Converting network config.")
 				self.__writeBackend.setNetworkConfig(nc , clientId)
-	
+			self.__currentProgressSubject.addToState(1)
+		
 	def deleteProducts(self):
 		logger.info("Deleting products")
-		self.__progressSubject.setMessage("Deleting products.")
-		for depotId in self.__writeBackend.getDepotIds_list():
+		self.__overallProgressSubject.setMessage("Deleting products.")
+		self.__currentProgressSubject.reset()
+		
+		depotIds = self.__writeBackend.getDepotIds_list()
+		self.__currentProgressSubject.setEnd(len(depotIds))
+		
+		for depotId in depotIds:
 			for productId in self.__writeBackend.getProductIds_list(objectId = depotId):
 				self.__writeBackend.deleteProduct(productId = productId, depotIds = [ depotId ])
+			self.__currentProgressSubject.addToState(1)
 		
 	def replicateProducts(self):
 		objectId=None
@@ -666,12 +835,16 @@ class DataBackendReplicator(object):
 				newDepotId = self.__newServerId
 			for type in ('netboot', 'localboot'):
 				logger.info("Converting %s products on depot '%s'." % (type, depotId) )
-				self.__progressSubject.setMessage("Converting %s products on depot '%s'." % (type, depotId) )
+				self.__overallProgressSubject.setMessage("Converting %s products on depot '%s'." % (type, depotId) )
+				self.__currentProgressSubject.reset()
+				
 				productIds = self.getProductIds(productType = type, depotId = depotId)
+				self.__currentProgressSubject.setEnd(len(productIds))
+				
 				for j in range(len(productIds)):
 					productId = productIds[j]
 					logger.info("      Converting product '%s' of depot '%s' (%s/%s)" % (productId, depotId, j+1, len(productIds)) )
-					self.__progressSubject.setMessage("      Converting product '%s' of depot '%s' (%s/%s)" % (productId, depotId, j+1, len(productIds)) )
+					self.__currentProgressSubject.setMessage("      Converting product '%s' of depot '%s' (%s/%s)" % (productId, depotId, j+1, len(productIds)) )
 					
 					product = self.__readBackend.getProduct_hash(productId = productId, depotId = depotId)
 					try:
@@ -723,7 +896,7 @@ class DataBackendReplicator(object):
 					for dependency in self.__readBackend.getProductDependencies_listOfHashes(productId = productId, depotId = depotId):
 						logger.info("            Converting product dependency '%s'" \
 							% dependency.get('requiredProductId', dependency.get('requiredProductClassId')) )
-						self.__progressSubject.setMessage("            Converting product dependency '%s'" \
+						self.__currentProgressSubject.setMessage("            Converting product dependency '%s'" \
 							% dependency.get('requiredProductId', dependency.get('requiredProductClassId')) )
 						self.__writeBackend.createProductDependency(
 								productId			= productId,
@@ -737,7 +910,7 @@ class DataBackendReplicator(object):
 						
 					for definition in self.__readBackend.getProductPropertyDefinitions_listOfHashes(productId = productId, depotId = depotId):
 						logger.info("            Converting product property definition '%s'" % definition.get('name') )
-						self.__progressSubject.setMessage("            Converting product property definition '%s'" % definition.get('name') )
+						self.__currentProgressSubject.setMessage("            Converting product property definition '%s'" % definition.get('name') )
 						self.__writeBackend.createProductPropertyDefinition(
 								productId 	= productId,
 								name		= definition.get('name'),
@@ -745,26 +918,30 @@ class DataBackendReplicator(object):
 								defaultValue	= definition.get('default'),
 								possibleValues	= definition.get('values'),
 								depotIds	= [ newDepotId ] )
-				self.__progressSubject.setMessage("")
+					self.__currentProgressSubject.addToState(1)
+				self.__currentProgressSubject.setMessage("")
 	
 	def replicateProductStates(self):
 		logger.info("Replicating product states")
-		self.__progressSubject.setMessage("Replicating product states.")
+		self.__overallProgressSubject.setMessage("Replicating product states.")
+		self.__currentProgressSubject.reset()
 		
 		clientIds = self.getClientIds()
+		self.__currentProgressSubject.setEnd(len(clientIds))
+		
 		i = 0
-		for (clientId, states) in self.__readBackend.getProductStates_hash(clientIds, {}).items():
+		for (clientId, states) in self.__readBackend.getProductStates_hash(clientIds).items():
 			depotId = self.__writeBackend.getDepotId(clientId)
 			productIds = self.getProductIds(depotId = depotId)
 			i += 1
 			logger.info("      Converting product states of client '%s' (%s/%s)" % ( clientId, i, len(clientIds) ) )
-			self.__progressSubject.setMessage("      Converting product states of client '%s' (%s/%s)" % ( clientId, i, len(clientIds) ) )
+			self.__currentProgressSubject.setMessage("      Converting product states of client '%s' (%s/%s)" % ( clientId, i, len(clientIds) ) )
 			for state in states:
 				if state.get('productId') not in productIds:
 					logger.debug("Skipping product state replication of product '%s': product not installed on depot" % state.get('productId'))
 					continue
 				
-				self.__progressSubject.setMessage("               Converting product state for product '%s' on '%s' (%s/%s)" \
+				self.__currentProgressSubject.setMessage("               Converting product state for product '%s' on '%s' (%s/%s)" \
 								% ( state.get('productId'), clientId, i, len(clientIds) ) )
 				try:
 					self.__writeBackend.setProductState(
@@ -775,17 +952,19 @@ class DataBackendReplicator(object):
 							productVersion = state.get('productVersion'),
 							packageVersion = state.get('packageVersion'),
 							lastStateChange = state.get('lastStateChange'),
-							licenseKey = "" )
+							productActionProgress = state.get('productActionProgress', {}))
 					#self.__writeBackend.setProductInstallationStatus(state.get('productId'), hostId, state.get('installationStatus'))
 					#if state.get('actionRequest') and state.get('actionRequest') not in ('undefined', 'none'):
 					#	self.__writeBackend.setProductActionRequest(state.get('productId'), hostId, state.get('actionRequest'))
 				except Exception, e:
 					logger.error(e)
 					raise
+			self.__currentProgressSubject.addToState(1)
 	
 	def replicateProductProperties(self):
 		logger.info("Replicating product properties.")
-		self.__progressSubject.setMessage("Replicating product properties.")
+		self.__overallProgressSubject.setMessage("Replicating product properties.")
+		
 		for depotId in self.getDepotIds():
 			i = 0
 			productIds = self.getProductIds(depotId = depotId)
@@ -793,10 +972,15 @@ class DataBackendReplicator(object):
 			newDepotId = depotId
 			if self.__newServerId and (self.__oldServerId == depotId):
 				newDepotId = self.__newServerId
+			
+			self.__currentProgressSubject.reset()
+			self.__currentProgressSubject.setEnd(len(productIds)+1)
+			
 			for productId in productIds:
 				i += 1
 				logger.info("      Replicating product properties for product '%s' (%s/%s)" % (productId, i, len(productIds)) )
-				self.__progressSubject.setMessage("      Replicating product properties for product '%s' (%s/%s)" % (productId, i, len(productIds)) )
+				self.__currentProgressSubject.setMessage("      Replicating product properties for product '%s' (%s/%s)" % (productId, i, len(productIds)) )
+				
 				productProperties = self.__readBackend.getProductProperties_hash(productId, objectId = depotId)
 				try:
 					self.__writeBackend.setProductProperties(productId, productProperties, objectId = newDepotId)
@@ -804,9 +988,11 @@ class DataBackendReplicator(object):
 					logger.error(e)
 					raise
 				
+				self.__currentProgressSubject.addToState(1)
+				
 				for clientId in clientIds:
 					logger.info("            Replicating product properties for product '%s' on '%s' (%s/%s)" % (productId, clientId, i, len(productIds)) )
-					self.__progressSubject.setMessage("            Replicating product properties for product '%s' on '%s' (%s/%s)" % (productId, clientId, i, len(productIds)) )
+					self.__currentProgressSubject.setMessage("            Replicating product properties for product '%s' on '%s' (%s/%s)" % (productId, clientId, i, len(productIds)) )
 					pp = self.__readBackend.getProductProperties_hash(productId, clientId)
 					new = False
 					
@@ -824,6 +1010,6 @@ class DataBackendReplicator(object):
 						except Exception, e:
 							logger.error(e)
 							raise
-
+			self.__currentProgressSubject.addToState(1)
 
 

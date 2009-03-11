@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.8'
+__version__ = '1.0'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -95,7 +95,6 @@ class File31Backend(File, FileBackend):
 			self.__pckeyFile = windefaultdir + '\\opsi\\pckeys'
 			self.__passwdFile = windefaultdir + '\\opsi\\passwd'
 			self.__groupsFile = windefaultdir + '\\opsi\\config\\clientgroups.ini'
-			self.__licensesFile = windefaultdir + '\\opsi\\config\\licenses.ini'
 			self.__clientConfigDir = windefaultdir + '\\opsi\\config\\clients'
 			self.__globalConfigFile = windefaultdir + '\\opsi\\config\\global.ini'
 			self.__depotConfigDir = windefaultdir + '\\opsi\\config\\depots'
@@ -108,7 +107,6 @@ class File31Backend(File, FileBackend):
 			self.__passwdFile = '/etc/opsi/passwd'
 			self.__logDir = '/var/log/opsi'
 			self.__groupsFile = '/var/lib/opsi/config/clientgroups.ini'
-			self.__licensesFile = '/var/lib/opsi/config/licenses.ini'
 			self.__clientConfigDir = '/var/lib/opsi/config/clients'
 			self.__globalConfigFile = '/var/lib/opsi/config/global.ini'
 			self.__depotConfigDir = '/var/lib/opsi/config/depots'
@@ -130,7 +128,6 @@ class File31Backend(File, FileBackend):
 			elif (option.lower() == 'pckeyfile'):			self.__pckeyFile = value
 			elif (option.lower() == 'passwdfile'):			self.__passwdFile = value
 			elif (option.lower() == 'groupsfile'): 			self.__groupsFile = value
-			elif (option.lower() == 'licensesfile'): 		self.__licensesFile = value
 			elif (option.lower() == 'defaultdomain'): 		self._defaultDomain = value
 			elif (option.lower() == 'clientconfigdir'): 		self.__clientConfigDir = value
 			elif (option.lower() == 'globalconfigfile'):		self.__globalConfigFile = value
@@ -484,11 +481,8 @@ class File31Backend(File, FileBackend):
 						'depotid', 'windomain', 'nextbootservertype', 'nextbootserviceurl' ):
 				logger.error("Unknown networkConfig key '%s'" % key)
 				continue
-			if (key == 'depoturl'):
-				logger.error("networkConfig: Setting key 'depotUrl' is no longer supported, use depotId")
-				continue
-			if key in ('configurl', 'utilsurl'):
-				logger.error("networkConfig: Setting key '%s' is no longer supported" % key)
+			if key in ('depoturl', 'configurl', 'utilsurl'):
+				logger.warning("networkConfig: Setting key '%s' is no longer supported" % key)
 				continue
 			configNew[key] = value
 		config = configNew
@@ -923,6 +917,8 @@ class File31Backend(File, FileBackend):
 				raise BackendMissingDataError("Group '%s' does not exist" % groupId)
 			
 			for (key, value) in ini.items(groupId):
+				if (key.lower() == 'parentgroupid'):
+					continue
 				if (value == '0'):
 					logger.notice("Skipping host '%s' in group '%s' (value = 0)" % (key, groupId))
 					continue
@@ -1247,13 +1243,14 @@ class File31Backend(File, FileBackend):
 		else:
 			logger.warning("No section 'info' in ini file '%s'" % iniFile)
 		
-		for hw in self.getHardwareInformation_listOfHashes(hostId):
-			if (hw.get('class') == 'ETHERNET_CONTROLLER'):
-				mac = hw.get('macAddress')
-				if mac and not mac in macs:
-					macs.append(mac.strip().lower())
 		return macs
-		
+	
+	def getMacAddress(self, hostId):
+		macs = self.getMacAddresses_list(hostId)
+		if macs:
+			return macs[0]
+		return ''
+	
 	def setMacAddresses(self, hostId, macs=[]):
 		
 		logger.info("Setting mac addresses for host '%s'" % hostId)
@@ -1274,10 +1271,12 @@ class File31Backend(File, FileBackend):
 		# Write back ini file
 		self.writeIniFile(iniFile, ini)
 		
-	def createGroup(self, groupId, members = [], description = ""):
+	def createGroup(self, groupId, members = [], description = "", parentGroupId=""):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
-		
+		if parentGroupId and not re.search(GROUP_ID_REGEX, parentGroupId):
+			raise BackendBadValueError("Bad parent-group-id: '%s'" % parentGroupId)
+			
 		if ( type(members) != type([]) and type(members) != type(()) ):
 			members = [ members ]
 		
@@ -1288,9 +1287,14 @@ class File31Backend(File, FileBackend):
 			self.createFile(self.__groupsFile, mode=0660)
 			ini = self.readIniFile(self.__groupsFile)
 		
+		if parentGroupId and not ini.has_section(parentGroupId):
+			raise BackendMissingDataError("Parent group '%s' not found" % parentGroupId)
+		
 		if ini.has_section(groupId):
 			ini.remove_section(groupId)
 		ini.add_section(groupId)
+		if parentGroupId:
+			ini.set(groupId, 'parentGroupId', parentGroupId)
 		for member in members:
 			ini.set(groupId, member, '1')
 		
@@ -1304,7 +1308,49 @@ class File31Backend(File, FileBackend):
 		except BackendIOError, e:
 			logger.warning("No groups found: %s" % e)
 		return []
+	
+	def getHostGroupTree_hash(self):
+		groups = {}
+		ini = None
+		try:
+			ini = self.readIniFile(self.__groupsFile)
+		except BackendIOError, e:
+			logger.warning("No groups found: %s" % e)
+			return groups
 		
+		groupIds = ini.sections()
+		childs = {}
+		for groupId in groupIds:
+			hasParent = False
+			for (k, v) in ini.items(groupId):
+				if (k.lower() == 'parentgroupid'):
+					hasParent = True
+					if not childs.has_key(v):
+						childs[v] = {}
+					childs[v][groupId] = {}
+					break
+			if not hasParent:
+				groups[groupId] = {}
+		
+		def insertGroup(gid, g, gs):
+			if gid in gs.keys():
+				gs[gid] = g
+				return True
+			for ng in gs.keys():
+				if insertGroup(gid, g, gs[ng]):
+					return True
+			return False
+		
+		while childs.keys():
+			left = len(childs.keys())
+			for groupId in childs.keys():
+				if insertGroup(groupId, childs[groupId], groups):
+					del childs[groupId]
+			if (left == len(childs.keys())):
+				raise BackendIOError("Error in host groups")
+		
+		return groups
+	
 	def deleteGroup(self, groupId):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
@@ -1704,7 +1750,7 @@ class File31Backend(File, FileBackend):
 			if (not productType or productType == 'localboot'):
 				localbootDir = os.path.join(depotDir, 'localboot')
 				if not os.path.exists(localbootDir):
-					logger.error("Directory '%s' does not exist" % localbootDir)
+					logger.warning("Directory '%s' does not exist" % localbootDir)
 				else:
 					for f in os.listdir(localbootDir):
 						productIds.append(f)
@@ -1712,7 +1758,7 @@ class File31Backend(File, FileBackend):
 			if (not productType or productType == 'netboot'):
 				netbootDir = os.path.join(depotDir, 'netboot')
 				if not os.path.exists(netbootDir):
-					logger.error("Directory '%s' does not exist" % netbootDir)
+					logger.warning("Directory '%s' does not exist" % netbootDir)
 				else:
 					for f in os.listdir(netbootDir):
 						productIds.append(f)
@@ -1859,22 +1905,18 @@ class File31Backend(File, FileBackend):
 		
 		return installationStatus
 	
-	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", licenseKey=""):
-		
+	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", productActionProgress={}):
 		productId = productId.lower()
+		objectId = self._preProcessHostId(objectId)
 		
 		if objectId in self.getDepotIds_list():
 			return
 		
 		depotId = self.getDepotId(objectId)
+		productType = self.getProductType(productId = productId, depotId = depotId)
 		
-		productType = None
-		if productId in self.getProductIds_list('netboot', depotId):
-			productType = 'netboot'
-		elif productId in self.getProductIds_list('localboot', depotId):
-			productType = 'localboot'
-		else:
-			raise Exception("product '%s': is neither localboot nor netboot product" % productId)
+		if not productActionProgress:
+			productActionProgress = {}
 		
 		if not installationStatus:
 			installationStatus = 'undefined'
@@ -1947,54 +1989,35 @@ class File31Backend(File, FileBackend):
 		
 		ini.set('%s-state' % productId, 'productVersion', productVersion)
 		ini.set('%s-state' % productId, 'packageVersion', packageVersion)
+		ini.set('%s-state' % productId, 'productActionProgress', json.write(productActionProgress))
 		ini.set('%s-state' % productId, 'lastStateChange', lastStateChange)
 		
 		self.writeIniFile( self.getClientIniFile(objectId), ini)
 		
-		return
-		################################################## TODO
+	
+	def setProductInstallationStatus(self, productId, objectId, installationStatus):
+		self.setProductState(productId, objectId, installationStatus = installationStatus)
+	
+	def setProductActionProgress(self, productId, hostId, productActionProgress):
+		productId = productId.lower()
+		hostId = self._preProcessHostId(hostId)
+		if not productActionProgress:
+			productActionProgress = {}
 		
-		if (installationStatus in ['not_installed', 'uninstalled']):
-			logger.debug("Removing license key assignement for host '%s' and product '%s' if exists" \
-					% (objectId, productId) )
-			# Update licenses ini file
-			try:
-				ini = self.readIniFile(self.__licensesFile)
-				if ini.has_section(productId):
-					for (key, value) in ini.items(productId):
-						if (value == objectId):
-							ini.set(productId, key, '')
-							self.writeIniFile(self.__licensesFile, ini)
-							logger.info("License key assignement for host '%s' and product '%s' removed" \
-									% (objectId, productId) )
-							break
-			except BackendIOError, e:
-				logger.warning("Cannot update license file '%s': %s" % (self.__licensesFile, e))
-			
-		
-		if not licenseKey:
+		if hostId in self.getDepotIds_list():
 			return
 		
-		# Read licenses ini file or create if not exists
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError:
-			logger.warning("Cannot read license file '%s', trying to create" % self.__licensesFile)
-			self.createFile(self.__licensesFile, mode=0660)
-			ini = self.readIniFile(self.__licensesFile)
+		logger.info("Setting product action progress '%s' for host '%s', product '%s'" \
+					% (productActionProgress, hostId, productId))
 		
-		if not ini.has_section(productId):
-			ini.add_section(productId)
+		ini = self.readIniFile( self.getClientIniFile(hostId) )
+		if not ini.has_section('%s-state' % productId):
+			self.setProductState(self, productId = productId, objectId = hostId, installationStatus="not_installed", actionRequest="none")
+			ini = self.readIniFile( self.getClientIniFile(hostId) )
 		
-		ini.set(productId, licenseKey, objectId)
+		ini.set('%s-state' % productId, 'productActionProgress', json.write(productActionProgress))
+		self.writeIniFile( self.getClientIniFile(hostId), ini)
 		
-		# Write back ini file
-		self.writeIniFile(self.__licensesFile, ini)
-	
-	def setProductInstallationStatus(self, productId, objectId, installationStatus, policyId="", licenseKey=""):
-		
-		self.setProductState(productId, objectId, installationStatus = installationStatus, licenseKey = licenseKey)
-	
 	def getPossibleProductActions_list(self, productId=None, depotId=None):
 		
 		if not productId:
@@ -2113,12 +2136,13 @@ class File31Backend(File, FileBackend):
 				if isDepot:
 					for productId in productIds:
 						p = self.getProduct_hash(productId, objectId)
-						result[objectId].append( { 	'productId':		productId, 
-										'installationStatus':	'installed',
-										'actionRequest':	'none',
-										'productVersion':	p['productVersion'],
-										'packageVersion':	p['packageVersion'],
-										'lastStateChange':	p['creationTimestamp'] } )
+						result[objectId].append( { 	'productId':             productId,
+										'installationStatus':    'installed',
+										'actionRequest':         'none',
+										'productActionProgress': {},
+										'productVersion':        p['productVersion'],
+										'packageVersion':        p['packageVersion'],
+										'lastStateChange':       p['creationTimestamp'] } )
 					continue
 				
 				states = []
@@ -2127,6 +2151,7 @@ class File31Backend(File, FileBackend):
 					productVersion = ''
 					packageVersion = ''
 					lastStateChange = ''
+					productActionProgress = {}
 					if ini.has_section('%s-state' % productId):
 						for (key, value) in ini.items('%s-state' % productId):
 							if (key.lower() == 'productversion'):
@@ -2135,13 +2160,18 @@ class File31Backend(File, FileBackend):
 								packageVersion = value
 							elif (key.lower() == 'laststatechange'):
 								lastStateChange = value
+							elif (key.lower() == 'productactionprogress'):
+								productActionProgress = value
+								if productActionProgress:
+									productActionProgress = json.read(value)
 					
-					states.append( { 	'productId':		productId, 
-								'installationStatus':	'undefined',
-								'actionRequest':	'undefined',
-								'productVersion':	productVersion,
-								'packageVersion':	packageVersion,
-								'lastStateChange':	lastStateChange } )
+					states.append( { 	'productId':             productId,
+								'installationStatus':    'undefined',
+								'actionRequest':         'undefined',
+								'productActionProgress': 'productActionProgress',
+								'productVersion':        productVersion,
+								'packageVersion':        packageVersion,
+								'lastStateChange':       lastStateChange } )
 				
 				if ini.has_section('%s_product_states' % pt):
 					for i in range(len(states)):
@@ -2678,94 +2708,4 @@ class File31Backend(File, FileBackend):
 			
 			del product.productDependencies[num]
 			product.writeControlFile(productFile)
-		
 	
-	def createLicenseKey(self, productId, licenseKey):
-		productId = productId.lower()
-		# TODO: productLicenses for each depot ?
-		raise NotImplementedError("createLicenseKey() not yet implemeted in File31 backend")
-		
-		# Read the ini file or create if not exists
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError:
-			logger.warning("Cannot read license file '%s', trying to create" % self.__licensesFile)
-			self.createFile(self.__licensesFile, mode=0660)
-			ini = self.readIniFile(self.__licensesFile)
-		
-		if not ini.has_section(productId):
-			ini.add_section(productId)
-		
-		ini.set(productId, licenseKey, '')
-		
-		# Write back ini file
-		self.writeIniFile(self.__licensesFile, ini)
-		
-	def getLicenseKey(self, productId, clientId):
-		productId = productId.lower()
-		clientId = self._preProcessHostId(clientId)
-		
-		for (key, value) in self.getProductProperties_hash(productId, clientId).items():
-			if (key.lower() == 'productkey'):
-				return value
-		
-		freeLicenses = []
-		for license in self.getLicenseKeys_listOfHashes(productId):
-			hostId = license.get('hostId', '')
-			if not hostId:
-				freeLicenses.append(license.get('licenseKey', ''))
-			elif (hostId == clientId):
-				logger.info("Returning licensekey for product '%s' which is assigned to host '%s'"
-						% (productId, clientId))
-				return license.get('productkey', '')
-		
-		if (len(freeLicenses) > 0):
-			logger.debug( "%s free license(s) found for product '%s'" % (len(freeLicenses), productId) )
-			return freeLicenses[0]
-		
-		raise BackendMissingDataError("No more licenses available for product '%s'" % productId)
-	
-	def getLicenseKeys_listOfHashes(self, productId):
-		productId = productId.lower()
-		
-		return []
-		
-		# Read the ini file
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError, e:
-			logger.error("Cannot get license keys for product '%s': %s" % (productId, e))
-			return []
-		
-		if not ini.has_section(productId):
-			logger.error("Cannot get license keys for product '%s': Section missing" % productId)
-			return []
-		
-		licenses = []
-		for (key, value) in ini.items(productId):
-			licenses.append( { "licenseKey": key, "hostId": value } )
-		return licenses
-	
-	def deleteLicenseKey(self, productId, licenseKey):
-		productId = productId.lower()
-		if productId in self.getProductIds_list('netboot'):
-			raise NotImplementedError("License managment for netboot-products not yet supported")
-		
-		# Read the ini file
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError, e:
-			logger.error("Cannot delete license key: %s" % e)
-			return
-		
-		if not ini.has_section(productId):
-			logger.error("Cannot delete license key: No section '%s' in file '%s'" \
-						% (productId, self.__licensesFile))
-			return
-		
-		if ini.has_option(productId, licenseKey):
-			ini.remove_option(productId, licenseKey)
-			
-			# Write back ini file
-			self.writeIniFile(self.__licensesFile, ini)
-

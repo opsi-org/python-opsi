@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.1'
+__version__ = '0.3'
 
 # Imports
-import json, threading, re, stat, base64, urllib
+import json, threading, re, stat, base64, urllib, os, md5, shutil
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 from httplib import HTTPConnection, HTTPSConnection
@@ -92,6 +92,9 @@ class Subject(object):
 		self._title = title
 		self._observers = []
 	
+	def reset(self):
+		pass
+	
 	def getClass(self):
 		return self.__class__.__name__
 	
@@ -118,13 +121,17 @@ class Subject(object):
 class MessageSubject(Subject):
 	def __init__(self, id, type='', title='', **args):
 		Subject.__init__(self, id, type, title, **args)
-		self._message = ""
-		self._severity = 0
+		self.reset()
 		if args.has_key('message'):
 			self._message = args['message']
 		if args.has_key('severity'):
 			self._severity = args['severity']
-		
+	
+	def reset(self):
+		Subject.reset(self)
+		self._message = ""
+		self._severity = 0
+	
 	def setMessage(self, message, severity = 0):
 		self._message = str(message)
 		self._severity = severity
@@ -149,9 +156,7 @@ class MessageSubject(Subject):
 class ChoiceSubject(MessageSubject):
 	def __init__(self, id, type='', title='', **args):
 		MessageSubject.__init__(self, id, type, title, **args)
-		self._message = ""
-		self._choices = []
-		self._selectedIndex = -1
+		self.reset()
 		self._callbacks = []
 		if args.has_key('choices'):
 			self._choices = args['choices']
@@ -159,6 +164,11 @@ class ChoiceSubject(MessageSubject):
 			self._selectedIndex = args['selectedIndex']
 		if args.has_key('callbacks'):
 			self._callbacks = args['callbacks']
+	
+	def reset(self):
+		MessageSubject.reset(self)
+		self._choices = []
+		self._selectedIndex = -1
 		
 	def setSelectedIndex(self, selectedIndex):
 		if not type(selectedIndex) is int:
@@ -211,14 +221,8 @@ class ChoiceSubject(MessageSubject):
 class ProgressSubject(MessageSubject):
 	def __init__(self, id, type='', title='', **args):
 		MessageSubject.__init__(self, id, type, title, **args)
-		self._end = 0
-		self._percent = 0
-		self._state = 0
-		self._timeStarted = long(time.time())
-		self._timeSpend = 0
-		self._timeLeft = 0
-		self._timeFired = 0
-		self._speed = 0
+		self.reset()
+		self._fireAlways = False
 		if args.has_key('end'):
 			self._end = args['end']
 			if (self._end < 0): self._end = 0
@@ -236,19 +240,37 @@ class ProgressSubject(MessageSubject):
 			self._timeFired = args['timeFired']
 		if args.has_key('speed'):
 			self._speed = args['speed']
+		if args.has_key('fireAlways'):
+			self._fireAlways = bool(args['fireAlways'])
+	
+	def reset(self):
+		MessageSubject.reset(self)
+		self._end = 0
+		self._percent = 0
+		self._state = 0
+		self._timeStarted = long(time.time())
+		self._timeSpend = 0
+		self._timeLeft = 0
+		self._timeFired = 0
+		self._speed = 0
 	
 	def setEnd(self, end):
 		self._end = end
 		if (self._end < 0):
 			self._end = 0
-	
+		self.setState(self._state)
+		
 	def setState(self, state):
-		if (state < 0): state = 0
-		if (state > self._end): state = self._end
+		if (state <= 0):
+			state = 0
+			self._percent = 0
+		if (state > self._end):
+			state = self._end
+			self._percent = 100
 		self._state = state
 		
 		now = long(time.time())
-		if (self._timeFired != now) or (self._state == self._end):
+		if self._fireAlways or (self._timeFired != now) or (self._state == self._end):
 			if (self._end == 0):
 				self._percent = 100
 			else:
@@ -257,7 +279,8 @@ class ProgressSubject(MessageSubject):
 			self._timeSpend = now - self._timeStarted
 			if self._timeSpend:
 				self._speed = int(self._state/self._timeSpend)
-				self._timeLeft = ((self._end-self._state)/self._speed)
+				if (self._speed > 0):
+					self._timeLeft = ((self._end-self._state)/self._speed)
 			
 			self._timeFired = now
 			self._notifyProgressChanged(self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
@@ -641,6 +664,9 @@ class Repository:
 		self._path = ''
 		self._maxBandwidth = 0
 	
+	def __str__(self):
+		return '<%s %s>' % (self.__class__.__name__, self._url)
+		
 	def _transfer(self, src, dst, progressSubject=None):
 		buf = True
 		waitTime = 0.0
@@ -683,14 +709,20 @@ class Repository:
 	
 	def content(self, destination=''):
 		raise RepositoryError("Not implemented")
-		
+	
+	def fileInfo(self, destination):
+		raise RepositoryError("Not implemented")
+	
 	def upload(self, source, destination):
 		raise RepositoryError("Not implemented")
-		
+	
+	def download(self, source, destination, progressObserver=None):
+		raise RepositoryError("Not implemented")
+	
 	def delete(self, destination):
 		raise RepositoryError("Not implemented")
 	
-	def fileInfo(self, destination):
+	def makeDirectory(self, destination):
 		raise RepositoryError("Not implemented")
 	
 class FileRepository(Repository):
@@ -789,6 +821,12 @@ class FileRepository(Repository):
 	def delete(self, source, destination):
 		destination = self._absolutePath(destination)
 		os.unlink(destination)
+	
+	def makeDirectory(self, destination):
+		destination = self._absolutePath(destination)
+		if not os.path.isdir(destination):
+			os.mkdir(destination)
+		
 	
 class WebDAVRepository(Repository):
 	def __init__(self, url, username='', password=''):
@@ -1009,6 +1047,120 @@ class WebDAVRepository(Repository):
 				% (destination, response.status))
 		# We have to read the response!
 		response.read()
+
+
+class DepotToLocalDirectorySychronizer(object):
+	def __init__(self, sourceDepot, destinationDirectory, productIds=[]):
+		self._sourceDepot = sourceDepot
+		self._destinationDirectory = destinationDirectory
+		self._productIds = productIds
+		if not os.path.isdir(self._destinationDirectory):
+			os.mkdir(self._destinationDirectory)
+	
+	def _md5sum(self, filename):
+		f = open(filename)
+		m = md5.new()
+		while True:
+			d = f.read(8096)
+			if not d:
+				break
+			m.update(d)
+		f.close()
+		return m.hexdigest()
+	
+	def _synchronizeDirectories(self, source, destination):
+		logger.debug("   Syncing directory %s to %s" % (source, destination))
+		if not os.path.isdir(destination):
+			os.mkdir(destination)
+		
+		for f in os.listdir(destination):
+			relSource = (source + '/' + f).split('/', 1)[1]
+			if (relSource == self._productId + '.files'):
+				continue
+			if self._fileInfo.has_key(relSource):
+				continue
+			
+			logger.info("      Deleting '%s'" % relSource)
+			path = os.path.join(destination, f)
+			if os.path.isdir(path) and not os.path.islink(path):
+				shutil.rmtree(path)
+			else:
+				os.remove(path)
+			
+		for f in self._sourceDepot.content(source):
+			(s, d) = (source + '/' + f['name'], os.path.join(destination, f['name']))
+			relSource = s.split('/', 1)[1]
+			if not self._fileInfo.has_key(relSource):
+				continue
+			if (f['type'] == 'dir'):
+				self._synchronizeDirectories(s, d)
+			else:
+				logger.debug("      Syncing %s: %s" % (relSource, self._fileInfo[relSource]))
+				if (self._fileInfo[relSource]['type'] == 'l'):
+					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
+					continue
+				elif (self._fileInfo[relSource]['type'] == 'f'):
+					if os.path.exists(d):
+						if (os.path.getsize(d) == int(self._fileInfo[relSource]['size'])) and \
+						   (self._md5sum(d) == self._fileInfo[relSource]['md5sum']):
+							continue
+				logger.info("      Downloading file '%s'" % f['name'])
+				self._sourceDepot.download(s, d)
+	
+	def synchronize(self, progressObserver=None):
+		if not self._productIds:
+			logger.info("Getting product dirs of depot '%s'" % self._sourceDepot)
+			for c in self._sourceDepot.content():
+				self._productIds.append(c['name'])
+		
+		for self._productId in self._productIds:
+			self._linkFiles = {}
+			logger.notice("Syncing product %s of depot %s with local directory %s" \
+					% (self._productId, self._sourceDepot, self._destinationDirectory))
+			
+			productDestinationDirectory = os.path.join(self._destinationDirectory, self._productId)
+			if not os.path.isdir(productDestinationDirectory):
+				os.mkdir(productDestinationDirectory)
+			
+			logger.info("Downloading file info file")
+			from OPSI import Product
+			fileInfoFile = os.path.join(productDestinationDirectory, '%s.files' % self._productId)
+			self._sourceDepot.download('%s/%s.files' % (self._productId, self._productId), fileInfoFile)
+			self._fileInfo = Product.readFileInfoFile(fileInfoFile)
+			
+			self._synchronizeDirectories(self._productId, productDestinationDirectory)
+			
+			fs = self._linkFiles.keys()
+			fs.sort()
+			for f in fs:
+				t = self._linkFiles[f]
+				cwd = os.getcwd()
+				os.chdir(productDestinationDirectory)
+				try:
+					if os.path.exists(f):
+						if os.path.isdir(f) and not os.path.islink(f):
+							shutil.rmtree(f)
+						else:
+							os.remove(f)
+					if (os.name == 'posix'):
+						parts = len(f.split('/'))
+						parts -= len(t.split('/'))
+						for i in range(parts):
+							t = os.path.join('..', t)
+						logger.info("Symlink '%s' to '%s'" % (f, t))
+						os.symlink(t, f)
+					else:
+						t = os.path.join(productDestinationDirectory, t)
+						f = os.path.join(productDestinationDirectory, f)
+						logger.info("Copying '%s' to '%s'" % (t, f))
+						if os.path.isdir(t):
+							shutil.copytree(t, f)
+						else:
+							shutil.copyfile(t, f)
+				finally:
+					os.chdir(cwd)
+
+
 
 
 

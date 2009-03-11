@@ -32,17 +32,17 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0'
+__version__ = '1.0.1'
 
 # Imports
 import os, stat, types, re, socket, new, base64, md5
 import copy as pycopy
-from duplicity import librsync
 from twisted.conch.ssh import keys
 
 # OS dependend imports
 if (os.name == 'posix'):
 	import pwd, grp
+	from duplicity import librsync
 else:
 	import win32security
 	from _winreg import *
@@ -68,8 +68,7 @@ OPSI_MODULES_FILE='/etc/opsi/modules'
 
 class BackendManager(DataBackend):
 	
-	def __init__(self, username = '', password = '', address = '', 
-		     configFile = None, backend = None, authRequired=True):
+	def __init__(self, username = '', password = '', address = '', configFile=None, backend=None, authRequired=True):
 		
 		self._pamService = 'common-auth'
 		self._sshRSAPublicKeyFile = '/etc/ssh/ssh_host_rsa_key.pub'
@@ -83,11 +82,6 @@ class BackendManager(DataBackend):
 		#	except:
 		#		windefaultdir = 'C:\\Programme\\opsi.org\\opsiconfd'
 		#	configFile = windefaultdir+'\\backendManager.conf'
-		
-		if not configFile:
-			configFile = '/etc/opsi/backendManager.d'
-			if not os.path.isdir(configFile):
-				configFile = '/etc/opsi/backendManager.conf'
 		
 		''' 
 		The constructor of the class BackendManager creates an instance of the
@@ -126,9 +120,10 @@ class BackendManager(DataBackend):
 		self.forcedBackend = backend
 		
 		# Now read the config file to overwrite the defaults
-		self._readConfigFile()
-		#if os.name == 'nt':
-		#	self.__readConfigFromReg()
+		if self.__configFile:
+			self._readConfigFile()
+		else:
+			logger.warning("No config file given")
 		
 		logger.info("Using default domain '%s'" % self.defaultDomain)
 		
@@ -139,7 +134,7 @@ class BackendManager(DataBackend):
 		if not self.__authRequired:
 			# Authenticate by remote server
 			self.__userGroups = []
-			logger.debug("Authorization disabled...")
+			logger.info("Skipping local authorization")
 			
 		elif re.search('^\S+\.\S+\.\S+$', self.__username):
 			# Username starts with something like xxx.yyy.zzz: 
@@ -224,6 +219,8 @@ class BackendManager(DataBackend):
 				self.backends[key]['instance'] = b
 			else:
 				self.backends[key]['instance'] = self.forcedBackend
+			
+			if self.forcedBackend:
 				self.forcedBackend         = key
 				self.defaultBackend        = key
 				self.clientManagingBackend = key
@@ -550,6 +547,9 @@ class BackendManager(DataBackend):
 	def librsyncSignature(self, filename):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
 		
+		if (os.name != 'posix'):
+			raise NotImplementedError("Not implemented for non-posix os")
+		
 		(f, sf) = (None, None)
 		try:
 			f = open(filename, 'rb')
@@ -565,6 +565,9 @@ class BackendManager(DataBackend):
 		
 	def librsyncPatchFile(self, oldfile, deltafile, newfile):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
+		
+		if (os.name != 'posix'):
+			raise NotImplementedError("Not implemented for non-posix os")
 		
 		logger.debug("librsyncPatchFile: %s, %s, %s" % (oldfile, deltafile, newfile))
 		if (oldfile == newfile):
@@ -599,6 +602,9 @@ class BackendManager(DataBackend):
 	def getDiskSpaceUsage(self, path):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP)
 		
+		if (os.name != 'posix'):
+			raise NotImplementedError("Not implemented for non-posix os")
+		
 		try:
 			return System.getDiskSpaceUsage(path)
 		except Exception, e:
@@ -606,6 +612,9 @@ class BackendManager(DataBackend):
 	
 	def getHostRSAPublicKey(self):
 		self._verifyGroupMembership(SYSTEM_ADMIN_GROUP, HOST_GROUP)
+		
+		if (os.name != 'posix'):
+			raise NotImplementedError("Not implemented for non-posix os")
 		
 		f = open(self._sshRSAPublicKeyFile, 'r')
 		data = f.read()
@@ -1146,8 +1155,10 @@ class BackendManager(DataBackend):
 				modules[module] = (state == 'yes')
 			f.close()
 			if not modules.get('signature'):
+				modules = {'valid': False}
 				raise Exception('Signature not found')
 			if not modules.get('customer'):
+				modules = {'valid': False}
 				raise Exception('Customer not found')
 			
 			publicKey = keys.getPublicKeyObject(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))

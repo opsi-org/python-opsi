@@ -179,6 +179,24 @@ def setRegistryValue(key, subKey, valueName, value):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+def mkdir(newDir, mode=0750, ui='default'):
+	"""
+	- already exists, silently complete
+	- regular file in the way, raise an exception
+	- parent directory(ies) does not exist, make them as well
+	"""
+	if os.path.isdir(newDir):
+		pass
+	elif os.path.isfile(newDir):
+		raise OSError(	"A file with the same name as the desired " \
+				"dir, '%s', already exists." % newDir)
+	else:
+		(head, tail) = os.path.split(newDir)
+		if head and not os.path.isdir(head):
+			mkdir(head)
+		if tail:
+			os.mkdir(newDir)
+		
 def mount(dev, mountpoint, ui='default', **options):
 	#if ui == 'default': ui=userInterface
 	fs = ''

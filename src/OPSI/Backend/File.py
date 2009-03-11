@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.7.9'
+__version__ = '1.0'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, codecs
@@ -293,7 +293,6 @@ class FileBackend(File, DataBackend):
 			self.__passwdFile = windefaultdir+'\\opsi\\passwd'
 			self.__productsFile = windefaultdir+'\\share\\utils\\produkte.txt'
 			self.__groupsFile = windefaultdir+'\\opsi\\groups.ini'
-			self.__licensesFile = windefaultdir+'\\opsi\\licenses.ini'
 			self.__opsiTFTPDir = windefaultdir+'\\opsi\\tftpboot'
 		else:
 			self.__pclogDir = '/opt/pcbin/pcpatch/pclog'
@@ -303,7 +302,6 @@ class FileBackend(File, DataBackend):
 			self.__passwdFile = '/etc/opsi/passwd'
 			self.__productsFile = '/opt/pcbin/utils/produkte.txt'
 			self.__groupsFile = '/opt/pcbin/utils/groups.ini'
-			self.__licensesFile = '/opt/pcbin/utils/licenses.ini'
 			self.__opsiTFTPDir = '/tftpboot/opsi'
 		
 		# Parse arguments
@@ -317,7 +315,6 @@ class FileBackend(File, DataBackend):
 			elif (option.lower() == 'opsitftpdir'): 	self.__opsiTFTPDir = value
 			elif (option.lower() == 'fileopentimeout'): 	self.__fileOpenTimeout = value
 			elif (option.lower() == 'groupsfile'): 	self.__groupsFile = value
-			elif (option.lower() == 'licensesfile'): 	self.__licensesFile = value
 			elif (option.lower() == 'defaultdomain'): 	self._defaultDomain = value
 			else:
 				logger.warning("Unknown argument '%s' passed to FileBackend constructor" % option)
@@ -359,8 +356,6 @@ class FileBackend(File, DataBackend):
 		files = [self.__productsFile, self.__pckeyFile, self.__passwdFile]
 		if os.path.exists(self.__groupsFile):
 			files.append(self.__groupsFile)
-		if os.path.exists(self.__licensesFile):
-			files.append(self.__licensesFile)
 		
 		for path in [self.__pcpatchDir, self.__opsiTFTPDir, self.__pclogDir, self.__depotDir]:
 			if not os.path.isdir(path):
@@ -1236,7 +1231,7 @@ class FileBackend(File, DataBackend):
 		return macs
 		#raise BackendMissingDataError("Cannot get mac address for host '%s' from harware-info." % hostId)
 	
-	def createGroup(self, groupId, members = [], description = ""):
+	def createGroup(self, groupId, members = [], description = "", parentGroupId=""):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
 		
@@ -1258,7 +1253,7 @@ class FileBackend(File, DataBackend):
 		
 		# Write back ini file
 		self.writeIniFile(self.__groupsFile, ini)
-		
+	
 	def getGroupIds_list(self):
 		try:
 			ini = self.readIniFile(self.__groupsFile)
@@ -1266,7 +1261,10 @@ class FileBackend(File, DataBackend):
 		except BackendIOError, e:
 			logger.warning("No groups found: %s" % e)
 		return []
-		
+	
+	def getHostGroupTree_hash(self):
+		return {}
+	
 	def deleteGroup(self, groupId):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)
@@ -1879,7 +1877,7 @@ class FileBackend(File, DataBackend):
 		
 		return installationStatus
 	
-	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", licenseKey=""):
+	def setProductState(self, productId, objectId, installationStatus="", actionRequest="", productVersion="", packageVersion="", lastStateChange="", productActionProgress={}):
 		productId = productId.lower()
 		
 		if objectId in self._aliaslist():
@@ -2012,48 +2010,12 @@ class FileBackend(File, DataBackend):
 		
 		self.writeIniFile( os.path.join(self.__pcpatchDir, self.getIniFile(objectId)), ini)
 		
-		return
-		# TODO
-		
-		if (installationStatus in ['not_installed', 'uninstalled']):
-			logger.debug("Removing license key assignement for host '%s' and product '%s' if exists" \
-					% (objectId, productId) )
-			# Update licenses ini file
-			try:
-				ini = self.readIniFile(self.__licensesFile)
-				if ini.has_section(productId):
-					for (key, value) in ini.items(productId):
-						if (value == objectId):
-							ini.set(productId, key, '')
-							self.writeIniFile(self.__licensesFile, ini)
-							logger.info("License key assignement for host '%s' and product '%s' removed" \
-									% (objectId, productId) )
-							break
-			except BackendIOError, e:
-				logger.warning("Cannot update license file '%s': %s" % (self.__licensesFile, e))
-			
-		
-		if not licenseKey:
-			return
-		
-		# Read licenses ini file or create if not exists
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError:
-			logger.warning("Cannot read license file '%s', trying to create" % self.__licensesFile)
-			self.createFile(self.__licensesFile, mode=0660)
-			ini = self.readIniFile(self.__licensesFile)
-		
-		if not ini.has_section(productId):
-			ini.add_section(productId)
-		
-		ini.set(productId, licenseKey, objectId)
-		
-		# Write back ini file
-		self.writeIniFile(self.__licensesFile, ini)
 	
-	def setProductInstallationStatus(self, productId, objectId, installationStatus, policyId="", licenseKey=""):
-		self.setProductState(productId, objectId, installationStatus = installationStatus, licenseKey = licenseKey)
+	def setProductInstallationStatus(self, productId, objectId, installationStatus):
+		self.setProductState(productId, objectId, installationStatus = installationStatus)
+	
+	def setProductActionProgress(self, productId, hostId, productActionProgress):
+		return
 	
 	def getPossibleProductActions_list(self, productId=None, depotId=None):
 		
@@ -2964,118 +2926,7 @@ class FileBackend(File, DataBackend):
 				ini.remove_section(section)
 		
 		self.writeIniFile(self.__productsFile, ini)
-		
 	
-	def createLicenseKey(self, productId, licenseKey):
-		productId = productId.lower()
-		if productId in self.getProductIds_list('netboot'):
-			raise NotImplementedError("License managment for netboot-products not yet supported")
-		
-		# Read the ini file or create if not exists
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError:
-			logger.warning("Cannot read license file '%s', trying to create" % self.__licensesFile)
-			self.createFile(self.__licensesFile, mode=0660)
-			ini = self.readIniFile(self.__licensesFile)
-		
-		if not ini.has_section(productId):
-			ini.add_section(productId)
-		
-		ini.set(productId, licenseKey, '')
-		
-		# Write back ini file
-		self.writeIniFile(self.__licensesFile, ini)
-		
-	def getLicenseKeys_listOfHashes(self, productId):
-		productId = productId.lower()
-		if productId in self.getProductIds_list('netboot'):
-			raise NotImplementedError("License managment for netboot-products not yet supported")
-		
-		# Read the ini file
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError, e:
-			logger.error("Cannot get license keys for product '%s': %s" % (productId, e))
-			return []
-		
-		if not ini.has_section(productId):
-			logger.error("Cannot get license keys for product '%s': Section missing" % productId)
-			return []
-		
-		licenses = []
-		for (key, value) in ini.items(productId):
-			licenses.append( { "licenseKey": key, "hostId": value } )
-		return licenses
-
-	def getLicenseKey(self, productId, clientId):
-		productId = productId.lower()
-		licenseKey = ''
-		
-		if productId in self.getProductIds_list('netboot'):
-			# The product is an net-boot product
-			iniFiles = [ 
-				os.path.join(self.__opsiTFTPDir, "global.sysconf"),
-				os.path.join(self.__opsiTFTPDir, self.getSysconfFile(clientId)) ]
-			
-			for iniFile in iniFiles:
-				try:
-					ini = self.readIniFile(iniFile)
-					licenseKey = ini.get(productId, 'productkey')
-				except BackendIOError, e:
-					logger.debug(e)
-					continue
-				except ConfigParser.NoSectionError, e:
-					logger.warning("No section '%s' in ini-file '%s'" % (productId, iniFile))
-					continue
-				except ConfigParser.NoOptionError, e:
-					logger.warning("No option 'productkey' in ini-file '%s'" % iniFile)
-			
-			if not licenseKey:
-				raise BackendMissingDataError('No product license found')
-			return licenseKey
-		
-		freeLicenses = []
-		for license in self.getLicenseKeys_listOfHashes(productId):
-			hostId = license.get('hostId', '')
-			if not hostId:
-				freeLicenses.append(license.get('licenseKey', ''))
-			elif (hostId == clientId):
-				logger.info("Returning licensekey for product '%s' which is assigned to host '%s'"
-						% (productId, clientId))
-				return license.get('licenseKey', '')
-		
-		if (len(freeLicenses) > 0):
-			logger.debug( "%s free license(s) found for product '%s'" % (len(freeLicenses), productId) )
-			return freeLicenses[0]
-		
-		raise BackendMissingDataError("No more licenses available for product '%s'" % productId)
-	
-	
-	def deleteLicenseKey(self, productId, licenseKey):
-		productId = productId.lower()
-		if productId in self.getProductIds_list('netboot'):
-			raise NotImplementedError("License managment for netboot-products not yet supported")
-		
-		# Read the ini file
-		try:
-			ini = self.readIniFile(self.__licensesFile)
-		except BackendIOError, e:
-			logger.error("Cannot delete license key: %s" % e)
-			return
-		
-		if not ini.has_section(productId):
-			logger.error("Cannot delete license key: No section '%s' in file '%s'" \
-						% (productId, self.__licensesFile))
-			return
-		
-		if ini.has_option(productId, licenseKey):
-			ini.remove_option(productId, licenseKey)
-			
-			# Write back ini file
-			self.writeIniFile(self.__licensesFile, ini)
-
-
 # ======================================================================================================
 # =                                   CLASS TFTPFILEBACKEND                                            =
 # ======================================================================================================
