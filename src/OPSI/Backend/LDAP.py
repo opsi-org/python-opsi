@@ -1588,7 +1588,7 @@ class LDAPBackend(DataBackend):
 		productState.readFromDirectory(self._ldap)
 		attributes = productState.getAttributeDict()
 		
-		status['installationStatus'] = attributes.get('opsiProductInstallationStatus', 'not_installed')
+		status['installationStatus'] =  attributes.get('opsiProductInstallationStatus', 'not_installed')
 		status['productVersion'] = 	attributes.get('opsiProductVersion')
 		status['packageVersion'] = 	attributes.get('opsiPackageVersion')
 		status['lastStateChange'] = 	attributes.get('lastStateChange')

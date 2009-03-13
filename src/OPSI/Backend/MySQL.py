@@ -1565,25 +1565,30 @@ class MySQLBackend(DataBackend):
 		
 	def freeSoftwareLicense(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not licensePoolId:
+		licensePoolIds = []
+		if licensePoolId:
+			licensePoolIds = [ licensePoolId ]
+		else:
 			if productId:
 				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s"' % productId)
 				if (len(result) < 1):
 					raise BackendMissingDataError("No license pool for product id '%s' found" % productId)
-				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for product id '%s' found" % productId)
-				licensePoolId = result[0]['licensePoolId']
+				for res in result:
+					licensePoolIds.append(res['licensePoolId'])
 			elif windowsSoftwareId:
 				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s"' % windowsSoftwareId)
 				if (len(result) < 1):
 					raise BackendMissingDataError("No license pool for windows software id '%s' found" % windowsSoftwareId)
-				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for windows software id '%s' found" % windowsSoftwareId)
-				licensePoolId = result[0]['licensePoolId']
+				for res in result:
+					licensePoolIds.append(res['licensePoolId'])
 			else:
 				raise BackendBadValueError("No license pool id, product id or windows software id given.")
 		
-		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', '`licensePoolId`="%s" AND `hostId`="%s"' % (licensePoolId, hostId))
+		where = '`hostId`="%s" AND `licensePoolId` IN (' % hostId
+		for licensePoolId in licensePoolIds:
+			where += '"%s", ' % licensePoolId
+		where = where[:-2]+')'
+		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', where)
 		
 	def freeAllSoftwareLicenses(self, hostIds=[]):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")

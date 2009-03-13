@@ -67,6 +67,7 @@ class CacheBackend(DataBackend):
 		self.__workBackend = None
 		self.__cleanupBackend = False
 		self.__cachedExecutionsFile = ''
+		self.__privileges = 'CLIENT'
 		self._defaultDomain = None
 		
 		# Parse arguments
@@ -75,6 +76,7 @@ class CacheBackend(DataBackend):
 			elif (option.lower() == 'cachebackend'):         self.__cacheBackend = value
 			elif (option.lower() == 'workbackend'):          self.__workBackend = value
 			elif (option.lower() == 'cleanupbackend'):       self.__cleanupBackend = bool(value)
+			elif (option.lower() == 'privileges'):           self.__privileges = value
 			elif (option.lower() == 'cachedexecutionsfile'): self.__cachedExecutionsFile = value
 			else:
 				logger.warning("Unknown argument '%s' passed to CacheBackend constructor" % option)
@@ -83,15 +85,22 @@ class CacheBackend(DataBackend):
 			raise Exception("MainBackend, cacheBackend and workingBackend needed")
 		
 		self.__cacheReplicator = DataBackendReplicator(
-					readBackend  = self.__mainBackend,
-					writeBackend = self.__cacheBackend,
-					cleanupFirst = self.__cleanupBackend )
+					readBackend   = self.__mainBackend,
+					writeBackend  = self.__cacheBackend,
+					cleanupFirst  = self.__cleanupBackend,
+					privileges    = self.__privileges )
 		
 		self.__workReplicator = DataBackendReplicator(
 					readBackend  = self.__cacheBackend,
 					writeBackend = self.__workBackend,
-					cleanupFirst = self.__cleanupBackend )
+					cleanupFirst = self.__cleanupBackend,
+					privileges   = self.__privileges )
 		
+		self.createInstanceMethods()
+		self.readCachedExecutionsFile()
+	
+	def createInstanceMethods(self):
+		self.__possibleMethods = []
 		for method in self.getPossibleMethods_listOfHashes():
 			if (method['name'].lower() == "getpossiblemethods_listofhashes"):
 				# Method already implemented
@@ -121,8 +130,6 @@ class CacheBackend(DataBackend):
 			
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 		
-		self.readCachedExecutionsFile()
-	
 	def readCachedExecutionsFile(self):
 		if not self.__cachedExecutionsFile:
 			logger.warning("Cached executions file not given")
@@ -162,19 +169,12 @@ class CacheBackend(DataBackend):
 	def getCachedExecutions(self):
 		return self.__cachedExecutions
 	
-	def buildCache(self, depotIds=[], clientIds=[], productIds=[]):
-		self.__cacheReplicator.replicate(depotIds = depotIds, clientIds = clientIds, productIds = productIds)
-		for depotId in self.__cacheBackend.getDepotIds_list():
-			# Do not store depot keys
-			self.__cacheBackend.setOpsiHostKey(depotId, '00000000000000000000000000000000')
-		self.__workReplicator.replicate(depotIds = depotIds, clientIds = clientIds, productIds = productIds)
-		for depotId in self.__cacheBackend.getDepotIds_list():
-			# Do not store depot keys
-			self.__workBackend.setOpsiHostKey(depotId, '00000000000000000000000000000000')
-		
+	def buildCache(self, serverIds=[], depotIds=[], clientIds=[], groupIds = [], productIds=[]):
+		self.__cacheReplicator.replicate(serverIds = serverIds, depotIds = depotIds, clientIds = clientIds, groupIds = groupIds, productIds = productIds)
+		self.__workReplicator.replicate(serverIds = serverIds, depotIds = depotIds, clientIds = clientIds, groupIds = groupIds, productIds = productIds)
+	
 	def writebackCache(self):
-		self.__cacheOnly = False
-		self.__mainOnly = True
+		self.workDirectOnly(True)
 		for i in range(len(self.__cachedExecutions)):
 			try:
 				ce = self.__cachedExecutions[i]
@@ -185,28 +185,41 @@ class CacheBackend(DataBackend):
 		self.__cachedExecutions = []
 		self.writeCachedExecutionsFile()
 		
-	def workCached(self, cached):
+	def workCachedOnly(self, cached):
 		if cached:
+			logger.info("Now working cached only")
 			self.__cacheOnly = True
 			self.__mainOnly = False
 		else:
 			self.__cacheOnly = False
-		
+	
+	def workDirectOnly(self, direct):
+		if direct:
+			logger.info("Now working direct only")
+			self.__mainOnly = True
+			self.__cacheOnly = False
+		else:
+			self.__mainOnly = False
+	
 	def getPossibleMethods_listOfHashes(self):
+		self.__possibleMethods = []
 		if not self.__possibleMethods:
 			self.__possibleMethods = []
-			for (n, t) in self.__cacheBackend.__class__.__dict__.items():
-				# Extract a list of all "public" functions (functionname does not start with '_') 
-				if ( (type(t) == types.FunctionType or type(t) == types.MethodType )
-				      and not n.startswith('_') ):
-					argCount = t.func_code.co_argcount
-					argNames = list(t.func_code.co_varnames[1:argCount])
-					argDefaults = t.func_defaults
-					if ( argDefaults != None and len(argDefaults) > 0 ):
-						offset = argCount - len(argDefaults) - 1
-						for i in range( len(argDefaults) ):
-							argNames[offset+i] = '*' + argNames[offset+i]		
-					self.__possibleMethods.append( { 'name': n, 'params': argNames} )
+			try:
+				self.__possibleMethods = self.__mainBackend.getPossibleMethods_listOfHashes()
+			except Exception, e:
+				for (n, t) in self.__cacheBackend.__class__.__dict__.items():
+					# Extract a list of all "public" functions (functionname does not start with '_') 
+					if ( (type(t) == types.FunctionType or type(t) == types.MethodType )
+					      and not n.startswith('_') ):
+						argCount = t.func_code.co_argcount
+						argNames = list(t.func_code.co_varnames[1:argCount])
+						argDefaults = t.func_defaults
+						if ( argDefaults != None and len(argDefaults) > 0 ):
+							offset = argCount - len(argDefaults) - 1
+							for i in range( len(argDefaults) ):
+								argNames[offset+i] = '*' + argNames[offset+i]		
+						self.__possibleMethods.append( { 'name': n, 'params': argNames} )
 		return self.__possibleMethods
 	
 	def _getParams(self, **options):

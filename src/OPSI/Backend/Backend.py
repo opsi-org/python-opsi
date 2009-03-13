@@ -336,11 +336,12 @@ class DataBackend(Backend):
 		pass
 	
 class DataBackendReplicator(object):
-	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True):
+	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True, privileges='FULL'):
 		self.__readBackend  = readBackend
 		self.__writeBackend = writeBackend
 		self.__newServerId  = newServerId
 		self.__cleanupFirst = cleanupFirst
+		self.__privileges = privileges
 		self.__oldServerId  = ''
 		self.__serverIds = []
 		self.__depotIds = []
@@ -357,7 +358,9 @@ class DataBackendReplicator(object):
 		return self.__overallProgressSubject
 	
 	def getServerId(self):
-		return self.getServerIds()[0]
+		if not self.__serverIds:
+			return None
+		return self.__serverIds[0]
 	
 	def getServerIds(self):
 		return self.__serverIds
@@ -376,8 +379,6 @@ class DataBackendReplicator(object):
 		return clientIds
 	
 	def getGroupIds(self):
-		if not self.__groupIds:
-			self.__groupIds = self.__readBackend.getGroupIds_list()
 		return self.__groupIds
 	
 	def getProductIds(self, productType='', depotId=''):
@@ -396,13 +397,26 @@ class DataBackendReplicator(object):
 						productIds.extend(pIds)
 		return productIds
 	
-	def replicate(self, depotIds=[], clientIds=[], productIds=[]):
+	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[]):
+		'''
+		Replicate (a part) of a opsi configuration database
+		An empty list passed as a param means: replicate all known
+		None as the only element of a list means: replicate none
+		'''
+		if not type(serverIds)  is list: serverIds  = [ serverIds ]
 		if not type(depotIds)   is list: depotIds   = [ depotIds ]
 		if not type(clientIds)  is list: clientIds  = [ clientIds ]
+		if not type(groupIds)   is list: groupIds   = [ groupIds ]
 		if not type(productIds) is list: productIds = [ productIds ]
 		
 		# Servers
-		self.__serverIds = self.__readBackend.getServerIds_list()
+		knownServerIds = self.__readBackend.getServerIds_list()
+		if serverIds:
+			for serverId in serverIds:
+				if serverId in knownServerIds:
+					self.__serverIds.append(serverId)
+		else:
+			self.__serverIds = knownServerIds
 		
 		# Depots
 		knownDepotIds = self.__readBackend.getDepotIds_list()
@@ -430,6 +444,15 @@ class DataBackendReplicator(object):
 						break
 		else:
 			self.__clientIds = knownClientIds
+		
+		# Groups
+		knownGroupIds = self.__readBackend.getGroupIds_list()
+		if groupIds:
+			for groupId in groupIds:
+				if groupId in knownGroupIds:
+					self.__groupIds.append(groupId)
+		else:
+			self.__groupIds = knownGroupIds
 		
 		# Products
 		knownProductIds = {}
@@ -520,7 +543,7 @@ class DataBackendReplicator(object):
 		
 		serverIds = self.getServerIds()
 		if (len(serverIds) > 1):
-			raise NotImplemented("Repication of more than one server not supported")
+			raise NotImplemented("Replication of more than one server not supported")
 		
 		self.__currentProgressSubject.setEnd(len(serverIds))
 		
@@ -542,8 +565,9 @@ class DataBackendReplicator(object):
 							description	= server.get('description', ''),
 							notes		= server.get('notes', '') )
 				
-				self.__writeBackend.setOpsiHostKey( newServerId, self.__readBackend.getOpsiHostKey(server.get('hostId')) )
-				self.__writeBackend.setPcpatchPassword( newServerId, self.__readBackend.getPcpatchPassword(server.get('hostId')) )
+				if (self.__privileges == 'FULL'):
+					self.__writeBackend.setOpsiHostKey( newServerId, self.__readBackend.getOpsiHostKey(server.get('hostId')) )
+					self.__writeBackend.setPcpatchPassword( newServerId, self.__readBackend.getPcpatchPassword(server.get('hostId')) )
 				
 			except Exception, e:
 				logger.error(e)
@@ -602,7 +626,8 @@ class DataBackendReplicator(object):
 							network			= depot.get('network', ''),
 							maxBandwidth		= depot.get('repositoryMaxBandwidth', '')
 				)
-				self.__writeBackend.setOpsiHostKey( newDepotId, self.__readBackend.getOpsiHostKey(depotId) )
+				if (self.__privileges == 'FULL'):
+					self.__writeBackend.setOpsiHostKey( newDepotId, self.__readBackend.getOpsiHostKey(depotId) )
 			
 			except Exception, e:
 				logger.error(e)
@@ -648,9 +673,10 @@ class DataBackendReplicator(object):
 				
 				opsiHostKey = self.__readBackend.getOpsiHostKey( client.get('hostId') )
 				self.__writeBackend.setOpsiHostKey( client.get('hostId'), opsiHostKey )
-				serverKey = self.__writeBackend.getOpsiHostKey( self.getServerId() )
-				encryptedPcpatchPass = self.__writeBackend.getPcpatchPassword( self.getServerId() )
-				self.__writeBackend.setPcpatchPassword( client.get('hostId'), Tools.blowfishEncrypt(opsiHostKey, Tools.blowfishDecrypt(serverKey, encryptedPcpatchPass)) )
+				if (self.__privileges == 'FULL'):
+					serverKey = self.__writeBackend.getOpsiHostKey( self.getServerId() )
+					encryptedPcpatchPass = self.__writeBackend.getPcpatchPassword( self.getServerId() )
+					self.__writeBackend.setPcpatchPassword( client.get('hostId'), Tools.blowfishEncrypt(opsiHostKey, Tools.blowfishDecrypt(serverKey, encryptedPcpatchPass)) )
 			
 			except Exception, e:
 				logger.error(e)
@@ -724,8 +750,10 @@ class DataBackendReplicator(object):
 		clientIds = self.__writeBackend.getClientIds_list()
 		self.__currentProgressSubject.setEnd(len(clientIds)+1)
 		
-		generalConfig = self.__readBackend.getGeneralConfig_hash()
-		self.__writeBackend.setGeneralConfig(generalConfig)
+		generalConfig = {}
+		if self.getServerId():
+			generalConfig = self.__readBackend.getGeneralConfig_hash(self.getServerId())
+			self.__writeBackend.setGeneralConfig(generalConfig)
 		self.__currentProgressSubject.addToState(1)
 		
 		for clientId in clientIds:
@@ -778,13 +806,15 @@ class DataBackendReplicator(object):
 		clientIds = self.getClientIds()
 		self.__currentProgressSubject.setEnd(len(clientIds)+1)
 		
-		networkConfig = self.__readBackend.getNetworkConfig_hash()
-		if self.__newServerId:
-			networkConfig['opsiServer'] = self.__newServerId
-			if (networkConfig.get('depotId') == self.__oldServerId):
-				networkConfig['depotId'] = self.__newServerId
-		
-		self.__writeBackend.setNetworkConfig(networkConfig)
+		networkConfig = {}
+		if self.getServerId():
+			networkConfig = self.__readBackend.getNetworkConfig_hash(self.getServerId())
+			if self.__newServerId:
+				networkConfig['opsiServer'] = self.__newServerId
+				if (networkConfig.get('depotId') == self.__oldServerId):
+					networkConfig['depotId'] = self.__newServerId
+			
+			self.__writeBackend.setNetworkConfig(networkConfig)
 		self.__currentProgressSubject.addToState(1)
 		
 		for clientId in clientIds:
