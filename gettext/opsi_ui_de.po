@@ -15,38 +15,64 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../OPSI/UI.py:57
 msgid "An error occured"
 msgstr "Ein Fehler ist aufgetreten"
 
-#: ../OPSI/UI.py:57 ../OPSI/UI.py:78 ../OPSI/UI.py:112 ../OPSI/UI.py:161
 msgid "OK"
 msgstr "OK"
 
-#: ../OPSI/UI.py:78
 msgid "Message"
 msgstr "Nachricht"
 
-#: ../OPSI/UI.py:99
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: ../OPSI/UI.py:103
 msgid "Text"
 msgstr "Text"
 
-#: ../OPSI/UI.py:112
+msgid "Please type text"
+msgstr "Bitte test eingeben"
+
+msgid "Please select"
+msgstr "Bitte auswaehlen"
+
 msgid "Please fill in"
 msgstr "Bitte ausfuellen"
 
-#: ../OPSI/UI.py:112 ../OPSI/UI.py:161
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: ../OPSI/UI.py:161
 msgid "Question"
 msgstr "Frage"
 
-#: ../OPSI/UI.py:185 ../OPSI/UI.py:231
 msgid "Title"
 msgstr "Titel"
+
+msgid "select"
+msgstr "auswaehlen"
+
+msgid "scroll text"
+msgstr "Text scrollen"
+
+msgid "move cursor"
+msgstr "Cursor bewegen"
+
+msgid "(Please press any key to continue)"
+msgstr "(Zum Fortsetzen bitte eine Taste druecken)"
+
+msgid ""
+"\n"
+"Press <ENTER> to keep the default (*)"
+msgstr ""
+"\n"
+"<ENTER> druecken, um den Standard beizubehalten (*)"
+
+msgid "Please select one of %s"
+msgstr "Bitte einen Eintrag auswaehlen: %s"
+
+msgid "Please select one or more of %s"
+msgstr "Bitte einen oder mehrere Eintraege auswaehlen: %s"
+
+msgid "(y/n)"
+msgstr "(y/n)"
+
