@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0'
+__version__ = '1.0.1'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, codecs
@@ -1608,7 +1608,7 @@ class FileBackend(File, DataBackend):
 				elif (item[0] == 'oncewinst'):      onceWinst = item[1]
 				elif (item[0] == 'alwayswinst'):    alwaysWinst = item[1]
 		except ConfigParser.NoSectionError, e:
-			raise BackendMissingDataError("Script paths not found for product '%s': %s" % (productId, e))
+			logger.warning("Script paths not found for product '%s': %s" % (productId, e))
 		logger.debug("setupPath = %s, setupWinst = %s, deinstallWinst = %s, updateWinst = %s, alwaysWinst = %s, onceWinst = %s" % 
 			(setupPath, setupWinst, deinstallWinst, updateWinst, alwaysWinst, onceWinst ) )
 		
