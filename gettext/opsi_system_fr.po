@@ -1,0 +1,159 @@
+# translation of opsi_sytem.po to
+# French translations for PACKAGE package.
+# Copyright (C) 2009 ORGANIZATION
+#
+# Benoit Mortier <benoit.mortier@opensides.be>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: opsi_sytem\n"
+"POT-Creation-Date: 2009-03-26 14:23+CET\n"
+"PO-Revision-Date: 2009-03-26 15:19+0100\n"
+"Last-Translator: Benoit Mortier <benoit.mortier@opensides.be>\n"
+"Language-Team:  <fr@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"Plural-Forms:  nplurals=2; plural=(n > 1);\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:309
+msgid "System is going down for reboot now.\n"
+msgstr "Le système va redémarrer maintenant.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:315
+msgid "System is going down for halt now.\n"
+msgstr "Le système va s'arrêter maintenant.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:341
+msgid "Copying from %s to %s\n"
+msgstr "Copie depuis %s vers %s\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:347
+msgid "Copying from %s to %s"
+msgstr "Copie depuis %s vers %s"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:433
+msgid "Creating directory '%s'.\n"
+msgstr "Création du répertoire '%s'. \n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:473
+msgid "Mounting '%s' to '%s'.\n"
+msgstr "Montage de '%s' sur '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:574
+msgid "Umounting '%s'.\n"
+msgstr "Démontage de '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:587
+msgid "Looking for harddisks.\n"
+msgstr "Recherche des disques durs.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:600
+msgid "Hardisk '%s' found (%s MB).\n"
+msgstr "Le disque dur '%s' à été trouvé (%s MB).\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:638
+msgid "Collecting hardware information.\n"
+msgstr "Récupération des informations matérielles.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1318
+msgid "Deleting partition table on disk '%s'.\n"
+msgstr "Effacement de la table de partition du disque '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1349
+msgid "Shredding %s"
+msgstr ""
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1378
+msgid "Pass %d/%d (%s)\n"
+msgstr "Etape %d/%d (%s)\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1379
+msgid "Position: %s\n"
+msgstr "Position: %s\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1417
+msgid "Writing from %s to '%s'"
+msgstr "Ecriture depuis %s vers '%s'"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1441
+msgid "Failed"
+msgstr "Échoue"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1467
+msgid "Average transfer rate: %s kB/s\n"
+msgstr "Taux moyen de transfert %s kB/s\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1468
+msgid "Pos: %s MB\n"
+msgstr ""
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1486
+msgid "Writing master boot record (system: %s) to '%s'.\n"
+msgstr "Ecriture du secteur d'amorçage principal (système: %s) vers '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1507
+msgid "Writing partition boot record (fs: %s) to '%s'.\n"
+msgstr "Ecriture du secteur d'amorçage de la partition (fs: %s) vers '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1542
+msgid "Modifying NTFS boot record of partition '%s' (sector: %s).\n"
+msgstr "Modification du secteur d'amorçage NTFS de la partition '%s' (secteur: %s).\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1670
+msgid ""
+"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %"
+"s cyl, end: %s cyl.\n"
+msgstr "Création d'une partition sur '%s': numéro: %s, type '%s', système de fichiers '%s', début: cyl %s, fin: cyl %s.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1698
+msgid "Deleting partition '%s' on '%s'.\n"
+msgstr "Effacement de la partition '%s' sur '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1738
+msgid "Creating filesystem '%s' on '%s'.\n"
+msgstr "Création du système de fichiers '%s' sur '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1778
+msgid "Resizing filesystem on partition '%s' (%s) to %s MB.\n"
+msgstr "Redimensionne le système de fichiers sur la partition '%s' (%s) à %s MB.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1800
+msgid "Writing filesystem image of '%s' to '%s'.\n"
+msgstr "Ecriture de l'image du système de fichiers '%s' vers '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1826
+msgid "Writing filesystem image of partition '%s' to ntfsclone-image '%s'"
+msgstr "Ecriture de l'image de la partition '%s' vers une image ntfsclone '%s'"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1852
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1991
+msgid "Syncing ...\n"
+msgstr "Synchronisation...\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1855
+msgid "Scanning filesystem ...\n"
+msgstr "Parcour du système de fichiers...\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1857
+msgid "Writing image ...\n"
+msgstr "Ecriture de l'image...\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1860
+msgid "Filesystem usage is %s MB (%s)\n"
+msgstr "La place utilisée est de %s MB (%s)\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1879
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:2007
+msgid "Failed: %s"
+msgstr "Echoué: %s"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1905
+msgid "Restoring filesystem image '%s' to '%s'.\n"
+msgstr "Restauration du système de fichiers '%s' vers '%s'.\n"
+
+#: usr/share/python-support/python-opsi/OPSI/System/Posix.py:1966
+msgid "Restoring ntfsclone image '%s' to '%s'"
+msgstr "Restauration d'une image ntfsclone '%s' vers '%s'"
+

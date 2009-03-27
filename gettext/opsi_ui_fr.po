@@ -1,0 +1,158 @@
+# translation of opsi_ui.po to
+# French translations for PACKAGE package.
+# Copyright (C) 2009 ORGANIZATION
+#
+# Benoit Mortier <benoit.mortier@opensides.be>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: opsi_ui\n"
+"POT-Creation-Date: 2009-03-26 14:23+CET\n"
+"PO-Revision-Date: 2009-03-26 15:23+0100\n"
+"Last-Translator: Benoit Mortier <benoit.mortier@opensides.be>\n"
+"Language-Team:  <fr@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"Plural-Forms:  nplurals=2; plural=(n > 1);\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:104
+#: usr/share/python-support/python-opsi/OPSI/UI.py:107
+#: usr/share/python-support/python-opsi/OPSI/UI.py:119
+#: usr/share/python-support/python-opsi/OPSI/UI.py:122
+#: usr/share/python-support/python-opsi/OPSI/UI.py:125
+#: usr/share/python-support/python-opsi/OPSI/UI.py:128
+#: usr/share/python-support/python-opsi/OPSI/UI.py:191
+#: usr/share/python-support/python-opsi/OPSI/UI.py:219
+#: usr/share/python-support/python-opsi/OPSI/UI.py:260
+#: usr/share/python-support/python-opsi/OPSI/UI.py:318
+#: usr/share/python-support/python-opsi/OPSI/UI.py:399
+#: usr/share/python-support/python-opsi/OPSI/UI.py:477
+#: usr/share/python-support/python-opsi/OPSI/UI.py:677
+#: usr/share/python-support/python-opsi/OPSI/UI.py:688
+#: usr/share/python-support/python-opsi/OPSI/UI.py:712
+#: usr/share/python-support/python-opsi/OPSI/UI.py:771
+#: usr/share/python-support/python-opsi/OPSI/UI.py:814
+msgid "OK"
+msgstr ""
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:104
+#: usr/share/python-support/python-opsi/OPSI/UI.py:191
+#: usr/share/python-support/python-opsi/OPSI/UI.py:677
+msgid "An error occured"
+msgstr "Une erreur est survenue"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:107
+#: usr/share/python-support/python-opsi/OPSI/UI.py:219
+#: usr/share/python-support/python-opsi/OPSI/UI.py:688
+msgid "Message"
+msgstr ""
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:110
+#: usr/share/python-support/python-opsi/OPSI/UI.py:247
+#: usr/share/python-support/python-opsi/OPSI/UI.py:699
+msgid "Progress"
+msgstr "Progression"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:113
+#: usr/share/python-support/python-opsi/OPSI/UI.py:251
+#: usr/share/python-support/python-opsi/OPSI/UI.py:703
+msgid "Text"
+msgstr "Texte"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:119
+#: usr/share/python-support/python-opsi/OPSI/UI.py:122
+#: usr/share/python-support/python-opsi/OPSI/UI.py:125
+#: usr/share/python-support/python-opsi/OPSI/UI.py:128
+#: usr/share/python-support/python-opsi/OPSI/UI.py:260
+#: usr/share/python-support/python-opsi/OPSI/UI.py:318
+#: usr/share/python-support/python-opsi/OPSI/UI.py:399
+#: usr/share/python-support/python-opsi/OPSI/UI.py:477
+#: usr/share/python-support/python-opsi/OPSI/UI.py:712
+#: usr/share/python-support/python-opsi/OPSI/UI.py:771
+#: usr/share/python-support/python-opsi/OPSI/UI.py:814
+msgid "Cancel"
+msgstr "Annuler"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:119
+#: usr/share/python-support/python-opsi/OPSI/UI.py:260
+msgid "Please type text"
+msgstr "Veuillez taper du texte"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:122
+#: usr/share/python-support/python-opsi/OPSI/UI.py:318
+#: usr/share/python-support/python-opsi/OPSI/UI.py:712
+msgid "Please select"
+msgstr "Veuillez sélectionner"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:125
+#: usr/share/python-support/python-opsi/OPSI/UI.py:399
+#: usr/share/python-support/python-opsi/OPSI/UI.py:771
+msgid "Please fill in"
+msgstr "Veuillez remplir"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:128
+#: usr/share/python-support/python-opsi/OPSI/UI.py:477
+#: usr/share/python-support/python-opsi/OPSI/UI.py:814
+msgid "Question"
+msgstr ""
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:132
+#: usr/share/python-support/python-opsi/OPSI/UI.py:149
+#: usr/share/python-support/python-opsi/OPSI/UI.py:511
+#: usr/share/python-support/python-opsi/OPSI/UI.py:568
+#: usr/share/python-support/python-opsi/OPSI/UI.py:829
+#: usr/share/python-support/python-opsi/OPSI/UI.py:853
+msgid "Title"
+msgstr "Titre"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:213
+#: usr/share/python-support/python-opsi/OPSI/UI.py:241
+#: usr/share/python-support/python-opsi/OPSI/UI.py:305
+#: usr/share/python-support/python-opsi/OPSI/UI.py:378
+#: usr/share/python-support/python-opsi/OPSI/UI.py:457
+#: usr/share/python-support/python-opsi/OPSI/UI.py:500
+msgid "select"
+msgstr "sélectionnez"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:214
+#: usr/share/python-support/python-opsi/OPSI/UI.py:242
+#: usr/share/python-support/python-opsi/OPSI/UI.py:307
+#: usr/share/python-support/python-opsi/OPSI/UI.py:380
+#: usr/share/python-support/python-opsi/OPSI/UI.py:459
+msgid "scroll text"
+msgstr "Faites défiler le texte"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:304
+#: usr/share/python-support/python-opsi/OPSI/UI.py:377
+#: usr/share/python-support/python-opsi/OPSI/UI.py:456
+#: usr/share/python-support/python-opsi/OPSI/UI.py:499
+msgid "move cursor"
+msgstr "bougez le curseur"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:685
+#: usr/share/python-support/python-opsi/OPSI/UI.py:696
+msgid "(Please press any key to continue)"
+msgstr "(Veuillez appuyer n'importe quelle touche pour continuer)"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:724
+msgid ""
+"\n"
+"Press <ENTER> to keep the default (*)"
+msgstr ""
+"\n"
+"Appuyez sur <ENTER> pour les paramètres par défaut (*)"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:730
+msgid "Please select one of %s"
+msgstr "Veuillez sélectionner un de ceux ci %s"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:745
+msgid "Please select one or more of %s"
+msgstr "Veuillez sélectionner un ou plusieurs de ceux ci %s"
+
+#: usr/share/python-support/python-opsi/OPSI/UI.py:821
+msgid "(y/n)"
+msgstr ""
+
