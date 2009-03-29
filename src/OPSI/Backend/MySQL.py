@@ -1362,7 +1362,20 @@ class MySQLBackend(DataBackend):
 		for windowsSoftwareId in windowsSoftwareIds:
 			if not self.__mysql__.db_getRow('SELECT * FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s" AND `licensePoolId`="%s"' % (windowsSoftwareId, licensePoolId)):
 				self.__mysql__.db_insert('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', { 'licensePoolId': licensePoolId, 'windowsSoftwareId': windowsSoftwareId })
-	
+				
+	def setWindowsSoftwareIdsToLicensePool(self, windowsSoftwareIds, licensePoolId):
+		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
+		if not re.search(LICENSE_POOL_ID_REGEX, licensePoolId):
+			raise BackendBadValueError("Bad license pool id '%s'" % licensePoolId)
+		if not licensePoolId in self.getLicensePoolIds_list():
+			raise BackendMissingDataError("License pool '%s' does not exist" % licensePoolId)
+		self.__mysql__.db_delete('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', '`licensePoolId`="%s"' % (licensePoolId))
+		if not type(windowsSoftwareIds) is list:
+			windowsSoftwareIds = [ windowsSoftwareIds ]
+		for windowsSoftwareId in windowsSoftwareIds:
+			if not self.__mysql__.db_getRow('SELECT * FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s" AND `licensePoolId`="%s"' % (windowsSoftwareId, licensePoolId)):
+				self.__mysql__.db_insert('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', { 'licensePoolId': licensePoolId, 'windowsSoftwareId': windowsSoftwareId })
+				
 	def addProductIdsToLicensePool(self, productIds, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		if not re.search(LICENSE_POOL_ID_REGEX, licensePoolId):
