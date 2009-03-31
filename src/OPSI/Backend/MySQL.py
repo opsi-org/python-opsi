@@ -1413,7 +1413,7 @@ class MySQLBackend(DataBackend):
 																% (licensePoolId, hostId))
 		if result:
 			logger.info("Using already assigned license key")
-			return result['licenseKey']
+			return result['licenseKey'].encode('utf-8')
 		
 		softwareLicenseId = None
 		licenseKey = None
@@ -1462,6 +1462,7 @@ class MySQLBackend(DataBackend):
 					break
 		
 		if not licenseKey:
+			#licenseKey=''
 			raise BackendMissingDataError("License available but no license key found")
 		
 		logger.info("Using license key '%s' for host '%s'" % (licenseKey, hostId))
@@ -1469,7 +1470,7 @@ class MySQLBackend(DataBackend):
 		# Register license key as used by host
 		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'hostId': hostId, 'licenseKey': licenseKey } )
 		
-		return licenseKey
+		return licenseKey.encode('utf-8')
 	
 	
 	def getSoftwareLicenseKeys_listOfHashes(self, licensePoolId=""):
