@@ -1482,7 +1482,7 @@ class MySQLBackend(DataBackend):
 			
 		return licenceKeys
 		
-	def getSoftwareLicenseUsage(self, hostId, licensePoolId)
+	def getSoftwareLicenseUsage(self, hostId, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		if not licensePoolId:
 				raise BackendBadValueError("No license pool id given")
@@ -1490,7 +1490,7 @@ class MySQLBackend(DataBackend):
 				
 		result = self.__mysql__.db_getRow('SELECT `hostId`, `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s"' % (hostId, licensePoolId))
 		
-		if (result)
+		if (result):
 			return result
 			
 		usedCounter = {}
@@ -1511,16 +1511,16 @@ class MySQLBackend(DataBackend):
 		
 		# note the conditions for them
 		for sLId in sLIds:
-			row = self.__mysql__.db_getRow('SELECT `softwareLicenseId`, `boundToHost`, `maxInstallations` FROM `SOFTWARE_LICENSE` WHERE `softwareLicenseId`="%s"' % (sLId)')
+			row = self.__mysql__.db_getRow('SELECT `softwareLicenseId`, `boundToHost`, `maxInstallations` FROM `SOFTWARE_LICENSE` WHERE `softwareLicenseId`="%s"' % sLId)
 			if row['maxInstallations']:
 				maxCounter[sLId] = row['maxInstallations']
-			else
+			else:
 				maxCounter[sLId] = 1
 				
 			if row['boundToHost']:
 				boundToHost[sLId] = row['boundToHost']
 				
-				if row['boundToHost'] = hostId:
+				if row['boundToHost'] == hostId:
 					boundToHostSLId = sLId
 			
 		# count used licences
@@ -1528,7 +1528,7 @@ class MySQLBackend(DataBackend):
 			res2 = self.__mysql__.db_getSet('SELECT `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `licensePoolId`="%s" and `softwareLicenseId`="%s"'  % (licensePoolId, sLId))
 			
 			for row in res2:
-				usedCounter[sLId]++
+				usedCounter[sLId]+=1
 				
 			
 		# give result
@@ -1536,10 +1536,10 @@ class MySQLBackend(DataBackend):
 		result['hostId'] = hostId
 		result['licensePoolId'] = licensePoolId
 		
-		if boundToHostSLId and (usedCounter[boundToHostSLId] = 0):
+		if boundToHostSLId and (usedCounter[boundToHostSLId] == 0):
 			result['softwareLicenseId'] = boundToHostSLId
 			
-		else:	
+		else:
 			for sLId in sLIds:
 				if usedCounter[sLId] < maxCounter[sLId]:
 					result['softwareLicenseId'] = sLId
