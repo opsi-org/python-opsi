@@ -1481,6 +1481,80 @@ class MySQLBackend(DataBackend):
 			licenceKeys.append(licenceKey)
 			
 		return licenceKeys
+		
+	def getSoftwareLicenseUsage(self, hostId, licensePoolId)
+		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
+		if not licensePoolId:
+				raise BackendBadValueError("No license pool id given")
+				
+				
+		result = self.__mysql__.db_getRow('SELECT `hostId`, `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s"' % (hostId, licensePoolId))
+		
+		if (result)
+			return result
+			
+		usedCounter = {}
+		maxCounter = {}
+		boundToHost = {}
+		sLIds = []
+		boundToHostSLId = ''
+		result = {}
+		
+		# find all licenses for the pool
+		res1 = self.__mysql__.db_getSet('SELECT `softwareLicenseId` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `licensePoolId`="%s"' % (licensePoolId))
+			
+		for row in res1:
+			sLId = row['softwareLicenseId']
+			sLIds.append(sLId)
+			usedCounter[sLId]=0
+			maxCounter[sLId]=0
+		
+		# note the conditions for them
+		for sLId in sLIds:
+			row = self.__mysql__.db_getRow('SELECT `softwareLicenseId`, `boundToHost`, `maxInstallations` FROM `SOFTWARE_LICENSE` WHERE `softwareLicenseId`="%s"' % (sLId)')
+			if row['maxInstallations']:
+				maxCounter[sLId] = row['maxInstallations']
+			else
+				maxCounter[sLId] = 1
+				
+			if row['boundToHost']:
+				boundToHost[sLId] = row['boundToHost']
+				
+				if row['boundToHost'] = hostId:
+					boundToHostSLId = sLId
+			
+		# count used licences
+		for sLId in sLIds:
+			res2 = self.__mysql__.db_getSet('SELECT `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `licensePoolId`="%s" and `softwareLicenseId`="%s"'  % (licensePoolId, sLId))
+			
+			for row in res2:
+				usedCounter[sLId]++
+				
+			
+		# give result
+		
+		result['hostId'] = hostId
+		result['licensePoolId'] = licensePoolId
+		
+		if boundToHostSLId and (usedCounter[boundToHostSLId] = 0):
+			result['softwareLicenseId'] = boundToHostSLId
+			
+		else:	
+			for sLId in sLIds:
+				if usedCounter[sLId] < maxCounter[sLId]:
+					result['softwareLicenseId'] = sLId
+					break
+		
+		if not result['softwareLicenseId']:
+			raise BackendMissingDataError("No license found for license pool '%s' found" % licensePoolId)
+		 
+		row = self.__mysql__.db_getRow('SELECT `licenseKey` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `softwareLicenseId`="%s" and `licensePoolId`="%s"' % (result['softwareLicenseId'],licensePoolId))
+		
+		# Register license key as used by host
+		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", { 'licensePoolId': licensePoolId, 'softwareLicenseId': result['softwareLicenseId'], 'licenseKey': row['licenseKey'], 'hostId': hostId} )
+		
+		return result
+				
 	
 	def assignSoftwareLicense(self, hostId, licenseKey="", licensePoolId="", productId="", windowsSoftwareId="", notes=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
