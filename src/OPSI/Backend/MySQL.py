@@ -1651,10 +1651,9 @@ class MySQLBackend(DataBackend):
 				"hostId":            res["hostId"].encode('utf-8'),
 				"softwareLicenseId": res["softwareLicenseId"].encode('utf-8'),
 				"licensePoolId":     res["licensePoolId"].encode('utf-8'),
-				"licenseKey":        ""
+				"notes":			 res.get("notes", "").encode('utf-8'),
+				"licenseKey":        res.get("licenseKey", "").encode('utf-8'),
 			}
-			if res["licenseKey"]:
-				usedLicense["licenseKey"] = res["licenseKey"].encode('utf-8')
 			usedLicenses.append(usedLicense)
 		return usedLicenses
 		
