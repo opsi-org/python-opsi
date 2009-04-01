@@ -1487,10 +1487,12 @@ class MySQLBackend(DataBackend):
 		if not licensePoolId:
 				raise BackendBadValueError("No license pool id given")
 				
-				
 		result = self.__mysql__.db_getRow('SELECT `hostId`, `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s"' % (hostId, licensePoolId))
 		
 		if (result):
+			result['hostId']=result['hostId'].encode('utf-8')
+			result['licensePoolId']=result['licensePoolId'].encode('utf-8')
+			result['softwareLicenseId']=result['softwareLicenseId'].encode('utf-8')
 			return result
 			
 		usedCounter = {}
@@ -1502,6 +1504,9 @@ class MySQLBackend(DataBackend):
 		
 		# find all licenses for the pool
 		res1 = self.__mysql__.db_getSet('SELECT `softwareLicenseId` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `licensePoolId`="%s"' % (licensePoolId))
+		
+		if not res1:
+			raise BackendMissingDataError("No licenses found for license pool '%s' " % licensePoolId)
 			
 		for row in res1:
 			sLId = row['softwareLicenseId']
@@ -1546,13 +1551,14 @@ class MySQLBackend(DataBackend):
 					break
 		
 		if not result['softwareLicenseId']:
-			raise BackendMissingDataError("No license found for license pool '%s' found" % licensePoolId)
+			raise BackendMissingDataError("No license found for license pool '%s' " % licensePoolId)
 		 
 		row = self.__mysql__.db_getRow('SELECT `licenseKey` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `softwareLicenseId`="%s" and `licensePoolId`="%s"' % (result['softwareLicenseId'],licensePoolId))
 		
 		# Register license key as used by host
 		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", { 'licensePoolId': licensePoolId, 'softwareLicenseId': result['softwareLicenseId'], 'licenseKey': row['licenseKey'], 'hostId': hostId} )
 		
+		result['softwareLicenseId']=result['softwareLicenseId'].encode('utf-8')
 		return result
 				
 	
