@@ -1601,6 +1601,7 @@ class MySQLBackend(DataBackend):
 		# Register license as used by host
 		licenseUsedByHost = { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'licenseKey': licenseKey, 'hostId': hostId, 'notes': notes }
 		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", licenseUsedByHost )
+		licenseUsedByHost['softwareLicenseId']=licenseUsedByHost['softwareLicenseId'].encode('utf-8')
 		return licenseUsedByHost
 		
 	def getAssignedSoftwareLicenseKey(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
