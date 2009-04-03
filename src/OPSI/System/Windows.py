@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 
 # Imports
 import re, os, time, socket
@@ -169,12 +169,15 @@ def getRegistryValue(key, subKey, valueName):
 	return value
 
 def setRegistryValue(key, subKey, valueName, value):
+	_winreg.CreateKey(key, subKey)
 	hkey = _winreg.OpenKey(key, subKey, 0, _winreg.KEY_WRITE)
 	if type(value) is int:
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_DWORD, value)
 	else:
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
 
+def createRegistryKey(key, subKey):
+	_winreg.CreateKey(key, subKey)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -

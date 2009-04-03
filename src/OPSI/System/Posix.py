@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.12'
+__version__ = '1.1.13'
 
 # Imports
 import os, sys, re, shutil, time, gettext, popen2, select, signal, socket
@@ -1231,13 +1231,48 @@ class Harddisk:
 		self.signature += ord(x[1]) << 8
 		self.signature += ord(x[0]) 
 		logger.debug("Device Signature: '%s'" % hex(self.signature))
-		
-				
+	
 	def setDiskLabelType(self, label):
 		if not label.lower() in ["bsd", "gpt", "loop", "mac", "mips", "msdos", "pc98", "sun"]:
 			raise Exception("Unknown disk label '%s'" % label)
 		
 		self.label = label.lower()
+	
+	def setPartitionId(self, partition, id):
+		partition = int(partition)
+		if (partition < 1) or (partition > 4):
+			raise Exception("Partition has to be int value between 1 and 4")
+		id = id.lower()
+		if not re.search('^[a-f0-9]{2}$', id):
+			if (id in ['linux', 'ext2', 'ext3', 'xfs', 'reiserfs', 'reiser4']):
+				id = '83'
+			elif (id == 'linux-swap'):
+				id = '82'
+			elif (fs == 'fat32'):
+				id = '0c'
+			elif (fs == 'ntfs'):
+				id = '07'
+			else:
+				raise Exception("Partition type '%s' not supported!" % id)
+		id = eval('0x' + id)
+		offset = 0x1be + (partition-1)*16 + 4
+		f = open(self.device, 'rb+')
+		f.seek(offset)
+		f.write(chr(id))
+		f.close()
+	
+	def setPartitionBootable(self, partition, bootable):
+		bootable = bool(bootable)
+		if (partition < 1) or (partition > 4):
+			raise Exception("Partition has to be int value between 1 and 4")
+		offset = 0x1be + (partition-1)*16 + 4
+		f = open(self.device, 'rb+')
+		f.seek(offset)
+		if bootable:
+			f.write(chr(0x80))
+		else:
+			f.write(chr(0x00))
+		f.close()
 	
 	def readPartitionTable(self):
 		self.partitions = []
