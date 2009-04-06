@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3'
+__version__ = '0.3.2'
 
 # Imports
 import json, threading, re, stat, base64, urllib, os, md5, shutil
@@ -649,21 +649,26 @@ class RepositoryError(Exception):
 		else:
 			return "%s" % self.ExceptionShortDescription
 
-def getRepository(url, username='', password=''):
+def getRepository(url, username='', password='', maxBandwidth=0):
 	if re.search('^file://', url):
-		return FileRepository(url, username, password)
+		return FileRepository(url, username, password, maxBandwidth)
 	if re.search('^webdavs*://', url):
-		return WebDAVRepository(url, username, password)
+		return WebDAVRepository(url, username, password, maxBandwidth)
 	raise RepositoryError("Repository url '%s' not supported" % url)
 	
 class Repository:
-	def __init__(self, url, username='', password=''):
+	def __init__(self, url, username='', password='', maxBandwidth=0):
+		''' maxBandwidth in bit/s'''
 		self._url = url
 		self._username = username
 		self._password = password
 		self._path = ''
-		self._maxBandwidth = 0
-	
+		self._maxBandwidth = maxBandwidth
+		if self._maxBandwidth:
+			self._maxBandwidth = self._maxBandwidth/8
+			if (self._maxBandwidth < 1):
+				self._maxBandwidth = 1
+		
 	def __str__(self):
 		return '<%s %s>' % (self.__class__.__name__, self._url)
 		
@@ -671,6 +676,12 @@ class Repository:
 		buf = True
 		waitTime = 0.0
 		bufferSize = 64*1024
+		if self._maxBandwidth:
+			if (self._maxBandwidth < bufferSize*2):
+				bufferSize = int(self._maxBandwidth/2)
+			if (bufferSize < 512):
+				bufferSize = 512
+		
 		while(buf):
 			t1 = time.time()
 			buf = src.read(bufferSize)
@@ -683,7 +694,7 @@ class Repository:
 				time.sleep(waitTime)
 				t2 = time.time()
 				dt = t2-t1
-				if self._maxBandwidth and (dt > 0):
+				if self._maxBandwidth and (self._maxBandwidth > 0) and (dt > 0):
 					speed = int(read/dt)
 					wt = 0
 					if (speed > 0) and (speed > self._maxBandwidth):
@@ -705,7 +716,12 @@ class Repository:
 					progressSubject.addToState(read)
 	
 	def setMaxBandwidth(self, maxBandwidth):
+		''' maxBandwidth in bit/s'''
 		self._maxBandwidth = maxBandwidth
+		if self._maxBandwidth:
+			self._maxBandwidth = int(self._maxBandwidth/8)
+			if (self._maxBandwidth < 1):
+				self._maxBandwidth = 1
 	
 	def content(self, destination=''):
 		raise RepositoryError("Not implemented")
@@ -726,14 +742,13 @@ class Repository:
 		raise RepositoryError("Not implemented")
 	
 class FileRepository(Repository):
-	def __init__(self, url, username='', password=''):
-		Repository.__init__(self, url, username, password)
+	def __init__(self, url, username='', password='', maxBandwidth=0):
+		Repository.__init__(self, url, username, password, maxBandwidth)
 		
 		match = re.search('^file://(/[^/]+.*)$', self._url)
 		if not match:
 			raise RepositoryError("Bad url: '%s'" % self._url)
 		self._path = match.group(1)
-		self._maxBandwidth = 0
 		
 	def _absolutePath(self, destination):
 		if destination.startswith('/'):
@@ -829,8 +844,8 @@ class FileRepository(Repository):
 		
 	
 class WebDAVRepository(Repository):
-	def __init__(self, url, username='', password=''):
-		Repository.__init__(self, url, username, password)
+	def __init__(self, url, username='', password='', maxBandwidth=0):
+		Repository.__init__(self, url, username, password, maxBandwidth)
 		
 		match = re.search('^(webdavs*)://([^:]+:*[^:]+):(\d+)(/.*)$', self._url)
 		if not match:
@@ -850,7 +865,6 @@ class WebDAVRepository(Repository):
 		self._auth = 'Basic '+ base64.encodestring( urllib.unquote(self._username + ':' + self._password) ).strip()
 		self._connection = None
 		self._cookie = ''
-		self._maxBandwidth = 0
 		
 	def _absolutePath(self, destination):
 		if destination.startswith('/'):
@@ -1050,10 +1064,11 @@ class WebDAVRepository(Repository):
 
 
 class DepotToLocalDirectorySychronizer(object):
-	def __init__(self, sourceDepot, destinationDirectory, productIds=[]):
+	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0):
 		self._sourceDepot = sourceDepot
 		self._destinationDirectory = destinationDirectory
 		self._productIds = productIds
+		self._maxBandwidth = maxBandwidth
 		if not os.path.isdir(self._destinationDirectory):
 			os.mkdir(self._destinationDirectory)
 	

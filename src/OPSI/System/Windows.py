@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 
 # Imports
 import re, os, time, socket
@@ -117,6 +117,8 @@ def getFileVersionInfo(filename):
 def getProgramFilesDir():
 	return getRegistryValue(HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows\\CurrentVersion', 'ProgramFilesDir')
 
+def getSystemDrive():
+	return os.getenv('SystemDrive', 'c:')
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            HELPERS                                                -
