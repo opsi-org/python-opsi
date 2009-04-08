@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.6'
+__version__ = '0.9.9.7'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -100,7 +100,7 @@ def removeUnit(x):
 	return value
 
 def md5sum(filename):
-	f = open(filename)
+	f = open(filename, 'rb')
 	m = md5.new()
 	while True:
 		d = f.read(8096)

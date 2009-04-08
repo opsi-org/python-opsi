@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 
 # Imports
 import json, threading, re, stat, base64, urllib, os, md5, shutil
@@ -49,6 +49,16 @@ from Logger import *
 # Get Logger instance
 logger = Logger()
 
+# Get locale
+try:
+	t = gettext.translation('opsi_util', LOCALE_DIR)
+	_ = t.ugettext
+except Exception, e:
+	logger.error("Locale not found: %s" % e)
+	def _(string):
+		"""Dummy method, created and called when no locale is found.
+		Uses the fallback language (called C; means english) then."""
+		return string
 
 def _async_raise(tid, excobj):
 	import ctypes
@@ -118,6 +128,9 @@ class Subject(object):
 	def serializable(self):
 		return { "id": self.getId(), "type": self.getType(), "title": self.getTitle(), "class": self.getClass() }
 	
+	def __str__(self):
+		return '<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
+	
 class MessageSubject(Subject):
 	def __init__(self, id, type='', title='', **args):
 		Subject.__init__(self, id, type, title, **args)
@@ -126,6 +139,7 @@ class MessageSubject(Subject):
 			self._message = args['message']
 		if args.has_key('severity'):
 			self._severity = args['severity']
+		logger.debug('%s created' % self)
 	
 	def reset(self):
 		Subject.reset(self)
@@ -152,7 +166,7 @@ class MessageSubject(Subject):
 		s['message'] = self.getMessage()
 		s['severity'] = self.getSeverity()
 		return s
-
+	
 class ChoiceSubject(MessageSubject):
 	def __init__(self, id, type='', title='', **args):
 		MessageSubject.__init__(self, id, type, title, **args)
@@ -164,6 +178,7 @@ class ChoiceSubject(MessageSubject):
 			self._selectedIndex = args['selectedIndex']
 		if args.has_key('callbacks'):
 			self._callbacks = args['callbacks']
+		logger.debug('%s created' % self)
 	
 	def reset(self):
 		MessageSubject.reset(self)
@@ -242,7 +257,8 @@ class ProgressSubject(MessageSubject):
 			self._speed = args['speed']
 		if args.has_key('fireAlways'):
 			self._fireAlways = bool(args['fireAlways'])
-	
+		logger.debug('%s created' % self)
+		
 	def reset(self):
 		MessageSubject.reset(self)
 		self._end = 0
@@ -288,6 +304,9 @@ class ProgressSubject(MessageSubject):
 	def addToState(self, amount):
 		self.setState(self._state + amount)
 	
+	def getEnd(self):
+		return self._end
+	
 	def getState(self):
 		return self._state
 	
@@ -309,6 +328,7 @@ class ProgressSubject(MessageSubject):
 	
 	def serializable(self):
 		s = MessageSubject.serializable(self)
+		s['end'] = self.getEnd()
 		s['state'] = self.getState()
 		s['percent'] = self.getPercent()
 		s['timeSpend'] = self.getTimeSpend()
@@ -373,6 +393,42 @@ class SubjectsObserver(ChoiceObserver, ProgressObserver):
 	def subjectsChanged(self, subjects):
 		pass
 
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# =       Subject proxies                                                             =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, ChoiceObserver):
+	def __init__(self, id, type='', title='', **args):
+		ChoiceSubject.__init__(self, id, type, title, **args)
+		ChoiceObserver.__init__(self)
+		ProgressSubject.__init__(self, id, type, title, **args)
+		ProgressObserver.__init__(self)
+		self._fireAlways = True
+	
+	def messageChanged(self, subject, message):
+		self.setMessage(message, severity = subject.getSeverity())
+	
+	def selectedIndexChanged(self, subject, selectedIndex):
+		self.setSelectedIndex(selectedIndex)
+	
+	def choicesChanged(self, subject, choices):
+		self.setChoices(choices)
+	
+	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+		self._end = subject.getEnd()
+		self.setState(state)
+	
+class ChoiceSubjectProxy(MessageSubjectProxy):
+	def __init__(self, id, type='', title='', **args):
+		MessageSubjectProxy.__init__(self, id, type, title, **args)
+
+class ProgressSubjectProxy(MessageSubjectProxy):
+	def __init__(self, id, type='', title='', **args):
+		MessageSubjectProxy.__init__(self, id, type, title, **args)
+	
+	
+	
+
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # =       Notification server                                                         =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -432,21 +488,38 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 					break
 			
 			else:
-				raise ValueError("unkown method '%s'" % method)
+				raise ValueError("unknown method '%s'" % method)
 		except Exception, e:
 			logger.error("Failed to execute rpc: %s" % e)
 	
 	def messageChanged(self, subject, message):
+		if not subject in self.getSubjects():
+			logger.info("Unknown subject %s passed to messageChanged, automatically adding subject" % subject)
+			self.addSubject(subject)
 		logger.debug("messageChanged: subject id '%s', message '%s'" % (subject.getId(), message))
 		self.notify( name = "messageChanged", params = [subject.serializable(), message] )
 	
 	def selectedIndexChanged(self, subject, selectedIndex):
+		if not subject in self.getSubjects():
+			logger.info("Unknown subject %s passed to selectedIndexChanged, automatically adding subject" % subject)
+			self.addSubject(subject)
 		logger.debug("selectedIndexChanged: subject id '%s', selectedIndex '%s'" % (subject.getId(), selectedIndex))
 		self.notify( name = "selectedIndexChanged", params = [ subject.serializable(), selectedIndex ] )
 	
 	def choicesChanged(self, subject, choices):
+		if not subject in self.getSubjects():
+			logger.info("Unknown subject %s passed to choicesChanged, automatically adding subject" % subject)
+			self.addSubject(subject)
 		logger.debug("choicesChanged: subject id '%s', choices %s" % (subject.getId(), choices))
 		self.notify( name = "choicesChanged", params = [ subject.serializable(), choices ] )
+	
+	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+		if not subject in self.getSubjects():
+			logger.info("Unknown subject %s passed to progressChanged, automatically adding subject" % subject)
+			self.addSubject(subject)
+		logger.debug("progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s" \
+			% (subject.getId(), state, percent, timeSpend, timeLeft, speed))
+		self.notify( name = "progressChanged", params = [ subject.serializable(), state, percent, timeSpend, timeLeft, speed ] )
 	
 	def subjectsChanged(self, subjects):
 		logger.debug("subjectsChanged: subjects %s" % subjects)
@@ -484,6 +557,8 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def getFactory(self):
 		return self._factory
 	
+	def getObserver(self):
+		return self._factory
 	
 	def setSubjects(self, subjects):
 		return self._factory.setSubjects(subjects)
@@ -595,7 +670,6 @@ class NotificationClientFactory(ClientFactory):
 		
 		rpc = {'id': None, "method": method, "params": params }
 		self.sendLine( json.write( rpc ) )
-		
 
 class NotificationClient(threading.Thread):
 	def __init__(self, address, port, observer):
@@ -1073,7 +1147,7 @@ class DepotToLocalDirectorySychronizer(object):
 			os.mkdir(self._destinationDirectory)
 	
 	def _md5sum(self, filename):
-		f = open(filename)
+		f = open(filename, 'rb')
 		m = md5.new()
 		while True:
 			d = f.read(8096)
@@ -1083,7 +1157,7 @@ class DepotToLocalDirectorySychronizer(object):
 		f.close()
 		return m.hexdigest()
 	
-	def _synchronizeDirectories(self, source, destination):
+	def _synchronizeDirectories(self, source, destination, progressSubject=None):
 		logger.debug("   Syncing directory %s to %s" % (source, destination))
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
@@ -1108,27 +1182,42 @@ class DepotToLocalDirectorySychronizer(object):
 			if not self._fileInfo.has_key(relSource):
 				continue
 			if (f['type'] == 'dir'):
-				self._synchronizeDirectories(s, d)
+				self._synchronizeDirectories(s, d, progressSubject)
 			else:
+				bytes = 0
 				logger.debug("      Syncing %s: %s" % (relSource, self._fileInfo[relSource]))
 				if (self._fileInfo[relSource]['type'] == 'l'):
 					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
 					continue
 				elif (self._fileInfo[relSource]['type'] == 'f'):
+					bytes = int(self._fileInfo[relSource]['size'])
 					if os.path.exists(d):
-						if (os.path.getsize(d) == int(self._fileInfo[relSource]['size'])) and \
-						   (self._md5sum(d) == self._fileInfo[relSource]['md5sum']):
+						md5 = self._md5sum(d)
+						logger.debug("      Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, bytes, md5))
+						if (os.path.getsize(d) == bytes) and (md5 == self._fileInfo[relSource]['md5sum']):
+							if progressSubject: progressSubject.addToState(bytes)
 							continue
 				logger.info("      Downloading file '%s'" % f['name'])
+				if progressSubject: progressSubject.setMessage( _("Downloading file '%s'") % f['name'] )
 				self._sourceDepot.download(s, d)
-	
-	def synchronize(self, progressObserver=None):
+				if progressSubject: progressSubject.addToState(bytes)
+				
+	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
+		
 		if not self._productIds:
 			logger.info("Getting product dirs of depot '%s'" % self._sourceDepot)
 			for c in self._sourceDepot.content():
 				self._productIds.append(c['name'])
 		
+		overallProgressSubject = ProgressSubject(id = 'sync_products_overall', type = 'product_sync', end = len(self._productIds))
+		overallProgressSubject.setMessage( _('Synchronizing products') )
+		if overallProgressObserver: overallProgressSubject.attachObserver(overallProgressObserver)
+		
 		for self._productId in self._productIds:
+			productProgressSubject = ProgressSubject(id = 'sync_product_' + self._productId, type = 'product_sync')
+			productProgressSubject.setMessage( _("Synchronizing product %s") % self._productId )
+			if productProgressObserver: productProgressSubject.attachObserver(productProgressObserver)
+			
 			self._linkFiles = {}
 			logger.notice("Syncing product %s of depot %s with local directory %s" \
 					% (self._productId, self._sourceDepot, self._destinationDirectory))
@@ -1143,7 +1232,14 @@ class DepotToLocalDirectorySychronizer(object):
 			self._sourceDepot.download('%s/%s.files' % (self._productId, self._productId), fileInfoFile)
 			self._fileInfo = Product.readFileInfoFile(fileInfoFile)
 			
-			self._synchronizeDirectories(self._productId, productDestinationDirectory)
+			bytes = 0
+			for value in self._fileInfo.values():
+				if value.has_key('size'):
+					bytes += int(value['size'])
+			productProgressSubject.setMessage( _("Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
+			productProgressSubject.setEnd(bytes)
+			
+			self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
 			
 			fs = self._linkFiles.keys()
 			fs.sort()
@@ -1174,6 +1270,10 @@ class DepotToLocalDirectorySychronizer(object):
 							shutil.copyfile(t, f)
 				finally:
 					os.chdir(cwd)
+			overallProgressSubject.addToState(1)
+			if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
+		
+		if overallProgressObserver: overallProgressSubject.detachObserver(overallProgressObserver)
 
 
 
