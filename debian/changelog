@@ -1,6 +1,7 @@
 python-opsi (3.4.0.0-a1) unstable; urgency=low
 
   * Introducing license management
+  * JSONRPC backend: non-blocking connect
 
  -- Jan Schneider <j.schneider@uib.de>  Wed, 04 Mar 2009 14:04:07 +0100
 

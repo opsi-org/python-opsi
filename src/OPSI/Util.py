@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 
 # Imports
 import json, threading, re, stat, base64, urllib, os, md5, shutil
@@ -92,44 +92,6 @@ class KillableThread(threading.Thread):
 		# due to a bug in PyThreadState_SetAsyncExc
 		self.raise_exc(SystemExit)
 
-
-class KillableThread_old(threading.Thread):
-	"""A subclass of threading.Thread, with a kill() method."""
-	def __init__(self, *args, **keywords):
-		threading.Thread.__init__(self, *args, **keywords)
-		self.killed = False
-	
-	def start(self):
-		"""Start the thread."""
-		self.__run_backup = self.run
-		self.run = self.__run # Force the Thread to install our trace.
-		threading.Thread.start(self)
-	
-	def __run(self):
-		"""Hacked run function, which installs the trace."""
-		sys.settrace(self.globaltrace)
-		self.__run_backup()
-		self.run = self.__run_backup
-	
-	def globaltrace(self, frame, why, arg):
-		if (why == 'call'):
-			return self.localtrace
-		else:
-			return None
-	
-	def localtrace(self, frame, why, arg):
-		if self.killed:
-			if (why == 'line'):
-				logger.info("Raising SystemExit")
-				raise SystemExit()
-		return self.localtrace
-	
-	def kill(self):
-		self.killed = True
-	
-	def terminate(self):
-		self.kill()
-	
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # =       Subjects                                                                    =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -177,7 +139,7 @@ class MessageSubject(Subject):
 			self._message = args['message']
 		if args.has_key('severity'):
 			self._severity = args['severity']
-		logger.debug('%s created' % self)
+		logger.debug("MessageSubject '%s' created" % self._id)
 	
 	def reset(self):
 		Subject.reset(self)
@@ -216,7 +178,7 @@ class ChoiceSubject(MessageSubject):
 			self._selectedIndex = args['selectedIndex']
 		if args.has_key('callbacks'):
 			self._callbacks = args['callbacks']
-		logger.debug('%s created' % self)
+		logger.debug("ChoiceSubject '%s' created" % self._id)
 	
 	def reset(self):
 		MessageSubject.reset(self)
@@ -295,7 +257,7 @@ class ProgressSubject(MessageSubject):
 			self._speed = args['speed']
 		if args.has_key('fireAlways'):
 			self._fireAlways = bool(args['fireAlways'])
-		logger.debug('%s created' % self)
+		logger.debug("ProgressSubject '%s' created" % self._id)
 		
 	def reset(self):
 		MessageSubject.reset(self)
@@ -1247,12 +1209,12 @@ class DepotToLocalDirectorySychronizer(object):
 			for c in self._sourceDepot.content():
 				self._productIds.append(c['name'])
 		
-		overallProgressSubject = ProgressSubject(id = 'sync_products_overall', type = 'product_sync', end = len(self._productIds))
+		overallProgressSubject = ProgressSubject(id = 'sync_products_overall', type = 'product_sync', end = len(self._productIds), fireAlways = True)
 		overallProgressSubject.setMessage( _('Synchronizing products') )
 		if overallProgressObserver: overallProgressSubject.attachObserver(overallProgressObserver)
 		
 		for self._productId in self._productIds:
-			productProgressSubject = ProgressSubject(id = 'sync_product_' + self._productId, type = 'product_sync')
+			productProgressSubject = ProgressSubject(id = 'sync_product_' + self._productId, type = 'product_sync', fireAlways = True)
 			productProgressSubject.setMessage( _("Synchronizing product %s") % self._productId )
 			if productProgressObserver: productProgressSubject.attachObserver(productProgressObserver)
 			
