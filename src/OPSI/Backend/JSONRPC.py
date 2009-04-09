@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.5.12'
+__version__ = '0.9.6'
 
 # Imports
 import json, base64, urllib, httplib, new, stat, socket, random, time
@@ -46,6 +46,64 @@ logger = Logger()
 
 METHOD_POST = 1
 METHOD_GET = 2
+
+def non_blocking_connect_http(self):
+	''' Non blocking connect, needed for KillableThread '''
+	msg = "getaddrinfo returns an empty list"
+	socket.setdefaulttimeout(10)
+	for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
+		af, socktype, proto, canonname, sa = res
+		try:
+			self.sock = socket.socket(af, socktype, proto)
+			self.sock.setblocking(0)
+			while True:
+				try:
+					self.sock.connect(sa)
+				except socket.error, e:
+					if e[0] in (106, 10056):
+						# Transport endpoint is already connected
+						break
+					if e[0] not in (114, 115, 10035):
+						raise
+					time.sleep(0.1)
+		except socket.error, msg:
+			if self.sock:
+				self.sock.close()
+			self.sock = None
+			continue
+		break
+	if not self.sock:
+		raise socket.error, msg
+	else:
+		self.sock.setblocking(1)
+	
+def non_blocking_connect_https(self):
+	''' Non blocking connect, needed for KillableThread '''
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.setblocking(0)
+	# Nicer implementation but not raising the right exections!?
+	#try:
+	#	sock.connect((self.host, self.port))
+	#except socket.error, e:
+	#	if e[0] not in (115, 10035):
+	#		raise
+	#while True:
+	#	readyToWrite = select.select([], [sock], [], 0.1)[1]
+	#	if readyToWrite and (readyToWrite[0] == sock):
+	#		break
+	while True:
+		try:
+			sock.connect((self.host, self.port))
+		except socket.error, e:
+			if e[0] in (106, 10056):
+				# Transport endpoint is already connected
+				break
+			if e[0] not in (114, 115, 10035):
+				raise
+			time.sleep(0.1)
+	sock.setblocking(1)
+	ssl = socket.ssl(sock, self.key_file, self.cert_file)
+	self.sock = httplib.FakeSocket(sock, ssl)
 
 # ======================================================================================================
 # =                                   CLASS JSONRPCBACKEND                                             =
@@ -129,12 +187,18 @@ class JSONRPCBackend(DataBackend):
 		#self.possibleMethods = []
 		
 		try:
+			
+			#socket.setblocking(0)
 			if (self.__protocol == 'https'):
 				logger.info("Opening https connection to %s:%s" % (host, port))
 				self.__connection = httplib.HTTPSConnection(host, port)
+				non_blocking_connect_https(self.__connection)
 			else:
 				logger.info("Opening http connection to %s:%s" % (host, port))
 				self.__connection = httplib.HTTPConnection(host, port)
+				non_blocking_connect_http(self.__connection)
+				
+			self.__connection.connect()
 			
 			#self._jsonRPC('authenticated')
 			if not self.possibleMethods:
@@ -252,7 +316,7 @@ class JSONRPCBackend(DataBackend):
 			# Get cookie from header
 			cookie = response.getheader('Set-Cookie', None)
 			if cookie:
-				# Store sessionId cookie 
+				# Store sessionId cookie
 				self.__sessionId = cookie.split(';')[0].strip()
 		
 		except Exception, e:
