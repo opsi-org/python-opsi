@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.6'
+__version__ = '0.9.7'
 
 # Imports
 import json, base64, urllib, httplib, new, stat, socket, random, time
@@ -127,6 +127,7 @@ class JSONRPCBackend(DataBackend):
 		self.__protocol = 'https'
 		self.__method = METHOD_POST
 		self.__timeout = None
+		self.__connectOnInit = True
 		self._defaultDomain = None
 		
 		# Parse arguments
@@ -140,6 +141,7 @@ class JSONRPCBackend(DataBackend):
 			elif (option.lower() == 'defaultdomain'): 	self._defaultDomain = value
 			elif (option.lower() == 'sessionid'): 		self.__sessionId = value
 			elif (option.lower() == 'timeout'): 		self.__timeout = value
+			elif (option.lower() == 'connectoninit'):	self.__connectOnInit = value
 			elif (option.lower() == 'method'):
 				if (value.lower() == 'get'):
 					self.__method = METHOD_GET
@@ -163,7 +165,8 @@ class JSONRPCBackend(DataBackend):
 			logger.debug("Failed to get possible methods from backend manager")
 		
 		socket.setdefaulttimeout(self.__timeout)
-		self._connect()
+		if self.__connectOnInit:
+			self._connect()
 	
 	def _connect(self):
 		

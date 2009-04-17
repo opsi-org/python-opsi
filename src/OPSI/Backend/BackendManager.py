@@ -403,7 +403,7 @@ class BackendManager(DataBackend):
 			
 			for (key, val) in locals().items():
 				if ( type(val) == types.FunctionType ):
-					logger.debug("Adding instancemethod: '%s'" % key )
+					logger.debug2("Adding instancemethod: '%s'" % key )
 					setattr( self.__class__, key, new.instancemethod(val, None, self.__class__) )
 		except Exception, e:
 			raise Exception("Failed to read config from '%s': %s" % (self.__configFile, e))

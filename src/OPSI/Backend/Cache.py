@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1'
+__version__ = '0.2.1'
 
 # Imports
 
@@ -41,7 +41,9 @@ import time, types, new, json
 
 # OPSI imports
 from OPSI.Backend.Backend import *
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import *
+from OPSI.Util import ProgressSubjectProxy
 
 # Get logger instance
 logger = Logger()
@@ -169,11 +171,45 @@ class CacheBackend(DataBackend):
 	def getCachedExecutions(self):
 		return self.__cachedExecutions
 	
-	def buildCache(self, serverIds=[], depotIds=[], clientIds=[], groupIds = [], productIds=[]):
-		self.__cacheReplicator.replicate(serverIds = serverIds, depotIds = depotIds, clientIds = clientIds, groupIds = groupIds, productIds = productIds)
-		self.__workReplicator.replicate(serverIds = serverIds, depotIds = depotIds, clientIds = clientIds, groupIds = groupIds, productIds = productIds)
-	
+	def buildCache(self, serverIds=[], depotIds=[], clientIds=[], groupIds = [], productIds=[], currentProgressObserver=None, overallProgressObserver=None):
+		
+		class BuildCacheProgress(ProgressSubjectProxy):
+			def __init__(self):
+				ProgressSubjectProxy.__init__(self, id='build_cache_overall')
+				self._pass = 1
+			
+			def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+				self._end = subject.getEnd() * 2
+				self.setState(state * self._pass)
+		overallProgress = BuildCacheProgress()
+		
+		if overallProgressObserver: overallProgress.attachObserver(overallProgressObserver)
+		try:
+			self.__cacheReplicator.getOverallProgressSubject().attachObserver(overallProgress)
+			if currentProgressObserver: self.__cacheReplicator.getCurrentProgressSubject().attachObserver(currentProgressObserver)
+			try:
+				self.__cacheReplicator.replicate(serverIds = serverIds, depotIds = depotIds, clientIds = clientIds, groupIds = groupIds, productIds = productIds)
+			finally:
+				self.__cacheReplicator.getOverallProgressSubject().detachObserver(overallProgress)
+				if currentProgressObserver: self.__cacheReplicator.getCurrentProgressSubject().detachObserver(currentProgressObserver)
+			
+			overallProgress._pass = 2
+			
+			self.__workReplicator.getOverallProgressSubject().attachObserver(overallProgress)
+			if currentProgressObserver: self.__workReplicator.getCurrentProgressSubject().attachObserver(currentProgressObserver)
+			try:
+				self.__workReplicator.replicate(serverIds = serverIds, depotIds = depotIds, clientIds = clientIds, groupIds = groupIds, productIds = productIds)
+			finally:
+				self.__workReplicator.getOverallProgressSubject().detachObserver(overallProgress)
+				if currentProgressObserver: self.__workReplicator.getCurrentProgressSubject().detachObserver(currentProgressObserver)
+		finally:
+			if overallProgressObserver: overallProgress.detachObserver(overallProgressObserver)
+		
 	def writebackCache(self):
+		if not self.__cachedExecutions:
+			logger.debug("No cached executions to write back")
+			return
+		
 		self.workDirectOnly(True)
 		for i in range(len(self.__cachedExecutions)):
 			try:
@@ -181,6 +217,7 @@ class CacheBackend(DataBackend):
 				self._execCachedExecution(ce['method'], params = ce['params'])
 			except Exception, e:
 				self.__cachedExecutions = self.__cachedExecutions[i:]
+				self.writeCachedExecutionsFile()
 				raise
 		self.__cachedExecutions = []
 		self.writeCachedExecutionsFile()
@@ -198,6 +235,10 @@ class CacheBackend(DataBackend):
 			logger.info("Now working direct only")
 			self.__mainOnly = True
 			self.__cacheOnly = False
+			if isinstance(self.__mainBackend, JSONRPCBackend):
+				# Connecting to get possible methods
+				self.__mainBackend._connect()
+				self.createInstanceMethods()
 		else:
 			self.__mainOnly = False
 	
@@ -239,9 +280,14 @@ class CacheBackend(DataBackend):
 		
 	def _exec(self, method, **options):
 		params = self._getParams(**options)
+		ps = str(params)[1:-1]
+		if (len(ps) > 200):
+			# Do not log long strings like used in writeLog
+			ps = ps[:200-3] + '...'
+		
 		if not self.__cacheOnly:
 			try:
-				logger.notice('Executing on main backend: %s(%s)' % (method, str(params)[1:-1]))
+				logger.info('Executing on main backend: %s(%s)' % (method, ps))
 				be = self.__mainBackend
 				result = eval('be.%s(*params)' % method)
 				return result
@@ -250,13 +296,11 @@ class CacheBackend(DataBackend):
 					raise
 				logger.warning("Main backend failed, using cache: %s" % e)
 		
-		logger.notice('Executing on cache backend: %s(%s)' % (method, str(params)[1:-1]))
+		logger.info('Executing on cache backend: %s(%s)' % (method, ps))
 		be = self.__workBackend
 		result = eval('be.%s(*params)' % method)
 		self.addCachedExecution(method = method, params = params)
 		return result
-		
-		raise BackendIOException("Failed to execute")
 		
 	def _execCachedExecution(self, method, **options):
 		params = self._getParams(**options)
