@@ -291,11 +291,7 @@ class OfflineBackend(DataBackend):
 		logger.info('Executing on local work backend: %s(%s)' % (method, ps))
 		
 		if (method == 'getOpsiHWAuditConf'):
-			logger.info("Reading hwaudit conf file '%s'" % self.__hwauditConfFile)
-			f = open(self.__hwauditConfFile, 'rb')
-			hwAuditConf = f.read()
-			f.close()
-			return json.read(hwAuditConf)
+			return self.getOpsiHWAuditConf()
 		
 		be = self.__workBackend
 		result = eval('be.%s(*params)' % method)
@@ -328,7 +324,13 @@ class OfflineBackend(DataBackend):
 		result = eval('be.%s(*params)' % method)
 		return result
 		
-		
+	def getOpsiHWAuditConf(self, lang=''):
+		logger.info("Reading hwaudit conf file '%s'" % self.__hwauditConfFile)
+		f = open(self.__hwauditConfFile, 'rb')
+		hwAuditConf = f.read()
+		f.close()
+		return json.read(hwAuditConf)
+	
 	def getPossibleMethods_listOfHashes(self):
 		if not self.__possibleMethods:
 			logger.debug("OfflineBackend: Getting possible methods")
