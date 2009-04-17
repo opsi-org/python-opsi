@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Cache     =
-   = = = = = = = = = = = = = = = = = = =
+   = = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Offline     =
+   = = = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
@@ -51,43 +51,49 @@ logger = Logger()
 
 
 # ======================================================================================================
-# =                                   CLASS CACHEBACKEND                                             =
+# =                                   CLASS OFFLINEBACKEND                                             =
 # ======================================================================================================
-class CacheBackend(DataBackend):
+class OfflineBackend(DataBackend):
 	
 	def __init__(self, username = '', password = '', address = '', backendManager=None, args={}):
 		
 		self.__backendManager = backendManager
 		self.__possibleMethods = None
-		self.__cacheOnly = False
-		self.__mainOnly = False
+		self.__localOnly = False
+		self.__remoteOnly = False
 		self.__cachedExecutions = []
 		
 		# Default values
-		self.__mainBackend  = None
+		self.__remoteBackend  = None
 		self.__cacheBackend = None
 		self.__workBackend = None
 		self.__cleanupBackend = False
-		self.__cachedExecutionsFile = ''
 		self.__privileges = 'CLIENT'
 		self._defaultDomain = None
 		
+		self.__storageDir = ''
+		self.__cachedExecutionsFile = ''
+		self.__hwauditConfFile = ''
+		
 		# Parse arguments
 		for (option, value) in args.items():
-			if   (option.lower() == 'mainbackend'):          self.__mainBackend = value
+			if   (option.lower() == 'remotebackend'):        self.__remoteBackend = value
 			elif (option.lower() == 'cachebackend'):         self.__cacheBackend = value
 			elif (option.lower() == 'workbackend'):          self.__workBackend = value
 			elif (option.lower() == 'cleanupbackend'):       self.__cleanupBackend = bool(value)
 			elif (option.lower() == 'privileges'):           self.__privileges = value
-			elif (option.lower() == 'cachedexecutionsfile'): self.__cachedExecutionsFile = value
+			elif (option.lower() == 'storagedir'):           self.__storageDir = value
 			else:
 				logger.warning("Unknown argument '%s' passed to CacheBackend constructor" % option)
 		
-		if not self.__mainBackend or not self.__cacheBackend or not self.__workBackend:
-			raise Exception("MainBackend, cacheBackend and workingBackend needed")
+		self.__cachedExecutionsFile = os.path.join(self.__storageDir, 'cached_exec')
+		self.__hwauditConfFile = os.path.join(self.__storageDir, 'hwaudit.conf')
+		
+		if not self.__remoteBackend or not self.__cacheBackend or not self.__workBackend:
+			raise Exception("RemoteBackend, cacheBackend and workingBackend needed")
 		
 		self.__cacheReplicator = DataBackendReplicator(
-					readBackend   = self.__mainBackend,
+					readBackend   = self.__remoteBackend,
 					writeBackend  = self.__cacheBackend,
 					cleanupFirst  = self.__cleanupBackend,
 					privileges    = self.__privileges )
@@ -98,10 +104,11 @@ class CacheBackend(DataBackend):
 					cleanupFirst = self.__cleanupBackend,
 					privileges   = self.__privileges )
 		
-		self.createInstanceMethods()
-		self.readCachedExecutionsFile()
+		self._createInstanceMethods()
+		self._readCachedExecutionsFile()
 	
-	def createInstanceMethods(self):
+	def _createInstanceMethods(self):
+		logger.debug("OfflineBackend: Creating instance methods")
 		self.__possibleMethods = []
 		for method in self.getPossibleMethods_listOfHashes():
 			if (method['name'].lower() == "getpossiblemethods_listofhashes"):
@@ -117,7 +124,7 @@ class CacheBackend(DataBackend):
 					params[i] = params[i][1:]
 					paramsWithDefaults[i] = params[i] + '="__UNDEF__"'
 			
-			logger.debug2("Creating instance method '%s'" % method['name'])
+			logger.debug2("OfflineBackend: Creating instance method '%s'" % method['name'])
 			
 			if (len(params) == 2):
 				logger.debug2('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._exec(method = "%s", params = (%s))'\
@@ -132,7 +139,7 @@ class CacheBackend(DataBackend):
 			
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 		
-	def readCachedExecutionsFile(self):
+	def _readCachedExecutionsFile(self):
 		if not self.__cachedExecutionsFile:
 			logger.warning("Cached executions file not given")
 			return
@@ -146,7 +153,7 @@ class CacheBackend(DataBackend):
 			self.__cachedExecutions.append(json.read(line.strip()))
 		f.close()
 		
-	def writeCachedExecutionsFile(self, lastOnly=False):
+	def _writeCachedExecutionsFile(self, lastOnly=False):
 		if not self.__cachedExecutionsFile:
 			logger.warning("Cached executions file not given")
 			return
@@ -164,14 +171,14 @@ class CacheBackend(DataBackend):
 			f.write(json.write(ce) + '\n')
 		f.close()
 		
-	def addCachedExecution(self, method, params=[]):
+	def _addCachedExecution(self, method, params=[]):
 		self.__cachedExecutions.append({'method': method, 'params': params})
-		self.writeCachedExecutionsFile(lastOnly=True)
+		self._writeCachedExecutionsFile(lastOnly=True)
 	
-	def getCachedExecutions(self):
+	def _getCachedExecutions(self):
 		return self.__cachedExecutions
 	
-	def buildCache(self, serverIds=[], depotIds=[], clientIds=[], groupIds = [], productIds=[], currentProgressObserver=None, overallProgressObserver=None):
+	def _buildCache(self, serverIds=[], depotIds=[], clientIds=[], groupIds = [], productIds=[], currentProgressObserver=None, overallProgressObserver=None):
 		
 		class BuildCacheProgress(ProgressSubjectProxy):
 			def __init__(self):
@@ -202,66 +209,51 @@ class CacheBackend(DataBackend):
 			finally:
 				self.__workReplicator.getOverallProgressSubject().detachObserver(overallProgress)
 				if currentProgressObserver: self.__workReplicator.getCurrentProgressSubject().detachObserver(currentProgressObserver)
+			
+			logger.info("Writing hwaudit conf file '%s'" % self.__hwauditConfFile)
+			hwAuditConf = json.write(self.__remoteBackend.getOpsiHWAuditConf())
+			f = open(self.__hwauditConfFile, 'wb')
+			f.write(hwAuditConf)
+			f.close()
 		finally:
 			if overallProgressObserver: overallProgress.detachObserver(overallProgressObserver)
 		
-	def writebackCache(self):
+	def _writebackCache(self):
 		if not self.__cachedExecutions:
 			logger.debug("No cached executions to write back")
 			return
 		
-		self.workDirectOnly(True)
+		self._workRemoteOnly(True)
 		for i in range(len(self.__cachedExecutions)):
 			try:
 				ce = self.__cachedExecutions[i]
 				self._execCachedExecution(ce['method'], params = ce['params'])
 			except Exception, e:
 				self.__cachedExecutions = self.__cachedExecutions[i:]
-				self.writeCachedExecutionsFile()
+				self._writeCachedExecutionsFile()
 				raise
 		self.__cachedExecutions = []
-		self.writeCachedExecutionsFile()
+		self._writeCachedExecutionsFile()
 		
-	def workCachedOnly(self, cached):
-		if cached:
-			logger.info("Now working cached only")
-			self.__cacheOnly = True
-			self.__mainOnly = False
+	def _workLocalOnly(self, local):
+		if local:
+			logger.info("Now working local only")
+			self.__localOnly = True
+			self.__remoteOnly = False
 		else:
-			self.__cacheOnly = False
+			self.__localOnly = False
 	
-	def workDirectOnly(self, direct):
-		if direct:
-			logger.info("Now working direct only")
-			self.__mainOnly = True
-			self.__cacheOnly = False
-			if isinstance(self.__mainBackend, JSONRPCBackend):
-				# Connecting to get possible methods
-				self.__mainBackend._connect()
-				self.createInstanceMethods()
+	def _workRemoteOnly(self, remote):
+		if remote:
+			logger.info("Now working remote only")
+			self.__remoteOnly = True
+			self.__localOnly = False
+			#if isinstance(self.__remoteBackend, JSONRPCBackend):
+			#	# Connecting to get possible methods
+			#	self.__remoteBackend._connect()
+			#	self._createInstanceMethods()
 		else:
-			self.__mainOnly = False
-	
-	def getPossibleMethods_listOfHashes(self):
-		self.__possibleMethods = []
-		if not self.__possibleMethods:
-			self.__possibleMethods = []
-			try:
-				self.__possibleMethods = self.__mainBackend.getPossibleMethods_listOfHashes()
-			except Exception, e:
-				for (n, t) in self.__cacheBackend.__class__.__dict__.items():
-					# Extract a list of all "public" functions (functionname does not start with '_') 
-					if ( (type(t) == types.FunctionType or type(t) == types.MethodType )
-					      and not n.startswith('_') ):
-						argCount = t.func_code.co_argcount
-						argNames = list(t.func_code.co_varnames[1:argCount])
-						argDefaults = t.func_defaults
-						if ( argDefaults != None and len(argDefaults) > 0 ):
-							offset = argCount - len(argDefaults) - 1
-							for i in range( len(argDefaults) ):
-								argNames[offset+i] = '*' + argNames[offset+i]		
-						self.__possibleMethods.append( { 'name': n, 'params': argNames} )
-		return self.__possibleMethods
+			self.__remoteOnly = False
 	
 	def _getParams(self, **options):
 		params = []
@@ -285,21 +277,29 @@ class CacheBackend(DataBackend):
 			# Do not log long strings like used in writeLog
 			ps = ps[:200-3] + '...'
 		
-		if not self.__cacheOnly:
+		if not self.__localOnly:
 			try:
-				logger.info('Executing on main backend: %s(%s)' % (method, ps))
-				be = self.__mainBackend
+				logger.info('Executing on remote backend: %s(%s)' % (method, ps))
+				be = self.__remoteBackend
 				result = eval('be.%s(*params)' % method)
 				return result
 			except Exception, e:
-				if self.__mainOnly:
+				if self.__remoteOnly:
 					raise
-				logger.warning("Main backend failed, using cache: %s" % e)
+				logger.warning("Remote backend failed, using cache: %s" % e)
 		
-		logger.info('Executing on cache backend: %s(%s)' % (method, ps))
+		logger.info('Executing on local work backend: %s(%s)' % (method, ps))
+		
+		if (method == 'getOpsiHWAuditConf'):
+			logger.info("Reading hwaudit conf file '%s'" % self.__hwauditConfFile)
+			f = open(self.__hwauditConfFile, 'rb')
+			hwAuditConf = f.read()
+			f.close()
+			return json.read(hwAuditConf)
+		
 		be = self.__workBackend
 		result = eval('be.%s(*params)' % method)
-		self.addCachedExecution(method = method, params = params)
+		self._addCachedExecution(method = method, params = params)
 		return result
 		
 	def _execCachedExecution(self, method, **options):
@@ -312,7 +312,7 @@ class CacheBackend(DataBackend):
 					cachedActionRequest = ar['actionRequest']
 					break
 			actionRequest = ''
-			for ar in self.__mainBackend.getProductActionRequests_listOfHashes(clientId = params[1]):
+			for ar in self.__remoteBackend.getProductActionRequests_listOfHashes(clientId = params[1]):
 				if (ar['productId'] == params[0]):
 					actionRequest = ar['actionRequest']
 					break
@@ -323,12 +323,32 @@ class CacheBackend(DataBackend):
 				self.__cacheBackend.setProductActionRequest(productId = params[0], clientId = params[1], actionRequest = actionRequest)
 				return
 		
-		logger.notice('Executing on main backend: %s(%s)' % (method, str(params)[1:-1]))
-		be = self.__mainBackend
+		logger.notice('Executing on remote backend: %s(%s)' % (method, str(params)[1:-1]))
+		be = self.__remoteBackend
 		result = eval('be.%s(*params)' % method)
 		return result
 		
 		
-		
+	def getPossibleMethods_listOfHashes(self):
+		if not self.__possibleMethods:
+			logger.debug("OfflineBackend: Getting possible methods")
+			#self.__possibleMethods = []
+			#try:
+			#	self.__possibleMethods = self.__remoteBackend.getPossibleMethods_listOfHashes()
+			#except Exception, e:
+			#	logger.info("Getting possible methods from cacheBackend")
+			for (n, t) in self.__cacheBackend.__class__.__dict__.items():
+				# Extract a list of all "public" functions (functionname does not start with '_') 
+				if ( (type(t) == types.FunctionType or type(t) == types.MethodType )
+				      and not n.startswith('_') ):
+					argCount = t.func_code.co_argcount
+					argNames = list(t.func_code.co_varnames[1:argCount])
+					argDefaults = t.func_defaults
+					if ( argDefaults != None and len(argDefaults) > 0 ):
+						offset = argCount - len(argDefaults) - 1
+						for i in range( len(argDefaults) ):
+							argNames[offset+i] = '*' + argNames[offset+i]		
+					self.__possibleMethods.append( { 'name': n, 'params': argNames} )
+		return self.__possibleMethods
 		
 		

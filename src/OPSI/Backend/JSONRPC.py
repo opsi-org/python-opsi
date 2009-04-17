@@ -246,6 +246,8 @@ class JSONRPCBackend(DataBackend):
 		''' This function executes a JSON-RPC and
 		    returns the result as a JSON object. '''
 		
+		logger.debug("Executing jsonrpc method '%s'" % method)
+		
 		# Get params
 		params = []
 		logger.debug("Options: %s" % options)
@@ -262,9 +264,9 @@ class JSONRPCBackend(DataBackend):
 		
 		# Create json-rpc object
 		jsonrpc = json.write( {"id": 1, "method": method, "params": params } )
-		logger.debug("jsonrpc string: %s" % jsonrpc)
+		logger.debug2("jsonrpc string: %s" % jsonrpc)
 		
-		logger.debug("requesting: '%s', query '%s'" % (self.__address, jsonrpc))
+		logger.debug2("requesting: '%s', query '%s'" % (self.__address, jsonrpc))
 		response = self.__request(self.__baseUrl, jsonrpc, retry=retry )
 		
 		# Read response

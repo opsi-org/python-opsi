@@ -237,7 +237,7 @@ class ProgressSubject(MessageSubject):
 	def __init__(self, id, type='', title='', **args):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
-		self._fireAlways = False
+		self._fireAlways = True
 		if args.has_key('end'):
 			self._end = args['end']
 			if (self._end < 0): self._end = 0
