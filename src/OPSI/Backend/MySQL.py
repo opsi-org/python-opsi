@@ -1560,7 +1560,24 @@ class MySQLBackend(DataBackend):
 		
 		result['softwareLicenseId']=result['softwareLicenseId'].encode('utf-8')
 		return result
-				
+			
+			
+	def editSoftwareLicenseUsage(self, hostId, licensePoolId, softwareLicenseId, licenseKey="", notes="")
+		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
+		
+		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' \
+								% (hostId, licensePoolId, softwareLicenseId))
+		data = { 'licenseKey': licenseKey, 'notes': notes }
+		if result:
+			self.__mysql__.db_update('LICENSE_USED_BY_HOST',\
+				`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId),\
+				data)
+		else:
+			raise BackendMissingDataError("License usage not found")
+		
+		licenseUsedByHost = { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'licenseKey': licenseKey, 'hostId': hostId, 'notes': notes }
+		return licenseUsedByHost
+		
 	
 	def assignSoftwareLicense(self, hostId, licenseKey="", licensePoolId="", productId="", windowsSoftwareId="", notes=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
