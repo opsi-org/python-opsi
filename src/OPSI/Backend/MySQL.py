@@ -1562,16 +1562,14 @@ class MySQLBackend(DataBackend):
 		return result
 			
 			
-	def editSoftwareLicenseUsage(self, hostId, licensePoolId, softwareLicenseId, licenseKey="", notes="")
+	def editSoftwareLicenseUsage(self, hostId, licensePoolId, softwareLicenseId, licenseKey="", notes=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		
-		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' \
-								% (hostId, licensePoolId, softwareLicenseId))
+		whereclause = '`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId)
+		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE ' + whereclause)
 		data = { 'licenseKey': licenseKey, 'notes': notes }
 		if result:
-			self.__mysql__.db_update('LICENSE_USED_BY_HOST',\
-				'`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId),\
-				data)
+			self.__mysql__.db_update('LICENSE_USED_BY_HOST', whereclause, data)
 		else:
 			raise BackendMissingDataError("License usage not found")
 		
@@ -1579,21 +1577,25 @@ class MySQLBackend(DataBackend):
 		return licenseUsedByHost
 		
 		
-	def deleteSoftwareLicenseUsage(self, hostId, licensePoolId, softwareLicenseId)
+	def deleteSoftwareLicenseUsage(self, hostId, softwareLicenseId, licensePoolId=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		
-		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' \
-								% (hostId, licensePoolId, softwareLicenseId))
+		whereclause = ''
+		if (licensePoolId):
+			whereclause = '`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId)
+		else:
+			whereclause = '`hostId`="%s" AND `softwareLicenseId`="%s"' % (hostId, softwareLicenseId)
+		
+		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST`' + ' WHERE ' +  whereclause)
+		
 		if result:
 			logger.debug('delete software license usage with `hostId`="%s", `licensePoolId`="%s",`softwareLicenseId`="%s"' \
 								% (hostId, licensePoolId, softwareLicenseId))
 		else:
 			logger.info('no software license usage found for deleting, `hostId`="%s". `licensePoolId`="%s",`softwareLicenseId`="%s"' \
-								% (hostId, licensePoolId, softwareLicenseId)	
+								% (hostId, licensePoolId, softwareLicenseId))	
 								
-		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', ,\
-				'`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"'\
-				% (hostId, licensePoolId, softwareLicenseId))
+		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', whereclause)
 		
 	
 	def assignSoftwareLicense(self, hostId, licenseKey="", licensePoolId="", productId="", windowsSoftwareId="", notes=""):
@@ -1662,7 +1664,7 @@ class MySQLBackend(DataBackend):
 							% (licensePoolId, hostId))
 		if not result:
 			return ""
-		return result['licenseKey']
+		return result['licenseKey'].encode('utf-8')
 	
 	def getUsedLicenses_listOfHashes(self, hostIds=[], licensePoolId=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
