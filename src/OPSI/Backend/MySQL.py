@@ -1730,7 +1730,7 @@ class MySQLBackend(DataBackend):
 		where = '`hostId` IN ('
 		for hostId in hostIds:
 			where += '"%s", ' % hostId
-		sql = sql[:-2]+')'
+		where = where[:-2]+')'
 		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', where)
 		
 	def getLicenseStatistics(self, licensePoolId):
