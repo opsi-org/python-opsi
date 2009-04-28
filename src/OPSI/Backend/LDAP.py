@@ -68,7 +68,7 @@ class LDAPBackend(DataBackend):
 		self._groupsContainerDn = 'cn=groups,' + self._opsiBaseDn
 		self._productsContainerDn = 'cn=products,' + self._opsiBaseDn
 		self._productClassesContainerDn = 'cn=productClasses,' + self._opsiBaseDn
-		self._productLicensesContainerDn = 'cn=productLicenses,' + self._opsiBaseDn
+		#self._productLicensesContainerDn = 'cn=productLicenses,' + self._opsiBaseDn
 		self._productStatesContainerDn = 'cn=productStates,' + self._opsiBaseDn
 		self._generalConfigsContainerDn = 'cn=generalConfigs,' + self._opsiBaseDn
 		self._networkConfigsContainerDn = 'cn=networkConfigs,' + self._opsiBaseDn
@@ -154,7 +154,7 @@ class LDAPBackend(DataBackend):
 		self.createOrganizationalRole(self._productClassesContainerDn)
 		self.createOrganizationalRole(self._productStatesContainerDn)
 		self.createOrganizationalRole(self._productPropertiesContainerDn)
-		self.createOrganizationalRole(self._productLicensesContainerDn)
+		#self.createOrganizationalRole(self._productLicensesContainerDn)
 		
 	
 	def getHostContainerDn(self, domain = None):
