@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 # Imports
 import os, stat, types, re, socket, new, base64, md5
@@ -731,6 +731,7 @@ class BackendManager(DataBackend):
 		logger.info("Locking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
 		self.lockProduct(ppf.product.productId, depotIds=[ depotId ])
 		
+		exists = False
 		try:
 			exists = ppf.product.productId in self.getProductIds_list(objectId = depotId, installationStatus = 'installed')
 			if exists:
@@ -836,15 +837,35 @@ class BackendManager(DataBackend):
 			self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
 			
 		except Exception, e:
+			logger.logException(e)
+			if exists:
+				# Restore product properties on product update failure
+				try:
+					properties = {}
+					for p in ppf.product.productProperties:
+						defaultValue = p.defaultValue
+						if p.name in defaultProperties.keys():
+							defaultValue = defaultProperties[p.name]
+						
+						self.createProductPropertyDefinition(
+							p.productId,
+							p.name,
+							p.description,
+							defaultValue,
+							p.possibleValues,
+							depotIds = [ depotId ]
+						)
+						properties[p.name] = defaultValue
+				except Exception, e2:
+					logger.error(e2)
 			try:
 				logger.info("Cleaning up")
 				ppf.cleanup()
 				# TODO: unlock if failed?
 				logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
 				self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
-			except Exception, e2:
-				logger.error(e2)
-			logger.logException(e)
+			except Exception, e3:
+				logger.error(e3)
 			raise e
 	
 	def uninstallPackage(self, productId, force=False, deleteFiles=True):

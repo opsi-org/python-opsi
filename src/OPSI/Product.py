@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 # Imports
 import os
@@ -64,6 +64,7 @@ DEFAULT_CLIENT_DATA_GROUP = 'pcpatch'
 DEFAULT_CLIENT_DATA_FILE_MODE = 0660
 DEFAULT_CLIENT_DATA_DIR_MODE = 0770
 EXCLUDE_DIRS_ON_PACK = '^\.svn$'
+EXCLUDE_FILES_ON_PACK = '~$'
 
 PRODUCT_ID_REGEX = re.compile("^[a-zA-Z0-9\_\.-]+$")
 PACKAGE_VERSION_REGEX = re.compile("^[\w\.]+$")
@@ -802,7 +803,7 @@ class ProductPackageSource(ProductPackage):
 								os.path.join(self.sourceDir, d) )
 					continue
 				
-				fileList = Tools.findFiles( os.path.join(self.sourceDir, d), excludeDir=EXCLUDE_DIRS_ON_PACK )
+				fileList = Tools.findFiles( os.path.join(self.sourceDir, d), excludeDir=EXCLUDE_DIRS_ON_PACK, excludeFile=EXCLUDE_FILES_ON_PACK )
 				
 				if d.startswith('SERVER_DATA'):
 					# never change permissions of existing directories in /
