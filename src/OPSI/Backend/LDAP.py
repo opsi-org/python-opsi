@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0'
+__version__ = '1.0.1'
 
 # Imports
 import ldap, ldap.modlist, re, json
@@ -586,7 +586,7 @@ class LDAPBackend(DataBackend):
 			if not deleteServer and server.exists(self._ldap):
 				logger.info("Removing opsi objectClasses from object '%s'" % server.getDn())
 				server.readFromDirectory(self._ldap)
-				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiCreatedTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
 					server.setAttribute(attr, [])
 				server.removeObjectClass('opsiConfigserver')
 				server.removeObjectClass('opsiDepotserver')
@@ -656,7 +656,7 @@ class LDAPBackend(DataBackend):
 			elif client.exists(self._ldap):
 				logger.info("Removing opsi objectClasses from object '%s'" % client.getDn())
 				client.readFromDirectory(self._ldap)
-				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiCreatedTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
 					client.setAttribute(attr, [])
 				client.removeObjectClass('opsiClient')
 				client.removeObjectClass('opsiHost')
@@ -1036,7 +1036,7 @@ class LDAPBackend(DataBackend):
 			if not deleteServer and depot.exists(self._ldap):
 				logger.info("Removing opsi objectClasses from object '%s'" % depot.getDn())
 				depot.readFromDirectory(self._ldap)
-				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
+				for attr in ('opsiHostId', 'opsiDescription', 'opsiNotes', 'opsiHostKey', 'opsiPcpatchPassword', 'opsiLastSeenTimestamp', 'opsiCreatedTimestamp', 'opsiHardwareAddress', 'opsiIpAddress'):
 					depot.setAttribute(attr, [])
 				depot.removeObjectClass('opsiDepotserver')
 				depot.removeObjectClass('opsiHost')
@@ -1732,7 +1732,11 @@ class LDAPBackend(DataBackend):
 		
 		productState.setAttribute( 'opsiProductActionRequestForced', [ actionRequest ] )
 		productState.setAttribute( 'opsiProductInstallationStatus', [ installationStatus ] )
-		productState.setAttribute( 'opsiProductActionProgress', [ json.write(productActionProgress) ] )
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			productState.setAttribute( 'opsiProductActionProgress', [ json.dumps(productActionProgress) ] )
+		else:
+			productState.setAttribute( 'opsiProductActionProgress', [ json.write(productActionProgress) ] )
 		
 		productState.setAttribute( 'opsiHostReference', 	[ self.getHostDn(objectId) ] )
 		productState.setAttribute( 'opsiProductReference', 	[ product.getDn() ] )
@@ -1771,7 +1775,12 @@ class LDAPBackend(DataBackend):
 			self.setProductState(self, productId = productId, objectId = hostId, installationStatus="not_installed", actionRequest="none")
 		
 		productState.readFromDirectory(self._ldap)
-		productState.setAttribute( 'opsiProductActionProgress', [ json.write(productActionProgress) ] )
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			productState.setAttribute( 'opsiProductActionProgress', [ json.dumps(productActionProgress) ] )
+		else:
+			productState.setAttribute( 'opsiProductActionProgress', [ json.write(productActionProgress) ] )
+		
 		productState.writeToDirectory(self._ldap)
 		
 	def getPossibleProductActions_list(self, productId=None, depotId=None):
@@ -1986,7 +1995,11 @@ class LDAPBackend(DataBackend):
 						state['installationStatus'] = productState.getAttribute('opsiProductInstallationStatus', 'not_installed')
 						state['productActionProgress'] = productState.getAttribute( 'opsiProductActionProgress', {} )
 						if state['productActionProgress']:
-							state['productActionProgress'] = json.read( state['productActionProgress'] )
+							if hasattr(json, 'loads'):
+								# python 2.6 json module
+								state['productActionProgress'] = json.loads( state['productActionProgress'] )
+							else:
+								state['productActionProgress'] = json.read( state['productActionProgress'] )
 						state['productVersion'] = productState.getAttribute('opsiProductVersion', '')
 						state['packageVersion'] = productState.getAttribute('opsiPackageVersion', '')
 						state['lastStateChange'] = productState.getAttribute('lastStateChange', '')
@@ -2923,7 +2936,7 @@ class LDAPSession:
 			try:
 				result = self._ldap.search_s(baseDn, scope, filter, attributes)
 			except ldap.LDAPError, e:
-				if (e.__str__().lower().find('ldap connection invalid') != -1):
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
 					# Possibly timed out
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
@@ -2953,7 +2966,7 @@ class LDAPSession:
 			try:
 				self._ldap.delete_s(dn)
 			except ldap.LDAPError, e:
-				if (e.__str__().lower().find('ldap connection invalid') != -1):
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
 					# Possibly timed out
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
@@ -2980,7 +2993,7 @@ class LDAPSession:
 			try:
 				self._ldap.modify_s(dn,attrs)
 			except ldap.LDAPError, e:
-				if (e.__str__().lower().find('ldap connection invalid') != -1):
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
 					# Possibly timed out
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
@@ -3005,7 +3018,7 @@ class LDAPSession:
 			try:
 				self._ldap.add_s(dn,attrs)
 			except ldap.LDAPError, e:
-				if (e.__str__().lower().find('ldap connection invalid') != -1):
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
 					# Possibly timed out
 					logger.warning("LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()

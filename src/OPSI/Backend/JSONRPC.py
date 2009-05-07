@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.7'
+__version__ = '0.9.8'
 
 # Imports
 import json, base64, urllib, httplib, new, stat, socket, random, time
@@ -263,19 +263,30 @@ class JSONRPCBackend(DataBackend):
 				params.append(p)
 		
 		# Create json-rpc object
-		jsonrpc = json.write( {"id": 1, "method": method, "params": params } )
+		jsonrpc = ''
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			jsonrpc = json.dumps( {"id": 1, "method": method, "params": params } )
+		else:
+			jsonrpc = json.write( {"id": 1, "method": method, "params": params } )
 		logger.debug2("jsonrpc string: %s" % jsonrpc)
 		
 		logger.debug2("requesting: '%s', query '%s'" % (self.__address, jsonrpc))
 		response = self.__request(self.__baseUrl, jsonrpc, retry=retry )
 		
 		# Read response
-		if json.read(response).get('error'):
+		if hasattr(json, 'loads'):
+			# python 2.6 json module
+			response = json.loads(response)
+		else:
+			response = json.read(response)
+		
+		if response.get('error'):
 			# Error occurred => raise BackendIOError
-			raise Exception( json.read(response).get('error') )
+			raise Exception( response.get('error') )
 		
 		# Return result as json object
-		return json.read(response).get('result', None)
+		return response.get('result', None)
 	
 	def __request(self, baseUrl, query='', retry=True, maxRetrySeconds=5, started=None):
 		''' Do a http request '''

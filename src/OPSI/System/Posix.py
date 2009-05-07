@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.1.13'
+__version__ = '1.2'
 
 # Imports
-import os, sys, re, shutil, time, gettext, popen2, select, signal, socket
+import os, sys, re, shutil, time, gettext, subprocess, select, signal, socket
 import copy as pycopy
 if (os.name == 'posix'):
 	import posix, fcntl
@@ -101,7 +101,7 @@ def which(cmd):
 	
 	return WHICH_CACHE[cmd]
 
-def execute(cmd, nowait=False, wait=1, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=False, capturestderr=True):
+def execute(cmd, nowait=False, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=False, capturestderr=True):
 	"""
 	Executes a command and returns output lines as list
 	"""
@@ -119,30 +119,36 @@ def execute(cmd, nowait=False, wait=1, getHandle=False, logLevel=LOG_DEBUG, exit
 		
 		elif getHandle:
 			if capturestderr:
-				return os.popen4(cmd)[1]
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
 			else:
-				return os.popen(cmd)
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
 		
 		else:
-			fi = popen2.Popen3(cmd, capturestderr=capturestderr)
+			stderr = None
+			if capturestderr:
+				stderr	= subprocess.PIPE
+			proc = subprocess.Popen(
+				cmd,
+				shell	= True,
+				stdin	= subprocess.PIPE,
+				stdout	= subprocess.PIPE,
+				stderr	= stderr,
+			)
 			
-			flags = fcntl.fcntl(fi.fromchild, fcntl.F_GETFL)
-			fcntl.fcntl(fi.fromchild, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-			readList = [ fi.fromchild ]
+			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			
 			if capturestderr:
-				flags = fcntl.fcntl(fi.childerr, fcntl.F_GETFL)
-				fcntl.fcntl(fi.childerr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-				readList.append(fi.childerr)
+				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			
-			ret = -1
-			
+			ret = None
 			curLine = ''
 			curErrLine = ''
-			while (ret == -1):
-				ret = fi.poll()
+			while ret is None:
+				ret = proc.poll()
 				try:
-					string = fi.fromchild.read()
+					string = proc.stdout.read()
 					if (len(string) > 0):
 						result += string
 						curLine += string
@@ -159,7 +165,7 @@ def execute(cmd, nowait=False, wait=1, getHandle=False, logLevel=LOG_DEBUG, exit
 				
 				if capturestderr:
 					try:
-						string = fi.childerr.read()
+						string = proc.stderr.read()
 						if (len(string) > 0):
 							result += string
 							curErrLine += string
@@ -193,13 +199,13 @@ def execute(cmd, nowait=False, wait=1, getHandle=False, logLevel=LOG_DEBUG, exit
 		# Some error occured during execution
 		if (logLevel == LOG_CONFIDENTIAL):
 			cmd = '***********************'
-		raise Exception("Command '%s' failed: %s" % (cmd, e) )
+		raise Exception("Command '%s' failed:\n%s" % (cmd, e) )
 	
 	logger.debug("Exit code: %s" % exitCode)
 	if exitCode:
 		if (logLevel == LOG_CONFIDENTIAL):
 			cmd = '***********************'
-		raise Exception("Command '%s' failed (%s): %s" % (cmd, exitCode, '\n'.join(result)) )
+		raise Exception("Command '%s' failed (%s):\n%s" % (cmd, exitCode, '\n'.join(result)) )
 	return result
 
 def getKernelParams():

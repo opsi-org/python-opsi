@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.8'
+__version__ = '0.9.9.9'
 
 # Imports
 import time, json, gettext, os, re, random, md5
@@ -557,7 +557,11 @@ def objectToBeautifiedText(obj, level=0):
 			i+=1
 		text += '\n' + ' '*hspace + '}'
 	else:
-		text+= json.write(obj)
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			text+= json.dumps(obj)
+		else:
+			text+= json.write(obj)
 	return text
 
 
@@ -590,7 +594,11 @@ def jsonObjToHtml(jsonObj, level=0):
 			i+=1
 		html += '<br />' + ' '*hspace + '}'
 	else:
-		html += json.write(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			html += json.dumps(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
+		else:
+			html += json.write(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
 	return html.replace('\\n', '<br />' + ' '*hspace)
 
 

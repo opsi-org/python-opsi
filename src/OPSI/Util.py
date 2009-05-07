@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 
 # Imports
 import json, threading, re, stat, base64, urllib, os, md5, shutil
@@ -464,7 +464,11 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		logger.info("received line %s" % line)
 		id = None
 		try:
-			rpc = json.read( line )
+			if hasattr(json, 'loads'):
+				# python 2.6 json module
+				rpc = json.loads( line )
+			else:
+				rpc = json.read( line )
 			method = rpc['method']
 			id = rpc['id']
 			params = rpc['params']
@@ -541,7 +545,11 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		logger.info("sending notification '%s' to clients" % name)
 		for client in self.clients:
 			# json-rpc: notifications have id null
-			client.sendLine( json.write( {"id": None, "method": name, "params": params } ) )
+			if hasattr(json, 'dumps'):
+				# python 2.6 json module
+				client.sendLine( json.dumps( {"id": None, "method": name, "params": params } ) )
+			else:
+				client.sendLine( json.write( {"id": None, "method": name, "params": params } ) )
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
@@ -640,7 +648,11 @@ class NotificationClientFactory(ClientFactory):
 		logger.debug("received rpc '%s'" % rpc)
 		id = None
 		try:
-			rpc = json.read( rpc )
+			if hasattr(json, 'loads'):
+				# python 2.6 json module
+				rpc = json.loads( rpc )
+			else:
+				rpc = json.read( rpc )
 			id = rpc['id']
 			if id:
 				# Received rpc answer
@@ -669,7 +681,11 @@ class NotificationClientFactory(ClientFactory):
 			raise Exception("execute timed out after %d seconds" % self._timeout)
 		
 		rpc = {'id': None, "method": method, "params": params }
-		self.sendLine( json.write( rpc ) )
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			self.sendLine( json.dumps( rpc ) )
+		else:
+			self.sendLine( json.write( rpc ) )
 
 class NotificationClient(threading.Thread):
 	def __init__(self, address, port, observer):

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 # Imports
 
@@ -150,7 +150,11 @@ class OfflineBackend(DataBackend):
 		self.__cachedExecutions = []
 		f = open(self.__cachedExecutionsFile)
 		for line in f.readlines():
-			self.__cachedExecutions.append(json.read(line.strip()))
+			if hasattr(json, 'loads'):
+				# python 2.6 json module
+				self.__cachedExecutions.append(json.loads(line.strip()))
+			else:
+				self.__cachedExecutions.append(json.read(line.strip()))
 		f.close()
 		
 	def _writeCachedExecutionsFile(self, lastOnly=False):
@@ -168,7 +172,11 @@ class OfflineBackend(DataBackend):
 			f = open(self.__cachedExecutionsFile, 'w')
 			ces = self.__cachedExecutions
 		for ce in ces:
-			f.write(json.write(ce) + '\n')
+			if hasattr(json, 'dumps'):
+				# python 2.6 json module
+				f.write(json.dumps(ce) + '\n')
+			else:
+				f.write(json.write(ce) + '\n')
 		f.close()
 		
 	def _addCachedExecution(self, method, params=[]):
@@ -211,20 +219,29 @@ class OfflineBackend(DataBackend):
 				if currentProgressObserver: self.__workReplicator.getCurrentProgressSubject().detachObserver(currentProgressObserver)
 			
 			logger.info("Writing hwaudit conf file '%s'" % self.__hwauditConfFile)
-			hwAuditConf = json.write(self.__remoteBackend.getOpsiHWAuditConf())
+			hwAuditConf = ''
+			if hasattr(json, 'dumps'):
+				# python 2.6 json module
+				hwAuditConf = json.dumps(self.__remoteBackend.getOpsiHWAuditConf())
+			else:
+				hwAuditConf = json.write(self.__remoteBackend.getOpsiHWAuditConf())
 			f = open(self.__hwauditConfFile, 'wb')
 			f.write(hwAuditConf)
 			f.close()
 		finally:
 			if overallProgressObserver: overallProgress.detachObserver(overallProgressObserver)
 		
-	def _writebackCache(self):
+	def _writebackCache(self, currentProgressObserver = None):
 		if not self.__cachedExecutions:
 			logger.debug("No cached executions to write back")
 			return
 		
+		currentProgressSubject = ProgressSubject(id = 'writeback_cache', type = 'config_sync', end = len(self.__cachedExecutions))
+		if currentProgressObserver: currentProgressSubject.attachObserver(currentProgressObserver)
+		
 		self._workRemoteOnly(True)
 		for i in range(len(self.__cachedExecutions)):
+			currentProgressSubject.setMessage( _("Writing back cached service call %d") % (i+1) )
 			try:
 				ce = self.__cachedExecutions[i]
 				self._execCachedExecution(ce['method'], params = ce['params'])
@@ -232,6 +249,7 @@ class OfflineBackend(DataBackend):
 				self.__cachedExecutions = self.__cachedExecutions[i:]
 				self._writeCachedExecutionsFile()
 				raise
+			currentProgressSubject.addToState(1)
 		self.__cachedExecutions = []
 		self._writeCachedExecutionsFile()
 		
@@ -329,7 +347,11 @@ class OfflineBackend(DataBackend):
 		f = open(self.__hwauditConfFile, 'rb')
 		hwAuditConf = f.read()
 		f.close()
-		return json.read(hwAuditConf)
+		if hasattr(json, 'loads'):
+			# python 2.6 json module
+			return json.loads(hwAuditConf)
+		else:
+			return json.read(hwAuditConf)
 	
 	def getPossibleMethods_listOfHashes(self):
 		if not self.__possibleMethods:
