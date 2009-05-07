@@ -32,10 +32,14 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.9'
+__version__ = '1.0'
 
 # Imports
-import time, json, gettext, os, re, random, md5
+import time, json, gettext, os, re, random
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
 
 # OPSI imports
 from Logger import *
@@ -101,7 +105,7 @@ def removeUnit(x):
 
 def md5sum(filename):
 	f = open(filename, 'rb')
-	m = md5.new()
+	m = md5()
 	while True:
 		d = f.read(8096)
 		if not d:

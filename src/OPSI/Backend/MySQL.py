@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3'
+__version__ = '0.3.1'
 
 # Imports
 import MySQLdb, warnings, time
@@ -203,7 +203,11 @@ class MySQLBackend(DataBackend):
 			try:
 				modules = self.__backendManager.getOpsiInformation_hash()['modules']
 				if modules.get('valid') and modules.get('license_management'):
-					import base64, md5, twisted.conch.ssh.keys
+					import base64, twisted.conch.ssh.keys
+					try:
+						from hashlib import md5
+					except ImportError:
+						from md5 import md5
 					publicKey = twisted.conch.ssh.keys.getPublicKeyObject(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
 					data = ''
 					mks = modules.keys()
@@ -215,7 +219,7 @@ class MySQLBackend(DataBackend):
 						if (val == False): val = 'no'
 						if (val == True):  val = 'yes'
 						data += module.lower().strip() + ' = ' + val + '\r\n'
-					self._licenseManagementEnabled = bool(publicKey.verify(md5.new(data).digest(), [ modules['signature'] ]))
+					self._licenseManagementEnabled = bool(publicKey.verify(md5(data).digest(), [ modules['signature'] ]))
 			except Exception, e:
 				logger.error(e)
 		

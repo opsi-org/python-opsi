@@ -32,10 +32,14 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.5'
+__version__ = '0.3.6'
 
 # Imports
-import json, threading, re, stat, base64, urllib, os, md5, shutil
+import json, threading, re, stat, base64, urllib, os, shutil
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 from httplib import HTTPConnection, HTTPSConnection
@@ -1164,7 +1168,7 @@ class DepotToLocalDirectorySychronizer(object):
 	
 	def _md5sum(self, filename):
 		f = open(filename, 'rb')
-		m = md5.new()
+		m = md5()
 		while True:
 			d = f.read(8096)
 			if not d:
@@ -1208,9 +1212,9 @@ class DepotToLocalDirectorySychronizer(object):
 				elif (self._fileInfo[relSource]['type'] == 'f'):
 					bytes = int(self._fileInfo[relSource]['size'])
 					if os.path.exists(d):
-						md5 = self._md5sum(d)
-						logger.debug("      Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, bytes, md5))
-						if (os.path.getsize(d) == bytes) and (md5 == self._fileInfo[relSource]['md5sum']):
+						md5s = self._md5sum(d)
+						logger.debug("      Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, bytes, md5s))
+						if (os.path.getsize(d) == bytes) and (md5s == self._fileInfo[relSource]['md5sum']):
 							if progressSubject: progressSubject.addToState(bytes)
 							continue
 				logger.info("      Downloading file '%s'" % f['name'])

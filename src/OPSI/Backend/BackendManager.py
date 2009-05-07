@@ -32,10 +32,15 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 # Imports
 import os, stat, types, re, socket, new, base64, md5
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
+
 import copy as pycopy
 from twisted.conch.ssh import keys
 
@@ -1193,7 +1198,7 @@ class BackendManager(DataBackend):
 				if (val == False): val = 'no'
 				if (val == True):  val = 'yes'
 				data += module.lower().strip() + ' = ' + val + '\r\n'
-			modules['valid'] = bool(publicKey.verify(md5.new(data).digest(), [ modules['signature'] ]))
+			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ modules['signature'] ]))
 		except Exception, e:
 			logger.error("Failed to read opsi modules file '%s': %s" % (OPSI_MODULES_FILE, e))
 		
