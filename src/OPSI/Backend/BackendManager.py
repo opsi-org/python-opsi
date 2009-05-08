@@ -35,7 +35,7 @@
 __version__ = '1.0.3'
 
 # Imports
-import os, stat, types, re, socket, new, base64, md5
+import os, stat, types, re, socket, new, base64
 try:
 	from hashlib import md5
 except ImportError:

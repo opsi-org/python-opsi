@@ -31,17 +31,18 @@ See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt (WebDAV)
 """
 
 __all__ = [
+    "registerElement",
     "registerElements",
-    "WebDAVContentHandler",
+    "lookupElement",
     "WebDAVDocument",
 ]
 
-import StringIO
+import cStringIO as StringIO
 import xml.dom.minidom
 import xml.sax
 
-from OPSI.web2.dav.element.base import *
-from OPSI.web2.dav.element.util import PrintXML, encodeXMLName
+from OPSI.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
+from OPSI.web2.dav.element.util import PrintXML
 
 ##
 # Parsing
@@ -61,19 +62,26 @@ def registerElements(module):
             if element_class.name is None: continue
             if element_class.unregistered: continue
 
-            qname = element_class.namespace, element_class.name
-
-            if qname in elements_by_tag_name:
-                raise AssertionError(
-                    "Attempting to register qname %s multiple times: (%r, %r)"
-                    % (qname, elements_by_tag_name[qname], element_class)
-                )
-
-            if not (qname in elements_by_tag_name and issubclass(element_class, elements_by_tag_name[qname])):
-                elements_by_tag_name[qname] = element_class
-                element_names.append(element_class.__name__)
+            registerElement(element_class, element_names)
 
     return element_names
+
+def registerElement(element_class, element_names=None):
+    """
+    Register the supplied XML elements with the parser.
+    """
+    qname = element_class.namespace, element_class.name
+    
+    if qname in elements_by_tag_name:
+        raise AssertionError(
+            "Attempting to register qname %s multiple times: (%r, %r)"
+            % (qname, elements_by_tag_name[qname], element_class)
+        )
+    
+    if not (qname in elements_by_tag_name and issubclass(element_class, elements_by_tag_name[qname])):
+        elements_by_tag_name[qname] = element_class
+        if element_names is not None:
+            element_names.append(element_class.__name__)
 
 def lookupElement(qname):
     """
@@ -98,6 +106,12 @@ class WebDAVContentHandler (xml.sax.handler.ContentHandler):
             "children"   : [],
         }]
 
+        # Keep a cache of the subclasses we create for unknown XML
+        # elements, so that we don't create multiple classes for the
+        # same element; it's fairly typical for elements to appear
+        # multiple times in a document.
+        self.unknownElementClasses = {}
+
     def endDocument(self):
         top = self.stack[-1]
 
@@ -107,23 +121,28 @@ class WebDAVContentHandler (xml.sax.handler.ContentHandler):
         assert len(top["children"]) is 1, "Must have exactly one root element, got %d" % len(top["children"])
 
         self.dom = WebDAVDocument(top["children"][0])
+        del(self.unknownElementClasses)
 
     def startElementNS(self, name, qname, attributes):
         attributes_dict = {}
 
         if attributes.getLength() is not 0:
-            for attr_name in attributes.getNames():
-                attributes_dict[encodeXMLName(attr_name)] = attributes.getValue(attr_name)
+            for attr_name in attributes.getQNames():
+                attributes_dict[attr_name.encode("utf-8")] = attributes.getValueByQName(attr_name)
 
         tag_namespace, tag_name = name
 
-        if (name not in elements_by_tag_name):
-            class UnknownElement (WebDAVUnknownElement):
-                namespace = tag_namespace
-                name      = tag_name
-            element_class = UnknownElement
-        else:
+        if name in elements_by_tag_name:
             element_class = elements_by_tag_name[name]
+        elif name in self.unknownElementClasses:
+            element_class = self.unknownElementClasses[name]
+        else:
+            def element_class(*args, **kwargs):
+                element = WebDAVUnknownElement(*args, **kwargs)
+                element.namespace = tag_namespace
+                element.name      = tag_name
+                return element
+            self.unknownElementClasses[name] = element_class
 
         self.stack.append({
             "name"       : name,
@@ -150,7 +169,12 @@ class WebDAVContentHandler (xml.sax.handler.ContentHandler):
         self.stack[-1]["children"].append(element)
 
     def characters(self, content):
-        self.stack[-1]["children"].append(PCDATAElement(content))
+        # Coalesce adjacent PCDATAElements
+        pcdata = PCDATAElement(content)
+        if len(self.stack[-1]["children"]) and isinstance(self.stack[-1]["children"][-1], PCDATAElement):
+            self.stack[-1]["children"][-1] = self.stack[-1]["children"][-1] + pcdata
+        else:
+            self.stack[-1]["children"].append(pcdata)
 
     def ignorableWhitespace(self, whitespace):
         self.characters(self, whitespace)
@@ -186,6 +210,8 @@ class WebDAVDocument (object):
             except xml.sax.SAXParseException, e:
                 raise ValueError(e)
 
+            #handler.dom.root_element.validate()
+
             return handler.dom
 
         return parse
@@ -200,7 +226,7 @@ class WebDAVDocument (object):
         super(WebDAVDocument, self).__init__()
 
         if not isinstance(root_element, WebDAVElement):
-            raise ValueError("Not a WebDAVElement: %r" % (obj,))
+            raise ValueError("Not a WebDAVElement: %r" % (root_element,))
 
         self.root_element = root_element
 
