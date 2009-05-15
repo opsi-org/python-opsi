@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 # Imports
 import ldap, ldap.modlist, re, json
@@ -862,13 +862,14 @@ class LDAPBackend(DataBackend):
 		infos = []
 		for hostDn in hostDns:
 			host = Object(hostDn)
-			host.readFromDirectory(self._ldap, 'opsiHostId', self._hostAttributeDescription, self._hostAttributeNotes, 'opsiLastSeenTimestamp')
+			host.readFromDirectory(self._ldap, 'opsiHostId', self._hostAttributeDescription, self._hostAttributeNotes, 'opsiLastSeenTimestamp', 'opsiCreatedTimestamp')
 			infos.append( { 
 				'hostId': 	host.getAttribute('opsiHostId', self.getHostId(host.getDn())),
 				'depotId': 	hostDnToDepotId[hostDn],
 				'description':	host.getAttribute(self._hostAttributeDescription, ""),
 				'notes':	host.getAttribute(self._hostAttributeNotes, ""),
-				'lastSeen':	host.getAttribute('opsiLastSeenTimestamp', "") } )
+				'lastSeen':	host.getAttribute('opsiLastSeenTimestamp', ""),
+				'created':	host.getAttribute('opsiCreatedTimestamp', "")} )
 		return infos
 	
 	def getClientIds_list(self, serverId = None, depotIds = [], groupId = None, productId = None, installationStatus = None, actionRequest = None, productVersion = None, packageVersion = None):

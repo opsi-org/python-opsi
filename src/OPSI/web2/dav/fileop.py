@@ -287,7 +287,7 @@ def copy(source_filepath, destination_filepath, destination_uri, depth):
                     response = waitForDeferred(copy(FilePath(source_path), FilePath(destination_path), destination_uri, depth))
                     yield response
                     response = response.getResult()
-                    checkResponse(response, "copy", responsecode.NO_CONTENT)
+                    checkResponse(response, "copy", responsecode.CREATED, responsecode.NO_CONTENT)
 
             for subdir in subdirs:
                 source_path, destination_path = paths(dir, subdir)
@@ -318,8 +318,6 @@ def copy(source_filepath, destination_filepath, destination_uri, depth):
             responsecode.FORBIDDEN,
             "The requested resource exists but is not backed by a regular file."
         ))
-
-    raise AssertionError("We shouldn't be here.")
 
 copy = deferredGenerator(copy)
 
@@ -509,7 +507,5 @@ def rmdir(dirname):
     os.rmdir(dirname)
 
 def checkResponse(response, method, *codes):
-    assert (
-        response in codes,
-        "%s() should have raised, but returned one of %r instead" % (method, codes)
-    )
+    assert  response in codes, \
+        "%s() returned %r, but should have returned one of %r instead" % (method, response, codes)

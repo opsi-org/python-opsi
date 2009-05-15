@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat
@@ -776,8 +776,11 @@ class File31Backend(File, FileBackend):
 	
 	def deleteSoftwareInformation(self, hostId):
 		hostId = hostId.lower()
+		swFile = "%s.hw" % os.path.join(self.__auditInfoDir, hostId)
+		if not os.path.exists(swFile):
+			return
 		try:
-			self.deleteFile( "%s.sw" % os.path.join(self.__auditInfoDir, hostId) )
+			self.deleteFile(swFile)
 		except Exception, e:
 			logger.error("Failed to delete software information for host '%s': %s" % (hostId, e))
 		
@@ -857,8 +860,11 @@ class File31Backend(File, FileBackend):
 	
 	def deleteHardwareInformation(self, hostId):
 		hostId = hostId.lower()
+		hwFile = "%s.hw" % os.path.join(self.__auditInfoDir, hostId)
+		if not os.path.exists(hwFile):
+			return
 		try:
-			self.deleteFile( "%s.hw" % os.path.join(self.__auditInfoDir, hostId) )
+			self.deleteFile(hwFile)
 		except Exception, e:
 			logger.error("Failed to delete hardware information for host '%s': %s" % (hostId, e))
 	

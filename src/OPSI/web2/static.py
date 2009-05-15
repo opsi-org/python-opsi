@@ -9,7 +9,10 @@ I deal with static resources.
 # System Imports
 import os, time, stat
 import tempfile
-from hashlib import md5
+try:
+	from hashlib import md5
+except ImportError:
+	import md5
 
 # Sibling Imports
 from OPSI.web2 import http_headers, resource
