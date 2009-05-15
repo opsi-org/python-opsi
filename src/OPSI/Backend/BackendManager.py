@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 # Imports
 import os, stat, types, re, socket, new, base64
@@ -1169,7 +1169,7 @@ class BackendManager(DataBackend):
 				module = module.strip().lower()
 				state = state.strip()
 				if (module == 'signature'):
-					modules[module] = long(state)
+					modules[module] = state
 					continue
 				if (module == 'customer'):
 					modules[module] = state
@@ -1198,7 +1198,7 @@ class BackendManager(DataBackend):
 				if (val == False): val = 'no'
 				if (val == True):  val = 'yes'
 				data += module.lower().strip() + ' = ' + val + '\r\n'
-			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ modules['signature'] ]))
+			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
 		except Exception, e:
 			logger.error("Failed to read opsi modules file '%s': %s" % (OPSI_MODULES_FILE, e))
 		

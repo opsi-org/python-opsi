@@ -219,7 +219,7 @@ class MySQLBackend(DataBackend):
 						if (val == False): val = 'no'
 						if (val == True):  val = 'yes'
 						data += module.lower().strip() + ' = ' + val + '\r\n'
-					self._licenseManagementEnabled = bool(publicKey.verify(md5(data).digest(), [ modules['signature'] ]))
+					self._licenseManagementEnabled = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
 			except Exception, e:
 				logger.error(e)
 		
