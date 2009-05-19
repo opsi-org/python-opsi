@@ -1357,10 +1357,6 @@ class MySQLBackend(DataBackend):
 	
 	def removeSoftwareLicenseFromLicensePool(self, softwareLicenseId, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not re.search(SOFTWARE_LICENSE_ID_REGEX, softwareLicenseId):
-			raise BackendBadValueError("Bad software license id '%s'" % softwareLicenseId)
-		if not re.search(LICENSE_POOL_ID_REGEX, licensePoolId):
-			raise BackendBadValueError("Bad license pool id '%s'" % licensePoolId)
 		if not licensePoolId in self.getLicensePoolIds_list():
 			raise BackendMissingDataError("License pool '%s' does not exist" % licensePoolId)
 		if not softwareLicenseId in self.getSoftwareLicenseIds_list():
@@ -1384,8 +1380,6 @@ class MySQLBackend(DataBackend):
 	
 	def removeProductIdsFromLicensePool(self, productIds, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not re.search(LICENSE_POOL_ID_REGEX, licensePoolId):
-			raise BackendBadValueError("Bad license pool id '%s'" % licensePoolId)
 		if not licensePoolId in self.getLicensePoolIds_list():
 			raise BackendMissingDataError("License pool '%s' does not exist" % licensePoolId)
 		if not type(productIds) is list:
@@ -1396,8 +1390,6 @@ class MySQLBackend(DataBackend):
 	
 	def setWindowsSoftwareIdsToLicensePool(self, windowsSoftwareIds, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not re.search(LICENSE_POOL_ID_REGEX, licensePoolId):
-			raise BackendBadValueError("Bad license pool id '%s'" % licensePoolId)
 		if not licensePoolId in self.getLicensePoolIds_list():
 			raise BackendMissingDataError("License pool '%s' does not exist" % licensePoolId)
 		self.__mysql__.db_delete('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', '`licensePoolId`="%s"' % (licensePoolId))
