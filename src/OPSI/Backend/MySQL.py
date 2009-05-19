@@ -1437,7 +1437,7 @@ class MySQLBackend(DataBackend):
 		logger.info("Sum installations: %d, sum max installations: %d" % (sumInstallations, sumMaxInstallations))
 		
 		if not softwareLicenseId:
-			raise BackendMissingDataError("No license available")
+			raise LicenseMissingError("No license available")
 		return (softwareLicenseId, licenseKey)
 	
 	def getSoftwareLicenseKeys_listOfHashes(self, licensePoolId=""):
@@ -1466,16 +1466,16 @@ class MySQLBackend(DataBackend):
 			if productId:
 				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s"' % productId)
 				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for product id '%s' found" % productId)
+					raise LicenseConfigurationError("No license pool for product id '%s' found" % productId)
 				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for product id '%s' found" % productId)
+					raise LicenseConfigurationError("Multiple license pools for product id '%s' found" % productId)
 				licensePoolId = result[0]['licensePoolId']
 			elif windowsSoftwareId:
 				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s"' % windowsSoftwareId)
 				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for windows software id '%s' found" % windowsSoftwareId)
+					raise LicenseConfigurationError("No license pool for windows software id '%s' found" % windowsSoftwareId)
 				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for windows software id '%s' found" % windowsSoftwareId)
+					raise LicenseConfigurationError("Multiple license pools for windows software id '%s' found" % windowsSoftwareId)
 				licensePoolId = result[0]['licensePoolId']
 			else:
 				raise BackendBadValueError("No license pool id, product id or windows software id given.")
@@ -1497,7 +1497,7 @@ class MySQLBackend(DataBackend):
 					break
 		
 		if not licenseKey:
-			raise BackendMissingDataError("License available but no license key found")
+			logger.info("License available but no license key found")
 		
 		logger.info("Using license key '%s' for host '%s'" % (licenseKey, hostId))
 		

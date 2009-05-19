@@ -147,6 +147,14 @@ class BackendModuleDisabledError(genericError):
 	""" Exception raised if a needed module is disabled. """
 	ExceptionShortDescription = "Backend module disabled error"
 
+class LicenseConfigurationError(genericError):
+	""" Exception raised if a configuration error occurs in the license data base. """
+	ExceptionShortDescription = "License configuration error"
+
+class LicenseMissingError(genericError):
+	""" Exception raised if a license is requested but cannot be found. """
+	ExceptionShortDescription = "License missing error"
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                        CLASS BACKEND                                               =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
