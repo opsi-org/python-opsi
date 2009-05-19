@@ -591,11 +591,11 @@ class MySQLBackend(DataBackend):
 		if not 'LICENSE_USED_BY_HOST' in tables.keys():
 			table = 'CREATE TABLE `LICENSE_USED_BY_HOST` (\n' + \
 					'`softwareLicenseId` VARCHAR(100) NOT NULL,\n' + \
-					'FOREIGN KEY ( `softwareLicenseId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId` ),\n' + \
 					'`licensePoolId` VARCHAR(100) NOT NULL,\n' + \
-					'FOREIGN KEY ( `licensePoolId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `licensePoolId` ),\n' + \
 					'`hostId` varchar(50),\n' + \
 					'PRIMARY KEY( `softwareLicenseId`, `licensePoolId`, `hostId` ),\n' + \
+					'FOREIGN KEY( `softwareLicenseId`, `licensePoolId` ) \n' + \
+					'REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId`, `licensePoolId` ), \n' + \
 					'`licenseKey` VARCHAR(100) NOT NULL,\n' + \
 					'`notes` VARCHAR(1024) NOT NULL DEFAULT \'\'\n' + \
 					') ENGINE=InnoDB DEFAULT CHARSET=utf8;\n'
