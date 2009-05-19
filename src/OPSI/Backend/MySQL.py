@@ -1385,8 +1385,9 @@ class MySQLBackend(DataBackend):
 		if not type(productIds) is list:
 			productIds = [ productIds ]
 		for productId in productIds:
-			if self.__mysql__.db_getRow('SELECT * FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s" AND `licensePoolId`="%s"' % (productId, licensePoolId)):
-				self.__mysql__.db_delete('PRODUCT_ID_TO_LICENSE_POOL', { 'licensePoolId': licensePoolId, 'productId': productId })
+			where = '`productId`="%s" AND `licensePoolId`="%s"' % (productId, licensePoolId)
+			if self.__mysql__.db_getRow('SELECT * FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE ' + where):
+				self.__mysql__.db_delete('PRODUCT_ID_TO_LICENSE_POOL', where)
 	
 	def setWindowsSoftwareIdsToLicensePool(self, windowsSoftwareIds, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
