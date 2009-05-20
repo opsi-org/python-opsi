@@ -1377,7 +1377,6 @@ class MySQLBackend(DataBackend):
 			if not self.__mysql__.db_getRow('SELECT * FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s" AND `licensePoolId`="%s"' % (productId, licensePoolId)):
 				self.__mysql__.db_insert('PRODUCT_ID_TO_LICENSE_POOL', { 'licensePoolId': licensePoolId, 'productId': productId })
 	
-	
 	def removeProductIdsFromLicensePool(self, productIds, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		if not licensePoolId in self.getLicensePoolIds_list():
@@ -1441,9 +1440,9 @@ class MySQLBackend(DataBackend):
 			raise LicenseMissingError("No license available")
 		return (softwareLicenseId, licenseKey)
 	
-	def getSoftwareLicenseKeys_listOfHashes(self, licensePoolId=""):
+	def getSoftwareLicenses_listOfHashes(self, licensePoolId=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		licenceKeys = []
+		licences = []
 		
 		sql = ''
 		if licensePoolId:
@@ -1453,15 +1452,15 @@ class MySQLBackend(DataBackend):
 		else:
 			sql = 'SELECT * FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL`'
 		
-		for licenceKey in self.__mysql__.db_getSet(sql):
-			licenceKey['softwareLicenseId'] = licenceKey['softwareLicenseId'].encode('utf-8')
-			licenceKey['licensePoolId']     = licenceKey['licensePoolId'].encode('utf-8')
-			licenceKey['licenseKey']        = licenceKey['licenseKey'].encode('utf-8')
-			licenceKeys.append(licenceKey)
+		for licence in self.__mysql__.db_getSet(sql):
+			licence['softwareLicenseId'] = licence['softwareLicenseId'].encode('utf-8')
+			licence['licensePoolId']     = licence['licensePoolId'].encode('utf-8')
+			licence['licenseKey']        = licence['licenseKey'].encode('utf-8')
+			licences.append(licence)
 			
-		return licenceKeys
+		return licences
 	
-	def getAndAssignSoftwareLicenseKey(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
+	def getOrCreateSoftwareLicenseUsage_hash(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		if not licensePoolId:
 			if productId:
@@ -1481,223 +1480,51 @@ class MySQLBackend(DataBackend):
 			else:
 				raise BackendBadValueError("No license pool id, product id or windows software id given.")
 		
-		# Test if a licensekey is already used by the host
-		result = self.__mysql__.db_getRow('SELECT `licenseKey` FROM `LICENSE_USED_BY_HOST` WHERE `licensePoolId`="%s" AND `hostId`="%s"' \
-																% (licensePoolId, hostId))
+		# Test if a license is already used by the host
+		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE `licensePoolId`="%s" AND `hostId`="%s"' \
+															% (licensePoolId, hostId))
 		if result:
-			logger.info("Using already assigned license key")
-			return result['licenseKey'].encode('utf-8')
-		
-		(softwareLicenseId, licenseKey) = self._getFreeSoftwareLicense(hostId, licensePoolId)
-		
-		if not licenseKey:
-			# Search a key
-			for res in result:
-				if res['licenseKey']:
-					licenseKey = res['licenseKey']
-					break
-		
-		if not licenseKey:
-			logger.info("License available but no license key found")
-		
-		logger.info("Using license key '%s' for host '%s'" % (licenseKey, hostId))
-		
-		# Register license key as used by host
-		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'hostId': hostId, 'licenseKey': licenseKey } )
-		
-		return licenseKey.encode('utf-8')
-	
-	def assignSoftwareLicense(self, hostId, licenseKey="", licensePoolId="", productId="", windowsSoftwareId="", notes=""):
-		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not notes:
-			notes = ''
-		if not licensePoolId:
-			if productId:
-				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s"' % productId)
-				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for product id '%s' found" % productId)
-				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for product id '%s' found" % productId)
-				licensePoolId = result[0]['licensePoolId']
-			elif windowsSoftwareId:
-				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s"' % windowsSoftwareId)
-				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for windows software id '%s' found" % windowsSoftwareId)
-				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for windows software id '%s' found" % windowsSoftwareId)
-				licensePoolId = result[0]['licensePoolId']
-			else:
-				raise BackendBadValueError("No license pool id, product id or windows software id given.")
-		
-		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', '`hostId` = "%s" AND `licensePoolId`="%s"' % (hostId, licensePoolId))
-		
-		softwareLicenseId = ''
-		if licenseKey:
-			result = self.__mysql__.db_getRow('SELECT `softwareLicenseId` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `licenseKey`="%s" AND `licensePoolId`="%s"' \
-								% (licenseKey, licensePoolId))
-			if not result:
-				raise BackendMissingDataError("License key does not exists")
-			
-			softwareLicenseId = result['softwareLicenseId']
-			logger.info("Using license key '%s' for host '%s'" % (licenseKey, hostId))
+			logger.info("Using already assigned license")
+			result['softwareLicenseId'] = result['softwareLicenseId'].encode('utf-8')
+			result['licenseKey']        = result['licenseKey'].encode('utf-8')
+			result['notes']             = result['licenseKey'].encode('utf-8')
 		else:
-			softwareLicenseId = self._getFreeSoftwareLicense(hostId, licensePoolId)[0]
-		
-		# Register license as used by host
-		licenseUsedByHost = { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'licenseKey': licenseKey, 'hostId': hostId, 'notes': notes }
-		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", licenseUsedByHost )
-		licenseUsedByHost['softwareLicenseId']=licenseUsedByHost['softwareLicenseId'].encode('utf-8')
-		return licenseUsedByHost
-		
-	def getAssignedSoftwareLicenseKey(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
-		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not licensePoolId:
-			if productId:
-				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s"' % productId)
-				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for product id '%s' found" % productId)
-				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for product id '%s' found" % productId)
-				licensePoolId = result[0]['licensePoolId']
-			elif windowsSoftwareId:
-				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s"' % windowsSoftwareId)
-				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for windows software id '%s' found" % windowsSoftwareId)
-				elif (len(result) > 1):
-					raise BackendIOError("Multiple license pools for windows software id '%s' found" % windowsSoftwareId)
-				licensePoolId = result[0]['licensePoolId']
-			else:
-				raise BackendBadValueError("No license pool id, product id or windows software id given.")
-		
-		result = self.__mysql__.db_getRow('SELECT `licenseKey` FROM `LICENSE_USED_BY_HOST` WHERE `licensePoolId`="%s" AND `hostId`="%s"' \
-							% (licensePoolId, hostId))
-		if not result:
-			return ""
-		return result['licenseKey'].encode('utf-8')
-	
-	def getSoftwareLicenseUsage(self, hostId, licensePoolId):
-		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not licensePoolId:
-				raise BackendBadValueError("No license pool id given")
-				
-		result = self.__mysql__.db_getRow('SELECT `hostId`, `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `hostId`="%s" AND `licensePoolId`="%s"' % (hostId, licensePoolId))
-		
-		if (result):
-			result['hostId']=result['hostId'].encode('utf-8')
-			result['licensePoolId']=result['licensePoolId'].encode('utf-8')
-			result['softwareLicenseId']=result['softwareLicenseId'].encode('utf-8')
-			return result
+			(softwareLicenseId, licenseKey) = self._getFreeSoftwareLicense(hostId, licensePoolId)
+			if not licenseKey:
+				logger.info("License available but no license key found")
 			
-		usedCounter = {}
-		maxCounter = {}
-		boundToHost = {}
-		sLIds = []
-		boundToHostSLId = ''
-		result = {}
-		
-		# find all licenses for the pool
-		res1 = self.__mysql__.db_getSet('SELECT `softwareLicenseId` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `licensePoolId`="%s"' % (licensePoolId))
-		
-		if not res1:
-			raise BackendMissingDataError("No licenses found for license pool '%s' " % licensePoolId)
+			logger.info("Using software license id '%s', license key '%s' for host '%s' and license pool '%s'" \
+					% (softwareLicenseId, licenseKey, hostId, licensePoolId))
 			
-		for row in res1:
-			sLId = row['softwareLicenseId']
-			sLIds.append(sLId)
-			usedCounter[sLId]=0
-			maxCounter[sLId]=0
+			self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'hostId': hostId, 'licenseKey': licenseKey } )
+			
+			result['softwareLicenseId'] = softwareLicenseId
+			result['licenseKey']        = licenseKey
+			result['notes']             = ''
 		
-		# note the conditions for them
-		for sLId in sLIds:
-			row = self.__mysql__.db_getRow('SELECT `softwareLicenseId`, `boundToHost`, `maxInstallations` FROM `SOFTWARE_LICENSE` WHERE `softwareLicenseId`="%s"' % sLId)
-			if row['maxInstallations']:
-				maxCounter[sLId] = row['maxInstallations']
-			else:
-				maxCounter[sLId] = 1
-				
-			if row['boundToHost']:
-				boundToHost[sLId] = row['boundToHost']
-				
-				if row['boundToHost'] == hostId:
-					boundToHostSLId = sLId
-			
-		# count used licences
-		for sLId in sLIds:
-			res2 = self.__mysql__.db_getSet('SELECT `licensePoolId`, `softwareLicenseId` FROM `LICENSE_USED_BY_HOST` WHERE `licensePoolId`="%s" and `softwareLicenseId`="%s"'  % (licensePoolId, sLId))
-			
-			for row in res2:
-				usedCounter[sLId]+=1
-				
-			
-		# give result
-		
-		result['hostId'] = hostId
 		result['licensePoolId'] = licensePoolId
+		result['hostId']        = hostId
 		
-		if boundToHostSLId and (usedCounter[boundToHostSLId] == 0):
-			result['softwareLicenseId'] = boundToHostSLId
-			
-		else:
-			for sLId in sLIds:
-				if usedCounter[sLId] < maxCounter[sLId]:
-					result['softwareLicenseId'] = sLId
-					break
-		
-		if not result['softwareLicenseId']:
-			raise BackendMissingDataError("No license found for license pool '%s' " % licensePoolId)
-		 
-		row = self.__mysql__.db_getRow('SELECT `licenseKey` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `softwareLicenseId`="%s" and `licensePoolId`="%s"' % (result['softwareLicenseId'],licensePoolId))
-		
-		# Register license key as used by host
-		self.__mysql__.db_insert( "LICENSE_USED_BY_HOST", { 'licensePoolId': licensePoolId, 'softwareLicenseId': result['softwareLicenseId'], 'licenseKey': row['licenseKey'], 'hostId': hostId} )
-		
-		result['softwareLicenseId']=result['softwareLicenseId'].encode('utf-8')
 		return result
-			
-			
-	def editSoftwareLicenseUsage(self, hostId, licensePoolId, softwareLicenseId, licenseKey="", notes=""):
-		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		
-		whereclause = '`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId)
-		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE ' + whereclause)
-		data = { 'licenseKey': licenseKey, 'notes': notes }
-		if result:
-			self.__mysql__.db_update('LICENSE_USED_BY_HOST', whereclause, data)
-		else:
-			raise BackendMissingDataError("License usage not found")
-		
-		licenseUsedByHost = { 'licensePoolId': licensePoolId, 'softwareLicenseId': softwareLicenseId, 'licenseKey': licenseKey, 'hostId': hostId, 'notes': notes }
-		return licenseUsedByHost
-		
-		
-	def deleteSoftwareLicenseUsage(self, hostId, softwareLicenseId, licensePoolId=""):
-		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		
-		whereclause = ''
-		if (licensePoolId):
-			whereclause = '`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId)
-		else:
-			whereclause = '`hostId`="%s" AND `softwareLicenseId`="%s"' % (hostId, softwareLicenseId)
-		
-		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST`' + ' WHERE ' +  whereclause)
-		
-		if result:
-			logger.debug('delete software license usage with `hostId`="%s", `licensePoolId`="%s",`softwareLicenseId`="%s"' \
-								% (hostId, licensePoolId, softwareLicenseId))
-		else:
-			logger.info('no software license usage found for deleting, `hostId`="%s". `licensePoolId`="%s",`softwareLicenseId`="%s"' \
-								% (hostId, licensePoolId, softwareLicenseId))	
-								
-		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', whereclause)
-		
 	
-	def getUsedLicenses_listOfHashes(self, hostIds=[], licensePoolId=""):
+	def getAndAssignSoftwareLicenseKey(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
+		return self.getOrCreateSoftwareLicenseUsage_hash(hostId, licensePoolId, productId, windowsSoftwareId).get('licenseKey', '')
+	
+	def getSoftwareLicenseUsages_listOfHashes(self, hostIds=[], licensePoolIds=[]):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		sql='SELECT * FROM `LICENSE_USED_BY_HOST`'
-		if licensePoolId:
-			sql += ' WHERE `licensePoolId`="%s"' % licensePoolId
+		
+		sql = 'SELECT * FROM `LICENSE_USED_BY_HOST`'
+		
+		if licensePoolIds:
+			sql += ' WHERE `licensePoolId` in ('
+			if not type(licensePoolIds) is list:
+				licensePoolIds = [ licensePoolIds ]
+			for licensePoolId in licensePoolIds:
+				sql += '"%s", ' % licensePoolId
+			sql = sql[:-2]+')'
+		
 		if hostIds:
-			if licensePoolId:
+			if licensePoolIds:
 				sql += ' AND `hostId` IN ('
 			else:
 				sql += ' WHERE `hostId` IN ('
@@ -1706,46 +1533,66 @@ class MySQLBackend(DataBackend):
 			for hostId in hostIds:
 				sql += '"%s", ' % hostId
 			sql = sql[:-2]+')'
-		usedLicenses = []
+		
+		licenseUsages = []
 		for res in self.__mysql__.db_getSet(sql):
-			usedLicense = {
+			licenseUsages.append({
 				"hostId":            res["hostId"].encode('utf-8'),
 				"softwareLicenseId": res["softwareLicenseId"].encode('utf-8'),
 				"licensePoolId":     res["licensePoolId"].encode('utf-8'),
-				"notes":			 res.get("notes", "").encode('utf-8'),
+				"notes":             res.get("notes", "").encode('utf-8'),
 				"licenseKey":        res.get("licenseKey", "").encode('utf-8'),
-			}
-			usedLicenses.append(usedLicense)
-		return usedLicenses
-		
-	def freeSoftwareLicense(self, hostId, licensePoolId="", productId="", windowsSoftwareId=""):
+			})
+		return licenseUsages
+	
+	def setSoftwareLicenseUsage(self, hostId, licensePoolId, softwareLicenseId, licenseKey="", notes=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		licensePoolIds = []
-		if licensePoolId:
-			licensePoolIds = [ licensePoolId ]
+		
+		licenseUsedByHost = { 'licenseKey': licenseKey, 'notes': notes }
+		if self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE ' + where):
+			self.__mysql__.db_update('LICENSE_USED_BY_HOST', where, licenseUsedByHost)
 		else:
+			licenseUsedByHost['hostId'] = hostId
+			licenseUsedByHost['licensePoolId'] = licensePoolId
+			licenseUsedByHost['softwareLicenseId'] = softwareLicenseId
+			self.__mysql__.db_insert('LICENSE_USED_BY_HOST', licenseUsedByHost)
+		
+	def deleteSoftwareLicenseUsage(self, hostId, softwareLicenseId="", licensePoolId="", productId="", windowsSoftwareId=""):
+		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
+		if not licensePoolId:
 			if productId:
 				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `PRODUCT_ID_TO_LICENSE_POOL` WHERE `productId`="%s"' % productId)
 				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for product id '%s' found" % productId)
-				for res in result:
-					licensePoolIds.append(res['licensePoolId'])
+					raise LicenseConfigurationError("No license pool for product id '%s' found" % productId)
+				elif (len(result) > 1):
+					raise LicenseConfigurationError("Multiple license pools for product id '%s' found" % productId)
+				licensePoolId = result[0]['licensePoolId']
 			elif windowsSoftwareId:
 				result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` WHERE `windowsSoftwareId`="%s"' % windowsSoftwareId)
 				if (len(result) < 1):
-					raise BackendMissingDataError("No license pool for windows software id '%s' found" % windowsSoftwareId)
-				for res in result:
-					licensePoolIds.append(res['licensePoolId'])
+					raise LicenseConfigurationError("No license pool for windows software id '%s' found" % windowsSoftwareId)
+				elif (len(result) > 1):
+					raise LicenseConfigurationError("Multiple license pools for windows software id '%s' found" % windowsSoftwareId)
+				licensePoolId = result[0]['licensePoolId']
 			else:
 				raise BackendBadValueError("No license pool id, product id or windows software id given.")
 		
-		where = '`hostId`="%s" AND `licensePoolId` IN (' % hostId
-		for licensePoolId in licensePoolIds:
-			where += '"%s", ' % licensePoolId
-		where = where[:-2]+')'
-		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', where)
+		where = ''
+		if (softwareLicenseId):
+			where = '`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId)
+		else:
+			where = '`hostId`="%s" AND `licensePoolId`="%s"' % (hostId, licensePoolId)
 		
-	def freeAllSoftwareLicenses(self, hostIds=[]):
+		result = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE ' +  where)
+		if result:
+			logger.debug("Deleting software license usage for hostId '%s', licensePoolId '%s', softwareLicenseId '%s'" \
+								% (hostId, licensePoolId, softwareLicenseId))
+			self.__mysql__.db_delete('LICENSE_USED_BY_HOST', where)
+		else:
+			logger.info('no software license usage found for deleting, `hostId`="%s". `licensePoolId`="%s",`softwareLicenseId`="%s"' \
+								% (hostId, licensePoolId, softwareLicenseId))
+	
+	def deleteAllSoftwareLicenseUsages(self, hostIds=[]):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		if not hostIds:
 			return
@@ -1757,11 +1604,9 @@ class MySQLBackend(DataBackend):
 			where += '"%s", ' % hostId
 		where = where[:-2]+')'
 		self.__mysql__.db_delete('LICENSE_USED_BY_HOST', where)
-		
-	def getLicenseStatistics(self, licensePoolId):
+	
+	def getLicenseStatistics_hash(self, licensePoolId):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
-		if not re.search(LICENSE_POOL_ID_REGEX, licensePoolId):
-			raise BackendBadValueError("Bad license pool id '%s'" % licensePoolId)
 		
 		licensePool = self.__mysql__.db_getRow('SELECT * FROM `LICENSE_POOL` WHERE `licensePoolId`="%s"' % licensePoolId)
 		if not licensePool:
