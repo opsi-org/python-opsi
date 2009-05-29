@@ -217,6 +217,8 @@ class MySQLBackend(DataBackend):
 						if (val == False): val = 'no'
 						if (val == True):  val = 'yes'
 						data += module.lower().strip() + ' = ' + val + '\r\n'
+					if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
+						raise Exception("Modules file signature expired")
 					self._licenseManagementEnabled = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
 			except Exception, e:
 				logger.error(e)
