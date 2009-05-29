@@ -1554,6 +1554,9 @@ class MySQLBackend(DataBackend):
 			licenseUsedByHost['licensePoolId'] = licensePoolId
 			licenseUsedByHost['softwareLicenseId'] = softwareLicenseId
 			self.__mysql__.db_insert('LICENSE_USED_BY_HOST', licenseUsedByHost)
+			
+		key = {	'hostId' :  hostId, 'softwareLicenseId': softwareLicenseId, 'licensePoolId' : licensePoolId }  
+		return key
 		
 	def deleteSoftwareLicenseUsage(self, hostId, softwareLicenseId="", licensePoolId="", productId="", windowsSoftwareId=""):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
