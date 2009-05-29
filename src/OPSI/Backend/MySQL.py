@@ -1546,6 +1546,7 @@ class MySQLBackend(DataBackend):
 		if not self._licenseManagementEnabled: raise BackendModuleDisabledError("License management module currently disabled")
 		
 		licenseUsedByHost = { 'licenseKey': licenseKey, 'notes': notes }
+		where = '`hostId`="%s" AND `licensePoolId`="%s" AND `softwareLicenseId`="%s"' % (hostId, licensePoolId, softwareLicenseId)
 		if self.__mysql__.db_getRow('SELECT * FROM `LICENSE_USED_BY_HOST` WHERE ' + where):
 			self.__mysql__.db_update('LICENSE_USED_BY_HOST', where, licenseUsedByHost)
 		else:
