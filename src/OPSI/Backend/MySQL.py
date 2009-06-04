@@ -1256,7 +1256,7 @@ class MySQLBackend(DataBackend):
 			hostIds = []
 			for res in result:
 				hostIds.append(res['hostId'])
-			raise BackendReferentialIntegrityError("Refusing to delete software license '%s', software license is used by hosts: %s" \
+			raise BackendReferentialIntegrityError("Refusing to delete software license '%s', since the software license is used by hosts: %s" \
 									% (softwareLicenseId, hostIds))
 		
 		result = self.__mysql__.db_getSet('SELECT `licensePoolId` FROM `SOFTWARE_LICENSE_TO_LICENSE_POOL` WHERE `softwareLicenseId`="%s"' % softwareLicenseId)
@@ -1265,7 +1265,7 @@ class MySQLBackend(DataBackend):
 				licensePoolIds = []
 				for res in result:
 					licensePoolIds.append(res['licensePoolId'])
-				raise BackendReferentialIntegrityError("Refusing to delete software license '%s', software license is attached to license pools: %s" \
+				raise BackendReferentialIntegrityError("Refusing to delete software license '%s', delete first the assignments to the license pools: %s" \
 									% (softwareLicenseId, licensePoolIds))
 			else:
 				self.__mysql__.db_delete('SOFTWARE_LICENSE_TO_LICENSE_POOL', '`softwareLicenseId`="%s"' % softwareLicenseId)
