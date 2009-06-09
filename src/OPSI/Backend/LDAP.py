@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 # Imports
 import ldap, ldap.modlist, re, json
@@ -452,7 +452,7 @@ class LDAPBackend(DataBackend):
 				except BackendMissingDataError, e:
 					if self._createServerCommand:
 						cmd = self._createServerCommand
-						cmd = cmd.replace('%name%', clientName.lower())
+						cmd = cmd.replace('%name%', serverName.lower())
 						cmd = cmd.replace('%domain%', domain.lower())
 						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
 						
@@ -934,7 +934,7 @@ class LDAPBackend(DataBackend):
 				except BackendMissingDataError, e:
 					if self._createServerCommand:
 						cmd = self._createServerCommand
-						cmd = cmd.replace('%name%', clientName.lower())
+						cmd = cmd.replace('%name%', depotName.lower())
 						cmd = cmd.replace('%domain%', domain.lower())
 						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
 						
