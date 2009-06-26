@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 # Imports
 import time, json, gettext, os, re, random, subprocess
@@ -817,6 +817,7 @@ def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=Non
 			logger.error("No disks found in txtsetup.oem, failed to integrate textmode driver.")
 			messageSubject.setMessage("No disks found in txtsetup.oem, failed to integrate textmode driver", severity='ERROR')
 			continue
+		logger.debug("Found disks: %s" % driverDisks)
 		
 		# Search for needed files
 		logger.info("Searching for needed files")

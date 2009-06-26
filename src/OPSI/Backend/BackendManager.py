@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 
 # Imports
 import os, stat, types, re, socket, new, base64, time
@@ -1002,13 +1002,13 @@ class BackendManager(DataBackend):
 				sequence = []
 				for productState in allProductStates[hostId]:
 					productId = productState['productId']
-					sequence.append(productId)
 					depotId = hostToDepot[hostId]
 					products[productId] = pycopy.deepcopy(allProducts[depotId][productId])
 					products[productId]['state'] = productState
 					products[productId]['dependencies'] = pycopy.deepcopy(allProductDependencies[depotId][productId])
 					for ps in productStates[hostId]:
 						if (ps['productId'] == productId):
+							sequence.append(productId)
 							if ps.get('installationStatus'):
 								products[productId]['state']['installationStatus'] = ps['installationStatus']
 							if ps.get('actionRequest'):
@@ -1018,8 +1018,10 @@ class BackendManager(DataBackend):
 				if options['processPriorities']:
 					# Sort by priority
 					priorityToProductIds = {}
-					sequence = []
+					newSequence = []
 					for (productId, product) in products.items():
+						if not productId in sequence:
+							continue
 						priority = int(products[productId]['priority'])
 						if not priorityToProductIds.has_key(priority):
 							priorityToProductIds[priority] = []
@@ -1028,8 +1030,9 @@ class BackendManager(DataBackend):
 					priorities.sort()
 					priorities.reverse()
 					for priority in priorities:
-						sequence.extend(priorityToProductIds[priority])
-				
+						newSequence.extend(priorityToProductIds[priority])
+					sequence = newSequence
+					
 					logger.debug("Sequence after priority sorting:")
 					for productId in sequence:
 						logger.debug("   %s (%s)" % (productId, products[productId]['priority']))
