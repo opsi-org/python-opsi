@@ -40,7 +40,8 @@ from _mysql_exceptions import *
 
 # OPSI imports
 from OPSI.Logger import *
-from Objects import *
+from Object import *
+from Backend import *
 
 # Get logger instance
 logger = Logger()
@@ -168,10 +169,10 @@ class MySQL:
 # ======================================================================================================
 class MySQLBackend(DataBackend):
 	
-	def __init__(self, username = '', password = '', address = 'localhost', backendManager=None, args={}):
+	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
 		''' MySQLBackend constructor. '''
 		
-		self.__backendManager = backendManager
+		#self.__backendManager = backendManager
 		
 		# Default values
 		self._defaultDomain = 'opsi.org'
@@ -181,7 +182,7 @@ class MySQLBackend(DataBackend):
 		self._database = 'opsi'
 		
 		# Parse arguments
-		for (option, value) in args.items():
+		for (option, value) in kwargs.items():
 			if   (option.lower() == 'database'):		self._database = value
 			elif (option.lower() == 'defaultdomain'): 	self._defaultDomain = value
 			elif (option.lower() == 'host'):		self._address = value
@@ -194,32 +195,6 @@ class MySQLBackend(DataBackend):
 		self.__mysql__ = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
 		
 		self._licenseManagementEnabled = True
-		if self.__backendManager:
-			self._licenseManagementEnabled = False
-			try:
-				modules = self.__backendManager.getOpsiInformation_hash()['modules']
-				if modules.get('valid') and modules.get('license_management'):
-					import base64, twisted.conch.ssh.keys
-					try:
-						from hashlib import md5
-					except ImportError:
-						from md5 import md5
-					publicKey = twisted.conch.ssh.keys.getPublicKeyObject(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
-					data = ''
-					mks = modules.keys()
-					mks.sort()
-					for module in mks:
-						if module in ('valid', 'signature'):
-							continue
-						val = modules[module]
-						if (val == False): val = 'no'
-						if (val == True):  val = 'yes'
-						data += module.lower().strip() + ' = ' + val + '\r\n'
-					if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
-						raise Exception("Modules file signature expired")
-					self._licenseManagementEnabled = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
-			except Exception, e:
-				logger.error(e)
 		
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
 		#logger.warning("%s (file: %s, line: %s)" % (message, filename, lineno))
@@ -284,8 +259,11 @@ class MySQLBackend(DataBackend):
 			result['id'] = result[id]
 			del result[id]
 		return result
-		
-	def deleteOpsiBase(self):
+	
+	
+		raise NotImplemented
+	
+	def base_delete(self):
 		# Drop database
 		failure = 0
 		done = False
@@ -299,7 +277,7 @@ class MySQLBackend(DataBackend):
 					done = False
 					failure += 1
 		
-	def createOpsiBase(self):
+	def base_create(self):
 		# Hardware audit database
 		tables = {}
 		logger.debug("Current tables:")
@@ -455,16 +433,7 @@ class MySQLBackend(DataBackend):
 				'''
 			logger.debug(table)
 			self._writeToServer_(table)
-		
-	def host_create(self, hosts=[]):
-		# TODO: move to super class
-		for host in forceList(hosts):
-			logger.notice("Creating host '%s'" % host)
-			if self.host_get(attributes=['id'], id = host.id):
-				logger.info("Host '%s' already exists, updating" % host)
-				return self.host_update(host)
-			return self.host_insert(host)
-		
+	
 	def host_insert(self, host):
 		host = host.toHash()
 		host['hostId'] = host['id']
@@ -472,12 +441,10 @@ class MySQLBackend(DataBackend):
 		self.__mysql__.db_insert('HOST', host)
 	
 	def host_update(self, host):
-		#host['hostId'] = host['id']
-		#del host['id']
-		#self.__mysql__.db_insert('HOST', host)
-		pass
+		raise NotImplemented
 	
 	def host_get(self, attributes=[], **filter):
+		logger.info("Getting hosts, filter: %s" % filter)
 		hosts = []
 		self._adjustAttributes(Host, attributes, filter)
 		for res in  self.__mysql__.db_getSet(self._createQuery('HOST', attributes, filter)):
@@ -485,29 +452,32 @@ class MySQLBackend(DataBackend):
 			hosts.append(Host.fromHash(res))
 		return hosts
 	
-	def host_delete(self, hosts=[]):
-		for host in forceList(hosts):
-			logger.notice("Deleting host %s" % host)
+	def host_delete(self, hosts):
+		for host in forceObjectClassList(hosts, Host):
+			logger.info("Deleting host %s" % host)
 			self.__mysql__.db_delete('HOST', "`type` = '%s' AND `hostId` = '%s'" % (host.getType(), host.id))
 	
-	def config_create(self, configs=[]):
-		for config in forceList(configs):
-			logger.notice("Creating config %s" % config)
-			self.__mysql__.db_insert('CONFIG', {
-					'name': config.name,
-					'description': config.description,
-					'type': config.getType(),
-					'editable': config.editable,
-					'multiValue': config.multiValue
-					})
-			for value in config.possibleValues:
-				self.__mysql__.db_insert('CONFIG_VALUE', {
-						'name': config.name,
-						'value': value,
-						'isDefault': (value in config.defaultValues)
-						})
+	
+	def config_insert(self, config):
+		config = config.toHash()
+		possibleValues = config['possibleValues']
+		defaultValues = config['defaultValues']
+		del config['possibleValues']
+		del config['defaultValues']
+		
+		self.__mysql__.db_insert('CONFIG', config)
+		for value in possibleValues:
+			self.__mysql__.db_insert('CONFIG_VALUE', {
+				'name': config['name'],
+				'value': value,
+				'isDefault': (value in defaultValues)
+				})
+	
+	def config_update(self, config):
+		raise NotImplemented
 	
 	def config_get(self, attributes=[], **filter):
+		logger.info("Getting configs, filter: %s" % filter)
 		configs = []
 		self._adjustAttributes(Config, attributes, filter)
 		for res in self.__mysql__.db_getSet(self._createQuery('CONFIG', attributes, filter)):
@@ -521,20 +491,26 @@ class MySQLBackend(DataBackend):
 			configs.append(Config.fromHash(res))
 		return configs
 	
-	def product_create(self, products=[]):
-		for product in forceList(products):
-			logger.notice("Creating product %s" % product)
-			product = product.toHash()
-			product['productId'] = product['id']
-			del product['id']
-			windowsSoftwareIds = product['windowsSoftwareIds']
-			del product['windowsSoftwareIds']
-			del product['productClassIds']
-			self.__mysql__.db_insert('PRODUCT', product)
-			for windowsSoftwareId in windowsSoftwareIds:
-				self.__mysql__.db_insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': product['productId']})
+	def config_delete(self, configs):
+		for config in forceObjectClassList(configs, Config):
+			logger.info("Deleting config %s" % config)
+			self.__mysql__.db_delete('CONFIG_VALUE', u"`name` = '%s'" % config.name)
+			self.__mysql__.db_delete('CONFIG', u"`name` = '%s'" % config.name)
+	
+	
+	def product_insert(self, product):
+		product = product.toHash()
+		product['productId'] = product['id']
+		del product['id']
+		windowsSoftwareIds = product['windowsSoftwareIds']
+		del product['windowsSoftwareIds']
+		del product['productClassIds']
+		self.__mysql__.db_insert('PRODUCT', product)
+		for windowsSoftwareId in windowsSoftwareIds:
+			self.__mysql__.db_insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': product['productId']})
 	
 	def product_get(self, attributes=[], **filter):
+		logger.info("Getting products, filter: %s" % filter)
 		products = []
 		self._adjustAttributes(Product, attributes, filter)
 		for res in self.__mysql__.db_getSet(self._createQuery('PRODUCT', attributes, filter)):
@@ -547,15 +523,59 @@ class MySQLBackend(DataBackend):
 			products.append(Product.fromHash(res))
 		return products
 	
-	def productOnDepot_create(self, productOnDepots=[]):
-		productOnDepots = forceList(productOnDepots)
-		for productOnDepot in productOnDepots:
-			logger.notice("Creating productOnDepot '%s'" % productOnDepot)
-			if self.productOnDepot_get(productId = productOnDepot.productId, depotId = productOnDepot.depotId):
-				logger.info("ProductOnDepot '%s' already exists, updating" % productOnDepot)
-				return self.productOnDepot_update(productOnDepot)
-			return self.productOnDepot_insert(productOnDepot)
+	def product_delete(self, products):
+		for product in forceObjectClassList(products, Product):
+			logger.info("Deleting config %s" % config)
+			#self.__mysql__.db_delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % product.id)
+			self.__mysql__.db_delete('PRODUCT', "`productId` = '%s'" % product.id)
+	
+	
+	def productProperty_insert(self, productProperty):
+		productProperty = productProperty.toHash()
+		possibleValues = productProperty['possibleValues']
+		defaultValues = productProperty['defaultValues']
+		del productProperty['possibleValues']
+		del productProperty['defaultValues']
 		
+		self.__mysql__.db_insert('PRODUCT_PROPERTY', productProperty)
+		for value in possibleValues:
+			self.__mysql__.db_insert('PRODUCT_PROPERTY_VALUE', {
+					'productId': productProperty['productId'],
+					'productVersion': productProperty['productVersion'],
+					'packageVersion': productProperty['packageVersion'],
+					'name': productProperty['name'],
+					'value': value,
+					'isDefault': (value in defaultValues)
+					})
+
+	def productProperty_get(self, attributes=[], **filter):
+		logger.info("Getting product properties, filter: %s" % filter)
+		productProperties = []
+		self._adjustAttributes(ProductProperty, attributes, filter)
+		for res in self.__mysql__.db_getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
+			res['possibleValues'] = []
+			res['defaultValues'] = []
+			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
+				for res2 in self.__mysql__.db_getSet(u"select * from PRODUCT_PROPERTY_VALUE where " \
+					+ u"`name` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
+					% (res['name'], res['productId'], res['productVersion'], res['packageVersion'])):
+					res['possibleValues'].append(res2['value'])
+					if res2['isDefault']:
+						res['defaultValues'].append(res2['value'])
+			productProperties.append(ProductProperty.fromHash(res))
+		return productProperties
+	
+	def productProperty_delete(self, productProperties):
+		for productProperty in forceObjectClassList(productProperties, ProductProperty):
+			logger.info("Deleting product property %s" % productProperty)
+			self.__mysql__.db_delete('PRODUCT_PROPERTY_VALUE',
+				u"`name` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
+					% (productProperty['name'], productProperty['productId'], productProperty['productVersion'], productProperty['packageVersion']))
+			self.__mysql__.db_delete('PRODUCT_PROPERTY',
+				u"`name` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
+					% (productProperty['name'], productProperty['productId'], productProperty['productVersion'], productProperty['packageVersion']))
+	
+	
 	def productOnDepot_insert(self, productOnDepot):
 		productOnDepot = productOnDepot.toHash()
 		self.__mysql__.db_insert('PRODUCT_ON_DEPOT', productOnDepot)
@@ -565,42 +585,13 @@ class MySQLBackend(DataBackend):
 		for res in self.__mysql__.db_getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
 			productOnDepots.append(ProductOnDepot.fromHash(res))
 		return productOnDepots
-		
 	
-	def productProperty_create(self, productProperties=[]):
-		for productProperty in forceList(productProperties):
-			logger.notice("Creating productProperty %s" % productProperty)
-			productProperty = productProperty.toHash()
-			possibleValues = productProperty['possibleValues']
-			defaultValues = productProperty['defaultValues']
-			del productProperty['possibleValues']
-			del productProperty['defaultValues']
-			
-			self.__mysql__.db_insert('PRODUCT_PROPERTY', productProperty)
-			for value in possibleValues:
-				self.__mysql__.db_insert('PRODUCT_PROPERTY_VALUE', {
-						'productId': productProperty['productId'],
-						'productVersion': productProperty['productVersion'],
-						'packageVersion': productProperty['packageVersion'],
-						'name': productProperty['name'],
-						'value': value,
-						'isDefault': (value in defaultValues)
-						})
+	def productOnDepot_insert(self, productOnDepot):
+		productOnDepot = productOnDepot.toHash()
+		self.__mysql__.db_insert('PRODUCT_ON_DEPOT', productOnDepot)
 	
-	def productProperty_get(self, attributes=[], **filter):
-		#configs = []
-		#self._adjustAttributes(Config, attributes, filter)
-		#for res in self.__mysql__.db_getSet(self._createQuery('CONFIG', attributes, filter)):
-		#	res['possibleValues'] = []
-		#	res['defaultValues'] = []
-		#	if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-		#		for res2 in self.__mysql__.db_getSet(u"select * from CONFIG_VALUE where `name` = '%s'" % res['name']):
-		#			res['possibleValues'].append(res2['value'])
-		#			if res2['isDefault']:
-		#				res['defaultValues'].append(res2['value'])
-		#	configs.append(Config.fromHash(res))
-		#return configs
-		return []
+	
+	
 		
 
 
