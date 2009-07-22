@@ -171,6 +171,32 @@ assert forceFilename('c:\\tmp\\test.txt') == u'c:\\tmp\\test.txt'
 assert type(forceFilename('/tmp/test.txt')) is unicode
 
 
+for i in ('installed', 'not_installed'):
+	assert forceInstallationStatus(i) == i
+	assert type(forceInstallationStatus(i)) is unicode
+for i in ('none', 'abc'):
+	try:
+		forceInstallationStatus(i)
+	except BackendBadValueError:
+		pass
+	else:
+		raise Exception(u"'%s' was accepted as installationStatus" % i)
+
+for i in ('setup', 'uninstall', 'update', 'once', 'always', 'none', None):
+	assert forceActionRequest(i) == str(i).lower()
+	assert type(forceActionRequest(i)) is unicode
+for i in ('installed'):
+	try:
+		forceActionRequest(i)
+	except BackendBadValueError:
+		pass
+	else:
+		raise Exception(u"'%s' was accepted as actionRequest" % i)
+
+
+assert forceActionProgress('installing 50%') == u'installing 50%'
+assert type(forceActionProgress('installing 50%')) is unicode
+
 
 
 

@@ -48,7 +48,10 @@ def forceUnicode(var):
 	if not type(var) is str:
 		var = str(var)
 	return unicode(var, 'utf-8', 'replace')
-	
+
+def forceUnicodeLower(var):
+	return forceUnicode(var).lower()
+
 def forceUnicodeList(var):
 	var = forceList(var)
 	for i in range(len(var)):
@@ -91,7 +94,7 @@ def forceOpsiTimestamp(var):
 
 hostIdRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')
 def forceHostId(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	match = re.search(hostIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad host id: %s" % var)
@@ -99,7 +102,7 @@ def forceHostId(var):
 
 hardwareAddressRegex = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
 def forceHardwareAddress(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	if not var:
 		return var
 	match = re.search(hardwareAddressRegex, var)
@@ -109,7 +112,7 @@ def forceHardwareAddress(var):
 
 ipAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 def forceIPAddress(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	if not var:
 		return var
 	if not re.search(ipAddressRegex, var):
@@ -118,7 +121,7 @@ def forceIPAddress(var):
 
 networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3][0-9]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	if not var:
 		return var
 	if not re.search(networkAddressRegex, var):
@@ -127,7 +130,7 @@ def forceNetworkAddress(var):
 
 urlRegex = re.compile('^[a-z0-9]+://[/a-z0-9]')
 def forceUrl(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	if not var:
 		return var
 	if not re.search(urlRegex, var):
@@ -136,7 +139,7 @@ def forceUrl(var):
 
 opsiHostKeyRegex = re.compile('^[0-9a-f]{32}$')
 def forceOpsiHostKey(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	if not var:
 		return var
 	if not re.search(opsiHostKeyRegex, var):
@@ -161,13 +164,28 @@ def forcePackageVersion(var):
 	
 productIdRegex = re.compile('^[a-zA-Z0-9\_\.-]+$')
 def forceProductId(var):
-	var = forceUnicode(var).lower()
+	var = forceUnicodeLower(var)
 	match = re.search(productIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad product id: %s" % var)
 	return var
 
 def forceFilename(var):
+	return forceUnicode(var)
+
+def forceInstallationStatus(var):
+	var = forceUnicodeLower(var)
+	if var and var not in ('installed', 'not_installed'):
+		raise BackendBadValueError(u"Bad installation status: %s" % var)
+	return var
+
+def forceActionRequest(var):
+	var = forceUnicodeLower(var)
+	if var and var not in ('setup', 'uninstall', 'update', 'always', 'once', 'none'):
+		raise BackendBadValueError(u"Bad action request: %s" % var)
+	return var
+
+def forceActionProgress(var):
 	return forceUnicode(var)
 
 def forceObjectClass(var, objectClass):
@@ -450,7 +468,7 @@ class Config(Entity):
 	subClasses = {}
 	
 	def __init__(self, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
-		self.name = forceUnicode(name)
+		self.name = forceUnicodeLower(name)
 		self.description = forceUnicode(description)
 		self.possibleValues = forceList(possibleValues)
 		self.defaultValues = forceList(defaultValues)
@@ -512,7 +530,7 @@ class Product(Entity):
 		self.id = forceProductId(id)
 		self.productVersion = forceProductVersion(productVersion)
 		self.packageVersion = forcePackageVersion(packageVersion)
-		self.name = forceUnicode(name)
+		self.name = forceUnicodeLower(name)
 		self.licenseRequired = forceBool(licenseRequired)
 		self.setupScript = forceFilename(setupScript)
 		self.uninstallScript = forceFilename(uninstallScript)
@@ -574,7 +592,7 @@ class ProductProperty(Entity):
 		self.productId = forceProductId(productId)
 		self.productVersion = forceProductVersion(productVersion)
 		self.packageVersion = forcePackageVersion(packageVersion)
-		self.name = forceUnicode(name)
+		self.name = forceUnicodeLower(name)
 		self.description = forceUnicode(description)
 		self.possibleValues = forceList(possibleValues)
 		self.defaultValues = forceList(defaultValues)
@@ -627,8 +645,6 @@ class BoolProductProperty(ProductProperty):
 			raise BackendBadValueError(u"Bool product property cannot have multiple default values: %s" % self.defaultValues)
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
-
-
 class ProductOnDepot(Relationship):
 	subClasses = {}
 	
@@ -658,7 +674,66 @@ class ProductOnDepot(Relationship):
 Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
 
 
+class ProductState(Relationship):
+	subClasses = {}
+	
+	def __init__(self, productId, hostId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
+		self.productId = forceProductId(productId)
+		self.hostId = forceHostId(hostId)
+		self.installationStatus = forceInstallationStatus(installationStatus)
+		self.actionRequest = forceActionRequest(actionRequest)
+		self.actionProgress = forceActionProgress(actionProgress)
+		self.productVersion = forceProductVersion(productVersion)
+		self.packageVersion = forcePackageVersion(packageVersion)
+		self.lastStateChange = lastStateChange
+		if not self.lastStateChange:
+			self.lastStateChange = time.strftime( "%Y%m%d%H%M%S", time.localtime() )
+		self.lastStateChange = forceOpsiTimestamp(self.lastStateChange)
+	
+	@staticmethod
+	def fromHash(hash):
+		return ProductState._fromHash(hash, ProductState)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return ProductState.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s hostId '%s', productId '%s'>" \
+			% (self.getType(), self.hostId, self.productId)
+		
+	def __repr__(self):
+		return unicode(self).encode("utf-8")
+	
+	__str__ = __repr__
+Relationship.subClasses['ProductState'] = ProductState
 
+class ProductPropertyState(Relationship):
+	subClasses = {}
+	
+	def __init__(self, productId, name, hostId, value=''):
+		self.productId = forceProductId(productId)
+		self.name = forceUnicodeLower(name)
+		self.hostId = forceHostId(hostId)
+		self.value = forceUnicode(value)
+	
+	@staticmethod
+	def fromHash(hash):
+		return ProductPropertyState._fromHash(hash, ProductPropertyState)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return ProductPropertyState.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s productId '%s', hostId '%s', name '%s'>" \
+			% (self.getType(), self.productId, self.hostId, self.name)
+		
+	def __repr__(self):
+		return unicode(self).encode("utf-8")
+	
+	__str__ = __repr__
+Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
 
 

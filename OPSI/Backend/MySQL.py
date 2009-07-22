@@ -291,10 +291,6 @@ class MySQLBackend(DataBackend):
 		
 		logger.notice('Creating opsi base')
 		
-		# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# = Client Management                                                                           =
-		# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		
 		# Host table
 		if not 'HOST' in tables.keys():
 			logger.debug('Creating table HOST')
@@ -433,7 +429,29 @@ class MySQLBackend(DataBackend):
 				'''
 			logger.debug(table)
 			self._writeToServer_(table)
+		
+		if not 'PRODUCT_STATE' in tables.keys():
+			logger.debug('Creating table PRODUCT_STATE')
+			table = '''CREATE TABLE `PRODUCT_STATE` (
+					`productId` varchar(50) NOT NULL,
+					FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
+					`hostId` varchar(255) NOT NULL,
+					FOREIGN KEY ( `hostId` ) REFERENCES HOST( `hostId` ),
+					PRIMARY KEY( `productId`, `hostId` ),
+					`installationStatus` varchar(16),
+					`actionRequest` varchar(16),
+					`actionProgress` varchar(255),
+					`productVersion` varchar(16),
+					`packageVersion` varchar(16),
+					`lastStateChange` TIMESTAMP
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				'''
+			logger.debug(table)
+			self._writeToServer_(table)
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Hosts                                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insert(self, host):
 		host = host.toHash()
 		host['hostId'] = host['id']
@@ -458,6 +476,9 @@ class MySQLBackend(DataBackend):
 			self.__mysql__.db_delete('HOST', "`type` = '%s' AND `hostId` = '%s'" % (host.getType(), host.id))
 	
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Configs                                                                                   -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insert(self, config):
 		config = config.toHash()
 		possibleValues = config['possibleValues']
@@ -498,6 +519,9 @@ class MySQLBackend(DataBackend):
 			self.__mysql__.db_delete('CONFIG', u"`name` = '%s'" % config.name)
 	
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Products                                                                                  -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insert(self, product):
 		product = product.toHash()
 		product['productId'] = product['id']
@@ -508,6 +532,9 @@ class MySQLBackend(DataBackend):
 		self.__mysql__.db_insert('PRODUCT', product)
 		for windowsSoftwareId in windowsSoftwareIds:
 			self.__mysql__.db_insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': product['productId']})
+	
+	def product_update(self, product):
+		raise NotImplemented
 	
 	def product_get(self, attributes=[], **filter):
 		logger.info("Getting products, filter: %s" % filter)
@@ -530,6 +557,9 @@ class MySQLBackend(DataBackend):
 			self.__mysql__.db_delete('PRODUCT', "`productId` = '%s'" % product.id)
 	
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductProperties                                                                         -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insert(self, productProperty):
 		productProperty = productProperty.toHash()
 		possibleValues = productProperty['possibleValues']
@@ -547,7 +577,10 @@ class MySQLBackend(DataBackend):
 					'value': value,
 					'isDefault': (value in defaultValues)
 					})
-
+	
+	def productProperty_update(self, productProperty):
+		raise NotImplemented
+	
 	def productProperty_get(self, attributes=[], **filter):
 		logger.info("Getting product properties, filter: %s" % filter)
 		productProperties = []
@@ -576,9 +609,15 @@ class MySQLBackend(DataBackend):
 					% (productProperty['name'], productProperty['productId'], productProperty['productVersion'], productProperty['packageVersion']))
 	
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnDepots                                                                           -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insert(self, productOnDepot):
 		productOnDepot = productOnDepot.toHash()
 		self.__mysql__.db_insert('PRODUCT_ON_DEPOT', productOnDepot)
+	
+	def productOnDepot_update(self, productOnDepot):
+		raise NotImplemented
 	
 	def productOnDepot_get(self, attributes=[], **filter):
 		productOnDepots = []
@@ -586,13 +625,57 @@ class MySQLBackend(DataBackend):
 			productOnDepots.append(ProductOnDepot.fromHash(res))
 		return productOnDepots
 	
-	def productOnDepot_insert(self, productOnDepot):
-		productOnDepot = productOnDepot.toHash()
-		self.__mysql__.db_insert('PRODUCT_ON_DEPOT', productOnDepot)
-	
-	
-	
+	def productOnDepot_delete(self, productOnDepots):
+		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
+			logger.info("Deleting productOnDepot %s" % productOnDepot)
+			self.__mysql__.db_delete('PRODUCT_ON_DEPOT', "`productId` = '%s', `depotId` = '%s'" \
+				% (productOnDepot.productId, productOnDepot.depotId))
 		
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductStates                                                                             -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productState_insert(self, productState):
+		productState = productState.toHash()
+		self.__mysql__.db_insert('PRODUCT_STATE', productState)
+		
+	def productState_update(self, productState):
+		raise NotImplemented
+	
+	def productState_get(self, attributes=[], **filter):
+		logger.info("Getting productStates, filter: %s" % filter)
+		productStates = []
+		for res in self.__mysql__.db_getSet(self._createQuery('PRODUCT_STATE', attributes, filter)):
+			productStates.append(ProductState.fromHash(res))
+		return productStates
+	
+	def productState_delete(self, productStates):
+		for productState in forceObjectClassList(productStates, ProductState):
+			logger.info("Deleting productState %s" % productState)
+			self.__mysql__.db_delete('PRODUCT_STATE', "`productId` = '%s', `hostId` = '%s'" \
+				% (productStates.productId, productStates.hostId))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductPropertyStates                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productPropertyState_insert(self, productPropertyState):
+		productPropertyState = productPropertyState.toHash()
+		self.__mysql__.db_insert('PRODUCT_PROPERTY_STATE', productPropertyState)
+	
+	def productPropertyState_update(self, productPropertyState):
+		raise NotImplemented
+	
+	def productPropertyState_get(self, attributes=[], **filter):
+		logger.info("Getting productPropertyStates, filter: %s" % filter)
+		productPropertyStates = []
+		for res in self.__mysql__.db_getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
+			productPropertyStates.append(ProductPropertyState.fromHash(res))
+		return productPropertyStates
+	
+	def productPropertyState_delete(self, productPropertyStates):
+		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
+			logger.info("Deleting productPropertyState %s" % productPropertyState)
+			self.__mysql__.db_delete('PRODUCT_PROPERTY_STATE', "`productId` = '%s', `hostId` = '%s' `name` = '%s'" \
+				% (productPropertyState.productId, productPropertyState.hostId, productPropertyState.name))
 
 
 

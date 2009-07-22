@@ -187,6 +187,7 @@ def testBackend(backend):
 	productProperties = backend.productProperty_get()
 	assert len(productProperties) == 2
 	
+	
 	logger.notice(u"Testing productOnDepot methods")
 	
 	productOnDepot1 = ProductOnDepot(
@@ -195,6 +196,45 @@ def testBackend(backend):
 		packageVersion = product1.packageVersion,
 		depotId = depot1.id,
 		locked = False)
+	
+	productOnDepot2 = ProductOnDepot(
+		productId = product2.id,
+		productVersion = product2.productVersion,
+		packageVersion = product2.packageVersion,
+		depotId = depot1.id,
+		locked = False)
+	
+	backend.productOnDepot_create([productOnDepot1, productOnDepot2])
+	
+	productOnDepots = backend.productOnDepot_get()
+	assert len(productProperties) == 2
+	
+	
+	logger.notice(u"Testing productState methods")
+	
+	productState1 = ProductState(
+		productId = product1.id,
+		hostId = client1.id,
+		installationStatus = 'installed',
+		actionRequest = 'setup',
+		actionProgress = '',
+		productVersion = product1.productVersion,
+		packageVersion = product1.packageVersion,
+		lastStateChange = '2009-07-01 12:00:00')
+	
+	productState2 = ProductState(
+		productId = product2.id,
+		hostId = client1.id,
+		installationStatus = 'installed',
+		actionRequest = 'uninstall',
+		actionProgress = '',
+		productVersion = product2.productVersion,
+		packageVersion = product2.packageVersion)
+	
+	backend.productState_create([productState1, productState2])
+	
+	productStates = backend.productState_get(hostId = client1.id)
+	assert len(productStates) == 2
 	
 	return
 	# ==========================================================================
@@ -205,13 +245,6 @@ def testBackend(backend):
 		parentGroupId = '',
 		memberIds = [ client1.id, client2.id ]
 	)
-
-	
-	
-	backend.productOnDepot_create(productOnDepots = [productOnDepot1])
-	print backend.productOnDepot_get()
-	
-	
 	
 	
 	
@@ -230,5 +263,34 @@ def testBackend(backend):
 
 
 testBackend( MySQLBackend(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
