@@ -75,7 +75,7 @@ HARDWARE_CLASSES = (	'UNKNOWN',
 			'PORT_CONNECTOR',
 			'HARDDISK' )
 
-SOFTWARE_LICENSE_TYPES = ( 'OEM', 'RETAIL', 'VOLUME' )
+SOFTWARE_LICENSE_TYPES = ( 'OEM', 'RETAIL', 'VOLUME', 'CONCURRENT' )
 SOFTWARE_LICENSE_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\:\.\-]+$")
 LICENSE_CONTRACT_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\:\.\-]+$")
 LICENSE_POOL_ID_REGEX = re.compile("^[a-zA-Z0-9\s\_\:\.\-]+$")
