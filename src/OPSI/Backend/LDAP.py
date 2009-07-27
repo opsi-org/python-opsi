@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 
 # Imports
 import ldap, ldap.modlist, re, json
@@ -899,13 +899,11 @@ class LDAPBackend(DataBackend):
 		return ids
 		
 	def getServerId(self, clientId=None):
-		# Return hostid of localhost
-		serverId = socket.getfqdn()
-		parts = serverId.split('.')
-		if (len(parts) < 3):
-			serverId = parts[0] + '.' + self._defaultDomain
-		return serverId.lower()
-	
+		serverIds = self.getServerIds_list()
+		if not serverIds:
+			return ""
+		return serverIds[0]
+		
 	def createDepot(self, depotName, domain, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl, network, description=None, notes=None, maxBandwidth=0):
 		if not re.search(HOST_NAME_REGEX, depotName):
 			raise BackendBadValueError("Unallowed char in hostname")
