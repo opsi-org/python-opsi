@@ -31,6 +31,7 @@ def testBackend(backend):
 	logger.notice(u"Creating base")
 	backend.base_create()
 	
+	# --- Host --- #
 	logger.notice(u"Testing host methods")
 	client1 = OpsiClient(
 		id = 'test1.uib.local',
@@ -39,19 +40,33 @@ def testBackend(backend):
 		hardwareAddress = '00:01:02:03:04:05',
 		ipAddress = '192.168.1.100',
 		lastSeen = '2009-01-01 00:00:00',
-		opsiHostKey = '12345678901234567890123456789012'
+		opsiHostKey = '45656789789012789012345612340123'
 	)
 	
 	client2 = OpsiClient(
 		id = 'test2.uib.local',
 		description = 'Test client 2',
 		hardwareAddress = '00-ff0aa3:0b-B5',
-		opsiHostKey = '12345678901234567890123456789012'
+		opsiHostKey = '59051234345678890121678901223467'
 	)
+	
+	configserver1 = OpsiConfigserver(
+		id = 'config1.uib.local',
+		opsiHostKey ='71234545689056789012123678901234',
+		depotLocalUrl = 'file:///opt/pcbin/install',
+		depotRemoteUrl = 'smb://config1/opt_pcbin',
+		repositoryLocalUrl = 'file:///var/lib/opsi/products',
+		repositoryRemoteUrl = 'webdavs://config1.uib.local:4447/products',
+		description = 'The configserver',
+		notes = 'Config 1',
+		hardwareAddress = '',
+		ipAddress = '',
+		network = '192.168.1.0/24',
+		maxBandwidth = 10000)
 	
 	depot1 = OpsiDepot(
 		id = 'depot1.uib.local',
-		opsiHostKey ='12345678901234567890123456789012',
+		opsiHostKey ='19012334567845645678901232789012',
 		depotLocalUrl = 'file:///opt/pcbin/install',
 		depotRemoteUrl = 'smb://depot1.uib.local/opt_pcbin',
 		repositoryLocalUrl = 'file:///var/lib/opsi/products',
@@ -60,15 +75,17 @@ def testBackend(backend):
 		notes = 'Däpöt 1',
 		hardwareAddress = '',
 		ipAddress = '',
-		network = '192.168.1.0/24',
+		network = '192.168.2.0/24',
 		maxBandwidth = 10000)
 	
+	backend.host_create(configserver1)
+	backend.host_create(depot1)
 	backend.host_create(client1)
 	backend.host_create(client2)
-	backend.host_create(depot1)
+	
 	
 	hosts = backend.host_get()
-	assert len(hosts) == 3
+	assert len(hosts) == 4
 	
 	hosts = backend.host_get(attributes=['id', 'description'], id = client1.id)
 	assert len(hosts) == 1
@@ -77,9 +94,16 @@ def testBackend(backend):
 	
 	backend.host_delete(client2)
 	hosts = backend.host_get()
-	assert len(hosts) == 2
+	assert len(hosts) == 3
+	
+	backend.host_create(client2)
+	client2.description = 'Updated'
+	backend.host_update(client2)
+	hosts = backend.host_get(description = 'Updated')
+	assert len(hosts) == 1
 	
 	
+	# --- Config --- #
 	logger.notice(u"Testing config methods")
 	config1 = UnicodeConfig(
 		name = u'opsi-linux-bootimage.cmdline.reboot',
@@ -113,7 +137,17 @@ def testBackend(backend):
 	configs = backend.config_get()
 	assert len(configs) == 2
 	
+	config3.description = u'Updated'
+	config3.possibleValues = ['1', '2', '3']
+	config3.defaultValues = ['1', '2']
+	backend.config_update(config3)
 	
+	configs = backend.config_get(description = u'Updated')
+	assert len(configs) == 1
+	assert configs[0].possibleValues == ['1', '2', '3']
+	assert configs[0].defaultValues == ['1', '2']
+	
+	# --- Product --- #
 	logger.notice(u"Testing product methods")
 	
 	product1 = NetbootProduct(
@@ -140,9 +174,9 @@ def testBackend(backend):
 		productVersion = '2.0',
 		packageVersion = 'test',
 		licenseRequired = False,
-		setupScript = "setup.py",
+		setupScript = "setup.ins",
 		uninstallScript = u"uninstall.ins",
-		updateScript = "update.py",
+		updateScript = "update.ins",
 		alwaysScript = u"",
 		onceScript = "",
 		priority = 0,
@@ -151,16 +185,41 @@ def testBackend(backend):
 		productClassNames = ['localboot-products'],
 		windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx'])
 	
+	product3 = LocalbootProduct(
+		id = 'product3',
+		name = u'Product 3',
+		productVersion = 3,
+		packageVersion = 1,
+		licenseRequired = True,
+		setupScript = "setup.ins",
+		uninstallScript = None,
+		updateScript = '',
+		alwaysScript = "",
+		onceScript = "",
+		priority = 100,
+		description = "---",
+		advice = "---",
+		productClassNames = ['localboot-products'],
+		windowsSoftwareIds = [])
 	
-	backend.product_create(products = [ product1, product2 ])
+	
+	
+	backend.product_create(products = [ product1, product2, product3 ])
 	
 	products = backend.product_get()
-	assert len(products) == 2
+	assert len(products) == 3
 	
 	products = backend.product_get(type = 'LocalbootProduct')
+	assert len(products) == 2
+	
+	product2.name = u'Product 2 updated'
+	products = backend.product_update(product2)
+	products = backend.product_get(id = 'product2')
 	assert len(products) == 1
+	assert products[0].name == u'Product 2 updated'
 	
 	
+	# --- ProductProperty --- #
 	logger.notice(u"Testing productProperty methods")
 	
 	productProperty1 = UnicodeProductProperty(
@@ -188,6 +247,7 @@ def testBackend(backend):
 	assert len(productProperties) == 2
 	
 	
+	# --- ProductOnDepot --- #
 	logger.notice(u"Testing productOnDepot methods")
 	
 	productOnDepot1 = ProductOnDepot(
@@ -236,8 +296,36 @@ def testBackend(backend):
 	productStates = backend.productState_get(hostId = client1.id)
 	assert len(productStates) == 2
 	
-	return
-	# ==========================================================================
+	
+	logger.notice(u"Testing productPropertyState methods")
+	
+	productPropertyState1 = ProductPropertyState(
+		productId = product1.id,
+		name = 'test_pp',
+		hostId = client1.id,
+		values = 'unicode1')
+	
+	productPropertyState2 = ProductPropertyState(
+		productId = product1.id,
+		name = 'test_pp_2',
+		hostId = client1.id,
+		values = [ False ])
+	
+	productPropertyState3 = ProductPropertyState(
+		productId = product1.id,
+		name = 'test_pp_2',
+		hostId = client2.id,
+		values = True)
+	
+	backend.productPropertyState_create(productPropertyStates = [ productPropertyState1, productPropertyState2, productPropertyState3 ])
+	
+	productPropertyStates = backend.productPropertyState_get()
+	assert len(productPropertyStates) == 3
+	
+	
+	# --- Group --- #
+	logger.notice(u"Testing group methods")
+	
 	group1 = HostGroup(
 		id = 'test group',
 		description = 'A group',
@@ -245,6 +333,8 @@ def testBackend(backend):
 		parentGroupId = '',
 		memberIds = [ client1.id, client2.id ]
 	)
+	
+	backend.group_create(groups = [ group1 ])
 	
 	
 	

@@ -34,7 +34,7 @@
 
 __version__ = '3.5'
 
-import json, re, copy, time
+import json, re, copy, time, inspect
 
 
 def forceList(var):
@@ -291,7 +291,8 @@ class LicenseMissingError(OpsiError):
 
 
 def mandatoryConstructorArgs(Class):
-	return Class.__init__.func_code.co_varnames[1:][:-1*len(Class.__init__.func_defaults)]
+	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
+	return args[1:][:-1*len(defaults)]
 	
 class Entity(object):
 	subClasses = {}
@@ -412,7 +413,7 @@ Object.subClasses['Host'] = Host
 class OpsiClient(Host):
 	subClasses = {}
 	
-	def __init__(self, id, opsiHostKey, description='', notes='', hardwareAddress='', ipAddress='', created='', lastSeen=''):
+	def __init__(self, id, opsiHostKey='', description='', notes='', hardwareAddress='', ipAddress='', created='', lastSeen=''):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress)
 		self.lastSeen = forceOpsiTimestamp(lastSeen)
 		self.created = created
@@ -429,7 +430,7 @@ Host.subClasses['OpsiClient'] = OpsiClient
 class OpsiDepot(Host):
 	subClasses = {}
 	
-	def __init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
+	def __init__(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
 		     description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress)
 		self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
@@ -444,7 +445,17 @@ class OpsiDepot(Host):
 			% (self.getType(), self.id, self.description, self.notes, self.hardwareAddress, self.ipAddress)
 Host.subClasses['OpsiDepot'] = OpsiDepot
 
-class OpsiGroup(Object):
+class OpsiConfigserver(OpsiDepot):
+	subClasses = {}
+	
+	def __init__(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
+		     description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+		OpsiDepot.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
+		     description, notes, hardwareAddress, ipAddress, network, maxBandwidth)
+	
+OpsiDepot.subClasses['OpsiConfigserver'] = OpsiConfigserver
+
+class Group(Object):
 	subClasses = {}
 	
 	def __init__(self, id, description='', notes='', parentGroupId='', memberIds=[]):
@@ -455,14 +466,14 @@ class OpsiGroup(Object):
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', notes '%s', parentGroupId '%s', memberIds %s>" \
 			% (self.getType(), self.id, self.description, self.notes, self.parentGroupId, self.memberIds)
-Object.subClasses['OpsiGroup'] = OpsiGroup
+Object.subClasses['Group'] = Group
 
-class HostGroup(OpsiGroup):
+class HostGroup(Group):
 	subClasses = {}
 	
 	def __init__(self, id, description='', notes='', parentGroupId='', memberIds=[]):
-		OpsiGroup.__init__(self, id, description, notes, parentGroupId, memberIds)
-OpsiGroup.subClasses['HostGroup'] = HostGroup
+		Group.__init__(self, id, description, notes, parentGroupId, memberIds)
+Group.subClasses['HostGroup'] = HostGroup
 
 class Config(Entity):
 	subClasses = {}
@@ -530,7 +541,7 @@ class Product(Entity):
 		self.id = forceProductId(id)
 		self.productVersion = forceProductVersion(productVersion)
 		self.packageVersion = forcePackageVersion(packageVersion)
-		self.name = forceUnicodeLower(name)
+		self.name = forceUnicode(name)
 		self.licenseRequired = forceBool(licenseRequired)
 		self.setupScript = forceFilename(setupScript)
 		self.uninstallScript = forceFilename(uninstallScript)
@@ -711,11 +722,11 @@ Relationship.subClasses['ProductState'] = ProductState
 class ProductPropertyState(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, name, hostId, value=''):
+	def __init__(self, productId, name, hostId, values=[]):
 		self.productId = forceProductId(productId)
 		self.name = forceUnicodeLower(name)
 		self.hostId = forceHostId(hostId)
-		self.value = forceUnicode(value)
+		self.values = forceList(values)
 	
 	@staticmethod
 	def fromHash(hash):
