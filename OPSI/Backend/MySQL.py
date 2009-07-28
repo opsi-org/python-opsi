@@ -286,8 +286,6 @@ class MySQLBackend(DataBackend):
 	def _uniqueCondition(self, object):
 		condition = u''
 		args = mandatoryConstructorArgs(object.__class__)
-		if isinstance(object, Group):
-			args.append('type')
 		for arg in args:
 			value = eval('object.%s' % arg)
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
@@ -372,7 +370,7 @@ class MySQLBackend(DataBackend):
 					`config_value_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_value_id` ),
 					`name` varchar(200) NOT NULL,
-					FOREIGN KEY ( `name` ) REFERENCES CONFIG( `name` ),
+					FOREIGN KEY ( `name` ) REFERENCES `CONFIG` ( `name` ),
 					`value` TEXT,
 					`isDefault` bool
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -410,7 +408,7 @@ class MySQLBackend(DataBackend):
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
 					PRIMARY KEY( `windowsSoftwareId`),
 					`productId` varchar(50) NOT NULL,
-					FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` )
+					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -422,7 +420,7 @@ class MySQLBackend(DataBackend):
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
-					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES PRODUCT( `productId`, `productVersion`, `packageVersion` ),
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
 					`depotId` varchar(50) NOT NULL,
 					FOREIGN KEY ( `depotId` ) REFERENCES HOST( `hostId` ),
 					PRIMARY KEY(  `productId`, `depotId` ),
@@ -439,7 +437,7 @@ class MySQLBackend(DataBackend):
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`name` varchar(200) NOT NULL,
-					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES PRODUCT( `productId`, `productVersion`, `packageVersion` ),
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
 					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `name` ),
 					`type` varchar(30) NOT NULL,
 					`description` varchar(256),
@@ -459,7 +457,7 @@ class MySQLBackend(DataBackend):
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`name` varchar(200) NOT NULL,
-					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `name` ) REFERENCES PRODUCT_PROPERTY( `productId`, `productVersion`, `packageVersion`, `name` ),
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `name` ) REFERENCES `PRODUCT_PROPERTY` ( `productId`, `productVersion`, `packageVersion`, `name` ),
 					`value` text,
 					`isDefault` bool
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -473,7 +471,7 @@ class MySQLBackend(DataBackend):
 					`productId` varchar(50) NOT NULL,
 					FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
 					`hostId` varchar(255) NOT NULL,
-					FOREIGN KEY ( `hostId` ) REFERENCES HOST( `hostId` ),
+					FOREIGN KEY ( `hostId` ) REFERENCES `HOST` ( `hostId` ),
 					PRIMARY KEY( `productId`, `hostId` ),
 					`installationStatus` varchar(16),
 					`actionRequest` varchar(16),
@@ -492,10 +490,10 @@ class MySQLBackend(DataBackend):
 					`product_property_state_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `product_property_state_id` ),
 					`productId` varchar(50) NOT NULL,
-					FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
+					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 					`name` varchar(200) NOT NULL,
 					`hostId` varchar(255) NOT NULL,
-					FOREIGN KEY ( `hostId` ) REFERENCES HOST( `hostId` ),
+					FOREIGN KEY ( `hostId` ) REFERENCES `HOST` ( `hostId` ),
 					`values` text
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -506,11 +504,23 @@ class MySQLBackend(DataBackend):
 			logger.debug('Creating table GROUP')
 			table = '''CREATE TABLE `GROUP` (
 					`groupId` varchar(255) NOT NULL,
+					PRIMARY KEY( `groupId` ),
 					`type` varchar(30) NOT NULL,
-					PRIMARY KEY( `groupId`, `type` ),
 					`parentGroupId` varchar(255),
 					`description` varchar(100),
 					`notes` varchar(500)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				'''
+			logger.debug(table)
+			self._writeToServer_(table)
+		
+		if not 'OBJECT_TO_GROUP' in tables.keys():
+			logger.debug('Creating table OBJECT_TO_GROUP')
+			table = '''CREATE TABLE `OBJECT_TO_GROUP` (
+					`groupId` varchar(255) NOT NULL,
+					FOREIGN KEY ( `groupId` ) REFERENCES `GROUP` ( `groupId` ),
+					`objectId` varchar(255) NOT NULL,
+					PRIMARY KEY( `groupId`, `objectId` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -795,8 +805,6 @@ class MySQLBackend(DataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insert(self, group):
 		data = self._objectToDatabaseHash(group)
-		memberIds = data['memberIds']
-		del data['memberIds']
 		self.__mysql__.db_insert('GROUP', data)
 	
 	def group_update(self, group):
@@ -809,6 +817,7 @@ class MySQLBackend(DataBackend):
 		groups = []
 		self._adjustAttributes(Group, attributes, filter)
 		for res in self.__mysql__.db_getSet(self._createQuery('GROUP', attributes, filter)):
+			self._adjustResult(Group, res)
 			groups.append(Group.fromHash(res))
 		return groups
 	
@@ -817,8 +826,30 @@ class MySQLBackend(DataBackend):
 			logger.info("Deleting group %s" % group)
 			where = self._uniqueCondition(group)
 			self.__mysql__.db_delete('GROUP', where)
-
-
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ObjectToGroups                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def objectToGroup_insert(self, objectToGroup):
+		data = self._objectToDatabaseHash(objectToGroup)
+		self.__mysql__.db_insert('OBJECT_TO_GROUP', data)
+	
+	def objectToGroup_update(self, objectToGroup):
+		pass
+	
+	def objectToGroup_get(self, attributes=[], **filter):
+		logger.info("Getting objectToGroups, filter: %s" % filter)
+		objectToGroups = []
+		self._adjustAttributes(ObjectToGroup, attributes, filter)
+		for res in self.__mysql__.db_getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter)):
+			objectToGroups.append(ObjectToGroup.fromHash(res))
+		return objectToGroups
+	
+	def objectToGroup_delete(self, objectToGroups):
+		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
+			logger.info("Deleting objectToGroup %s" % objectToGroup)
+			where = self._uniqueCondition(objectToGroup)
+			self.__mysql__.db_delete('OBJECT_TO_GROUP', where)
 
 
 

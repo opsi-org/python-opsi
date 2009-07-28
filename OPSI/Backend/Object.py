@@ -94,7 +94,7 @@ def forceOpsiTimestamp(var):
 
 hostIdRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')
 def forceHostId(var):
-	var = forceUnicodeLower(var)
+	var = forceObjectId(var)
 	match = re.search(hostIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad host id: %s" % var)
@@ -164,7 +164,7 @@ def forcePackageVersion(var):
 	
 productIdRegex = re.compile('^[a-zA-Z0-9\_\.-]+$')
 def forceProductId(var):
-	var = forceUnicodeLower(var)
+	var = forceObjectId(var)
 	match = re.search(productIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad product id: %s" % var)
@@ -199,6 +199,16 @@ def forceObjectClassList(var, objectClass):
 		var[i] = forceObjectClass(var[i], objectClass)
 	return var
 
+groupIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+def forceGroupId(var):
+	var = forceObjectId(var)
+	match = re.search(groupIdRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad group id: %s" % var)
+	return var
+
+def forceObjectId(var):
+	return forceUnicodeLower(var)
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      EXCEPTION CLASSES                                             =
@@ -309,6 +319,7 @@ class Entity(object):
 		for varname in Class.__init__.func_code.co_varnames[1:]:
 			if hash.has_key(varname):
 				kwargs[varname] = hash[varname]
+		
 		return Class(**kwargs)
 	
 	@staticmethod
@@ -375,7 +386,7 @@ class Object(Entity):
 	subClasses = {}
 	
 	def __init__(self, id, description='', notes=''):
-		self.id = forceUnicode(id)
+		self.id = forceObjectId(id)
 		self.description = forceUnicode(description)
 		self.notes = forceUnicode(notes)
 	
@@ -454,26 +465,6 @@ class OpsiConfigserver(OpsiDepot):
 		     description, notes, hardwareAddress, ipAddress, network, maxBandwidth)
 	
 OpsiDepot.subClasses['OpsiConfigserver'] = OpsiConfigserver
-
-class Group(Object):
-	subClasses = {}
-	
-	def __init__(self, id, description='', notes='', parentGroupId='', memberIds=[]):
-		Object.__init__(self, id, description, notes)
-		self.parentGroupId = forceUnicode(parentGroupId)
-		self.memberIds = forceUnicodeList(memberIds)
-		
-	def __unicode__(self):
-		return u"<%s id '%s', description '%s', notes '%s', parentGroupId '%s', memberIds %s>" \
-			% (self.getType(), self.id, self.description, self.notes, self.parentGroupId, self.memberIds)
-Object.subClasses['Group'] = Group
-
-class HostGroup(Group):
-	subClasses = {}
-	
-	def __init__(self, id, description='', notes='', parentGroupId='', memberIds=[]):
-		Group.__init__(self, id, description, notes, parentGroupId, memberIds)
-Group.subClasses['HostGroup'] = HostGroup
 
 class Config(Entity):
 	subClasses = {}
@@ -746,10 +737,62 @@ class ProductPropertyState(Relationship):
 	__str__ = __repr__
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
+class Group(Object):
+	subClasses = {}
+	
+	def __init__(self, id, description='', notes='', parentGroupId=''):
+		Object.__init__(self, id, description, notes)
+		self.id = forceGroupId(id)
+		if not parentGroupId:
+			self.parentGroupId = ''
+		else:
+			self.parentGroupId = forceGroupId(parentGroupId)
+	
+	@staticmethod
+	def fromHash(hash):
+		return Group._fromHash(hash, Group)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return Group.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s id '%s', description '%s', notes '%s', parentGroupId '%s'>" \
+			% (self.getType(), self.id, self.description, self.notes, self.parentGroupId)
+	
+Object.subClasses['Group'] = Group
 
+class HostGroup(Group):
+	subClasses = {}
+	
+	def __init__(self, id, description='', notes='', parentGroupId=''):
+		Group.__init__(self, id, description, notes, parentGroupId)
+Group.subClasses['HostGroup'] = HostGroup
 
-
-
+class ObjectToGroup(Relationship):
+	subClasses = {}
+	
+	def __init__(self, groupId, objectId):
+		self.groupId = forceGroupId(groupId)
+		self.objectId = forceObjectId(objectId)
+	
+	@staticmethod
+	def fromHash(hash):
+		return ObjectToGroup._fromHash(hash, ObjectToGroup)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return ObjectToGroup.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s groupId '%s', objectId '%s'>" \
+			% (self.getType(), self.groupId, self.objectId)
+		
+	def __repr__(self):
+		return unicode(self).encode("utf-8")
+	
+	__str__ = __repr__
+Relationship.subClasses['ObjectToGroup'] = ObjectToGroup
 
 
 
