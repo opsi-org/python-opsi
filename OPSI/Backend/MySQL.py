@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.3'
+__version__ = '3.5'
 
 # Imports
 import MySQLdb, warnings, time, json
@@ -173,26 +173,14 @@ class MySQL:
 class MySQLBackend(DataBackend):
 	
 	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
-		''' MySQLBackend constructor. '''
+		DataBackend.__init__(self, username, password, address, **kwargs)
 		
-		#self.__backendManager = backendManager
-		
-		# Default values
-		self._defaultDomain = 'opsi.org'
-		self._username = username
-		self._password = password
-		self._address = address
 		self._database = 'opsi'
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
-			if   (option.lower() == 'database'):		self._database = value
-			elif (option.lower() == 'defaultdomain'): 	self._defaultDomain = value
-			elif (option.lower() == 'host'):		self._address = value
-			elif (option.lower() == 'username'):		self._username = value
-			elif (option.lower() == 'password'):		self._password = value
-			else:
-				logger.warning("Unknown argument '%s' passed to MySQLBackend constructor" % option)
+			if   (option.lower() == 'database'):
+				self._database = value
 		
 		warnings.showwarning = self._showwarning
 		self.__mysql__ = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)

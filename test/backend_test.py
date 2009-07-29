@@ -4,6 +4,7 @@
 from OPSI.Logger import *
 from OPSI.Backend.Object import *
 from OPSI.Backend.MySQL import MySQLBackend
+from OPSI.Backend.BackendManager import BackendManager
 
 logger = Logger()
 logger.setConsoleLevel(LOG_DEBUG)
@@ -327,19 +328,73 @@ def testBackend(backend):
 	logger.notice(u"Testing group methods")
 	
 	group1 = HostGroup(
-		id = 'test group',
-		description = 'A group',
-		notes = '',
-		parentGroupId = '',
-		memberIds = [ client1.id, client2.id ]
+		id = 'host_group_1',
+		description = 'Group 1',
+		notes = 'First group',
+		parentGroupId = ''
 	)
 	
-	backend.group_create(groups = [ group1 ])
+	group2 = HostGroup(
+		id = u'host group 2',
+		description = 'Group 2',
+		notes = 'Test\nTest\nTest',
+		parentGroupId = 'host_group_1'
+	)
 	
+	group3 = HostGroup(
+		id = u'host group 3',
+		description = 'Group 3',
+		notes = '',
+		parentGroupId = ''
+	)
 	
+	backend.group_create(groups = [ group1, group2, group3 ])
 	
+	groups = backend.group_get()
+	assert len(groups) == 3
 	
+	groups = backend.group_get(description = u'Group 3')
+	assert len(groups) == 1
+	assert groups[0].id == u'host group 3'
 	
+	groups[0].description = u'new description'
+	backend.group_update(groups[0])
+	
+	groups = backend.group_get(id = u'host group 3')
+	assert len(groups) == 1
+	assert groups[0].description == u'new description'
+	
+	backend.group_delete(groups[0])
+	groups = backend.group_get()
+	assert len(groups) == 2
+	
+	# --- ObjectToGroup --- #
+	logger.notice(u"Testing objectToGroup methods")
+	
+	objectToGroup1 = ObjectToGroup(
+		groupId = group1.id,
+		objectId = client1.id
+	)
+	objectToGroup2 = ObjectToGroup(
+		groupId = group1.id,
+		objectId = client2.id
+	)
+	objectToGroup3 = ObjectToGroup(
+		groupId = group2.id,
+		objectId = client2.id
+	)
+	
+	backend.objectToGroup_create(objectToGroups = [objectToGroup1, objectToGroup2, objectToGroup3])
+	
+	objectToGroups = backend.objectToGroup_get()
+	assert len(objectToGroups) == 3
+	
+	objectToGroups = backend.objectToGroup_get(objectId = client2.id)
+	assert len(objectToGroups) == 2
+	
+	objectToGroups = backend.objectToGroup_get(objectId = client1.id)
+	assert len(objectToGroups) == 1
+	assert objectToGroups[0].objectId == client1.id
 	
 	
 	
@@ -352,8 +407,8 @@ def testBackend(backend):
 	
 
 
-testBackend( MySQLBackend(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
-
+#testBackend( MySQLBackend(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
+testBackend( BackendManager(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
 
 
 

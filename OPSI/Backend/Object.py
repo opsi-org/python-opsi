@@ -210,6 +210,14 @@ def forceGroupId(var):
 def forceObjectId(var):
 	return forceUnicodeLower(var)
 
+domainRegex = re.compile('^[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')
+def forceDomain(var):
+	var = forceUnicodeLower(var)
+	match = re.search(domainRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad domain: %s" % var)
+	return var
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      EXCEPTION CLASSES                                             =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''

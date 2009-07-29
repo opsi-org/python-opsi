@@ -48,15 +48,23 @@ logger = Logger()
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class Backend:
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		pass
-
+		
+		self._defaultDomain = 'opsi.org'
+		self._username = forceUnicode(username)
+		self._password = forceUnicode(password)
+		self._address = forceUnicode(address)
+		
+		for (option, value) in kwargs.items():
+			if (option.lower() == 'defaultdomain'):
+				self._defaultDomain = forceDomain(value)
+		
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      CLASS DATABACKEND                                             =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DataBackend(Backend):
 	
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		pass
+		Backend.__init__(self, username, password, address, **kwargs)
 	
 	def base_create(self):
 		raise NotImplemented
