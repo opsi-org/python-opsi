@@ -163,6 +163,12 @@ def forceProductVersion(var):
 		raise BackendBadValueError(u"Bad product id: '%s'" % var)
 	return var
 
+def forceProductVersionList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceProductVersion(var[i])
+	return var
+
 packageVersionRegex = re.compile('^[\w\.]+$')
 def forcePackageVersion(var):
 	var = forceUnicode(var)
@@ -170,13 +176,25 @@ def forcePackageVersion(var):
 	if not match:
 		raise BackendBadValueError(u"Bad product id: '%s'" % var)
 	return var
-	
+
+def forcePackageVersionList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forcePackageVersion(var[i])
+	return var
+
 productIdRegex = re.compile('^[a-zA-Z0-9\_\.-]+$')
 def forceProductId(var):
 	var = forceObjectId(var)
 	match = re.search(productIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad product id: '%s'" % var)
+	return var
+
+def forceProductIdList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceProductId(var[i])
 	return var
 
 def forceFilename(var):
@@ -228,6 +246,12 @@ def forceGroupId(var):
 	match = re.search(groupIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad group id: '%s'" % var)
+	return var
+
+def forceGroupIdList(var, objectClass):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceGroupId(var[i])
 	return var
 
 def forceObjectId(var):
