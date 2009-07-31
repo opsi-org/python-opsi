@@ -208,15 +208,23 @@ class MySQLBackend(DataBackend):
 				select += u','
 			select += u'`%s`' % attribute
 		
-		for (key, value) in filter.items():
-			if value is None:
+		for (key, values) in filter.items():
+			if values is None:
+				continue
+			if not type(values) is list:
+				values = [ values ]
+			if not values:
 				continue
 			if where:
 				where += u' and '
-			if type(value) in (float, long, int, bool):
-				where += u"`%s` = %s" % (key, value)
-			else:
-				where += u"`%s` = '%s'" % (key, value)
+			where += u'('
+			for value in values:
+				if type(value) in (float, long, int, bool):
+					where += u"`%s` = %s" % (key, value)
+				else:
+					where += u"`%s` = '%s'" % (key, value)
+				where += u' or '
+			where = where[:-4] + u')'
 		result = []
 		if not select:
 			select = u'*'

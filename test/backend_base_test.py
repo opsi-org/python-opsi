@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
 from OPSI.Logger import *
 from OPSI.Backend.Object import *
 
@@ -49,6 +50,22 @@ except OpsiError, e:
 
 # ----------------------------------------------------------------------- #
 logger.notice(u"Testing type force functions")
+
+client1 = OpsiClient(
+	id = 'test1.uib.local',
+	description = 'Test client 1',
+	notes = 'Notes ...',
+	hardwareAddress = '00:01:02:03:04:05',
+	ipAddress = '192.168.1.100',
+	lastSeen = '2009-01-01 00:00:00',
+	opsiHostKey = '45656789789012789012345612340123'
+)
+j = client1.toJson()
+h = client1.toHash()
+assert isinstance(forceObjectClass(j, Host), Host)
+assert isinstance(forceObjectClass(j, OpsiClient), OpsiClient)
+assert isinstance(forceObjectClass(h, Host), Host)
+assert isinstance(forceObjectClass(h, OpsiClient), OpsiClient)
 
 assert forceList('x') == ['x']
 

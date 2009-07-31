@@ -1,13 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
+
 from OPSI.Logger import *
 from OPSI.Backend.Object import *
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Backend.BackendManager import BackendManager
 
 logger = Logger()
-logger.setConsoleLevel(LOG_DEBUG)
+logger.setConsoleLevel(LOG_DEBUG2)
 logger.setConsoleColor(True)
 
 someTypes = (
@@ -16,7 +18,7 @@ someTypes = (
 	True,
 	time.localtime(),
 	u'unicode string',
-	u'utf-8 string: äöüß€'.encode('utf-8'),
+	u'utf-8 string: äöüß€®'.encode('utf-8'),
 	u'windows-1258 string: äöüß€'.encode('windows-1258'),
 	u'utf-16 string: äöüß€'.encode('utf-16'),
 	u'latin1 string: äöüß'.encode('latin-1')
@@ -65,7 +67,7 @@ def testBackend(backend):
 		network = '192.168.1.0/24',
 		maxBandwidth = 10000)
 	
-	depot1 = OpsiDepot(
+	depot1 = OpsiDepotserver(
 		id = 'depot1.uib.local',
 		opsiHostKey ='19012334567845645678901232789012',
 		depotLocalUrl = 'file:///opt/pcbin/install',
@@ -79,28 +81,34 @@ def testBackend(backend):
 		network = '192.168.2.0/24',
 		maxBandwidth = 10000)
 	
-	backend.host_create(configserver1)
-	backend.host_create(depot1)
-	backend.host_create(client1)
-	backend.host_create(client2)
+	backend.host_createObjects(configserver1)
+	backend.host_createObjects(depot1)
+	backend.host_createObjects(client1)
+	backend.host_createObjects(client2)
 	
 	
-	hosts = backend.host_get()
+	hosts = backend.host_getObjects()
 	assert len(hosts) == 4
 	
-	hosts = backend.host_get(attributes=['id', 'description'], id = client1.id)
-	assert len(hosts) == 1
-	assert hosts[0].id == client1.id
-	assert hosts[0].description == client1.description
+	hosts = backend.host_getObjects(id = [client1.getId(), client2.getId()])
+	assert len(hosts) == 2
 	
-	backend.host_delete(client2)
-	hosts = backend.host_get()
+	hosts = backend.host_getObjects(id = [client1.getId(), client2.getId()], description = 'Test client 2')
+	assert len(hosts) == 1
+	
+	hosts = backend.host_getObjects(attributes=['id', 'description'], id = client1.getId())
+	assert len(hosts) == 1
+	assert hosts[0].getId() == client1.getId()
+	assert hosts[0].getDescription() == client1.getDescription()
+	
+	backend.host_deleteObjects(client2)
+	hosts = backend.host_getObjects()
 	assert len(hosts) == 3
 	
-	backend.host_create(client2)
-	client2.description = 'Updated'
-	backend.host_update(client2)
-	hosts = backend.host_get(description = 'Updated')
+	backend.host_createObjects(client2)
+	client2.setDescription('Updated')
+	backend.host_updateObject(client2)
+	hosts = backend.host_getObjects(description = 'Updated')
 	assert len(hosts) == 1
 	
 	
@@ -126,27 +134,66 @@ def testBackend(backend):
 		defaultValues = ['product1', 'product3']
 	)
 	
-	backend.config_create([config1, config2, config3])
+	backend.config_createObjects([config1, config2, config3])
 	
-	configs = backend.config_get()
+	configs = backend.config_getObjects()
 	assert len(configs) == 3
 	
-	configs = backend.config_get(attributes=[], multiValue = True)
+	configs = backend.config_getObjects(attributes=[], multiValue = True)
 	assert len(configs) == 1
 	
-	backend.config_delete(config1)
-	configs = backend.config_get()
+	backend.config_deleteObjects(config1)
+	configs = backend.config_getObjects()
 	assert len(configs) == 2
 	
-	config3.description = u'Updated'
-	config3.possibleValues = ['1', '2', '3']
-	config3.defaultValues = ['1', '2']
-	backend.config_update(config3)
+	config3.setDescription(u'Updated')
+	config3.setPossibleValues(['1', '2', '3'])
+	config3.setDefaultValues(['1', '2'])
+	backend.config_updateObject(config3)
 	
-	configs = backend.config_get(description = u'Updated')
+	configs = backend.config_getObjects(description = u'Updated')
 	assert len(configs) == 1
-	assert configs[0].possibleValues == ['1', '2', '3']
-	assert configs[0].defaultValues == ['1', '2']
+	assert configs[0].getPossibleValues() == ['1', '2', '3']
+	assert configs[0].getDefaultValues() == ['1', '2']
+	
+	# --- ConfigState --- #
+	logger.notice(u"Testing configState methods")
+	configState1 = ConfigState(
+		name = config1.getName(),
+		objectId = client1.getId(),
+		values = ['w']
+	)
+	
+	configState2 = ConfigState(
+		name = config2.getName(),
+		objectId = client1.getId(),
+		values = [False]
+	)
+	
+	configState3 = ConfigState(
+		name = config2.getName(),
+		objectId = client2.getId(),
+		values = [False]
+	)
+	
+	backend.configState_createObjects([configState1, configState2, configState3])
+	
+	configStates = backend.configState_getObjects()
+	assert len(configStates) == 3
+	
+	configStates = backend.configState_getObjects(attributes=[], objectId = client1.getId())
+	assert len(configStates) == 2
+	
+	backend.configState_deleteObjects(configState2)
+	configStates = backend.configState_getObjects()
+	assert len(configStates) == 2
+	
+	configState3.setValues([True])
+	backend.configState_updateObject(configState3)
+	
+	configStates = backend.configState_getObjects(objectId = client2.getId(), name = config2.getName())
+	assert len(configStates) == 1
+	assert configStates[0].getValues() == [True]
 	
 	# --- Product --- #
 	logger.notice(u"Testing product methods")
@@ -205,19 +252,19 @@ def testBackend(backend):
 	
 	
 	
-	backend.product_create(products = [ product1, product2, product3 ])
+	backend.product_createObjects(products = [ product1, product2, product3 ])
 	
-	products = backend.product_get()
+	products = backend.product_getObjects()
 	assert len(products) == 3
 	
-	products = backend.product_get(type = 'LocalbootProduct')
+	products = backend.product_getObjects(type = 'LocalbootProduct')
 	assert len(products) == 2
 	
-	product2.name = u'Product 2 updated'
-	products = backend.product_update(product2)
-	products = backend.product_get(id = 'product2')
+	product2.setName(u'Product 2 updated')
+	products = backend.product_updateObject(product2)
+	products = backend.product_getObjects(id = 'product2')
 	assert len(products) == 1
-	assert products[0].name == u'Product 2 updated'
+	assert products[0].getName() == u'Product 2 updated'
 	
 	
 	# --- ProductProperty --- #
@@ -242,9 +289,9 @@ def testBackend(backend):
 		description = 'Test product property 2 (bool)',
 		defaultValues = True)
 	
-	backend.productProperty_create(productProperties = [ productProperty1, productProperty2 ])
+	backend.productProperty_createObjects(productProperties = [ productProperty1, productProperty2 ])
 	
-	productProperties = backend.productProperty_get()
+	productProperties = backend.productProperty_getObjects()
 	assert len(productProperties) == 2
 	
 	
@@ -252,75 +299,75 @@ def testBackend(backend):
 	logger.notice(u"Testing productOnDepot methods")
 	
 	productOnDepot1 = ProductOnDepot(
-		productId = product1.id,
-		productVersion = product1.productVersion,
-		packageVersion = product1.packageVersion,
-		depotId = depot1.id,
+		productId = product1.getId(),
+		productVersion = product1.getProductVersion(),
+		packageVersion = product1.getPackageVersion(),
+		depotId = depot1.getId(),
 		locked = False)
 	
 	productOnDepot2 = ProductOnDepot(
-		productId = product2.id,
-		productVersion = product2.productVersion,
-		packageVersion = product2.packageVersion,
-		depotId = depot1.id,
+		productId = product2.getId(),
+		productVersion = product2.getProductVersion(),
+		packageVersion = product2.getPackageVersion(),
+		depotId = depot1.getId(),
 		locked = False)
 	
-	backend.productOnDepot_create([productOnDepot1, productOnDepot2])
+	backend.productOnDepot_createObjects([productOnDepot1, productOnDepot2])
 	
-	productOnDepots = backend.productOnDepot_get()
+	productOnDepots = backend.productOnDepot_getObjects()
 	assert len(productProperties) == 2
 	
 	
 	logger.notice(u"Testing productState methods")
 	
 	productState1 = ProductState(
-		productId = product1.id,
-		hostId = client1.id,
+		productId = product1.getId(),
+		hostId = client1.getId(),
 		installationStatus = 'installed',
 		actionRequest = 'setup',
 		actionProgress = '',
-		productVersion = product1.productVersion,
-		packageVersion = product1.packageVersion,
+		productVersion = product1.getProductVersion(),
+		packageVersion = product1.getPackageVersion(),
 		lastStateChange = '2009-07-01 12:00:00')
 	
 	productState2 = ProductState(
-		productId = product2.id,
-		hostId = client1.id,
+		productId = product2.getId(),
+		hostId = client1.getId(),
 		installationStatus = 'installed',
 		actionRequest = 'uninstall',
 		actionProgress = '',
-		productVersion = product2.productVersion,
-		packageVersion = product2.packageVersion)
+		productVersion = product2.getProductVersion(),
+		packageVersion = product2.getPackageVersion())
 	
-	backend.productState_create([productState1, productState2])
+	backend.productState_createObjects([productState1, productState2])
 	
-	productStates = backend.productState_get(hostId = client1.id)
+	productStates = backend.productState_getObjects(hostId = client1.getId())
 	assert len(productStates) == 2
 	
 	
 	logger.notice(u"Testing productPropertyState methods")
 	
 	productPropertyState1 = ProductPropertyState(
-		productId = product1.id,
+		productId = product1.getId(),
 		name = 'test_pp',
-		hostId = client1.id,
+		hostId = client1.getId(),
 		values = 'unicode1')
 	
 	productPropertyState2 = ProductPropertyState(
-		productId = product1.id,
+		productId = product1.getId(),
 		name = 'test_pp_2',
-		hostId = client1.id,
+		hostId = client1.getId(),
 		values = [ False ])
 	
 	productPropertyState3 = ProductPropertyState(
-		productId = product1.id,
+		productId = product1.getId(),
 		name = 'test_pp_2',
-		hostId = client2.id,
+		hostId = client2.getId(),
 		values = True)
 	
-	backend.productPropertyState_create(productPropertyStates = [ productPropertyState1, productPropertyState2, productPropertyState3 ])
+	backend.productPropertyState_createObjects(productPropertyStates = [ productPropertyState1, productPropertyState2, productPropertyState3 ])
 	
-	productPropertyStates = backend.productPropertyState_get()
+	productPropertyStates = backend.productPropertyState_getObjects()
 	assert len(productPropertyStates) == 3
 	
 	
@@ -348,57 +395,91 @@ def testBackend(backend):
 		parentGroupId = ''
 	)
 	
-	backend.group_create(groups = [ group1, group2, group3 ])
+	backend.group_createObjects(groups = [ group1, group2, group3 ])
 	
-	groups = backend.group_get()
+	groups = backend.group_getObjects()
 	assert len(groups) == 3
 	
-	groups = backend.group_get(description = u'Group 3')
+	groups = backend.group_getObjects(description = u'Group 3')
 	assert len(groups) == 1
-	assert groups[0].id == u'host group 3'
+	assert groups[0].getId() == u'host group 3'
 	
-	groups[0].description = u'new description'
-	backend.group_update(groups[0])
+	groups[0].setDescription(u'new description')
+	backend.group_updateObject(groups[0])
 	
-	groups = backend.group_get(id = u'host group 3')
+	groups = backend.group_getObjects(id = u'host group 3')
 	assert len(groups) == 1
-	assert groups[0].description == u'new description'
+	assert groups[0].getDescription() == u'new description'
 	
-	backend.group_delete(groups[0])
-	groups = backend.group_get()
+	backend.group_deleteObjects(groups[0])
+	groups = backend.group_getObjects()
 	assert len(groups) == 2
 	
 	# --- ObjectToGroup --- #
 	logger.notice(u"Testing objectToGroup methods")
 	
 	objectToGroup1 = ObjectToGroup(
-		groupId = group1.id,
-		objectId = client1.id
+		groupId = group1.getId(),
+		objectId = client1.getId()
 	)
 	objectToGroup2 = ObjectToGroup(
-		groupId = group1.id,
-		objectId = client2.id
+		groupId = group1.getId(),
+		objectId = client2.getId()
 	)
 	objectToGroup3 = ObjectToGroup(
-		groupId = group2.id,
-		objectId = client2.id
+		groupId = group2.getId(),
+		objectId = client2.getId()
 	)
 	
-	backend.objectToGroup_create(objectToGroups = [objectToGroup1, objectToGroup2, objectToGroup3])
+	backend.objectToGroup_createObjects(objectToGroups = [objectToGroup1, objectToGroup2, objectToGroup3])
 	
-	objectToGroups = backend.objectToGroup_get()
+	objectToGroups = backend.objectToGroup_getObjects()
 	assert len(objectToGroups) == 3
 	
-	objectToGroups = backend.objectToGroup_get(objectId = client2.id)
+	objectToGroups = backend.objectToGroup_getObjects(objectId = client2.getId())
 	assert len(objectToGroups) == 2
 	
-	objectToGroups = backend.objectToGroup_get(objectId = client1.id)
+	objectToGroups = backend.objectToGroup_getObjects(objectId = client1.getId())
 	assert len(objectToGroups) == 1
-	assert objectToGroups[0].objectId == client1.id
+	assert objectToGroups[0].getObjectId() == client1.getId()
 	
+	backend.host_createOpsiClient(
+			id = 'test9.uib.local',
+			opsiHostKey = '12345678901234567890123456789009',
+			description = 'Test 9',
+			notes = 'No notes',
+			hardwareAddress = '00:00:01:01:02:02',
+			ipAddress = '192.168.0.200',
+			created = '',
+			lastSeen = '')
 	
+	backend.host_createOpsiDepotserver(
+			id = 'depot3.uib.local',
+			opsiHostKey = '123456789012345678901234567890aa',
+			depotLocalUrl = 'file:///opt/pcbin/install',
+			depotRemoteUrl = 'smb://depot3.uib.local/opt_pcbin',
+			repositoryLocalUrl = 'file:///var/lib/opsi/products',
+			repositoryRemoteUrl = 'webdavs://depot3.uib.local:4447/products',
+			description = 'A depot',
+			notes = 'Depot 3',
+			hardwareAddress = '',
+			ipAddress = '',
+			network = '192.168.2.0/24',
+			maxBandwidth = 0)
 	
-	
+	backend.host_createOpsiConfigserver(
+			id = 'config1.uib.local',
+			opsiHostKey = '123456789012345678901234567890bb',
+			depotLocalUrl = 'file:///opt/pcbin/install',
+			depotRemoteUrl = 'smb://config1.uib.local/opt_pcbin',
+			repositoryLocalUrl = 'file:///var/lib/opsi/products',
+			repositoryRemoteUrl = 'webdavs://config1.uib.local:4447/products',
+			description = 'config server',
+			notes = 'config 1',
+			hardwareAddress = '',
+			ipAddress = '',
+			network = '192.168.2.0/24',
+			maxBandwidth = 200000)
 	
 	
 	
@@ -407,8 +488,7 @@ def testBackend(backend):
 	
 
 
-#testBackend( MySQLBackend(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
-testBackend( BackendManager(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
+testBackend( MySQLBackend(username = 'opsi', password = 'opsi', args = {'database': 'opsi'}) )
 
 
 

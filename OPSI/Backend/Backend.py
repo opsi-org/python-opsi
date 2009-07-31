@@ -116,10 +116,9 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def host_delete(ids):
-		objects = []
-		for id in forceHostIdList(ids):
-			objects.append(Host(id = id))
-		return self.host_deleteObjects(objects)
+		return self.host_deleteObjects(
+				host_getObjects(
+					id = forceHostIdList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -163,10 +162,9 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def config_delete(names):
-		objects = []
-		for name in forceUnicodeLowerList(names):
-			objects.append(Config(name = name))
-		return self.config_deleteObjects(objects)
+		return self.config_deleteObjects(
+				config_getObjects(
+					name = forceUnicodeLowerList(names)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -201,11 +199,10 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def configState_delete(names, objectIds):
-		objects = []
-		for name in forceUnicodeLowerList(names):
-			for objectId in forceObjectIdsList(objectIds):
-				objects.append(ConfigState(name = name, objectId = objectId))
-		return self.configState_deleteObjects(objects)
+		return self.configState_deleteObjects(
+				configState_getObjects(
+					name = forceUnicodeLowerList(names),
+					objectId = forceObjectIdsList(objectIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
@@ -250,10 +247,9 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def product_delete(productIds):
-		objects = []
-		for productId in forceProductIdList(productIds):
-			objects.append(Product(productId = productId))
-		return self.product_deleteObjects(objects)
+		return self.product_deleteObjects(
+				product_getObjects(
+					productId = forceProductIdList(productIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -300,13 +296,12 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def productProperty_delete(self, productIds, productVersions, packageVersions, names):
-		objects = []
-		for productId in forceProductIdList(productIds):
-			for productVersion in forceProductVersionList(productVersions):
-				for packageVersion in forcePackageVersionList(packageVersions):
-					for name in forceUnicodeLowerList(names):
-						objects.append(ProductProperty(productId = productId, productVersion = productVersion, packageVersion = packageVersion, name = name))
-		return self.productProperty_deleteObjects(objects)
+		return self.productOnDepot_deleteObjects(
+				productOnDepot_getObjects(
+					productId = forceProductIdList(productIds),
+					productVersion = forceProductVersionList(productVersions),
+					packageVersion = forcePackageVersionList(packageVersions),
+					name = forceUnicodeLowerList(names)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
@@ -340,14 +335,13 @@ class DataBackend(Backend):
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		raise NotImplementedError(u"Not implemented")
 	
-	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotId):
-		objects = []
-		for productId in forceProductIdList(productIds):
-			for productVersion in forceProductVersionList(productVersions):
-				for packageVersion in forcePackageVersionList(packageVersions):
-					for depotId in forceHostIdList(depotIds):
-						objects.append(ProductProperty(productId = productId, productVersion = productVersion, packageVersion = packageVersion, depotId = depotId))
-		return self.productOnDepot_deleteObjects(objects)
+	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotIds):
+		return self.productOnDepot_deleteObjects(
+				productOnDepot_getObjects(
+					productId = forceProductIdList(productIds),
+					productVersion = forceProductVersionList(productVersions),
+					packageVersion = forcePackageVersionList(packageVersions),
+					depotId = forceHostIdList(depotIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductStates                                                                             -
@@ -382,11 +376,10 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def productState_delete(self, productIds, hostIds):
-		objects = []
-		for productId in forceProductIdList(productIds):
-			for hostId in forceHostIdList(hostIds):
-				objects.append(ProductState(productId = productId, hostId = hostId))
-		return self.productState_deleteObjects(objects)
+		return self.productState_deleteObjects(
+				productState_getObjects(
+					productId = forceProductIdList(productIds),
+					hostId = forceHostIdList(hostIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
@@ -422,13 +415,12 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def productPropertyState_delete(self, productIds, names, hostIds):
-		objects = []
-		for productId in forceProductIdList(productIds):
-			for name in forceUnicodeLowerList(names):
-				for hostId in forceHostIdList(hostIds):
-					objects.append(ProductPropertyState(productId = productId, name = name, hostId = hostId))
-		return self.productState_deleteObjects(objects)
-	
+		return self.productState_deleteObjects(
+				productPropertyState_getObjects(
+					productId = forceProductIdList(productIds),
+					name = forceUnicodeLowerList(names),
+					hostId = forceHostIdList(hostIds)))
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -460,10 +452,9 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def group_delete(self, ids):
-		objects = []
-		for id in forceGroupIdList(ids):
-			objects.append(Group(id = id))
-		return self.group_deleteObjects(objects)
+		return self.group_deleteObjects(
+				group_getObjects(
+					id = forceGroupIdList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -498,11 +489,11 @@ class DataBackend(Backend):
 		raise NotImplementedError(u"Not implemented")
 	
 	def objectToGroup_delete(self, groupIds, objectIds):
-		objects = []
-		for groupId in forceGroupIdList(groupIds):
-			for objectId in forceObjectIdList(objectIds):
-				objects.append(ObjectToGroup(groupId = groupId, objectId = objectId))
-		return self.objectToGroup_deleteObjects(objects)
+		return self.objectToGroup_deleteObjects(
+				objectToGroup_getObjects(
+					groupId = forceGroupIdList(groupIds),
+					objectId = forceObjectIdList(objectIds)))
+		
 
 
 
