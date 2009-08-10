@@ -248,7 +248,7 @@ def forceGroupId(var):
 		raise BackendBadValueError(u"Bad group id: '%s'" % var)
 	return var
 
-def forceGroupIdList(var, objectClass):
+def forceGroupIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceGroupId(var[i])
@@ -364,7 +364,16 @@ class LicenseMissingError(OpsiError):
 def mandatoryConstructorArgs(Class):
 	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
 	return args[1:][:-1*len(defaults)]
-	
+
+def getPossibleClassAttributes(Class):
+	attributes = inspect.getargspec(Class.__init__)[0]
+	for subClass in Class.subClasses.values():
+		attributes.extend(inspect.getargspec(subClass.__init__)[0])
+	attributes = list(set(attributes))
+	attributes.remove('self')
+	attributes.append('type')
+	return attributes
+
 class Entity(object):
 	subClasses = {}
 	
@@ -540,8 +549,6 @@ class OpsiClient(Host):
 		return self.created
 	
 	def setCreated(self, created):
-		if not created:
-			self.created = time.strftime( "%Y%m%d%H%M%S", time.localtime() )
 		self.created = forceOpsiTimestamp(created)
 	
 	def getOpsiHostKey(self):

@@ -35,7 +35,9 @@
 __version__ = '3.5'
 
 from OPSI.Logger import *
+from OPSI import Tools
 from OPSI.Backend.Object import *
+
 logger = Logger()
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -49,14 +51,13 @@ logger = Logger()
 class Backend:
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		
-		self._defaultDomain = 'opsi.org'
 		self._username = forceUnicode(username)
 		self._password = forceUnicode(password)
-		self._address = forceUnicode(address)
+		self._address  = forceUnicode(address)
 		
-		for (option, value) in kwargs.items():
-			if (option.lower() == 'defaultdomain'):
-				self._defaultDomain = forceDomain(value)
+		#for (option, value) in kwargs.items():
+		#	if (option.lower() == 'defaultdomain'):
+		#		self._defaultDomain = forceDomain(value)
 		
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      CLASS DATABACKEND                                             =
@@ -66,11 +67,20 @@ class DataBackend(Backend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		Backend.__init__(self, username, password, address, **kwargs)
 	
+	def _testFilterAndAttributes(self, Class, attributes, **filter):
+		possibleAttributes = getPossibleClassAttributes(Class)
+		for attribute in attributes:
+			if not attribute in possibleAttributes:
+				raise BackendBadValueError("Unkown attribute '%s'" % attribute)
+		for attribute in filter.keys():
+			if not attribute in possibleAttributes:
+				raise BackendBadValueError("Unkown attribute '%s'" % attribute)
+	
 	def base_create(self):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def base_delete(self):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -104,20 +114,30 @@ class DataBackend(Backend):
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
 	
 	def host_insertObject(self, host):
-		raise NotImplementedError(u"Not implemented")
+		if not host.opsiHostKey:
+			host.setOpsiHostKey(Tools.generateOpsiHostKey())
+		if isinstance(host, OpsiClient):
+			if not host.created:
+				host.setCreated(Tools.timestamp())
 	
 	def host_updateObject(self, host):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def host_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
-	
+		self._testFilterAndAttributes(Host, attributes, **filter)
+		
 	def host_deleteObjects(self, hosts):
-		raise NotImplementedError(u"Not implemented")
+		for host in forceObjectClassList(hosts, Host):
+			# Remove from groups
+			self.objectToGroup_delete(
+				groupIds = [],
+				objectIds = [ host.id ])
+			# Remove product states
+			
 	
 	def host_delete(ids):
 		return self.host_deleteObjects(
-				host_getObjects(
+				self.host_getObjects(
 					id = forceHostIdList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -150,16 +170,16 @@ class DataBackend(Backend):
 		return self.config_createObjects(BoolConfig.fromHash(hash))
 	
 	def config_insertObject(self, config):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def config_updateObject(self, config):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def config_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(Config, attributes, **filter)
 	
 	def config_deleteObjects(self, configs):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def config_delete(names):
 		return self.config_deleteObjects(
@@ -187,16 +207,16 @@ class DataBackend(Backend):
 		return self.configState_createObjects(ConfigState.fromHash(hash))
 	
 	def configState_insertObject(self, configState):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def configState_updateObject(self, configState):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def configState_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(ConfigState, attributes, **filter)
 	
 	def configState_deleteObjects(self, configStates):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def configState_delete(names, objectIds):
 		return self.configState_deleteObjects(
@@ -235,16 +255,20 @@ class DataBackend(Backend):
 		return self.product_createObjects(NetbootProduct.fromHash(hash))
 	
 	def product_insertObject(self, product):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def product_updateObject(self, product):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def product_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(Product, attributes, **filter)
 	
 	def product_deleteObjects(self, products):
-		raise NotImplementedError(u"Not implemented")
+		for product in forceObjectClassList(products, Product):
+			self.productProperty_delete(
+				productIds = [ product.id ],
+				productVersions = [ product.productVersion ],
+				packageVersions = [ product.packageVersion ])
 	
 	def product_delete(productIds):
 		return self.product_deleteObjects(
@@ -284,16 +308,16 @@ class DataBackend(Backend):
 		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
 	
 	def productProperty_insertObject(self, productProperty):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productProperty_updateObject(self, productProperty):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
 	
 	def productProperty_deleteObjects(self, productProperties):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productProperty_delete(self, productIds, productVersions, packageVersions, names):
 		return self.productOnDepot_deleteObjects(
@@ -324,16 +348,16 @@ class DataBackend(Backend):
 		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
 	
 	def productOnDepot_insertObject(self, productOnDepot):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productOnDepot_updateObject(self, productOnDepot):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(ProductOnDepot, attributes, **filter)
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotIds):
 		return self.productOnDepot_deleteObjects(
@@ -346,6 +370,7 @@ class DataBackend(Backend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductStates                                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	############# ProductOnClients
 	def productState_createObjects(self, productStates):
 		productStates = forceObjectClassList(productStates, ProductState)
 		for productState in productStates:
@@ -364,16 +389,16 @@ class DataBackend(Backend):
 		return self.productState_createObjects(ProductState.fromHash(hash))
 	
 	def productState_insertObject(self, productState):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productState_updateObject(self, productState):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productState_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(ProductState, attributes, **filter)
 	
 	def productState_deleteObjects(self, productStates):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productState_delete(self, productIds, hostIds):
 		return self.productState_deleteObjects(
@@ -384,6 +409,7 @@ class DataBackend(Backend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	############# ProductPropertyOnClients
 	def productPropertyState_createObjects(self, productPropertyStates):
 		productStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
@@ -403,16 +429,16 @@ class DataBackend(Backend):
 		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
 	
 	def productPropertyState_insertObject(self, productPropertyState):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productPropertyState_updateObject(self, productPropertyState):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
 	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def productPropertyState_delete(self, productIds, names, hostIds):
 		return self.productState_deleteObjects(
@@ -440,16 +466,16 @@ class DataBackend(Backend):
 		return self.group_createObjects(HostGroup.fromHash(hash))
 	
 	def group_insertObject(self, group):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def group_updateObject(self, group):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def group_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(Group, attributes, **filter)
 	
 	def group_deleteObjects(self, groups):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def group_delete(self, ids):
 		return self.group_deleteObjects(
@@ -477,20 +503,20 @@ class DataBackend(Backend):
 		return self.group_createObjects(ObjectToGroup.fromHash(hash))
 	
 	def objectToGroup_insertObject(self, objectToGroup):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def objectToGroup_updateObject(self, objectToGroup):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
-		raise NotImplementedError(u"Not implemented")
+		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
-		raise NotImplementedError(u"Not implemented")
+		pass
 	
 	def objectToGroup_delete(self, groupIds, objectIds):
 		return self.objectToGroup_deleteObjects(
-				objectToGroup_getObjects(
+				self.objectToGroup_getObjects(
 					groupId = forceGroupIdList(groupIds),
 					objectId = forceObjectIdList(objectIds)))
 		
