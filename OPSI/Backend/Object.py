@@ -133,6 +133,7 @@ def forceHardwareAddress(var):
 		raise BackendBadValueError(u"Bad hardware address: %s" % var)
 	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
+
 ipAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 def forceIPAddress(var):
 	var = forceUnicodeLower(var)

@@ -5,13 +5,8 @@ import sys, time
 
 from OPSI.Logger import *
 from OPSI.Backend.Object import *
-from OPSI.Backend.MySQL import MySQLBackend
-from OPSI.Backend.BackendManager import BackendManager
 
 logger = Logger()
-#logger.setConsoleLevel(LOG_DEBUG2)
-logger.setConsoleLevel(LOG_NOTICE)
-logger.setConsoleColor(True)
 
 someTypes = (
 	1,
