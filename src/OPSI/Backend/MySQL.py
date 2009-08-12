@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.3.2'
+__version__ = '0.3.3.3'
 
 # Imports
 import MySQLdb, warnings, time
@@ -224,8 +224,8 @@ class MySQLBackend(DataBackend):
 					self._licenseManagementEnabled = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
 			except Exception, e:
 				logger.error(e)
-		
-	def _showwarning(self, message, category, filename, lineno, file=None):
+	
+	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
 		#logger.warning("%s (file: %s, line: %s)" % (message, filename, lineno))
 		if str(message).startswith('Data truncated for column'):
 			logger.error(message)

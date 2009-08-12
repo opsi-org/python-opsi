@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.8'
+__version__ = '1.0.9'
 
 # Imports
 import os, stat, types, re, socket, new, base64, time
@@ -144,6 +144,8 @@ class BackendManager(DataBackend):
 		elif re.search('^\S+\.\S+\.\S+$', self.__username):
 			# Username starts with something like xxx.yyy.zzz: 
 			# Assuming it is a client passing his FQDN  as username
+			self.__username = self.__username.lower()
+			
 			logger.debug("Trying to authenticate by opsiHostKey...")
 			
 			hostKey = self.getOpsiHostKey(self.__username)

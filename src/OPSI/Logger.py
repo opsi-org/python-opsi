@@ -719,7 +719,6 @@ class Logger(LoggerImplementation):
 		# Store instance reference as the only member in the handle
 		self.__dict__['_Logger__instance'] = Logger.__instance
 	
-	
 	def __getattr__(self, attr):
 		""" Delegate access to implementation """
 		return getattr(self.__instance, attr)
