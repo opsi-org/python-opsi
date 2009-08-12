@@ -32,89 +32,81 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.9.9.2'
+__version__ = '3.5'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
-LOG_DEBUG2 = 7
-LOG_DEBUG = 6
-LOG_INFO = 5
-LOG_NOTICE = 4
-LOG_WARNING = 3
-LOG_ERROR = 2
-LOG_CRITICAL = 1
-LOG_COMMENT = 0
-LOG_NONE = -1
+LOG_DEBUG2       = 7
+LOG_DEBUG        = 6
+LOG_INFO         = 5
+LOG_NOTICE       = 4
+LOG_WARNING      = 3
+LOG_ERROR        = 2
+LOG_CRITICAL     = 1
+LOG_COMMENT      = 0
+LOG_NONE         = -1
 
 # Imports
 import sys, time, os, thread, threading
 if (os.name == 'nt'):
-	import win32evtlogutil
-	# Windows imports for file locking
+	# WIndows imports for file locking
 	import win32con, win32file, pywintypes
-	LOCK_EX = win32con.LOCKFILE_EXCLUSIVE_LOCK
-	LOCK_SH = 0 # the default
-	LOCK_NB = win32con.LOCKFILE_FAIL_IMMEDIATELY
-	__overlapped = pywintypes.OVERLAPPED()
 	
 	# Colors
-	COLOR_NORMAL =	''
-	COLOR_BLACK = ''
-	COLOR_RED = ''
-	COLOR_GREEN = ''
-	COLOR_YELLOW = ''
-	COLOR_BLUE = ''
-	COLOR_MAGENTA = ''
-	COLOR_CYAN = ''
-	COLOR_WHITE = ''
-	COLOR_LIGHT_BLACK = ''
-	COLOR_LIGHT_RED = ''
-	COLOR_LIGHT_GREEN = ''
-	COLOR_LIGHT_YELLOW = ''
-	COLOR_LIGHT_BLUE = ''
+	COLOR_NORMAL        = ''
+	COLOR_BLACK         = ''
+	COLOR_RED           = ''
+	COLOR_GREEN         = ''
+	COLOR_YELLOW        = ''
+	COLOR_BLUE          = ''
+	COLOR_MAGENTA       = ''
+	COLOR_CYAN          = ''
+	COLOR_WHITE         = ''
+	COLOR_LIGHT_BLACK   = ''
+	COLOR_LIGHT_RED     = ''
+	COLOR_LIGHT_GREEN   = ''
+	COLOR_LIGHT_YELLOW  = ''
+	COLOR_LIGHT_BLUE    = ''
 	COLOR_LIGHT_MAGENTA = ''
-	COLOR_LIGHT_CYAN = ''
-	COLOR_LIGHT_WHITE = ''
+	COLOR_LIGHT_CYAN    = ''
+	COLOR_LIGHT_WHITE   = ''
 
 elif (os.name == 'posix'):
 	# Posix imports for file locking
 	import fcntl
-	LOCK_EX = fcntl.LOCK_EX
-	LOCK_SH = fcntl.LOCK_SH
-	LOCK_NB = fcntl.LOCK_NB
 	
 	# Colors
-	COLOR_NORMAL =	'\033[0;0;0m'
-	COLOR_BLACK = '\033[0;30;40m'
-	COLOR_RED = '\033[0;31;40m'
-	COLOR_GREEN = '\033[0;32;40m'
-	COLOR_YELLOW = '\033[0;33;40m'
-	COLOR_BLUE = '\033[0;34;40m'
-	COLOR_MAGENTA = '\033[0;35;40m'
-	COLOR_CYAN = '\033[0;36;40m'
-	COLOR_WHITE = '\033[0;37;40m'
-	COLOR_LIGHT_BLACK = '\033[1;30;40m'
-	COLOR_LIGHT_RED = '\033[1;31;40m'
-	COLOR_LIGHT_GREEN = '\033[1;32;40m'
-	COLOR_LIGHT_YELLOW = '\033[1;33;40m'
-	COLOR_LIGHT_BLUE = '\033[1;34;40m'
+	COLOR_NORMAL        = '\033[0;0;0m'
+	COLOR_BLACK         = '\033[0;30;40m'
+	COLOR_RED           = '\033[0;31;40m'
+	COLOR_GREEN         = '\033[0;32;40m'
+	COLOR_YELLOW        = '\033[0;33;40m'
+	COLOR_BLUE          = '\033[0;34;40m'
+	COLOR_MAGENTA       = '\033[0;35;40m'
+	COLOR_CYAN          = '\033[0;36;40m'
+	COLOR_WHITE         = '\033[0;37;40m'
+	COLOR_LIGHT_BLACK   = '\033[1;30;40m'
+	COLOR_LIGHT_RED     = '\033[1;31;40m'
+	COLOR_LIGHT_GREEN   = '\033[1;32;40m'
+	COLOR_LIGHT_YELLOW  = '\033[1;33;40m'
+	COLOR_LIGHT_BLUE    = '\033[1;34;40m'
 	COLOR_LIGHT_MAGENTA = '\033[1;35;40m'
-	COLOR_LIGHT_CYAN = '\033[1;36;40m'
-	COLOR_LIGHT_WHITE = '\033[1;37;40m'
+	COLOR_LIGHT_CYAN    = '\033[1;36;40m'
+	COLOR_LIGHT_WHITE   = '\033[1;37;40m'
 	
 COLORS_AVAILABLE = [ 	COLOR_NORMAL, COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW,
 			COLOR_BLUE, COLOR_MAGENTA, COLOR_CYAN, COLOR_WHITE, COLOR_LIGHT_BLACK,
 			COLOR_LIGHT_RED, COLOR_LIGHT_GREEN, COLOR_LIGHT_YELLOW, COLOR_LIGHT_BLUE,
 			COLOR_LIGHT_MAGENTA, COLOR_LIGHT_CYAN, COLOR_LIGHT_WHITE ]
 
-DEBUG_COLOR = COLOR_WHITE
-INFO_COLOR = COLOR_LIGHT_WHITE
-NOTICE_COLOR = COLOR_GREEN
-WARNING_COLOR = COLOR_YELLOW
-ERROR_COLOR = COLOR_RED
-CRITICAL_COLOR = COLOR_LIGHT_RED
+DEBUG_COLOR        = COLOR_WHITE
+INFO_COLOR         = COLOR_LIGHT_WHITE
+NOTICE_COLOR       = COLOR_GREEN
+WARNING_COLOR      = COLOR_YELLOW
+ERROR_COLOR        = COLOR_RED
+CRITICAL_COLOR     = COLOR_LIGHT_RED
 CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
-COMMENT_COLOR = COLOR_LIGHT_CYAN
+COMMENT_COLOR      = COLOR_LIGHT_CYAN
 
 class LoggerSubject:
 	def __init__(self):
@@ -123,16 +115,20 @@ class LoggerSubject:
 		self._severity = 0
 	
 	def getId(self):
-		return 'logger'
+		return u'logger'
 	
 	def getType(self):
-		return 'Logger'
+		return u'Logger'
 	
 	def getClass(self):
-		return 'MessageSubject'
+		return u'MessageSubject'
 	
 	def setMessage(self, message, severity = 0):
-		self._message = str(message)
+		if not type(message) is unicode:
+			if not type(message) is str:
+				message = str(message)
+			message = unicode(message, 'utf-8', 'replace')
+		self._message = message
 		self._severity = severity
 		for o in self._observers:
 			o.messageChanged(self, message)
@@ -323,14 +319,14 @@ class LoggerImplementation:
 		''' Set the filename of logfile. '''
 		if currentThread:
 			self._setThreadConfig('logFile', logFile)
-			self.info("Now using log-file '%s' for thread %s" \
+			self.info(u"Now using log-file '%s' for thread %s" \
 				% (logFile, thread.get_ident()))
 		elif object:
 			self._setObjectConfig(id(object), 'logFile', logFile)
-			self.info("Now using log-file '%s' for object 0x%x" % (logFile, id(object)))
+			self.info(u"Now using log-file '%s' for object 0x%x" % (logFile, id(object)))
 		else:
 			self.__logFile = logFile
-			self.info("Now using log-file '%s'" % self.__logFile)
+			self.info(u"Now using log-file '%s'" % self.__logFile)
 	
 	def linkLogFile(self, linkFile, currentThread=False, object=None):
 		''' Set the filename of logfile. '''
@@ -343,7 +339,7 @@ class LoggerImplementation:
 			logFile = self.__logFile
 		
 		if not logFile:
-			self.error("Cannot create symlink '%s': log-file unkown" % linkFile)
+			self.error(u"Cannot create symlink '%s': log-file unkown" % linkFile)
 			return
 		
 		if not os.path.isabs(linkFile):
@@ -351,12 +347,12 @@ class LoggerImplementation:
 		
 		try:
 			if (logFile == linkFile):
-				raise Exception('logFile and linkFile are the same file!')
+				raise Exception(u'logFile and linkFile are the same file!')
 			if os.path.exists(linkFile):
 				os.unlink(linkFile)
 			os.symlink(logFile, linkFile)
 		except Exception, e:
-			self.error("Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, e))
+			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, e))
 		
 	def setFileLevel(self, level = LOG_NONE):
 		''' Maximum level of messages to appear in logfile
@@ -368,17 +364,17 @@ class LoggerImplementation:
 	def exit(self, object=None):
 		if object:
 			if self.__objectConfig.has_key(id(object)):
-				self.debug("Deleting config of object 0x%x" % id(object))
+				self.debug(u"Deleting config of object 0x%x" % id(object))
 				del self.__objectConfig[id(object)]
 			for objectId in self.__objectConfig.keys():
-				self.debug2("Got special config for object 0x%x" % objectId)
+				self.debug2(u"Got special config for object 0x%x" % objectId)
 			
 		threadId = str(long(thread.get_ident()))
 		if self.__threadConfig.has_key(threadId):
-			self.debug("Deleting config of thread %s" % threadId)
+			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
 		for threadId in self.__threadConfig.keys():
-			self.debug2("Got special config for thread %s" % threadId)
+			self.debug2(u"Got special config for thread %s" % threadId)
 	
 	def _setThreadConfig(self, key, value):
 		threadId = str(long(thread.get_ident()))
@@ -416,52 +412,52 @@ class LoggerImplementation:
 		    not self.univentionLogger_priv):
 			    return
 		
-		if type(message) is unicode:
-			message = message.encode('utf-8')
-		if not type(message) is str:
-			message = "%s" % message
+		if not type(message) is unicode:
+			if not type(message) is str:
+				message = str(message)
+			message = unicode(message, 'utf-8', 'replace')
 		
 		if (level < LOG_CONFIDENTIAL):
 			for string in self.__confidentialStrings:
-				message = message.replace(string, '*** confidential ***')
+				message = message.replace(string, u'*** confidential ***')
 		
-		levelname = ''
-		color = COLOR_NORMAL
-		filename = ''
-		linenumber = ''
-		datetime = time.strftime( "%b %d %H:%M:%S", time.localtime() )
-		threadId = str(long(thread.get_ident()))
+		levelname  = u''
+		color      = COLOR_NORMAL
+		filename   = u''
+		linenumber = u''
+		datetime   = time.strftime(u"%b %d %H:%M:%S", time.localtime() )
+		threadId   = unicode(long(thread.get_ident()))
 		
-		if (level == LOG_CONFIDENTIAL): 
-			levelname = 'confidential'
-			color = CONFIDENTIAL_COLOR
+		if (level == LOG_CONFIDENTIAL):
+			levelname = u'confidential'
+			color     = CONFIDENTIAL_COLOR
 		elif (level == LOG_DEBUG2): 
-			levelname = 'debug2'
-			color = DEBUG_COLOR
+			levelname = u'debug2'
+			color     = DEBUG_COLOR
 		elif (level == LOG_DEBUG): 
-			levelname = 'debug'
-			color = DEBUG_COLOR
+			levelname = u'debug'
+			color     = DEBUG_COLOR
 		elif (level == LOG_INFO):
-			levelname = 'info'
-			color = INFO_COLOR
+			levelname = u'info'
+			color     = INFO_COLOR
 		elif (level == LOG_NOTICE):
-			levelname = 'notice'
-			color = NOTICE_COLOR
+			levelname = u'notice'
+			color     = NOTICE_COLOR
 		elif (level == LOG_WARNING):
-			levelname = 'warning'
-			color = WARNING_COLOR
+			levelname = u'warning'
+			color     = WARNING_COLOR
 		elif (level == LOG_ERROR):
-			levelname = 'error'
-			color = ERROR_COLOR
+			levelname = u'error'
+			color     = ERROR_COLOR
 		elif (level == LOG_CRITICAL):
-			levelname = 'critical'
-			color = CRITICAL_COLOR
+			levelname = u'critical'
+			color     = CRITICAL_COLOR
 		elif (level == LOG_COMMENT):
-			levelname = 'comment'
-			color = COMMENT_COLOR
+			levelname = u'comment'
+			color     = COMMENT_COLOR
 		
-		filename = os.path.basename( sys._getframe(2).f_code.co_filename )
-		linenumber = str( sys._getframe(2).f_lineno )
+		filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
+		linenumber = unicode( sys._getframe(2).f_lineno )
 		
 		specialConfig = self._getThreadConfig()
 		if not specialConfig and self.__objectConfig:
@@ -480,7 +476,7 @@ class LoggerImplementation:
 			m = self.__messageSubjectFormat
 			if specialConfig:
 				m = specialConfig.get('messageSubjectFormat', m)
-			
+			m = unicode(m)
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -489,15 +485,13 @@ class LoggerImplementation:
 			m = m.replace('%F', filename)
 			m = m.replace('%N', linenumber)
 			self.__loggerSubject.setMessage(m, level)
-			
-		#self.__lock.acquire()
 		
 		if (level <= self.__consoleLevel):
 			# Log to terminal
 			m = self.__consoleFormat
 			if specialConfig:
 				m = specialConfig.get('consoleFormat', m)
-			
+			m = unicode(m)
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -509,7 +503,7 @@ class LoggerImplementation:
 			if (self.__consoleStdout):
 				fh = sys.stdout
 			if self.__consoleColor:
-				print >> fh, "%s%s%s" % (color, m, COLOR_NORMAL)
+				print >> fh, u"%s%s%s" % (color, m, COLOR_NORMAL)
 			else:
 				print >> fh, m
 		
@@ -522,7 +516,7 @@ class LoggerImplementation:
 				m = self.__fileFormat
 				if specialConfig:
 					m = specialConfig.get('fileFormat', m)
-				
+				m = unicode(m)
 				m = m.replace('%D', datetime)
 				m = m.replace('%T', threadId)
 				m = m.replace('%l', str(level))
@@ -534,13 +528,13 @@ class LoggerImplementation:
 				# Open the file
 				lf = None
 				try:
-					lf = open(logFile, 'a+')
+					lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
 				except Exception, e:
 					pass
 				
 				if lf:
 					# Flags for exclusive, non-blocking lock
-					flags = LOCK_EX | LOCK_NB
+					flags = fcntl.LOCK_EX | fcntl.LOCK_NB
 					
 					timeout = 0
 					locked = False
@@ -550,13 +544,12 @@ class LoggerImplementation:
 							# Try to lock file
 							if (os.name == 'nt'):
 								hfile = win32file._get_osfhandle(lf.fileno())
-								self.ov=pywintypes.OVERLAPPED()
-								win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0,-0x7fff0000,self.ov)
+								win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0, -0x7fff0000, pywintypes.OVERLAPPED())
 								#win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
-							elif (os.name =='posix'):
+							elif (os.name == 'posix'):
 								fcntl.flock(lf.fileno(), flags)
 						except IOError, e:
-							# Locking failed 
+							# Locking failed
 							# increase timeout counter, sleep 100 millis
 							timeout += 100
 							time.sleep(0.1)
@@ -566,7 +559,7 @@ class LoggerImplementation:
 					
 					if locked:
 						if self.__fileColor:
-							print >> lf, "%s%s%s" % (color, m, COLOR_NORMAL)
+							print >> lf, u"%s%s%s" % (color, m, COLOR_NORMAL)
 						else:
 							print >> lf, m
 						lf.close()
@@ -576,7 +569,7 @@ class LoggerImplementation:
 			m = self.__syslogFormat
 			if specialConfig:
 				m = specialConfig.get('syslogFormat', m)
-			
+			m = unicode(m)
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -613,7 +606,7 @@ class LoggerImplementation:
 			m = self.__univentionFormat
 			if specialConfig:
 				m = specialConfig.get('univentionFormat', m)
-			
+			m = unicode(m)
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', str(level))
@@ -641,24 +634,22 @@ class LoggerImplementation:
 			elif (level == LOG_COMMENT):
 				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 		
-		#self.__lock.release()
-	
 	def logException(self, e):
 		self.logTraceback(sys.exc_info()[2])
-		self.log(LOG_CRITICAL,'     ==>>> %s' % e)
+		self.log(LOG_CRITICAL, u'     ==>>> %s' % e)
 	
 	def logTraceback(self, tb):
 		''' Log an exception. '''
-		self.log(LOG_CRITICAL, 'Traceback:')
+		self.log(LOG_CRITICAL, u'Traceback:')
 		# Traceback
 		try:
 			while (tb != None):
 				f = tb.tb_frame
 				c = f.f_code
-				self.log(LOG_CRITICAL, "     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
+				self.log(LOG_CRITICAL, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
 				tb = tb.tb_next
 		except Exception, e:
-			self.log(LOG_CRITICAL, "    Failed to log traceback for '%s': %s" % (tb, e))
+			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
 	
 	def confidential( self, message ):
 		''' Log a confidential message. '''
@@ -702,8 +693,7 @@ class LoggerImplementation:
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
 class Logger(LoggerImplementation):
-	''' This class implements a SINGLETON used for 
-	    logging to console, file or syslog. '''
+	''' This class implements a SINGLETON used for logging to console, file or syslog. '''
 	
 	# Storage for the instance reference
 	__instance = None

@@ -35,7 +35,13 @@
 __version__ = '3.5'
 
 # Imports
-import json
+import json, os
+
+# OPSI imports
+from OPSI.Logger import *
+
+# Get logger instance
+logger = Logger()
 
 RANDOM_DEVICE = '/dev/urandom'
 

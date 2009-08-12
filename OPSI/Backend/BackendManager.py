@@ -44,6 +44,40 @@ from OPSI.Util.File import OpsiBackendACLFile, OpsiBackendDispatchConfigFile
 # Get logger instance
 logger = Logger()
 
+def getArgAndCallString(method):
+	argString = u''
+	callString = u''
+	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
+	for i in range(len(args)):
+		if (args[i] == 'self'):
+			continue
+		if (argString):
+			argString += u', '
+			callString += u', '
+		argString += args[i]
+		callString += u'%s=%s' % (args[i], args[i])
+		if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
+			default = argDefaults[len(args)-len(argDefaults)-i]
+			if type(default) is str:
+				default = u"'%s'" % default
+			elif type(default) is unicode:
+				default = u"u'%s'" % default
+			argString += u'=%s' % default
+	if varargs:
+		for vararg in varargs:
+			if argString:
+				argString += u', '
+				callString += u', '
+			argString += u'*%s' % vararg
+			callString += u'*%s' % vararg
+	if varkwargs:
+		if argString:
+			argString += u', '
+			callString += u', '
+		argString += u'**%s' % varkwargs
+		callString += u'**%s' % varkwargs
+	return (argString, callString)
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -51,41 +85,56 @@ logger = Logger()
 class BackendManager(DataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		DataBackend.__init__(self, username, password, address, **kwargs)
-		self._compositionConfigDir = '/etc/opsi/backendManager/compose.d'
-		self.__loadCompositionConf()
 		
-	def __loadCompositionConf(self):
-		if not self._compositionConfigDir:
-			return
-		try:
-			confFiles = []
-			files = os.listdir(self._compositionConfigDir)
-			files.sort()
-			for f in files:
-				if not f.endswith('.conf'):
-					continue
-				confFiles.append( os.path.join(self._compositionConfigDir, f) )
+		self._backend = None
+		dispatch = False
+		extend = False
+		accessControl = False
+		
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if (option == 'backend'):
+				self._backend = backend
+			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
+				dispatch = True
+			elif (option == 'extensionconfigdir') and value:
+				extend = True
+			elif option in ('acl', 'aclfile') and value:
+				accessControl = True
+		
+		if not dispatch and not self._backend:
+			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
+		if dispatch:
+			self._backend = BackendDispatcher(username, password, address, **kwargs)
+		if extend:
+			self._backend = BackendExtender(username, password, address, backend = self._backend, **kwargs)
+		if accessControl:
+			self._backend = BackendAccessControl(username, password, address, backend = self._backend, **kwargs)
+		
+		self.__createInstanceMethods()
+		
+	def __createInstanceMethods(self):
+		for member in inspect.getmembers(self._backend, inspect.ismethod):
+			methodName = member[0]
+			if methodName.startswith('_'):
+				# Not a public method
+				continue
+			logger.debug2(u"Found public method '%s'" % methodName)
 			
-			for confFile in confFiles:
-				try:
-					logger.info("Reading config file '%s'" % confFile)
-					execfile(confFile)
-				except Exception, e:
-					raise Exception("Error reading file '%s': %s" % (confFile, e))
+			(argString, callString) = getArgAndCallString(member[1])
 			
-				for (key, val) in locals().items():
-					if ( type(val) == types.FunctionType ):
-						logger.debug2("Adding composition instancemethod: '%s'" % key )
-						setattr( self.__class__, key, new.instancemethod(val, None, self.__class__) )
-		except Exception, e:
-			raise Exception("Failed to read composition config from '%s': %s" % (self._compositionConfigDir, e))
-
+			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+	
+	def _executeMethod(self, methodName, **kwargs):
+		return eval(u'self._backend.%s(**kwargs)' % methodName)
+	
 class BackendDispatcher(DataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		DataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._dispatchConfigFile = None
-		self._dispatchConfig = [ ['.*', []] ]
+		self._dispatchConfig = None
 		self._backendConfigDir = None
 		self._backends = {}
 		
@@ -99,32 +148,36 @@ class BackendDispatcher(DataBackend):
 				self._backendConfigDir = value
 		
 		if self._dispatchConfigFile:
-			logger.info("Loading dispatch config file '%s'" % self._dispatchConfigFile)
+			logger.info(u"Loading dispatch config file '%s'" % self._dispatchConfigFile)
 			self.__loadDispatchConfig()
+		if not self._dispatchConfig:
+			raise BackendConfigurationError(u"Dispatcher not configured")
 		self.__loadBackends()
 		self.__createInstanceMethods()
 		
 	
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
-			raise Exception(u"No dispatch config file defined")
+			raise BackendConfigurationError(u"No dispatch config file defined")
 		if not os.path.exists(self._dispatchConfigFile):
-			raise Exception(u"Dispatch config file '%s' not found" % self._dispatchConfigFile)
+			raise BackendConfigurationError(u"Dispatch config file '%s' not found" % self._dispatchConfigFile)
 		try:
 			self._dispatchConfig = OpsiBackendDispatchConfigFile(self._dispatchConfigFile).parse()
 			logger.debug(u"Read dispatch config from file '%s':" % self._dispatchConfigFile)
 			logger.debug(Tools.objectToBeautifiedText(self._dispatchConfig))
 		except Exception, e:
-			raise Exception(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
+			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 	
 	def __loadBackends(self):
 		backends = []
 		if not os.path.exists(self._backendConfigDir):
-			raise Exception(u"No backend config dir given")
+			raise BackendConfigurationError(u"No backend config dir given")
 		for i in range(len(self._dispatchConfig)):
 			if not type(self._dispatchConfig[i][1]) is list:
 				self._dispatchConfig[i][1] = [ self._dispatchConfig[i][1] ]
 			for value in self._dispatchConfig[i][1]:
+				if not value:
+					raise BackendConfigurationError(u"Bad dispatcher config '%s'" % self._dispatchConfig[i])
 				if value in backends:
 					continue
 				backends.append(value)
@@ -132,13 +185,13 @@ class BackendDispatcher(DataBackend):
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
 			if not os.path.exists(backendConfigFile):
-				raise Exception(u"Backend config file '%s' not found" % backendConfigFile)
+				raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
 			l = {'module': '', 'config': {}}
 			execfile(backendConfigFile, l)
 			if not l['module']:
-				raise Exception(u"No module defined in backend config file '%s'" % backendConfigFile)
+				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
 			if not type(l['config']) is dict:
-				raise TypeError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
+				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
 			exec(u'self._backends[backend]["instance"] = %sBackend(**l["config"])' % l['module'])
 			
@@ -164,32 +217,7 @@ class BackendDispatcher(DataBackend):
 			if not type(methodBackends) is list:
 				methodBackends = [ methodBackends ]
 			
-			argString = u''
-			callString = u''
-			(args, varargs, varkwargs, argDefaults) = inspect.getargspec(member[1])
-			print (args, varargs, varkwargs, argDefaults)
-			for i in range(len(args)):
-				if (args[i] == 'self'):
-					continue
-				if (argString):
-					argString += u', '
-					callString += u', '
-				argString += args[i]
-				callString += u'%s=%s' % (args[i], args[i])
-				if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
-					default = argDefaults[len(args)-len(argDefaults)-i]
-					if type(default) is str:
-						default = u"'%s'" % default
-					elif type(default) is unicode:
-						default = u"u'%s'" % default
-					argString += u'=%s' % default
-			if varargs:
-				for vararg in varargs:
-					argString += u', *%s' % vararg
-					callString += u', *%s' % vararg
-			if varkwargs:
-				argString += u', **%s' % varkwargs
-				callString += u', **%s' % varkwargs
+			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
@@ -214,8 +242,50 @@ class BackendDispatcher(DataBackend):
 		
 
 class BackendExtender(DataBackend):
-	def __init__(self, backend):
+	def __init__(self, username = '', password = '', address = '', **kwargs):
+		DataBackend.__init__(self, username, password, address, **kwargs)
 		
+		self._backend = None
+		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
+		
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   (option == 'backend'):
+				self._backend = value
+			elif (option == 'extensionconfigdir'):
+				self._extensionConfigDir = value
+		
+		if not self._backend:
+			raise BackendConfigurationError(u"No backend specified")
+		
+		self.__loadExtensionConf()
+		
+	def __loadExtensionConf(self):
+		if not self._extensionConfigDir:
+			logger.info(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
+			return
+		try:
+			confFiles = []
+			files = os.listdir(self._extensionConfigDir)
+			files.sort()
+			for f in files:
+				if not f.endswith('.conf'):
+					continue
+				confFiles.append( os.path.join(self._extensionConfigDir, f) )
+			
+			for confFile in confFiles:
+				try:
+					logger.info(u"Reading config file '%s'" % confFile)
+					execfile(confFile)
+				except Exception, e:
+					raise Exception(u"Error reading file '%s': %s" % (confFile, e))
+				
+				for (key, val) in locals().items():
+					if ( type(val) == types.FunctionType ):
+						logger.debug2(u"Extending backend '%s' with instancemethod: '%s'" % (self._backend, key) )
+						setattr( self._backend.__class__, key, new.instancemethod(val, None, self.__class__) )
+		except Exception, e:
+			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 
 
 import os, re, codecs
@@ -253,7 +323,7 @@ class BackendAccessControl(DataBackend):
 		if not self._backend:
 			raise BackendAuthenticationError(u"No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
-			raise BackendBadValueError(u"Cannot use BackenAccessControl instance as backend")
+			raise BackendConfigurationError(u"Cannot use BackenAccessControl instance as backend")
 			
 		for i in range(len(self._acl)):
 			self._acl[i][0] = re.compile(self._acl[i][0])
@@ -307,7 +377,7 @@ class BackendAccessControl(DataBackend):
 			logger.debug(u"Read acl from file '%s':" % self._aclFile)
 			logger.debug(Tools.objectToBeautifiedText(self._acl))
 		except Exception, e:
-			logger.error(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
+			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
 		
 		
 	def __createInstanceMethods(self):
@@ -318,32 +388,7 @@ class BackendAccessControl(DataBackend):
 				continue
 			logger.debug2(u"Found public DataBackend method '%s'" % methodName)
 			
-			argString = u''
-			callString = u''
-			(args, varargs, varkwargs, argDefaults) = inspect.getargspec(member[1])
-			print (args, varargs, varkwargs, argDefaults)
-			for i in range(len(args)):
-				if (args[i] == 'self'):
-					continue
-				if (argString):
-					argString += u', '
-					callString += u', '
-				argString += args[i]
-				callString += u'%s=%s' % (args[i], args[i])
-				if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
-					default = argDefaults[len(args)-len(argDefaults)-i]
-					if type(default) is str:
-						default = u"'%s'" % default
-					elif type(default) is unicode:
-						default = u"u'%s'" % default
-					argString += u'=%s' % default
-			if varargs:
-				for vararg in varargs:
-					argString += u', *%s' % vararg
-					callString += u', *%s' % vararg
-			if varkwargs:
-				argString += u', **%s' % varkwargs
-				callString += u', **%s' % varkwargs
+			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))

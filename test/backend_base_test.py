@@ -214,7 +214,7 @@ for i in ('installed'):
 assert forceActionProgress('installing 50%') == u'installing 50%'
 assert type(forceActionProgress('installing 50%')) is unicode
 
-
+getPossibleClassAttributes(Host)
 
 
 

@@ -54,13 +54,13 @@ class ServerConnection:
 		self.__port = port
 	
 	def createUnixSocket(self):
-		logger.notice("Creating unix socket '%s'" % self.__port)
+		logger.notice(u"Creating unix socket '%s'" % self.__port)
 		self.__socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 		self.__socket.settimeout(5.0)
 		try:
 			self.__socket.connect(self.__port)
 		except Exception, e:
-			raise Exception("Failed to connect to socket '%s': %s" % (self.__port, e))
+			raise Exception(u"Failed to connect to socket '%s': %s" % (self.__port, e))
 		
 	
 	def sendCommand(self, cmd):
@@ -70,10 +70,10 @@ class ServerConnection:
 		try:
 			result = self.__socket.recv(4096)
 		except Exception, e:
-			raise Exception("Failed to receive: %s" % e)
+			raise Exception(u"Failed to receive: %s" % e)
 		self.__socket.close()
 		if result.startswith('(ERROR)'):
-			raise Exception("Command '%s' failed: %s" % (cmd, result))
+			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
 		return result
 	
 # ======================================================================================================
@@ -105,11 +105,11 @@ class OpsiPXEConfdBackend(DataBackend):
 		
 		try:
 			sc = ServerConnection(self.__port)
-			logger.info("Sending command '%s'" % command)
+			logger.info(u"Sending command '%s'" % command)
 			result = sc.sendCommand(command)
-			logger.info("Got result '%s'" % result)
+			logger.info(u"Got result '%s'" % result)
 		except Exception, e:
-			raise BackendIOError("Failed to write PXE boot configuration: %s" % e)
+			raise BackendIOError(u"Failed to write PXE boot configuration: %s" % e)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductStates                                                                             -

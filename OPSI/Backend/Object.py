@@ -34,8 +34,14 @@
 
 __version__ = '3.5'
 
+# imports
 import json, re, copy, time, inspect
 
+# OPSI imports
+from OPSI.Logger import *
+
+# Get logger instance
+logger = Logger()
 
 def forceList(var):
 	if not type(var) is list:
@@ -312,6 +318,10 @@ class BackendIOError(OpsiError):
 	""" Exception raised if there is a read or write error in the backend. """
 	ExceptionShortDescription = u"Backend I/O error"
 
+class BackendConfigurationError(OpsiError):
+	""" Exception raised if a configuration error occurs in the backend. """
+	ExceptionShortDescription = u"Backend configuration error"
+
 class BackendReferentialIntegrityError(OpsiError):
 	""" Exception raised if there is a referential integration error occurs in the backend. """
 	ExceptionShortDescription = u"Backend referential integrity error"
@@ -363,7 +373,14 @@ class LicenseMissingError(OpsiError):
 
 def mandatoryConstructorArgs(Class):
 	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
-	return args[1:][:-1*len(defaults)]
+	if not defaults:
+		defaults = []
+	last = -1*len(defaults)
+	if (last == 0):
+		last = len(args)
+	mandatory = args[1:][:last]
+	logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class, mandatory))
+	return mandatory
 
 def getPossibleClassAttributes(Class):
 	attributes = inspect.getargspec(Class.__init__)[0]
@@ -1210,12 +1227,12 @@ class ProductOnDepot(Relationship):
 Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
 
 
-class ProductState(Relationship):
+class ProductOnClient(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, hostId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
+	def __init__(self, productId, clientId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
 		self.setProductId(productId)
-		self.setHostId(hostId)
+		self.setClientId(clientId)
 		self.setInstallationStatus(installationStatus)
 		self.setActionRequest(actionRequest)
 		self.setActionProgress(actionProgress)
@@ -1229,11 +1246,11 @@ class ProductState(Relationship):
 	def setProductId(self, productId):
 		self.productId = forceProductId(productId)
 	
-	def getHostId(self):
-		return self.hostId
+	def getClientId(self):
+		return self.clientId
 	
-	def setHostId(self, hostId):
-		self.hostId = forceHostId(hostId)
+	def setClientId(self, clientId):
+		self.clientId = forceHostId(clientId)
 	
 	def getInstallationStatus(self):
 		return self.installationStatus
@@ -1269,13 +1286,14 @@ class ProductState(Relationship):
 		return self.lastStateChange
 	
 	def setLastStateChange(self, lastStateChange):
-		if not lastStateChange:
-			lastStateChange = time.strftime( "%Y%m%d%H%M%S", time.localtime() )
-		self.lastStateChange = forceOpsiTimestamp(lastStateChange)
+		if lastStateChange:
+			self.lastStateChange = forceOpsiTimestamp(lastStateChange)
+		else:
+			self.lastStateChange = u''
 	
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductState'
+		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'
 		return Relationship.fromHash(hash)
 	
 	@staticmethod
@@ -1283,18 +1301,18 @@ class ProductState(Relationship):
 		return ProductState.fromHash(json.loads(jsonString))
 	
 	def __unicode__(self):
-		return u"<%s hostId '%s', productId '%s'>" \
-			% (self.getType(), self.hostId, self.productId)
+		return u"<%s clientId '%s', productId '%s'>" \
+			% (self.getType(), self.clientId, self.productId)
 	
-Relationship.subClasses['ProductState'] = ProductState
+Relationship.subClasses['ProductOnClient'] = ProductOnClient
 
 class ProductPropertyState(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, name, hostId, values=[]):
+	def __init__(self, productId, name, objectId, values=[]):
 		self.setProductId(productId)
 		self.setName(name)
-		self.setHostId(hostId)
+		self.setObjectId(objectId)
 		self.setValues(values)
 	
 	def getProductId(self):
@@ -1303,11 +1321,11 @@ class ProductPropertyState(Relationship):
 	def setProductId(self, productId):
 		self.productId = forceProductId(productId)
 	
-	def getHostId(self):
-		return self.hostId
+	def getObjectId(self):
+		return self.objectId
 	
-	def setHostId(self, hostId):
-		self.hostId = forceHostId(hostId)
+	def setObjectId(self, objectId):
+		self.objectId = forceObjectId(objectId)
 	
 	def getName(self):
 		return self.name
@@ -1331,8 +1349,8 @@ class ProductPropertyState(Relationship):
 		return ProductPropertyState.fromHash(json.loads(jsonString))
 	
 	def __unicode__(self):
-		return u"<%s productId '%s', hostId '%s', name '%s'>" \
-			% (self.getType(), self.productId, self.hostId, self.name)
+		return u"<%s productId '%s', objectId '%s', name '%s'>" \
+			% (self.getType(), self.productId, self.objectId, self.name)
 	
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 

@@ -62,110 +62,112 @@ class MySQL:
 	def connect(self):
 		try:
 			self._conn = MySQLdb.connect(
-							host = self._address,
-							user = self._username,
-							passwd = self._password,
-							db = self._database,
-							use_unicode = True,
-							charset = 'utf8' )
+						host        = self._address,
+						user        = self._username,
+						passwd      = self._password,
+						db          = self._database,
+						use_unicode = True,
+						charset     = 'utf8' )
 		except Exception, e:
-			raise BackendIOError("Failed to connect to database '%s' address '%s': %s" % (database, address, e))
+			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
 		
 		self._cursor = self._conn.cursor(MySQLdb.cursors.DictCursor)
-		
-	def db_query(self, query):
-		logger.debug2("db_query: %s" % query)
-		self.db_execute(query)
+	
+	def close(self):
+		if not self._conn:
+			return
+		logger.info(u"Closing database connection")
+		self._cursor.close()
+		self._conn.commit()
+		self._conn.close()
+	
+	def query(self, query):
+		logger.debug2(u"query: %s" % query)
+		self.execute(query)
 		return self._cursor.rowcount
 	
-	def db_getSet(self, query):
-		logger.debug2("db_getSet: %s" % query)
-		self.db_execute(query)
+	def getSet(self, query):
+		logger.debug2(u"getSet: %s" % query)
+		self.execute(query)
 		valueSet = self._cursor.fetchall()
 		if not valueSet:
-			logger.debug("No result for query '%s'" % query)
+			logger.debug(u"No result for query '%s'" % query)
 			return []
 		return valueSet
 		
-	def db_getRow(self, query):
-		logger.debug2("db_getRow: %s" % query)
-		self.db_execute(query)
+	def getRow(self, query):
+		logger.debug2(u"getRow: %s" % query)
+		self.execute(query)
 		row = self._cursor.fetchone()
 		if not row:
-			logger.debug("No result for query '%s'" % query)
+			logger.debug(u"No result for query '%s'" % query)
 			return {}
-		logger.debug2("Result: '%s'" % row)
+		logger.debug2(u"Result: '%s'" % row)
 		return row
 		
-	def db_insert(self, table, valueHash):
-		colNames = values = ''
+	def insert(self, table, valueHash):
+		colNames = values = u''
 		for (key, value) in valueHash.items():
-			colNames += "`%s`, " % key
+			colNames += u"`%s`, " % key
 			if type(value) in (float, long, int, bool):
-				values += "%s, " % value
+				values += u"%s, " % value
 			elif type(value) is str:
-				values += "\'%s\', " % ('%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
 			else:
-				values += "\'%s\', " % ('%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+				values += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
 			
-		query = "INSERT INTO `%s` (%s) VALUES (%s);" % (table, colNames[:-2], values[:-2])
-		logger.debug2("db_insert: %s" % query)
-		self.db_execute(query)
+		query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+		logger.debug2(u"insert: %s" % query)
+		self.execute(query)
 		return self._cursor.lastrowid
 		
-	def db_update(self, table, where, valueHash):
+	def update(self, table, where, valueHash):
 		if not valueHash:
-			raise ValueError("No values given")
-		query = "UPDATE `%s` SET " % table
+			raise BackendBadValueError(u"No values given")
+		query = u"UPDATE `%s` SET " % table
 		for (key, value) in valueHash.items():
-			query += "`%s` = " % key
+			query += u"`%s` = " % key
 			if type(value) in (float, long, int, bool):
-				query += "%s, " % value
+				query += u"%s, " % value
+			elif type(value) is str:
+				query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
 			else:
-				query += "\'%s\', " % ('%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+				query += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
 		
-		query = '%s WHERE %s;' % (query[:-2], where)
-		
-		logger.debug2("db_update: %s" % query)
-		self.db_execute(query)
-		self.db_commit()
+		query = u'%s WHERE %s;' % (query[:-2], where)
+		logger.debug2(u"update: %s" % query)
+		self.execute(query)
+		self.commit()
 		return self._cursor.lastrowid
 	
-	def db_delete(self, table, where):
-		query = "DELETE FROM `%s` WHERE %s;" % (table, where)
-		logger.debug2("db_delete: %s" % query)
-		self.db_execute(query)
+	def delete(self, table, where):
+		query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
+		logger.debug2(u"delete: %s" % query)
+		self.execute(query)
 		return self._cursor.lastrowid
 		
-	def db_commit(self):
+	def commit(self):
 		self._conn.commit()
 		
-	def db_execute(self, query):
+	def execute(self, query):
 		if not self._conn:
 			self.connect()
 		if not type(query) is unicode:
-			query = unicode(query, 'utf-8')
+			query = unicode(query, 'utf-8', 'replace')
 		res = self._cursor.execute(query)
-		self.db_commit()
+		self.commit()
 		return res
 	
-	def db_info(self):
+	def info(self):
 		if not self._conn:
 			self.connect()
 		return self._conn.info()
 	
-	def db_warning_count(self):
+	def warningCount(self):
 		if not self._conn:
 			self.connect()
 		return self._conn.warning_count()
-		
-	def db_close(self):
-		if not self._conn:
-			return
-		logger.info("Closing database connection")
-		self._cursor.close()
-		self._conn.commit()
-		self._conn.close()
+	
 
 # ======================================================================================================
 # =                                    CLASS MYSQLBACKEND                                              =
@@ -188,16 +190,11 @@ class MySQLBackend(DataBackend):
 		self._licenseManagementEnabled = True
 		
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
-		#logger.warning("%s (file: %s, line: %s)" % (message, filename, lineno))
+		#logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))
 		if str(message).startswith('Data truncated for column'):
 			logger.error(message)
 		else:
 			logger.warning(message)
-	
-	def _writeToServer_(self, queries):
-		for query in queries.split(';'):
-			if query.strip():
-				self._mysql.db_query(query + ' ;')
 	
 	def _createQuery(self, table, attributes=[], filter={}):
 		where = u''
@@ -304,10 +301,10 @@ class MySQLBackend(DataBackend):
 		done = False
 		while not done and (failure < 100):
 			done = True
-			for i in self._mysql.db_getSet('SHOW TABLES;'):
+			for i in self._mysql.getSet(u'SHOW TABLES;'):
 				try:
-					logger.debug('DROP TABLE `%s`;' % i.values()[0])
-					self._mysql.db_execute('DROP TABLE `%s`;' % i.values()[0])
+					logger.debug(u'DROP TABLE `%s`;' % i.values()[0])
+					self._mysql.execute(u'DROP TABLE `%s`;' % i.values()[0])
 				except Exception, e:
 					logger.error(e)
 					done = False
@@ -317,21 +314,21 @@ class MySQLBackend(DataBackend):
 		DataBackend.base_create(self)
 		# Hardware audit database
 		tables = {}
-		logger.debug("Current tables:")
-		for i in self._mysql.db_getSet('SHOW TABLES;'):
+		logger.debug(u"Current tables:")
+		for i in self._mysql.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
-			logger.debug(" [ %s ]" % tableName)
+			logger.debug(u" [ %s ]" % tableName)
 			tables[tableName] = []
-			for j in self._mysql.dtb_getSet('SHOW COLUMNS FROM `%s`' % tableName):
-				logger.debug("      %s" % j)
+			for j in self._mysql.dtb_getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
+				logger.debug(u"      %s" % j)
 				tables[tableName].append(j['Field'])
 		
-		logger.notice('Creating opsi base')
+		logger.notice(u'Creating opsi base')
 		
 		# Host table
 		if not 'HOST' in tables.keys():
-			logger.debug('Creating table HOST')
-			table = '''CREATE TABLE `HOST` (
+			logger.debug(u'Creating table HOST')
+			table = u'''CREATE TABLE `HOST` (
 					`hostId` varchar(255) NOT NULL,
 					PRIMARY KEY( `hostId` ),
 					`type` varchar(30),
@@ -350,11 +347,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'CONFIG' in tables.keys():
-			logger.debug('Creating table CONFIG')
-			table = '''CREATE TABLE `CONFIG` (
+			logger.debug(u'Creating table CONFIG')
+			table = u'''CREATE TABLE `CONFIG` (
 					`name` varchar(200) NOT NULL,
 					PRIMARY KEY( `name` ),
 					`type` varchar(30) NOT NULL,
@@ -364,11 +361,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'CONFIG_VALUE' in tables.keys():
-			logger.debug('Creating table CONFIG_VALUE')
-			table = '''CREATE TABLE `CONFIG_VALUE` (
+			logger.debug(u'Creating table CONFIG_VALUE')
+			table = u'''CREATE TABLE `CONFIG_VALUE` (
 					`config_value_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_value_id` ),
 					`name` varchar(200) NOT NULL,
@@ -378,11 +375,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'CONFIG_STATE' in tables.keys():
-			logger.debug('Creating table CONFIG_STATE')
-			table = '''CREATE TABLE `CONFIG_STATE` (
+			logger.debug(u'Creating table CONFIG_STATE')
+			table = u'''CREATE TABLE `CONFIG_STATE` (
 					`config_state_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_state_id` ),
 					`name` varchar(200) NOT NULL,
@@ -391,11 +388,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'PRODUCT' in tables.keys():
-			logger.debug('Creating table PRODUCT')
-			table = '''CREATE TABLE `PRODUCT` (
+			logger.debug(u'Creating table PRODUCT')
+			table = u'''CREATE TABLE `PRODUCT` (
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
@@ -415,11 +412,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' in tables.keys():
-			logger.debug('Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
-			table = '''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
+			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
+			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
 					PRIMARY KEY( `windowsSoftwareId`),
 					`productId` varchar(50) NOT NULL,
@@ -427,11 +424,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'PRODUCT_ON_DEPOT' in tables.keys():
-			logger.debug('Creating table PRODUCT_ON_DEPOT')
-			table = '''CREATE TABLE `PRODUCT_ON_DEPOT` (
+			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
+			table = u'''CREATE TABLE `PRODUCT_ON_DEPOT` (
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
@@ -443,11 +440,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'PRODUCT_PROPERTY' in tables.keys():
-			logger.debug('Creating table PRODUCT_PROPERTY')
-			table = '''CREATE TABLE `PRODUCT_PROPERTY` (
+			logger.debug(u'Creating table PRODUCT_PROPERTY')
+			table = u'''CREATE TABLE `PRODUCT_PROPERTY` (
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
@@ -461,11 +458,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'PRODUCT_PROPERTY_VALUE' in tables.keys():
-			logger.debug('Creating table PRODUCT_PROPERTY_VALUE')
-			table = '''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
+			logger.debug(u'Creating table PRODUCT_PROPERTY_VALUE')
+			table = u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
 					`product_property_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `product_property_id` ),
 					`productId` varchar(50) NOT NULL,
@@ -478,16 +475,16 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
-		if not 'PRODUCT_STATE' in tables.keys():
-			logger.debug('Creating table PRODUCT_STATE')
-			table = '''CREATE TABLE `PRODUCT_STATE` (
+		if not 'PRODUCT_ON_CLIENT' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
+			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
 					`productId` varchar(50) NOT NULL,
 					FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
-					`hostId` varchar(255) NOT NULL,
-					FOREIGN KEY ( `hostId` ) REFERENCES `HOST` ( `hostId` ),
-					PRIMARY KEY( `productId`, `hostId` ),
+					`clientId` varchar(255) NOT NULL,
+					FOREIGN KEY ( `clientId` ) REFERENCES `HOST` ( `hostId` ),
+					PRIMARY KEY( `productId`, `clientId` ),
 					`installationStatus` varchar(16),
 					`actionRequest` varchar(16),
 					`actionProgress` varchar(255),
@@ -497,27 +494,26 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'PRODUCT_PROPERTY_STATE' in tables.keys():
-			logger.debug('Creating table PRODUCT_PROPERTY_STATE')
-			table = '''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
+			logger.debug(u'Creating table PRODUCT_PROPERTY_STATE')
+			table = u'''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
 					`product_property_state_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `product_property_state_id` ),
 					`productId` varchar(50) NOT NULL,
 					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 					`name` varchar(200) NOT NULL,
-					`hostId` varchar(255) NOT NULL,
-					FOREIGN KEY ( `hostId` ) REFERENCES `HOST` ( `hostId` ),
+					`objectId` varchar(255) NOT NULL,
 					`values` text
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'GROUP' in tables.keys():
-			logger.debug('Creating table GROUP')
-			table = '''CREATE TABLE `GROUP` (
+			logger.debug(u'Creating table GROUP')
+			table = u'''CREATE TABLE `GROUP` (
 					`groupId` varchar(255) NOT NULL,
 					PRIMARY KEY( `groupId` ),
 					`type` varchar(30) NOT NULL,
@@ -527,11 +523,11 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 		if not 'OBJECT_TO_GROUP' in tables.keys():
-			logger.debug('Creating table OBJECT_TO_GROUP')
-			table = '''CREATE TABLE `OBJECT_TO_GROUP` (
+			logger.debug(u'Creating table OBJECT_TO_GROUP')
+			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
 					`groupId` varchar(255) NOT NULL,
 					FOREIGN KEY ( `groupId` ) REFERENCES `GROUP` ( `groupId` ),
 					`objectId` varchar(255) NOT NULL,
@@ -539,7 +535,7 @@ class MySQLBackend(DataBackend):
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
-			self._writeToServer_(table)
+			self._mysql.execute(table)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -547,20 +543,20 @@ class MySQLBackend(DataBackend):
 	def host_insertObject(self, host):
 		DataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
-		self._mysql.db_insert('HOST', data)
+		self._mysql.insert('HOST', data)
 	
 	def host_updateObject(self, host):
 		DataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
-		self._mysql.db_update('HOST', where, data)
+		self._mysql.update('HOST', where, data)
 	
 	def host_getObjects(self, attributes=[], **filter):
 		DataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting hosts, filter: %s" % filter)
 		hosts = []
 		self._adjustAttributes(Host, attributes, filter)
-		for res in  self._mysql.db_getSet(self._createQuery('HOST', attributes, filter)):
+		for res in  self._mysql.getSet(self._createQuery('HOST', attributes, filter)):
 			self._adjustResult(Host, res)
 			hosts.append(Host.fromHash(res))
 		return hosts
@@ -568,9 +564,9 @@ class MySQLBackend(DataBackend):
 	def host_deleteObjects(self, hosts):
 		DataBackend.host_deleteObjects(self, hosts)
 		for host in forceObjectClassList(hosts, Host):
-			logger.info("Deleting host %s" % host)
+			logger.info(u"Deleting host %s" % host)
 			where = self._uniqueCondition(host)
-			self._mysql.db_delete('HOST', where)
+			self._mysql.delete('HOST', where)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -584,9 +580,9 @@ class MySQLBackend(DataBackend):
 		del config['possibleValues']
 		del config['defaultValues']
 		
-		self._mysql.db_insert('CONFIG', config)
+		self._mysql.insert('CONFIG', config)
 		for value in possibleValues:
-			self._mysql.db_insert('CONFIG_VALUE', {
+			self._mysql.insert('CONFIG_VALUE', {
 				'name': config['name'],
 				'value': value,
 				'isDefault': (value in defaultValues)
@@ -601,10 +597,10 @@ class MySQLBackend(DataBackend):
 		del data['possibleValues']
 		del data['defaultValues']
 		
-		self._mysql.db_update('CONFIG', where, data)
-		self._mysql.db_delete('CONFIG_VALUE', where)
+		self._mysql.update('CONFIG', where, data)
+		self._mysql.delete('CONFIG_VALUE', where)
 		for value in possibleValues:
-			self._mysql.db_insert('CONFIG_VALUE', {
+			self._mysql.insert('CONFIG_VALUE', {
 				'name': data['name'],
 				'value': value,
 				'isDefault': (value in defaultValues)
@@ -619,11 +615,11 @@ class MySQLBackend(DataBackend):
 		for attr in attributes:
 			if not attr in ('defaultValues', 'possibleValues'):
 				attrs.append(attr)
-		for res in self._mysql.db_getSet(self._createQuery('CONFIG', attrs, filter)):
+		for res in self._mysql.getSet(self._createQuery('CONFIG', attrs, filter)):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
 			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-				for res2 in self._mysql.db_getSet(u"select * from CONFIG_VALUE where `name` = '%s'" % res['name']):
+				for res2 in self._mysql.getSet(u"select * from CONFIG_VALUE where `name` = '%s'" % res['name']):
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
 						res['defaultValues'].append(res2['value'])
@@ -635,8 +631,8 @@ class MySQLBackend(DataBackend):
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Deleting config %s" % config)
 			where = self._uniqueCondition(config)
-			self._mysql.db_delete('CONFIG_VALUE', where)
-			self._mysql.db_delete('CONFIG', where)
+			self._mysql.delete('CONFIG_VALUE', where)
+			self._mysql.delete('CONFIG', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -645,21 +641,21 @@ class MySQLBackend(DataBackend):
 		DataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		data['values'] = json.dumps(data['values'])
-		self._mysql.db_insert('CONFIG_STATE', data)
+		self._mysql.insert('CONFIG_STATE', data)
 	
 	def configState_updateObject(self, configState):
 		DataBackend.configState_updateObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		where = self._uniqueCondition(configState)
 		data['values'] = json.dumps(data['values'])
-		self._mysql.db_update('CONFIG_STATE', where, data)
+		self._mysql.update('CONFIG_STATE', where, data)
 	
 	def configState_getObjects(self, attributes=[], **filter):
 		DataBackend.configState_getObjects(self, attributes=[], **filter)
-		logger.info("Getting configStates, filter: %s" % filter)
+		logger.info(u"Getting configStates, filter: %s" % filter)
 		configStates = []
 		self._adjustAttributes(ConfigState, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
 			res['values'] = json.loads(res['values'])
 			configStates.append(ConfigState.fromHash(res))
 		return configStates
@@ -669,7 +665,7 @@ class MySQLBackend(DataBackend):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info("Deleting configState %s" % configState)
 			where = self._uniqueCondition(configState)
-			self._mysql.db_delete('CONFIG_STATE', where)
+			self._mysql.delete('CONFIG_STATE', where)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -681,9 +677,9 @@ class MySQLBackend(DataBackend):
 		windowsSoftwareIds = data['windowsSoftwareIds']
 		del data['windowsSoftwareIds']
 		del data['productClassIds']
-		self._mysql.db_insert('PRODUCT', data)
+		self._mysql.insert('PRODUCT', data)
 		for windowsSoftwareId in windowsSoftwareIds:
-			self._mysql.db_insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_updateObject(self, product):
 		DataBackend.product_updateObject(self, product)
@@ -692,21 +688,21 @@ class MySQLBackend(DataBackend):
 		windowsSoftwareIds = data['windowsSoftwareIds']
 		del data['windowsSoftwareIds']
 		del data['productClassIds']
-		self._mysql.db_update('PRODUCT', where, data)
-		self._mysql.db_delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
+		self._mysql.update('PRODUCT', where, data)
+		self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
 		for windowsSoftwareId in windowsSoftwareIds:
-			self._mysql.db_insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_getObjects(self, attributes=[], **filter):
 		DataBackend.product_getObjects(self, attributes=[], **filter)
-		logger.info("Getting products, filter: %s" % filter)
+		logger.info(u"Getting products, filter: %s" % filter)
 		products = []
 		self._adjustAttributes(Product, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('PRODUCT', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('PRODUCT', attributes, filter)):
 			res['windowsSoftwareIds'] = []
 			res['productClassIds'] = []
 			if not attributes or 'windowsSoftwareIds' in attributes or 'productClassIds' in attributes:
-				for res2 in self._mysql.db_getSet(u"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '%s'" % res['productId']):
+				for res2 in self._mysql.getSet(u"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '%s'" % res['productId']):
 					res['windowsSoftwareIds'].append(res2['windowsSoftwareId'])
 			self._adjustResult(Product, res)
 			products.append(Product.fromHash(res))
@@ -717,8 +713,8 @@ class MySQLBackend(DataBackend):
 		for product in forceObjectClassList(products, Product):
 			logger.info("Deleting product %s" % config)
 			where = self._uniqueCondition(product)
-			self._mysql.db_delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
-			self._mysql.db_delete('PRODUCT', where)
+			self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
+			self._mysql.delete('PRODUCT', where)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -732,9 +728,9 @@ class MySQLBackend(DataBackend):
 		del data['possibleValues']
 		del data['defaultValues']
 		
-		self._mysql.db_insert('PRODUCT_PROPERTY', data)
+		self._mysql.insert('PRODUCT_PROPERTY', data)
 		for value in possibleValues:
-			self._mysql.db_insert('PRODUCT_PROPERTY_VALUE', {
+			self._mysql.insert('PRODUCT_PROPERTY_VALUE', {
 					'productId': data['productId'],
 					'productVersion': data['productVersion'],
 					'packageVersion': data['packageVersion'],
@@ -751,9 +747,9 @@ class MySQLBackend(DataBackend):
 		del data['possibleValues']
 		del data['defaultValues']
 		
-		self._mysql.db_update('PRODUCT_PROPERTY', data)
+		self._mysql.update('PRODUCT_PROPERTY', data)
 		for value in possibleValues:
-			self._mysql.db_insert('PRODUCT_PROPERTY_VALUE', {
+			self._mysql.insert('PRODUCT_PROPERTY_VALUE', {
 					'productId': data['productId'],
 					'productVersion': data['productVersion'],
 					'packageVersion': data['packageVersion'],
@@ -764,14 +760,14 @@ class MySQLBackend(DataBackend):
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		DataBackend.productProperty_getObjects(self, attributes=[], **filter)
-		logger.info("Getting product properties, filter: %s" % filter)
+		logger.info(u"Getting product properties, filter: %s" % filter)
 		productProperties = []
 		self._adjustAttributes(ProductProperty, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
 			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-				for res2 in self._mysql.db_getSet(u"select * from PRODUCT_PROPERTY_VALUE where " \
+				for res2 in self._mysql.getSet(u"select * from PRODUCT_PROPERTY_VALUE where " \
 					+ u"`name` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
 					% (res['name'], res['productId'], res['productVersion'], res['packageVersion'])):
 					res['possibleValues'].append(res2['value'])
@@ -785,8 +781,8 @@ class MySQLBackend(DataBackend):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info("Deleting product property %s" % productProperty)
 			where = self._uniqueCondition(productProperty)
-			self._mysql.db_delete('PRODUCT_PROPERTY_VALUE', where)
-			self._mysql.db_delete('PRODUCT_PROPERTY', where)
+			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
+			self._mysql.delete('PRODUCT_PROPERTY', where)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -795,58 +791,58 @@ class MySQLBackend(DataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		DataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
-		self._mysql.db_insert('PRODUCT_ON_DEPOT', data)
+		self._mysql.insert('PRODUCT_ON_DEPOT', data)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		DataBackend.productOnDepot_updateObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		where = self._uniqueCondition(productOnDepot)
-		self._mysql.db_update('PRODUCT_ON_DEPOT', where, data)
+		self._mysql.update('PRODUCT_ON_DEPOT', where, data)
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		DataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		productOnDepots = []
 		self._adjustAttributes(ProductOnDepot, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
 			productOnDepots.append(ProductOnDepot.fromHash(res))
 		return productOnDepots
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		DataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			logger.info("Deleting productOnDepot %s" % productOnDepot)
-			where = self._uniqueCondition(ProductOnDepot)
-			self._mysql.db_delete('PRODUCT_ON_DEPOT', where)
+			logger.info(u"Deleting productOnDepot %s" % productOnDepot)
+			where = self._uniqueCondition(productOnDepot)
+			self._mysql.delete('PRODUCT_ON_DEPOT', where)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductStates                                                                             -
+	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productState_insertObject(self, productState):
-		DataBackend.productState_insertObject(self, productState)
-		data = self._objectToDatabaseHash(productState)
-		self._mysql.db_insert('PRODUCT_STATE', data)
+	def productOnClient_insertObject(self, productOnClient):
+		DataBackend.productOnClient_insertObject(self, productOnClient)
+		data = self._objectToDatabaseHash(productOnClient)
+		self._mysql.insert('PRODUCT_ON_CLIENT', data)
 		
-	def productState_updateObject(self, productState):
-		DataBackend.productState_updateObject(self, productState)
-		data = self._objectToDatabaseHash(productState)
-		where = self._uniqueCondition(productState)
-		self._mysql.db_update('PRODUCT_STATE', where, data)
+	def productOnClient_updateObject(self, productOnClient):
+		DataBackend.productOnClient_updateObject(self, productOnClient)
+		data = self._objectToDatabaseHash(productOnClient)
+		where = self._uniqueCondition(productOnClient)
+		self._mysql.update('PRODUCT_ON_CLIENT', where, data)
 	
-	def productState_getObjects(self, attributes=[], **filter):
-		DataBackend.productState_getObjects(self, attributes=[], **filter)
-		logger.info("Getting productStates, filter: %s" % filter)
-		productStates = []
-		self._adjustAttributes(ProductState, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('PRODUCT_STATE', attributes, filter)):
-			productStates.append(ProductState.fromHash(res))
-		return productStates
+	def productOnClient_getObjects(self, attributes=[], **filter):
+		DataBackend.productOnClient_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting productOnClients, filter: %s" % filter)
+		productOnClients = []
+		self._adjustAttributes(ProductOnClient, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter)):
+			productOnClients.append(ProductOnClient.fromHash(res))
+		return productOnClients
 	
-	def productState_deleteObjects(self, productStates):
-		DataBackend.productState_deleteObjects(self, productStates)
-		for productState in forceObjectClassList(productStates, ProductState):
-			logger.info("Deleting productState %s" % productState)
-			where = self._uniqueCondition(productState)
-			self._mysql.db_delete('PRODUCT_STATE', where)
+	def productOnClient_deleteObjects(self, productOnClients):
+		DataBackend.productOnClient_deleteObjects(self, productOnClients)
+		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
+			logger.info(u"Deleting productOnClient %s" % productOnClient)
+			where = self._uniqueCondition(productOnClient)
+			self._mysql.delete('PRODUCT_ON_CLIENT', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
@@ -855,21 +851,21 @@ class MySQLBackend(DataBackend):
 		DataBackend.productPropertyState_insertObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		data['values'] = json.dumps(data['values'])
-		self._mysql.db_insert('PRODUCT_PROPERTY_STATE', data)
+		self._mysql.insert('PRODUCT_PROPERTY_STATE', data)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		DataBackend.productPropertyState_updateObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		where = self._uniqueCondition(productPropertyState)
 		data['values'] = json.dumps(data['values'])
-		self._mysql.db_update('PRODUCT_PROPERTY_STATE', where, data)
+		self._mysql.update('PRODUCT_PROPERTY_STATE', where, data)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		DataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
-		logger.info("Getting productPropertyStates, filter: %s" % filter)
+		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
 		productPropertyStates = []
 		self._adjustAttributes(ProductPropertyState, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
 			res['values'] = json.loads(res['values'])
 			productPropertyStates.append(ProductPropertyState.fromHash(res))
 		return productPropertyStates
@@ -877,9 +873,9 @@ class MySQLBackend(DataBackend):
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		DataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
-			logger.info("Deleting productPropertyState %s" % productPropertyState)
+			logger.info(u"Deleting productPropertyState %s" % productPropertyState)
 			where = self._uniqueCondition(productPropertyState)
-			self._mysql.db_delete('PRODUCT_PROPERTY_STATE', where)
+			self._mysql.delete('PRODUCT_PROPERTY_STATE', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
@@ -887,20 +883,20 @@ class MySQLBackend(DataBackend):
 	def group_insertObject(self, group):
 		DataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
-		self._mysql.db_insert('GROUP', data)
+		self._mysql.insert('GROUP', data)
 	
 	def group_updateObject(self, group):
 		DataBackend.group_updateObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		where = self._uniqueCondition(group)
-		self._mysql.db_update('GROUP', where, data)
+		self._mysql.update('GROUP', where, data)
 	
 	def group_getObjects(self, attributes=[], **filter):
 		DataBackend.group_getObjects(self, attributes=[], **filter)
-		logger.info("Getting groups, filter: %s" % filter)
+		logger.info(u"Getting groups, filter: %s" % filter)
 		groups = []
 		self._adjustAttributes(Group, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('GROUP', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('GROUP', attributes, filter)):
 			self._adjustResult(Group, res)
 			groups.append(Group.fromHash(res))
 		return groups
@@ -908,9 +904,9 @@ class MySQLBackend(DataBackend):
 	def group_deleteObjects(self, groups):
 		DataBackend.group_deleteObjects(self, groups)
 		for group in forceObjectClassList(groups, Group):
-			logger.info("Deleting group %s" % group)
+			logger.info(u"Deleting group %s" % group)
 			where = self._uniqueCondition(group)
-			self._mysql.db_delete('GROUP', where)
+			self._mysql.delete('GROUP', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -918,26 +914,26 @@ class MySQLBackend(DataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		DataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
-		self._mysql.db_insert('OBJECT_TO_GROUP', data)
+		self._mysql.insert('OBJECT_TO_GROUP', data)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		DataBackend.objectToGroup_updateObject(self, objectToGroup)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		DataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
-		logger.info("Getting objectToGroups, filter: %s" % filter)
+		logger.info(u"Getting objectToGroups, filter: %s" % filter)
 		objectToGroups = []
 		self._adjustAttributes(ObjectToGroup, attributes, filter)
-		for res in self._mysql.db_getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter)):
+		for res in self._mysql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter)):
 			objectToGroups.append(ObjectToGroup.fromHash(res))
 		return objectToGroups
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		DataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			logger.info("Deleting objectToGroup %s" % objectToGroup)
+			logger.info(u"Deleting objectToGroup %s" % objectToGroup)
 			where = self._uniqueCondition(objectToGroup)
-			self._mysql.db_delete('OBJECT_TO_GROUP', where)
+			self._mysql.delete('OBJECT_TO_GROUP', where)
 
 
 

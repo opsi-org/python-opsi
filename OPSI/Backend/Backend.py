@@ -121,7 +121,8 @@ class DataBackend(Backend):
 				host.setCreated(Tools.timestamp())
 	
 	def host_updateObject(self, host):
-		pass
+		if not host.opsiHostKey:
+			host.setOpsiHostKey(Tools.generateOpsiHostKey())
 	
 	def host_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
@@ -132,10 +133,26 @@ class DataBackend(Backend):
 			self.objectToGroup_delete(
 				groupIds = [],
 				objectIds = [ host.id ])
-			# Remove product states
+			if isinstance(host, OpsiClient):
+				# Remove product states
+				self.productOnClient_delete(
+					productIds = [],
+					clientIds = [ host.id ])
+			elif isinstance(host, OpsiDepotserver):
+				# This is also true for OpsiConfigservers
+				# Remove products
+				self.productOnDepot_delete(
+					productIds = [],
+					productVersions = [],
+					packageVersions = [],
+					depotIds = [ host.id ])
+			# Remove product property states
+			self.productPropertyState_delete(
+				productIds = [],
+				names = [],
+				objectIds = [ host.id ])
 			
-	
-	def host_delete(ids):
+	def host_delete(self, ids):
 		return self.host_deleteObjects(
 				self.host_getObjects(
 					id = forceHostIdList(ids)))
@@ -181,7 +198,7 @@ class DataBackend(Backend):
 	def config_deleteObjects(self, configs):
 		pass
 	
-	def config_delete(names):
+	def config_delete(self, names):
 		return self.config_deleteObjects(
 				config_getObjects(
 					name = forceUnicodeLowerList(names)))
@@ -218,7 +235,7 @@ class DataBackend(Backend):
 	def configState_deleteObjects(self, configStates):
 		pass
 	
-	def configState_delete(names, objectIds):
+	def configState_delete(self, names, objectIds):
 		return self.configState_deleteObjects(
 				configState_getObjects(
 					name = forceUnicodeLowerList(names),
@@ -270,7 +287,7 @@ class DataBackend(Backend):
 				productVersions = [ product.productVersion ],
 				packageVersions = [ product.packageVersion ])
 	
-	def product_delete(productIds):
+	def product_delete(self, productIds):
 		return self.product_deleteObjects(
 				product_getObjects(
 					productId = forceProductIdList(productIds)))
@@ -321,7 +338,7 @@ class DataBackend(Backend):
 	
 	def productProperty_delete(self, productIds, productVersions, packageVersions, names):
 		return self.productOnDepot_deleteObjects(
-				productOnDepot_getObjects(
+				self.productOnDepot_getObjects(
 					productId = forceProductIdList(productIds),
 					productVersion = forceProductVersionList(productVersions),
 					packageVersion = forcePackageVersionList(packageVersions),
@@ -361,69 +378,70 @@ class DataBackend(Backend):
 	
 	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotIds):
 		return self.productOnDepot_deleteObjects(
-				productOnDepot_getObjects(
+				self.productOnDepot_getObjects(
 					productId = forceProductIdList(productIds),
 					productVersion = forceProductVersionList(productVersions),
 					packageVersion = forcePackageVersionList(packageVersions),
 					depotId = forceHostIdList(depotIds)))
 	
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductStates                                                                             -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	############# ProductOnClients
-	def productState_createObjects(self, productStates):
-		productStates = forceObjectClassList(productStates, ProductState)
-		for productState in productStates:
-			logger.info(u"Creating productState '%s'" % productState)
-			if self.productState_getObjects(
-					productId = productState.productId,
-					hostId = productState.hostId):
-				logger.info(u"ProductState '%s' already exists, updating" % productState)
-				self.productState_updateObject(productState)
-			else:
-				self.productState_insertObject(productState)
 	
-	def productState_create(self, productId, hostId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnClient_createObjects(self, productOnClients):
+		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
+		for productOnClient in productOnClients:
+			logger.info(u"Creating productOnClient '%s'" % productOnClient)
+			if self.productOnClient_getObjects(
+					productId = productOnClient.productId,
+					clientId = productOnClient.clientId):
+				logger.info(u"ProductOnClient '%s' already exists, updating" % productOnClient)
+				self.productOnClient_updateObject(productOnClient)
+			else:
+				self.productOnClient_insertObject(productOnClient)
+	
+	def productOnClient_create(self, productId, clientId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
 		hash = locals()
 		del hash['self']
-		return self.productState_createObjects(ProductState.fromHash(hash))
+		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
 	
-	def productState_insertObject(self, productState):
+	def productOnClient_insertObject(self, productOnClient):
+		if not productOnClient.lastStateChange:
+			productOnClient.setLastStateChange(Tools.timestamp())
+	
+	def productOnClient_updateObject(self, productOnClient):
+		if not productOnClient.lastStateChange:
+			productOnClient.setLastStateChange(Tools.timestamp())
+	
+	def productOnClient_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
+	
+	def productOnClient_deleteObjects(self, productOnClients):
 		pass
 	
-	def productState_updateObject(self, productState):
-		pass
-	
-	def productState_getObjects(self, attributes=[], **filter):
-		self._testFilterAndAttributes(ProductState, attributes, **filter)
-	
-	def productState_deleteObjects(self, productStates):
-		pass
-	
-	def productState_delete(self, productIds, hostIds):
-		return self.productState_deleteObjects(
-				productState_getObjects(
+	def productOnClient_delete(self, productIds, clientIds):
+		return self.productOnClient_deleteObjects(
+				self.productOnClient_getObjects(
 					productId = forceProductIdList(productIds),
-					hostId = forceHostIdList(hostIds)))
+					clientId = forceHostIdList(clientIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	############# ProductPropertyOnClients
 	def productPropertyState_createObjects(self, productPropertyStates):
-		productStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
+		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
 			logger.info(u"Creating productPropertyState '%s'" % productPropertyState)
 			if self.productPropertyState_getObjects(
 						productId = productPropertyState.productId,
-						hostId = productPropertyState.hostId,
+						objectId = productPropertyState.objectId,
 						name = productPropertyState.name):
 				logger.info(u"ProductPropertyState '%s' already exists, updating" % productPropertyState)
 				self.productPropertyState_updateObject(productPropertyState)
 			else:
 				self.productPropertyState_insertObject(productPropertyState)
 	
-	def productPropertyState_create(self, productId, name, hostId, values=[]):
+	def productPropertyState_create(self, productId, name, objectId, values=[]):
 		hash = locals()
 		del hash['self']
 		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
@@ -440,12 +458,12 @@ class DataBackend(Backend):
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		pass
 	
-	def productPropertyState_delete(self, productIds, names, hostIds):
-		return self.productState_deleteObjects(
-				productPropertyState_getObjects(
+	def productPropertyState_delete(self, productIds, names, objectIds):
+		return self.productPropertyState_deleteObjects(
+				self.productPropertyState_getObjects(
 					productId = forceProductIdList(productIds),
 					name = forceUnicodeLowerList(names),
-					hostId = forceHostIdList(hostIds)))
+					objectId = forceObjectIdList(objectIds)))
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
@@ -479,7 +497,7 @@ class DataBackend(Backend):
 	
 	def group_delete(self, ids):
 		return self.group_deleteObjects(
-				group_getObjects(
+				self.group_getObjects(
 					id = forceGroupIdList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
