@@ -645,7 +645,7 @@ class BackendTest(object):
 		hosts = self.backend.host_getObjects()
 		assert len(hosts) == 0
 		
-		return
+	def testPerformance(self):
 		start = time.time()
 		for i in range(200):
 			self.backend.host_createOpsiClient(
@@ -662,7 +662,7 @@ class BackendTest(object):
 		start = time.time()
 		self.backend.host_delete(ids = [])
 		logger.notice(u"Took %.2f seconds to delete 200 clients" % (time.time()-start))
-
+		
 
 
 
