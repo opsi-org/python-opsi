@@ -96,6 +96,19 @@ class LDAPBackend(DataBackend):
 		
 	def base_create(self):
 		DataBackend.base_create(self)
+	
+		# Create some containers
+		self.createOrganizationalRole(self._opsiBaseDn)
+		for hostContainerDn in self._hostsContainerDn:
+			self.createOrganizationalRole(hostContainerDn)
+		self.createOrganizationalRole(self._generalConfigsContainerDn)
+		self.createOrganizationalRole(self._networkConfigsContainerDn)
+		self.createOrganizationalRole(self._groupsContainerDn)
+		self.createOrganizationalRole(self._productsContainerDn)
+		self.createOrganizationalRole(self._productClassesContainerDn)
+		self.createOrganizationalRole(self._productStatesContainerDn)
+		self.createOrganizationalRole(self._productPropertiesContainerDn)
+		
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -252,7 +265,22 @@ class LDAPBackend(DataBackend):
 		DataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 
 
-
+	
+	# -------------------------------------------------
+	# -     HELPERS                                   -
+	# -------------------------------------------------
+	def createOrganizationalRole(self, dn):
+		''' This method will add a oprganizational role object
+		    with the specified DN, if it does not already exist. '''
+		organizationalRole = Object(dn)
+		if organizationalRole.exists(self._ldap):
+			logger.info(u"Organizational role '%s' already exists" % dn)
+		else:
+			logger.info(u"Creating organizational role '%s'" % dn)
+			organizationalRole.new('organizationalRole')
+			organizationalRole.writeToDirectory(self._ldap)
+		logger.info(u"Organizational role '%s' created" % dn)
+		
 
 
 # ======================================================================================================
