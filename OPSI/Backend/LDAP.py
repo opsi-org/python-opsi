@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-#import ldap
+import ldap
 
 # OPSI imports
 from OPSI.Logger import *
