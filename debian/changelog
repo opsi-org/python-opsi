@@ -1,3 +1,9 @@
+python-opsi (3.4.0.0-s1) stable; urgency=low
+
+  * New version number
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 27 Aug 2009 14:23:40 +0200
+
 python-opsi (3.4.0.0-rc6) unstable; urgency=low
 
   * MySQL 0.3.3.4: fixed encoding error
