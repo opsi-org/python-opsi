@@ -664,7 +664,11 @@ class BackendTest(object):
 		logger.notice(u"Took %.2f seconds to delete 200 clients" % (time.time()-start))
 		
 
-
+class BackendManagerTest(BackendTest):
+	def __init__(self, backendManager):
+		BackendTest.__init__(self, backendManager)
+	
+	
 
 
 

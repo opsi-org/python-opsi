@@ -19,8 +19,10 @@ os.mkdir(TMP_CONFIG_DIR)
 
 dipatchConfigFile = os.path.join(TMP_CONFIG_DIR, 'dispatch.conf')
 backendConfigDir = os.path.join(TMP_CONFIG_DIR, 'backends')
+aclFile = os.path.join(TMP_CONFIG_DIR, 'acl.conf')
 
 os.mkdir(backendConfigDir)
+
 f = open(dipatchConfigFile, 'w')
 f.write(
 '''
@@ -28,6 +30,15 @@ f.write(
 '''
 )
 f.close()
+
+f = open(aclFile, 'w')
+f.write(
+'''
+.*: opsi_depotserver
+'''
+)
+f.close()
+
 f = open(os.path.join(backendConfigDir, 'mysql.conf'), 'w')
 f.write(
 '''
@@ -45,24 +56,42 @@ f.close()
 bm = BackendManager(
 	dispatchConfigFile = dipatchConfigFile,
 	backendConfigDir = backendConfigDir)
-bt = BackendTest(bm)
+bt = BackendManagerTest(bm)
 bt.cleanupBackend()
 bt.testObjectMethods()
-#bt.testNonObjectMethods()
 
-
-sys.exit(0)
-########################################
 bm = BackendManager(
-	dispatchConfigFile = 'files/dispatch.conf',
-	backendConfigDir   = 'files/backends',
+	dispatchConfigFile = dipatchConfigFile,
+	backendConfigDir   = backendConfigDir,
 	username           = bt.configserver1.getId(),
 	password           = bt.configserver1.getOpsiHostKey(),
-	aclFile            = 'files/acl.conf')
-bt = BackendTest(bm)
+	aclFile            = aclFile)
+bt = BackendManagerTest(bm)
 bt.cleanupBackend()
 bt.testObjectMethods()
-#bt.testNonObjectMethods()
+
+f = open(aclFile, 'w')
+f.write(
+'''
+host_.*: opsi_depotserver
+'''
+)
+f.close()
+
+bm = BackendManager(
+	dispatchConfigFile = dipatchConfigFile,
+	backendConfigDir   = backendConfigDir,
+	username           = bt.configserver1.getId(),
+	password           = bt.configserver1.getOpsiHostKey(),
+	aclFile            = aclFile)
+bm.host_createObjects(bt.hosts)
+
+exception = None
+try:
+	bm.product_createObjects(bt.products)
+except Exception, e:
+	exception = e
+assert isinstance(exception, BackendPermissionDeniedError)
 
 
 if os.path.exists(TMP_CONFIG_DIR):
