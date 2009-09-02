@@ -35,7 +35,6 @@
 __version__ = '3.5'
 
 from OPSI.Logger import *
-from OPSI import Tools
 from OPSI.Backend.Object import *
 
 logger = Logger()
@@ -98,21 +97,11 @@ class ConfigDataBackend(Backend):
 	
 	def host_insertObject(self, host):
 		host = forceObjectClass(host, Host)
-		if not host.opsiHostKey:
-			host.setOpsiHostKey(Tools.generateOpsiHostKey())
-		if isinstance(host, OpsiClient):
-			if not host.created:
-				host.setCreated(Tools.timestamp())
+		host.setDefaults()
 	
 	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
-		if not host.opsiHostKey:
-			current = self.host_getObjects( attributes = ['opsiHostKey'], id = host.id )
-			if current and current[0].opsiHostKey:
-				host.setOpsiHostKey(current[0].opsiHostKey)
-			else:
-				host.setOpsiHostKey(Tools.generateOpsiHostKey())
-	
+		
 	def host_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
 		
@@ -156,8 +145,9 @@ class ConfigDataBackend(Backend):
 				self.config_insertObject(config)
 	
 	def config_insertObject(self, config):
-		pass
-	
+		config = forceObjectClass(config, Config)
+		config.setDefaults()
+		
 	def config_updateObject(self, config):
 		pass
 	
@@ -183,8 +173,9 @@ class ConfigDataBackend(Backend):
 				self.configState_insertObject(configState)
 	
 	def configState_insertObject(self, configState):
-		pass
-	
+		configState = forceObjectClass(configState, ConfigState)
+		configState.setDefaults()
+		
 	def configState_updateObject(self, configState):
 		pass
 	
@@ -210,7 +201,8 @@ class ConfigDataBackend(Backend):
 				self.product_insertObject(product)
 	
 	def product_insertObject(self, product):
-		pass
+		product = forceObjectClass(product, Product)
+		product.setDefaults()
 	
 	def product_updateObject(self, product):
 		pass
@@ -243,7 +235,8 @@ class ConfigDataBackend(Backend):
 				self.productProperty_insertObject(productProperty)
 	
 	def productProperty_insertObject(self, productProperty):
-		pass
+		productProperty = forceObjectClass(productProperty, ProductProperty)
+		productProperty.setDefaults()
 	
 	def productProperty_updateObject(self, productProperty):
 		pass
@@ -270,7 +263,8 @@ class ConfigDataBackend(Backend):
 				self.productOnDepot_insertObject(productOnDepot)
 	
 	def productOnDepot_insertObject(self, productOnDepot):
-		pass
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
+		productOnDepot.setDefaults()
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		pass
@@ -297,12 +291,11 @@ class ConfigDataBackend(Backend):
 				self.productOnClient_insertObject(productOnClient)
 	
 	def productOnClient_insertObject(self, productOnClient):
-		if not productOnClient.lastStateChange:
-			productOnClient.setLastStateChange(Tools.timestamp())
-	
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
+		productOnClient.setDefaults()
+		
 	def productOnClient_updateObject(self, productOnClient):
-		if not productOnClient.lastStateChange:
-			productOnClient.setLastStateChange(Tools.timestamp())
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
@@ -327,7 +320,8 @@ class ConfigDataBackend(Backend):
 				self.productPropertyState_insertObject(productPropertyState)
 	
 	def productPropertyState_insertObject(self, productPropertyState):
-		pass
+		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
+		productPropertyState.setDefaults()
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		pass
@@ -352,7 +346,8 @@ class ConfigDataBackend(Backend):
 				self.group_insertObject(group)
 	
 	def group_insertObject(self, group):
-		pass
+		group = forceObjectClass(group, Group)
+		group.setDefaults()
 	
 	def group_updateObject(self, group):
 		pass
@@ -379,7 +374,8 @@ class ConfigDataBackend(Backend):
 				self.objectToGroup_insertObject(objectToGroup)
 	
 	def objectToGroup_insertObject(self, objectToGroup):
-		pass
+		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
+		objectToGroup.setDefaults()
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		pass
@@ -401,19 +397,19 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def host_createOpsiClient(self, id, opsiHostKey='', description='', notes='', hardwareAddress='', ipAddress='', created='', lastSeen=''):
+	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, created=None, lastSeen=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiClient.fromHash(hash))
 	
-	def host_createOpsiDepotserver(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
-					description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+	def host_createOpsiDepotserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
+					description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
 	
-	def host_createOpsiConfigserver(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
-					description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+	def host_createOpsiConfigserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
+					description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
@@ -426,17 +422,17 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def config_create(self, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
+	def config_create(self, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.config_createObjects(Config.fromHash(hash))
 	
-	def config_createUnicode(self, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
+	def config_createUnicode(self, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.config_createObjects(UnicodeConfig.fromHash(hash))
 	
-	def config_createBool(self, name, description='', defaultValues = [ True ]):
+	def config_createBool(self, name, description=None, defaultValues=None):
 		hash = locals()
 		del hash['self']
 		return self.config_createObjects(BoolConfig.fromHash(hash))
@@ -449,7 +445,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def configState_create(self, name, objectId, values=[]):
+	def configState_create(self, name, objectId, values=None):
 		hash = locals()
 		del hash['self']
 		return self.configState_createObjects(ConfigState.fromHash(hash))
@@ -463,17 +459,17 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def product_createLocalboot(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-					setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-					priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[]):
+	def product_createLocalboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
+					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+					priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None):
 		hash = locals()
 		del hash['self']
 		return self.product_createObjects(LocalbootProduct.fromHash(hash))
 	
-	def product_createNetboot(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-					setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-					priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[],
-					pxeConfigTemplate=''):
+	def product_createNetboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
+					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+					priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None,
+					pxeConfigTemplate=None):
 		hash = locals()
 		del hash['self']
 		return self.product_createObjects(NetbootProduct.fromHash(hash))
@@ -486,17 +482,17 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productProperty_create(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
+	def productProperty_create(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.productProperty_createObjects(ProductProperty.fromHash(hash))
 	
-	def productProperty_createUnicode(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
+	def productProperty_createUnicode(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
 	
-	def productProperty_createBool(self, productId, productVersion, packageVersion, name, description='', defaultValues = [ True ]):
+	def productProperty_createBool(self, productId, productVersion, packageVersion, name, description=None, defaultValues=None):
 		hash = locals()
 		del hash['self']
 		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
@@ -512,7 +508,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productOnDepot_create(self, productId, productVersion, packageVersion, depotId, locked=False):
+	def productOnDepot_create(self, productId, productVersion, packageVersion, depotId, locked=None):
 		hash = locals()
 		del hash['self']
 		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
@@ -528,7 +524,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productOnClient_create(self, productId, clientId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
+	def productOnClient_create(self, productId, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
 		hash = locals()
 		del hash['self']
 		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
@@ -542,7 +538,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productPropertyState_create(self, productId, name, objectId, values=[]):
+	def productPropertyState_create(self, productId, name, objectId, values=None):
 		hash = locals()
 		del hash['self']
 		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
@@ -557,7 +553,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def group_createHost(self, id, description='', notes='', parentGroupId=''):
+	def group_createHost(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
 		del hash['self']
 		return self.group_createObjects(HostGroup.fromHash(hash))

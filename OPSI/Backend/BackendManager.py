@@ -581,7 +581,7 @@ class BackendAccessControl(ConfigDataBackend):
 				if granted is True:
 					break
 		
-		logger.error("acls: %s" % acls)
+		logger.debug("acls: %s" % acls)
 		if granted:
 			logger.debug(u"Access to method '%s' granted to user '%s' by acls %s" % (methodName, self._username, acls))
 		else:
@@ -593,10 +593,9 @@ class BackendAccessControl(ConfigDataBackend):
 		else:
 			newKwargs = kwargs
 		
-		logger.error("kwargs:    %s" % kwargs)
-		logger.error("newKwargs: %s" % newKwargs)
+		logger.debug2("kwargs:    %s" % kwargs)
+		logger.debug2("newKwargs: %s" % newKwargs)
 		
-		logger.debug2(u'Executing: %s(%s)' % (methodName, newKwargs))
 		result = eval(u'self._backend.%s(**newKwargs)' % methodName)
 		
 		if (str(granted) == 'partial'):
@@ -605,42 +604,62 @@ class BackendAccessControl(ConfigDataBackend):
 		
 		return result
 		
-		
-		
-		#if (str(granted) == 'partial'):
-		#	objects = forceList(result)
-		#	if (len(objects) > 0) and issubclass(objects[0].__class__, BaseObject):
-		#		result = self._filterObjects(result, ids = [ self._username ])
-		#		if not result:
-		#			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
-		
 	
 	def _filterParams(self, params, acls):
 		newParams = {}
 		for (key, value) in params.items():
 			if not value:
 				newParams[key] = value
-				continue
-			valueList = forceList(value)
-			if (len(valueList) > 0) and issubclass(valueList[0].__class__, BaseObject):
-				newParams[key] = self._filterObjects(value, acls)
-			if not newParams[key]:
-				raise BackendPermissionDeniedError(u"Access to given object(s) denied")
+			elif (key == 'attributes'):
+				newParams[key] = self._filterAttributes(value, acls)
+			elif key in ('id', 'objectId', 'hostId', 'clientId', 'depotId', 'serverId'):
+				granted = False
+				for acl in acls:
+					if (acl.get('type') != 'self') or (value == self._username):
+						granted = True
+						break
+				if not granted:
+					raise BackendPermissionDeniedError(u"Access to %s '%s' denied" % (key, value))
+				newParams[key] = value
+			else:
+				valueList = forceList(value)
+				if issubclass(valueList[0].__class__, BaseObject):
+					newParams[key] = self._filterObjects(value, acls)
+				else:
+					newParams[key] = value
+				if not newParams.get(key):
+					raise BackendPermissionDeniedError(u"Access to given object(s) denied")
 		return newParams
 	
 	def _filterResult(self, result, acls):
-		resultList = forceList(result)
-		if (len(resultList) > 0) and issubclass(resultList[0].__class__, BaseObject):
-			return self._filterObjects(result, acls)
+		if result:
+			resultList = forceList(result)
+			if issubclass(resultList[0].__class__, BaseObject):
+				return self._filterObjects(result, acls, raiseOnTruncate = False)
 		return result
+	
+	def _filterAttributes(self, attributes, acls):
+		newAttributes = []
+		for attribute in attributes:
+			for acl in acls:
+				if not (acl.get('denyAttributes', []) and not acl.get('allowAttributes', [])):
+					logger.debug2(u"Allwing all attributes %s" % attributes)
+					# full access, do not check other acls
+					return attributes
+				if attribute in acl.get('denyAttributes', []):
+					continue
+				if acl.get('allowAttributes', []) and not attribute in acl['allowAttributes']:
+					continue
+				newAttributes.append(attribute)
+		return newAttributes
 		
-	def _filterObjects(self, objects, acls):
+	def _filterObjects(self, objects, acls, raiseOnTruncate=True):
 		newObjects = []
 		for entry in forceList(objects):
 			hash = entry.toHash()
 			for acl in acls:
 				if (acl.get('type') == 'self'):
-					if ( hash.get('id', hash.get('objectId', hash.get('objectId', hash.get('clientId', hash.get('depotId', hash.get('serverId')))))) == self._username ):
+					if ( hash.get('id', hash.get('objectId', hash.get('hostId', hash.get('clientId', hash.get('depotId', hash.get('serverId')))))) == self._username ):
 						if not (acl.get('denyAttributes', []) and not acl.get('allowAttributes', [])):
 							newObjects.append(entry)
 							logger.debug2(u"Granting full access to %s" % entry)
@@ -652,10 +671,18 @@ class BackendAccessControl(ConfigDataBackend):
 				
 				if (acl.get('denyAttributes', []) or acl.get('allowAttributes', [])):
 					newHash = { 'type': hash.get('type') }
+					for arg in mandatoryConstructorArgs(entry.__class__):
+						newHash[arg] = hash.get(arg)
 					for (key, value) in hash.items():
+						if key in newHash.keys():
+							continue
 						if key in acl.get('denyAttributes', []):
+							if not value is None and raiseOnTruncate:
+								raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
 							continue
 						if acl.get('allowAttributes', []) and not key in acl['allowAttributes']:
+							if not value is None and raiseOnTruncate:
+								raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
 							continue
 						newHash[key] = value
 					logger.debug2(u"Granting partial access to %s" % entry)
@@ -665,45 +692,6 @@ class BackendAccessControl(ConfigDataBackend):
 				return None
 			return newObjects[0]
 		return newObjects
-		
-		
-	def _filterObjects_OLD(self, objects, ids=[]):
-		logger.debug2(u"Filtering objects %s by ids: %s" % (objects, ids))
-		newObjects = None
-		if type(objects) in (list, tuple):
-			newObjects = []
-		for entry in forceList(objects):
-			if issubclass(entry.__class__, BaseObject):
-				hash = entry.toHash()
-				if hash.get('id', hash.get('objectId', hash.get('objectId', hash.get('clientId', hash.get('depotId', hash.get('serverId')))))) in ids:
-					if type(newObjects) is list:
-						newObjects.append(entry.__class__.fromHash(hash))
-					else:
-						newObjects = entry.__class__.fromHash(hash)
-						break
-		return newObjects
-	
-	def _filterObjectAttributes(self, objects, allowAttributes = [], denyAttributes = []):
-		newObjects = None
-		if type(objects) in (list, tuple):
-			newObjects = []
-		for entry in forceList(objects):
-			if ( type(entry) is types.ObjectType and issubclass(entry, BaseObject) ):
-				objectFound = True
-				newHash = {}
-				for (k, v) in entry.toHash().items():
-					if denyAttributes and (k in denyAttributes):
-						continue
-					if allowAttributes and not (k in allowAttributes):
-						continue
-					newHash[k] = v
-				if type(newObjects) is list:
-					newObjects.append(entry.__class__.fromHash(newHash))
-				else:
-					newObjects = entry.__class__.fromHash(newHash)
-					break
-		return newObjects
-	
 	
 		
 				#if granted:

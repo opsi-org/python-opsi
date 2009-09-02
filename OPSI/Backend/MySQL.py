@@ -109,7 +109,9 @@ class MySQL:
 		colNames = values = u''
 		for (key, value) in valueHash.items():
 			colNames += u"`%s`, " % key
-			if type(value) in (float, long, int, bool):
+			if value is None:
+				values += u"NULL, "
+			elif type(value) in (float, long, int, bool):
 				values += u"%s, " % value
 			elif type(value) is str:
 				values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
@@ -126,6 +128,8 @@ class MySQL:
 			raise BackendBadValueError(u"No values given")
 		query = u"UPDATE `%s` SET " % table
 		for (key, value) in valueHash.items():
+			if value is None:
+				continue
 			query += u"`%s` = " % key
 			if type(value) in (float, long, int, bool):
 				query += u"%s, " % value

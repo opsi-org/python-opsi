@@ -39,6 +39,7 @@ import json, re, copy, time, inspect
 
 # OPSI imports
 from OPSI.Logger import *
+from OPSI import Tools
 
 # Get logger instance
 logger = Logger()
@@ -393,13 +394,27 @@ def getPossibleClassAttributes(Class):
 	return attributes
 
 class BaseObject(object):
-	pass
-
-class Entity(BaseObject):
 	subClasses = {}
+	
+	def setDefaults(self):
+		pass
 	
 	def getType(self):
 		return self.__class__.__name__
+	
+	def __unicode__(self):
+		return u"<%s'>" % self.getType()
+		
+	def __repr__(self):
+		return unicode(self).encode("utf-8")
+	
+	__str__ = __repr__
+	
+class Entity(BaseObject):
+	subClasses = {}
+	
+	def setDefaults(self):
+		BaseObject.setDefaults(self)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -419,23 +434,14 @@ class Entity(BaseObject):
 	@staticmethod
 	def fromJson(jsonString):
 		return Entity.fromHash(json.loads(jsonString))
-	
-	def toJson(self):
-		return json.dumps(self.toHash())
-	
-	def __unicode__(self):
-		return u"<%s'>" % self.getType()
-		
-	def __repr__(self):
-		return unicode(self).encode("utf-8")
-	
-	__str__ = __repr__
+
+BaseObject.subClasses['Entity'] = Entity
 
 class Relationship(BaseObject):
 	subClasses = {}
 	
-	def getType(self):
-		return self.__class__.__name__
+	def setDefaults(self):
+		BaseObject.setDefaults(self)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -457,21 +463,26 @@ class Relationship(BaseObject):
 	def toJson(self):
 		return json.dumps(self.toHash())
 	
-	def __unicode__(self):
-		return u"<%s'>" % self.getType()
-		
-	def __repr__(self):
-		return unicode(self).encode("utf-8")
-	
-	__str__ = __repr__
+BaseObject.subClasses['Relationship'] = Relationship
 
 class Object(Entity):
 	subClasses = {}
 	
-	def __init__(self, id, description='', notes=''):
+	def __init__(self, id, description=None, notes=None):
+		self.description = None
+		self.notes = None
 		self.setId(id)
-		self.setDescription(description)
-		self.setNotes(notes)
+		if not description is None:
+			self.setDescription(description)
+		if not notes is None:
+			self.setNotes(notes)
+	
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.description is None:
+			self.setDescription(u"")
+		if self.notes is None:
+			self.setNotes(u"")
 	
 	def getId(self):
 		return self.id
@@ -509,11 +520,18 @@ Entity.subClasses['Object'] = Object
 class Host(Object):
 	subClasses = {}
 	
-	def __init__(self, id, description='', notes='', hardwareAddress='', ipAddress=''):
+	def __init__(self, id, description=None, notes=None, hardwareAddress=None, ipAddress=None):
 		Object.__init__(self, id, description, notes)
+		self.hardwareAddress = None
+		self.ipAddress = None
 		self.setId(id)
-		self.setHardwareAddress(hardwareAddress)
-		self.setIpAddress(ipAddress)
+		if not hardwareAddress is None:
+			self.setHardwareAddress(hardwareAddress)
+		if not ipAddress is None:
+			self.setIpAddress(ipAddress)
+	
+	def setDefaults(self):
+		Object.setDefaults(self)
 	
 	def setId(self, id):
 		self.id = forceHostId(id)
@@ -522,19 +540,13 @@ class Host(Object):
 		return self.hardwareAddress
 	
 	def setHardwareAddress(self, hardwareAddress):
-		if not hardwareAddress:
-			self.hardwareAddress = u''
-		else:
-			self.hardwareAddress = forceHardwareAddress(hardwareAddress)
+		self.hardwareAddress = forceHardwareAddress(hardwareAddress)
 	
 	def getIpAddress(self):
 		return self.ipAddress
 	
 	def setIpAddress(self, ipAddress):
-		if not ipAddress:
-			self.ipAddress = u''
-		else:
-			self.ipAddress = forceIPAddress(ipAddress)
+		self.ipAddress = forceIPAddress(ipAddress)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -554,11 +566,24 @@ Object.subClasses['Host'] = Host
 class OpsiClient(Host):
 	subClasses = {}
 	
-	def __init__(self, id, opsiHostKey='', description='', notes='', hardwareAddress='', ipAddress='', created='', lastSeen=''):
+	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, created=None, lastSeen=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress)
-		self.setLastSeen(lastSeen)
-		self.setCreated(created)
-		self.setOpsiHostKey(opsiHostKey)
+		self.opsiHostKey = None
+		self.created = None
+		self.lastSeen = None
+		if not opsiHostKey is None:
+			self.setOpsiHostKey(opsiHostKey)
+		if not created is None:
+			self.setCreated(created)
+		if not lastSeen is None:
+			self.setLastSeen(lastSeen)
+	
+	def setDefaults(self):
+		Host.setDefaults(self)
+		if self.opsiHostKey is None:
+			self.setOpsiHostKey(Tools.generateOpsiHostKey())
+		if self.created is None:
+			self.setCreated(Tools.timestamp())
 	
 	def getLastSeen(self):
 		return self.lastSeen
@@ -576,10 +601,7 @@ class OpsiClient(Host):
 		return self.opsiHostKey
 	
 	def setOpsiHostKey(self, opsiHostKey):
-		if not opsiHostKey:
-			self.opsiHostKey = u''
-		else:
-			self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
+		self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -599,69 +621,68 @@ Host.subClasses['OpsiClient'] = OpsiClient
 class OpsiDepotserver(Host):
 	subClasses = {}
 	
-	def __init__(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
-		     description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress)
-		self.setOpsiHostKey(opsiHostKey)
-		self.setDepotLocalUrl(depotLocalUrl)
-		self.setDepotRemoteUrl(depotRemoteUrl)
-		self.setRepositoryLocalUrl(repositoryLocalUrl)
-		self.setRepositoryRemoteUrl(repositoryRemoteUrl)
-		self.setNetwork(network)
+		self.opsiHostKey = None
+		self.depotLocalUrl = None
+		self.depotRemoteUrl = None
+		self.repositoryLocalUrl = None
+		self.repositoryRemoteUrl = None
+		self.network = None
+		if not opsiHostKey is None:
+			self.setOpsiHostKey(opsiHostKey)
+		if not depotLocalUrl is None:
+			self.setDepotLocalUrl(depotLocalUrl)
+		if not depotRemoteUrl is None:
+			self.setDepotRemoteUrl(depotRemoteUrl)
+		if not repositoryLocalUrl is None:
+			self.setRepositoryLocalUrl(repositoryLocalUrl)
+		if not repositoryRemoteUrl is None:
+			self.setRepositoryRemoteUrl(repositoryRemoteUrl)
+		if not network is None:
+			self.setNetwork(network)
+	
+	def setDefaults(self):
+		Host.setDefaults(self)
+		if self.opsiHostKey is None:
+			self.setOpsiHostKey(Tools.generateOpsiHostKey())
 	
 	def getOpsiHostKey(self):
 		return self.opsiHostKey
 	
 	def setOpsiHostKey(self, opsiHostKey):
-		if not opsiHostKey:
-			self.opsiHostKey = u''
-		else:
-			self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
+		self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
 	
 	def getDepotLocalUrl(self):
 		return self.depotLocalUrl
 	
 	def setDepotLocalUrl(self, depotLocalUrl):
-		if not depotLocalUrl:
-			self.depotLocalUrl = u''
-		else:
-			self.depotLocalUrl = forceUrl(depotLocalUrl)
+		self.depotLocalUrl = forceUrl(depotLocalUrl)
 	
 	def getDepotRemoteUrl(self):
 		return self.depotRemoteUrl
 	
 	def setDepotRemoteUrl(self, depotRemoteUrl):
-		if not depotRemoteUrl:
-			self.depotRemoteUrl = u''
-		else:
-			self.depotRemoteUrl = forceUrl(depotRemoteUrl)
+		self.depotRemoteUrl = forceUrl(depotRemoteUrl)
 	
 	def getRepositoryLocalUrl(self):
 		return self.repositoryLocalUrl
 	
 	def setRepositoryLocalUrl(self, repositoryLocalUrl):
-		if not repositoryLocalUrl:
-			self.repositoryLocalUrl = u''
-		else:
-			self.repositoryLocalUrl = forceUrl(repositoryLocalUrl)
+		self.repositoryLocalUrl = forceUrl(repositoryLocalUrl)
 	
 	def getRepositoryRemoteUrl(self):
 		return self.repositoryRemoteUrl
 	
 	def setRepositoryRemoteUrl(self, repositoryRemoteUrl):
-		if not repositoryRemoteUrl:
-			self.repositoryRemoteUrl = u''
-		else:
-			self.repositoryRemoteUrl = forceUrl(repositoryRemoteUrl)
+		self.repositoryRemoteUrl = forceUrl(repositoryRemoteUrl)
 	
 	def getNetwork(self):
 		return self.network
 	
 	def setNetwork(self, network):
-		if not network:
-			self.network = u''
-		else:
-			self.network = forceNetworkAddress(network)
+		self.network = forceNetworkAddress(network)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -681,10 +702,13 @@ Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
 class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	
-	def __init__(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
-		     description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
 		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
 		     description, notes, hardwareAddress, ipAddress, network, maxBandwidth)
+	
+	def setDefaults(self):
+		OpsiDepotserver.setDefaults(self)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -700,13 +724,31 @@ OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 class Config(Entity):
 	subClasses = {}
 	
-	def __init__(self, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
+	def __init__(self, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+		self.description = None
+		self.possibleValues = None
+		self.defaultValues = None
+		self.editable = None
+		self.multiValue = None
+		
 		self.setName(name)
-		self.setDescription(description)
-		self.setPossibleValues(possibleValues)
-		self.setDefaultValues(defaultValues)
-		self.setEditable(editable)
-		self.setMultiValue(multiValue)
+		if not description is None:
+			self.setDescription(description)
+		if not possibleValues is None:
+			self.setPossibleValues(possibleValues)
+		if not defaultValues is None:
+			self.setDefaultValues(defaultValues)
+		if not editable is None:
+			self.setEditable(editable)
+		if not multiValue is None:
+			self.setMultiValue(multiValue)
+	
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.editable is None:
+			self.editable = False
+		if self.multiValue is None:
+			self.multiValue = False
 		
 	def getName(self):
 		return self.name
@@ -764,30 +806,35 @@ Entity.subClasses['Config'] = Config
 class UnicodeConfig(Config):
 	subClasses = {}
 	
-	def __init__(self, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
+	def __init__(self, name, description='', possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		Config.__init__(self, name, description, possibleValues, defaultValues, editable, multiValue)
-		self.setPossibleValues(possibleValues)
-		self.setDefaultValues(defaultValues)
-		
-		def setPossibleValues(self, possibleValues):
-			self.possibleValues = forceUnicodeList(possibleValues)
-			if self.possibleValues and self.defaultValues:
-				for defaultValue in self.defaultValues:
-					if not defaultValue in self.possibleValues:
-						raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-							% (defaultValue, possibleValues))
-			elif not self.possibleValues and self.defaultValues:
-				self.possibleValues = self.defaultValues
-		
-		def setDefaultValues(self, defaultValues):
-			self.defaultValues = forceUnicodeList(defaultValues)
-			if self.possibleValues and self.defaultValues:
-				for defaultValue in self.defaultValues:
-					if not defaultValue in self.possibleValues:
-						raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-							% (defaultValue, possibleValues))
-			elif not self.possibleValues and self.defaultValues:
-				self.possibleValues = self.defaultValues
+		if not possibleValues is None:
+			self.setPossibleValues(possibleValues)
+		if not defaultValues is None:
+			self.setDefaultValues(defaultValues)
+	
+	def setDefaults(self):
+		Config.setDefaults(self)
+	
+	def setPossibleValues(self, possibleValues):
+		self.possibleValues = forceUnicodeList(possibleValues)
+		#if self.possibleValues and self.defaultValues:
+		#	for defaultValue in self.defaultValues:
+		#		if not defaultValue in self.possibleValues:
+		#			raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
+		#				% (defaultValue, self.possibleValues))
+		#elif not self.possibleValues and self.defaultValues:
+		#	self.possibleValues = self.defaultValues
+	
+	def setDefaultValues(self, defaultValues):
+		self.defaultValues = forceUnicodeList(defaultValues)
+		#if self.possibleValues and self.defaultValues:
+		#	for defaultValue in self.defaultValues:
+		#		if not defaultValue in self.possibleValues:
+		#			raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
+		#				% (defaultValue, self.possibleValues))
+		#elif not self.possibleValues and self.defaultValues:
+		#	self.possibleValues = self.defaultValues
 	
 	@staticmethod
 	def fromHash(hash):
@@ -803,11 +850,20 @@ Config.subClasses['UnicodeConfig'] = UnicodeConfig
 class BoolConfig(Config):
 	subClasses = {}
 	
-	def __init__(self, name, description='', defaultValues = [ True ]):
-		Config.__init__(self, name, description, [ True, False ], forceBoolList(defaultValues), False, False)
+	def __init__(self, name, description = None, defaultValues = None):
+		Config.__init__(self, name, description, [ True, False ], defaultValues, False, False)
+	
+	def setDefaults(self):
+		Config.setDefaults(self)
+	
+	def setPossibleValues(self, possibleValues):
+		self.possibleValues = [ True, False ]
+	
+	def setDefaultValues(self, defaultValues):
+		self.defaultValues = forceBoolList(defaultValues)
 		if (len(self.defaultValues) > 1):
 			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % self.defaultValues)
-	
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'BoolConfig'
@@ -822,10 +878,17 @@ Config.subClasses['BoolConfig'] = BoolConfig
 class ConfigState(Relationship):
 	subClasses = {}
 	
-	def __init__(self, name, objectId, values=[]):
+	def __init__(self, name, objectId, values=None):
+		self.values = None
 		self.setName(name)
 		self.setObjectId(objectId)
-		self.setValues(values)
+		if not values is None:
+			self.setValues(values)
+	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.values is None:
+			self.setValues([])
 	
 	def getObjectId(self):
 		return self.objectId
@@ -863,25 +926,76 @@ Relationship.subClasses['ConfigState'] = ConfigState
 class Product(Entity):
 	subClasses = {}
 	
-	def __init__(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-		     setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-		     priority=0, description="", advice="", productClassIds=[], windowsSoftwareIds=[]):
+	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+		     priority=None, description=None, advice=None, productClassIds=None, windowsSoftwareIds=None):
+		self.name = None
+		self.licenseRequired = None
+		self.setupScript = None
+		self.uninstallScript = None
+		self.updateScript = None
+		self.alwaysScript = None
+		self.onceScript = None
+		self.priority = None
+		self.description = None
+		self.advice = None
+		self.productClassIds = None
+		self.windowsSoftwareIds = None
 		self.setId(id)
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
-		self.setName(name)
-		self.setLicenseRequired(licenseRequired)
-		self.setSetupScript(setupScript)
-		self.setUninstallScript(uninstallScript)
-		self.setUpdateScript(updateScript)
-		self.setAlwaysScript(alwaysScript)
-		self.setOnceScript(onceScript)
-		self.setPriority(priority)
-		self.setDescription(description)
-		self.setAdvice(advice)
-		self.setProductClassIds(productClassIds)
-		self.setWindowsSoftwareIds(windowsSoftwareIds)
+		if not name is None:
+			self.setName(name)
+		if not licenseRequired is None:
+			self.setLicenseRequired(licenseRequired)
+		if not setupScript is None:
+			self.setSetupScript(setupScript)
+		if not uninstallScript is None:
+			self.setUninstallScript(uninstallScript)
+		if not updateScript is None:
+			self.setUpdateScript(updateScript)
+		if not alwaysScript is None:
+			self.setAlwaysScript(alwaysScript)
+		if not onceScript is None:
+			self.setOnceScript(onceScript)
+		if not priority is None:
+			self.setPriority(priority)
+		if not description is None:
+			self.setDescription(description)
+		if not advice is None:
+			self.setAdvice(advice)
+		if not productClassIds is None:
+			self.setProductClassIds(productClassIds)
+		if not windowsSoftwareIds is None:
+			self.setWindowsSoftwareIds(windowsSoftwareIds)
 	
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.name is None:
+			self.setName(u"")
+		if self.licenseRequired is None:
+			self.setLicenseRequired(False)
+		if self.setupScript is None:
+			self.setSetupScript(u"")
+		if self.uninstallScript is None:
+			self.setUninstallScript(u"")
+		if self.updateScript is None:
+			self.setUpdateScript(u"")
+		if self.alwaysScript is None:
+			self.setAlwaysScript(u"")
+		if self.onceScript is None:
+			self.setOnceScript(u"")
+		if self.priority is None:
+			self.setPriority(0)
+		if self.description is None:
+			self.setDescription(u"")
+		if self.advice is None:
+			self.setAdvice(u"")
+		if self.productClassIds is None:
+			self.setProductClassIds([])
+		if self.windowsSoftwareIds is None:
+			self.setWindowsSoftwareIds([])
+		
 	def getId(self):
 		return self.id
 	
@@ -990,12 +1104,15 @@ Entity.subClasses['Product'] = Product
 class LocalbootProduct(Product):
 	subClasses = {}
 	
-	def __init__(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-		     setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-		     priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[]):
+	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+		     priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
 		     priority, description, advice, productClassNames, windowsSoftwareIds)
+	
+	def setDefaults(self):
+		Product.setDefaults(self)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1011,14 +1128,17 @@ Product.subClasses['LocalbootProduct'] = LocalbootProduct
 class NetbootProduct(Product):
 	subClasses = {}
 	
-	def __init__(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-		     setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-		     priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[],
+	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+		     priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None,
 		     pxeConfigTemplate=''):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
 		     priority, description, advice, productClassNames, windowsSoftwareIds)
 		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
+	
+	def setDefaults(self):
+		Product.setDefaults(self)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1034,17 +1154,40 @@ Product.subClasses['NetbootProduct'] = NetbootProduct
 class ProductProperty(Entity):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
+	def __init__(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+		self.description = None
+		self.possibleValues = None
+		self.defaultValues = None
+		self.editable = None
+		self.multiValue = None
 		self.setProductId(productId)
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
 		self.setName(name)
-		self.setDescription(description)
-		self.setPossibleValues(possibleValues)
-		self.setDefaultValues(defaultValues)
-		self.setEditable(editable)
-		self.setMultiValue(multiValue)
+		if not description is None:
+			self.setDescription(description)
+		if not possibleValues is None:
+			self.setPossibleValues(possibleValues)
+		if not defaultValues is None:
+			self.setDefaultValues(defaultValues)
+		if not editable is None:
+			self.setEditable(editable)
+		if not multiValue is None:
+			self.setMultiValue(multiValue)
 	
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.description is None:
+			self.setDescription(u"")
+		if self.possibleValues is None:
+			self.setPossibleValues([])
+		if self.defaultValues is None:
+			self.setDefaultValues([])
+		if self.editable is None:
+			self.setEditable(True)
+		if self.multiValue is None:
+			self.setMultiValue(False)
+		
 	def getProductId(self):
 		return self.productId
 	
@@ -1119,30 +1262,37 @@ Entity.subClasses['ProductProperty'] = ProductProperty
 class UnicodeProductProperty(ProductProperty):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
+	def __init__(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		ProductProperty.__init__(self, productId, productVersion, packageVersion, name, description, possibleValues, defaultValues, editable, multiValue)
-		self.setPossibleValues(possibleValues)
-		self.setDefaultValues(defaultValues)
-		
-		def setPossibleValues(self, possibleValues):
-			self.possibleValues = forceUnicodeList(possibleValues)
-			if self.possibleValues and self.defaultValues:
-				for defaultValue in self.defaultValues:
-					if not defaultValue in self.possibleValues:
-						raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-							% (defaultValue, possibleValues))
-			elif not self.possibleValues and self.defaultValues:
-				self.possibleValues = self.defaultValues
-		
-		def setDefaultValues(self, defaultValues):
-			self.defaultValues = forceUnicodeList(defaultValues)
-			if self.possibleValues and self.defaultValues:
-				for defaultValue in self.defaultValues:
-					if not defaultValue in self.possibleValues:
-						raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-							% (defaultValue, possibleValues))
-			elif not self.possibleValues and self.defaultValues:
-				self.possibleValues = self.defaultValues
+		self.possibleValues = None
+		self.defaultValues = None
+		if not possibleValues is None:
+			self.setPossibleValues(possibleValues)
+		if not defaultValues is None:
+			self.setDefaultValues(defaultValues)
+	
+	def setDefaults(self):
+		ProductProperty.setDefaults(self)
+	
+	def setPossibleValues(self, possibleValues):
+		self.possibleValues = forceUnicodeList(possibleValues)
+		if self.possibleValues and self.defaultValues:
+			for defaultValue in self.defaultValues:
+				if not defaultValue in self.possibleValues:
+					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
+						% (defaultValue, possibleValues))
+		elif not self.possibleValues and self.defaultValues:
+			self.possibleValues = self.defaultValues
+	
+	def setDefaultValues(self, defaultValues):
+		self.defaultValues = forceUnicodeList(defaultValues)
+		if self.possibleValues and self.defaultValues:
+			for defaultValue in self.defaultValues:
+				if not defaultValue in self.possibleValues:
+					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
+						% (defaultValue, possibleValues))
+		elif not self.possibleValues and self.defaultValues:
+			self.possibleValues = self.defaultValues
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1158,11 +1308,19 @@ ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
 class BoolProductProperty(ProductProperty):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, name, description='', defaultValues = [ True ]):
+	def __init__(self, productId, productVersion, packageVersion, name, description=None, defaultValues=None):
 		ProductProperty.__init__(self, productId, productVersion, packageVersion, name, description, [ True, False ], defaultValues, False, False)
-		self.defaultValues = forceBoolList(defaultValues)
 		if (len(self.defaultValues) > 1):
 			raise BackendBadValueError(u"Bool product property cannot have multiple default values: %s" % self.defaultValues)
+	
+	def setDefaults(self):
+		ProductProperty.setDefaults(self)
+	
+	def setPossibleValues(self, possibleValues):
+		self.possibleValues = [ True, False ]
+	
+	def setDefaultValues(self, defaultValues):
+		self.defaultValues = forceBoolList(defaultValues)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1178,12 +1336,19 @@ ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 class ProductOnDepot(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, depotId, locked=False):
+	def __init__(self, productId, productVersion, packageVersion, depotId, locked=None):
+		self.locked = None
 		self.setProductId(productId)
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
 		self.setDepotId(depotId)
-		self.setLocked(locked)
+		if not locked is None:
+			self.setLocked(locked)
+	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.locked is None:
+			self.setLocked(False)
 	
 	def getProductId(self):
 		return self.productId
@@ -1234,16 +1399,37 @@ Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
 class ProductOnClient(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, clientId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
+	def __init__(self, productId, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
+		self.installationStatus = None
+		self.actionRequest = None
+		self.actionProgress = None
+		self.productVersion = None
+		self.packageVersion = None
+		self.lastStateChange = None
 		self.setProductId(productId)
 		self.setClientId(clientId)
-		self.setInstallationStatus(installationStatus)
-		self.setActionRequest(actionRequest)
-		self.setActionProgress(actionProgress)
-		self.setProductVersion(productVersion)
-		self.setPackageVersion(packageVersion)
-		self.setLastStateChange(lastStateChange)
+		if not installationStatus is None:
+			self.setInstallationStatus(installationStatus)
+		if not actionRequest is None:
+			self.setActionRequest(actionRequest)
+		if not actionProgress is None:
+			self.setActionProgress(actionProgress)
+		if not productVersion is None:
+			self.setProductVersion(productVersion)
+		if not packageVersion is None:
+			self.setPackageVersion(packageVersion)
+		if not lastStateChange is None:
+			self.setLastStateChange(lastStateChange)
 	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.installationStatus is None:
+			self.setInstallationStatus('not_installed')
+		if self.actionRequest is None:
+			self.setActionRequest('none')
+		if self.lastStateChange is None:
+			self.setLastStateChange(Tools.timestamp())
+		
 	def getProductId(self):
 		return self.productId
 	
@@ -1278,29 +1464,20 @@ class ProductOnClient(Relationship):
 		return self.productVersion
 	
 	def setProductVersion(self, productVersion):
-		if productVersion:
-			self.productVersion = forceProductVersion(productVersion)
-		else:
-			self.productVersion = u''
+		self.productVersion = forceProductVersion(productVersion)
 		
 	def getPackageVersion(self):
 		return self.packageVersion
 	
 	def setPackageVersion(self, packageVersion):
-		if packageVersion:
-			self.packageVersion = forcePackageVersion(packageVersion)
-		else:
-			self.packageVersion = u''
+		self.packageVersion = forcePackageVersion(packageVersion)
 	
 	def getLastStateChange(self):
 		return self.lastStateChange
 	
 	def setLastStateChange(self, lastStateChange):
-		if lastStateChange:
-			self.lastStateChange = forceOpsiTimestamp(lastStateChange)
-		else:
-			self.lastStateChange = u''
-	
+		self.lastStateChange = forceOpsiTimestamp(lastStateChange)
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'
@@ -1319,11 +1496,18 @@ Relationship.subClasses['ProductOnClient'] = ProductOnClient
 class ProductPropertyState(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, name, objectId, values=[]):
+	def __init__(self, productId, name, objectId, values=None):
+		self.values = None
 		self.setProductId(productId)
 		self.setName(name)
 		self.setObjectId(objectId)
-		self.setValues(values)
+		if not values is None:
+			self.setValues(values)
+	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.values is None:
+			self.setValues([])
 	
 	def getProductId(self):
 		return self.productId
@@ -1367,10 +1551,15 @@ Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 class Group(Object):
 	subClasses = {}
 	
-	def __init__(self, id, description='', notes='', parentGroupId=''):
+	def __init__(self, id, description=None, notes=None, parentGroupId=None):
 		Object.__init__(self, id, description, notes)
+		self.parentGroupId = None
 		self.setId(id)
-		self.setParentGroupId(parentGroupId)
+		if not parentGroupId is None:
+			self.setParentGroupId(parentGroupId)
+	
+	def setDefaults(self):
+		Object.setDefaults(self)
 	
 	def getId(self):
 		return self.id
@@ -1382,10 +1571,7 @@ class Group(Object):
 		return self.parentGroupId
 	
 	def setParentGroupId(self, parentGroupId):
-		if not parentGroupId:
-			self.parentGroupId = u''
-		else:
-			self.parentGroupId = forceGroupId(parentGroupId)
+		self.parentGroupId = forceGroupId(parentGroupId)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1405,8 +1591,11 @@ Object.subClasses['Group'] = Group
 class HostGroup(Group):
 	subClasses = {}
 	
-	def __init__(self, id, description='', notes='', parentGroupId=''):
+	def __init__(self, id, description=None, notes=None, parentGroupId=None):
 		Group.__init__(self, id, description, notes, parentGroupId)
+	
+	def setDefaults(self):
+		Group.setDefaults(self)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1425,6 +1614,9 @@ class ObjectToGroup(Relationship):
 	def __init__(self, groupId, objectId):
 		self.setGroupId(groupId)
 		self.setObjectId(objectId)
+	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
 	
 	def getGroupId(self):
 		return self.groupId

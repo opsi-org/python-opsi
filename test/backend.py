@@ -36,8 +36,8 @@ class BackendTest(object):
 			repositoryRemoteUrl = 'webdavs://config1.uib.local:4447/products',
 			description         = 'The configserver',
 			notes               = 'Config 1',
-			hardwareAddress     = '',
-			ipAddress           = '',
+			hardwareAddress     = None,
+			ipAddress           = None,
 			network             = '192.168.1.0/24',
 			maxBandwidth        = 10000
 		)
@@ -53,8 +53,8 @@ class BackendTest(object):
 			repositoryRemoteUrl = 'webdavs://depotserver1.uib.local:4447/products',
 			description         = 'A depot',
 			notes               = 'D€pot 1',
-			hardwareAddress     = '',
-			ipAddress           = '',
+			hardwareAddress     = None,
+			ipAddress           = None,
 			network             = '192.168.2.0/24',
 			maxBandwidth        = 10000
 		)
@@ -138,8 +138,8 @@ class BackendTest(object):
 			setupScript        = None,
 			uninstallScript    = None,
 			updateScript       = "update.py",
-			alwaysScript       = u"",
-			onceScript         = "",
+			alwaysScript       = None,
+			onceScript         = None,
 			priority           = '100',
 			description        = "Nothing",
 			advice             = u"No advice",
@@ -159,8 +159,8 @@ class BackendTest(object):
 			setupScript        = "setup.ins",
 			uninstallScript    = u"uninstall.ins",
 			updateScript       = "update.ins",
-			alwaysScript       = u"",
-			onceScript         = "",
+			alwaysScript       = None,
+			onceScript         = None,
 			priority           = 0,
 			description        = None,
 			advice             = "",
@@ -176,9 +176,9 @@ class BackendTest(object):
 			licenseRequired    = True,
 			setupScript        = "setup.ins",
 			uninstallScript    = None,
-			updateScript       = '',
-			alwaysScript       = "",
-			onceScript         = "",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
 			priority           = 100,
 			description        = "---",
 			advice             = "---",
@@ -307,7 +307,7 @@ class BackendTest(object):
 			id            = 'host_group_1',
 			description   = 'Group 1',
 			notes         = 'First group',
-			parentGroupId = ''
+			parentGroupId = None
 		)
 		
 		self.group2 = HostGroup(
@@ -321,7 +321,7 @@ class BackendTest(object):
 			id            = u'host group 3',
 			description   = 'Group 3',
 			notes         = '',
-			parentGroupId = ''
+			parentGroupId = None
 		)
 		self.groups = [ self.group1, self.group2, self.group3 ]
 		
@@ -440,8 +440,8 @@ class BackendTest(object):
 		assert len(configs) == len(self.configs)-1
 		
 		self.config3.setDescription(u'Updated')
-		self.config3.setPossibleValues(['1', '2', '3'])
 		self.config3.setDefaultValues(['1', '2'])
+		self.config3.setPossibleValues(['1', '2', '3'])
 		self.backend.config_updateObject(self.config3)
 		
 		configs = self.backend.config_getObjects(description = u'Updated')
