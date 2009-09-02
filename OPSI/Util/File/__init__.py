@@ -170,32 +170,85 @@ class ConfigFile(TextFile):
 	
 class OpsiBackendACLFile(ConfigFile):
 	def parse(self):
+		# acl example:
+		#    <method>: <aclType>[(aclTypeParam[(aclTypeParamValue,...)],...)]
+		#    xyz_.*:   opsi_depotserver,(attributes(id,name))
+		#    abc:      self(attributes(!opsiHostKey)),sys_group(admin, group 2, attributes(!opsiHostKey))
+		
 		aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 		acl = []
 		for line in self.readlines():
 			match = re.search(aclEntryRegex, line)
 			if not match:
-				logger.error(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
-				continue
+				raise Exception(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
 			method = match.group(1)
-			acl.append([match.group(1), []])
-			for entry in match.group(2).split(','):
+			acl.append([method, []])
+			for entry in match.group(2).split(';'):
 				entry = entry.strip()
-				type = entry
-				param = ''
+				aclType = entry
+				aclTypeParams = ''
 				if (entry.find('(') != -1):
-					(type, param) = entry.split('(', 1)
-					if (param.find(')') == -1):
-						logger.error(u"Bad formatted acl entry: '%s'" % entry)
-						continue
-					type = type.strip()
-					param = param.split(')')[0].strip()
-				if not type in ('all', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
-					logger.error(u"Unhandled acl entry: '%s'" % entry)
-					continue
-				entry = type
-				if param:
-					entry += u'(%s)' % param
+					(aclType, aclTypeParams) = entry.split('(', 1)
+					if (aclTypeParams[-1] != ')'):
+						raise Exception(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
+					aclType = aclType.strip()
+					aclTypeParams = aclTypeParams[:-1]
+				if not aclType in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
+					raise Exception(u"Unhandled acl type: '%s'" % aclType)
+				entry = { 'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': [] }
+				if not aclTypeParams:
+					if aclType in ('sys_group', 'sys_user'):
+						raise Exception(u"Bad formatted acl type '%s': no params given" % aclType)
+				else:
+					aclTypeParam = u''
+					aclTypeParamValues = [u'']
+					inAclTypeParamValues = False
+					for i in range(len(aclTypeParams)):
+						c = aclTypeParams[i]
+						if (c == '('):
+							if inAclTypeParamValues:
+								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+							inAclTypeParamValues = True
+						elif (c == ')'):
+							if not inAclTypeParamValues or not aclTypeParam:
+								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+							inAclTypeParamValues = False
+						elif (c != ',') or (i == len(aclTypeParams)-1):
+							if inAclTypeParamValues:
+								aclTypeParamValues[-1] += c
+							else:
+								aclTypeParam += c
+						
+						if (c == ',') or (i == len(aclTypeParams)-1):
+							if inAclTypeParamValues:
+								if (i == len(aclTypeParams)-1):
+									raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
+								aclTypeParamValues.append(u'')
+							else:
+								aclTypeParam = aclTypeParam.strip()
+								tmp = []
+								for t in aclTypeParamValues:
+									t = t.strip()
+									if not t:
+										continue
+									tmp.append(t)
+								aclTypeParamValues = tmp
+								if (aclTypeParam == 'attributes'):
+									for v in aclTypeParamValues:
+										if not v:
+											continue
+										if v.startswith('!'):
+											entry['denyAttributes'].append(v.strip())
+										else:
+											entry['allowAttributes'].append(v)
+								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):
+									entry['ids'].append(aclTypeParam.strip())
+								else:
+									raise Exception(u"Unhandled acl type param '%s' for acl type '%s'" % (aclTypeParam, aclType))
+								aclTypeParam = u''
+								aclTypeParamValues = [u'']
+						
+						
 				acl[-1][1].append(entry)
 		return acl
 

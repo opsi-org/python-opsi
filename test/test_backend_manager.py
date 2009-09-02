@@ -53,6 +53,15 @@ config = {
 )
 f.close()
 
+
+f = open(aclFile, 'w')
+f.write(
+'''
+host_.*: opsi_depotserver
+'''
+)
+f.close()
+
 bm = BackendManager(
 	dispatchConfigFile = dipatchConfigFile,
 	backendConfigDir = backendConfigDir)
@@ -69,14 +78,6 @@ bm = BackendManager(
 bt = BackendManagerTest(bm)
 bt.cleanupBackend()
 bt.testObjectMethods()
-
-f = open(aclFile, 'w')
-f.write(
-'''
-host_.*: opsi_depotserver
-'''
-)
-f.close()
 
 bm = BackendManager(
 	dispatchConfigFile = dipatchConfigFile,

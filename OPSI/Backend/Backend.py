@@ -60,9 +60,9 @@ class Backend:
 		#		self._defaultDomain = forceDomain(value)
 		
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                      CLASS DATABACKEND                                             =
+=                                   CLASS CONFIGDATABACKEND                                          =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class DataBackend(Backend):
+class ConfigDataBackend(Backend):
 	
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		Backend.__init__(self, username, password, address, **kwargs)
@@ -96,24 +96,8 @@ class DataBackend(Backend):
 			else:
 				self.host_insertObject(host)
 	
-	def host_createOpsiClient(self, id, opsiHostKey='', description='', notes='', hardwareAddress='', ipAddress='', created='', lastSeen=''):
-		hash = locals()
-		del hash['self']
-		return self.host_createObjects(OpsiClient.fromHash(hash))
-	
-	def host_createOpsiDepotserver(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
-					description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
-		hash = locals()
-		del hash['self']
-		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
-	
-	def host_createOpsiConfigserver(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
-					description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
-		hash = locals()
-		del hash['self']
-		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
-	
 	def host_insertObject(self, host):
+		host = forceObjectClass(host, Host)
 		if not host.opsiHostKey:
 			host.setOpsiHostKey(Tools.generateOpsiHostKey())
 		if isinstance(host, OpsiClient):
@@ -121,8 +105,13 @@ class DataBackend(Backend):
 				host.setCreated(Tools.timestamp())
 	
 	def host_updateObject(self, host):
+		host = forceObjectClass(host, Host)
 		if not host.opsiHostKey:
-			host.setOpsiHostKey(Tools.generateOpsiHostKey())
+			current = self.host_getObjects( attributes = ['opsiHostKey'], id = host.id )
+			if current and current[0].opsiHostKey:
+				host.setOpsiHostKey(current[0].opsiHostKey)
+			else:
+				host.setOpsiHostKey(Tools.generateOpsiHostKey())
 	
 	def host_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
@@ -151,11 +140,6 @@ class DataBackend(Backend):
 				productIds = [],
 				names = [],
 				objectIds = [ host.id ])
-			
-	def host_delete(self, ids):
-		return self.host_deleteObjects(
-				self.host_getObjects(
-					id = forceHostIdList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -171,21 +155,6 @@ class DataBackend(Backend):
 			else:
 				self.config_insertObject(config)
 	
-	def config_create(self, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
-		hash = locals()
-		del hash['self']
-		return self.config_createObjects(Config.fromHash(hash))
-	
-	def config_createUnicode(self, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
-		hash = locals()
-		del hash['self']
-		return self.config_createObjects(UnicodeConfig.fromHash(hash))
-	
-	def config_createBool(self, name, description='', defaultValues = [ True ]):
-		hash = locals()
-		del hash['self']
-		return self.config_createObjects(BoolConfig.fromHash(hash))
-	
 	def config_insertObject(self, config):
 		pass
 	
@@ -197,11 +166,6 @@ class DataBackend(Backend):
 	
 	def config_deleteObjects(self, configs):
 		pass
-	
-	def config_delete(self, names):
-		return self.config_deleteObjects(
-				config_getObjects(
-					name = forceUnicodeLowerList(names)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -218,11 +182,6 @@ class DataBackend(Backend):
 			else:
 				self.configState_insertObject(configState)
 	
-	def configState_create(self, name, objectId, values=[]):
-		hash = locals()
-		del hash['self']
-		return self.configState_createObjects(ConfigState.fromHash(hash))
-	
 	def configState_insertObject(self, configState):
 		pass
 	
@@ -234,12 +193,6 @@ class DataBackend(Backend):
 	
 	def configState_deleteObjects(self, configStates):
 		pass
-	
-	def configState_delete(self, names, objectIds):
-		return self.configState_deleteObjects(
-				configState_getObjects(
-					name = forceUnicodeLowerList(names),
-					objectId = forceObjectIdsList(objectIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
@@ -256,21 +209,6 @@ class DataBackend(Backend):
 			else:
 				self.product_insertObject(product)
 	
-	def product_createLocalboot(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-					setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-					priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[]):
-		hash = locals()
-		del hash['self']
-		return self.product_createObjects(LocalbootProduct.fromHash(hash))
-	
-	def product_createNetboot(self, id, productVersion, packageVersion, name="", licenseRequired=False,
-					setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
-					priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[],
-					pxeConfigTemplate=''):
-		hash = locals()
-		del hash['self']
-		return self.product_createObjects(NetbootProduct.fromHash(hash))
-	
 	def product_insertObject(self, product):
 		pass
 	
@@ -286,11 +224,6 @@ class DataBackend(Backend):
 				productIds = [ product.id ],
 				productVersions = [ product.productVersion ],
 				packageVersions = [ product.packageVersion ])
-	
-	def product_delete(self, productIds):
-		return self.product_deleteObjects(
-				product_getObjects(
-					productId = forceProductIdList(productIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -309,21 +242,6 @@ class DataBackend(Backend):
 			else:
 				self.productProperty_insertObject(productProperty)
 	
-	def productProperty_create(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
-		hash = locals()
-		del hash['self']
-		return self.productProperty_createObjects(ProductProperty.fromHash(hash))
-	
-	def productProperty_createUnicode(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
-		hash = locals()
-		del hash['self']
-		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
-	
-	def productProperty_createBool(self, productId, productVersion, packageVersion, name, description='', defaultValues = [ True ]):
-		hash = locals()
-		del hash['self']
-		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
-	
 	def productProperty_insertObject(self, productProperty):
 		pass
 	
@@ -335,14 +253,6 @@ class DataBackend(Backend):
 	
 	def productProperty_deleteObjects(self, productProperties):
 		pass
-	
-	def productProperty_delete(self, productIds, productVersions, packageVersions, names):
-		return self.productOnDepot_deleteObjects(
-				self.productOnDepot_getObjects(
-					productId = forceProductIdList(productIds),
-					productVersion = forceProductVersionList(productVersions),
-					packageVersion = forcePackageVersionList(packageVersions),
-					name = forceUnicodeLowerList(names)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
@@ -359,11 +269,6 @@ class DataBackend(Backend):
 			else:
 				self.productOnDepot_insertObject(productOnDepot)
 	
-	def productOnDepot_create(self, productId, productVersion, packageVersion, depotId, locked=False):
-		hash = locals()
-		del hash['self']
-		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
-	
 	def productOnDepot_insertObject(self, productOnDepot):
 		pass
 	
@@ -375,15 +280,6 @@ class DataBackend(Backend):
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		pass
-	
-	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotIds):
-		return self.productOnDepot_deleteObjects(
-				self.productOnDepot_getObjects(
-					productId = forceProductIdList(productIds),
-					productVersion = forceProductVersionList(productVersions),
-					packageVersion = forcePackageVersionList(packageVersions),
-					depotId = forceHostIdList(depotIds)))
-	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
@@ -400,11 +296,6 @@ class DataBackend(Backend):
 			else:
 				self.productOnClient_insertObject(productOnClient)
 	
-	def productOnClient_create(self, productId, clientId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
-		hash = locals()
-		del hash['self']
-		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
-	
 	def productOnClient_insertObject(self, productOnClient):
 		if not productOnClient.lastStateChange:
 			productOnClient.setLastStateChange(Tools.timestamp())
@@ -418,12 +309,6 @@ class DataBackend(Backend):
 	
 	def productOnClient_deleteObjects(self, productOnClients):
 		pass
-	
-	def productOnClient_delete(self, productIds, clientIds):
-		return self.productOnClient_deleteObjects(
-				self.productOnClient_getObjects(
-					productId = forceProductIdList(productIds),
-					clientId = forceHostIdList(clientIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
@@ -441,11 +326,6 @@ class DataBackend(Backend):
 			else:
 				self.productPropertyState_insertObject(productPropertyState)
 	
-	def productPropertyState_create(self, productId, name, objectId, values=[]):
-		hash = locals()
-		del hash['self']
-		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
-	
 	def productPropertyState_insertObject(self, productPropertyState):
 		pass
 	
@@ -458,13 +338,6 @@ class DataBackend(Backend):
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		pass
 	
-	def productPropertyState_delete(self, productIds, names, objectIds):
-		return self.productPropertyState_deleteObjects(
-				self.productPropertyState_getObjects(
-					productId = forceProductIdList(productIds),
-					name = forceUnicodeLowerList(names),
-					objectId = forceObjectIdList(objectIds)))
-		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -478,11 +351,6 @@ class DataBackend(Backend):
 			else:
 				self.group_insertObject(group)
 	
-	def group_createHost(self, id, description='', notes='', parentGroupId=''):
-		hash = locals()
-		del hash['self']
-		return self.group_createObjects(HostGroup.fromHash(hash))
-	
 	def group_insertObject(self, group):
 		pass
 	
@@ -494,11 +362,6 @@ class DataBackend(Backend):
 	
 	def group_deleteObjects(self, groups):
 		pass
-	
-	def group_delete(self, ids):
-		return self.group_deleteObjects(
-				self.group_getObjects(
-					id = forceGroupIdList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -515,11 +378,6 @@ class DataBackend(Backend):
 			else:
 				self.objectToGroup_insertObject(objectToGroup)
 	
-	def objectToGroup_create(self, groupId, objectId):
-		hash = locals()
-		del hash['self']
-		return self.group_createObjects(ObjectToGroup.fromHash(hash))
-	
 	def objectToGroup_insertObject(self, objectToGroup):
 		pass
 	
@@ -531,6 +389,191 @@ class DataBackend(Backend):
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		pass
+
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+class ExtendedConfigDataBackend(ConfigDataBackend):
+	
+	def __init__(self, username = '', password = '', address = '', **kwargs):
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Hosts                                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def host_createOpsiClient(self, id, opsiHostKey='', description='', notes='', hardwareAddress='', ipAddress='', created='', lastSeen=''):
+		hash = locals()
+		del hash['self']
+		return self.host_createObjects(OpsiClient.fromHash(hash))
+	
+	def host_createOpsiDepotserver(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
+					description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+		hash = locals()
+		del hash['self']
+		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
+	
+	def host_createOpsiConfigserver(self, id, opsiHostKey='', depotLocalUrl='', depotRemoteUrl='', repositoryLocalUrl='', repositoryRemoteUrl='',
+					description='', notes='', hardwareAddress='', ipAddress='', network='0.0.0.0/0', maxBandwidth=0):
+		hash = locals()
+		del hash['self']
+		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
+	
+	def host_delete(self, ids):
+		return self.host_deleteObjects(
+				self.host_getObjects(
+					id = forceHostIdList(ids)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Configs                                                                                   -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def config_create(self, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
+		hash = locals()
+		del hash['self']
+		return self.config_createObjects(Config.fromHash(hash))
+	
+	def config_createUnicode(self, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
+		hash = locals()
+		del hash['self']
+		return self.config_createObjects(UnicodeConfig.fromHash(hash))
+	
+	def config_createBool(self, name, description='', defaultValues = [ True ]):
+		hash = locals()
+		del hash['self']
+		return self.config_createObjects(BoolConfig.fromHash(hash))
+	
+	def config_delete(self, names):
+		return self.config_deleteObjects(
+				config_getObjects(
+					name = forceUnicodeLowerList(names)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ConfigStates                                                                              -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def configState_create(self, name, objectId, values=[]):
+		hash = locals()
+		del hash['self']
+		return self.configState_createObjects(ConfigState.fromHash(hash))
+	
+	def configState_delete(self, names, objectIds):
+		return self.configState_deleteObjects(
+				configState_getObjects(
+					name = forceUnicodeLowerList(names),
+					objectId = forceObjectIdsList(objectIds)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Products                                                                                  -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def product_createLocalboot(self, id, productVersion, packageVersion, name="", licenseRequired=False,
+					setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
+					priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[]):
+		hash = locals()
+		del hash['self']
+		return self.product_createObjects(LocalbootProduct.fromHash(hash))
+	
+	def product_createNetboot(self, id, productVersion, packageVersion, name="", licenseRequired=False,
+					setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
+					priority=0, description="", advice="", productClassNames=[], windowsSoftwareIds=[],
+					pxeConfigTemplate=''):
+		hash = locals()
+		del hash['self']
+		return self.product_createObjects(NetbootProduct.fromHash(hash))
+	
+	def product_delete(self, productIds):
+		return self.product_deleteObjects(
+				product_getObjects(
+					productId = forceProductIdList(productIds)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductProperties                                                                         -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productProperty_create(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=False, multiValue=False):
+		hash = locals()
+		del hash['self']
+		return self.productProperty_createObjects(ProductProperty.fromHash(hash))
+	
+	def productProperty_createUnicode(self, productId, productVersion, packageVersion, name, description='', possibleValues=[], defaultValues=[], editable=True, multiValue=False):
+		hash = locals()
+		del hash['self']
+		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
+	
+	def productProperty_createBool(self, productId, productVersion, packageVersion, name, description='', defaultValues = [ True ]):
+		hash = locals()
+		del hash['self']
+		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
+	
+	def productProperty_delete(self, productIds, productVersions, packageVersions, names):
+		return self.productOnDepot_deleteObjects(
+				self.productOnDepot_getObjects(
+					productId = forceProductIdList(productIds),
+					productVersion = forceProductVersionList(productVersions),
+					packageVersion = forcePackageVersionList(packageVersions),
+					name = forceUnicodeLowerList(names)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnDepots                                                                           -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnDepot_create(self, productId, productVersion, packageVersion, depotId, locked=False):
+		hash = locals()
+		del hash['self']
+		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
+	
+	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotIds):
+		return self.productOnDepot_deleteObjects(
+				self.productOnDepot_getObjects(
+					productId = forceProductIdList(productIds),
+					productVersion = forceProductVersionList(productVersions),
+					packageVersion = forcePackageVersionList(packageVersions),
+					depotId = forceHostIdList(depotIds)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnClient_create(self, productId, clientId, installationStatus='not_installed', actionRequest='none', actionProgress='', productVersion='', packageVersion='', lastStateChange=''):
+		hash = locals()
+		del hash['self']
+		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
+	
+	def productOnClient_delete(self, productIds, clientIds):
+		return self.productOnClient_deleteObjects(
+				self.productOnClient_getObjects(
+					productId = forceProductIdList(productIds),
+					clientId = forceHostIdList(clientIds)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductPropertyStates                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productPropertyState_create(self, productId, name, objectId, values=[]):
+		hash = locals()
+		del hash['self']
+		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
+	
+	def productPropertyState_delete(self, productIds, names, objectIds):
+		return self.productPropertyState_deleteObjects(
+				self.productPropertyState_getObjects(
+					productId = forceProductIdList(productIds),
+					name = forceUnicodeLowerList(names),
+					objectId = forceObjectIdList(objectIds)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Groups                                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def group_createHost(self, id, description='', notes='', parentGroupId=''):
+		hash = locals()
+		del hash['self']
+		return self.group_createObjects(HostGroup.fromHash(hash))
+	
+	def group_delete(self, ids):
+		return self.group_deleteObjects(
+				self.group_getObjects(
+					id = forceGroupIdList(ids)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ObjectToGroups                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def objectToGroup_create(self, groupId, objectId):
+		hash = locals()
+		del hash['self']
+		return self.group_createObjects(ObjectToGroup.fromHash(hash))
 	
 	def objectToGroup_delete(self, groupIds, objectIds):
 		return self.objectToGroup_deleteObjects(
@@ -538,8 +581,6 @@ class DataBackend(Backend):
 					groupId = forceGroupIdList(groupIds),
 					objectId = forceObjectIdList(objectIds)))
 		
-
-
 
 
 

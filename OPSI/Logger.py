@@ -47,7 +47,8 @@ LOG_COMMENT      = 0
 LOG_NONE         = -1
 
 # Imports
-import sys, time, os, thread, threading
+import sys, locale, time, os, thread, threading
+
 if (os.name == 'nt'):
 	# WIndows imports for file locking
 	import win32con, win32file, pywintypes
@@ -502,11 +503,15 @@ class LoggerImplementation:
 			fh = sys.stderr
 			if (self.__consoleStdout):
 				fh = sys.stdout
+			
+			fhEncoding = fh.encoding
+			if fhEncoding is None:
+				fhEncoding = locale.getpreferredencoding()
+			
 			if self.__consoleColor:
-				print >> fh, u"%s%s%s" % (color, m, COLOR_NORMAL)
-			else:
-				print >> fh, m
-		
+				m = u"%s%s%s" % (color, m, COLOR_NORMAL)
+			print >> fh, m.encode(fhEncoding, 'backslashreplace')
+			
 		if (level <= self.__fileLevel):
 			# Log to file
 			logFile = self.__logFile

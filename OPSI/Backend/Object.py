@@ -167,7 +167,7 @@ def forceProductVersion(var):
 	var = forceUnicode(var)
 	match = re.search(productVersionRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad product id: '%s'" % var)
+		raise BackendBadValueError(u"Bad product version: '%s'" % var)
 	return var
 
 def forceProductVersionList(var):
@@ -181,7 +181,7 @@ def forcePackageVersion(var):
 	var = forceUnicode(var)
 	match = re.search(packageVersionRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad product id: '%s'" % var)
+		raise BackendBadValueError(u"Bad package version: '%s'" % var)
 	return var
 
 def forcePackageVersionList(var):
@@ -392,7 +392,10 @@ def getPossibleClassAttributes(Class):
 	attributes.append('type')
 	return attributes
 
-class Entity(object):
+class BaseObject(object):
+	pass
+
+class Entity(BaseObject):
 	subClasses = {}
 	
 	def getType(self):
@@ -428,7 +431,7 @@ class Entity(object):
 	
 	__str__ = __repr__
 
-class Relationship(object):
+class Relationship(BaseObject):
 	subClasses = {}
 	
 	def getType(self):
@@ -1275,13 +1278,19 @@ class ProductOnClient(Relationship):
 		return self.productVersion
 	
 	def setProductVersion(self, productVersion):
-		self.productVersion = forceProductVersion(productVersion)
-	
+		if productVersion:
+			self.productVersion = forceProductVersion(productVersion)
+		else:
+			self.productVersion = u''
+		
 	def getPackageVersion(self):
 		return self.packageVersion
 	
 	def setPackageVersion(self, packageVersion):
-		self.packageVersion = forcePackageVersion(packageVersion)
+		if packageVersion:
+			self.packageVersion = forcePackageVersion(packageVersion)
+		else:
+			self.packageVersion = u''
 	
 	def getLastStateChange(self):
 		return self.lastStateChange

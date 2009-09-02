@@ -172,10 +172,10 @@ class MySQL:
 # ======================================================================================================
 # =                                    CLASS MYSQLBACKEND                                              =
 # ======================================================================================================
-class MySQLBackend(DataBackend):
+class MySQLBackend(ExtendedConfigDataBackend):
 	
 	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._database = 'opsi'
 		
@@ -295,7 +295,7 @@ class MySQLBackend(DataBackend):
 		return condition
 	
 	def base_delete(self):
-		DataBackend.base_delete(self)
+		ConfigDataBackend.base_delete(self)
 		# Drop database
 		failure = 0
 		done = False
@@ -311,7 +311,7 @@ class MySQLBackend(DataBackend):
 					failure += 1
 		
 	def base_create(self):
-		DataBackend.base_create(self)
+		ConfigDataBackend.base_create(self)
 		# Hardware audit database
 		tables = {}
 		logger.debug(u"Current tables:")
@@ -339,6 +339,7 @@ class MySQLBackend(DataBackend):
 					`created` TIMESTAMP,
 					`lastSeen` TIMESTAMP,
 					`opsiHostKey` varchar(32),
+					`maxBandwidth` int,
 					`depotLocalUrl` varchar(128),
 					`depotRemoteUrl` varchar(255),
 					`repositoryLocalUrl` varchar(128),
@@ -541,18 +542,18 @@ class MySQLBackend(DataBackend):
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
-		DataBackend.host_insertObject(self, host)
+		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		self._mysql.insert('HOST', data)
 	
 	def host_updateObject(self, host):
-		DataBackend.host_updateObject(self, host)
+		ConfigDataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
 		self._mysql.update('HOST', where, data)
 	
 	def host_getObjects(self, attributes=[], **filter):
-		DataBackend.host_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting hosts, filter: %s" % filter)
 		hosts = []
 		self._adjustAttributes(Host, attributes, filter)
@@ -562,7 +563,7 @@ class MySQLBackend(DataBackend):
 		return hosts
 	
 	def host_deleteObjects(self, hosts):
-		DataBackend.host_deleteObjects(self, hosts)
+		ConfigDataBackend.host_deleteObjects(self, hosts)
 		for host in forceObjectClassList(hosts, Host):
 			logger.info(u"Deleting host %s" % host)
 			where = self._uniqueCondition(host)
@@ -573,7 +574,7 @@ class MySQLBackend(DataBackend):
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
-		DataBackend.config_insertObject(self, config)
+		ConfigDataBackend.config_insertObject(self, config)
 		config = self._objectToDatabaseHash(config)
 		possibleValues = config['possibleValues']
 		defaultValues = config['defaultValues']
@@ -589,7 +590,7 @@ class MySQLBackend(DataBackend):
 				})
 	
 	def config_updateObject(self, config):
-		DataBackend.config_updateObject(self, config)
+		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
 		possibleValues = data['possibleValues']
@@ -607,7 +608,7 @@ class MySQLBackend(DataBackend):
 				})
 		
 	def config_getObjects(self, attributes=[], **filter):
-		DataBackend.config_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configs, filter: %s" % filter)
 		configs = []
 		self._adjustAttributes(Config, attributes, filter)
@@ -627,7 +628,7 @@ class MySQLBackend(DataBackend):
 		return configs
 	
 	def config_deleteObjects(self, configs):
-		DataBackend.config_deleteObjects(self, configs)
+		ConfigDataBackend.config_deleteObjects(self, configs)
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Deleting config %s" % config)
 			where = self._uniqueCondition(config)
@@ -638,20 +639,20 @@ class MySQLBackend(DataBackend):
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
-		DataBackend.configState_insertObject(self, configState)
+		ConfigDataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		data['values'] = json.dumps(data['values'])
 		self._mysql.insert('CONFIG_STATE', data)
 	
 	def configState_updateObject(self, configState):
-		DataBackend.configState_updateObject(self, configState)
+		ConfigDataBackend.configState_updateObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		where = self._uniqueCondition(configState)
 		data['values'] = json.dumps(data['values'])
 		self._mysql.update('CONFIG_STATE', where, data)
 	
 	def configState_getObjects(self, attributes=[], **filter):
-		DataBackend.configState_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configStates, filter: %s" % filter)
 		configStates = []
 		self._adjustAttributes(ConfigState, attributes, filter)
@@ -661,7 +662,7 @@ class MySQLBackend(DataBackend):
 		return configStates
 	
 	def configState_deleteObjects(self, configStates):
-		DataBackend.configState_deleteObjects(self, configStates)
+		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info("Deleting configState %s" % configState)
 			where = self._uniqueCondition(configState)
@@ -672,7 +673,7 @@ class MySQLBackend(DataBackend):
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
-		DataBackend.product_insertObject(self, product)
+		ConfigDataBackend.product_insertObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		windowsSoftwareIds = data['windowsSoftwareIds']
 		del data['windowsSoftwareIds']
@@ -682,7 +683,7 @@ class MySQLBackend(DataBackend):
 			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_updateObject(self, product):
-		DataBackend.product_updateObject(self, product)
+		ConfigDataBackend.product_updateObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		where = self._uniqueCondition(product)
 		windowsSoftwareIds = data['windowsSoftwareIds']
@@ -694,7 +695,7 @@ class MySQLBackend(DataBackend):
 			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_getObjects(self, attributes=[], **filter):
-		DataBackend.product_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting products, filter: %s" % filter)
 		products = []
 		self._adjustAttributes(Product, attributes, filter)
@@ -709,7 +710,7 @@ class MySQLBackend(DataBackend):
 		return products
 	
 	def product_deleteObjects(self, products):
-		DataBackend.product_deleteObjects(self, products)
+		ConfigDataBackend.product_deleteObjects(self, products)
 		for product in forceObjectClassList(products, Product):
 			logger.info("Deleting product %s" % config)
 			where = self._uniqueCondition(product)
@@ -721,7 +722,7 @@ class MySQLBackend(DataBackend):
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
-		DataBackend.productProperty_insertObject(self, productProperty)
+		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		possibleValues = data['possibleValues']
 		defaultValues = data['defaultValues']
@@ -740,7 +741,7 @@ class MySQLBackend(DataBackend):
 					})
 	
 	def productProperty_updateObject(self, productProperty):
-		DataBackend.productProperty_updateObject(self, productProperty)
+		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		possibleValues = data['possibleValues']
 		defaultValues = data['defaultValues']
@@ -759,7 +760,7 @@ class MySQLBackend(DataBackend):
 					})
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
-		DataBackend.productProperty_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product properties, filter: %s" % filter)
 		productProperties = []
 		self._adjustAttributes(ProductProperty, attributes, filter)
@@ -777,7 +778,7 @@ class MySQLBackend(DataBackend):
 		return productProperties
 	
 	def productProperty_deleteObjects(self, productProperties):
-		DataBackend.productProperty_deleteObjects(self, productProperties)
+		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info("Deleting product property %s" % productProperty)
 			where = self._uniqueCondition(productProperty)
@@ -789,18 +790,18 @@ class MySQLBackend(DataBackend):
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
-		DataBackend.productOnDepot_insertObject(self, productOnDepot)
+		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		self._mysql.insert('PRODUCT_ON_DEPOT', data)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
-		DataBackend.productOnDepot_updateObject(self, productOnDepot)
+		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		where = self._uniqueCondition(productOnDepot)
 		self._mysql.update('PRODUCT_ON_DEPOT', where, data)
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
-		DataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		productOnDepots = []
 		self._adjustAttributes(ProductOnDepot, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
@@ -808,7 +809,7 @@ class MySQLBackend(DataBackend):
 		return productOnDepots
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
-		DataBackend.productOnDepot_deleteObjects(self, productOnDepots)
+		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			logger.info(u"Deleting productOnDepot %s" % productOnDepot)
 			where = self._uniqueCondition(productOnDepot)
@@ -818,18 +819,18 @@ class MySQLBackend(DataBackend):
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
-		DataBackend.productOnClient_insertObject(self, productOnClient)
+		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		self._mysql.insert('PRODUCT_ON_CLIENT', data)
 		
 	def productOnClient_updateObject(self, productOnClient):
-		DataBackend.productOnClient_updateObject(self, productOnClient)
+		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		where = self._uniqueCondition(productOnClient)
 		self._mysql.update('PRODUCT_ON_CLIENT', where, data)
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
-		DataBackend.productOnClient_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productOnClients, filter: %s" % filter)
 		productOnClients = []
 		self._adjustAttributes(ProductOnClient, attributes, filter)
@@ -838,7 +839,7 @@ class MySQLBackend(DataBackend):
 		return productOnClients
 	
 	def productOnClient_deleteObjects(self, productOnClients):
-		DataBackend.productOnClient_deleteObjects(self, productOnClients)
+		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
 			logger.info(u"Deleting productOnClient %s" % productOnClient)
 			where = self._uniqueCondition(productOnClient)
@@ -848,20 +849,20 @@ class MySQLBackend(DataBackend):
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
-		DataBackend.productPropertyState_insertObject(self, productPropertyState)
+		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		data['values'] = json.dumps(data['values'])
 		self._mysql.insert('PRODUCT_PROPERTY_STATE', data)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
-		DataBackend.productPropertyState_updateObject(self, productPropertyState)
+		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		where = self._uniqueCondition(productPropertyState)
 		data['values'] = json.dumps(data['values'])
 		self._mysql.update('PRODUCT_PROPERTY_STATE', where, data)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
-		DataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
 		productPropertyStates = []
 		self._adjustAttributes(ProductPropertyState, attributes, filter)
@@ -871,7 +872,7 @@ class MySQLBackend(DataBackend):
 		return productPropertyStates
 	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
-		DataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
+		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			logger.info(u"Deleting productPropertyState %s" % productPropertyState)
 			where = self._uniqueCondition(productPropertyState)
@@ -881,18 +882,18 @@ class MySQLBackend(DataBackend):
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
-		DataBackend.group_insertObject(self, group)
+		ConfigDataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		self._mysql.insert('GROUP', data)
 	
 	def group_updateObject(self, group):
-		DataBackend.group_updateObject(self, group)
+		ConfigDataBackend.group_updateObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		where = self._uniqueCondition(group)
 		self._mysql.update('GROUP', where, data)
 	
 	def group_getObjects(self, attributes=[], **filter):
-		DataBackend.group_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting groups, filter: %s" % filter)
 		groups = []
 		self._adjustAttributes(Group, attributes, filter)
@@ -902,7 +903,7 @@ class MySQLBackend(DataBackend):
 		return groups
 	
 	def group_deleteObjects(self, groups):
-		DataBackend.group_deleteObjects(self, groups)
+		ConfigDataBackend.group_deleteObjects(self, groups)
 		for group in forceObjectClassList(groups, Group):
 			logger.info(u"Deleting group %s" % group)
 			where = self._uniqueCondition(group)
@@ -912,15 +913,15 @@ class MySQLBackend(DataBackend):
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
-		DataBackend.objectToGroup_insertObject(self, objectToGroup)
+		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 		self._mysql.insert('OBJECT_TO_GROUP', data)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
-		DataBackend.objectToGroup_updateObject(self, objectToGroup)
+		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
-		DataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting objectToGroups, filter: %s" % filter)
 		objectToGroups = []
 		self._adjustAttributes(ObjectToGroup, attributes, filter)
@@ -929,7 +930,7 @@ class MySQLBackend(DataBackend):
 		return objectToGroups
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
-		DataBackend.objectToGroup_deleteObjects(self, objectToGroups)
+		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 			logger.info(u"Deleting objectToGroup %s" % objectToGroup)
 			where = self._uniqueCondition(objectToGroup)

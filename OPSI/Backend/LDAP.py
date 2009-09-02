@@ -48,10 +48,10 @@ logger = Logger()
 # ======================================================================================================
 # =                                    CLASS LDAPBACKEND                                               =
 # ======================================================================================================
-class LDAPBackend(DataBackend):
+class LDAPBackend(ConfigDataBackend):
 	
 	def __init__(self, username = 'opsi', password = 'opsi', address = 'localhost', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		## Parse arguments
 		#for (option, value) in kwargs.items():
@@ -93,10 +93,10 @@ class LDAPBackend(DataBackend):
 		
 		
 	def base_delete(self):
-		DataBackend.base_delete(self)
+		ConfigDataBackend.base_delete(self)
 		
 	def base_create(self):
-		DataBackend.base_create(self)
+		ConfigDataBackend.base_create(self)
 	
 		# Create some containers
 		self.createOrganizationalRole(self._opsiBaseDn)
@@ -115,155 +115,155 @@ class LDAPBackend(DataBackend):
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
-		DataBackend.host_insertObject(self, host)
+		ConfigDataBackend.host_insertObject(self, host)
 	
 	def host_updateObject(self, host):
-		DataBackend.host_updateObject(self, host)
+		ConfigDataBackend.host_updateObject(self, host)
 	
 	def host_getObjects(self, attributes=[], **filter):
-		DataBackend.host_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 	
 	def host_deleteObjects(self, hosts):
-		DataBackend.host_deleteObjects(self, hosts)
+		ConfigDataBackend.host_deleteObjects(self, hosts)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
-		DataBackend.config_insertObject(self, config)
+		ConfigDataBackend.config_insertObject(self, config)
 	
 	def config_updateObject(self, config):
-		DataBackend.config_updateObject(self, config)
+		ConfigDataBackend.config_updateObject(self, config)
 		
 	def config_getObjects(self, attributes=[], **filter):
-		DataBackend.config_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 	
 	def config_deleteObjects(self, configs):
-		DataBackend.config_deleteObjects(self, configs)
+		ConfigDataBackend.config_deleteObjects(self, configs)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
-		DataBackend.configState_insertObject(self, configState)
+		ConfigDataBackend.configState_insertObject(self, configState)
 	
 	def configState_updateObject(self, configState):
-		DataBackend.configState_updateObject(self, configState)
+		ConfigDataBackend.configState_updateObject(self, configState)
 	
 	def configState_getObjects(self, attributes=[], **filter):
-		DataBackend.configState_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 	
 	def configState_deleteObjects(self, configStates):
-		DataBackend.configState_deleteObjects(self, configStates)
+		ConfigDataBackend.configState_deleteObjects(self, configStates)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
-		DataBackend.product_insertObject(self, product)
+		ConfigDataBackend.product_insertObject(self, product)
 	
 	def product_updateObject(self, product):
-		DataBackend.product_updateObject(self, product)
+		ConfigDataBackend.product_updateObject(self, product)
 	
 	def product_getObjects(self, attributes=[], **filter):
-		DataBackend.product_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 	
 	def product_deleteObjects(self, products):
-		DataBackend.product_deleteObjects(self, products)
+		ConfigDataBackend.product_deleteObjects(self, products)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
-		DataBackend.productProperty_insertObject(self, productProperty)
+		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 	
 	def productProperty_updateObject(self, productProperty):
-		DataBackend.productProperty_updateObject(self, productProperty)
+		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
-		DataBackend.productProperty_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 	
 	def productProperty_deleteObjects(self, productProperties):
-		DataBackend.productProperty_deleteObjects(self, productProperties)
+		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
-		DataBackend.productOnDepot_insertObject(self, productOnDepot)
+		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
-		DataBackend.productOnDepot_updateObject(self, productOnDepot)
+		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
-		DataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
-		DataBackend.productOnDepot_deleteObjects(self, productOnDepots)
+		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
-		DataBackend.productOnClient_insertObject(self, productOnClient)
+		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
 	def productOnClient_updateObject(self, productOnClient):
-		DataBackend.productOnClient_updateObject(self, productOnClient)
+		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
-		DataBackend.productOnClient_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 	
 	def productOnClient_deleteObjects(self, productOnClients):
-		DataBackend.productOnClient_deleteObjects(self, productOnClients)
+		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
-		DataBackend.productPropertyState_insertObject(self, productPropertyState)
+		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
-		DataBackend.productPropertyState_updateObject(self, productPropertyState)
+		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
-		DataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
-		DataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
+		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
-		DataBackend.group_insertObject(self, group)
+		ConfigDataBackend.group_insertObject(self, group)
 	
 	def group_updateObject(self, group):
-		DataBackend.group_updateObject(self, group)
+		ConfigDataBackend.group_updateObject(self, group)
 	
 	def group_getObjects(self, attributes=[], **filter):
-		DataBackend.group_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 	
 	def group_deleteObjects(self, groups):
-		DataBackend.group_deleteObjects(self, groups)
+		ConfigDataBackend.group_deleteObjects(self, groups)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
-		DataBackend.objectToGroup_insertObject(self, objectToGroup)
+		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
-		DataBackend.objectToGroup_updateObject(self, objectToGroup)
+		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
-		DataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
+		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
-		DataBackend.objectToGroup_deleteObjects(self, objectToGroups)
+		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 
 
 	

@@ -48,7 +48,12 @@ def getArgAndCallString(method):
 	argString = u''
 	callString = u''
 	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
+	logger.debug2(u"args: %s" % unicode(args))
+	logger.debug2(u"varargs: %s" % unicode(varargs))
+	logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
+	logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
 	for i in range(len(args)):
+		logger.debug2(u"Processing arg [%s] %s" % (i, args[i]))
 		if (args[i] == 'self'):
 			continue
 		if (argString):
@@ -57,11 +62,12 @@ def getArgAndCallString(method):
 		argString += args[i]
 		callString += u'%s=%s' % (args[i], args[i])
 		if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
-			default = argDefaults[len(args)-len(argDefaults)-i]
+			default = argDefaults[len(argDefaults)-len(args)+i]
 			if type(default) is str:
 				default = u"'%s'" % default
 			elif type(default) is unicode:
 				default = u"u'%s'" % default
+			logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
 			argString += u'=%s' % default
 	if varargs:
 		for vararg in varargs:
@@ -76,15 +82,18 @@ def getArgAndCallString(method):
 			callString += u', '
 		argString += u'**%s' % varkwargs
 		callString += u'**%s' % varkwargs
+	logger.debug2(u"Arg string is: %s" % argString)
+	logger.debug2(u"Call string is: %s" % callString)
 	return (argString, callString)
-	
+
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
-class BackendManager(DataBackend):
+class BackendManager(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._backend = None
 		dispatch = False
@@ -129,9 +138,9 @@ class BackendManager(DataBackend):
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
-class BackendDispatcher(DataBackend):
+class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
@@ -196,12 +205,12 @@ class BackendDispatcher(DataBackend):
 			exec(u'self._backends[backend]["instance"] = %sBackend(**l["config"])' % l['module'])
 			
 	def __createInstanceMethods(self):
-		for member in inspect.getmembers(DataBackend, inspect.ismethod):
+		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			logger.debug2(u"Found public DataBackend method '%s'" % methodName)
+			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
 			
 			methodBackends = None
 			for i in range(len(self._dispatchConfig)):
@@ -241,9 +250,9 @@ class BackendDispatcher(DataBackend):
 		return result
 		
 
-class BackendExtender(DataBackend):
+class BackendExtender(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._backend = None
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
@@ -295,17 +304,17 @@ elif (os.name == 'nt'):
 	import win32security, win32net
 from OPSI import Tools
 
-class BackendAccessControl(DataBackend):
+class BackendAccessControl(ConfigDataBackend):
 	
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
+		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._pamService = 'common-auth'
 		self._userGroups = []
 		self._host = None
 		self._backend = None
 		self._aclFile = None
-		self._acl = [ ['.*', ['sys_group(opsiadmin)']] ]
+		self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -323,11 +332,12 @@ class BackendAccessControl(DataBackend):
 		if not self._backend:
 			raise BackendAuthenticationError(u"No backend specified")
 		if isinstance(self._backend, BackendAccessControl):
-			raise BackendConfigurationError(u"Cannot use BackenAccessControl instance as backend")
-			
-		for i in range(len(self._acl)):
-			self._acl[i][0] = re.compile(self._acl[i][0])
-			self._acl[i][1] = forceUnicodeList(self._acl[i][1])
+			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
+		
+		# TODO: forceACL
+		#for i in range(len(self._acl)):
+		#	self._acl[i][0] = re.compile(self._acl[i][0])
+		#	self._acl[i][1] = forceUnicodeList(self._acl[i][1])
 			
 		try:
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
@@ -386,7 +396,7 @@ class BackendAccessControl(DataBackend):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			logger.debug2(u"Found public DataBackend method '%s'" % methodName)
+			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
 			
 			(argString, callString) = getArgAndCallString(member[1])
 			
@@ -494,68 +504,287 @@ class BackendAccessControl(DataBackend):
 		except Exception, e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 	
+	def isMemberOfGroup(self, ids):
+		for id in forceUnicodeList(ids):
+			if id in self._userGroups:
+				return True
+		return False
+		
+	def isUser(self, ids):
+		for id in forceUnicodeList(ids):
+			if (id == self._username):
+				return True
+		return False
+		
+	def isOpsiDepotserver(self, ids=[]):
+		if not self._host or not isinstance(self._host, OpsiDepotserver):
+			return False
+		if not ids:
+			return True
+		for id in forceUnicodeList(ids):
+			if (id == self._host.id):
+				return True
+		return False
+		
+	def isOpsiClient(self, ids=[]):
+		if not self._host or not isinstance(self._host, OpsiClient):
+			return False
+		if not ids:
+			return True
+		for id in forceUnicodeList(ids):
+			if (id == self._host.id):
+				return True
+		return False
+	
+	def isSelf(self, **params):
+		if not params:
+			return False
+		for (param, value) in params.items():
+			if type(value) is types.ClassType and issubclass(value, Object) and (value.id == self._username):
+				return True
+			if param in ('id', 'objectId', 'hostId', 'clientId', 'serverId', 'depotId') and (value == self._username):
+				return True
+		return False
+	
 	def _executeMethod(self, methodName, **kwargs):
 		granted = False
+		newKwargs = {}
+		acls = []
 		for (regex, acl) in self._acl:
 			if not re.search(regex, methodName):
 				continue
-			logger.debug(u"Using acl %s for method '%s'" % (acl, methodName))
+			logger.debug(u"Found matching acl %s for method '%s'" % (acl, methodName))
 			for entry in acl:
-				if (entry == 'all'):
+				aclType = entry.get('type')
+				ids = entry.get('ids', [])
+				if (aclType == 'all'):
 					granted = True
-				elif (entry == 'opsi_depotserver'):
-					granted = self.isOpsiDepotserver()
-				elif entry.startswith('opsi_client'):
-					if (entry.replace('opsi_client', '').replace('(', '').replace(')', '').strip() != ''):
-						granted = self.isOpsiClient(**kwargs)
-					else:
-						granted = self.isOpsiClient()
-				elif entry.startswith('sys_group'):
-					granted = self.isMemberOfGroup(entry.replace('sys_group', '').replace('(', '').replace(')', '').strip())
-				elif entry.startswith('sys_user'):
-					granted = self.isUser(entry.replace('sys_user', '').replace('(', '').replace(')', '').strip())
+				elif (aclType == 'opsi_depotserver'):
+					granted = self.isOpsiDepotserver(ids)
+				elif (aclType == 'opsi_client'):
+					granted = self.isOpsiClient(ids)
+				elif (aclType == 'sys_group'):
+					granted = self.isMemberOfGroup(ids)
+				elif (aclType == 'sys_user'):
+					granted = self.isUser(ids)
+				elif (aclType == 'self'):
+					granted = 'partial'
 				else:
-					logger.error(u"Unhandled acl entry: %s" % entry)
+					logger.error(u"Unhandled acl entry type: %s" % aclType)
 					continue
-				if granted:
+				
+				if (entry.get('denyAttributes') or entry.get('allowAttributes')):
+					granted = 'partial'
+				
+				acls.append(entry)
+				
+				if granted is True:
 					break
-			if granted:
-				logger.debug(u"Access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
-				break
-		if not granted:
+		
+		logger.error("acls: %s" % acls)
+		if granted:
+			logger.debug(u"Access to method '%s' granted to user '%s' by acls %s" % (methodName, self._username, acls))
+		else:
 			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
-		return eval(u'self._backend.%s(**kwargs)' % methodName)
-	
-	def isMemberOfGroup(self, group):
-		group = forceUnicode(group)
-		if group in self._userGroups:
-			return True
-		return False
-	
-	def isUser(self, user):
-		user = forceUnicode(user)
-		if (self._username == user):
-			return True
-		return False
 		
-	def isOpsiDepotserver(self):
-		if self._host and isinstance(self._host, OpsiDepotserver):
-			return True
-		return False
-	
-	def isOpsiClient(self, **params):
-		if not self._host or not isinstance(self._host, OpsiClient):
-			return False
-		if not params:
-			return True
-		for (param, value) in params.items():
-			if type(value) is types.ClassType and issubclass(value, Host) and (value.id == self._username):
-				return True
-			if param in ('id', 'objectId', 'hostId') and (value == self._username):
-				return True
-		return False
+		if (str(granted) == 'partial'):
+			# Filter incoming params
+			newKwargs = self._filterParams(kwargs, acls)
+		else:
+			newKwargs = kwargs
+		
+		logger.error("kwargs:    %s" % kwargs)
+		logger.error("newKwargs: %s" % newKwargs)
+		
+		logger.debug2(u'Executing: %s(%s)' % (methodName, newKwargs))
+		result = eval(u'self._backend.%s(**newKwargs)' % methodName)
+		
+		if (str(granted) == 'partial'):
+			# Filter result
+			result = self._filterResult(result, acls)
+		
+		return result
 		
 		
+		
+		#if (str(granted) == 'partial'):
+		#	objects = forceList(result)
+		#	if (len(objects) > 0) and issubclass(objects[0].__class__, BaseObject):
+		#		result = self._filterObjects(result, ids = [ self._username ])
+		#		if not result:
+		#			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
+		
+	
+	def _filterParams(self, params, acls):
+		newParams = {}
+		for (key, value) in params.items():
+			if not value:
+				newParams[key] = value
+				continue
+			valueList = forceList(value)
+			if (len(valueList) > 0) and issubclass(valueList[0].__class__, BaseObject):
+				newParams[key] = self._filterObjects(value, acls)
+			if not newParams[key]:
+				raise BackendPermissionDeniedError(u"Access to given object(s) denied")
+		return newParams
+	
+	def _filterResult(self, result, acls):
+		resultList = forceList(result)
+		if (len(resultList) > 0) and issubclass(resultList[0].__class__, BaseObject):
+			return self._filterObjects(result, acls)
+		return result
+		
+	def _filterObjects(self, objects, acls):
+		newObjects = []
+		for entry in forceList(objects):
+			hash = entry.toHash()
+			for acl in acls:
+				if (acl.get('type') == 'self'):
+					if ( hash.get('id', hash.get('objectId', hash.get('objectId', hash.get('clientId', hash.get('depotId', hash.get('serverId')))))) == self._username ):
+						if not (acl.get('denyAttributes', []) and not acl.get('allowAttributes', [])):
+							newObjects.append(entry)
+							logger.debug2(u"Granting full access to %s" % entry)
+							# full access, do not check other acls
+							break
+					else:
+						# next acl
+						continue
+				
+				if (acl.get('denyAttributes', []) or acl.get('allowAttributes', [])):
+					newHash = { 'type': hash.get('type') }
+					for (key, value) in hash.items():
+						if key in acl.get('denyAttributes', []):
+							continue
+						if acl.get('allowAttributes', []) and not key in acl['allowAttributes']:
+							continue
+						newHash[key] = value
+					logger.debug2(u"Granting partial access to %s" % entry)
+					newObjects.append(entry.__class__.fromHash(newHash))
+		if not type(objects) in (list, tuple):
+			if not newObjects:
+				return None
+			return newObjects[0]
+		return newObjects
+		
+		
+	def _filterObjects_OLD(self, objects, ids=[]):
+		logger.debug2(u"Filtering objects %s by ids: %s" % (objects, ids))
+		newObjects = None
+		if type(objects) in (list, tuple):
+			newObjects = []
+		for entry in forceList(objects):
+			if issubclass(entry.__class__, BaseObject):
+				hash = entry.toHash()
+				if hash.get('id', hash.get('objectId', hash.get('objectId', hash.get('clientId', hash.get('depotId', hash.get('serverId')))))) in ids:
+					if type(newObjects) is list:
+						newObjects.append(entry.__class__.fromHash(hash))
+					else:
+						newObjects = entry.__class__.fromHash(hash)
+						break
+		return newObjects
+	
+	def _filterObjectAttributes(self, objects, allowAttributes = [], denyAttributes = []):
+		newObjects = None
+		if type(objects) in (list, tuple):
+			newObjects = []
+		for entry in forceList(objects):
+			if ( type(entry) is types.ObjectType and issubclass(entry, BaseObject) ):
+				objectFound = True
+				newHash = {}
+				for (k, v) in entry.toHash().items():
+					if denyAttributes and (k in denyAttributes):
+						continue
+					if allowAttributes and not (k in allowAttributes):
+						continue
+					newHash[k] = v
+				if type(newObjects) is list:
+					newObjects.append(entry.__class__.fromHash(newHash))
+				else:
+					newObjects = entry.__class__.fromHash(newHash)
+					break
+		return newObjects
+	
+	
+		
+				#if granted:
+				#	if (aclType == 'self'):
+				#		logger.error("SELF")
+				#		granted = 'partial'
+				#		for (param, value) in kwargs.items():
+				#			objects = forceList(value)
+				#			if (len(objects) > 0) and issubclass(objects[0].__class__, BaseObject):
+				#				newKwargs[param] = self._filterObjects(
+				#					value,
+				#					ids = [ self._username ])
+				#				if not newKwargs[param]:
+				#					granted = False
+				#				
+				#	#if (entry.get('denyAttributes') or entry.get('allowAttributes')):
+				#	#	granted = 'partial'
+				#	#	for (param, value) in kwargs.items():
+				#	#		objects = forceList(value)
+				#	#		if type(objects[0]) is types.ClassType and issubclass(objects[0], Object):
+				#	#			
+				#	#			newKwargs[param] = self._filterObjectAttributes(
+				#	#				value,
+				#	#				allowAttributes = entry.get('allowAttributes', []),
+				#	#				denyAttributes  = entry.get('denyAttributes', []))
+				#	
+				#if granted:
+				#	for (param, value) in kwargs.items():
+				#		if not newKwargs.has_key(param):
+				#			newKwargs[param] = kwargs[param]
+				#	if granted is True:
+				#		break
+				#if granted and entry.get('self'):
+				#	granted = self.isSelf(**kwargs)
+				#
+				#if granted and (entry.get('denyAttributes') or entry.get('allowAttributes')):
+				#	denyAttributes = entry.get('denyAttributes', [])
+				#	allowAttributes = entry.get('allowAttributes', [])
+				#	newKwargs = {}
+				#	for (param, value) in kwargs.items():
+				#		if (param == 'attributes'):
+				#			if (methodName.find('_get') == -1):
+				#				granted = False
+				#				break
+				#			Class = methodName.split('_get')[0]
+				#			if not Class:
+				#				granted = False
+				#				break
+				#			Class = Class[0].upper() + Class[1:]
+				#			try:
+				#				possibleAttributes = getPossibleClassAttributes(eval(Class))
+				#			except Exception, e:
+				#				logger.warning(e)
+				#				granted = False
+				#				break
+				#			newKwargs[param] = []
+				#			if not value:
+				#				value = possibleAttributes
+				#			
+				#			value = forceUnicodeList(value)
+				#			for v in value:
+				#				if denyAttributes and v in denyAttributes:
+				#					continue
+				#				if allowAttributes and not v in allowAttributes:
+				#					continue
+				#				newKwargs[param].append(v)
+				#			
+				#		else:
+				#			newObjects = self._filterObjectAttributes(value, allowAttributes = allowAttributes, denyAttributes = denyAttributes)
+				#			if newObjects:
+				#				newKwargs[param] = newObjects
+				#			else:
+				#				if denyAttributes and (param in denyAttributes):
+				#					continue
+				#				if allowAttributes and not (param in allowAttributes):
+				#					continue
+				#				newKwargs[param] = value
+				#	kwargs = newKwargs
+				#if granted:
+				#	break
+			
 		
 		
 		
