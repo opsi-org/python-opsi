@@ -135,7 +135,7 @@ class BackendTest(object):
 			productVersion     = '1.0',
 			packageVersion     = 1,
 			licenseRequired    = True,
-			setupScript        = None,
+			setupScript        = "setup.py",
 			uninstallScript    = None,
 			updateScript       = "update.py",
 			alwaysScript       = None,
@@ -269,7 +269,7 @@ class BackendTest(object):
 		)
 		
 		self.productOnClient3 = ProductOnClient(
-			productId          = self.product1.getId(),
+			productId          = self.product2.getId(),
 			clientId           = self.client3.getId(),
 			installationStatus = 'installed',
 			actionRequest      = 'setup',
@@ -438,6 +438,8 @@ class BackendTest(object):
 		self.backend.config_deleteObjects(self.config1)
 		configs = self.backend.config_getObjects()
 		assert len(configs) == len(self.configs)-1
+		
+		self.backend.config_createObjects(self.config1)
 		
 		self.config3.setDescription(u'Updated')
 		self.config3.setDefaultValues(['1', '2'])

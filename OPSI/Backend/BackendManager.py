@@ -34,7 +34,7 @@
 
 __version__ = '3.5'
 
-import new, inspect, re, types
+import new, inspect, re, types, socket
 
 # OPSI imports
 from OPSI.Logger import *
@@ -68,7 +68,7 @@ def getArgAndCallString(method):
 			elif type(default) is unicode:
 				default = u"u'%s'" % default
 			logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
-			argString += u'=%s' % default
+			argString += u'=%s' % unicode(default)
 	if varargs:
 		for vararg in varargs:
 			if argString:
@@ -91,7 +91,7 @@ def getArgAndCallString(method):
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
-class BackendManager(ConfigDataBackend):
+class BackendManager(ExtendedConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
@@ -116,7 +116,7 @@ class BackendManager(ConfigDataBackend):
 		if dispatch:
 			self._backend = BackendDispatcher(username, password, address, **kwargs)
 		if extend:
-			self._backend = BackendExtender(username, password, address, backend = self._backend, **kwargs)
+			BackendExtender(username, password, address, backend = self._backend, **kwargs)
 		if accessControl:
 			self._backend = BackendAccessControl(username, password, address, backend = self._backend, **kwargs)
 		
@@ -138,7 +138,7 @@ class BackendManager(ConfigDataBackend):
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
-class BackendDispatcher(ConfigDataBackend):
+class BackendDispatcher(ExtendedConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
@@ -251,7 +251,7 @@ class BackendDispatcher(ConfigDataBackend):
 		
 
 class BackendExtender(ConfigDataBackend):
-	def __init__(self, username = '', password = '', address = '', **kwargs):
+	def __init__(self, username, password, address, **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._backend = None
@@ -292,7 +292,7 @@ class BackendExtender(ConfigDataBackend):
 				for (key, val) in locals().items():
 					if ( type(val) == types.FunctionType ):
 						logger.debug2(u"Extending backend '%s' with instancemethod: '%s'" % (self._backend, key) )
-						setattr( self._backend.__class__, key, new.instancemethod(val, None, self.__class__) )
+						setattr( self._backend.__class__, key, new.instancemethod(val, None, self._backend.__class__) )
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 
@@ -551,9 +551,10 @@ class BackendAccessControl(ConfigDataBackend):
 		newKwargs = {}
 		acls = []
 		for (regex, acl) in self._acl:
+			logger.debug2(u"Testing acl %s: %s for method '%s'" % (regex, acl, methodName))
 			if not re.search(regex, methodName):
 				continue
-			logger.debug(u"Found matching acl %s for method '%s'" % (acl, methodName))
+			logger.info(u"Found matching acl %s for method '%s'" % (acl, methodName))
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])

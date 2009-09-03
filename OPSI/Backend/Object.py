@@ -262,8 +262,13 @@ def forceGroupIdList(var):
 		var[i] = forceGroupId(var[i])
 	return var
 
+objectIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceObjectId(var):
-	return forceUnicodeLower(var)
+	var = forceUnicodeLower(var)
+	match = re.search(objectIdRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad object id: '%s'" % var)
+	return var
 
 def forceObjectIdList(var):
 	var = forceList(var)
@@ -277,6 +282,14 @@ def forceDomain(var):
 	match = re.search(domainRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad domain: '%s'" % var)
+	return var
+
+hostnameRegex = re.compile('^[a-z0-9][a-z0-9\-]*$')
+def forceHostname(var):
+	var = forceUnicodeLower(var)
+	match = re.search(hostnameRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad hostname: '%s'" % var)
 	return var
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -745,10 +758,6 @@ class Config(Entity):
 	
 	def setDefaults(self):
 		Entity.setDefaults(self)
-		if self.editable is None:
-			self.editable = False
-		if self.multiValue is None:
-			self.multiValue = False
 		
 	def getName(self):
 		return self.name
@@ -815,6 +824,14 @@ class UnicodeConfig(Config):
 	
 	def setDefaults(self):
 		Config.setDefaults(self)
+		if self.editable is None:
+			self.editable = True
+		if self.multiValue is None:
+			self.multiValue = False
+		if self.possibleValues is None:
+			self.possibleValues = [u'']
+		if self.defaultValues is None:
+			self.defaultValues = [u'']
 	
 	def setPossibleValues(self, possibleValues):
 		self.possibleValues = forceUnicodeList(possibleValues)
