@@ -311,6 +311,32 @@ def testComposition():
 	actions = bm.getPossibleProductActions_hash()
 	logger.comment(actions)
 	
+	depotId = bm.getDepotId(clientId = bt.client1.id)
+	logger.comment(depotId)
+	assert depotId == bt.depotserver1.id
+	
+	clientId = bm.getClientIdByMac(mac = bt.client2.hardwareAddress)
+	logger.comment(bt.client2.id)
+	assert clientId == bt.client2.id
+	
+	productIds = bm.getInstallableProductIds_list(clientId = bt.client1.id)
+	logger.comment(productIds)
+	
+	productIds = bm.getInstallableLocalBootProductIds_list(clientId = bt.client1.id)
+	logger.comment(productIds)
+	
+	productIds = bm.getInstallableNetBootProductIds_list(clientId = bt.client1.id)
+	logger.comment(productIds)
+	
+	status = bm.getProductInstallationStatus_listOfHashes(objectId = bt.client1.id)
+	logger.comment(status)
+	
+	actions = bm.getProductActionRequests_listOfHashes(clientId = bt.client1.id)
+	logger.comment(actions)
+	
+	states = bm.getLocalBootProductStates_hash()
+	logger.comment(Tools.objectToBeautifiedText(states))
+	
 testComposition()
 
 

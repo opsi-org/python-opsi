@@ -205,6 +205,16 @@ def forceProductIdList(var):
 		var[i] = forceProductId(var[i])
 	return var
 
+def forceProductType(var):
+	v = forceUnicodeLower(var)
+	if v in ('localboot', 'localbootproduct'):
+		var = u'LocalbootProduct'
+	elif v in ('netboot', 'netbootproduct'):
+		var = u'NetbootProduct'
+	else:
+		raise BackendBadValueError(u"Unknown product type: '%s'" % var)
+	return var
+
 def forceFilename(var):
 	return forceUnicode(var)
 
@@ -758,6 +768,7 @@ class Config(Entity):
 	
 	def setDefaults(self):
 		Entity.setDefaults(self)
+		self.setDefaultValues(self.defaultValues)
 		
 	def getName(self):
 		return self.name
@@ -782,6 +793,9 @@ class Config(Entity):
 	
 	def setDefaultValues(self, defaultValues):
 		self.defaultValues = forceList(defaultValues)
+		for defaultValue in self.defaultValues:
+			if not defaultValue in self.possibleValues:
+				self.possibleValues.append(defaultValue)
 	
 	def getEditable(self):
 		return self.editable
@@ -835,23 +849,11 @@ class UnicodeConfig(Config):
 	
 	def setPossibleValues(self, possibleValues):
 		self.possibleValues = forceUnicodeList(possibleValues)
-		#if self.possibleValues and self.defaultValues:
-		#	for defaultValue in self.defaultValues:
-		#		if not defaultValue in self.possibleValues:
-		#			raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-		#				% (defaultValue, self.possibleValues))
-		#elif not self.possibleValues and self.defaultValues:
-		#	self.possibleValues = self.defaultValues
+		Config.setPossibleValues(self, self.possibleValues)
 	
 	def setDefaultValues(self, defaultValues):
 		self.defaultValues = forceUnicodeList(defaultValues)
-		#if self.possibleValues and self.defaultValues:
-		#	for defaultValue in self.defaultValues:
-		#		if not defaultValue in self.possibleValues:
-		#			raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-		#				% (defaultValue, self.possibleValues))
-		#elif not self.possibleValues and self.defaultValues:
-		#	self.possibleValues = self.defaultValues
+		Config.setDefaultValues(self, self.defaultValues)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -875,11 +877,13 @@ class BoolConfig(Config):
 	
 	def setPossibleValues(self, possibleValues):
 		self.possibleValues = [ True, False ]
+		Config.setPossibleValues(self, self.possibleValues)
 	
 	def setDefaultValues(self, defaultValues):
 		self.defaultValues = forceBoolList(defaultValues)
 		if (len(self.defaultValues) > 1):
 			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % self.defaultValues)
+		Config.setPossibleValues(self, self.possibleValues)
 		
 	@staticmethod
 	def fromHash(hash):
@@ -945,7 +949,7 @@ class Product(Entity):
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-		     priority=None, description=None, advice=None, productClassIds=None, windowsSoftwareIds=None):
+		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
 		self.name = None
 		self.licenseRequired = None
 		self.setupScript = None
@@ -956,6 +960,7 @@ class Product(Entity):
 		self.priority = None
 		self.description = None
 		self.advice = None
+		self.changelog = None
 		self.productClassIds = None
 		self.windowsSoftwareIds = None
 		self.setId(id)
@@ -981,6 +986,8 @@ class Product(Entity):
 			self.setDescription(description)
 		if not advice is None:
 			self.setAdvice(advice)
+		if not changelog is None:
+			self.setChangelog(changelog)
 		if not productClassIds is None:
 			self.setProductClassIds(productClassIds)
 		if not windowsSoftwareIds is None:
@@ -1008,6 +1015,8 @@ class Product(Entity):
 			self.setDescription(u"")
 		if self.advice is None:
 			self.setAdvice(u"")
+		if self.changelog is None:
+			self.setChangelog(u"")
 		if self.productClassIds is None:
 			self.setProductClassIds([])
 		if self.windowsSoftwareIds is None:
@@ -1091,6 +1100,12 @@ class Product(Entity):
 	def setAdvice(self, advice):
 		self.advice = forceUnicode(advice)
 	
+	def getChangelog(self):
+		return self.changelog
+	
+	def setChangelog(self, changelog):
+		self.changelog = forceUnicode(changelog)
+	
 	def getProductClassIds(self):
 		return self.productClassIds
 	
@@ -1123,10 +1138,10 @@ class LocalbootProduct(Product):
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-		     priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None):
+		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
-		     priority, description, advice, productClassNames, windowsSoftwareIds)
+		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
 	
 	def setDefaults(self):
 		Product.setDefaults(self)
@@ -1147,11 +1162,11 @@ class NetbootProduct(Product):
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-		     priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None,
+		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None,
 		     pxeConfigTemplate=''):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
-		     priority, description, advice, productClassNames, windowsSoftwareIds)
+		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
 		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
 	
 	def setDefaults(self):
@@ -1353,9 +1368,10 @@ ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 class ProductOnDepot(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, depotId, locked=None):
+	def __init__(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
 		self.locked = None
 		self.setProductId(productId)
+		self.setProductType(productType)
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
 		self.setDepotId(depotId)
@@ -1372,6 +1388,12 @@ class ProductOnDepot(Relationship):
 	
 	def setProductId(self, productId):
 		self.productId = forceProductId(productId)
+	
+	def getProductType(self):
+		return self.productType
+	
+	def setProductType(self, productType):
+		self.productType = forceProductType(productType)
 	
 	def getProductVersion(self):
 		return self.productVersion
@@ -1416,7 +1438,7 @@ Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
 class ProductOnClient(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
+	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
 		self.installationStatus = None
 		self.actionRequest = None
 		self.actionProgress = None
@@ -1424,6 +1446,7 @@ class ProductOnClient(Relationship):
 		self.packageVersion = None
 		self.lastStateChange = None
 		self.setProductId(productId)
+		self.setProductType(productType)
 		self.setClientId(clientId)
 		if not installationStatus is None:
 			self.setInstallationStatus(installationStatus)
@@ -1452,6 +1475,12 @@ class ProductOnClient(Relationship):
 	
 	def setProductId(self, productId):
 		self.productId = forceProductId(productId)
+	
+	def getProductType(self):
+		return self.productType
+	
+	def setProductType(self, productType):
+		self.productType = forceProductType(productType)
 	
 	def getClientId(self):
 		return self.clientId

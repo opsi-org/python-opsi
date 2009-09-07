@@ -105,7 +105,15 @@ class BackendTest(object):
 			possibleValues = ['product1', 'product2', 'product3', 'product4'],
 			defaultValues  = ['product1', 'product3']
 		)
-		self.configs = [ self.config1, self.config2, self.config3 ]
+		
+		self.config4 = UnicodeConfig(
+			name           = u'opsiclientd.depot_server.depot_id',
+			description    = u'Depotserver to use',
+			possibleValues = [],
+			defaultValues  = [ self.depotserver1.id ]
+		)
+		
+		self.configs = [ self.config1, self.config2, self.config3, self.config4 ]
 		
 		# ConfigStates
 		self.configState1 = ConfigState(
@@ -223,6 +231,7 @@ class BackendTest(object):
 		# ProductOnDepots
 		self.productOnDepot1 = ProductOnDepot(
 			productId      = self.product1.getId(),
+			productType    = self.product1.getType(),
 			productVersion = self.product1.getProductVersion(),
 			packageVersion = self.product1.getPackageVersion(),
 			depotId        = self.depotserver1.getId(),
@@ -231,6 +240,7 @@ class BackendTest(object):
 		
 		self.productOnDepot2 = ProductOnDepot(
 			productId      = self.product2.getId(),
+			productType    = self.product2.getType(),
 			productVersion = self.product2.getProductVersion(),
 			packageVersion = self.product2.getPackageVersion(),
 			depotId        = self.depotserver1.getId(),
@@ -239,6 +249,7 @@ class BackendTest(object):
 		
 		self.productOnDepot3 = ProductOnDepot(
 			productId      = self.product3.getId(),
+			productType    = self.product3.getType(),
 			productVersion = self.product3.getProductVersion(),
 			packageVersion = self.product3.getPackageVersion(),
 			depotId        = self.depotserver1.getId(),
@@ -249,6 +260,7 @@ class BackendTest(object):
 		# ProductOnClients
 		self.productOnClient1 = ProductOnClient(
 			productId          = self.product1.getId(),
+			productType        = self.product1.getType(),
 			clientId           = self.client1.getId(),
 			installationStatus = 'installed',
 			actionRequest      = 'setup',
@@ -260,6 +272,7 @@ class BackendTest(object):
 		
 		self.productOnClient2 = ProductOnClient(
 			productId          = self.product2.getId(),
+			productType        = self.product2.getType(),
 			clientId           = self.client1.getId(),
 			installationStatus = 'installed',
 			actionRequest      = 'uninstall',
@@ -270,6 +283,7 @@ class BackendTest(object):
 		
 		self.productOnClient3 = ProductOnClient(
 			productId          = self.product2.getId(),
+			productType        = self.product2.getType(),
 			clientId           = self.client3.getId(),
 			installationStatus = 'installed',
 			actionRequest      = 'setup',

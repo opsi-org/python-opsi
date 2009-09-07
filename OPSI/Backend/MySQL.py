@@ -413,7 +413,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`priority` int,
 					`description` TEXT,
 					`advice` TEXT,
-					`pxeConfigTemplate` varchar(50)
+					`pxeConfigTemplate` varchar(50),
+					`changelog` TEXT
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -441,6 +442,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`depotId` varchar(50) NOT NULL,
 					FOREIGN KEY ( `depotId` ) REFERENCES HOST( `hostId` ),
 					PRIMARY KEY(  `productId`, `depotId` ),
+					`productType` varchar(16) NOT NULL,
 					`locked` bool
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -490,6 +492,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`clientId` varchar(255) NOT NULL,
 					FOREIGN KEY ( `clientId` ) REFERENCES `HOST` ( `hostId` ),
 					PRIMARY KEY( `productId`, `clientId` ),
+					`productType` varchar(16) NOT NULL,
 					`installationStatus` varchar(16),
 					`actionRequest` varchar(16),
 					`actionProgress` varchar(255),

@@ -454,14 +454,14 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	
 	def product_createLocalboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-					priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None):
+					priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
 		hash = locals()
 		del hash['self']
 		return self.product_createObjects(LocalbootProduct.fromHash(hash))
 	
 	def product_createNetboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
-					priority=None, description=None, advice=None, productClassNames=None, windowsSoftwareIds=None,
+					priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None,
 					pxeConfigTemplate=None):
 		hash = locals()
 		del hash['self']
@@ -535,7 +535,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			self.productOnDepot_updateObject(productOnDepot)
 	
-	def productOnDepot_create(self, productId, productVersion, packageVersion, depotId, locked=None):
+	def productOnDepot_create(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
 		hash = locals()
 		del hash['self']
 		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
@@ -567,7 +567,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
 			self.productOnClient_updateObject(productOnClient)
 	
-	def productOnClient_create(self, productId, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
+	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
 		hash = locals()
 		del hash['self']
 		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
