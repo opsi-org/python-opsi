@@ -1,8 +1,9 @@
 python-opsi (3.4.0.1-1) stable; urgency=low
 
   * Changed lshw class for DISK_PARITION in hwaudit.conf
+  * Posix 1.2.6
 
- -- Jan Schneider <schneider@pcjan.uib.local>  Fri, 04 Sep 2009 14:58:11 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 07 Sep 2009 10:12:19 +0200
 
 python-opsi (3.4.0.0-s1) stable; urgency=low
 
