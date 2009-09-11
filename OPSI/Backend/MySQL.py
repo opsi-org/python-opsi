@@ -410,6 +410,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`updateScript` varchar(50),
 					`alwaysScript` varchar(50),
 					`onceScript` varchar(50),
+					`userLoginScript` varchar(50),
 					`priority` int,
 					`description` TEXT,
 					`advice` TEXT,

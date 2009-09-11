@@ -948,7 +948,7 @@ class Product(Entity):
 	subClasses = {}
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None
 		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
 		self.name = None
 		self.licenseRequired = None
@@ -957,6 +957,7 @@ class Product(Entity):
 		self.updateScript = None
 		self.alwaysScript = None
 		self.onceScript = None
+		self.userLoginScript = None
 		self.priority = None
 		self.description = None
 		self.advice = None
@@ -980,6 +981,8 @@ class Product(Entity):
 			self.setAlwaysScript(alwaysScript)
 		if not onceScript is None:
 			self.setOnceScript(onceScript)
+		if not userLoginScript is None:
+			self.setUserLoginScript(userLoginScript)
 		if not priority is None:
 			self.setPriority(priority)
 		if not description is None:
@@ -1082,6 +1085,12 @@ class Product(Entity):
 	def setOnceScript(self, onceScript):
 		self.onceScript = forceFilename(onceScript)
 	
+	def getUserLoginScript(self):
+		return self.userLoginScript
+	
+	def setUserLoginScript(self, userLoginScript):
+		self.userLoginScript = forceFilename(userLoginScript)
+	
 	def getPriority(self):
 		return self.priority
 	
@@ -1137,7 +1146,7 @@ class LocalbootProduct(Product):
 	subClasses = {}
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
@@ -1165,7 +1174,7 @@ class NetbootProduct(Product):
 		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None,
 		     pxeConfigTemplate=''):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
-		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
+		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, None,
 		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
 		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
 	
