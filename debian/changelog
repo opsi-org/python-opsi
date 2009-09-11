@@ -1,3 +1,10 @@
+python-opsi (3.4.0.2-1) stable; urgency=low
+
+  * Posix 1.2.7
+     - getDHCPResult: retry ifconfig
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 11 Sep 2009 17:05:54 +0200
+
 python-opsi (3.4.0.1-1) stable; urgency=low
 
   * Changed lshw class for DISK_PARITION in hwaudit.conf

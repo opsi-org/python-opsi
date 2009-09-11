@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.2.6'
+__version__ = '1.2.7'
 
 # Imports
 import os, sys, re, shutil, time, gettext, subprocess, select, signal, socket
@@ -244,19 +244,20 @@ def getDHCPResult(retry=3):
 	keys are converted to lower case
 	"""
 	interfaces = []
-	for line in execute(which('ifconfig')):
-		match = re.search('^(eth\d+)\s+', line)
-		if match:
-			logger.info("Found ethernet device: '%s'" % match.group(1))
-			interfaces.append( { 'device': match.group(1) } )
-	
-	if not interfaces:
-		raise Exception('No ethernet interfaces found!')
-	
-	for interface in interfaces:
-		i = 0
-		while (i < retry):
-			try:
+	i = 0
+	while (i < retry):
+		try:
+			if not interfaces:
+				for line in execute(which('ifconfig')):
+					match = re.search('^(eth\d+)\s+', line)
+					if match:
+						logger.info("Found ethernet device: '%s'" % match.group(1))
+						interfaces.append( { 'device': match.group(1) } )
+			
+			if not interfaces:
+				raise Exception('No ethernet interfaces found in ifconfig output')
+			
+			for interface in interfaces:
 				for line in execute( '%s -s -i %s' % (which('pump'), interface['device']) ):
 					line = line.strip()
 					keyValue = line.split(":")
@@ -273,19 +274,15 @@ def getDHCPResult(retry=3):
 					# Some DHCP-Servers are returning multiple domain names seperated by whitespace,
 					# so we split all values at whitespace and take the first element
 					interface[keyValue[0].replace(' ','').lower()] = keyValue[1].strip().split()[0]
-			except Exception, e:
-				logger.warning("Pump failed: %s" % e)
-				#try:
-				#	execute( '%s -i %s' % (which('pump'), interface['device']) )
-				#except Exception, e:
-				#	logger.warning("Pump failed: %s" % e)
-				i += 1
-			else:
-				i = retry
+		except Exception, e:
+			logger.warning(e)
+			i += 1
 			# Sleeping 3 seconds for 2 reasons:
 			# 1. Pump failed: Waiting for DHCP server
 			# 2. Pump successful: Pump needs some time to configure interface
 			time.sleep(3)
+			continue
+		break
 	
 	useIf = 0
 	if (len(interfaces) > 1):
