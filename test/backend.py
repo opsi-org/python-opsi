@@ -38,6 +38,7 @@ class BackendTest(object):
 			notes               = 'Config 1',
 			hardwareAddress     = None,
 			ipAddress           = None,
+			inventoryNumber     = '00000000001',
 			network             = '192.168.1.0/24',
 			maxBandwidth        = 10000
 		)
@@ -68,19 +69,22 @@ class BackendTest(object):
 			hardwareAddress = '00:01:02:03:04:05',
 			ipAddress       = '192.168.1.100',
 			lastSeen        = '2009-01-01 00:00:00',
-			opsiHostKey     = '45656789789012789012345612340123'
+			opsiHostKey     = '45656789789012789012345612340123',
+			inventoryNumber = None
 		)
 		
 		self.client2 = OpsiClient(
 			id              = 'client2.uib.local',
 			description     = 'Test client 2',
 			hardwareAddress = '00-ff0aa3:0b-B5',
-			opsiHostKey     = '59051234345678890121678901223467'
+			opsiHostKey     = '59051234345678890121678901223467',
+			inventoryNumber = '00000000002'
 		)
 		
 		self.client3 = OpsiClient(
-			id          = 'client3.uib.local',
-			description = 'Test client 3'
+			id              = 'client3.uib.local',
+			description     = 'Test client 3',
+			inventoryNumber = 'XYZABC_1200292'
 		)
 		self.clients = [ self.client1, self.client2, self.client3 ]
 		self.hosts.extend(self.clients)
@@ -619,8 +623,8 @@ class BackendTest(object):
 				repositoryRemoteUrl = 'webdavs://config1.uib.local:4447/products',
 				description = 'config server',
 				notes = 'config 100',
-				hardwareAddress = '',
-				ipAddress = '',
+				hardwareAddress = None,
+				ipAddress = None,
 				network = '192.168.100.0/24',
 				maxBandwidth = 200000)
 		
@@ -636,8 +640,8 @@ class BackendTest(object):
 				repositoryRemoteUrl = 'webdavs://depot3.uib.local:4447/products',
 				description = 'A depot',
 				notes = 'Depot 100',
-				hardwareAddress = '',
-				ipAddress = '',
+				hardwareAddress = None,
+				ipAddress = None,
 				network = '192.168.100.0/24',
 				maxBandwidth = 0)
 		
@@ -651,8 +655,8 @@ class BackendTest(object):
 				notes = 'No notes',
 				hardwareAddress = '00:00:01:01:02:02',
 				ipAddress = '192.168.0.200',
-				created = '',
-				lastSeen = '')
+				created = None,
+				lastSeen = None)
 		
 		hosts = self.backend.host_getObjects(id = 'config100.uib.local')
 		assert len(hosts) == 1
@@ -662,23 +666,37 @@ class BackendTest(object):
 		assert len(hosts) == 0
 		
 	def testPerformance(self):
+		consoleLevel = logger.getConsoleLevel()
+		if (consoleLevel > LOG_NOTICE):
+			logger.setConsoleLevel(LOG_NOTICE)
+		logger.notice("Testing backend performance...")
+		
+		num = 1000
 		start = time.time()
-		for i in range(200):
+		for i in range(num):
+			ip = num
+			while (ip > 255):
+				ip -= 255
 			self.backend.host_createOpsiClient(
 				id = 'client%d.uib.local' % i,
 				opsiHostKey = None,
 				description = 'Client %d' % i,
 				notes = 'No notes',
 				hardwareAddress = '',
-				ipAddress = '192.168.0.%d' % i,
-				created = '',
-				lastSeen = '')
-		logger.notice(u"Took %.2f seconds to create 200 clients" % (time.time()-start))
+				ipAddress = '192.168.0.%d' % ip,
+				created = None,
+				lastSeen = None)
+		logger.notice(u"Took %.2f seconds to create %d clients" % ((time.time()-start), num))
+		
+		start = time.time()
+		self.backend.host_getObjects(attributes = ['id'], ipAddress = '192.168.0.100')
+		logger.notice(u"Took %.2f seconds to search ip address in %d clients" % ((time.time()-start), num))
 		
 		start = time.time()
 		self.backend.host_delete(ids = [])
-		logger.notice(u"Took %.2f seconds to delete 200 clients" % (time.time()-start))
+		logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), num))
 		
+		logger.setConsoleLevel(consoleLevel)
 
 class BackendManagerTest(BackendTest):
 	def __init__(self, backendManager):

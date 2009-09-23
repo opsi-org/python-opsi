@@ -343,19 +343,19 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for host in forceObjectClassList(hosts, Host):
 			self.host_updateObject(host)
 	
-	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, created=None, lastSeen=None):
+	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiClient.fromHash(hash))
 	
 	def host_createOpsiDepotserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-					description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
+					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
 	
 	def host_createOpsiConfigserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-					description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
+					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))

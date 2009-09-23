@@ -134,8 +134,7 @@ def forceHardwareAddress(var):
 		raise BackendBadValueError(u"Bad hardware address: %s" % var)
 	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
-
-ipAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+ipAddressRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceIPAddress(var):
 	var = forceUnicodeLower(var)
 	if not re.search(ipAddressRegex, var):
@@ -543,19 +542,24 @@ Entity.subClasses['Object'] = Object
 class Host(Object):
 	subClasses = {}
 	
-	def __init__(self, id, description=None, notes=None, hardwareAddress=None, ipAddress=None):
+	def __init__(self, id, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None):
 		Object.__init__(self, id, description, notes)
 		self.hardwareAddress = None
 		self.ipAddress = None
+		self.inventoryNumber = None
 		self.setId(id)
 		if not hardwareAddress is None:
 			self.setHardwareAddress(hardwareAddress)
 		if not ipAddress is None:
 			self.setIpAddress(ipAddress)
+		if not inventoryNumber is None:
+			self.setInventoryNumber(inventoryNumber)
 	
 	def setDefaults(self):
 		Object.setDefaults(self)
-	
+		if self.inventoryNumber is None:
+			self.setInventoryNumber(u"")
+		
 	def setId(self, id):
 		self.id = forceHostId(id)
 	
@@ -570,6 +574,12 @@ class Host(Object):
 	
 	def setIpAddress(self, ipAddress):
 		self.ipAddress = forceIPAddress(ipAddress)
+	
+	def getInventoryNumber(self):
+		return self.inventoryNumber
+	
+	def setInventoryNumber(self, inventoryNumber):
+		self.inventoryNumber = forceUnicode(inventoryNumber)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -589,8 +599,8 @@ Object.subClasses['Host'] = Host
 class OpsiClient(Host):
 	subClasses = {}
 	
-	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, created=None, lastSeen=None):
-		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress)
+	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
+		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
 		self.opsiHostKey = None
 		self.created = None
 		self.lastSeen = None
@@ -645,8 +655,8 @@ class OpsiDepotserver(Host):
 	subClasses = {}
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
-		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress)
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
+		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
 		self.depotRemoteUrl = None
@@ -726,9 +736,9 @@ class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, network=None, maxBandwidth=None):
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
 		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
-		     description, notes, hardwareAddress, ipAddress, network, maxBandwidth)
+		     description, notes, hardwareAddress, ipAddress, inventoryNumber, network, maxBandwidth)
 	
 	def setDefaults(self):
 		OpsiDepotserver.setDefaults(self)
@@ -948,7 +958,7 @@ class Product(Entity):
 	subClasses = {}
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
 		self.name = None
 		self.licenseRequired = None
@@ -1012,6 +1022,8 @@ class Product(Entity):
 			self.setAlwaysScript(u"")
 		if self.onceScript is None:
 			self.setOnceScript(u"")
+		if self.userLoginScript is None:
+			self.setUserLoginScript(u"")
 		if self.priority is None:
 			self.setPriority(0)
 		if self.description is None:
@@ -1149,7 +1161,7 @@ class LocalbootProduct(Product):
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
-		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript,
+		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, userLoginScript,
 		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
 	
 	def setDefaults(self):

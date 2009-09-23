@@ -110,11 +110,20 @@ backendAccessControl = BackendAccessControl(
 		['productOnClient_create', [ {'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []} ] ],
 	])
 
-backendAccessControl.productOnClient_create(productId = backendTest.product1.id, clientId = backendTest.client1.id, installationStatus = 'installed')
+backendAccessControl.productOnClient_create(
+			productId = backendTest.product1.id,
+			productType = backendTest.product1.getType(),
+			clientId = backendTest.client1.id,
+			installationStatus = 'installed')
 try:
-	backendAccessControl.productOnClient_create(productId = backendTest.product1.id, clientId = backendTest.client2.id, installationStatus = 'installed')
+	backendAccessControl.productOnClient_create(
+		productId = backendTest.product1.id,
+		productType = backendTest.product1.getType(),
+		clientId = backendTest.client2.id,
+		installationStatus = 'installed')
 except Exception, e:
 	logger.error(e)
+	logger.notice("OK, permission was denied")
 else:
 	raise Exception("Permission was not denied")
 

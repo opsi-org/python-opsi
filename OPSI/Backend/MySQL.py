@@ -340,6 +340,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`notes` varchar(500),
 					`hardwareAddress` varchar(17),
 					`ipAddress` varchar(15),
+					`inventoryNumber` varchar(30),
 					`created` TIMESTAMP,
 					`lastSeen` TIMESTAMP,
 					`opsiHostKey` varchar(32),

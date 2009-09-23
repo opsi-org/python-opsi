@@ -17,8 +17,8 @@ mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi
 bt = BackendTest(mysqlBackend)
 bt.cleanupBackend()
 bt.testObjectMethods()
-#bt.testNonObjectMethods()
-
+bt.testNonObjectMethods()
+bt.testPerformance()
 
 
 
