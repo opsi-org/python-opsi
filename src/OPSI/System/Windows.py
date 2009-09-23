@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1.8.2'
+__version__ = '0.1.9'
 
 # Imports
 import re, os, time, socket, sys
@@ -286,6 +286,49 @@ def getActiveDesktopName():
 	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
 	return win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME)
 
+
+def getActiveSessionIds():
+	sessionIds = []
+	logger.debug("Getting active sessions")
+	for s in win32ts.WTSEnumerateSessions():
+		logger.debug("   Found session: %s" % s)
+		sessionIds.append(s['SessionId'])
+	return sessionIds
+	
+def getSessionInformation(sessionId):
+	info = {}
+	for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
+	                  'WTSOEMId', 'WTSUserName', 'WTSWinStationName', 'WTSWorkingDirectory', 'WTSClientProtocolType', 'WTSClientProductId',
+	                  'WTSClientBuildNumber', 'WTSClientHardwareId', 'WTSSessionId', 'WTSConnectState', 'WTSClientDisplay', 'WTSClientAddress'):
+		try:
+			info[infoClass] = win32ts.WTSQuerySessionInformation(None, sessionId, eval('win32ts.%s' % infoClass))
+		except Exception, e:
+			info[infoClass] = None
+			logger.debug(e)
+	return info
+
+def getActiveSessionInformation():
+	info = []
+	for sessionId in getActiveSessionIds():
+		info.append(getSessionInformation(sessionId))
+	return info
+
+def getUserSessionIds(username):
+	sessionIds = []
+	if not username:
+		return sessionIds
+	domain = None
+	logger.debug("Getting sessions of user '%s'" % username)
+	if (username.find('\\') != -1):
+		domain = username.split('\\')[0]
+		username = username.split('\\')[-1]
+	for session in getActiveSessionInformation():
+		if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
+		     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
+			sessionIds.append(session.get('WTSSessionId'))
+			logger.debug("   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
+	return sessionIds
+	
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
 	#win32api.ExitWindows()
@@ -651,8 +694,11 @@ def runCommandInSession(command, sessionId = None, desktop = "default", duplicat
 	if (desktop.find('\\') == -1):
 		desktop = 'winsta0\\' + desktop
 	
-	if not type(sessionId) is int or (sessionId < 0):
+	logger.debug("Session id given: %s" % sessionId)
+	if sessionId is None or (int(sessionId) < 0):
+		logger.debug("No session id given, running in active console session")
 		sessionId = getActiveConsoleSessionId()
+	sessionId = int(sessionId)
 	
 	userToken = getUserToken(sessionId, duplicateFrom)
 	
