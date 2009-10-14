@@ -39,6 +39,7 @@ import ldap
 
 # OPSI imports
 from OPSI.Logger import *
+from OPSI.Types import *
 from Object import *
 from Backend import *
 

@@ -39,6 +39,7 @@ import json, os
 
 # OPSI imports
 from OPSI.Logger import *
+from OPSI.Types import *
 
 # Get logger instance
 logger = Logger()
@@ -46,18 +47,18 @@ logger = Logger()
 RANDOM_DEVICE = '/dev/urandom'
 
 def generateOpsiHostKey():
-	key = ''
+	key = u''
 	if (os.name == 'posix'):
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
 		r = open (RANDOM_DEVICE)
 		key = r.read(16)
 		r.close()
 		logger.debug("Random device closed")
-		key = key.encode("hex")
+		key = unicode(key.encode("hex"))
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
 		while (len(key) < 32):
-			key += random.choice(['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'])
+			key += random.choice([u'0',u'1',u'2',u'3',u'4',u'5',u'6',u'7',u'8',u'9',u'a',u'b',u'c',u'd',u'e',u'f'])
 	return key
 
 def timestamp(secs=0, dateOnly=False):

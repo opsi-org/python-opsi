@@ -40,6 +40,7 @@ from _mysql_exceptions import *
 
 # OPSI imports
 from OPSI.Logger import *
+from OPSI.Types import *
 from Object import *
 from Backend import *
 

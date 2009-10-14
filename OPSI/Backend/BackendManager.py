@@ -38,6 +38,7 @@ import new, inspect, re, types, socket
 
 # OPSI imports
 from OPSI.Logger import *
+from OPSI.Types import *
 from Backend import *
 from OPSI.Util.File import OpsiBackendACLFile, OpsiBackendDispatchConfigFile
 

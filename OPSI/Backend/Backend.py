@@ -35,6 +35,7 @@
 __version__ = '3.5'
 
 from OPSI.Logger import *
+from OPSI.Types import *
 from OPSI.Backend.Object import *
 
 logger = Logger()
