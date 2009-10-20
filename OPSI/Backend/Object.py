@@ -56,6 +56,12 @@ def mandatoryConstructorArgs(Class):
 	logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class, mandatory))
 	return mandatory
 
+def getIdentAttributes(Class):
+	return tuple(mandatoryConstructorArgs(Class))
+
+def getForeignIdAttributes(Class):
+	return Class.foreignIdAttributes
+	
 def getPossibleClassAttributes(Class):
 	attributes = inspect.getargspec(Class.__init__)[0]
 	for subClass in Class.subClasses.values():
@@ -65,12 +71,23 @@ def getPossibleClassAttributes(Class):
 	attributes.append('type')
 	return attributes
 
+def getBackendMethodPrefix(Class):
+	return Class.backendMethodPrefix
+	
 class BaseObject(object):
 	subClasses = {}
 	identSeparator = u';'
+	foreignIdAttributes = []
+	backendMethodPrefix = ''
+	
+	def getBackendMethodPrefix(self):
+		return self.backendMethodPrefix
+	
+	def getForeignIdAttributes(self):
+		return self.foreignIdAttributes
 	
 	def getIdentAttributes(self):
-		return tuple(mandatoryConstructorArgs(self.__class__))
+		return getIdentAttributes(self.__class__)
 	
 	def getIdent(self, returnType='unicode'):
 		returnType = forceUnicodeLower(returnType)
@@ -161,6 +178,7 @@ BaseObject.subClasses['Relationship'] = Relationship
 
 class Object(Entity):
 	subClasses = {}
+	foreignIdAttributes = Entity.foreignIdAttributes + ['objectId']
 	
 	def __init__(self, id, description=None, notes=None):
 		self.description = None
@@ -213,6 +231,8 @@ Entity.subClasses['Object'] = Object
 
 class Host(Object):
 	subClasses = {}
+	foreignIdAttributes = Object.foreignIdAttributes + ['hostId']
+	backendMethodPrefix = 'host'
 	
 	def __init__(self, id, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None):
 		Object.__init__(self, id, description, notes)
@@ -270,6 +290,7 @@ Object.subClasses['Host'] = Host
 
 class OpsiClient(Host):
 	subClasses = {}
+	foreignIdAttributes = Host.foreignIdAttributes + ['clientId']
 	
 	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
@@ -325,6 +346,7 @@ Host.subClasses['OpsiClient'] = OpsiClient
 
 class OpsiDepotserver(Host):
 	subClasses = {}
+	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
@@ -406,6 +428,7 @@ Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
 
 class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
+	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
@@ -425,9 +448,12 @@ class OpsiConfigserver(OpsiDepotserver):
 		return OpsiConfigserver.fromHash(json.loads(jsonString))
 	
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
+Host.subClasses['OpsiConfigserver'] = OpsiConfigserver
 
 class Config(Object):
 	subClasses = {}
+	foreignIdAttributes = Object.foreignIdAttributes + ['configId']
+	backendMethodPrefix = 'config'
 	
 	def __init__(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		self.description = None
@@ -577,6 +603,7 @@ Config.subClasses['BoolConfig'] = BoolConfig
 
 class ConfigState(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'configState'
 	
 	def __init__(self, configId, objectId, values=None):
 		self.values = None
@@ -625,6 +652,8 @@ Relationship.subClasses['ConfigState'] = ConfigState
 
 class Product(Entity):
 	subClasses = {}
+	foreignIdAttributes = Object.foreignIdAttributes + ['productId']
+	backendMethodPrefix = 'product'
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None,
@@ -875,6 +904,7 @@ Product.subClasses['NetbootProduct'] = NetbootProduct
 
 class ProductProperty(Entity):
 	subClasses = {}
+	backendMethodPrefix = 'productProperty'
 	
 	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		self.description = None
@@ -1057,6 +1087,7 @@ ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
 class ProductOnDepot(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'productOnDepot'
 	
 	def __init__(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
 		self.locked = None
@@ -1127,6 +1158,7 @@ Relationship.subClasses['ProductOnDepot'] = ProductOnDepot
 
 class ProductOnClient(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'productOnClient'
 	
 	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
 		self.installationStatus = None
@@ -1231,6 +1263,7 @@ Relationship.subClasses['ProductOnClient'] = ProductOnClient
 
 class ProductPropertyState(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'productPropertyState'
 	
 	def __init__(self, productId, propertyId, objectId, values=None):
 		self.values = None
@@ -1286,6 +1319,8 @@ Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
 class Group(Object):
 	subClasses = {}
+	foreignIdAttributes = Object.foreignIdAttributes + ['groupId']
+	backendMethodPrefix = 'group'
 	
 	def __init__(self, id, description=None, notes=None, parentGroupId=None):
 		Object.__init__(self, id, description, notes)

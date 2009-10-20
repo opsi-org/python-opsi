@@ -697,8 +697,14 @@ class BackendTest(object):
 		logger.notice("Idents: %s" % ids)
 		
 		#result = self.backend.searchIds('(&(objectClass=Host)(type=OpsiDepotserver))')
-		result = self.backend.searchIds('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=OpsiDepotserver))')
-		#result = self.backend.searchIds('(|(&(objectClass=OpsiClient)(attr=xyz)(at1=val*))(&(objectClass=OpsiClient)(attr=222)(at1=val222)))')
+		#result = self.backend.searchIds('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
+		#result = self.backend.searchIds('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
+		#result = self.backend.searchIds('(& (objectClass=OpsiClient) (&(objectClass=ProductOnClient)(installationStatus=installed)) (&(objectClass=ProductOnClient)(productId=product1)) )')
+		#result = self.backend.searchIds('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
+		#result = self.backend.searchIds('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
+		#result = self.backend.searchIds('(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
+		result = self.backend.searchIds('(&(objectClass=Host)(description=T*))')
+		#result = self.backend.searchIds('(&(objectClass=Host)(description=*))')
 		logger.notice(result)
 		
 		self.backend.host_delete(ids = [])

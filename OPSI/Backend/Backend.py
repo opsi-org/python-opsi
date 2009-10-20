@@ -339,72 +339,190 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
 		
 		
-		def handleFilter(f):
-			operator = None
+		def combineResults(result1, result2, operator):
+			if not result1:
+				return result2
+			if not result2:
+				return result1
+			
+			result1IdentIndex = -1
+			result2IdentIndex = -1
+			
+			for i in range(len(result1['identAttributes'])):
+				for j in range(len(result2['identAttributes'])):
+					if (result1['identAttributes'][i] == result2['identAttributes'][j]):
+						if (result1['identAttributes'][i] != 'id') or (result1['objectClass'] == result2['objectClass']):
+							result1IdentIndex = i
+							result2IdentIndex = j
+							break
+			if (result1IdentIndex == -1):
+				logger.debug(u"No matching identAttributes found (%s, %s)" % (result1['identAttributes'], result2['identAttributes']))
+			
+			if (result1IdentIndex == -1):
+				if (len(result1['identAttributes']) == 1) and result1['foreignIdAttributes']:
+					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
+					for attr in result1['foreignIdAttributes']:
+						for i in range(len(result2['identAttributes'])):
+							logger.debug(result2['identAttributes'][i])
+							if (attr == result2['identAttributes'][i]):
+								result2IdentIndex = i
+								result1IdentIndex = 0
+				else:
+					logger.debug(u"Cannot use foreignIdAttributes of result1")
+				
+			if (result1IdentIndex == -1):
+				if (len(result2['identAttributes']) == 1) and result2['foreignIdAttributes']:
+					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
+					for attr in result2['foreignIdAttributes']:
+						for i in range(len(result1['identAttributes'])):
+							logger.debug(result1['identAttributes'][i])
+							if (attr == result1['identAttributes'][i]):
+								result1IdentIndex = i
+								result2IdentIndex = 0
+				else:
+					logger.debug(u"Cannot use foreignIdAttributes of result2")
+			
+			if (result1IdentIndex == -1):
+				raise BackendBadValueError(u"Failed to combine partial results %s(%s | %s) %s(%s | %s)" \
+					% (result1['objectClass'], result1['identAttributes'], result1['foreignIdAttributes'],
+					   result2['objectClass'], result2['identAttributes'], result2['foreignIdAttributes']))
+			
+			logger.info(u"Using attributes %s.%s and %s.%s to combine results (%s)" \
+				% (result1['objectClass'], result1['identAttributes'][result1IdentIndex],
+				   result2['objectClass'], result2['identAttributes'][result2IdentIndex],
+				   operator))
+			
+			values1 = []
+			for v in result1['identValues']:
+				values1.append(v[result1IdentIndex])
+			values2 = []
+			for v in result2['identValues']:
+				values2.append(v[result2IdentIndex])
+			
+			foreignIdAttributes = result1["foreignIdAttributes"]
+			for attr in result2["foreignIdAttributes"]:
+				if attr in result1["foreignIdAttributes"]:
+					continue
+				foreignIdAttributes.append(attr)
+			
+			result = {
+				"objectClass":         result2["objectClass"],
+				"foreignIdAttributes": foreignIdAttributes,
+				"identAttributes":     [ result2['identAttributes'][result2IdentIndex] ],
+				"identValues":         []
+			}
+			
+			if (operator == 'OR'):
+				vals = []
+				values1.extend(values2)
+				for v in values1:
+					if v in vals:
+						continue
+					vals.append(v)
+					result['identValues'].append([v])
+			elif (operator == 'AND'):
+				vals = []
+				for v in values2:
+					if not v in values1 or v in vals:
+						continue
+					vals.append(v)
+					result['identValues'].append([v])
+			
+			return result
+			
+		def handleFilter(f, level=0):
 			objectClass = None
 			objectFilter = {}
-			if   isinstance(f, pureldap.LDAPFilter_equalityMatch):
+			result = None
+			
+			logger.debug(u"Level %s, processing: %s" % (level, repr(f)))
+			
+			if isinstance(f, pureldap.LDAPFilter_equalityMatch):
 				logger.debug(u"Handle equality attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
 				if (f.attributeDesc.value.lower() == 'objectclass'):
 					objectClass = f.assertionValue.value
-					return (None, objectClass, {})
 				else:
-					return (None, None, { f.attributeDesc.value: f.assertionValue.value })
-				
+					objectFilter = { f.attributeDesc.value: f.assertionValue.value }
+					
 			elif isinstance(f, pureldap.LDAPFilter_substrings):
 				logger.debug(u"Handle substrings type %s: %s" % (f.type, repr(f.substrings)))
 				if (f.type.lower() == 'objectclass'):
 					raise BackendBadValueError(u"Substring search not allowed for objectClass")
 				if   isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_initial):
 					# string*
-					return (None, None, { f.type: '%s*' % f.substrings[0].value })
+					objectFilter = { f.type: '%s*' % f.substrings[0].value }
 				elif isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_final):
 					# *string
-					return (None, None, { f.type: '*%s' % f.substrings[0].value })
+					objectFilter = { f.type: '*%s' % f.substrings[0].value }
 				elif isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_any):
 					# *string*
-					return (None, None, { f.type: '*%s*' % f.substrings[0].value })
+					objectFilter = { f.type: '*%s*' % f.substrings[0].value }
 				else:
 					raise BackendBadValueError(u"Unsupported substring class: %s" % repr(f))
 			elif isinstance(f, pureldap.LDAPFilter_present):
-				return (None, None, { f.value: '*' })
-			
-			elif isinstance(f, pureldap.LDAPFilter_and):
-				operator = 'AND'
-			elif isinstance(f, pureldap.LDAPFilter_or):
-				operator = 'OR'
+				objectFilter = { f.value: '*' }
+				
+			elif isinstance(f, pureldap.LDAPFilter_and) or isinstance(f, pureldap.LDAPFilter_or):
+				operator = None
+				if isinstance(f, pureldap.LDAPFilter_and):
+					operator = 'AND'
+				elif isinstance(f, pureldap.LDAPFilter_or):
+					operator = 'OR'
+				
+				for fChild in f.data:
+					(res, oc, of) = handleFilter(fChild, level+1)
+					logger.debug(u"Got return values: %s, %s, %s" % (res, oc, of))
+					if oc:
+						objectClass = oc
+					if of:
+						objectFilter.update(of)
+					if res:
+						#if (objectClass or objectFilter):
+						#	raise BackendBadValueError(u"Unsupported search filter: %s" % repr(f))
+						result = combineResults(result, res, operator)
+				
+				if objectFilter or objectClass:
+					if objectFilter and not objectClass:
+						raise BackendBadValueError(u"Bad search filter '%s': objectClass not defined" % repr(f))
+					
+					try:
+						oc = eval(objectClass)
+						if not ('type' in objectFilter):
+							types = [ objectClass ]
+							for c in oc.subClasses:
+								types.append(c)
+							if (len(types) > 1):
+								objectFilter['type'] = types
+							
+						this = self
+						res = {
+							"objectClass":         objectClass,
+							"foreignIdAttributes": getForeignIdAttributes(oc),
+							"identAttributes":     getIdentAttributes(oc),
+							"identValues":         eval("this.%s_getIdents(returnType = 'list', **objectFilter)" % getBackendMethodPrefix(oc))
+						}
+						if (level == 0):
+							result = combineResults(result, res, operator)
+						else:
+							result = res
+					except Exception, e:
+						logger.logException(e)
+						raise BackendBadValueError(u"Failed to process search filter '%s': %s" % (repr(f), e))
+					
+					objectClass = None
+					objectFilter = {}
+					
 			elif isinstance(f, pureldap.LDAPFilter_not):
 				raise BackendBadValueError(u"Operator '!' not allowed")
 			else:
 				raise BackendBadValueError(u"Unsupported search filter: %s" % repr(f))
 			
-			for fChild in f.data:
-				(result, oc, of) = handleFilter(fChild)
-				if oc:
-					objectClass = oc
-				if of:
-					objectFilter.update(of)
-			
-			logger.error("operator: %s, objectClass: %s, objectFilter: %s" % (operator, objectClass, objectFilter))
-			if objectFilter or objectClass:
-				result = []
-				if objectFilter and not objectClass:
-					raise BackendBadValueError(u"Bad search filter '%s': objectClass not defined" % repr(f))
-				type = None
-				if objectClass in ('Host', 'OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
-					#if not objectFilter.has_key('type'):
-					#	objectFilter['type'] = objectClass
-					result = self.host_getIds(**objectFilter)
-					logger.error(result)
-				else:
-					raise BackendBadValueError(u"ObjectClass '%s' not supported" % objectClass)
-				objectClass = None
-				objectFilter = {}
-				return (result, None, None)
-			
-		handleFilter(parsedFilter)
+			return (result, objectClass, objectFilter)
 		
-		raise Exception("STOP")
+		result = []
+		for v in handleFilter(parsedFilter)[0].get('identValues', []):
+			result.append(v[0])
+		return result
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
