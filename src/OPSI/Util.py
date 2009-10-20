@@ -465,6 +465,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.clients.remove(client)
 		
 	def rpc(self, client, line):
+		line = unicode(line, 'utf-8')
 		logger.info("received line %s" % line)
 		id = None
 		try:
@@ -548,12 +549,16 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			return
 		logger.info("sending notification '%s' to clients" % name)
 		for client in self.clients:
+			jsonString = ''
 			# json-rpc: notifications have id null
 			if hasattr(json, 'dumps'):
 				# python 2.6 json module
-				client.sendLine( json.dumps( {"id": None, "method": name, "params": params } ) )
+				jsonString = json.dumps( {"id": None, "method": name, "params": params } )
 			else:
-				client.sendLine( json.write( {"id": None, "method": name, "params": params } ) )
+				jsonString = json.write( {"id": None, "method": name, "params": params } )
+			if type(jsonString) is unicode:
+				jsonString = jsonString.encode('utf-8')
+			client.sendLine(jsonString)
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
