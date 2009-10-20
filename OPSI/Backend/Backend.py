@@ -34,6 +34,11 @@
 
 __version__ = '3.5'
 
+# Imports
+from ldaptor.protocols import pureldap
+from ldaptor import ldapfilter
+
+# OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Backend.Object import *
@@ -120,9 +125,9 @@ class ConfigDataBackend(Backend):
 			# Remove product property states
 			self.productPropertyState_deleteObjects(
 				self.productPropertyState_getObjects(
-					productId = [],
-					name = [],
-					objectId = host.id ))
+					productId  = [],
+					propertyId = [],
+					objectId   = host.id ))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -138,13 +143,13 @@ class ConfigDataBackend(Backend):
 		self._testFilterAndAttributes(Config, attributes, **filter)
 	
 	def config_deleteObjects(self, configs):
-		names = []
+		ids = []
 		for config in forceObjectClassList(configs, Config):
-			names.append(config.name)
-		if names:
+			ids.append(config.id)
+		if ids:
 			self.configState_deleteObjects(
 				self.configState_getObjects(
-					name = names,
+					configId = ids,
 					objectId = []))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -154,11 +159,11 @@ class ConfigDataBackend(Backend):
 		configState = forceObjectClass(configState, ConfigState)
 		configState.setDefaults()
 		
-		configNames = []
-		for config in self.config_getObjects(attributes = ['name']):
-			configNames.append(config.name)
-		if configState.name not in configNames:
-			raise BackendReferentialIntegrityError(u"Config with name '%s' not found" % configState.name)
+		configIds = []
+		for config in self.config_getObjects(attributes = ['id']):
+			configIds.append(config.id)
+		if configState.configId not in configIds:
+			raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
 		
 	def configState_updateObject(self, configState):
 		pass
@@ -326,9 +331,90 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 	
+	def searchIds(self, filter):
+		try:
+			parsedFilter = ldapfilter.parseFilter(filter)
+		except Exception, e:
+			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
+		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
+		
+		
+		def handleFilter(f):
+			operator = None
+			objectClass = None
+			objectFilter = {}
+			if   isinstance(f, pureldap.LDAPFilter_equalityMatch):
+				logger.debug(u"Handle equality attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
+				if (f.attributeDesc.value.lower() == 'objectclass'):
+					objectClass = f.assertionValue.value
+					return (None, objectClass, {})
+				else:
+					return (None, None, { f.attributeDesc.value: f.assertionValue.value })
+				
+			elif isinstance(f, pureldap.LDAPFilter_substrings):
+				logger.debug(u"Handle substrings type %s: %s" % (f.type, repr(f.substrings)))
+				if (f.type.lower() == 'objectclass'):
+					raise BackendBadValueError(u"Substring search not allowed for objectClass")
+				if   isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_initial):
+					# string*
+					return (None, None, { f.type: '%s*' % f.substrings[0].value })
+				elif isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_final):
+					# *string
+					return (None, None, { f.type: '*%s' % f.substrings[0].value })
+				elif isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_any):
+					# *string*
+					return (None, None, { f.type: '*%s*' % f.substrings[0].value })
+				else:
+					raise BackendBadValueError(u"Unsupported substring class: %s" % repr(f))
+			elif isinstance(f, pureldap.LDAPFilter_present):
+				return (None, None, { f.value: '*' })
+			
+			elif isinstance(f, pureldap.LDAPFilter_and):
+				operator = 'AND'
+			elif isinstance(f, pureldap.LDAPFilter_or):
+				operator = 'OR'
+			elif isinstance(f, pureldap.LDAPFilter_not):
+				raise BackendBadValueError(u"Operator '!' not allowed")
+			else:
+				raise BackendBadValueError(u"Unsupported search filter: %s" % repr(f))
+			
+			for fChild in f.data:
+				(result, oc, of) = handleFilter(fChild)
+				if oc:
+					objectClass = oc
+				if of:
+					objectFilter.update(of)
+			
+			logger.error("operator: %s, objectClass: %s, objectFilter: %s" % (operator, objectClass, objectFilter))
+			if objectFilter or objectClass:
+				result = []
+				if objectFilter and not objectClass:
+					raise BackendBadValueError(u"Bad search filter '%s': objectClass not defined" % repr(f))
+				type = None
+				if objectClass in ('Host', 'OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
+					#if not objectFilter.has_key('type'):
+					#	objectFilter['type'] = objectClass
+					result = self.host_getIds(**objectFilter)
+					logger.error(result)
+				else:
+					raise BackendBadValueError(u"ObjectClass '%s' not supported" % objectClass)
+				objectClass = None
+				objectFilter = {}
+				return (result, None, None)
+			
+		handleFilter(parsedFilter)
+		
+		raise Exception("STOP")
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def host_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for host in self.host_getObjects(attributes = ['id'], **filter):
+			result.append(host.getIdent(returnType))
+		return result
+	
 	def host_createObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			logger.info(u"Creating host '%s'" % host)
@@ -369,12 +455,18 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def config_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for config in self.config_getObjects(attributes = ['id'], **filter):
+			result.append(config.getIdent(returnType))
+		return result
+	
 	def config_createObjects(self, configs):
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Creating config %s" % config)
 			if self.config_getObjects(
-					attributes = ['name'],
-					name = config.name):
+					attributes = ['id'],
+					id         = config.id):
 				logger.info(u"Config '%s' already exists, updating" % config)
 				self.config_updateObject(config)
 			else:
@@ -384,36 +476,42 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for config in forceObjectClassList(configs, Config):
 			self.config_updateObject(config)
 	
-	def config_create(self, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def config_create(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.config_createObjects(Config.fromHash(hash))
 	
-	def config_createUnicode(self, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def config_createUnicode(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.config_createObjects(UnicodeConfig.fromHash(hash))
 	
-	def config_createBool(self, name, description=None, defaultValues=None):
+	def config_createBool(self, id, description=None, defaultValues=None):
 		hash = locals()
 		del hash['self']
 		return self.config_createObjects(BoolConfig.fromHash(hash))
 	
-	def config_delete(self, names):
+	def config_delete(self, ids):
 		return self.config_deleteObjects(
 				config_getObjects(
-					name = forceUnicodeLowerList(names)))
+					id = forceUnicodeLowerList(ids)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def configState_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for configState in self.configState_getObjects(attributes = ['configId', 'objectId'], **filter):
+			result.append(configState.getIdent(returnType))
+		return result
+	
 	def configState_createObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
 			if self.configState_getObjects(
-					attributes = ['name'],
-					name = configState.name,
-					objectId = configState.objectId):
+					attributes = ['configId'],
+					configId   = configState.configId,
+					objectId   = configState.objectId):
 				logger.info(u"ConfigState '%s' already exists, updating" % configState)
 				self.configState_updateObject(configState)
 			else:
@@ -423,20 +521,26 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			self.configState_updateObject(configState)
 	
-	def configState_create(self, name, objectId, values=None):
+	def configState_create(self, configId, objectId, values=None):
 		hash = locals()
 		del hash['self']
 		return self.configState_createObjects(ConfigState.fromHash(hash))
 	
-	def configState_delete(self, names, objectIds):
+	def configState_delete(self, configIds, objectIds):
 		return self.configState_deleteObjects(
 				self.configState_getObjects(
-					name = forceUnicodeLowerList(names),
+					configId = forceUnicodeLowerList(configIds),
 					objectId = forceObjectIdList(objectIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def product_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for product in self.product_getObjects(attributes = ['id'], **filter):
+			result.append(product.getIdent(returnType))
+		return result
+	
 	def product_createObjects(self, products):
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Creating product %s" % product)
@@ -476,15 +580,21 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productProperty_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productProperty in self.productProperty_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'propertyId'], **filter):
+			result.append(productProperty.getIdent(returnType))
+		return result
+	
 	def productProperty_createObjects(self, productProperties):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating product property %s" % productProperty)
 			if self.productProperty_getObjects(
-					attributes = ['productId'],
-					productId = productProperty.productId,
+					attributes     = ['productId'],
+					productId      = productProperty.productId,
 					productVersion = productProperty.productVersion,
 					packageVersion = productProperty.packageVersion,
-					name = productProperty.name):
+					propertyId     = productProperty.propertyId):
 				logger.info(u"Product property '%s' already exists, updating" % productProperty)
 				self.productProperty_updateObject(productProperty)
 			else:
@@ -494,32 +604,38 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			self.productProperty_updateObject(productProperty)
 	
-	def productProperty_create(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def productProperty_create(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.productProperty_createObjects(ProductProperty.fromHash(hash))
 	
-	def productProperty_createUnicode(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def productProperty_createUnicode(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
 		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
 	
-	def productProperty_createBool(self, productId, productVersion, packageVersion, name, description=None, defaultValues=None):
+	def productProperty_createBool(self, productId, productVersion, packageVersion, propertyId, description=None, defaultValues=None):
 		hash = locals()
 		del hash['self']
 		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
 	
-	def productProperty_delete(self, productIds, productVersions, packageVersions, names):
+	def productProperty_delete(self, productIds, productVersions, packageVersions, propertyIds):
 		return self.productOnDepot_deleteObjects(
 				self.productOnDepot_getObjects(
-					productId = forceProductIdList(productIds),
+					productId      = forceProductIdList(productIds),
 					productVersion = forceProductVersionList(productVersions),
 					packageVersion = forcePackageVersionList(packageVersions),
-					name = forceUnicodeLowerList(names)))
+					propertyIds    = forceUnicodeLowerList(propertyIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnDepot_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productOnDepot in self.productOnDepot_getObjects(attributes = ['productId', 'productType', 'depotId'], **filter):
+			result.append(productOnDepot.getIdent(returnType))
+		return result
+	
 	def productOnDepot_createObjects(self, productOnDepots):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
@@ -552,6 +668,12 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productOnClient in self.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
+			result.append(productOnClient.getIdent(returnType))
+		return result
+	
 	def productOnClient_createObjects(self, productOnClients):
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
 		for productOnClient in productOnClients:
@@ -582,14 +704,20 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productPropertyState_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productPropertyState in self.productPropertyState_getObjects(attributes = ['productId', 'propertyId', 'objectId'], **filter):
+			result.append(productPropertyState.getIdent(returnType))
+		return result
+	
 	def productPropertyState_createObjects(self, productPropertyStates):
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
 			logger.info(u"Creating productPropertyState '%s'" % productPropertyState)
 			if self.productPropertyState_getObjects(
-						productId = productPropertyState.productId,
-						objectId = productPropertyState.objectId,
-						name = productPropertyState.name):
+						productId  = productPropertyState.productId,
+						objectId   = productPropertyState.objectId,
+						propertyId = productPropertyState.propertyId):
 				logger.info(u"ProductPropertyState '%s' already exists, updating" % productPropertyState)
 				self.productPropertyState_updateObject(productPropertyState)
 			else:
@@ -599,21 +727,27 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			self.productPropertyState_updateObject(productPropertyState)
 	
-	def productPropertyState_create(self, productId, name, objectId, values=None):
+	def productPropertyState_create(self, productId, propertyId, objectId, values=None):
 		hash = locals()
 		del hash['self']
 		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
 	
-	def productPropertyState_delete(self, productIds, names, objectIds):
+	def productPropertyState_delete(self, productIds, propertyIds, objectIds):
 		return self.productPropertyState_deleteObjects(
 				self.productPropertyState_getObjects(
-					productId = forceProductIdList(productIds),
-					name = forceUnicodeLowerList(names),
-					objectId = forceObjectIdList(objectIds)))
+					productId  = forceProductIdList(productIds),
+					propertyId = forceUnicodeLowerList(propertyIds),
+					objectId   = forceObjectIdList(objectIds)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def group_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for group in self.group_getObjects(attributes = ['id'], **filter):
+			result.append(group.getIdent(returnType))
+		return result
+	
 	def group_createObjects(self, groups):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
@@ -641,6 +775,12 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def objectToGroup_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for objectToGroup in self.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
+			result.append(objectToGroup.getIdent(returnType))
+		return result
+	
 	def objectToGroup_createObjects(self, objectToGroups):
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
@@ -667,7 +807,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 				self.objectToGroup_getObjects(
 					groupId = forceGroupIdList(groupIds),
 					objectId = forceObjectIdList(objectIds)))
-		
+	
 
 
 

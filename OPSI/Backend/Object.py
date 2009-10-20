@@ -67,6 +67,28 @@ def getPossibleClassAttributes(Class):
 
 class BaseObject(object):
 	subClasses = {}
+	identSeparator = u';'
+	
+	def getIdentAttributes(self):
+		return tuple(mandatoryConstructorArgs(self.__class__))
+	
+	def getIdent(self, returnType='unicode'):
+		returnType = forceUnicodeLower(returnType)
+		identAttributes = self.getIdentAttributes()
+		identValues = []
+		for attr in identAttributes:
+			identValues.append(getattr(self, attr))
+		if returnType in ('list'):
+			return identValues
+		elif returnType in ('tuple'):
+			return tuple(identValues)
+		elif returnType in ('dict', 'hash'):
+			ret = {}
+			for i in range(len(identAttributes)):
+				ret[identAttributes[i]] = identValues[i]
+			return ret
+		else:
+			return self.identSeparator.join(identValues)
 	
 	def setDefaults(self):
 		pass
@@ -404,17 +426,17 @@ class OpsiConfigserver(OpsiDepotserver):
 	
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 
-class Config(Entity):
+class Config(Object):
 	subClasses = {}
 	
-	def __init__(self, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def __init__(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		self.description = None
 		self.possibleValues = None
 		self.defaultValues = None
 		self.editable = None
 		self.multiValue = None
 		
-		self.setName(name)
+		self.setId(id)
 		if not description is None:
 			self.setDescription(description)
 		if not possibleValues is None:
@@ -429,12 +451,9 @@ class Config(Entity):
 	def setDefaults(self):
 		Entity.setDefaults(self)
 		self.setDefaultValues(self.defaultValues)
-		
-	def getName(self):
-		return self.name
 	
-	def setName(self, name):
-		self.name = forceUnicodeLower(name)
+	def setId(self, id):
+		self.id = forceUnicodeLower(id)
 	
 	def getDescription(self):
 		return self.description
@@ -481,16 +500,16 @@ class Config(Entity):
 		return Config.fromHash(json.loads(jsonString))
 	
 	def __unicode__(self):
-		return u"<%s name '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
-			% (self.getType(), self.name, self.description, self.possibleValues, self.defaultValues, self.multiValue)
+		return u"<%s id '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
+			% (self.getType(), self.id, self.description, self.possibleValues, self.defaultValues, self.multiValue)
 	
-Entity.subClasses['Config'] = Config
+Object.subClasses['Config'] = Config
 
 class UnicodeConfig(Config):
 	subClasses = {}
 	
-	def __init__(self, name, description='', possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		Config.__init__(self, name, description, possibleValues, defaultValues, editable, multiValue)
+	def __init__(self, id, description='', possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+		Config.__init__(self, id, description, possibleValues, defaultValues, editable, multiValue)
 		if not possibleValues is None:
 			self.setPossibleValues(possibleValues)
 		if not defaultValues is None:
@@ -529,8 +548,8 @@ Config.subClasses['UnicodeConfig'] = UnicodeConfig
 class BoolConfig(Config):
 	subClasses = {}
 	
-	def __init__(self, name, description = None, defaultValues = None):
-		Config.__init__(self, name, description, [ True, False ], defaultValues, False, False)
+	def __init__(self, id, description = None, defaultValues = None):
+		Config.__init__(self, id, description, [ True, False ], defaultValues, False, False)
 	
 	def setDefaults(self):
 		Config.setDefaults(self)
@@ -559,9 +578,9 @@ Config.subClasses['BoolConfig'] = BoolConfig
 class ConfigState(Relationship):
 	subClasses = {}
 	
-	def __init__(self, name, objectId, values=None):
+	def __init__(self, configId, objectId, values=None):
 		self.values = None
-		self.setName(name)
+		self.setConfigId(configId)
 		self.setObjectId(objectId)
 		if not values is None:
 			self.setValues(values)
@@ -577,11 +596,11 @@ class ConfigState(Relationship):
 	def setObjectId(self, objectId):
 		self.objectId = forceObjectId(objectId)
 	
-	def getName(self):
-		return self.name
+	def getConfigId(self):
+		return self.configId
 	
-	def setName(self, name):
-		self.name = forceUnicodeLower(name)
+	def setConfigId(self, configId):
+		self.configId = forceUnicodeLower(configId)
 	
 	def getValues(self):
 		return self.values
@@ -599,8 +618,8 @@ class ConfigState(Relationship):
 		return ConfigState.fromHash(json.loads(jsonString))
 	
 	def __unicode__(self):
-		return u"<%s objectId '%s', name '%s'>" \
-			% (self.getType(), self.objectId, self.name)
+		return u"<%s configId '%s', objectId '%s'>" \
+			% (self.getType(), self.configId, self.objectId)
 	
 Relationship.subClasses['ConfigState'] = ConfigState
 
@@ -857,7 +876,7 @@ Product.subClasses['NetbootProduct'] = NetbootProduct
 class ProductProperty(Entity):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		self.description = None
 		self.possibleValues = None
 		self.defaultValues = None
@@ -866,7 +885,7 @@ class ProductProperty(Entity):
 		self.setProductId(productId)
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
-		self.setName(name)
+		self.setPropertyId(propertyId)
 		if not description is None:
 			self.setDescription(description)
 		if not possibleValues is None:
@@ -909,11 +928,11 @@ class ProductProperty(Entity):
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
 	
-	def getName(self):
-		return self.name
+	def getPropertyId(self):
+		return self.propertyId
 	
-	def setName(self, name):
-		self.name = forceUnicodeLower(name)
+	def setPropertyId(self, propertyId):
+		self.propertyId = forceUnicodeLower(propertyId)
 	
 	def getDescription(self):
 		return self.description
@@ -957,16 +976,16 @@ class ProductProperty(Entity):
 		return ProductProperty.fromHash(json.loads(jsonString))
 	
 	def __unicode__(self):
-		return u"<%s name '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
-			% (self.getType(), self.name, self.description, self.possibleValues, self.defaultValues, self.multiValue)
+		return u"<%s propertyId '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
+			% (self.getType(), self.propertyId, self.description, self.possibleValues, self.defaultValues, self.multiValue)
 	
 Entity.subClasses['ProductProperty'] = ProductProperty
 
 class UnicodeProductProperty(ProductProperty):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, name, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		ProductProperty.__init__(self, productId, productVersion, packageVersion, name, description, possibleValues, defaultValues, editable, multiValue)
+	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+		ProductProperty.__init__(self, productId, productVersion, packageVersion, propertyId, description, possibleValues, defaultValues, editable, multiValue)
 		self.possibleValues = None
 		self.defaultValues = None
 		if not possibleValues is None:
@@ -1011,8 +1030,8 @@ ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
 class BoolProductProperty(ProductProperty):
 	subClasses = {}
 	
-	def __init__(self, productId, productVersion, packageVersion, name, description=None, defaultValues=None):
-		ProductProperty.__init__(self, productId, productVersion, packageVersion, name, description, [ True, False ], defaultValues, False, False)
+	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, defaultValues=None):
+		ProductProperty.__init__(self, productId, productVersion, packageVersion, propertyId, description, [ True, False ], defaultValues, False, False)
 		if (len(self.defaultValues) > 1):
 			raise BackendBadValueError(u"Bool product property cannot have multiple default values: %s" % self.defaultValues)
 	
@@ -1213,10 +1232,10 @@ Relationship.subClasses['ProductOnClient'] = ProductOnClient
 class ProductPropertyState(Relationship):
 	subClasses = {}
 	
-	def __init__(self, productId, name, objectId, values=None):
+	def __init__(self, productId, propertyId, objectId, values=None):
 		self.values = None
 		self.setProductId(productId)
-		self.setName(name)
+		self.setPropertyId(propertyId)
 		self.setObjectId(objectId)
 		if not values is None:
 			self.setValues(values)
@@ -1238,11 +1257,11 @@ class ProductPropertyState(Relationship):
 	def setObjectId(self, objectId):
 		self.objectId = forceObjectId(objectId)
 	
-	def getName(self):
-		return self.name
+	def getPropertyId(self):
+		return self.propertyId
 	
-	def setName(self, name):
-		self.name = forceUnicodeLower(name)
+	def setPropertyId(self, propertyId):
+		self.propertyId = forceUnicodeLower(propertyId)
 	
 	def getValues(self):
 		return self.values
@@ -1260,8 +1279,8 @@ class ProductPropertyState(Relationship):
 		return ProductPropertyState.fromHash(json.loads(jsonString))
 	
 	def __unicode__(self):
-		return u"<%s productId '%s', objectId '%s', name '%s'>" \
-			% (self.getType(), self.productId, self.objectId, self.name)
+		return u"<%s productId '%s', objectId '%s', propertyId '%s'>" \
+			% (self.getType(), self.productId, self.objectId, self.propertyId)
 	
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 

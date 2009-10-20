@@ -221,10 +221,20 @@ class MySQLBackend(ExtendedConfigDataBackend):
 				where += u' and '
 			where += u'('
 			for value in values:
+				operator = '='
 				if type(value) in (float, long, int, bool):
-					where += u"`%s` = %s" % (key, value)
+					where += u"`%s` %s %s" % (key, operator, value)
 				else:
-					where += u"`%s` = '%s'" % (key, value)
+					match = re.search('^\s*([>=<]+)\s*(\S+)', value)
+					if match:
+						operator = match.group(1)
+						value = match.group(2)
+					
+					if (value.find('*') != -1):
+						operator = 'LIKE'
+						value = value.replace('%', '\%').replace('_', '\_').replace('*', '%')
+					
+					where += u"`%s` %s '%s'" % (key, operator, value)
 				where += u' or '
 			where = where[:-4] + u')'
 		result = []
@@ -283,6 +293,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 				return 'hostId'
 			if issubclass(objectClass, Group):
 				return 'groupId'
+			if issubclass(objectClass, Config):
+				return 'configId'
 		return attribute
 	
 	def _uniqueCondition(self, object):
@@ -359,8 +371,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 		if not 'CONFIG' in tables.keys():
 			logger.debug(u'Creating table CONFIG')
 			table = u'''CREATE TABLE `CONFIG` (
-					`name` varchar(200) NOT NULL,
-					PRIMARY KEY( `name` ),
+					`configId` varchar(200) NOT NULL,
+					PRIMARY KEY( `configId` ),
 					`type` varchar(30) NOT NULL,
 					`description` varchar(256),
 					`multiValue` bool NOT NULL,
@@ -375,8 +387,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			table = u'''CREATE TABLE `CONFIG_VALUE` (
 					`config_value_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_value_id` ),
-					`name` varchar(200) NOT NULL,
-					FOREIGN KEY ( `name` ) REFERENCES `CONFIG` ( `name` ),
+					`configId` varchar(200) NOT NULL,
+					FOREIGN KEY ( `configId` ) REFERENCES `CONFIG` ( `configId` ),
 					`value` TEXT,
 					`isDefault` bool
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -389,7 +401,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			table = u'''CREATE TABLE `CONFIG_STATE` (
 					`config_state_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_state_id` ),
-					`name` varchar(200) NOT NULL,
+					`configId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					`values` text
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -458,9 +470,9 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
-					`name` varchar(200) NOT NULL,
+					`propertyId` varchar(200) NOT NULL,
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
-					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `name` ),
+					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
 					`type` varchar(30) NOT NULL,
 					`description` varchar(256),
 					`multiValue` bool NOT NULL,
@@ -478,8 +490,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(16) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
-					`name` varchar(200) NOT NULL,
-					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `name` ) REFERENCES `PRODUCT_PROPERTY` ( `productId`, `productVersion`, `packageVersion`, `name` ),
+					`propertyId` varchar(200) NOT NULL,
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `propertyId` ) REFERENCES `PRODUCT_PROPERTY` ( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
 					`value` text,
 					`isDefault` bool
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -514,7 +526,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					PRIMARY KEY( `product_property_state_id` ),
 					`productId` varchar(50) NOT NULL,
 					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
-					`name` varchar(200) NOT NULL,
+					`propertyId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					`values` text
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -594,7 +606,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 		self._mysql.insert('CONFIG', config)
 		for value in possibleValues:
 			self._mysql.insert('CONFIG_VALUE', {
-				'name': config['name'],
+				'configId': config['configId'],
 				'value': value,
 				'isDefault': (value in defaultValues)
 				})
@@ -612,7 +624,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 		self._mysql.delete('CONFIG_VALUE', where)
 		for value in possibleValues:
 			self._mysql.insert('CONFIG_VALUE', {
-				'name': data['name'],
+				'configId': data['configId'],
 				'value': value,
 				'isDefault': (value in defaultValues)
 				})
@@ -630,10 +642,11 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
 			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-				for res2 in self._mysql.getSet(u"select * from CONFIG_VALUE where `name` = '%s'" % res['name']):
+				for res2 in self._mysql.getSet(u"select * from CONFIG_VALUE where `configId` = '%s'" % res['configId']):
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
 						res['defaultValues'].append(res2['value'])
+			self._adjustResult(Config, res)
 			configs.append(Config.fromHash(res))
 		return configs
 	
@@ -667,7 +680,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 		configStates = []
 		self._adjustAttributes(ConfigState, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
-			res['values'] = json.loads(res['values'])
+			if res.has_key('values'):
+				res['values'] = json.loads(res['values'])
 			configStates.append(ConfigState.fromHash(res))
 		return configStates
 	
@@ -745,7 +759,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					'productId': data['productId'],
 					'productVersion': data['productVersion'],
 					'packageVersion': data['packageVersion'],
-					'name': data['name'],
+					'propertyId': data['propertyId'],
 					'value': value,
 					'isDefault': (value in defaultValues)
 					})
@@ -764,7 +778,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 					'productId': data['productId'],
 					'productVersion': data['productVersion'],
 					'packageVersion': data['packageVersion'],
-					'name': data['name'],
+					'propertyId': data['propertyId'],
 					'value': value,
 					'isDefault': (value in defaultValues)
 					})
@@ -779,8 +793,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			res['defaultValues'] = []
 			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
 				for res2 in self._mysql.getSet(u"select * from PRODUCT_PROPERTY_VALUE where " \
-					+ u"`name` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
-					% (res['name'], res['productId'], res['productVersion'], res['packageVersion'])):
+					+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
+					% (res['propertyId'], res['productId'], res['productVersion'], res['packageVersion'])):
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
 						res['defaultValues'].append(res2['value'])
@@ -877,7 +891,8 @@ class MySQLBackend(ExtendedConfigDataBackend):
 		productPropertyStates = []
 		self._adjustAttributes(ProductPropertyState, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
-			res['values'] = json.loads(res['values'])
+			if res.has_key('values'):
+				res['values'] = json.loads(res['values'])
 			productPropertyStates.append(ProductPropertyState.fromHash(res))
 		return productPropertyStates
 	

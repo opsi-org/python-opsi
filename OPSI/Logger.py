@@ -47,7 +47,7 @@ LOG_COMMENT      = 0
 LOG_NONE         = -1
 
 # Imports
-import sys, locale, time, os, thread, threading
+import sys, locale, time, os, thread, threading, codecs
 
 if (os.name == 'nt'):
 	# WIndows imports for file locking
@@ -196,7 +196,10 @@ class LoggerImplementation:
 			self.addConfidentialString(string)
 	
 	def addConfidentialString(self, string):
-		string = str(string)
+		if not type(string) is unicode:
+			if not type(string) is str:
+				string = str(string)
+			string = unicode(string, 'utf-8', 'replace')
 		if not string:
 			raise ValueError("Cannot use empty string as confidential string")
 		if string in self.__confidentialStrings:
@@ -370,7 +373,7 @@ class LoggerImplementation:
 			for objectId in self.__objectConfig.keys():
 				self.debug2(u"Got special config for object 0x%x" % objectId)
 			
-		threadId = str(long(thread.get_ident()))
+		threadId = unicode(thread.get_ident())
 		if self.__threadConfig.has_key(threadId):
 			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
@@ -378,13 +381,13 @@ class LoggerImplementation:
 			self.debug2(u"Got special config for thread %s" % threadId)
 	
 	def _setThreadConfig(self, key, value):
-		threadId = str(long(thread.get_ident()))
+		threadId = unicode(thread.get_ident())
 		if not self.__threadConfig.has_key(threadId):
 			self.__threadConfig[threadId] = {}
 		self.__threadConfig[threadId][key] = value
 	
 	def _getThreadConfig(self, key = None):
-		threadId = str(long(thread.get_ident()))
+		threadId = unicode(thread.get_ident())
 		if not self.__threadConfig.has_key(threadId):
 			return None
 		if not key:
@@ -427,7 +430,7 @@ class LoggerImplementation:
 		filename   = u''
 		linenumber = u''
 		datetime   = time.strftime(u"%b %d %H:%M:%S", time.localtime() )
-		threadId   = unicode(long(thread.get_ident()))
+		threadId   = unicode(thread.get_ident())
 		
 		if (level == LOG_CONFIDENTIAL):
 			levelname = u'confidential'
@@ -538,9 +541,6 @@ class LoggerImplementation:
 					pass
 				
 				if lf:
-					# Flags for exclusive, non-blocking lock
-					flags = fcntl.LOCK_EX | fcntl.LOCK_NB
-					
 					timeout = 0
 					locked = False
 					while (not locked and timeout < 2000):
@@ -552,7 +552,8 @@ class LoggerImplementation:
 								win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0, -0x7fff0000, pywintypes.OVERLAPPED())
 								#win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
 							elif (os.name == 'posix'):
-								fcntl.flock(lf.fileno(), flags)
+								# Flags for exclusive, non-blocking lock
+								fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 						except IOError, e:
 							# Locking failed
 							# increase timeout counter, sleep 100 millis
@@ -564,9 +565,11 @@ class LoggerImplementation:
 					
 					if locked:
 						if self.__fileColor:
-							print >> lf, u"%s%s%s" % (color, m, COLOR_NORMAL)
-						else:
-							print >> lf, m
+							m = u"%s%s%s" % (color, m, COLOR_NORMAL)
+						m += u'\n'
+						if (os.name == 'nt'):
+							m = m.replace(u'\n', u'\r\n')
+						lf.write(m)
 						lf.close()
 		
 		if (level <= self.__syslogLevel):

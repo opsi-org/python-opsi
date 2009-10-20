@@ -34,6 +34,9 @@
 
 __version__ = '0.1'
 
+# Imports
+import re
+
 # OPSI imports
 from OPSI.Logger import *
 

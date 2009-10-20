@@ -91,27 +91,27 @@ class BackendTest(object):
 		
 		# Configs
 		self.config1 = UnicodeConfig(
-			name           = u'opsi-linux-bootimage.cmdline.reboot',
+			id             = u'opsi-linux-bootimage.cmdline.reboot',
 			description    = (u'Some sting üöä?').encode('latin-1'),
 			possibleValues = ['w', 'c', 'b', 'h', 'b,c'],
 			defaultValues  = ['b,c']
 		)
 		
 		self.config2 = BoolConfig(
-			name          = u'opsi-linux-bootimage.cmdline.bool',
+			id            = u'opsi-linux-bootimage.cmdline.bool',
 			description   = 'Bool?',
 			defaultValues = 'on'
 		)
 		
 		self.config3 = UnicodeConfig(
-			name           = u'some.products',
+			id             = u'some.products',
 			description    = u'Install this products',
 			possibleValues = ['product1', 'product2', 'product3', 'product4'],
 			defaultValues  = ['product1', 'product3']
 		)
 		
 		self.config4 = UnicodeConfig(
-			name           = u'opsiclientd.depot_server.depot_id',
+			id             = u'opsiclientd.depot_server.depot_id',
 			description    = u'Depotserver to use',
 			possibleValues = [],
 			defaultValues  = [ self.depotserver1.id ]
@@ -121,19 +121,19 @@ class BackendTest(object):
 		
 		# ConfigStates
 		self.configState1 = ConfigState(
-			name     = self.config1.getName(),
+			configId = self.config1.getId(),
 			objectId = self.client1.getId(),
 			values   = ['w']
 		)
 		
 		self.configState2 = ConfigState(
-			name     = self.config2.getName(),
+			configId = self.config2.getId(),
 			objectId = self.client1.getId(),
 			values   = [False]
 		)
 		
 		self.configState3 = ConfigState(
-			name     = self.config2.getName(),
+			configId = self.config2.getId(),
 			objectId = self.client2.getId(),
 			values   = [False]
 		)
@@ -205,7 +205,7 @@ class BackendTest(object):
 			productId      = self.product1.id,
 			productVersion = self.product1.productVersion,
 			packageVersion = self.product1.packageVersion,
-			name           = "productProperty1",
+			propertyId     = "productProperty1",
 			description    = 'Test product property (unicode)',
 			possibleValues = ['unicode1', 'unicode2', 'unicode3'],
 			defaultValues  = [ 'unicode1', 'unicode3' ],
@@ -217,7 +217,7 @@ class BackendTest(object):
 			productId      = self.product1.id,
 			productVersion = self.product1.productVersion,
 			packageVersion = self.product1.packageVersion,
-			name           = "productProperty2",
+			propertyId     = "productProperty2",
 			description    = 'Test product property 2 (bool)',
 			defaultValues  = True
 		)
@@ -226,7 +226,7 @@ class BackendTest(object):
 			productId      = self.product3.id,
 			productVersion = self.product3.productVersion,
 			packageVersion = self.product3.packageVersion,
-			name           = u"productProperty3",
+			propertyId     = u"productProperty3",
 			description    = u'Test product property 3 (bool)',
 			defaultValues  = False
 		)
@@ -299,24 +299,24 @@ class BackendTest(object):
 		
 		# ProductPropertyStates
 		self.productPropertyState1 = ProductPropertyState(
-			productId = self.productProperty1.getProductId(),
-			name      = self.productProperty1.getName(),
-			objectId  = self.client1.getId(),
-			values    = 'unicode1'
+			productId  = self.productProperty1.getProductId(),
+			propertyId = self.productProperty1.getPropertyId(),
+			objectId   = self.client1.getId(),
+			values     = 'unicode1'
 		)
 		
 		self.productPropertyState2 = ProductPropertyState(
-			productId = self.productProperty2.getProductId(),
-			name      = self.productProperty2.getName(),
-			objectId  = self.client1.getId(),
-			values = [ False ]
+			productId  = self.productProperty2.getProductId(),
+			propertyId = self.productProperty2.getPropertyId(),
+			objectId   = self.client1.getId(),
+			values     = [ False ]
 		)
 		
 		self.productPropertyState3 = ProductPropertyState(
-			productId = self.productProperty2.getProductId(),
-			name      = self.productProperty2.getName(),
-			objectId  = self.client2.getId(),
-			values = True
+			productId  = self.productProperty2.getProductId(),
+			propertyId = self.productProperty2.getPropertyId(),
+			objectId   = self.client2.getId(),
+			values     = True
 		)
 		self.productPropertyStates = [ self.productPropertyState1, self.productPropertyState2, self.productPropertyState3 ]
 		
@@ -438,11 +438,11 @@ class BackendTest(object):
 		
 		configs = self.backend.config_getObjects()
 		assert len(configs) == len(self.configs)
-		names = []
+		ids = []
 		for config in configs:
-			names.append(config.name)
+			ids.append(config.id)
 		for config in self.configs:
-			assert config.name in names
+			assert config.id in ids
 		
 		multiValueConfigNames = []
 		for config in self.configs:
@@ -491,11 +491,11 @@ class BackendTest(object):
 		configStates = self.backend.configState_getObjects()
 		assert len(configStates) == len(self.configStates)-1
 		for configState in configStates:
-			assert not (configState.objectId == self.configState2.objectId and configState.name == self.configState2.name)
+			assert not (configState.objectId == self.configState2.objectId and configState.configId == self.configState2.configId)
 		
 		self.configState3.setValues([True])
 		self.backend.configState_updateObject(self.configState3)
-		configStates = self.backend.configState_getObjects(objectId = self.configState3.getObjectId(), name = self.configState3.getName())
+		configStates = self.backend.configState_getObjects(objectId = self.configState3.getObjectId(), configId = self.configState3.getConfigId())
 		assert len(configStates) == 1
 		assert configStates[0].getValues() == [True]
 		
@@ -660,6 +660,46 @@ class BackendTest(object):
 		
 		hosts = self.backend.host_getObjects(id = 'config100.uib.local')
 		assert len(hosts) == 1
+		
+		ids = self.backend.host_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.host_getIdents(id = '*100*')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.host_getIdents(returnType = 'tuple')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.host_getIdents(returnType = 'list')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.host_getIdents(returnType = 'dict')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.config_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.configState_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.product_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productProperty_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productOnDepot_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productOnDepot_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productPropertyState_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productPropertyState_getIdents(returnType = 'tuple')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productPropertyState_getIdents(returnType = 'list')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.productPropertyState_getIdents(returnType = 'dict')
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.group_getIdents()
+		logger.notice("Idents: %s" % ids)
+		ids = self.backend.objectToGroup_getIdents()
+		logger.notice("Idents: %s" % ids)
+		
+		#result = self.backend.searchIds('(&(objectClass=Host)(type=OpsiDepotserver))')
+		result = self.backend.searchIds('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=OpsiDepotserver))')
+		#result = self.backend.searchIds('(|(&(objectClass=OpsiClient)(attr=xyz)(at1=val*))(&(objectClass=OpsiClient)(attr=222)(at1=val222)))')
+		logger.notice(result)
 		
 		self.backend.host_delete(ids = [])
 		hosts = self.backend.host_getObjects()
