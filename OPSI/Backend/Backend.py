@@ -331,7 +331,7 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 	
-	def searchIds(self, filter):
+	def searchObjects(self, filter):
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
 		except Exception, e:
@@ -359,26 +359,34 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 				logger.debug(u"No matching identAttributes found (%s, %s)" % (result1['identAttributes'], result2['identAttributes']))
 			
 			if (result1IdentIndex == -1):
-				if (len(result1['identAttributes']) == 1) and result1['foreignIdAttributes']:
+				#if (len(result1['identAttributes']) == 1) and result1['foreignIdAttributes']:
+				if 'id' in result1['identAttributes'] and result1['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
 					for attr in result1['foreignIdAttributes']:
 						for i in range(len(result2['identAttributes'])):
-							logger.debug(result2['identAttributes'][i])
+							logger.debug2("%s == %s" % (attr, result2['identAttributes'][i]))
 							if (attr == result2['identAttributes'][i]):
 								result2IdentIndex = i
-								result1IdentIndex = 0
+								for a in range(len(result1['identAttributes'])):
+									if (result1['identAttributes'][a] == 'id'):
+										result1IdentIndex = a
+								break
 				else:
 					logger.debug(u"Cannot use foreignIdAttributes of result1")
 				
 			if (result1IdentIndex == -1):
-				if (len(result2['identAttributes']) == 1) and result2['foreignIdAttributes']:
+				#if (len(result2['identAttributes']) == 1) and result2['foreignIdAttributes']:
+				if 'id' in result2['identAttributes'] and result2['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
 					for attr in result2['foreignIdAttributes']:
 						for i in range(len(result1['identAttributes'])):
-							logger.debug(result1['identAttributes'][i])
+							logger.debug2("%s == %s" % (attr, result1['identAttributes'][i]))
 							if (attr == result1['identAttributes'][i]):
 								result1IdentIndex = i
-								result2IdentIndex = 0
+								for a in range(len(result2['identAttributes'])):
+									if (result2['identAttributes'][a] == 'id'):
+										result2IdentIndex = a
+								break
 				else:
 					logger.debug(u"Cannot use foreignIdAttributes of result2")
 			
@@ -565,10 +573,11 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
 	
-	def host_delete(self, ids):
+	def host_delete(self, id):
+		if not id: id = []
 		return self.host_deleteObjects(
 				self.host_getObjects(
-					id = forceHostIdList(ids)))
+					id = forceHostIdList(id)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -609,10 +618,11 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.config_createObjects(BoolConfig.fromHash(hash))
 	
-	def config_delete(self, ids):
+	def config_delete(self, id):
+		if not id: id = []
 		return self.config_deleteObjects(
 				config_getObjects(
-					id = forceUnicodeLowerList(ids)))
+					id = forceUnicodeLowerList(id)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -644,11 +654,13 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.configState_createObjects(ConfigState.fromHash(hash))
 	
-	def configState_delete(self, configIds, objectIds):
+	def configState_delete(self, configId, objectId):
+		if not configId: configId = []
+		if not objectId: objectId = []
 		return self.configState_deleteObjects(
 				self.configState_getObjects(
-					configId = forceUnicodeLowerList(configIds),
-					objectId = forceObjectIdList(objectIds)))
+					configId = forceUnicodeLowerList(configId),
+					objectId = forceObjectIdList(objectId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
@@ -690,10 +702,11 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.product_createObjects(NetbootProduct.fromHash(hash))
 	
-	def product_delete(self, productIds):
+	def product_delete(self, productId):
+		if not productId: productId = []
 		return self.product_deleteObjects(
 				product_getObjects(
-					productId = forceProductIdList(productIds)))
+					productId = forceProductIdList(productId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -737,13 +750,17 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
 	
-	def productProperty_delete(self, productIds, productVersions, packageVersions, propertyIds):
+	def productProperty_delete(self, productId, productVersion, packageVersion, propertyId):
+		if not productId:      productId      = []
+		if not productVersion: productVersion = []
+		if not packageVersion: packageVersion = []
+		if not propertyId:     propertyId     = []
 		return self.productOnDepot_deleteObjects(
 				self.productOnDepot_getObjects(
-					productId      = forceProductIdList(productIds),
-					productVersion = forceProductVersionList(productVersions),
-					packageVersion = forcePackageVersionList(packageVersions),
-					propertyIds    = forceUnicodeLowerList(propertyIds)))
+					productId      = forceProductIdList(productId),
+					productVersion = forceProductVersionList(productVersion),
+					packageVersion = forcePackageVersionList(packageVersion),
+					propertyIds    = forceUnicodeLowerList(propertyId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
@@ -775,13 +792,17 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
 	
-	def productOnDepot_delete(self, productIds, productVersions, packageVersions, depotIds):
+	def productOnDepot_delete(self, productId, productVersion, packageVersion, depotId):
+		if not productId:      productId      = []
+		if not productVersion: productVersion = []
+		if not packageVersion: packageVersion = []
+		if not depotId:        depotId        = []
 		return self.productOnDepot_deleteObjects(
 				self.productOnDepot_getObjects(
-					productId = forceProductIdList(productIds),
-					productVersion = forceProductVersionList(productVersions),
-					packageVersion = forcePackageVersionList(packageVersions),
-					depotId = forceHostIdList(depotIds)))
+					productId = forceProductIdList(productId),
+					productVersion = forceProductVersionList(productVersion),
+					packageVersion = forcePackageVersionList(packageVersion),
+					depotId = forceHostIdList(depotId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
@@ -813,11 +834,13 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
 	
-	def productOnClient_delete(self, productIds, clientIds):
+	def productOnClient_delete(self, productId, clientId):
+		if not productId:  productId  = []
+		if not clientId:   clientId   = []
 		return self.productOnClient_deleteObjects(
 				self.productOnClient_getObjects(
-					productId = forceProductIdList(productIds),
-					clientId = forceHostIdList(clientIds)))
+					productId = forceProductIdList(productId),
+					clientId = forceHostIdList(clientId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
@@ -850,12 +873,15 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
 	
-	def productPropertyState_delete(self, productIds, propertyIds, objectIds):
+	def productPropertyState_delete(self, productId, propertyId, objectId):
+		if not productId:  productId  = []
+		if not propertyId: propertyId = []
+		if not objectId:   objectId   = []
 		return self.productPropertyState_deleteObjects(
 				self.productPropertyState_getObjects(
-					productId  = forceProductIdList(productIds),
-					propertyId = forceUnicodeLowerList(propertyIds),
-					objectId   = forceObjectIdList(objectIds)))
+					productId  = forceProductIdList(productId),
+					propertyId = forceUnicodeLowerList(propertyId),
+					objectId   = forceObjectIdList(objectId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
@@ -885,10 +911,11 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.group_createObjects(HostGroup.fromHash(hash))
 	
-	def group_delete(self, ids):
+	def group_delete(self, id):
+		if not id: id = []
 		return self.group_deleteObjects(
 				self.group_getObjects(
-					id = forceGroupIdList(ids)))
+					id = forceGroupIdList(id)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -920,11 +947,13 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		del hash['self']
 		return self.group_createObjects(ObjectToGroup.fromHash(hash))
 	
-	def objectToGroup_delete(self, groupIds, objectIds):
+	def objectToGroup_delete(self, groupId, objectId):
+		if not groupId:  groupId  = []
+		if not objectId: objectId = []
 		return self.objectToGroup_deleteObjects(
 				self.objectToGroup_getObjects(
-					groupId = forceGroupIdList(groupIds),
-					objectId = forceObjectIdList(objectIds)))
+					groupId = forceGroupIdList(groupId),
+					objectId = forceObjectIdList(objectId)))
 	
 
 

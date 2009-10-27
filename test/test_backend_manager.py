@@ -82,12 +82,12 @@ def testComposition():
 		password           = bt.configserver1.getOpsiHostKey(),
 		aclFile            = aclFile)
 	
-	hostIds = bm.host_getIds()
+	hostIds = bm.host_getIdents()
 	logger.comment(hostIds)
 	for host in bt.hosts:
 		assert host.id in hostIds
 	
-	values = bm.configState_getValues(names = [], objectIds = [])
+	values = bm.configState_getValues(configId = [], objectId = [])
 	logger.comment(values)
 	for host in bt.hosts:
 		assert host.id in values.keys()
@@ -98,11 +98,11 @@ def testComposition():
 	generalConfig = bm.getGeneralConfig_hash(objectId = bt.client1.id)
 	logger.comment(generalConfig)
 	
-	value = bm.getGeneralConfigValue(key = bt.config1.name, objectId = None)
+	value = bm.getGeneralConfigValue(key = bt.config1.id, objectId = None)
 	logger.comment(value)
 	assert value == bt.config1.defaultValues[0]
 	
-	generalConfig = {'test-key-1': 'test-value-1', 'test-key-2': 'test-value-2'}
+	generalConfig = {'test-key-1': 'test-value-1', 'test-key-2': 'test-value-2', 'opsiclientd.depot_server.depot_id': bt.depotserver1.id}
 	bm.setGeneralConfig(config = generalConfig, objectId = None)
 	
 	value = bm.getGeneralConfigValue(key = generalConfig.keys()[0], objectId = bt.client1.id)
@@ -154,7 +154,7 @@ def testComposition():
 	logger.comment(serverId)
 	assert serverId == serverName + '.' + domain
 	
-	serverIds = bm.host_getIds(type = 'OpsiConfigserver')
+	serverIds = bm.host_getIdents(type = 'OpsiConfigserver')
 	logger.comment(serverIds)
 	assert serverId in serverIds
 	
@@ -163,17 +163,17 @@ def testComposition():
 	logger.comment(clientId)
 	assert clientId == clientName + '.' + domain
 	
-	clientIds = bm.host_getIds(type = 'OpsiClient')
+	clientIds = bm.host_getIdents(type = 'OpsiClient')
 	logger.comment(clientIds)
 	assert clientId in clientIds
 	
 	bm.deleteServer(serverId)
-	serverIds = bm.host_getIds(type = 'OpsiConfigserver')
+	serverIds = bm.host_getIdents(type = 'OpsiConfigserver')
 	logger.comment(serverIds)
 	assert serverId not in serverIds
 	
 	bm.deleteClient(clientId)
-	clientIds = bm.host_getIds(type = 'OpsiClient')
+	clientIds = bm.host_getIdents(type = 'OpsiClient')
 	logger.comment(clientIds)
 	assert clientId not in clientIds
 	
@@ -262,10 +262,10 @@ def testComposition():
 		   setupScript="", uninstallScript="", updateScript="", alwaysScript="", onceScript="",
 		   priority=0, description="", advice="", pxeConfigTemplate = 'some_template', windowsSoftwareIds=[], depotIds=[])
 	
-	productIds = bm.product_getIds()
-	logger.comment(productIds)
-	assert productId1 in productIds
-	assert productId2 in productIds
+	productIdents = bm.product_getIdents(returnType = 'tuple')
+	logger.comment(productIdents)
+	assert (productId1,'1.0','1') in productIdents
+	assert (productId2,'1.0','1') in productIdents
 	
 	product = bm.getProduct_hash(productId = productId1, depotId = bt.depotserver1.id)
 	logger.comment(product)
