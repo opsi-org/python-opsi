@@ -722,6 +722,7 @@ def runCommandInSession(command, sessionId = None, desktop = "default", duplicat
 	while win32event.WaitForSingleObject(hProcess, 0):
 		time.sleep(0.1)
 	logger.notice("Process ended: %d" % dwProcessId)
+	return (None, None, None, None)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                     USER / GROUP HANDLING                                         -
