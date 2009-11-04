@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2'
+__version__ = '0.2.2'
 
 # Imports
 import re, os, time, socket, sys
@@ -577,7 +577,7 @@ def getPids(process, sessionId = None):
 		return
 	while True:
 		pid = pe32.th32ProcessID
-		sid = 'unkown'
+		sid = 'unknown'
 		try:
 			sid = win32ts.ProcessIdToSessionId(pid)
 		except:
@@ -731,7 +731,8 @@ def runCommandInSession(command, sessionId = None, desktop = "default", duplicat
 def createUser(username, password, groups = []):
 	domain = getHostname().upper()
 	if (username.find('\\') != -1):
-		(domain, username) = username.split('\\')
+		domain = username.split('\\')[0]
+		username = username.split('\\')[-1]
 	domain = domain.upper()
 	if (domain != getHostname().upper()):
 		raise ValueError("Can only handle domain %s" % getHostname().upper())
@@ -760,7 +761,8 @@ def createUser(username, password, groups = []):
 def deleteUser(username):
 	domain = getHostname().upper()
 	if (username.find('\\') != -1):
-		(domain, username) = username.split('\\')
+		domain = username.split('\\')[0]
+		username = username.split('\\')[-1]
 	domain = domain.upper()
 	if (domain != getHostname().upper()):
 		raise ValueError("Can only handle domain %s" % getHostname().upper())
@@ -773,7 +775,8 @@ def deleteUser(username):
 def existsUser(username):
 	domain = getHostname().upper()
 	if (username.find('\\') != -1):
-		(domain, username) = username.split('\\')
+		domain = username.split('\\')[0]
+		username = username.split('\\')[-1]
 	domain = domain.upper()
 	if (domain != getHostname().upper()):
 		raise ValueError("Can only handle domain %s" % getHostname().upper())
@@ -788,6 +791,14 @@ def getUserSidFromHandle(userHandle):
 	for (sid, flags) in tic:
 		if (flags & win32con.SE_GROUP_LOGON_ID):
 			return sid
+
+def getUserSid(username):
+	domain = getHostname().upper()
+	if (username.find('\\') != -1):
+		domain = username.split('\\')[0]
+		username = username.split('\\')[-1]
+	domain = domain.upper()
+	return win32security.ConvertSidToStringSid(win32security.LookupAccountName(None, domain + '\\' + username)[0])
 
 def getAdminGroupName():
 	subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, \
@@ -881,7 +892,7 @@ class Impersonate:
 					logger.debug("Added user to desktop")
 			
 			win32security.ImpersonateLoggedOnUser(self.userToken)
-			logger.debug("User imersonated")
+			logger.debug("User impersonated")
 		except Exception, e:
 			logger.logException(e)
 			self.end()
@@ -905,7 +916,8 @@ class Impersonate:
 		logger.info("Waiting for process ending: %d" % dwProcessId)
 		while win32event.WaitForSingleObject(hProcess, 0):
 			time.sleep(0.1)
-		logger.notice("Process ended: %d" % dwProcessId)
+		exitCode = win32process.GetExitCodeProcess(hProcess)
+		logger.notice("Process %d ended with exit code %d" % (dwProcessId, exitCode))
 
 	def end(self):
 		if self.userToken: self.userToken.Close()

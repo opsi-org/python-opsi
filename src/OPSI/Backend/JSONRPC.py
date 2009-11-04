@@ -35,7 +35,7 @@
 __version__ = '0.9.9.1'
 
 # Imports
-import json, base64, urllib, httplib, new, stat, socket, random, time
+import json, base64, urllib, httplib, new, stat, socket, random, time, types
 
 # OPSI imports
 from OPSI.Backend.Backend import *
@@ -229,12 +229,14 @@ class JSONRPCBackend(DataBackend):
 		logger.debug("Options: %s" % options)
 		if options.has_key('params'):
 			ps = options['params']
-			if not isinstance(ps, tuple) and not isinstance(ps, list):
+			if not type(ps) is types.ListType and not type(ps) is types.TupleType:
 				ps = [ ps ]
 			
 			for p in ps:
 				if (p == '__UNDEF__'):
 					p = None
+				if type(p) is types.StringType:
+					p = unicode(p, 'utf-8')
 				logger.debug2("Appending param: %s, type: %s" % (p, type(p)))
 				params.append(p)
 		
@@ -271,6 +273,10 @@ class JSONRPCBackend(DataBackend):
 		if not started:
 			started = now
 		
+		if type(query) is types.StringType:
+			query = unicode(query, 'utf-8')
+		query = query.encode('utf-8')
+		
 		#logger.debug("__request(%s)" % request)
 		response = None
 		try:
@@ -284,7 +290,7 @@ class JSONRPCBackend(DataBackend):
 				logger.debug("Using method POST")
 				self.__connection.putrequest('POST', baseUrl)
 				self.__connection.putheader('content-type', 'application/json-rpc')
-				self.__connection.putheader('content-length', str(len(query)))
+				self.__connection.putheader('content-length', len(query))
 			
 			# Add some http headers
 			self.__connection.putheader('Accept', 'application/json-rpc')

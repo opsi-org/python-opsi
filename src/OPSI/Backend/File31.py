@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 
 # Imports
 import socket, os, time, re, ConfigParser, json, StringIO, stat, codecs
@@ -1309,7 +1309,10 @@ class File31Backend(File, FileBackend):
 		
 		# Write back ini file
 		self.writeIniFile(iniFile, ini)
-		
+	
+	def setIpAddress(self, hostId, ipAddress):
+		return
+	
 	def createGroup(self, groupId, members = [], description = "", parentGroupId=""):
 		if not re.search(GROUP_ID_REGEX, groupId):
 			raise BackendBadValueError("Bad group-id: '%s'" % groupId)

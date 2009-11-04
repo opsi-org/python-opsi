@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.3'
+__version__ = '1.3.1'
 
 # Imports
 import os, sys, re, shutil, time, gettext, subprocess, select, signal, socket
@@ -261,7 +261,7 @@ def getNetworkDeviceConfig(device):
 	}
 	for line in execute("%s %s" % (which('ifconfig'), device)):
 		line = line.lower().strip()
-		match = re.search('hardware.*([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
+		match = re.search('\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
 		if match:
 			result['hardwareAddress'] = match.group(1)
 			continue
