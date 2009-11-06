@@ -111,7 +111,7 @@ class BackendTest(object):
 		)
 		
 		self.config4 = UnicodeConfig(
-			id             = u'opsiclientd.depot_server.depot_id',
+			id             = u'network.depot_server.depot_id',
 			description    = u'Depotserver to use',
 			possibleValues = [],
 			defaultValues  = [ self.depotserver1.id ]
@@ -721,9 +721,7 @@ class BackendTest(object):
 		result = self.backend.searchObjects('(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
 		logger.notice(result)
 		
-		raise Exception(u"stop")
-		
-		self.backend.host_delete(ids = [])
+		self.backend.host_delete(id = [])
 		hosts = self.backend.host_getObjects()
 		assert len(hosts) == 0
 		
@@ -755,7 +753,7 @@ class BackendTest(object):
 		logger.notice(u"Took %.2f seconds to search ip address in %d clients" % ((time.time()-start), num))
 		
 		start = time.time()
-		self.backend.host_delete(ids = [])
+		self.backend.host_delete(id = [])
 		logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), num))
 		
 		logger.setConsoleLevel(consoleLevel)
