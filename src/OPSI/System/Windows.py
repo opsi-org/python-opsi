@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 # Imports
 import re, os, time, socket, sys
@@ -693,7 +693,7 @@ def getUserToken(sessionId = None, duplicateFrom = "winlogon.exe"):
 	
 	return hUserTokenDup
 
-def runCommandInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True):
+def runCommandInSession(command, sessionId = None, desktop = "default", duplicateFrom = "winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	if not desktop:
 		desktop = "default"
 	if (desktop.find('\\') == -1):
@@ -718,11 +718,21 @@ def runCommandInSession(command, sessionId = None, desktop = "default", duplicat
 	logger.info("Process startet, pid: %d" % dwProcessId)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
-	logger.info("Waiting for process ending: %d" % dwProcessId)
-	while win32event.WaitForSingleObject(hProcess, 0):
+	logger.info("Waiting for process ending: %d (timeout: %d seconds)" % (dwProcessId, timeoutSeconds))
+	t = 0.0
+	while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
+		if (timeoutSeconds > 0):
+			if (t >= timeoutSeconds):
+				terminateProcess(processId = dwProcessId)
+				raise Exception("Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
+			t += 0.1
 		time.sleep(0.1)
-	logger.notice("Process ended: %d" % dwProcessId)
+	exitCode = win32process.GetExitCodeProcess(hProcess)
+	logger.notice("Process %d ended with exit code %d" % (dwProcessId, exitCode))
 	return (None, None, None, None)
+	
+	
+	
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                     USER / GROUP HANDLING                                         -
@@ -898,7 +908,7 @@ class Impersonate:
 			self.end()
 			raise
 	
-	def runCommand(self, command, waitForProcessEnding=True):
+	def runCommand(self, command, waitForProcessEnding=True, timeoutSeconds=0):
 		dwCreationFlags = win32process.CREATE_NEW_CONSOLE
 		
 		s = win32process.STARTUPINFO()
@@ -913,12 +923,19 @@ class Impersonate:
 		logger.info("Process startet, pid: %d" % dwProcessId)
 		if not waitForProcessEnding:
 			return (hProcess, hThread, dwProcessId, dwThreadId)
-		logger.info("Waiting for process ending: %d" % dwProcessId)
-		while win32event.WaitForSingleObject(hProcess, 0):
+		logger.info("Waiting for process ending: %d (timeout: %d seconds)" % (dwProcessId, timeoutSeconds))
+		t = 0.0
+		while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
+			if (timeoutSeconds > 0):
+				if (t >= timeoutSeconds):
+					terminateProcess(processId = dwProcessId)
+					raise Exception("Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
+				t += 0.1
 			time.sleep(0.1)
 		exitCode = win32process.GetExitCodeProcess(hProcess)
 		logger.notice("Process %d ended with exit code %d" % (dwProcessId, exitCode))
-
+		return (None, None, None, None)
+		
 	def end(self):
 		if self.userToken: self.userToken.Close()
 		win32security.RevertToSelf()
