@@ -1,0 +1,5 @@
+etc/opsi/backendManager/acl.conf
+etc/opsi/backendManager/dispatch.conf
+etc/opsi/backendManager/compose.d/10_opsi.conf
+etc/opsi/backendManager/compose.d/20_legacy.conf
+etc/opsi/backends/mysql.conf

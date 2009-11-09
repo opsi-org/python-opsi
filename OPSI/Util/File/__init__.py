@@ -34,7 +34,7 @@
 
 __version__ = "3.5"
 
-import os, codecs, re
+import os, codecs, re, ConfigParser, StringIO, cStringIO
 
 if (os.name == 'posix'):
 	import fcntl
@@ -133,6 +133,7 @@ class LockableFile(File):
 class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename)
+		self._lines = []
 		
 	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
 		self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
@@ -144,11 +145,20 @@ class TextFile(LockableFile):
 		str = forceUnicode(str)
 		self._fileHandle.write(str)
 	
-	def writelines(self, sequence):
+	def readlines(self):
+		self._lines = []
+		if not self._fileHandle:
+			self.open()
+		self._lines = self._fileHandle.readlines()
+		self.close()
+		return self._lines
+	
+	def writelines(self, sequence=[]):
 		if not self._fileHandle:
 			raise IOError("File not opened")
-		sequence = forceUnicodeList(sequence)
-		self._fileHandle.writelines(sequence)
+		if sequence:
+			self._lines = forceUnicodeList(sequence)
+		self._fileHandle.writelines(self._lines)
 	
 class ConfigFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '/', '#']):
@@ -156,29 +166,29 @@ class ConfigFile(TextFile):
 		self._commentChars = forceList(commentChars)
 		self._lines = []
 		
-	def readlines(self):
-		self._lines = []
-		if not self._fileHandle:
-			self.open()
-		for line in self._fileHandle.readlines():
+	def parse(self):
+		self.readlines()
+		lines = []
+		for line in self._lines:
 			line = line.strip()
 			if not line or line[0] in self._commentChars:
 				continue
-			self._lines.append(line)
-		self.close()
-		return self._lines
+			lines.append(line)
+		return lines
 	
 class OpsiBackendACLFile(ConfigFile):
+	
+	aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+	
 	def parse(self):
 		# acl example:
 		#    <method>: <aclType>[(aclTypeParam[(aclTypeParamValue,...)],...)]
 		#    xyz_.*:   opsi_depotserver,(attributes(id,name))
 		#    abc:      self(attributes(!opsiHostKey)),sys_group(admin, group 2, attributes(!opsiHostKey))
 		
-		aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 		acl = []
-		for line in self.readlines():
-			match = re.search(aclEntryRegex, line)
+		for line in ConfigFile.parse(self):
+			match = re.search(self.aclEntryRegex, line)
 			if not match:
 				raise Exception(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
 			method = match.group(1)
@@ -267,9 +277,57 @@ class OpsiBackendDispatchConfigFile(ConfigFile):
 				dispatch[-1][1].append(entry.strip())
 		return dispatch
 
-
-
-
+class IniFile(ConfigFile):
+	optionMatch = re.compile('^([^\:\=]+)([\:\=].*)$')
+	
+	def __init__(self, filename, lockFailTimeout = 2000, ignoreCase = True, raw = False):
+		ConfigFile.__init__(self, filename, commentChars = [';', '#'])
+		self._ignoreCase = forceBool(ignoreCase)
+		self._raw = forceBool(raw)
+		self._configParser = None
+		
+	def parse(self):
+		logger.debug(u"Parsing ini file '%s'" % self._filename)
+		start = time.time()
+		lines = ConfigFile.parse(self)
+		if self._ignoreCase:
+			for i in range(len(lines)):
+				lines[i] = lines[i].strip()
+				if lines[i].startswith('['):
+					lines[i] = lines[i].lower()
+				
+				match = self.optionMatch.search(lines[i])
+				if not match:
+					continue
+				lines[i] = match.group(1).lower() + match.group(2)
+		
+		self._configParser = None
+		if self._raw:
+			self._configParser = ConfigParser.RawConfigParser()
+		else:
+			self._configParser = ConfigParser.SafeConfigParser()
+		try:
+			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines)) )
+		except Exception, e:
+			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
+		
+		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
+		
+		# Return ConfigParser
+		return self._configParser
+	
+	def generate(self):
+		if not self._configParser:
+			raise Exception(u"Got no data to write")
+		
+		data = StringIO.StringIO()
+		self._configParser.write(data)
+		self._lines = data.decode('utf-8', 'replace').replace('\r', '').split('\n')
+		
+		self.open('w')
+		self.writelines()
+		self.close()
+	
 
 
 

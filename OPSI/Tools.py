@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-import json, os
+import json, os, random
 
 # OPSI imports
 from OPSI.Logger import *
@@ -46,11 +46,17 @@ logger = Logger()
 
 RANDOM_DEVICE = '/dev/urandom'
 
+def randomString(length):
+	string = u''
+	for i in range(length):
+		string = string + random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	return unicode(string)
+
 def generateOpsiHostKey():
 	key = u''
 	if (os.name == 'posix'):
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
-		r = open (RANDOM_DEVICE)
+		r = open(RANDOM_DEVICE)
 		key = r.read(16)
 		r.close()
 		logger.debug("Random device closed")
@@ -97,11 +103,46 @@ def objectToBeautifiedText(obj, level=0):
 			i+=1
 		text += u'\n' + u' '*hspace + u'}'
 	else:
-		text += json.dumps(obj)
-		#if hasattr(json, 'dumps'):
-		#	# python 2.6 json module
-		#	text+= json.dumps(obj)
-		#else:
-		#	text+= json.write(obj)
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			text+= json.dumps(obj)
+		else:
+			text+= json.write(obj)
 	return text
+
+def jsonObjToHtml(jsonObj, level=0):
+	''' This function creates a beautified json 
+	    serialisation from a json object'''
+	hspace = level*10
+	html = ''
+	if ( type(jsonObj) == type([]) ):
+		html += ' '*hspace + '[ <br />'
+		for i in range( len(jsonObj) ):
+			if type(jsonObj[i]) != type({}) and type(jsonObj[i]) != type([]):
+				html += ' '*hspace
+			html += jsonObjToHtml(jsonObj[i], level+1)
+			
+			if (i < len(jsonObj)-1):
+				html += ',<br />'
+		html += '<br />' + ' '*hspace + ']'
+	elif ( type(jsonObj) == type({}) ):
+		html += ' '*hspace + '{ <br />'
+		i = 0
+		for (key, value) in jsonObj.items():
+			html += ' '*hspace + '"<font class="json_key">' + key +  '</font>": '
+			if type(value) == type({}) or type(value) == type([]):
+				html += '<br />'
+			html += jsonObjToHtml(jsonObj[key], level+1)
+			
+			if (i < len(jsonObj)-1):
+				html += ',<br />'
+			i+=1
+		html += '<br />' + ' '*hspace + '}'
+	else:
+		if hasattr(json, 'dumps'):
+			# python 2.6 json module
+			html += json.dumps(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
+		else:
+			html += json.write(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
+	return html.replace('\\n', '<br />' + ' '*hspace)
 

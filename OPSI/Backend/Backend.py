@@ -37,6 +37,7 @@ __version__ = '3.5'
 # Imports
 from ldaptor.protocols import pureldap
 from ldaptor import ldapfilter
+import types
 
 # OPSI imports
 from OPSI.Logger import *
@@ -63,6 +64,32 @@ class Backend:
 		#for (option, value) in kwargs.items():
 		#	if (option.lower() == 'defaultdomain'):
 		#		self._defaultDomain = forceDomain(value)
+	
+	def getInterface(self):
+		''' This function returns a list of available interface methods.
+		The methods are defined by hashes containing the keys "name" and
+		"params", which is a list of parameter names used for a method.
+		Parameters starting with an asterisk (*) are optional '''
+		methodList = []
+		methods = {}
+		for (n, t) in self.__class__.__dict__.items():
+			# Extract a list of all "public" functions (functionname does not start with '_')
+			if ( (type(t) == types.FunctionType or type(t) == types.MethodType ) and not n.startswith('_') ):
+				methods[n] = t
+		
+		for (n, t) in methods.items():
+			argCount = t.func_code.co_argcount
+			argNames = list(t.func_code.co_varnames[1:argCount])
+			argDefaults = t.func_defaults
+			if ( argDefaults != None and len(argDefaults) > 0 ):
+				offset = argCount - len(argDefaults) - 1
+				for i in range( len(argDefaults) ):
+					argNames[offset+i] = '*' + argNames[offset+i]		
+			methodList.append( { 'name': n, 'params': argNames} )
+		
+		# Sort the function list by name
+		methodList.sort()
+		return methodList
 		
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS CONFIGDATABACKEND                                          =

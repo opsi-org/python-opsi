@@ -130,7 +130,8 @@ class BackendManager(ExtendedConfigDataBackend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public method '%s'" % methodName)
-			
+			if (methodName == 'getInterface'):
+				continue
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
@@ -138,6 +139,9 @@ class BackendManager(ExtendedConfigDataBackend):
 	
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
+	
+	def exit(self):
+		pass
 	
 class BackendDispatcher(ExtendedConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
@@ -181,7 +185,7 @@ class BackendDispatcher(ExtendedConfigDataBackend):
 	def __loadBackends(self):
 		backends = []
 		if not os.path.exists(self._backendConfigDir):
-			raise BackendConfigurationError(u"No backend config dir given")
+			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 		for i in range(len(self._dispatchConfig)):
 			if not type(self._dispatchConfig[i][1]) is list:
 				self._dispatchConfig[i][1] = [ self._dispatchConfig[i][1] ]
@@ -388,6 +392,7 @@ class BackendAccessControl(ConfigDataBackend):
 			logger.debug(u"Read acl from file '%s':" % self._aclFile)
 			logger.debug(Tools.objectToBeautifiedText(self._acl))
 		except Exception, e:
+			logger.logException(e)
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
 		
 		

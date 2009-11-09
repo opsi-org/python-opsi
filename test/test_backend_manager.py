@@ -82,6 +82,11 @@ def testComposition():
 		password           = bt.configserver1.getOpsiHostKey(),
 		aclFile            = aclFile)
 	
+	
+	#print "===========>>>>>>>>>>>>>>>>", bm.getInterface()
+	#print bm.authenticated()
+	#sys.exit(0)
+	
 	hostIds = bm.host_getIdents()
 	logger.comment(hostIds)
 	for host in bt.hosts:
