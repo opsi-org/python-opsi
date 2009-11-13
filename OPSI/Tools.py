@@ -111,10 +111,11 @@ def objectToBeautifiedText(obj, level=0):
 	return text
 
 def jsonObjToHtml(jsonObj, level=0):
-	''' This function creates a beautified json 
-	    serialisation from a json object'''
 	hspace = level*10
 	html = ''
+	if hasattr(jsonObj, 'toHash'):
+		jsonObj = jsonObj.toHash()
+	
 	if ( type(jsonObj) == type([]) ):
 		html += ' '*hspace + '[ <br />'
 		for i in range( len(jsonObj) ):

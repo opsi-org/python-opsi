@@ -349,6 +349,23 @@ class ConfigDataBackend(Backend):
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   HardwareInventory                                                                         -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def hardwareInventory_insertObject(self, hardwareInventory):
+		hardwareInventory = forceObjectClass(hardwareInventory, HardwareInventory)
+		hardwareInventory.setDefaults()
+	
+	def hardwareInventory_updateObject(self, hardwareInventory):
+		pass
+	
+	def hardwareInventory_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(HardwareInventory, attributes, **filter)
+	
+	def hardwareInventory_deleteObjects(self, hardwareInventory):
+		pass
+
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
@@ -982,6 +999,9 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 					groupId = forceGroupIdList(groupId),
 					objectId = forceObjectIdList(objectId)))
 	
+
+
+
 
 
 

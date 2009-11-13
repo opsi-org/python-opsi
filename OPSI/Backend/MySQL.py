@@ -336,7 +336,7 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			tableName = i.values()[0]
 			logger.debug(u" [ %s ]" % tableName)
 			tables[tableName] = []
-			for j in self._mysql.dtb_getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
+			for j in self._mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
 				logger.debug(u"      %s" % j)
 				tables[tableName].append(j['Field'])
 		

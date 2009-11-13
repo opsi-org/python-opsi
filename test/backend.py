@@ -721,9 +721,9 @@ class BackendTest(object):
 		result = self.backend.searchObjects('(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
 		logger.notice(result)
 		
-		self.backend.host_delete(id = [])
-		hosts = self.backend.host_getObjects()
-		assert len(hosts) == 0
+		#self.backend.host_delete(id = [])
+		#hosts = self.backend.host_getObjects()
+		#assert len(hosts) == 0
 		
 	def testPerformance(self):
 		consoleLevel = logger.getConsoleLevel()
@@ -752,9 +752,9 @@ class BackendTest(object):
 		self.backend.host_getObjects(attributes = ['id'], ipAddress = '192.168.0.100')
 		logger.notice(u"Took %.2f seconds to search ip address in %d clients" % ((time.time()-start), num))
 		
-		start = time.time()
-		self.backend.host_delete(id = [])
-		logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), num))
+		#start = time.time()
+		#self.backend.host_delete(id = [])
+		#logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), num))
 		
 		logger.setConsoleLevel(consoleLevel)
 
