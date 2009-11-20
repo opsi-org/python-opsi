@@ -74,7 +74,7 @@ class BackendManager(ExtendedConfigDataBackend):
 		if dispatch:
 			self._backend = BackendDispatcher(username, password, address, **kwargs)
 		if extend:
-			BackendExtender(username, password, address, backend = self._backend, **kwargs)
+			BackendExtender(self._backend, **kwargs)
 		if accessControl:
 			self._backend = BackendAccessControl(username, password, address, backend = self._backend, **kwargs)
 		
@@ -93,11 +93,11 @@ class BackendManager(ExtendedConfigDataBackend):
 				continue
 			(argString, callString) = getArgAndCallString(member[1])
 			
-			exec(u'def %s(self, %s): return self._executeOnBackend("%s", %s)' % (methodName, argString, methodName, callString))
+			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-		ExtendedConfigDataBackend._createInstanceMethods(self)
+		#ExtendedConfigDataBackend._createInstanceMethods(self)
 		
-	def _executeOnBackend(self, methodName, **kwargs):
+	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def exit(self):
@@ -214,18 +214,19 @@ class BackendDispatcher(ConfigDataBackend):
 		return result
 		
 
-class BackendExtender(ConfigDataBackend):
-	def __init__(self, username, password, address, **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+class BackendExtender(ExtendedConfigDataBackend):
+	def __init__(self, backend, **kwargs):
+		if not isinstance(backend, ExtendedConfigDataBackend):
+			backend = ExtendedConfigDataBackend(backend)
+		ExtendedConfigDataBackend.__init__(self, backend)
 		
-		self._backend = None
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   (option == 'backend'):
-				self._backend = value
-			elif (option == 'extensionconfigdir'):
+			#if   (option == 'backend'):
+			#	self._backend = ExtendedConfigDataBackend(value)
+			if (option == 'extensionconfigdir'):
 				self._extensionConfigDir = value
 		
 		if not self._backend:
@@ -268,7 +269,7 @@ elif (os.name == 'nt'):
 	import win32security, win32net
 from OPSI import Tools
 
-class BackendAccessControl(ConfigDataBackend):
+class BackendAccessControl(ExtendedConfigDataBackend):
 	
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)

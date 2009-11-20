@@ -15,10 +15,11 @@ logger.setConsoleColor(True)
 
 
 mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi')
+
 bt = BackendTest(ExtendedConfigDataBackend(mysqlBackend))
 bt.cleanupBackend()
 bt.testObjectMethods()
-#bt.testNonObjectMethods()
+bt.testNonObjectMethods()
 #bt.testPerformance()
 
 

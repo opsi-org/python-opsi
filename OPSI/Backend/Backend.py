@@ -540,12 +540,12 @@ class ConfigDataBackend(Backend):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ExtendedConfigDataBackend(ConfigDataBackend):
 	
-	def __init__(self, configDataBackend):
-		self._configDataBackend = configDataBackend
+	def __init__(self, backend):
+		self._backend = backend
 		self._createInstanceMethods()
 	
 	def _createInstanceMethods(self):
-		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
+		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
@@ -555,11 +555,11 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 				continue
 			(argString, callString) = getArgAndCallString(member[1])
 			
-			exec(u'def %s(self, %s): return self._executeOnConfigDataBackend("%s", %s)' % (methodName, argString, methodName, callString))
+			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
-	def _executeOnConfigDataBackend(self, methodName, **kwargs):
-		return eval(u'self._configDataBackend.%s(**kwargs)' % methodName)
+	def _executeMethod(self, methodName, **kwargs):
+		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def searchObjects(self, filter):
 		try:
@@ -768,39 +768,39 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def host_createObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			logger.info(u"Creating host '%s'" % host)
-			if self._configDataBackend.host_getObjects(
+			if self.host_getObjects(
 					attributes = ['id'],
 					id = host.id):
 				logger.info(u"%s already exists, updating" % host)
-				self._configDataBackend.host_updateObject(host)
+				self.host_updateObject(host)
 			else:
-				self._configDataBackend.host_insertObject(host)
+				self.host_insertObject(host)
 	
 	def host_updateObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
-			self._configDataBackend.host_updateObject(host)
+			self._backend.host_updateObject(host)
 	
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.host_createObjects(OpsiClient.fromHash(hash))
+		return self.host_createObjects(OpsiClient.fromHash(hash))
 	
 	def host_createOpsiDepotserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.host_createObjects(OpsiDepotserver.fromHash(hash))
+		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
 	
 	def host_createOpsiConfigserver(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 					description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.host_createObjects(OpsiConfigserver.fromHash(hash))
+		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
 	
 	def host_delete(self, id):
 		if not id: id = []
-		return self._configDataBackend.host_deleteObjects(
-				self._configDataBackend.host_getObjects(
+		return self._backend.host_deleteObjects(
+				self._backend.host_getObjects(
 					id = forceHostIdList(id)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -809,36 +809,36 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def config_createObjects(self, configs):
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Creating config %s" % config)
-			if self._configDataBackend.config_getObjects(
+			if self._backend.config_getObjects(
 					attributes = ['id'],
 					id         = config.id):
 				logger.info(u"Config '%s' already exists, updating" % config)
-				self._configDataBackend.config_updateObject(config)
+				self._backend.config_updateObject(config)
 			else:
-				self._configDataBackend.config_insertObject(config)
+				self._backend.config_insertObject(config)
 	
 	def config_updateObjects(self, configs):
 		for config in forceObjectClassList(configs, Config):
-			self._configDataBackend.config_updateObject(config)
+			self._backend.config_updateObject(config)
 	
 	def config_create(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.config_createObjects(Config.fromHash(hash))
+		return self.config_createObjects(Config.fromHash(hash))
 	
 	def config_createUnicode(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.config_createObjects(UnicodeConfig.fromHash(hash))
+		return self.config_createObjects(UnicodeConfig.fromHash(hash))
 	
 	def config_createBool(self, id, description=None, defaultValues=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.config_createObjects(BoolConfig.fromHash(hash))
+		return self.config_createObjects(BoolConfig.fromHash(hash))
 	
 	def config_delete(self, id):
 		if not id: id = []
-		return self._configDataBackend.config_deleteObjects(
+		return self._backend.config_deleteObjects(
 				config_getObjects(
 					id = forceUnicodeLowerList(id)))
 	
@@ -848,29 +848,29 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def configState_createObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
-			if self._configDataBackend.configState_getObjects(
+			if self._backend.configState_getObjects(
 					attributes = ['configId'],
 					configId   = configState.configId,
 					objectId   = configState.objectId):
 				logger.info(u"ConfigState '%s' already exists, updating" % configState)
-				self._configDataBackend.configState_updateObject(configState)
+				self._backend.configState_updateObject(configState)
 			else:
-				self._configDataBackend.configState_insertObject(configState)
+				self._backend.configState_insertObject(configState)
 	
 	def configState_updateObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
-			self._configDataBackend.configState_updateObject(configState)
+			self._backend.configState_updateObject(configState)
 	
 	def configState_create(self, configId, objectId, values=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.configState_createObjects(ConfigState.fromHash(hash))
+		return self._backend.configState_createObjects(ConfigState.fromHash(hash))
 	
 	def configState_delete(self, configId, objectId):
 		if not configId: configId = []
 		if not objectId: objectId = []
-		return self._configDataBackend.configState_deleteObjects(
-				self._configDataBackend.configState_getObjects(
+		return self._backend.configState_deleteObjects(
+				self._backend.configState_getObjects(
 					configId = forceUnicodeLowerList(configId),
 					objectId = forceObjectIdList(objectId)))
 	
@@ -880,25 +880,25 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def product_createObjects(self, products):
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Creating product %s" % product)
-			if self._configDataBackend.product_getObjects(
+			if self._backend.product_getObjects(
 					attributes = ['productId'],
 					id = product.id, productVersion = product.productVersion,
 					packageVersion = product.packageVersion):
 				logger.info(u"Product '%s' already exists, updating" % product)
-				self._configDataBackend.product_updateObject(product)
+				self._backend.product_updateObject(product)
 			else:
-				self._configDataBackend.product_insertObject(product)
+				self._backend.product_insertObject(product)
 	
 	def product_updateObjects(self, products):
 		for product in forceObjectClassList(products, Product):
-			self._configDataBackend.product_updateObject(product)
+			self._backend.product_updateObject(product)
 	
 	def product_createLocalboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
 					priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.product_createObjects(LocalbootProduct.fromHash(hash))
+		return self.product_createObjects(LocalbootProduct.fromHash(hash))
 	
 	def product_createNetboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
@@ -906,11 +906,11 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 					pxeConfigTemplate=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.product_createObjects(NetbootProduct.fromHash(hash))
+		return self.product_createObjects(NetbootProduct.fromHash(hash))
 	
 	def product_delete(self, productId):
 		if not productId: productId = []
-		return self._configDataBackend.product_deleteObjects(
+		return self._backend.product_deleteObjects(
 				product_getObjects(
 					productId = forceProductIdList(productId)))
 	
@@ -920,43 +920,43 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def productProperty_createObjects(self, productProperties):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating product property %s" % productProperty)
-			if self._configDataBackend.productProperty_getObjects(
+			if self._backend.productProperty_getObjects(
 					attributes     = ['productId'],
 					productId      = productProperty.productId,
 					productVersion = productProperty.productVersion,
 					packageVersion = productProperty.packageVersion,
 					propertyId     = productProperty.propertyId):
 				logger.info(u"Product property '%s' already exists, updating" % productProperty)
-				self._configDataBackend.productProperty_updateObject(productProperty)
+				self._backend.productProperty_updateObject(productProperty)
 			else:
-				self._configDataBackend.productProperty_insertObject(productProperty)
+				self._backend.productProperty_insertObject(productProperty)
 	
 	def productProperty_updateObjects(self, productProperties):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			self._configDataBackend.productProperty_updateObject(productProperty)
+			self._backend.productProperty_updateObject(productProperty)
 	
 	def productProperty_create(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productProperty_createObjects(ProductProperty.fromHash(hash))
+		return self.productProperty_createObjects(ProductProperty.fromHash(hash))
 	
 	def productProperty_createUnicode(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
+		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
 	
 	def productProperty_createBool(self, productId, productVersion, packageVersion, propertyId, description=None, defaultValues=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productProperty_createObjects(BoolProductProperty.fromHash(hash))
+		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
 	
 	def productProperty_delete(self, productId, productVersion, packageVersion, propertyId):
 		if not productId:      productId      = []
 		if not productVersion: productVersion = []
 		if not packageVersion: packageVersion = []
 		if not propertyId:     propertyId     = []
-		return self._configDataBackend.productOnDepot_deleteObjects(
-				self._configDataBackend.productOnDepot_getObjects(
+		return self._backend.productOnDepot_deleteObjects(
+				self._backend.productOnDepot_getObjects(
 					productId      = forceProductIdList(productId),
 					productVersion = forceProductVersionList(productVersion),
 					packageVersion = forcePackageVersionList(packageVersion),
@@ -968,25 +968,25 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	def productDependency_createObjects(self, productDependencies):
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info(u"Creating product dependency %s" % productDependency)
-			if self._configDataBackend.productDependency_getIdents(
+			if self._backend.productDependency_getIdents(
 					productId         = productDependency.productId,
 					productVersion    = productDependency.productVersion,
 					packageVersion    = productDependency.packageVersion,
 					productAction     = productDependency.productAction,
 					requiredProductId = productDependency.requiredProductId):
 				logger.info(u"Product dependency '%s' already exists, updating" % productDependency)
-				self._configDataBackend.productDependency_updateObject(productDependency)
+				self._backend.productDependency_updateObject(productDependency)
 			else:
-				self._configDataBackend.productDependency_insertObject(productDependency)
+				self._backend.productDependency_insertObject(productDependency)
 	
 	def productDependency_updateObjects(self, productDependencies):
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			self._configDataBackend.productDependency_updateObject(productDependency)
+			self._backend.productDependency_updateObject(productDependency)
 	
 	def productDependency_create(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productDependency_createObjects(ProductDependency.fromHash(hash))
+		return self.productDependency_createObjects(ProductDependency.fromHash(hash))
 	
 	def productDependency_delete(self, productId, productVersion, packageVersion, productAction, requiredProductId):
 		if not productId:         productId         = []
@@ -994,8 +994,8 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		if not packageVersion:    packageVersion    = []
 		if not productAction:     productAction     = []
 		if not requiredProductId: requiredProductId = []
-		return self._configDataBackend.productDependency_deleteObjects(
-				self._configDataBackend.productDependency_getObjects(
+		return self._backend.productDependency_deleteObjects(
+				self._backend.productDependency_getObjects(
 					productId         = forceProductIdList(productId),
 					productVersion    = forceProductVersionList(productVersion),
 					packageVersion    = forcePackageVersionList(packageVersion),
@@ -1009,30 +1009,30 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
 			logger.info(u"Creating productOnDepot '%s'" % productOnDepot)
-			if self._configDataBackend.productOnDepot_getObjects(
+			if self._backend.productOnDepot_getObjects(
 					productId = productOnDepot.productId,
 					depotId = productOnDepot.depotId):
 				logger.info(u"ProductOnDepot '%s' already exists, updating" % productOnDepot)
-				self._configDataBackend.productOnDepot_updateObject(productOnDepot)
+				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
-				self._configDataBackend.productOnDepot_insertObject(productOnDepot)
+				self._backend.productOnDepot_insertObject(productOnDepot)
 	
 	def productOnDepot_updateObjects(self, productOnDepots):
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			self._configDataBackend.productOnDepot_updateObject(productOnDepot)
+			self._backend.productOnDepot_updateObject(productOnDepot)
 	
 	def productOnDepot_create(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
+		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
 	
 	def productOnDepot_delete(self, productId, productVersion, packageVersion, depotId):
 		if not productId:      productId      = []
 		if not productVersion: productVersion = []
 		if not packageVersion: packageVersion = []
 		if not depotId:        depotId        = []
-		return self._configDataBackend.productOnDepot_deleteObjects(
-				self._configDataBackend.productOnDepot_getObjects(
+		return self._backend.productOnDepot_deleteObjects(
+				self._backend.productOnDepot_getObjects(
 					productId = forceProductIdList(productId),
 					productVersion = forceProductVersionList(productVersion),
 					packageVersion = forcePackageVersionList(packageVersion),
@@ -1048,28 +1048,28 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
 		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient '%s'" % productOnClient)
-			if self._configDataBackend.productOnClient_getObjects(
+			if self._backend.productOnClient_getObjects(
 					productId = productOnClient.productId,
 					clientId = productOnClient.clientId):
 				logger.info(u"ProductOnClient '%s' already exists, updating" % productOnClient)
-				self._configDataBackend.productOnClient_updateObject(productOnClient)
+				self._backend.productOnClient_updateObject(productOnClient)
 			else:
-				self._configDataBackend.productOnClient_insertObject(productOnClient)
+				self._backend.productOnClient_insertObject(productOnClient)
 	
 	def productOnClient_updateObjects(self, productOnClients):
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
-			self._configDataBackend.productOnClient_updateObject(productOnClient)
+			self._backend.productOnClient_updateObject(productOnClient)
 	
 	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productOnClient_createObjects(ProductOnClient.fromHash(hash))
+		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
 	
 	def productOnClient_delete(self, productId, clientId):
 		if not productId:  productId  = []
 		if not clientId:   clientId   = []
-		return self._configDataBackend.productOnClient_deleteObjects(
-				self._configDataBackend.productOnClient_getObjects(
+		return self._backend.productOnClient_deleteObjects(
+				self._backend.productOnClient_getObjects(
 					productId = forceProductIdList(productId),
 					clientId = forceHostIdList(clientId)))
 	
@@ -1080,30 +1080,30 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
 			logger.info(u"Creating productPropertyState '%s'" % productPropertyState)
-			if self._configDataBackend.productPropertyState_getObjects(
+			if self._backend.productPropertyState_getObjects(
 						productId  = productPropertyState.productId,
 						objectId   = productPropertyState.objectId,
 						propertyId = productPropertyState.propertyId):
 				logger.info(u"ProductPropertyState '%s' already exists, updating" % productPropertyState)
-				self._configDataBackend.productPropertyState_updateObject(productPropertyState)
+				self._backend.productPropertyState_updateObject(productPropertyState)
 			else:
-				self._configDataBackend.productPropertyState_insertObject(productPropertyState)
+				self._backend.productPropertyState_insertObject(productPropertyState)
 	
 	def productPropertyState_updateObjects(self, productPropertyStates):
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
-			self._configDataBackend.productPropertyState_updateObject(productPropertyState)
+			self._backend.productPropertyState_updateObject(productPropertyState)
 	
 	def productPropertyState_create(self, productId, propertyId, objectId, values=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
+		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
 	
 	def productPropertyState_delete(self, productId, propertyId, objectId):
 		if not productId:  productId  = []
 		if not propertyId: propertyId = []
 		if not objectId:   objectId   = []
-		return self._configDataBackend.productPropertyState_deleteObjects(
-				self._configDataBackend.productPropertyState_getObjects(
+		return self._backend.productPropertyState_deleteObjects(
+				self._backend.productPropertyState_getObjects(
 					productId  = forceProductIdList(productId),
 					propertyId = forceUnicodeLowerList(propertyId),
 					objectId   = forceObjectIdList(objectId)))
@@ -1115,25 +1115,25 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
 			logger.info(u"Creating group '%s'" % group)
-			if self._configDataBackend.group_getObjects(id = group.id):
+			if self._backend.group_getObjects(id = group.id):
 				logger.info(u"Group '%s' already exists, updating" % group)
-				self._configDataBackend.group_updateObject(group)
+				self._backend.group_updateObject(group)
 			else:
-				self._configDataBackend.group_insertObject(group)
+				self._backend.group_insertObject(group)
 	
 	def group_updateObjects(self, groups):
 		for group in forceObjectClassList(groups, Group):
-			self._configDataBackend.group_updateObject(group)
+			self._backend.group_updateObject(group)
 	
 	def group_createHost(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.group_createObjects(HostGroup.fromHash(hash))
+		return self.group_createObjects(HostGroup.fromHash(hash))
 	
 	def group_delete(self, id):
 		if not id: id = []
-		return self._configDataBackend.group_deleteObjects(
-				self._configDataBackend.group_getObjects(
+		return self._backend.group_deleteObjects(
+				self._backend.group_getObjects(
 					id = forceGroupIdList(id)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1143,28 +1143,28 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
 			logger.info(u"Creating %s" % objectToGroup)
-			if self._configDataBackend.objectToGroup_getObjects(
+			if self._backend.objectToGroup_getObjects(
 					groupId = objectToGroup.groupId,
 					objectId = objectToGroup.objectId):
 				logger.info(u"%s already exists, updating" % objectToGroup)
-				self._configDataBackend.objectToGroup_updateObject(objectToGroup)
+				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
-				self._configDataBackend.objectToGroup_insertObject(objectToGroup)
+				self._backend.objectToGroup_insertObject(objectToGroup)
 	
 	def objectToGroup_updateObjects(self, objectToGroups):
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			self._configDataBackend.objectToGroup_updateObject(objectToGroup)
+			self._backend.objectToGroup_updateObject(objectToGroup)
 	
 	def objectToGroup_create(self, groupId, objectId):
 		hash = locals()
 		del hash['self']
-		return self._configDataBackend.group_createObjects(ObjectToGroup.fromHash(hash))
+		return self.group_createObjects(ObjectToGroup.fromHash(hash))
 	
 	def objectToGroup_delete(self, groupId, objectId):
 		if not groupId:  groupId  = []
 		if not objectId: objectId = []
-		return self._configDataBackend.objectToGroup_deleteObjects(
-				self._configDataBackend.objectToGroup_getObjects(
+		return self._backend.objectToGroup_deleteObjects(
+				self._backend.objectToGroup_getObjects(
 					groupId = forceGroupIdList(groupId),
 					objectId = forceObjectIdList(objectId)))
 	
