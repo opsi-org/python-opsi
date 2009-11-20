@@ -177,7 +177,7 @@ class MySQL:
 # ======================================================================================================
 # =                                    CLASS MYSQLBACKEND                                              =
 # ======================================================================================================
-class MySQLBackend(ExtendedConfigDataBackend):
+class MySQLBackend(ConfigDataBackend):
 	
 	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)

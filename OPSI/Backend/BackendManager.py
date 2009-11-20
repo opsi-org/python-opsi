@@ -45,56 +45,13 @@ from OPSI.Util.File import OpsiBackendACLFile, OpsiBackendDispatchConfigFile
 # Get logger instance
 logger = Logger()
 
-def getArgAndCallString(method):
-	argString = u''
-	callString = u''
-	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
-	logger.debug2(u"args: %s" % unicode(args))
-	logger.debug2(u"varargs: %s" % unicode(varargs))
-	logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
-	logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
-	for i in range(len(args)):
-		logger.debug2(u"Processing arg [%s] %s" % (i, args[i]))
-		if (args[i] == 'self'):
-			continue
-		if (argString):
-			argString += u', '
-			callString += u', '
-		argString += args[i]
-		callString += u'%s=%s' % (args[i], args[i])
-		if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
-			default = argDefaults[len(argDefaults)-len(args)+i]
-			if type(default) is str:
-				default = u"'%s'" % default
-			elif type(default) is unicode:
-				default = u"u'%s'" % default
-			logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
-			argString += u'=%s' % unicode(default)
-	if varargs:
-		for vararg in varargs:
-			if argString:
-				argString += u', '
-				callString += u', '
-			argString += u'*%s' % vararg
-			callString += u'*%s' % vararg
-	if varkwargs:
-		if argString:
-			argString += u', '
-			callString += u', '
-		argString += u'**%s' % varkwargs
-		callString += u'**%s' % varkwargs
-	logger.debug2(u"Arg string is: %s" % argString)
-	logger.debug2(u"Call string is: %s" % callString)
-	return (argString, callString)
-
-
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
 class BackendManager(ExtendedConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+		#ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._backend = None
 		dispatch = False
@@ -104,7 +61,7 @@ class BackendManager(ExtendedConfigDataBackend):
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if (option == 'backend'):
-				self._backend = backend
+				self._backend = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
 			elif (option == 'extensionconfigdir') and value:
@@ -121,31 +78,34 @@ class BackendManager(ExtendedConfigDataBackend):
 		if accessControl:
 			self._backend = BackendAccessControl(username, password, address, backend = self._backend, **kwargs)
 		
-		self.__createInstanceMethods()
-		
-	def __createInstanceMethods(self):
+		self._createInstanceMethods()
+	
+	def _createInstanceMethods(self):
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
+		#for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public method '%s'" % methodName)
+			print u"Found public method '%s'" % methodName
 			if (methodName == 'getInterface'):
 				continue
 			(argString, callString) = getArgAndCallString(member[1])
 			
-			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+			exec(u'def %s(self, %s): return self._executeOnBackend("%s", %s)' % (methodName, argString, methodName, callString))
 			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
-	def _executeMethod(self, methodName, **kwargs):
+		ExtendedConfigDataBackend._createInstanceMethods(self)
+		
+	def _executeOnBackend(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def exit(self):
 		pass
 	
-class BackendDispatcher(ExtendedConfigDataBackend):
+class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+		#ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
@@ -167,8 +127,8 @@ class BackendDispatcher(ExtendedConfigDataBackend):
 		if not self._dispatchConfig:
 			raise BackendConfigurationError(u"Dispatcher not configured")
 		self.__loadBackends()
-		self.__createInstanceMethods()
-		
+		self._createInstanceMethods()
+		#ExtendedConfigDataBackend.__init__(self, username, password, address, **kwargs)
 	
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
@@ -209,14 +169,13 @@ class BackendDispatcher(ExtendedConfigDataBackend):
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
 			exec(u'self._backends[backend]["instance"] = %sBackend(**l["config"])' % l['module'])
 			
-	def __createInstanceMethods(self):
+	def _createInstanceMethods(self):
 		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
-			
 			methodBackends = None
 			for i in range(len(self._dispatchConfig)):
 				(regex, backend) = self._dispatchConfig[i]
@@ -378,7 +337,7 @@ class BackendAccessControl(ConfigDataBackend):
 		except Exception, e:
 			raise BackendAuthenticationError(u"%s" % e)
 		
-		self.__createInstanceMethods()
+		self._createInstanceMethods()
 		if self._aclFile:
 			self.__loadACLFile()
 		
@@ -396,7 +355,7 @@ class BackendAccessControl(ConfigDataBackend):
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
 		
 		
-	def __createInstanceMethods(self):
+	def _createInstanceMethods(self):
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):

@@ -6,10 +6,11 @@ import sys, os, shutil
 from OPSI.Logger import *
 from OPSI import Tools
 from OPSI.Backend.BackendManager import *
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from backend import *
 
 logger = Logger()
-logger.setConsoleLevel(LOG_DEBUG2)
+logger.setConsoleLevel(LOG_NOTICE)
 logger.setConsoleColor(True)
 
 TMP_CONFIG_DIR = '/tmp/opsi_test_backend_manager_conf'
@@ -81,7 +82,6 @@ def testComposition():
 		username           = bt.configserver1.getId(),
 		password           = bt.configserver1.getOpsiHostKey(),
 		aclFile            = aclFile)
-	
 	
 	#print "===========>>>>>>>>>>>>>>>>", bm.getInterface()
 	#print bm.authenticated()

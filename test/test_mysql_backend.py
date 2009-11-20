@@ -5,6 +5,7 @@ import sys
 
 from OPSI.Logger import *
 from OPSI.Backend.MySQL import MySQLBackend
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from backend import *
 
 logger = Logger()
@@ -14,7 +15,7 @@ logger.setConsoleColor(True)
 
 
 mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi')
-bt = BackendTest(mysqlBackend)
+bt = BackendTest(ExtendedConfigDataBackend(mysqlBackend))
 bt.cleanupBackend()
 bt.testObjectMethods()
 #bt.testNonObjectMethods()
