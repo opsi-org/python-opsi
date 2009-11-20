@@ -13,9 +13,12 @@ logger.setConsoleColor(True)
 
 
 
-ldapBackend = LDAPBackend(username = 'opsi', password = 'opsi', adress = 'localhost')
+ldapBackend = LDAPBackend(username = 'cn=admin,dc=uib,dc=local', password = 'linux123', adress = 'localhost')
+
+
 bt = BackendTest(ldapBackend)
 bt.cleanupBackend()
+#ldapBackend.base_create()
 bt.testObjectMethods()
 #bt.testNonObjectMethods()
 

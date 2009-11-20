@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-import ldap
+import ldap, ldap.modlist
 
 # OPSI imports
 from OPSI.Logger import *
@@ -92,24 +92,42 @@ class LDAPBackend(ConfigDataBackend):
 				password = self._password )
 		self._ldap.connect()
 		
-		
+	
+	# -------------------------------------------------
+	# -     HELPERS                                   -
+	# -------------------------------------------------
+	def _createOrganizationalRole(self, dn):
+		''' This method will add a oprganizational role object
+		    with the specified DN, if it does not already exist. '''
+		organizationalRole = LDAPObject(dn)
+		if organizationalRole.exists(self._ldap):
+			logger.info(u"Organizational role '%s' already exists" % dn)
+		else:
+			logger.debug(u"Creating organizational role '%s'" % dn)
+			organizationalRole.new('organizationalRole')
+			organizationalRole.writeToDirectory(self._ldap)
+			logger.info(u"Organizational role '%s' created" % dn)
+	
 	def base_delete(self):
 		ConfigDataBackend.base_delete(self)
+		ldapobj = LDAPObject(self._opsiBaseDn)
+		if ldapobj.exists(self._ldap):
+			ldapobj.deleteFromDirectory(self._ldap, recursive = True)
+		
 		
 	def base_create(self):
 		ConfigDataBackend.base_create(self)
-	
+		
 		# Create some containers
-		self.createOrganizationalRole(self._opsiBaseDn)
-		for hostContainerDn in self._hostsContainerDn:
-			self.createOrganizationalRole(hostContainerDn)
-		self.createOrganizationalRole(self._generalConfigsContainerDn)
-		self.createOrganizationalRole(self._networkConfigsContainerDn)
-		self.createOrganizationalRole(self._groupsContainerDn)
-		self.createOrganizationalRole(self._productsContainerDn)
-		self.createOrganizationalRole(self._productClassesContainerDn)
-		self.createOrganizationalRole(self._productStatesContainerDn)
-		self.createOrganizationalRole(self._productPropertiesContainerDn)
+		self._createOrganizationalRole(self._opsiBaseDn)
+		self._createOrganizationalRole(self._hostsContainerDn)
+		self._createOrganizationalRole(self._generalConfigsContainerDn)
+		self._createOrganizationalRole(self._networkConfigsContainerDn)
+		self._createOrganizationalRole(self._groupsContainerDn)
+		self._createOrganizationalRole(self._productsContainerDn)
+		self._createOrganizationalRole(self._productClassesContainerDn)
+		self._createOrganizationalRole(self._productStatesContainerDn)
+		self._createOrganizationalRole(self._productPropertiesContainerDn)
 		
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -268,20 +286,7 @@ class LDAPBackend(ConfigDataBackend):
 
 
 	
-	# -------------------------------------------------
-	# -     HELPERS                                   -
-	# -------------------------------------------------
-	def createOrganizationalRole(self, dn):
-		''' This method will add a oprganizational role object
-		    with the specified DN, if it does not already exist. '''
-		organizationalRole = Object(dn)
-		if organizationalRole.exists(self._ldap):
-			logger.info(u"Organizational role '%s' already exists" % dn)
-		else:
-			logger.info(u"Creating organizational role '%s'" % dn)
-			organizationalRole.new('organizationalRole')
-			organizationalRole.writeToDirectory(self._ldap)
-		logger.info(u"Organizational role '%s' created" % dn)
+	
 		
 
 
@@ -458,7 +463,294 @@ class LDAPSession:
 
 
 
+# ======================================================================================================
+# =                                     CLASS LDAPOBJECT                                               =
+# ======================================================================================================
 
+class LDAPObject:
+	''' This class handles ldap objects. '''
+	
+	def __init__(self, dn):
+		''' Constructor of the Object class. '''
+		if not dn:
+			raise BackendIOError("Cannot create Object, dn not defined")
+		self._dn = dn
+		self._old = self._new = {}
+		self._existsInBackend = False
+	
+	def getObjectClasses(self):
+		''' Returns object's objectClasses '''
+		return self.getAttribute('objectClass', default=[], valuesAsList=True )
+	
+	def addObjectClass(self, objectClass):
+		try:
+			self.addAttributeValue('objectClass', objectClass)
+		except Exception, e:
+			logger.warning("Failed to add objectClass '%s' to '%s': %s" \
+						% (objectClass, self.getDn(), e) )
+		
+	def removeObjectClass(self, objectClass):
+		try:
+			self.deleteAttributeValue('objectClass', objectClass)
+		except Exception, e:
+			logger.warning("Failed to delete objectClass '%s' from '%s': %s" \
+						% (objectClass, self.getDn(), e) )
+	
+	def getCn(self):
+		''' Returns the RDN without type.
+		    assuming all subClasses use CN as RDN this method returns the CN '''
+		return ( ldap.explode_dn(self._dn, notypes=1) )[0]
+	
+	def getRdn(self):
+		''' Returns the object's RDN. '''
+		return ( ldap.explode_dn(self._dn, notypes=0) )[0]
+		
+	def getDn(self):
+		''' Returns the object's DN. '''
+		return self._dn
+	
+	def getContainerCn(self):
+		''' Returns the cn of the object's parent (container). '''
+		return ( ldap.explode_dn(self._dn, notypes=1) )[1]
+	
+	def exists(self, ldapSession):
+		try:
+			objectSearch = LDAPObjectSearch(ldapSession, self._dn, scope=ldap.SCOPE_BASE)
+		except BackendMissingDataError:
+			logger.debug("exists(): object '%s' does not exist" % self._dn)
+			return False
+		logger.debug("exists(): object '%s' does exist" % self._dn)
+		return True
+	
+	def getContainer(self):
+		return self.getParent()
+	
+	def getParent(self):
+		parts = ( ldap.explode_dn(self._dn, notypes=0) )[1:]
+		if (parts <= 1):
+			raise BackendBadValueError("Object '%s' has no parent" % self._dn)
+		return LDAPObject(','.join(parts))
+	
+	def new(self, *objectClasses, **attributes):
+		''' Creates a new object. '''
+		if ( len(objectClasses) <= 0 ):
+			raise BackendBadValueError("No objectClasses defined!")
+		
+		self._new['objectClass'] = objectClasses
+		
+		self._new['cn'] = [ self.getCn() ]
+		
+		for attr in attributes:
+			self._new[attr] = [ attributes[attr] ]
+		
+		logger.debug("Created new LDAP-Object: %s" % self._new)
+			
+	def deleteFromDirectory(self, ldapSession, recursive = False):
+		''' Deletes an object from ldap directory. '''
+		if recursive:
+			objects = []
+			try:
+				objectSearch = LDAPObjectSearch(ldapSession, self._dn, scope=ldap.SCOPE_ONELEVEL)
+				objects = objectSearch.getObjects()
+			except:
+				pass
+			if objects:
+				for obj in objects:
+					obj.deleteFromDirectory(ldapSession, recursive = True)
+		
+		return ldapSession.delete(self._dn)
+		
+	def readFromDirectory(self, ldapSession, *attributes):
+		''' If no attributes are given, all attributes are read.
+		    If attributes are specified for read speedup,
+		    the object can NOT be written back to ldap! '''
+		
+		self._readAllAttributes = False
+		if ( len(attributes) <= 0 ):
+			attributes = None
+			self._readAllAttributes = True
+		
+		try:
+			result = ldapSession.search(	baseDn     = self._dn,
+							scope      = ldap.SCOPE_BASE,
+							filter     = "(ObjectClass=*)",
+							attributes = attributes )
+		except Exception, e:
+			raise BackendIOError("Cannot read object (dn: '%s') from ldap: %s" % (self._dn, e))
+		
+		self._existsInBackend = True
+		self._old = result[0][1]
+		# Copy the dict
+		self._new = self._old.copy()
+		# Copy the lists
+		for attr in self._new:
+			self._new[attr] = list(self._new[attr])
+
+	def writeToDirectory(self, ldapSession):
+		''' Writes the object to the ldap tree. '''
+		logger.info("Writing object %s to directory" % self.getDn())
+		if self._existsInBackend:
+			if not self._readAllAttributes:
+				raise BackendIOError("Not all attributes have been read from backend - not writing to backend!")
+			ldapSession.modifyByModlist(self._dn, self._old, self._new)
+		else:
+			ldapSession.addByModlist(self._dn, self._new)
+	
+	def getAttributeDict(self, valuesAsList=False, unpackOpsiKeyValuePairs=False):
+		''' Get all attributes of object as dict.
+		    All values in self._new are lists by default, 
+		    a list of length 0 becomes the value None
+		    if there is only one item the item's value is used '''
+		ret = {}
+		
+		for (key, values) in self._new.items():
+			if ( len(values) > 1 or valuesAsList):
+				ret[key] = values
+			else:
+				ret[key] = values[0]
+		
+		if unpackOpsiKeyValuePairs and ret.get('opsiKeyValuePair'):
+			opsiKeyValuePairs = ret['opsiKeyValuePair']
+			del ret['opsiKeyValuePair']
+			if not type(opsiKeyValuePairs) in (list, tuple):
+				opsiKeyValuePairs = [ opsiKeyValuePairs ]
+			for keyValuePair in opsiKeyValuePairs:
+				(k, v) = keyValuePair.split('=', 1)
+				if k in ret.keys():
+					logger.warning("Opsi key-value-pair %s overwrites attribute" % k)
+				if valuesAsList:
+					ret[k] = [ v ]
+				else:
+					ret[k] = v
+		return ret
+		
+	def getAttribute(self, attribute, default='DEFAULT_UNDEFINED', valuesAsList=False ):
+		''' Get a specific attribute from object. 
+		    Set valuesAsList to a boolean true value to get a list,
+		    even if there is only one attribute value. '''
+		if not self._new.has_key(attribute):
+			if (default != 'DEFAULT_UNDEFINED'):
+				return default
+			raise BackendMissingDataError("Attribute '%s' does not exist" % attribute)
+		values = self._new[attribute]
+		if ( len(values) > 1 or valuesAsList):
+			return values
+		else:
+			return values[0]
+	
+	def setAttribute(self, attribute, value):
+		''' Set the attribute to the value given.
+		    The value's type should be list. '''
+		if ( type(value) != tuple ) and ( type(value) != list ):
+			value = [ value ]
+		if (value == ['']):
+			value = []
+		else:
+			for i in range(len(value)):
+				value[i] = self._encodeValue(value[i])
+		logger.debug("Setting attribute '%s' to '%s'" % (attribute, value))
+		self._new[attribute] = value
+	
+	def addAttributeValue(self, attribute, value):
+		''' Add a value to an object's attribute. '''
+		if not self._new.has_key(attribute):
+			self.setAttribute(attribute, [ self._encodeValue(value) ])
+			return
+		if value in self._new[attribute]:
+			#logger.warning("Attribute value '%s' already exists" % value.decode('utf-8', 'ignore'))
+			return
+		self._new[attribute].append( self._encodeValue(value) )
+	
+	def deleteAttributeValue(self, attribute, value):
+		''' Delete a value from the list of attribute values. '''
+		logger.debug("Deleting value '%s' of attribute '%s' on object '%s'" % (value, attribute, self.getDn()))
+		if not self._new.has_key(attribute):
+			logger.warning("Failed to delete value '%s' of attribute '%s': does not exists" % (value, attribute))
+			return
+		for i in range( len(self._new[attribute]) ):
+			logger.debug2("Testing if value '%s' of attribute '%s' == '%s'" % (self._new[attribute][i], attribute, value))
+			if (self._new[attribute][i] == value):
+				del self._new[attribute][i]
+				logger.debug("Value '%s' of attribute '%s' successfuly deleted" % (value, attribute))
+				return
+	
+	def _encodeValue(self, value):
+		if not value:
+			return value
+		if (type(value) != unicode):
+			value = value.decode('utf-8', 'replace')
+		return value.encode('utf-8')
+
+
+# ======================================================================================================
+# =                                    CLASS LDAPObjectSearch                                              =
+# ======================================================================================================
+
+class LDAPObjectSearch:
+	''' This class simplifies object searchs. '''
+	
+	def __init__(self, ldapSession, baseDn='', scope=ldap.SCOPE_SUBTREE, filter='(ObjectClass=*)'):
+		''' ObjectSearch constructor. '''
+		
+		if not baseDn:
+			baseDn = ldapSession.baseDn
+		
+		logger.debug( "Searching object => baseDn: %s, scope: %s, filter: %s" 
+				% (baseDn, scope, filter) )
+		
+		# Storage for matching DNs
+		self._dns = []
+		self._ldap = ldapSession
+		
+		# Execute search
+		try:
+			result = self._ldap.search( 	baseDn = baseDn, 
+							scope = scope, 
+							filter = filter, 
+							attributes = ['dn'] )
+		except Exception, e:
+			logger.debug("LDAPObjectSearch search error: %s" % e)
+			raise
+		
+		for r in result:
+			logger.debug( "Found dn: %s" % r[0] )
+			self._dns.append(r[0])
+		
+	def getCns(self):
+		''' Returns the cns of all objects found. '''
+		cns = []
+		for dn in self._dns:
+			cns.append( ( ldap.explode_dn(dn, notypes=1) )[0] )
+		return cns
+	
+	def getCn(self):
+		''' Returns the cn of the first object found. '''
+		if ( len(self._dns) >= 1 ):
+			return ( ldap.explode_dn(self._dns[0], notypes=1) )[0]
+			
+	def getDns(self):
+		''' Returns the dns of all objects found. '''
+		return self._dns
+	
+	def getDn(self):
+		''' Returns the dn of the first object found. '''
+		if ( len(self._dns) >= 1 ):
+			return self._dns[0]
+		
+	def getObjects(self):
+		''' Returns all objects as Object instances. '''
+		if ( len(self._dns) <= 0 ):
+			raise BackendMissingDataError("No objects found")
+		objects = []
+		for dn in self._dns:
+			objects.append( LDAPObject(dn) )
+		return objects
+	
+	def getLDAPObject(self):
+		''' Returns the first object found as Object instance. '''
+		if ( len(self._dns) <= 0 ):
+			raise BackendMissingDataError("No object found")
+		return LDAPObject(self._dns[0])
 
 
 
