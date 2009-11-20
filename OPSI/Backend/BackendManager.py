@@ -34,7 +34,7 @@
 
 __version__ = '3.5'
 
-import new, inspect, re, types, socket
+import new, inspect, re, types, socket, copy
 
 # OPSI imports
 from OPSI.Logger import *

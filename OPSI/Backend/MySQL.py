@@ -499,6 +499,26 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
+		if not 'PRODUCT_DEPENDENCY' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_DEPENDENCY')
+			table = u'''CREATE TABLE `PRODUCT_DEPENDENCY` (
+					`productId` varchar(50) NOT NULL,
+					`productVersion` varchar(16) NOT NULL,
+					`packageVersion` varchar(16) NOT NULL,
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
+					`productAction` varchar(16) NOT NULL,
+					`requiredProductId` varchar(50) NOT NULL,
+					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `productAction`, `requiredProductId` ),
+					`requiredProductVersion` varchar(16),
+					`requiredPackageVersion` varchar(16),
+					`requiredAction` varchar(16),
+					`requiredInstallationStatus` varchar(16),
+					`requirementType` varchar(16)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+			
 		if not 'PRODUCT_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
 			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
@@ -715,8 +735,9 @@ class MySQLBackend(ExtendedConfigDataBackend):
 		del data['productClassIds']
 		self._mysql.update('PRODUCT', where, data)
 		self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
-		for windowsSoftwareId in windowsSoftwareIds:
-			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+		if windowsSoftwareIds:
+			for windowsSoftwareId in windowsSoftwareIds:
+				self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
@@ -809,6 +830,36 @@ class MySQLBackend(ExtendedConfigDataBackend):
 			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
 			self._mysql.delete('PRODUCT_PROPERTY', where)
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductDependencies                                                                         -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productDependency_insertObject(self, productDependency):
+		ConfigDataBackend.productDependency_insertObject(self, productDependency)
+		data = self._objectToDatabaseHash(productDependency)
+		
+		self._mysql.insert('PRODUCT_DEPENDENCY', data)
+	
+	def productDependency_updateObject(self, productDependency):
+		ConfigDataBackend.productDependency_updateObject(self, productDependency)
+		data = self._objectToDatabaseHash(productDependency)
+		
+		self._mysql.update('PRODUCT_DEPENDENCY', data)
+	
+	def productDependency_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting product dependencies, filter: %s" % filter)
+		productDependencies = []
+		self._adjustAttributes(ProductDependency, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter)):
+			productDependencies.append(ProductDependency.fromHash(res))
+		return productDependencies
+	
+	def productDependency_deleteObjects(self, productDependencies):
+		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
+		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
+			logger.info("Deleting product dependency %s" % productDependency)
+			where = self._uniqueCondition(productDependency)
+			self._mysql.delete('PRODUCT_DEPENDENCY', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -

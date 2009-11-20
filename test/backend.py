@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, time
+import sys, time, random
 
 from OPSI.Logger import *
 from OPSI.Backend.Object import *
@@ -197,7 +197,26 @@ class BackendTest(object):
 			productClassNames  = ['localboot-products'],
 			windowsSoftwareIds = []
 		)
-		self.localbootProducts = [ self.product2, self.product3 ]
+		
+		self.product4 = LocalbootProduct(
+			id                 = 'product4',
+			name               = u'Product 4',
+			productVersion     = "3.0",
+			packageVersion     = 24,
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = "uninstall.ins",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
+			priority           = 0,
+			description        = "",
+			advice             = "",
+			productClassNames  = [],
+			windowsSoftwareIds = []
+		)
+		
+		self.localbootProducts = [ self.product2, self.product3, self.product4 ]
 		self.products.extend(self.localbootProducts)
 		
 		# ProductProperties
@@ -231,6 +250,33 @@ class BackendTest(object):
 			defaultValues  = False
 		)
 		self.productProperties = [ self.productProperty1, self.productProperty2, self.productProperty3 ]
+		
+		# ProductDependencies
+		self.productDependency1 = ProductDependency(
+			productId                  = self.product2.id,
+			productVersion             = self.product2.productVersion,
+			packageVersion             = self.product2.packageVersion,
+			productAction              = 'setup',
+			requiredProductId          = self.product3.id,
+			requiredProductVersion     = self.product3.productVersion,
+			requiredPackageVersion     = self.product3.packageVersion,
+			requiredAction             = 'setup',
+			requiredInstallationStatus = None,
+			requirementType            = 'before'
+		)
+		self.productDependency2 = ProductDependency(
+			productId                  = self.product2.id,
+			productVersion             = self.product2.productVersion,
+			packageVersion             = self.product2.packageVersion,
+			productAction              = 'setup',
+			requiredProductId          = self.product4.id,
+			requiredProductVersion     = None,
+			requiredPackageVersion     = None,
+			requiredAction             = None,
+			requiredInstallationStatus = 'installed',
+			requirementType            = 'after'
+		)
+		self.productDependencies = [ self.productDependency1, self.productDependency2 ]
 		
 		# ProductOnDepots
 		self.productOnDepot1 = ProductOnDepot(
@@ -529,6 +575,12 @@ class BackendTest(object):
 		productProperties = self.backend.productProperty_getObjects()
 		assert len(productProperties) == len(self.productProperties)
 		
+		# ProductDependencies
+		logger.notice(u"Testing ProductDependency methods")
+		
+		self.backend.productDependency_createObjects(self.productDependencies)
+		productDependencies = self.backend.productDependency_getObjects()
+		assert len(productDependencies) == len(self.productDependencies)
 		
 		# ProductOnDepots
 		logger.notice(u"Testing productOnDepot methods")
@@ -745,7 +797,8 @@ class BackendTest(object):
 				hardwareAddress = '',
 				ipAddress = '192.168.0.%d' % ip,
 				created = None,
-				lastSeen = None)
+				lastSeen = None
+			)
 		logger.notice(u"Took %.2f seconds to create %d clients" % ((time.time()-start), num))
 		
 		start = time.time()
@@ -755,6 +808,67 @@ class BackendTest(object):
 		#start = time.time()
 		#self.backend.host_delete(id = [])
 		#logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), num))
+		
+		
+		num = 100
+		start = time.time()
+		for i in range(num):
+			method = random.choice((self.backend.product_createLocalboot, self.backend.product_createNetboot))
+			method(
+				id = 'product-%d' % i,
+				productVersion = random.choice(('1.0', '2', 'xxx', '3.1', '4')),
+				packageVersion = random.choice(('1', '2', 'y', '3', '10', 11, 22)),
+				name = 'Product %d' % i,
+				licenseRequired = random.choice((None, True, False)),
+				setupScript = random.choice(('setup.ins', None)),
+				uninstallScript = random.choice(('uninstall.ins', None)),
+				updateScript = random.choice(('update.ins', None)),
+				alwaysScript = random.choice(('always.ins', None)),
+				onceScript = random.choice(('once.ins', None)),
+				priority = random.choice((-100, -90, -30, 0, 30, 40, 60, 99)),
+				description = random.choice(('Test product %d' % i, 'Some product', '--------', '', None)),
+				advice = random.choice(('Nothing', 'Be careful', '--------', '', None)),
+				changelog = None,
+				productClassNames = None,
+				windowsSoftwareIds = None
+			)
+		
+		logger.notice(u"Took %.2f seconds to create %d products" % ((time.time()-start), num))
+		
+		#start = time.time()
+		#self.backend.product_getObjects(attributes = ['id'], uninstallScript = 'uninstall.ins')
+		#logger.notice(u"Took %.2f seconds to search uninstall script in %d products" % ((time.time()-start), num))
+		
+		for product in self.backend.product_getObjects():
+			for depotId in self.backend.host_getIdents(type = 'OpsiDepotserver'):
+				self.backend.productOnDepot_create(
+					productId = product.id,
+					productType = product.getType(),
+					productVersion = product.productVersion,
+					packageVersion = product.packageVersion,
+					depotId = depotId
+				)
+		
+		
+		for product in self.backend.product_getObjects():
+			for clientId in self.backend.host_getIdents(type = 'OpsiClient'):
+				actions = ['none', None]
+				if product.setupScript:     actions.append('setup')
+				if product.uninstallScript: actions.append('uninstall')
+				if product.onceScript:      actions.append('once')
+				if product.alwaysScript:    actions.append('always')
+				if product.updateScript:    actions.append('update')
+				self.backend.productOnClient_create(
+					productId = product.id,
+					productType = product.getType(),
+					clientId = clientId,
+					installationStatus = random.choice(('installed', 'not_installed', None)),
+					actionRequest = random.choice(actions),
+					actionProgress = random.choice(('installing 100%', 'uninstalling 56%', 'something', None)),
+					productVersion = product.productVersion,
+					packageVersion = product.packageVersion,
+					lastStateChange = None
+				)
 		
 		logger.setConsoleLevel(consoleLevel)
 

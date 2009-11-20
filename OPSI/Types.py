@@ -218,19 +218,37 @@ def forceFilename(var):
 
 def forceInstallationStatus(var):
 	var = forceUnicodeLower(var)
-	if var and var not in ('installed', 'not_installed'):
-		raise BackendBadValueError(u"Bad installation status: '%s'" % var)
+	if var:
+		if (var == 'undefined'):
+			var = None
+		elif var not in ('installed', 'not_installed'):
+			raise BackendBadValueError(u"Bad installation status: '%s'" % var)
 	return var
 
 def forceActionRequest(var):
 	var = forceUnicodeLower(var)
-	if var and var not in ('setup', 'uninstall', 'update', 'always', 'once', 'none'):
-		raise BackendBadValueError(u"Bad action request: '%s'" % var)
+	if var:
+		if (var == 'undefined'):
+			var = None
+		elif var not in ('setup', 'uninstall', 'update', 'always', 'once', 'none', 'failed'):
+			raise BackendBadValueError(u"Bad action request: '%s'" % var)
 	return var
 
+def forceActionRequestList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceActionRequest(var[i])
+	return var
+	
 def forceActionProgress(var):
 	return forceUnicode(var)
 
+def forceRequirementType(var):
+	var = forceUnicodeLower(var)
+	if not var in ('before', 'after'):
+		raise BackendBadValueError(u"Bad requirement type: '%s'" % var)
+	return var
+	
 def forceObjectClass(var, objectClass):
 	if type(var) in (unicode, str):
 		try:

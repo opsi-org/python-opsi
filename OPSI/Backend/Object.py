@@ -1085,6 +1085,110 @@ class BoolProductProperty(ProductProperty):
 	
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
+class ProductDependency(Relationship):
+	subClasses = {}
+	backendMethodPrefix = 'productDependency'
+	
+	def __init__(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
+		self.requiredProductVersion = None
+		self.requiredPackageVersion = None
+		self.requiredAction = None
+		self.requiredInstallationStatus = None
+		self.requirementType = None
+		self.setProductId(productId)
+		self.setProductVersion(productVersion)
+		self.setPackageVersion(packageVersion)
+		self.setProductAction(productAction)
+		self.setRequiredProductId(requiredProductId)
+		if not requiredProductVersion is None:
+			self.setRequiredProductVersion(requiredProductVersion)
+		if not requiredPackageVersion is None:
+			self.setRequiredPackageVersion(requiredPackageVersion)
+		if not requiredAction is None:
+			self.setRequiredAction(requiredAction)
+		if not requiredInstallationStatus is None:
+			self.setRequiredInstallationStatus(requiredInstallationStatus)
+		if not requirementType is None:
+			self.setRequirementType(requirementType)
+	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+	
+	def getProductId(self):
+		return self.productId
+	
+	def setProductId(self, productId):
+		self.productId = forceProductId(productId)
+	
+	def getProductVersion(self):
+		return self.productVersion
+	
+	def setProductVersion(self, productVersion):
+		self.productVersion = forceProductVersion(productVersion)
+	
+	def getPackageVersion(self):
+		return self.packageVersion
+	
+	def setPackageVersion(self, packageVersion):
+		self.packageVersion = forcePackageVersion(packageVersion)
+	
+	def getProductAction(self):
+		return self.productAction
+	
+	def setProductAction(self, productAction):
+		self.productAction = forceActionRequest(productAction)
+	
+	def getRequiredProductId(self):
+		return self.requiredProductId
+	
+	def setRequiredProductId(self, requiredProductId):
+		self.requiredProductId = forceProductId(requiredProductId)
+	
+	def getRequiredProductVersion(self):
+		return self.requiredProductVersion
+	
+	def setRequiredProductVersion(self, requiredProductVersion):
+		self.requiredProductVersion = forceProductVersion(requiredProductVersion)
+	
+	def getRequiredPackageVersion(self):
+		return self.requiredPackageVersion
+	
+	def setRequiredPackageVersion(self, requiredPackageVersion):
+		self.requiredPackageVersion = forcePackageVersion(requiredPackageVersion)
+	
+	def getRequiredAction(self):
+		return self.requiredAction
+	
+	def setRequiredAction(self, requiredAction):
+		self.requiredAction = forceActionRequest(requiredAction)
+	
+	def getRequiredInstallationStatus(self):
+		return self.requiredInstallationStatus
+	
+	def setRequiredInstallationStatus(self, requiredInstallationStatus):
+		self.requiredInstallationStatus = forceInstallationStatus(requiredInstallationStatus)
+	
+	def getRequirementType(self):
+		return self.requirementType
+	
+	def setRequirementType(self, requirementType):
+		self.requirementType = forceRequirementType(requirementType)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'ProductDependency'
+		return Relationship.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return ProductDependency.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s productId '%s', productVersion '%s', packageVersion '%s', productAction '%s', requiredProductId '%s'>" \
+			% (self.getType(), self.productId, self.productVersion, self.packageVersion, self.productAction, self.requiredProductId)
+	
+Relationship.subClasses['ProductDependency'] = ProductDependency
+
 class ProductOnDepot(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnDepot'

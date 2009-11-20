@@ -207,7 +207,7 @@ class ConfigDataBackend(Backend):
 	def product_insertObject(self, product):
 		product = forceObjectClass(product, Product)
 		product.setDefaults()
-	
+		
 	def product_updateObject(self, product):
 		pass
 	
@@ -215,20 +215,51 @@ class ConfigDataBackend(Backend):
 		self._testFilterAndAttributes(Product, attributes, **filter)
 	
 	def product_deleteObjects(self, products):
+		productIds = []
 		for product in forceObjectClassList(products, Product):
+			if not product.id in productIds:
+				productIds.append(product.id)
 			self.productProperty_deleteObjects(
 				self.productProperty_getObjects(
 					productId = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
-	
+			self.productDependency_deleteObjects(
+				self.productDependency_getObjects(
+					productId = product.id,
+					productVersion = product.productVersion,
+					packageVersion = product.packageVersion ))
+			self.productOnDepot_deleteObjects(
+				self.productOnDepot_getObjects(
+					productId = product.id,
+					productVersion = product.productVersion,
+					packageVersion = product.packageVersion ))
+			self.productOnClient_deleteObjects(
+				self.productOnClient_getObjects(
+					productId = product.id,
+					productVersion = product.productVersion,
+					packageVersion = product.packageVersion ))
+		
+		for productId in productIds:
+			if not self.product_getIdents(id = productId):
+				# No more products with this id found => delete productPropertyStates
+				self.productPropertyState_deleteObjects(
+					self.productPropertyState_getObjects(productId = productId))
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		productProperty.setDefaults()
-	
+		
+		if not self.product_getIdents(
+				id             = productProperty.productId,
+				productVersion = productProperty.productVersion,
+				packageVersion = productProperty.packageVersion):
+			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
+		
 	def productProperty_updateObject(self, productProperty):
 		pass
 	
@@ -236,6 +267,30 @@ class ConfigDataBackend(Backend):
 		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
 	
 	def productProperty_deleteObjects(self, productProperties):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductDependencies                                                                       -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productDependency_insertObject(self, productDependency):
+		productDependency = forceObjectClass(productDependency, ProductDependency)
+		productDependency.setDefaults()
+		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
+			raise BackendBadValueError(u"Either a required action or a required installation status must be given")
+		if not self.product_getIdents(
+				id                = productDependency.productId,
+				productVersion    = productDependency.productVersion,
+				packageVersion    = productDependency.packageVersion):
+			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
+		
+	def productDependency_updateObject(self, productDependency):
+		pass
+	
+	def productDependency_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(ProductDependency, attributes, **filter)
+	
+	def productDependency_deleteObjects(self, productDependencies):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -277,7 +332,7 @@ class ConfigDataBackend(Backend):
 		if   (productOnClient.actionRequest == 'setup') and not products[0].setupScript:
 			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
 				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		elif (productOnClient.actionRequest == 'uninstall') and not products[0].setupScript:
+		elif (productOnClient.actionRequest == 'uninstall') and not products[0].uninstallScript:
 			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
 				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
 		elif (productOnClient.actionRequest == 'update') and not products[0].updateScript:
@@ -305,6 +360,11 @@ class ConfigDataBackend(Backend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		productPropertyState.setDefaults()
+		if not self.productProperties_getIdents(
+					productId  = productPropertyState.productId,
+					propertyId = productPropertyState.propertyId):
+			raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
+				% (productPropertyState.productId, productPropertyState.propertyId))
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		pass
@@ -807,6 +867,52 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 					propertyIds    = forceUnicodeLowerList(propertyId)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductDependencies                                                                       -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productDependency_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productDependency in self.productDependency_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'], **filter):
+			result.append(productDependency.getIdent(returnType))
+		return result
+	
+	def productDependency_createObjects(self, productDependencies):
+		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
+			logger.info(u"Creating product dependency %s" % productDependency)
+			if self.productDependency_getIdents(
+					productId         = productDependency.productId,
+					productVersion    = productDependency.productVersion,
+					packageVersion    = productDependency.packageVersion,
+					productAction     = productDependency.productAction,
+					requiredProductId = productDependency.requiredProductId):
+				logger.info(u"Product dependency '%s' already exists, updating" % productDependency)
+				self.productDependency_updateObject(productDependency)
+			else:
+				self.productDependency_insertObject(productDependency)
+	
+	def productDependency_updateObjects(self, productDependencies):
+		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
+			self.productDependency_updateObject(productDependency)
+	
+	def productDependency_create(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
+		hash = locals()
+		del hash['self']
+		return self.productDependency_createObjects(ProductDependency.fromHash(hash))
+	
+	def productDependency_delete(self, productId, productVersion, packageVersion, productAction, requiredProductId):
+		if not productId:         productId         = []
+		if not productVersion:    productVersion    = []
+		if not packageVersion:    packageVersion    = []
+		if not productAction:     productAction     = []
+		if not requiredProductId: requiredProductId = []
+		return self.productDependency_deleteObjects(
+				self.productDependency_getObjects(
+					productId         = forceProductIdList(productId),
+					productVersion    = forceProductVersionList(productVersion),
+					packageVersion    = forcePackageVersionList(packageVersion),
+					productAction     = forceActionRequestList(productAction),
+					requiredProductId = forceProductIdList(requiredProductId)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_getIdents(self, returnType='unicode', **filter):
@@ -856,6 +962,9 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 		for productOnClient in self.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
 			result.append(productOnClient.getIdent(returnType))
 		return result
+	
+	def productOnClient_getObjects(self, attributes=[], **filter):
+		return []#super(ExtendedConfigDataBackend, self).productOnClient_getObjects(self, attributes=[], **filter)
 	
 	def productOnClient_createObjects(self, productOnClients):
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
