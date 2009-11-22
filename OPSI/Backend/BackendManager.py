@@ -49,7 +49,7 @@ logger = Logger()
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
-class BackendManager(ExtendedConfigDataBackend):
+class BackendManager(Backend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		#ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
@@ -74,29 +74,28 @@ class BackendManager(ExtendedConfigDataBackend):
 		if dispatch:
 			self._backend = BackendDispatcher(username, password, address, **kwargs)
 		if extend:
+			self._backend = ExtendedConfigDataBackend(self._backend)
 			BackendExtender(self._backend, **kwargs)
 		if accessControl:
-			self._backend = BackendAccessControl(username, password, address, backend = self._backend, **kwargs)
-		
+			self._backend = BackendAccessControl(username = username, password = password, backend = self._backend, **kwargs)
 		self._createInstanceMethods()
-	
+		
 	def _createInstanceMethods(self):
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
-		#for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public method '%s'" % methodName)
-			print u"Found public method '%s'" % methodName
-			if (methodName == 'getInterface'):
+			#if methodName in ('exit', 'getInterface'):
+			if hasattr(self.__class__, methodName):
+				logger.debug(u"Not overwriting method %s" % methodName)
 				continue
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-		#ExtendedConfigDataBackend._createInstanceMethods(self)
-		
+			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+	
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
@@ -197,7 +196,7 @@ class BackendDispatcher(ConfigDataBackend):
 			
 			for be in self._backends.keys():
 				if not be in methodBackends:
-					setattr(self._backends[be]['instance'].__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
 					
 	
 	def _executeMethod(self, methodBackends, methodName, **kwargs):
@@ -214,11 +213,12 @@ class BackendDispatcher(ConfigDataBackend):
 		return result
 		
 
-class BackendExtender(ExtendedConfigDataBackend):
+class BackendExtender(object):
 	def __init__(self, backend, **kwargs):
 		if not isinstance(backend, ExtendedConfigDataBackend):
-			backend = ExtendedConfigDataBackend(backend)
-		ExtendedConfigDataBackend.__init__(self, backend)
+			raise Exception("Need instance of ExtendedConfigDataBackend as backend")
+		self._backend = backend
+		#ExtendedConfigDataBackend.__init__(self, backend)
 		
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
 		
@@ -257,7 +257,7 @@ class BackendExtender(ExtendedConfigDataBackend):
 				for (key, val) in locals().items():
 					if ( type(val) == types.FunctionType ):
 						logger.debug2(u"Extending backend '%s' with instancemethod: '%s'" % (self._backend, key) )
-						setattr( self._backend.__class__, key, new.instancemethod(val, None, self._backend.__class__) )
+						setattr( self._backend, key, new.instancemethod(val, self._backend, self._backend.__class__) )
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 
@@ -269,27 +269,21 @@ elif (os.name == 'nt'):
 	import win32security, win32net
 from OPSI import Tools
 
-class BackendAccessControl(ExtendedConfigDataBackend):
+class BackendAccessControl(object):
 	
-	def __init__(self, username = '', password = '', address = '', **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+	def __init__(self, backend, username=None, password=None, acl=None, aclFile=None, **kwargs):
 		
+		self._backend    = backend
+		self._username   = username
+		self._password   = password
+		self._acl        = acl
+		self._aclFile    = aclFile
 		self._pamService = 'common-auth'
 		self._userGroups = []
-		self._host = None
-		self._backend = None
-		self._aclFile = None
-		self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
+		self._host       = None
 		
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if   (option == 'backend'):
-				self._backend = value
-			elif (option == 'acl'):
-				self._acl = value
-			elif (option == 'aclfile'):
-				self._aclFile = value
-			
+		if not self._acl:
+			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
 		if not self._username:
 			raise BackendAuthenticationError(u"No username specified")
 		if not self._password:

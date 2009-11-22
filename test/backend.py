@@ -595,15 +595,19 @@ class BackendTest(object):
 		
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		productOnClients = self.backend.productOnClient_getObjects()
-		assert len(productOnClients) == len(self.productOnClients)
 		
 		client1ProductOnClients = []
 		for productOnClient in self.productOnClients:
 			if (productOnClient.getClientId() == self.client1.id):
 				client1ProductOnClients.append(productOnClient)
 		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
-		assert len(productOnClients) == len(client1ProductOnClients)
+		for productOnClient in productOnClients:
+			assert productOnClient.getClientId() == self.client1.getId()
 		
+		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId(), productId = self.product2.getId())
+		assert len(productOnClients) == 1
+		assert productOnClients[0].getProductId() == self.product2.getId()
+		assert productOnClients[0].getClientId() == self.client1.getId()
 		
 		# ProductPropertyStates
 		logger.notice(u"Testing productPropertyState methods")

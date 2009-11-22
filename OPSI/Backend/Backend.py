@@ -114,7 +114,7 @@ class Backend:
 		Parameters starting with an asterisk (*) are optional '''
 		methodList = []
 		methods = {}
-		for (n, t) in self.__class__.__dict__.items():
+		for (n, t) in self.__dict__.items():
 			# Extract a list of all "public" functions (functionname does not start with '_')
 			if ( (type(t) == types.FunctionType or type(t) == types.MethodType ) and not n.startswith('_') ):
 				methods[n] = t
@@ -538,7 +538,7 @@ class ConfigDataBackend(Backend):
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class ExtendedConfigDataBackend(ConfigDataBackend):
+class ExtendedConfigDataBackend(Backend):
 	
 	def __init__(self, backend):
 		self._backend = backend
@@ -551,13 +551,14 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public method '%s'" % methodName)
-			if (methodName == 'getInterface'):
+			if hasattr(self.__class__, methodName):
+				logger.debug(u"Not overwriting method %s" % methodName)
 				continue
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
+		
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
@@ -874,6 +875,59 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 					configId = forceUnicodeLowerList(configId),
 					objectId = forceObjectIdList(objectId)))
 	
+	def configState_getValues(self, configId=[], objectId=[], allowOverwriteDefaultWithEmptyValues=True):
+		configId = forceUnicodeLowerList(configId)
+		objectId = forceObjectIdList(objectId)
+		
+		defaultValues = {}
+		for config in self.config_getObjects(id = configId):
+			defaultValues[config.id] = config.defaultValues
+			logger.debug("Default values for '%s': %s" % (config.id, config.defaultValues))
+		
+		objectValues = {}
+		if objectId:
+			for objectId in objectId:
+				objectValues[objectId] = copy.deepcopy(defaultValues)
+		else:
+			for objectId in self.host_getIdents():
+				objectValues[objectId] = copy.deepcopy(defaultValues)
+		
+		for configState in self.configState_getObjects(configId = configId, objectId = objectId):
+			if not objectValues.has_key(configState.objectId):
+				logger.warning(u"Object id '%s' not found in objects")
+				continue
+			if not objectValues[configState.objectId].has_key(configState.configId):
+				logger.warning(u"Non existing config id '%s' found in config state of object id '%s'" \
+					% (configState.configId, configState.objectId))
+				continue
+			if not configState.values and not allowOverwriteDefaultWithEmptyValues:
+				continue
+			objectValues[configState.objectId][configState.configId] = configState.values
+		return objectValues
+
+	def configState_getDepotserverIdsToClientIds(self, depotIds=[], clientIds=[]):
+		result = {}
+		if not depotIds:
+			depotIds = self.host_getIdents(type = 'OpsiDepotserver')
+		for depotId in depotIds:
+			result[depotId] = []
+		
+		knownClientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
+		configId = 'network.depot_server.depot_id'
+		values = self.configState_getValues(configId = configId, objectId = clientIds, allowOverwriteDefaultWithEmptyValues = False)
+		for (objectId, configState) in values.items():
+			if not objectId in knownClientIds:
+				logger.debug(u"Skipping objectId '%s': not a opsi client" % objectId)
+				continue
+			depotId = configState.get(configId, [])[0]
+			if not depotId:
+				logger.error(u"No depot server configured for client '%s'" % objectId)
+				continue
+			if not depotId in depotIds:
+				continue
+			result[depotId].append(objectId)
+		return result
+	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1041,8 +1095,43 @@ class ExtendedConfigDataBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	#def productOnClient_getObjects(self, attributes=[], **filter):
-	#	return []#super(ExtendedConfigDataBackend, self).productOnClient_getObjects(self, attributes=[], **filter)
+	def productOnClient_getObjects(self, attributes=[], **filter):
+		# Get product states from backend
+		productOnClients = self._backend.productOnClient_getObjects(attributes, **filter)
+		# Get all client ids by filter
+		clientIds = self._backend.host_getIdents(id = filter.get('clientId'), returnType = 'unicode')
+		# Get depot to client assignment
+		depotToClients = self.configState_getDepotserverIdsToClientIds(clientIds = clientIds)
+		# Create data structure for product states to find missing ones
+		pocs = {}
+		for clientId in clientIds:
+			pocs[clientId] = []
+		for poc in productOnClients:
+			pocs[poc.clientId].append(poc.productId)
+		# Create missing product states
+		for (depotId, depotClientIds) in depotToClients.items():
+			productOnDepots = self._backend.productOnDepot_getObjects(
+				depotId        = depotId,
+				productId      = filter.get('productId'),
+				productVersion = filter.get('productVersion'),
+				packageVersion = filter.get('packageVersion'))
+			for clientId in depotClientIds:
+				if not clientId in clientIds:
+					# Filtered
+					continue
+				for pod in productOnDepots:
+					if not pod.productId in pocs[clientId]:
+						# Create default
+						productOnClients.append(
+							ProductOnClient(
+								productId          = pod.productId,
+								productType        = pod.productType,
+								clientId           = clientId,
+								installationStatus = u'not_installed',
+								actionRequest      = u'none',
+							)
+						)
+		return productOnClients
 	
 	def productOnClient_createObjects(self, productOnClients):
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
