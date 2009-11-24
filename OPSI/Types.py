@@ -94,6 +94,12 @@ def forceInt(var):
 	except Exception, e:
 		raise BackendBadValueError(u"Bad int value '%s': %s" % (var, e))
 
+def forceUnsignedInt(var):
+	var = forceInt(var)
+	if (var < 0):
+		var = var*(-1)
+	return var
+
 def forceDict(var):
 	if type(var) is dict:
 		return var
@@ -316,6 +322,48 @@ def forceHostname(var):
 	match = re.search(hostnameRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad hostname: '%s'" % var)
+	return var
+
+licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+def forceLicenseContractId(var):
+	var = forceObjectId(var)
+	match = re.search(licenseContractIdRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad license contract id: '%s'" % var)
+	return var
+
+def forceLicenseContractIdList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceLicenseContractId(var[i])
+	return var
+
+softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+def forceSoftwareLicenseId(var):
+	var = forceObjectId(var)
+	match = re.search(softwareLicenseIdRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad software license id: '%s'" % var)
+	return var
+
+def forceSoftwareLicenseIdList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceSoftwareLicenseId(var[i])
+	return var
+
+licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+def forceLicensePoolId(var):
+	var = forceObjectId(var)
+	match = re.search(licensePoolIdRegex, var)
+	if not match:
+		raise BackendBadValueError(u"Bad license pool id: '%s'" % var)
+	return var
+
+def forceLicensePoolIdList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceLicensePoolId(var[i])
 	return var
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

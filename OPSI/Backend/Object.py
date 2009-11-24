@@ -450,7 +450,7 @@ class OpsiConfigserver(OpsiDepotserver):
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 Host.subClasses['OpsiConfigserver'] = OpsiConfigserver
 
-class Config(Object):
+class Config(Entity):
 	subClasses = {}
 	foreignIdAttributes = Object.foreignIdAttributes + ['configId']
 	backendMethodPrefix = 'config'
@@ -477,6 +477,9 @@ class Config(Object):
 	def setDefaults(self):
 		Entity.setDefaults(self)
 		self.setDefaultValues(self.defaultValues)
+	
+	def getId(self):
+		return self.id
 	
 	def setId(self, id):
 		self.id = forceUnicodeLower(id)
@@ -529,7 +532,7 @@ class Config(Object):
 		return u"<%s id '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
 			% (self.getType(), self.id, self.description, self.possibleValues, self.defaultValues, self.multiValue)
 	
-Object.subClasses['Config'] = Config
+Entity.subClasses['Config'] = Config
 
 class UnicodeConfig(Config):
 	subClasses = {}
@@ -1519,6 +1522,393 @@ class ObjectToGroup(Relationship):
 			% (self.getType(), self.groupId, self.objectId)
 	
 Relationship.subClasses['ObjectToGroup'] = ObjectToGroup
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -   License management                                                                        -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+class LicenseContract(Entity):
+	subClasses = {}
+	foreignIdAttributes = Entity.foreignIdAttributes + ['licenseContractId']
+	backendMethodPrefix = 'licenseContract'
+	
+	def __init__(self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None):
+		self.description = None
+		self.notes = None
+		self.partner = None
+		self.conclusionDate = None
+		self.notificationDate = None
+		self.expirationDate = None
+		self.setId(id)
+		if not partner is None:
+			self.setPartner(partner)
+		if not conclusionDate is None:
+			self.setConclusionDate(conclusionDate)
+		if not notificationDate is None:
+			self.setNotificationDate(notificationDate)
+		if not conclusionDate is None:
+			self.setExpirationDate(expirationDate)
+	
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.description is None:
+			self.setDescription(u"")
+		if self.notes is None:
+			self.setNotes(u"")
+		if self.partner is None:
+			self.setPartner(u"")
+		if self.conclusionDate is None:
+			self.setConclusionDate(Tools.timestamp())
+		if self.notificationDate is None:
+			self.setNotificationDate('0000-00-00 00:00:00')
+		if self.expirationDate is None:
+			self.setExpirationDate('0000-00-00 00:00:00')
+		
+	def getId(self):
+		return self.id
+	
+	def setId(self, id):
+		self.id = forceLicenseContractId(id)
+	
+	def getDescription(self):
+		return self.description
+	
+	def setDescription(self, description):
+		self.description = forceUnicode(description)
+	
+	def getNotes(self):
+		return self.notes
+	
+	def setNotes(self, notes):
+		self.notes = forceUnicode(notes)
+	
+	def getPartner(self):
+		return self.partner
+	
+	def setPartner(self, partner):
+		self.partner = forceUnicode(partner)
+	
+	def getConclusionDate(self):
+		return self.conclusionDate
+	
+	def setConclusionDate(self, conclusionDate):
+		self.conclusionDate = forceOpsiTimestamp(conclusionDate)
+	
+	def getNotificationDate(self):
+		return self.notificationDate
+	
+	def setNotificationDate(self, notificationDate):
+		self.notificationDate = forceOpsiTimestamp(notificationDate)
+	
+	def getExpirationDate(self):
+		return self.expirationDate
+	
+	def setExpirationDate(self, expirationDate):
+		self.expirationDate = forceOpsiTimestamp(expirationDate)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'LicenseContract'
+		return Entity.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return LicenseContract.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s id '%s', description '%s'>" \
+			% (self.getType(), self.id, self.description)
+	
+Entity.subClasses['LicenseContract'] = LicenseContract
+
+class SoftwareLicense(Entity):
+	subClasses = {}
+	foreignIdAttributes = Object.foreignIdAttributes + ['softwareLicenseId']
+	backendMethodPrefix = 'softwareLicense'
+	
+	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		self.maxInstallations = None
+		self.boundToHost = None
+		self.expirationDate = None
+		self.setId(id)
+		self.setLicenseContractId(licenseContractId)
+		if not maxInstallations is None:
+			self.setMaxInstallations(maxInstallations)
+		if not boundToHost is None:
+			self.setBoundToHost(boundToHost)
+		if not expirationDate is None:
+			self.setExpirationDate(expirationDate)
+		
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.maxInstallations is None:
+			self.setMaxInstallations(1)
+		if self.expirationDate is None:
+			self.setExpirationDate('0000-00-00 00:00:00')
+		
+	def getId(self):
+		return self.id
+	
+	def setId(self, id):
+		self.id = forceSoftwareLicenseId(id)
+	
+	def getLicenseContractId(self):
+		return self.licenseContractId
+	
+	def setLicenseContractId(self, licenseContractId):
+		self.licenseContractId = forceLicenseContractId(licenseContractId)
+	
+	def getMaxInstallations(self):
+		return self.maxInstallations
+	
+	def setMaxInstallations(self, maxInstallations):
+		self.maxInstallations = forceUnsignedInt(maxInstallations)
+	
+	def getBoundToHost(self):
+		return self.boundToHost
+	
+	def setBoundToHost(self, boundToHost):
+		self.boundToHost = forceHostId(boundToHost)
+	
+	def getExpirationDate(self):
+		return self.expirationDate
+	
+	def setExpirationDate(self, expirationDate):
+		self.expirationDate = forceOpsiTimestamp(expirationDate)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'SoftwareLicense'
+		return Entity.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return SoftwareLicense.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s id '%s', licenseContractId '%s'>" \
+			% (self.getType(), self.id, self.licenseContractId)
+	
+Entity.subClasses['LicenseContract'] = LicenseContract
+
+class RetailSoftwareLicense(SoftwareLicense):
+	subClasses = {}
+	
+	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations, boundToHost, expirationDate)
+		
+	def setDefaults(self):
+		SoftwareLicense.setDefaults(self)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'RetailSoftwareLicense'
+		return SoftwareLicense.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return RetailSoftwareLicense.fromHash(json.loads(jsonString))
+	
+SoftwareLicense.subClasses['RetailSoftwareLicense'] = RetailSoftwareLicense
+
+class OEMSoftwareLicense(SoftwareLicense):
+	subClasses = {}
+	
+	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, 1, boundToHost, expirationDate)
+		if not self.boundToHost:
+			raise BackendBadValueError("OEM software license requires boundToHost value")
+		
+	def setDefaults(self):
+		SoftwareLicense.setDefaults(self)
+	
+	def setMaxInstallations(self, maxInstallations):
+		maxInstallations = forceUnsignedInt(maxInstallations)
+		if (maxInstallations > 1):
+			raise BackendBadValueError(u"OEM software license max installations can only be set to 1")
+		self.maxInstallations = maxInstallations
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'OEMSoftwareLicense'
+		return SoftwareLicense.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return OEMSoftwareLicense.fromHash(json.loads(jsonString))
+	
+SoftwareLicense.subClasses['OEMSoftwareLicense'] = OEMSoftwareLicense
+
+class VolumeSoftwareLicense(SoftwareLicense):
+	subClasses = {}
+	
+	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations, boundToHost, expirationDate)
+	
+	def setDefaults(self):
+		SoftwareLicense.setDefaults(self)
+		if self.maxInstallations is None:
+			self.setMaxInstallations(1)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'VolumeSoftwareLicense'
+		return SoftwareLicense.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return VolumeSoftwareLicense.fromHash(json.loads(jsonString))
+	
+SoftwareLicense.subClasses['VolumeSoftwareLicense'] = VolumeSoftwareLicense
+
+class ConcurrentSoftwareLicense(SoftwareLicense):
+	subClasses = {}
+	
+	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations, boundToHost, expirationDate)
+	
+	def setDefaults(self):
+		SoftwareLicense.setDefaults(self)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'ConcurrentSoftwareLicense'
+		return SoftwareLicense.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return ConcurrentSoftwareLicense.fromHash(json.loads(jsonString))
+	
+SoftwareLicense.subClasses['ConcurrentSoftwareLicense'] = ConcurrentSoftwareLicense
+
+class LicensePool(Entity):
+	subClasses = {}
+	foreignIdAttributes = Object.foreignIdAttributes + ['licensePoolId']
+	backendMethodPrefix = 'licensePool'
+	
+	def __init__(self, id, description=None, productIds=None, windowsSoftwareIds=None):
+		self.description = None
+		self.productIds = None
+		self.windowsSoftwareIds = None
+		self.setId(id)
+		if not description is None:
+			self.setDescription(description)
+		if not productIds is None:
+			self.setProductIds(productIds)
+		if not windowsSoftwareIds is None:
+			self.setWindowsSoftwareIds(windowsSoftwareIds)
+		
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.description is None:
+			self.setDescription(u"")
+		if self.productIds is None:
+			self.setProductIds([])
+		if self.windowsSoftwareIds is None:
+			self.setWindowsSoftwareIds([])
+		
+	def getId(self):
+		return self.id
+	
+	def setId(self, id):
+		self.id = forceLicensePoolId(id)
+	
+	def getDescription(self):
+		return self.description
+	
+	def setDescription(self, description):
+		self.description = forceUnicode(description)
+	
+	def getProductIds(self):
+		return self.productIds
+	
+	def setProductIds(self, productIds):
+		self.productIds = forceProductIdList(productIds)
+	
+	def getWindowsSoftwareIds(self):
+		return self.windowsSoftwareIds
+	
+	def setWindowsSoftwareIds(self, windowsSoftwareIds):
+		self.windowsSoftwareIds = forceUnicodeList(windowsSoftwareIds)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'LicensePool'
+		return Entity.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return LicensePool.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s id '%s', description '%s'>" \
+			% (self.getType(), self.id, self.description)
+	
+Entity.subClasses['LicensePool'] = LicensePool
+
+class SoftwareLicenseToLicensePool(Relationship):
+	subClasses = {}
+	
+	def __init__(self, softwareLicenseId, licensePoolId, licenseKey = None):
+		self.licenseKey = None
+		self.setSoftwareLicenseId(softwareLicenseId)
+		self.setLicensePoolId(licensePoolId)
+		if not licenseKey is None:
+			self.setLicenseKey(licenseKey)
+		
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.licenseKey is None:
+			self.setLicenseKey(u'')
+	
+	def getSoftwareLicenseId(self):
+		return self.softwareLicenseId
+	
+	def setSoftwareLicenseId(self, softwareLicenseId):
+		self.softwareLicenseId = forceSoftwareLicenseId(softwareLicenseId)
+	
+	def getLicensePoolId(self):
+		return self.licensePoolId
+	
+	def setLicensePoolId(self, licensePoolId):
+		self.licensePoolId = forceLicensePoolId(licensePoolId)
+	
+	def getLicenseKey(self):
+		return self.licenseKey
+	
+	def setLicenseKey(self, licenseKey):
+		self.licenseKey = forceUnicodeLower(licenseKey)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'SoftwareLicenseToLicensePool'
+		return Relationship.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return SoftwareLicenseToLicensePool.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s softwareLicenseId '%s', licensePoolId '%s'>" \
+			% (self.getType(), self.softwareLicenseId, self.licensePoolId)
+	
+Relationship.subClasses['SoftwareLicenseToLicensePool'] = SoftwareLicenseToLicensePool
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

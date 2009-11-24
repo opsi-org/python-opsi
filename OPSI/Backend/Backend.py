@@ -54,12 +54,12 @@ def getArgAndCallString(method):
 	argString = u''
 	callString = u''
 	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
-	logger.debug2(u"args: %s" % unicode(args))
-	logger.debug2(u"varargs: %s" % unicode(varargs))
-	logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
-	logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
+	#logger.debug2(u"args: %s" % unicode(args))
+	#logger.debug2(u"varargs: %s" % unicode(varargs))
+	#logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
+	#logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
 	for i in range(len(args)):
-		logger.debug2(u"Processing arg [%s] %s" % (i, args[i]))
+		#logger.debug2(u"Processing arg [%s] %s" % (i, args[i]))
 		if (args[i] == 'self'):
 			continue
 		if (argString):
@@ -73,7 +73,7 @@ def getArgAndCallString(method):
 				default = u"'%s'" % default
 			elif type(default) is unicode:
 				default = u"u'%s'" % default
-			logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
+			#logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
 			argString += u'=%s' % unicode(default)
 	if varargs:
 		for vararg in varargs:
@@ -88,8 +88,8 @@ def getArgAndCallString(method):
 			callString += u', '
 		argString += u'**%s' % varkwargs
 		callString += u'**%s' % varkwargs
-	logger.debug2(u"Arg string is: %s" % argString)
-	logger.debug2(u"Call string is: %s" % callString)
+	#logger.debug2(u"Arg string is: %s" % argString)
+	#logger.debug2(u"Call string is: %s" % callString)
 	return (argString, callString)
 
 
@@ -132,11 +132,80 @@ class Backend:
 		# Sort the function list by name
 		methodList.sort()
 		return methodList
-		
+
+class BackendIdentExtension(Backend):
+	def host_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for host in self.host_getObjects(attributes = ['id'], **filter):
+			result.append(host.getIdent(returnType))
+		return result
+	
+	def config_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for config in self.config_getObjects(attributes = ['id'], **filter):
+			result.append(config.getIdent(returnType))
+		return result
+	
+	def configState_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for configState in self.configState_getObjects(attributes = ['configId', 'objectId'], **filter):
+			result.append(configState.getIdent(returnType))
+		return result
+	
+	def product_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for product in self.product_getObjects(attributes = ['id'], **filter):
+			result.append(product.getIdent(returnType))
+		return result
+	
+	def productProperty_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productProperty in self.productProperty_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'propertyId'], **filter):
+			result.append(productProperty.getIdent(returnType))
+		return result
+	
+	def productDependency_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productDependency in self.productDependency_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'], **filter):
+			result.append(productDependency.getIdent(returnType))
+		return result
+	
+	def productOnDepot_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productOnDepot in self.productOnDepot_getObjects(attributes = ['productId', 'productType', 'depotId'], **filter):
+			result.append(productOnDepot.getIdent(returnType))
+		return result
+	
+	def productOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productOnClient in self.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
+			result.append(productOnClient.getIdent(returnType))
+		return result
+	
+	def productPropertyState_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productPropertyState in self.productPropertyState_getObjects(attributes = ['productId', 'propertyId', 'objectId'], **filter):
+			result.append(productPropertyState.getIdent(returnType))
+		return result
+	
+	def group_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for group in self.group_getObjects(attributes = ['id'], **filter):
+			result.append(group.getIdent(returnType))
+		return result
+	
+	
+	def objectToGroup_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for objectToGroup in self.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
+			result.append(objectToGroup.getIdent(returnType))
+		return result
+	
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS CONFIGDATABACKEND                                          =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class ConfigDataBackend(Backend):
+class ConfigDataBackend(BackendIdentExtension):
 	
 	def __init__(self, username = '', password = '', address = '', **kwargs):
 		Backend.__init__(self, username, password, address, **kwargs)
@@ -168,12 +237,6 @@ class ConfigDataBackend(Backend):
 		
 	def host_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
-	
-	def host_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for host in self.host_getObjects(attributes = ['id'], **filter):
-			result.append(host.getIdent(returnType))
-		return result
 	
 	def host_deleteObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
@@ -217,12 +280,6 @@ class ConfigDataBackend(Backend):
 	def config_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
 	
-	def config_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for config in self.config_getObjects(attributes = ['id'], **filter):
-			result.append(config.getIdent(returnType))
-		return result
-	
 	def config_deleteObjects(self, configs):
 		ids = []
 		for config in forceObjectClassList(configs, Config):
@@ -252,12 +309,6 @@ class ConfigDataBackend(Backend):
 	def configState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
 	
-	def configState_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for configState in self.configState_getObjects(attributes = ['configId', 'objectId'], **filter):
-			result.append(configState.getIdent(returnType))
-		return result
-	
 	def configState_deleteObjects(self, configStates):
 		pass
 	
@@ -273,12 +324,6 @@ class ConfigDataBackend(Backend):
 	
 	def product_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
-	
-	def product_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for product in self.product_getObjects(attributes = ['id'], **filter):
-			result.append(product.getIdent(returnType))
-		return result
 	
 	def product_deleteObjects(self, products):
 		productIds = []
@@ -332,12 +377,6 @@ class ConfigDataBackend(Backend):
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
 	
-	def productProperty_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productProperty in self.productProperty_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'propertyId'], **filter):
-			result.append(productProperty.getIdent(returnType))
-		return result
-	
 	def productProperty_deleteObjects(self, productProperties):
 		pass
 	
@@ -362,12 +401,6 @@ class ConfigDataBackend(Backend):
 	def productDependency_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductDependency, attributes, **filter)
 	
-	def productDependency_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productDependency in self.productDependency_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'], **filter):
-			result.append(productDependency.getIdent(returnType))
-		return result
-	
 	def productDependency_deleteObjects(self, productDependencies):
 		pass
 	
@@ -390,12 +423,6 @@ class ConfigDataBackend(Backend):
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnDepot, attributes, **filter)
-	
-	def productOnDepot_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productOnDepot in self.productOnDepot_getObjects(attributes = ['productId', 'productType', 'depotId'], **filter):
-			result.append(productOnDepot.getIdent(returnType))
-		return result
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		pass
@@ -435,12 +462,6 @@ class ConfigDataBackend(Backend):
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
 	
-	def productOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productOnClient in self.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
-			result.append(productOnClient.getIdent(returnType))
-		return result
-	
 	def productOnClient_deleteObjects(self, productOnClients):
 		pass
 	
@@ -462,12 +483,6 @@ class ConfigDataBackend(Backend):
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
 	
-	def productPropertyState_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productPropertyState in self.productPropertyState_getObjects(attributes = ['productId', 'propertyId', 'objectId'], **filter):
-			result.append(productPropertyState.getIdent(returnType))
-		return result
-	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		pass
 	
@@ -483,12 +498,6 @@ class ConfigDataBackend(Backend):
 	
 	def group_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Group, attributes, **filter)
-	
-	def group_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for group in self.group_getObjects(attributes = ['id'], **filter):
-			result.append(group.getIdent(returnType))
-		return result
 	
 	def group_deleteObjects(self, groups):
 		for group in forceObjectClassList(groups, Group):
@@ -509,13 +518,71 @@ class ConfigDataBackend(Backend):
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
 	
-	def objectToGroup_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for objectToGroup in self.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
-			result.append(objectToGroup.getIdent(returnType))
-		return result
-	
 	def objectToGroup_deleteObjects(self, objectToGroups):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseContracts                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseContract_insertObject(self, licenseContract):
+		licenseContract = forceObjectClass(licenseContract, LicenseContract)
+		licenseContract.setDefaults()
+	
+	def licenseContract_updateObject(self, licenseContract):
+		pass
+	
+	def licenseContract_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(LicenseContract, attributes, **filter)
+	
+	def licenseContract_deleteObjects(self, licenseContracts):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenses                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def softwareLicense_insertObject(self, softwareLicense):
+		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
+		softwareLicense.setDefaults()
+	
+	def softwareLicense_updateObject(self, softwareLicense):
+		pass
+	
+	def softwareLicense_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(SoftwareLicense, attributes, **filter)
+	
+	def softwareLicense_deleteObjects(self, softwareLicenses):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicensePools                                                                              -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licensePool_insertObject(self, licensePool):
+		licensePool = forceObjectClass(licensePool, LicensePool)
+		licensePool.setDefaults()
+	
+	def licensePool_updateObject(self, licensePool):
+		pass
+	
+	def licensePool_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(LicensePool, attributes, **filter)
+	
+	def licensePool_deleteObjects(self, licensePools):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenseToLicensePools                                                             -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
+		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
+		softwareLicenseToLicensePool.setDefaults()
+	
+	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
+		pass
+	
+	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(SoftwareLicenseToLicensePool, attributes, **filter)
+	
+	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePool):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -538,7 +605,7 @@ class ConfigDataBackend(Backend):
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class ExtendedConfigDataBackend(Backend):
+class ExtendedConfigDataBackend(BackendIdentExtension):
 	
 	def __init__(self, backend):
 		self._backend = backend
@@ -563,6 +630,7 @@ class ExtendedConfigDataBackend(Backend):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def searchObjects(self, filter):
+		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
 		except Exception, e:
@@ -734,6 +802,17 @@ class ExtendedConfigDataBackend(Backend):
 								objectFilter['type'] = types
 							
 						this = self
+						objectFilterNew = {}
+						for (key, value) in objectFilter.items():
+							if (key != 'type'):
+								try:
+									value = eval(value)
+								except:
+									pass
+							objectFilterNew[str(key)] = value
+						objectFilter = objectFilterNew
+						
+						logger.debug(u"Executing: this.%s_getIdents(returnType = 'list', %s)" % (getBackendMethodPrefix(oc), objectFilter))
 						res = {
 							"objectClass":         objectClass,
 							"foreignIdAttributes": getForeignIdAttributes(oc),
@@ -744,6 +823,7 @@ class ExtendedConfigDataBackend(Backend):
 							result = combineResults(result, res, operator)
 						else:
 							result = res
+						logger.debug("Result: %s" % result)
 					except Exception, e:
 						logger.logException(e)
 						raise BackendBadValueError(u"Failed to process search filter '%s': %s" % (repr(f), e))
@@ -761,6 +841,7 @@ class ExtendedConfigDataBackend(Backend):
 		result = []
 		for v in handleFilter(parsedFilter)[0].get('identValues', []):
 			result.append(v[0])
+		logger.info(u"=== Search done, result: %s" % result)
 		return result
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -846,6 +927,34 @@ class ExtendedConfigDataBackend(Backend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def configState_getObjects(self, attributes=[], **filter):
+		# Get product states from backend
+		configStates = self._backend.configState_getObjects(attributes, **filter)
+		# Get objectIds
+		objectIds = self._backend.host_getIdents(id = filter.get('objectId'), returnType = 'unicode')
+		# Create data structure for config states to find missing ones
+		css = {}
+		for objectId in objectIds:
+			css[objectId] = []
+		for cs in self._backend.configState_getObjects(attributes = ['objectId', 'configId'], objectId = objectIds):
+			css[cs.objectId].append(cs.configId)
+		# Create missing config states
+		for config in self._backend.config_getObjects(id = filter.get('configId')):
+			logger.debug("Default values for '%s': %s" % (config.id, config.defaultValues))
+			if filter.get('configId') and not config.id in filter['configId']:
+				continue
+			for objectId in objectIds:
+				if not config.id in css[objectId]:
+					# Create default
+					configStates.append(
+						ConfigState(
+							configId = config.id,
+							objectId = objectId,
+							values   = config.defaultValues
+						)
+					)
+		return configStates
+		
 	def configState_createObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
@@ -875,57 +984,24 @@ class ExtendedConfigDataBackend(Backend):
 					configId = forceUnicodeLowerList(configId),
 					objectId = forceObjectIdList(objectId)))
 	
-	def configState_getValues(self, configId=[], objectId=[], allowOverwriteDefaultWithEmptyValues=True):
-		configId = forceUnicodeLowerList(configId)
-		objectId = forceObjectIdList(objectId)
-		
-		defaultValues = {}
-		for config in self.config_getObjects(id = configId):
-			defaultValues[config.id] = config.defaultValues
-			logger.debug("Default values for '%s': %s" % (config.id, config.defaultValues))
-		
-		objectValues = {}
-		if objectId:
-			for objectId in objectId:
-				objectValues[objectId] = copy.deepcopy(defaultValues)
-		else:
-			for objectId in self.host_getIdents():
-				objectValues[objectId] = copy.deepcopy(defaultValues)
-		
-		for configState in self.configState_getObjects(configId = configId, objectId = objectId):
-			if not objectValues.has_key(configState.objectId):
-				logger.warning(u"Object id '%s' not found in objects")
-				continue
-			if not objectValues[configState.objectId].has_key(configState.configId):
-				logger.warning(u"Non existing config id '%s' found in config state of object id '%s'" \
-					% (configState.configId, configState.objectId))
-				continue
-			if not configState.values and not allowOverwriteDefaultWithEmptyValues:
-				continue
-			objectValues[configState.objectId][configState.configId] = configState.values
-		return objectValues
-
-	def configState_getDepotserverIdsToClientIds(self, depotIds=[], clientIds=[]):
-		result = {}
+	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[]):
+		result = []
 		if not depotIds:
 			depotIds = self.host_getIdents(type = 'OpsiDepotserver')
-		for depotId in depotIds:
-			result[depotId] = []
 		
 		knownClientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
 		configId = 'network.depot_server.depot_id'
-		values = self.configState_getValues(configId = configId, objectId = clientIds, allowOverwriteDefaultWithEmptyValues = False)
-		for (objectId, configState) in values.items():
-			if not objectId in knownClientIds:
-				logger.debug(u"Skipping objectId '%s': not a opsi client" % objectId)
+		for configState in self.configState_getObjects(configId = configId, objectId = clientIds):
+			if not configState.objectId in knownClientIds:
+				logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
 				continue
-			depotId = configState.get(configId, [])[0]
+			depotId = configState.values[0]
 			if not depotId:
-				logger.error(u"No depot server configured for client '%s'" % objectId)
+				logger.error(u"No depot server configured for client '%s'" % configState.objectId)
 				continue
 			if not depotId in depotIds:
 				continue
-			result[depotId].append(objectId)
+			result.append({ 'depotId': depotId, 'clientId': configState.objectId })
 		return result
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1098,39 +1174,46 @@ class ExtendedConfigDataBackend(Backend):
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		# Get product states from backend
 		productOnClients = self._backend.productOnClient_getObjects(attributes, **filter)
-		# Get all client ids by filter
-		clientIds = self._backend.host_getIdents(id = filter.get('clientId'), returnType = 'unicode')
-		# Get depot to client assignment
-		depotToClients = self.configState_getDepotserverIdsToClientIds(clientIds = clientIds)
-		# Create data structure for product states to find missing ones
-		pocs = {}
-		for clientId in clientIds:
-			pocs[clientId] = []
-		for poc in productOnClients:
-			pocs[poc.clientId].append(poc.productId)
-		# Create missing product states
-		for (depotId, depotClientIds) in depotToClients.items():
-			productOnDepots = self._backend.productOnDepot_getObjects(
-				depotId        = depotId,
-				productId      = filter.get('productId'),
-				productVersion = filter.get('productVersion'),
-				packageVersion = filter.get('packageVersion'))
-			for clientId in depotClientIds:
-				if not clientId in clientIds:
-					# Filtered
-					continue
-				for pod in productOnDepots:
-					if not pod.productId in pocs[clientId]:
-						# Create default
-						productOnClients.append(
-							ProductOnClient(
-								productId          = pod.productId,
-								productType        = pod.productType,
-								clientId           = clientId,
-								installationStatus = u'not_installed',
-								actionRequest      = u'none',
+		if filter.get('installationStatus') in (None, 'not_installed') and filter.get('actionRequest') in (None, 'none'):
+			# Get all client ids by filter
+			clientIds = self._backend.host_getIdents(id = filter.get('clientId'), returnType = 'unicode')
+			# Get depot to client assignment
+			depotToClients = {}
+			for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
+				if not depotToClients.has_key(clientToDepot['depotId']):
+					depotToClients[clientToDepot['depotId']] = []
+				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+			# Create data structure for product states to find missing ones
+			pocs = {}
+			for clientId in clientIds:
+				pocs[clientId] = []
+			# Get available on clients without filter!
+			for poc in self._backend.productOnClient_getObjects(attributes = ['clientId', 'productId'], clientId = clientIds):
+				pocs[poc.clientId].append(poc.productId)
+			# Create missing product states
+			for (depotId, depotClientIds) in depotToClients.items():
+				productOnDepots = self._backend.productOnDepot_getObjects(
+					depotId        = depotId,
+					productId      = filter.get('productId'),
+					productVersion = filter.get('productVersion'),
+					packageVersion = filter.get('packageVersion'))
+				for clientId in depotClientIds:
+					if not clientId in clientIds:
+						# Filtered
+						continue
+					for pod in productOnDepots:
+						if not pod.productId in pocs[clientId]:
+							# Create default
+							productOnClients.append(
+								ProductOnClient(
+									productId          = pod.productId,
+									productType        = pod.productType,
+									clientId           = clientId,
+									installationStatus = u'not_installed',
+									actionRequest      = u'none',
+								)
 							)
-						)
+							print productOnClients[-1]
 		return productOnClients
 	
 	def productOnClient_createObjects(self, productOnClients):
@@ -1165,6 +1248,48 @@ class ExtendedConfigDataBackend(Backend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productPropertyState_getObjects(self, attributes=[], **filter):
+		# Get product properties from backend
+		productPropertyStates = self._backend.productPropertyState_getObjects(attributes, **filter)
+		# Get objectIds
+		objectIds = self._backend.host_getIdents(type = 'OpsiClient', id = filter.get('objectId'), returnType = 'unicode')
+		# Get depotIds
+		depotIdToClientIds = {}
+		for configState in self.configState_getClientToDepotserver(clientIds = filter.get('objectIds')):
+			if not configState['depotId'] in depotIdToClientIds.keys():
+				depotIdToClientIds[configState['depotId']] = []
+			depotIdToClientIds[configState['depotId']].append(configState['clientId'])
+		# Create data structure for product property states to find missing ones
+		ppss = {}
+		for objectId in objectIds:
+			ppss[objectId] = []
+		for pps in self._backend.productPropertyState_getObjects(attributes = ['objectId', 'propertyId'], objectId = objectIds):
+			ppss[pps.objectId].append(pps.propertyId)
+		# Create missing product property states
+		for (depotId, clientIds) in depotIdToClientIds.items():
+			for productOnDepot in self.productOnDepot_getObjects(depotId = depotId, productId = filter.get('productId')):
+				# TODO: Use productPropertyState of depot as default!
+				for productProperty in self._backend.productProperty_getObjects(
+								productId      = productOnDepot.productId,
+								productVersion = productOnDepot.productVersion,
+								packageVersion = productOnDepot.packageVersion,
+								propertyId     = filter.get('propertyId')):
+					for clientId in clientIds:
+						if not clientId in objectIds:
+							# Filtered
+							continue
+						if productProperty.propertyId in ppss[clientId]:
+							continue
+						productPropertyStates.append(
+							ProductPropertyState(
+								productId  = productProperty.productId,
+								propertyId = productProperty.propertyId,
+								objectId   = clientId,
+								values     = productProperty.defaultValues
+							)
+						)
+		return productPropertyStates
+	
 	def productPropertyState_createObjects(self, productPropertyStates):
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
@@ -1214,7 +1339,7 @@ class ExtendedConfigDataBackend(Backend):
 		for group in forceObjectClassList(groups, Group):
 			self._backend.group_updateObject(group)
 	
-	def group_createHost(self, id, description=None, notes=None, parentGroupId=None):
+	def group_createHostGroup(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
 		del hash['self']
 		return self.group_createObjects(HostGroup.fromHash(hash))
@@ -1257,6 +1382,148 @@ class ExtendedConfigDataBackend(Backend):
 					groupId = forceGroupIdList(groupId),
 					objectId = forceObjectIdList(objectId)))
 	
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseContracts                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseContract_createObjects(self, licenseContracts):
+		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
+		for licenseContract in licenseContracts:
+			logger.info(u"Creating licenseContract '%s'" % licenseContract)
+			if self._backend.licenseContract_getObjects(id = licenseContract.id):
+				logger.info(u"LicenseContract '%s' already exists, updating" % licenseContract)
+				self._backend.licenseContract_updateObject(licenseContract)
+			else:
+				self._backend.licenseContract_insertObject(licenseContract)
+	
+	def licenseContract_updateObjects(self, licenseContracts):
+		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
+			self._backend.licenseContract_updateObject(licenseContract)
+	
+	def licenseContract_create(self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None):
+		hash = locals()
+		del hash['self']
+		return self.licenseContract_createObjects(LicenseContract.fromHash(hash))
+	
+	def licenseContract_delete(self, id):
+		if not id: id = []
+		return self._backend.licenseContract_deleteObjects(
+				self._backend.licenseContract_getObjects(
+					id = forceLicenseContractIdList(id)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenses                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def softwareLicense_createObjects(self, softwareLicenses):
+		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
+		for softwareLicense in softwareLicenses:
+			logger.info(u"Creating softwareLicense '%s'" % softwareLicense)
+			if self._backend.softwareLicense_getObjects(id = softwareLicense.id):
+				logger.info(u"SoftwareLicense '%s' already exists, updating" % softwareLicense)
+				self._backend.softwareLicense_updateObject(softwareLicense)
+			else:
+				self._backend.softwareLicense_insertObject(softwareLicense)
+	
+	def softwareLicense_updateObjects(self, softwareLicenses):
+		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
+			self._backend.softwareLicense_updateObject(softwareLicense)
+	
+	def softwareLicense_createRetail(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		hash = locals()
+		del hash['self']
+		return self.softwareLicense_createObjects(RetailSoftwareLicense.fromHash(hash))
+	
+	def softwareLicense_createOEM(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		hash = locals()
+		del hash['self']
+		return self.softwareLicense_createObjects(OEMSoftwareLicense.fromHash(hash))
+	
+	def softwareLicense_createVolume(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		hash = locals()
+		del hash['self']
+		return self.softwareLicense_createObjects(VolumeSoftwareLicense.fromHash(hash))
+	
+	def softwareLicense_createConcurrent(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+		hash = locals()
+		del hash['self']
+		return self.softwareLicense_createObjects(ConcurrentSoftwareLicense.fromHash(hash))
+	
+	def softwareLicense_delete(self, id):
+		if not id: id = []
+		return self._backend.softwareLicense_deleteObjects(
+				self._backend.softwareLicense_getObjects(
+					id = forceSoftwareLicenseIdList(id)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicensePool                                                                               -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licensePool_createObjects(self, licensePools):
+		licensePools = forceObjectClassList(licensePools, LicensePool)
+		for licensePool in licensePools:
+			logger.info(u"Creating licensePool '%s'" % licensePool)
+			if self._backend.licensePool_getObjects(id = licensePool.id):
+				logger.info(u"LicensePool '%s' already exists, updating" % licensePool)
+				self._backend.licensePool_updateObject(licensePool)
+			else:
+				self._backend.licensePool_insertObject(licensePool)
+	
+	def licensePool_updateObjects(self, licensePools):
+		for licensePool in forceObjectClassList(licensePools, LicensePool):
+			self._backend.softwareLicense_updateObject(licensePool)
+	
+	def licensePool_create(self, id, description=None, productIds=None, windowsSoftwareIds=None):
+		hash = locals()
+		del hash['self']
+		return self.licensePool_createObjects(LicensePool.fromHash(hash))
+	
+	def licensePool_delete(self, id):
+		if not id: id = []
+		return self._backend.licensePool_deleteObjects(
+				self._backend.licensePool_getObjects(
+					id = forceLicensePoolIdList(id)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenseToLicensePools                                                             -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def softwareLicenseToLicensePool_createObjects(self, softwareLicenseToLicensePools):
+		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
+		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
+			logger.info(u"Creating %s" % softwareLicenseToLicensePool)
+			if self._backend.softwareLicenseToLicensePool_getObjects(
+					softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
+					licensePoolId     = softwareLicenseToLicensePool.licensePoolId):
+				logger.info(u"%s already exists, updating" % softwareLicenseToLicensePool)
+				self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
+			else:
+				self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
+	
+	def softwareLicenseToLicensePool_updateObjects(self, softwareLicenseToLicensePools):
+		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
+			self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
+	
+	def softwareLicenseToLicensePool_create(self, softwareLicenseId, licensePoolId, licenseKey=None):
+		hash = locals()
+		del hash['self']
+		return self.group_createObjects(SoftwareLicenseToLicensePool.fromHash(hash))
+	
+	def softwareLicenseToLicensePool_delete(self, softwareLicenseId, licensePoolId):
+		if not softwareLicenseId: softwareLicenseId  = []
+		if not licensePoolId:     licensePoolId = []
+		return self._backend.softwareLicenseToLicensePool_deleteObjects(
+				self._backend.softwareLicenseToLicensePool_getObjects(
+					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
+					licensePoolId     = forceLicensePoolIdList(licensePoolId)))
+
+
+
+
+
+
+
+
+
+
+
 
 
 
