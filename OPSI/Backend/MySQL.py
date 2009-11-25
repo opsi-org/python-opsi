@@ -224,6 +224,8 @@ class MySQLBackend(ConfigDataBackend):
 				operator = '='
 				if type(value) in (float, long, int, bool):
 					where += u"`%s` %s %s" % (key, operator, value)
+				elif value is None:
+					where += u"`%s` is NULL" % key
 				else:
 					match = re.search('^\s*([>=<]+)\s*(\S+)', value)
 					if match:
@@ -669,6 +671,22 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
+		# LICENSE_USED_BY_HOST
+		if not 'LICENSE_ON_CLIENT' in tables.keys():
+			logger.debug(u'Creating table LICENSE_ON_CLIENT')
+			table = u'''CREATE TABLE `LICENSE_ON_CLIENT` (
+					`softwareLicenseId` VARCHAR(100) NOT NULL,
+					`licensePoolId` VARCHAR(100) NOT NULL,
+					`clientId` varchar(255),
+					PRIMARY KEY( `softwareLicenseId`, `licensePoolId`, `clientId` ),
+					FOREIGN KEY( `softwareLicenseId`, `licensePoolId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId`, `licensePoolId` ),
+					`licenseKey` VARCHAR(100),
+					`notes` VARCHAR(1024)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -737,12 +755,31 @@ class MySQLBackend(ConfigDataBackend):
 				'value': value,
 				'isDefault': (value in defaultValues)
 				})
-		
+	
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configs, filter: %s" % filter)
 		configs = []
 		self._adjustAttributes(Config, attributes, filter)
+		
+		if filter.has_key('defaultValues'):
+			if filter['defaultValues']:
+				configIds = filter.get('configId')
+				filter['configId'] = []
+				for res in self._mysql.getSet(self._createQuery('CONFIG_VALUE', ['configId'], {'configId': configIds, 'value': filter['defaultValues'], 'isDefault': True})):
+					filter['configId'].append(res['configId'])
+				if not filter['configId']:
+					return []
+			del filter['defaultValues']
+		if filter.has_key('possibleValues'):
+			if filter['possibleValues']:
+				configIds = filter.get('configId')
+				filter['configId'] = []
+				for res in self._mysql.getSet(self._createQuery('CONFIG_VALUE', ['configId'], {'configId': configIds, 'value': filter['possibleValues']})):
+					filter['configId'].append(res['configId'])
+				if not filter['configId']:
+					return []
+			del filter['possibleValues']
 		attrs = []
 		for attr in attributes:
 			if not attr in ('defaultValues', 'possibleValues'):
@@ -1184,7 +1221,7 @@ class MySQLBackend(ConfigDataBackend):
 		for productId in productIds:
 			self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
 		
-	def licensePool_updateObject(self, softwareLicense):
+	def licensePool_updateObject(self, licensePool):
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		where = self._uniqueCondition(licensePool)
@@ -1207,7 +1244,30 @@ class MySQLBackend(ConfigDataBackend):
 		logger.info(u"Getting licensePools, filter: %s" % filter)
 		licensePools = []
 		self._adjustAttributes(LicensePool, attributes, filter)
-		for res in self._mysql.getSet(self._createQuery('LICENSE_POOL', attributes, filter)):
+		
+		if filter.has_key('windowsSoftwareIds'):
+			if filter['windowsSoftwareIds']:
+				licensePoolIds = filter.get('licensePoolId')
+				filter['licensePoolId'] = []
+				for res in self._mysql.getSet(self._createQuery('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', ['licensePoolId'], {'licensePoolId': licensePoolIds, 'windowsSoftwareId': filter['windowsSoftwareIds']})):
+					filter['licensePoolId'].append(res['licensePoolId'])
+				if not filter['licensePoolId']:
+					return []
+			del filter['windowsSoftwareIds']
+		if filter.has_key('productIds'):
+			if filter['productIds']:
+				licensePoolIds = filter.get('licensePoolId')
+				filter['licensePoolId'] = []
+				for res in self._mysql.getSet(self._createQuery('PRODUCT_ID_TO_LICENSE_POOL', ['licensePoolId'], {'licensePoolId': licensePoolIds, 'productId': filter['productIds']})):
+					filter['licensePoolId'].append(res['licensePoolId'])
+				if not filter['licensePoolId']:
+					return []
+			del filter['productIds']
+		attrs = []
+		for attr in attributes:
+			if not attr in ('windowsSoftwareIds', 'productIds'):
+				attrs.append(attr)
+		for res in self._mysql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
 			res['windowsSoftwareIds'] = []
 			res['productIds'] = []
 			if not attributes or 'windowsSoftwareIds' in attributes:
@@ -1245,19 +1305,50 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting objectToGroups, filter: %s" % filter)
+		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
 		softwareLicenseToLicensePools = []
-		self._adjustAttributes(ObjectToGroup, attributes, filter)
+		self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('SOFTWARE_LICENSE_TO_LICENSE_POOL', attributes, filter)):
 			softwareLicenseToLicensePools.append(SoftwareLicenseToLicensePool.fromHash(res))
 		return softwareLicenseToLicensePools
 	
-	def softwareLicenseToLicensePool_deleteObjects(self, objectToGroups):
+	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
-			logger.info(u"Deleting objectToGroup %s" % softwareLicenseToLicensePool)
+			logger.info(u"Deleting softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
 			where = self._uniqueCondition(softwareLicenseToLicensePool)
 			self._mysql.delete('SOFTWARE_LICENSE_TO_LICENSE_POOL', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseOnClient_insertObject(self, licenseOnClient):
+		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
+		data = self._objectToDatabaseHash(licenseOnClient)
+		self._mysql.insert('LICENSE_ON_CLIENT', data)
+	
+	def licenseOnClient_updateObject(self, licenseOnClient):
+		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
+		data = self._objectToDatabaseHash(licenseOnClient)
+		where = self._uniqueCondition(licenseOnClient)
+		self._mysql.update('LICENSE_ON_CLIENT', where, data)
+	
+	def licenseOnClient_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
+		licenseOnClients = []
+		self._adjustAttributes(LicenseOnClient, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('LICENSE_ON_CLIENT', attributes, filter)):
+			licenseOnClients.append(LicenseOnClient.fromHash(res))
+		return licenseOnClients
+	
+	def licenseOnClient_deleteObjects(self, licenseOnClients):
+		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
+		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
+			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)
+			where = self._uniqueCondition(licenseOnClient)
+			self._mysql.delete('LICENSE_ON_CLIENT', where)
+			
 	
 
 

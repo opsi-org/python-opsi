@@ -194,11 +194,34 @@ class BackendIdentExtension(Backend):
 			result.append(group.getIdent(returnType))
 		return result
 	
-	
 	def objectToGroup_getIdents(self, returnType='unicode', **filter):
 		result = []
 		for objectToGroup in self.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
 			result.append(objectToGroup.getIdent(returnType))
+		return result
+	
+	def licenseContract_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for licenseContract in self.licenseContract_getObjects(attributes = ['id'], **filter):
+			result.append(licenseContract.getIdent(returnType))
+		return result
+	
+	def softwareLicense_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for softwareLicense in self.softwareLicense_getObjects(attributes = ['id', 'licenseContractId'], **filter):
+			result.append(softwareLicense.getIdent(returnType))
+		return result
+	
+	def licensePool_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for licensePool in self.licensePool_getObjects(attributes = ['id'], **filter):
+			result.append(licensePool.getIdent(returnType))
+		return result
+	
+	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for licenseOnClient in self.licenseOnClient_getObjects(attributes = ['softwareLicenseId', 'licensePoolId', 'clientId'], **filter):
+			result.append(licenseOnClient.getIdent(returnType))
 		return result
 	
 	
@@ -543,7 +566,11 @@ class ConfigDataBackend(BackendIdentExtension):
 	def softwareLicense_insertObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 		softwareLicense.setDefaults()
-	
+		if not softwareLicense.licenseContractId:
+			raise BackendBadValueError(u"License contract missing")
+		if not self.licenseContract_getIdents(id = softwareLicense.licenseContractId):
+			raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
+		
 	def softwareLicense_updateObject(self, softwareLicense):
 		pass
 	
@@ -551,7 +578,12 @@ class ConfigDataBackend(BackendIdentExtension):
 		self._testFilterAndAttributes(SoftwareLicense, attributes, **filter)
 	
 	def softwareLicense_deleteObjects(self, softwareLicenses):
-		pass
+		softwareLicenseIds = []
+		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
+			softwareLicenseIds.append(softwareLicense.id)
+		self.softwareLicenseToLicensePool_deleteObjects(
+			self.softwareLicenseToLicensePool_getObjects(
+				softwareLicenseId = softwareLicenseIds ))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools                                                                              -
@@ -567,7 +599,13 @@ class ConfigDataBackend(BackendIdentExtension):
 		self._testFilterAndAttributes(LicensePool, attributes, **filter)
 	
 	def licensePool_deleteObjects(self, licensePools):
-		pass
+		licensePoolIds = []
+		for licensePool in forceObjectClassList(licensePools, LicensePool):
+			licensePoolIds.append(licensePool.id)
+		softwareLicenseToLicensePoolIdents = self.softwareLicenseToLicensePool_getIdents(licensePoolId = licensePoolIds, returnType = 'unicode')
+		if softwareLicenseToLicensePoolIdents:
+			raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
+				(licensePoolIds, softwareLicenseToLicensePoolIdents))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools                                                             -
@@ -575,14 +613,40 @@ class ConfigDataBackend(BackendIdentExtension):
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 		softwareLicenseToLicensePool.setDefaults()
-	
+		if not self.softwareLicense_getIdents(id = softwareLicenseToLicensePool.softwareLicenseId):
+			raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
+		if not self.licensePool_getIdents(id = softwareLicenseToLicensePool.licensePoolId):
+			raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
+		
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		pass
 	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicenseToLicensePool, attributes, **filter)
 	
-	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePool):
+	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
+		softwareLicenseIds = []
+		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
+			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
+		licenseOnClientIdents = self.licenseOnClient_getIdents(softwareLicenseId = softwareLicenseIds)
+		if licenseOnClientIdents:
+			raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
+				% licenseOnClientIdents)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseOnClient_insertObject(self, licenseOnClient):
+		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
+		licenseOnClient.setDefaults()
+	
+	def licenseOnClient_updateObject(self, licenseOnClient):
+		pass
+	
+	def licenseOnClient_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(LicenseOnClient, attributes, **filter)
+	
+	def licenseOnClient_deleteObjects(self, licenseOnClients):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1504,7 +1568,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 	def softwareLicenseToLicensePool_create(self, softwareLicenseId, licensePoolId, licenseKey=None):
 		hash = locals()
 		del hash['self']
-		return self.group_createObjects(SoftwareLicenseToLicensePool.fromHash(hash))
+		return self.softwareLicenseToLicensePool_createObjects(SoftwareLicenseToLicensePool.fromHash(hash))
 	
 	def softwareLicenseToLicensePool_delete(self, softwareLicenseId, licensePoolId):
 		if not softwareLicenseId: softwareLicenseId  = []
@@ -1513,9 +1577,42 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 				self._backend.softwareLicenseToLicensePool_getObjects(
 					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
 					licensePoolId     = forceLicensePoolIdList(licensePoolId)))
-
-
-
+		
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseOnClient_createObjects(self, licenseOnClients):
+		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
+		for licenseOnClient in licenseOnClients:
+			logger.info(u"Creating %s" % licenseOnClient)
+			if self._backend.licenseOnClient_getObjects(
+					softwareLicenseId = licenseOnClient.softwareLicenseId,
+					licensePoolId     = licenseOnClient.licensePoolId,
+					clientId          = licenseOnClient.clientId):
+				logger.info(u"%s already exists, updating" % licenseOnClient)
+				self._backend.licenseOnClient_updateObject(licenseOnClient)
+			else:
+				self._backend.licenseOnClient_insertObject(licenseOnClient)
+	
+	def licenseOnClient_updateObjects(self, licenseOnClients):
+		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
+			self._backend.licenseOnClient_updateObject(licenseOnClient)
+	
+	def licenseOnClient_create(self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None):
+		hash = locals()
+		del hash['self']
+		return self.licenseOnClient_createObjects(LicenseOnClient.fromHash(hash))
+	
+	def licenseOnClient_delete(self, softwareLicenseId, licensePoolId, clientId):
+		if not softwareLicenseId: softwareLicenseId  = []
+		if not licensePoolId:     licensePoolId = []
+		if not clientId:          clientId = []
+		return self._backend.licenseOnClient_deleteObjects(
+				self._backend.licenseOnClient_getObjects(
+					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
+					licensePoolId     = forceLicensePoolIdList(licensePoolId),
+					clientId          = forceHostIdList(clientId)))
+	
 
 
 

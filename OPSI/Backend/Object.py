@@ -1540,6 +1540,10 @@ class LicenseContract(Entity):
 		self.notificationDate = None
 		self.expirationDate = None
 		self.setId(id)
+		if not description is None:
+			self.setDescription(description)
+		if not notes is None:
+			self.setNotes(notes)
 		if not partner is None:
 			self.setPartner(partner)
 		if not conclusionDate is None:
@@ -1716,8 +1720,6 @@ class OEMSoftwareLicense(SoftwareLicense):
 	
 	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
 		SoftwareLicense.__init__(self, id, licenseContractId, 1, boundToHost, expirationDate)
-		if not self.boundToHost:
-			raise BackendBadValueError("OEM software license requires boundToHost value")
 		
 	def setDefaults(self):
 		SoftwareLicense.setDefaults(self)
@@ -1727,6 +1729,11 @@ class OEMSoftwareLicense(SoftwareLicense):
 		if (maxInstallations > 1):
 			raise BackendBadValueError(u"OEM software license max installations can only be set to 1")
 		self.maxInstallations = maxInstallations
+	
+	def setBoundToHost(self, boundToHost):
+		self.boundToHost = forceHostId(boundToHost)
+		if not self.boundToHost:
+			raise BackendBadValueError("OEM software license requires boundToHost value")
 	
 	@staticmethod
 	def fromHash(hash):
@@ -1894,7 +1901,72 @@ class SoftwareLicenseToLicensePool(Relationship):
 	
 Relationship.subClasses['SoftwareLicenseToLicensePool'] = SoftwareLicenseToLicensePool
 
-
+class LicenseOnClient(Relationship):
+	subClasses = {}
+	backendMethodPrefix = 'licenseOnClient'
+	
+	def __init__(self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None):
+		self.licenseKey = None
+		self.notes = None
+		self.setSoftwareLicenseId(softwareLicenseId)
+		self.setLicensePoolId(licensePoolId)
+		self.setClientId(clientId)
+		if not licenseKey is None:
+			self.setLicenseKey(licenseKey)
+		if not notes is None:
+			self.setNotes(notes)
+		
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.licenseKey is None:
+			self.setLicenseKey(u'')
+		if self.notes is None:
+			self.setNotes(u'')
+		
+	def getSoftwareLicenseId(self):
+		return self.softwareLicenseId
+	
+	def setSoftwareLicenseId(self, softwareLicenseId):
+		self.softwareLicenseId = forceSoftwareLicenseId(softwareLicenseId)
+	
+	def getLicensePoolId(self):
+		return self.licensePoolId
+	
+	def setLicensePoolId(self, licensePoolId):
+		self.licensePoolId = forceLicensePoolId(licensePoolId)
+	
+	def getClientId(self):
+		return self.clientId
+	
+	def setClientId(self, clientId):
+		self.clientId = forceHostId(clientId)
+	
+	def getLicenseKey(self):
+		return self.licenseKey
+	
+	def setLicenseKey(self, licenseKey):
+		self.licenseKey = forceUnicodeLower(licenseKey)
+	
+	def getNotes(self):
+		return self.notes
+	
+	def setNotes(self, notes):
+		self.notes = forceUnicode(notes)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'LicenseOnClient'
+		return Relationship.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return LicenseOnClient.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s softwareLicenseId '%s', licensePoolId '%s', clientId '%s'>" \
+			% (self.getType(), self.softwareLicenseId, self.licensePoolId, self.clientId)
+	
+Relationship.subClasses['LicenseOnClient'] = LicenseOnClient
 
 
 

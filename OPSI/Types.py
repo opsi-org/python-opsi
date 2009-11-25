@@ -106,13 +106,17 @@ def forceDict(var):
 	raise BackendBadValueError(u"Not a dict '%s'")
 
 opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})$')
+opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
 def forceOpsiTimestamp(var):
 	if not var:
 		var = u'0000-00-00 00:00:00'
 	var = forceUnicode(var)
 	match = re.search(opsiTimestampRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad opsi timestamp: '%s'" % var)
+		match = re.search(opsiDateRegex, var)
+		if not match:
+			raise BackendBadValueError(u"Bad opsi timestamp: '%s'" % var)
+		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
 hostIdRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')
@@ -324,9 +328,9 @@ def forceHostname(var):
 		raise BackendBadValueError(u"Bad hostname: '%s'" % var)
 	return var
 
-licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
 def forceLicenseContractId(var):
-	var = forceObjectId(var)
+	var = forceUnicodeLower(var)
 	match = re.search(licenseContractIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad license contract id: '%s'" % var)
@@ -338,9 +342,9 @@ def forceLicenseContractIdList(var):
 		var[i] = forceLicenseContractId(var[i])
 	return var
 
-softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
 def forceSoftwareLicenseId(var):
-	var = forceObjectId(var)
+	var = forceUnicodeLower(var)
 	match = re.search(softwareLicenseIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad software license id: '%s'" % var)
@@ -352,9 +356,9 @@ def forceSoftwareLicenseIdList(var):
 		var[i] = forceSoftwareLicenseId(var[i])
 	return var
 
-licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
 def forceLicensePoolId(var):
-	var = forceObjectId(var)
+	var = forceUnicodeLower(var)
 	match = re.search(licensePoolIdRegex, var)
 	if not match:
 		raise BackendBadValueError(u"Bad license pool id: '%s'" % var)

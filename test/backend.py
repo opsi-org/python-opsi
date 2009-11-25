@@ -117,7 +117,14 @@ class BackendTest(object):
 			defaultValues  = [ self.depotserver1.id ]
 		)
 		
-		self.configs = [ self.config1, self.config2, self.config3, self.config4 ]
+		self.config5 = UnicodeConfig(
+			id             = u'some.other.products',
+			description    = u'Some other product ids',
+			possibleValues = ['product3', 'product4', 'product5'],
+			defaultValues  = ['product3']
+		)
+		
+		self.configs = [ self.config1, self.config2, self.config3, self.config4, self.config5 ]
 		
 		# ConfigStates
 		self.configState1 = ConfigState(
@@ -504,6 +511,24 @@ class BackendTest(object):
 		)
 		self.softwareLicenseToLicensePools = [ self.softwareLicenseToLicensePool1, self.softwareLicenseToLicensePool2, self.softwareLicenseToLicensePool3, self.softwareLicenseToLicensePool4 ]
 		
+		# LicenseOnClients
+		self.licenseOnClient1 = LicenseOnClient(
+			softwareLicenseId  = self.softwareLicenseToLicensePool1.getSoftwareLicenseId(),
+			licensePoolId      = self.softwareLicenseToLicensePool1.getLicensePoolId(),
+			clientId           = self.client1.getId(),
+			licenseKey         = self.softwareLicenseToLicensePool1.getLicenseKey(),
+			notes              = None
+		)
+		
+		self.licenseOnClient2 = LicenseOnClient(
+			softwareLicenseId  = self.softwareLicenseToLicensePool1.getSoftwareLicenseId(),
+			licensePoolId      = self.softwareLicenseToLicensePool1.getLicensePoolId(),
+			clientId           = self.client2.getId(),
+			licenseKey         = self.softwareLicenseToLicensePool1.getLicenseKey(),
+			notes              = u'Installed manually'
+		)
+		self.licenseOnClients = [self.licenseOnClient1, self.licenseOnClient2]
+		
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
 		self.backend.base_delete()
@@ -578,6 +603,35 @@ class BackendTest(object):
 		# Configs
 		logger.notice(u"Testing config methods")
 		
+		'''
+		self.config1 = UnicodeConfig(
+			id             = u'opsi-linux-bootimage.cmdline.reboot',
+			description    = (u'Some sting üöä?').encode('latin-1'),
+			possibleValues = ['w', 'c', 'b', 'h', 'b,c'],
+			defaultValues  = ['b,c']
+		)
+		
+		self.config2 = BoolConfig(
+			id            = u'opsi-linux-bootimage.cmdline.bool',
+			description   = 'Bool?',
+			defaultValues = 'on'
+		)
+		
+		self.config3 = UnicodeConfig(
+			id             = u'some.products',
+			description    = u'Install this products',
+			possibleValues = ['product1', 'product2', 'product3', 'product4'],
+			defaultValues  = ['product1', 'product3']
+		)
+		
+		self.config4 = UnicodeConfig(
+			id             = u'network.depot_server.depot_id',
+			description    = u'Depotserver to use',
+			possibleValues = [],
+			defaultValues  = [ self.depotserver1.id ]
+		)
+		'''
+		
 		self.backend.config_createObjects( self.configs )
 		
 		configs = self.backend.config_getObjects()
@@ -587,6 +641,22 @@ class BackendTest(object):
 			ids.append(config.id)
 		for config in self.configs:
 			assert config.id in ids
+		
+		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
+		assert len(configs) == 1
+		assert configs[0].getId() == self.config2.getId()
+		
+		configs = self.backend.config_getObjects(possibleValues = [])
+		assert len(configs) == len(self.configs)
+		
+		configs = self.backend.config_getObjects(possibleValues = self.config1.possibleValues, defaultValues = self.config1.defaultValues)
+		assert len(configs) == 1
+		assert configs[0].getId() == self.config1.getId()
+		
+		configs = self.backend.config_getObjects(possibleValues = self.config5.possibleValues, defaultValues = self.config5.defaultValues)
+		assert len(configs) == 2
+		for config in configs:
+			assert config.getId() in (self.config3.id, self.config5.id)
 		
 		multiValueConfigNames = []
 		for config in self.configs:
@@ -796,6 +866,35 @@ class BackendTest(object):
 				for productId in licensePool.getProductIds():
 					assert productId in self.licensePool1.getProductIds()
 		
+		licensePools = self.backend.licensePool_getObjects(windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
+		assert len(licensePools) == 1
+		assert licensePools[0].getId() == self.licensePool1.getId()
+		
+		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds)
+		assert len(licensePools) == 1
+		assert licensePools[0].getId() == self.licensePool1.getId()
+		
+		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
+		assert len(licensePools) == 1
+		assert licensePools[0].getId() == self.licensePool1.getId()
+		
+		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds[0])
+		assert len(licensePools) == 1
+		assert licensePools[0].getId() == self.licensePool1.getId()
+		
+		licensePools = self.backend.licensePool_getObjects(id = self.licensePool1.id, productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
+		assert len(licensePools) == 1
+		assert licensePools[0].getId() == self.licensePool1.getId()
+		
+		licensePools = self.backend.licensePool_getObjects(id = self.licensePool2.id, productIds = self.licensePool1.productIds)
+		assert len(licensePools) == 0
+		
+		licensePools = self.backend.licensePool_getObjects(productIds = None, windowsSoftwareIds = [])
+		assert len(licensePools) == len(self.licensePools)
+		
+		licensePools = self.backend.licensePool_getObjects(productIds = ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'])
+		assert len(licensePools) == 0
+		
 		# SoftwareLicenseToLicensePools
 		logger.notice(u"Testing softwareLicenseToLicensePool methods")
 		
@@ -803,6 +902,15 @@ class BackendTest(object):
 		
 		softwareLicenseToLicensePools = self.backend.softwareLicenseToLicensePool_getObjects()
 		assert len(softwareLicenseToLicensePools) == len(self.softwareLicenseToLicensePools)
+		
+		# LicenseOnClients
+		logger.notice(u"Testing licenseOnClient methods")
+		
+		self.backend.licenseOnClient_createObjects(self.licenseOnClients)
+		
+		licenseOnClients = self.backend.licenseOnClient_getObjects()
+		assert len(licenseOnClients) == len(self.licenseOnClients)
+		
 		
 	def testNonObjectMethods(self):
 		# Hosts
