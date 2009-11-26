@@ -258,7 +258,7 @@ class ConfigDataBackend(BackendIdentExtension):
 	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
 		
-	def host_getObjects(self, attributes=[], **filter):
+	def host_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
 	
 	def host_deleteObjects(self, hosts):
@@ -300,7 +300,7 @@ class ConfigDataBackend(BackendIdentExtension):
 	def config_updateObject(self, config):
 		pass
 	
-	def config_getObjects(self, attributes=[], **filter):
+	def config_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
 	
 	def config_deleteObjects(self, configs):
@@ -329,7 +329,7 @@ class ConfigDataBackend(BackendIdentExtension):
 	def configState_updateObject(self, configState):
 		pass
 	
-	def configState_getObjects(self, attributes=[], **filter):
+	def configState_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
 	
 	def configState_deleteObjects(self, configStates):
@@ -345,7 +345,7 @@ class ConfigDataBackend(BackendIdentExtension):
 	def product_updateObject(self, product):
 		pass
 	
-	def product_getObjects(self, attributes=[], **filter):
+	def product_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
 	
 	def product_deleteObjects(self, products):

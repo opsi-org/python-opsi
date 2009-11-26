@@ -54,7 +54,7 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self.__clientConfigDir = u'/tmp'
-		self.__pckeyFile = u'/tmp/pckeys'
+		self.__opsiHostKeyFile = u'/tmp/pckeys'
 		
 	def _getClientIniFile(self, client):
 		return os.path.join(self.__clientConfigDir, client.getId() + u'.ini')
@@ -70,12 +70,16 @@ class File31Backend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
+		
 		if isinstance(host, OpsiClient):
+			logger.info(u'Creating OpsiClient: %s' % host.getId())
+			
 			iniFile = IniFile(filename = self._getClientIniFile(host))
 			iniFile.delete()
 			iniFile.create()
 			ini = iniFile.parse()
 			ini.add_section(u'info')
+			
 			if not host.getDescription() is None:
 				ini.set(u'info', u'description',     host.getDescription().replace(u'\n', u'\\n').replace(u'%', u''))
 			if not host.getNotes() is None:
@@ -92,25 +96,55 @@ class File31Backend(ConfigDataBackend):
 				ini.set(u'info', u'lastseen',        host.getLastSeen())
 			iniFile.generate(ini)
 			
-			opsiHostKeys = OpsiHostKeyFile(filename = self.__pckeyFile)
+			logger.debug(u'Setting opsiHostKey for host '%s' in file %s' \
+				% (host.getId(), self.__opsiHostKeyFile))
+			opsiHostKeys = OpsiHostKeyFile(filename = self.__opsiHostKeyFile)
 			opsiHostKeys.create()
 			opsiHostKeys.setOpsiHostKey(host.getId(), host.getOpsiHostKey())
 			opsiHostKeys.generate()
 			
-		#elif isinstance(host, OpsiConfigserver):
-		#	print host.getId()
-		#else:
-		#	raise BackendBadValueError(u'Cannot create host %s: unhandled host type: %s' \
-		#		% (host, host.getType()))
+			logger.info(u'Created OpsiClient: %s' % host.getId())
+			
+		elif isinstance(host, OpsiConfigserver):
+			logger.info(u'Creating OpsiConfigserver: %s' % host.getId())
+		elif isinstance(host, OpsiDepotserver):
+			logger.info(u'Creating OpsiDepotserver: %s' % host.getId())
+		else:
+			raise BackendBadValueError(u'Cannot create host %s: unhandled host type: %s' \
+				% (host, host.getType()))
 		
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
-	def host_getObjects(self, attributes=[], **filter):
+	def host_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes, **filter)
+		
+		hosts = []
+		
+		#read from all hosts
+		
+		#validate filter in all hosts -> hostIds
+		
+		for hostId in hostIds:
+			hosts.append(
+				OpsiClient(
+					id = hostId,
+#					opsiHostKey = ,
+#					description = ,
+#					notes = ,
+#					hardwareAddress = ,
+#					ipAddress = ,
+#					inventoryNumber = ,
+#					created = ,
+#					lastSeen = 
+				)
+			)
+		
+		return hosts
 		
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
+		
 		for host in forceObjectClassList(hosts, Host):
 			if isinstance(host, OpsiConfigserver):
 				pass
