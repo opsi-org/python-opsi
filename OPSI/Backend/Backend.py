@@ -1277,7 +1277,6 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 									actionRequest      = u'none',
 								)
 							)
-							print productOnClients[-1]
 		return productOnClients
 	
 	def productOnClient_createObjects(self, productOnClients):

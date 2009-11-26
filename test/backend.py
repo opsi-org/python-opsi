@@ -312,6 +312,7 @@ class BackendTest(object):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
+		
 		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3 ]
 		
 		# ProductOnClients
@@ -948,6 +949,15 @@ class BackendTest(object):
 		hosts = self.backend.host_getObjects(id = 'depot100.uib.local')
 		assert len(hosts) == 1
 		
+		self.backend.productOnDepot_create(
+			productId      = self.product4.getId(),
+			productType    = self.product4.getType(),
+			productVersion = self.product4.getProductVersion(),
+			packageVersion = self.product4.getPackageVersion(),
+			depotId        = 'depot100.uib.local',
+			locked         = False
+		)
+		
 		self.backend.host_createOpsiClient(
 				id = 'client100.uib.local',
 				opsiHostKey = None,
@@ -958,7 +968,7 @@ class BackendTest(object):
 				created = None,
 				lastSeen = None)
 		
-		hosts = self.backend.host_getObjects(id = 'config100.uib.local')
+		hosts = self.backend.host_getObjects(id = 'client100.uib.local')
 		assert len(hosts) == 1
 		
 		# TODO: assertions
