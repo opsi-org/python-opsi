@@ -692,7 +692,7 @@ class LoggerImplementation:
 		self.log(LOG_CRITICAL, message)
 	
 	def comment( self, message ):
-		''' Log a critical message. '''
+		''' Log a comment message. '''
 		self.log(LOG_COMMENT, message)
 	
 

@@ -56,7 +56,16 @@ class File(object):
 		self._filename = forceUnicode(filename)
 		self._fileHandle = None
 		self.mode = None
-		
+	
+	def delete(self):
+		if os.path.exists(self._filename):
+			os.unlink(self._filename)
+	
+	def create(self):
+		if not os.path.exists(self._filename):
+			self.open('w')
+			self.close()
+	
 	def open(self, mode = 'r'):
 		self.mode = mode
 		self._fileHandle = __builtins__['open'](self._filename, mode)
@@ -66,7 +75,8 @@ class File(object):
 		if not self._fileHandle:
 			return
 		self._fileHandle.close()
-	
+		self._fileHandle = None
+		
 	def __getattr__(self, attr):
 		if self.__dict__.has_key(attr):
 			return self.__dict__[attr]
@@ -77,7 +87,11 @@ class LockableFile(File):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		File.__init__(self, filename)
 		self._lockFailTimeout = forceInt(lockFailTimeout)
-		
+	
+	def delete(self):
+		if os.path.exists(self._filename):
+			os.unlink(self._filename)
+	
 	def open(self, mode = 'r'):
 		File.open(self, mode)
 		self._lockFile()
@@ -85,7 +99,7 @@ class LockableFile(File):
 	def close(self):
 		self._unlockFile()
 		File.close(self)
-	
+		
 	def _lockFile(self):
 		timeout = 0
 		while (timeout < self._lockFailTimeout):
@@ -134,6 +148,7 @@ class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename)
 		self._lines = []
+		self._lineSeperator = u'\n'
 		
 	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
 		self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
@@ -158,6 +173,8 @@ class TextFile(LockableFile):
 			raise IOError("File not opened")
 		if sequence:
 			self._lines = forceUnicodeList(sequence)
+		for i in range(len(self._lines)):
+			self._lines[i] += self._lineSeperator
 		self._fileHandle.writelines(self._lines)
 	
 class ConfigFile(TextFile):
@@ -165,6 +182,7 @@ class ConfigFile(TextFile):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
 		self._lines = []
+		self._parsed = False
 		
 	def parse(self):
 		self.readlines()
@@ -174,7 +192,59 @@ class ConfigFile(TextFile):
 			if not line or line[0] in self._commentChars:
 				continue
 			lines.append(line)
+		self._parsed = True
 		return lines
+
+class OpsiHostKeyFile(ConfigFile):
+	
+	lineRegex = re.compile('^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
+	
+	def __init__(self, filename, lockFailTimeout = 2000):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '/', '#'])
+		self._opsiHostKeys = {}
+		
+	def parse(self):
+		for line in ConfigFile.parse(self):
+			match = self.lineRegex.search(line)
+			if not match:
+				logger.error(u"Found bad formatted line '%s' in pckey file '%s'" % (line, self._filename))
+				continue
+			try:
+				hostId = forceHostId(match.group(1))
+				opsiHostKey = forceOpsiHostKey(match.group(2))
+				if self._opsiHostKeys.has_key(hostId):
+					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
+				self._opsiHostKeys[hostId] = opsiHostKey
+			except BackendBadValueError, e:
+				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, e))
+	
+	def generate(self):
+		if not self._opsiHostKeys:
+			raise Exception(u"Got no data to write")
+		
+		self._lines = []
+		hostIds = self._opsiHostKeys.keys()
+		hostIds.sort()
+		for hostId in hostIds:
+			self._lines.append(u'%s:%s' % (hostId, self._opsiHostKeys[hostId]))
+		self.open('w')
+		self.writelines()
+		self.close()
+	
+	def getOpsiHostKey(self, hostId):
+		if not self._parsed:
+			self.parse()
+		hostId = forceHostId(hostId)
+		if not self._opsiHostKeys.has_key(hostId):
+			return None
+		return self._opsiHostKeys[hostId]
+		
+	def setOpsiHostKey(self, hostId, opsiHostKey):
+		if not self._parsed:
+			self.parse()
+		hostId = forceHostId(hostId)
+		opsiHostKey = forceOpsiHostKey(opsiHostKey)
+		self._opsiHostKeys[hostId] = opsiHostKey
 	
 class OpsiBackendACLFile(ConfigFile):
 	
@@ -316,13 +386,15 @@ class IniFile(ConfigFile):
 		# Return ConfigParser
 		return self._configParser
 	
-	def generate(self):
+	def generate(self, configParser):
+		self._configParser = configParser
+		
 		if not self._configParser:
 			raise Exception(u"Got no data to write")
 		
 		data = StringIO.StringIO()
 		self._configParser.write(data)
-		self._lines = data.decode('utf-8', 'replace').replace('\r', '').split('\n')
+		self._lines = data.getvalue().decode('utf-8', 'replace').replace('\r', '').split('\n')
 		
 		self.open('w')
 		self.writelines()
