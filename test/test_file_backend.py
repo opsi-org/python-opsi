@@ -18,21 +18,30 @@ client = OpsiClient(
 	id = 'schwarz.uib.local',
 	opsiHostKey = None,
 	description=None,
-	notes=None,
+	notes = None,
 	hardwareAddress=None,
-	ipAddress=None,
+	ipAddress = '192.168.1.1',
 	inventoryNumber=None,
 	created=None,
 	lastSeen=None)
 
-#file31Backend.host_insertObject(client)
+file31Backend.host_insertObject(client)
+
+for host in file31Backend.host_getObjects(attributes = [], id = '*local'):
+	print host
+for host in file31Backend.host_getObjects(attributes = [], id = '*local', ipAddress = None):
+	print host
+
+#
 
 #file31Backend.host_deleteObjects(client)
 
 #
-bt = BackendTest(ExtendedConfigDataBackend(file31Backend))
-bt.cleanupBackend()
-bt.testObjectMethods()
+#bt = BackendTest(ExtendedConfigDataBackend(file31Backend))
+
+
+#bt.cleanupBackend()
+#bt.testObjectMethods()
 #bt.testNonObjectMethods()
 #bt.testPerformance()
 
