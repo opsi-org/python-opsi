@@ -40,7 +40,8 @@ import json, re, copy, time, inspect
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI import Tools
+from OPSI.Tools import generateOpsiHostKey, timestamp
+
 
 # Get logger instance
 logger = Logger()
@@ -307,9 +308,9 @@ class OpsiClient(Host):
 	def setDefaults(self):
 		Host.setDefaults(self)
 		if self.opsiHostKey is None:
-			self.setOpsiHostKey(Tools.generateOpsiHostKey())
+			self.setOpsiHostKey(generateOpsiHostKey())
 		if self.created is None:
-			self.setCreated(Tools.timestamp())
+			self.setCreated(timestamp())
 	
 	def getLastSeen(self):
 		return self.lastSeen
@@ -1297,7 +1298,7 @@ class ProductOnClient(Relationship):
 		if self.actionRequest is None:
 			self.setActionRequest('none')
 		if self.lastStateChange is None:
-			self.setLastStateChange(Tools.timestamp())
+			self.setLastStateChange(timestamp())
 		
 	def getProductId(self):
 		return self.productId
@@ -1562,7 +1563,7 @@ class LicenseContract(Entity):
 		if self.partner is None:
 			self.setPartner(u"")
 		if self.conclusionDate is None:
-			self.setConclusionDate(Tools.timestamp())
+			self.setConclusionDate(timestamp())
 		if self.notificationDate is None:
 			self.setNotificationDate('0000-00-00 00:00:00')
 		if self.expirationDate is None:
@@ -2079,9 +2080,9 @@ class AuditSoftwareOnClient(Relationship):
 	def setDefaults(self):
 		Relationship.setDefaults(self)
 		if self.firstseen is None:
-			self.setFirstseen(Tools.timestamp())
+			self.setFirstseen(timestamp())
 		if self.lastseen is None:
-			self.setLastseen(Tools.timestamp())
+			self.setLastseen(timestamp())
 		if self.state is None:
 			self.setState(1)
 		if self.usageFrequency is None:

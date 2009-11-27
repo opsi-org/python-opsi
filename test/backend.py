@@ -641,6 +641,7 @@ class BackendTest(object):
 		self.backend.host_createObjects( self.hosts )
 		
 		hosts = self.backend.host_getObjects()
+		
 		assert len(hosts) == len(self.hosts)
 		for host in hosts:
 			assert host.getOpsiHostKey()

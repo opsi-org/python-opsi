@@ -265,10 +265,10 @@ def forceObjectClass(var, objectClass):
 			var = json.loads(var)
 		except Exception, e:
 			logger.debug(e)
-	
 	if type(var) is dict and var.has_key('type'):
 		try:
-			c = eval(var['type'])
+			import Backend.Object
+			c = eval('Backend.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
 		except Exception, e:

@@ -18,7 +18,7 @@ bt = BackendTest(jsonrpcBackend)
 
 #bt.cleanupBackend()
 #jsonrpcBackend.base_create()
-#bt.testObjectMethods()
+bt.testObjectMethods()
 #bt.testNonObjectMethods()
 
 

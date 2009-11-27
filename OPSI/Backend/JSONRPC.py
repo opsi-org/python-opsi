@@ -40,8 +40,8 @@ import json, base64, urllib, httplib, new, stat, socket, time, threading
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from Object import *
 from Backend import *
+import Object
 
 # Get logger instance
 logger = Logger()
@@ -195,6 +195,7 @@ class JSONRPCBackend(Backend):
 			
 			logger.info(u"Successfully connected to '%s:%s'" % (host, port))
 		except Exception, e:
+			logger.logException(e)
 			raise BackendIOError(u"Failed to connect to '%s': %s" % (self.__address, e))
 		
 		
@@ -203,6 +204,43 @@ class JSONRPCBackend(Backend):
 		''' This function executes a JSON-RPC and
 		    returns the result as a JSON object. '''
 		
+		def fromHash(obj):
+			newObj = None
+			if type(obj) is dict and obj.has_key('type'):
+				try:
+					c = eval('Object.%s' % obj['type'])
+					newObj = c.fromHash(obj)
+				except Exception, e:
+					logger.debug(e)
+					return obj
+			elif type(obj) is list:
+				newObj = []
+				for o in obj:
+					newObj.append(fromHash(o))
+			elif type(obj) is dict:
+				newObj = {}
+				for (k, v) in obj.items():
+					newObj[k] = fromHash(v)
+			else:
+				return obj
+			return newObj
+		
+		def toHash(obj):
+			newObj = None
+			if hasattr(obj, 'toHash'):
+				newObj = obj.toHash()
+			elif type(obj) is list:
+				newObj = []
+				for o in obj:
+					newObj.append(toHash(o))
+			elif type(obj) is dict:
+				newObj = {}
+				for (k, v) in obj.items():
+					newObj[k] = toHash(v)
+			else:
+				return obj
+			return newObj
+		
 		logger.debug("Executing jsonrpc method '%s'" % method)
 		self.__rpcLock.acquire()
 		try:
@@ -210,7 +248,7 @@ class JSONRPCBackend(Backend):
 			params = []
 			logger.debug("Keyword arguments: %s" % kwargs)
 			for (key, value) in kwargs.items():
-				params.append(value)
+				params.append(toHash(value))
 			
 			# Create json-rpc object
 			jsonrpc = ''
@@ -236,7 +274,9 @@ class JSONRPCBackend(Backend):
 				raise Exception( response.get('error') )
 			
 			# Return result as json object
-			return response.get('result', None)
+			result = fromHash(response.get('result'))
+			#print result
+			return result
 		finally:
 			self.__rpcLock.release()
 		
