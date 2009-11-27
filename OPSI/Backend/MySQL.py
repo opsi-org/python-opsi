@@ -213,8 +213,7 @@ class MySQLBackend(ConfigDataBackend):
 		for (key, values) in filter.items():
 			if values is None:
 				continue
-			if not type(values) is list:
-				values = [ values ]
+			values = forceList(values)
 			if not values:
 				continue
 			if where:
@@ -250,6 +249,9 @@ class MySQLBackend(ConfigDataBackend):
 		return query
 	
 	def _adjustAttributes(self, objectClass, attributes, filter):
+		if not attributes:
+			attributes = []
+		attributes = forceUnicodeList(attributes)
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 		if filter.has_key('id'):
 			filter[id] = filter['id']
@@ -687,6 +689,44 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
+		
+		# Software audit database
+		if not 'SOFTWARE' in tables.keys():
+			logger.debug(u'Creating table SOFTWARE')
+			table = u'''CREATE TABLE `SOFTWARE` (
+					`softwareId` varchar(100) NOT NULL,
+					`displayName` varchar(100),
+					`displayVersion` varchar(100),
+					PRIMARY KEY( `softwareId`, `displayName`, `displayVersion` ),
+					`type` varchar(30) NOT NULL,
+					`uninstallString` varchar(200),
+					`binaryName` varchar(100),
+					`installSize` BIGINT
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'SOFTWARE_CONFIG' in tables.keys():
+			logger.debug(u'Creating table SOFTWARE_CONFIG')
+			table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
+					`config_id` INT NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `config_id` ),
+					`clientId` varchar(255) NOT NULL,
+					`softwareId` varchar(100) NOT NULL,
+					`displayName` varchar(100),
+					`displayVersion` varchar(100),
+					`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`state` TINYINT NOT NULL,
+					`usageFrequency` int NOT NULL DEFAULT -1,
+					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -705,7 +745,11 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting hosts, filter: %s" % filter)
 		hosts = []
-		self._adjustAttributes(Host, attributes, filter)
+		type = forceList(filter.get('type', []))
+		if 'OpsiDepotserver' in type and not 'OpsiConfigserver' in type:
+			type.append('OpsiConfigserver')
+			filter['type'] = type
+		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
 		for res in  self._mysql.getSet(self._createQuery('HOST', attributes, filter)):
 			self._adjustResult(Host, res)
 			hosts.append(Host.fromHash(res))
@@ -760,7 +804,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configs, filter: %s" % filter)
 		configs = []
-		self._adjustAttributes(Config, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
 		
 		if filter.has_key('defaultValues'):
 			if filter['defaultValues']:
@@ -824,7 +868,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configStates, filter: %s" % filter)
 		configStates = []
-		self._adjustAttributes(ConfigState, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
 			if res.has_key('values'):
 				res['values'] = json.loads(res['values'])
@@ -869,7 +913,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting products, filter: %s" % filter)
 		products = []
-		self._adjustAttributes(Product, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT', attributes, filter)):
 			res['windowsSoftwareIds'] = []
 			res['productClassIds'] = []
@@ -936,7 +980,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product properties, filter: %s" % filter)
 		productProperties = []
-		self._adjustAttributes(ProductProperty, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
@@ -977,7 +1021,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product dependencies, filter: %s" % filter)
 		productDependencies = []
-		self._adjustAttributes(ProductDependency, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter)):
 			productDependencies.append(ProductDependency.fromHash(res))
 		return productDependencies
@@ -1006,7 +1050,7 @@ class MySQLBackend(ConfigDataBackend):
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		productOnDepots = []
-		self._adjustAttributes(ProductOnDepot, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
 			productOnDepots.append(ProductOnDepot.fromHash(res))
 		return productOnDepots
@@ -1036,7 +1080,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productOnClients, filter: %s" % filter)
 		productOnClients = []
-		self._adjustAttributes(ProductOnClient, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter)):
 			productOnClients.append(ProductOnClient.fromHash(res))
 		return productOnClients
@@ -1068,7 +1112,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
 		productPropertyStates = []
-		self._adjustAttributes(ProductPropertyState, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
 			if res.has_key('values'):
 				res['values'] = json.loads(res['values'])
@@ -1100,7 +1144,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting groups, filter: %s" % filter)
 		groups = []
-		self._adjustAttributes(Group, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Group, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('GROUP', attributes, filter)):
 			self._adjustResult(Group, res)
 			groups.append(Group.fromHash(res))
@@ -1131,7 +1175,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting objectToGroups, filter: %s" % filter)
 		objectToGroups = []
-		self._adjustAttributes(ObjectToGroup, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter)):
 			objectToGroups.append(ObjectToGroup.fromHash(res))
 		return objectToGroups
@@ -1161,7 +1205,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseContracts, filter: %s" % filter)
 		licenseContracts = []
-		self._adjustAttributes(LicenseContract, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(LicenseContract, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('LICENSE_CONTRACT', attributes, filter)):
 			self._adjustResult(LicenseContract, res)
 			licenseContracts.append(LicenseContract.fromHash(res))
@@ -1192,7 +1236,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
 		softwareLicenses = []
-		self._adjustAttributes(SoftwareLicense, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(SoftwareLicense, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('SOFTWARE_LICENSE', attributes, filter)):
 			self._adjustResult(SoftwareLicense, res)
 			softwareLicenses.append(SoftwareLicense.fromHash(res))
@@ -1243,7 +1287,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licensePools, filter: %s" % filter)
 		licensePools = []
-		self._adjustAttributes(LicensePool, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 		
 		if filter.has_key('windowsSoftwareIds'):
 			if filter['windowsSoftwareIds']:
@@ -1307,7 +1351,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
 		softwareLicenseToLicensePools = []
-		self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('SOFTWARE_LICENSE_TO_LICENSE_POOL', attributes, filter)):
 			softwareLicenseToLicensePools.append(SoftwareLicenseToLicensePool.fromHash(res))
 		return softwareLicenseToLicensePools
@@ -1337,7 +1381,7 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
 		licenseOnClients = []
-		self._adjustAttributes(LicenseOnClient, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
 		for res in self._mysql.getSet(self._createQuery('LICENSE_ON_CLIENT', attributes, filter)):
 			licenseOnClients.append(LicenseOnClient.fromHash(res))
 		return licenseOnClients
@@ -1348,10 +1392,67 @@ class MySQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)
 			where = self._uniqueCondition(licenseOnClient)
 			self._mysql.delete('LICENSE_ON_CLIENT', where)
-			
 	
-
-
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftware_insertObject(self, auditSoftware):
+		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
+		data = self._objectToDatabaseHash(auditSoftware)
+		self._mysql.insert('SOFTWARE', data)
+	
+	def auditSoftware_updateObject(self, auditSoftware):
+		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
+		data = self._objectToDatabaseHash(auditSoftware)
+		where = self._uniqueCondition(auditSoftware)
+		self._mysql.update('SOFTWARE', where, data)
+	
+	def auditSoftware_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditSoftware, filter: %s" % filter)
+		auditSoftwares = []
+		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('SOFTWARE', attributes, filter)):
+			auditSoftwares.append(AuditSoftware.fromHash(res))
+		return auditSoftwares
+	
+	def auditSoftware_deleteObjects(self, auditSoftwares):
+		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
+		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
+			logger.info(u"Deleting auditSoftware %s" % auditSoftware)
+			where = self._uniqueCondition(auditSoftware)
+			self._mysql.delete('SOFTWARE', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareOnClients                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
+		data = self._objectToDatabaseHash(auditSoftwareOnClient)
+		self._mysql.insert('SOFTWARE_CONFIG', data)
+	
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
+		data = self._objectToDatabaseHash(auditSoftwareOnClient)
+		where = self._uniqueCondition(auditSoftwareOnClient)
+		self._mysql.update('SOFTWARE_CONFIG', where, data)
+	
+	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditSoftwareOnClient, filter: %s" % filter)
+		auditSoftwareOnClients = []
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('SOFTWARE_CONFIG', attributes, filter)):
+			auditSoftwareOnClients.append(AuditSoftwareOnClient.fromHash(res))
+		return auditSoftwareOnClients
+	
+	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
+		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
+			logger.info(u"Deleting auditSoftwareOnClient %s" % auditSoftwareOnClient)
+			where = self._uniqueCondition(auditSoftwareOnClient)
+			self._mysql.delete('SOFTWARE_CONFIG', where)
+	
 
 
 

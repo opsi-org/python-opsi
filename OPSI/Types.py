@@ -370,6 +370,12 @@ def forceLicensePoolIdList(var):
 		var[i] = forceLicensePoolId(var[i])
 	return var
 
+def forceAuditState(var):
+	var = forceInt(var)
+	if var not in (0, 1):
+		raise BackendBadValueError(u"Bad audit state value '%s': %s" % (var, e))
+	return var
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      EXCEPTION CLASSES                                             =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''

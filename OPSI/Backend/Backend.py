@@ -88,8 +88,8 @@ def getArgAndCallString(method):
 			callString += u', '
 		argString += u'**%s' % varkwargs
 		callString += u'**%s' % varkwargs
-	#logger.debug2(u"Arg string is: %s" % argString)
-	#logger.debug2(u"Call string is: %s" % callString)
+	logger.debug2(u"Arg string is: %s" % argString)
+	logger.debug2(u"Call string is: %s" % callString)
 	return (argString, callString)
 
 
@@ -108,28 +108,29 @@ class Backend:
 		#		self._defaultDomain = forceDomain(value)
 	
 	def getInterface(self):
-		''' This function returns a list of available interface methods.
-		The methods are defined by hashes containing the keys "name" and
-		"params", which is a list of parameter names used for a method.
-		Parameters starting with an asterisk (*) are optional '''
 		methodList = []
 		methods = {}
-		for (n, t) in self.__dict__.items():
-			# Extract a list of all "public" functions (functionname does not start with '_')
-			if ( (type(t) == types.FunctionType or type(t) == types.MethodType ) and not n.startswith('_') ):
-				methods[n] = t
-		
-		for (n, t) in methods.items():
-			argCount = t.func_code.co_argcount
-			argNames = list(t.func_code.co_varnames[1:argCount])
-			argDefaults = t.func_defaults
-			if ( argDefaults != None and len(argDefaults) > 0 ):
-				offset = argCount - len(argDefaults) - 1
-				for i in range( len(argDefaults) ):
-					argNames[offset+i] = '*' + argNames[offset+i]		
-			methodList.append( { 'name': n, 'params': argNames} )
-		
-		# Sort the function list by name
+		for member in inspect.getmembers(self, inspect.ismethod):
+			methodName = member[0]
+			(args, varargs, varkwargs, argDefaults) = inspect.getargspec(member[1])
+			#logger.debug2(u"args: %s" % unicode(args))
+			#logger.debug2(u"varargs: %s" % unicode(varargs))
+			#logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
+			#logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
+			params = []
+			if args:
+				for arg in forceList(args):
+					if (arg != 'self'):
+						params.append(arg)
+			if varargs:
+				for arg in forceList(varargs):
+					params.append('*' + arg)
+			if varkwargs:
+				for arg in forceList(varkwargs):
+					params.append('**' + arg)
+			logger.debug2(u"Interface method name '%s' params %s" % (methodName, params))
+			methodList.append( { 'name': methodName, 'params': params} )
+			
 		methodList.sort()
 		return methodList
 
@@ -218,12 +219,29 @@ class BackendIdentExtension(Backend):
 			result.append(licensePool.getIdent(returnType))
 		return result
 	
+	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for softwareLicenseToLicensePool in self.softwareLicenseToLicensePool_getObjects(attributes = ['softwareLicenseId', 'licensePoolId'], **filter):
+			result.append(softwareLicenseToLicensePool.getIdent(returnType))
+		return result
+	
 	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
 		result = []
 		for licenseOnClient in self.licenseOnClient_getObjects(attributes = ['softwareLicenseId', 'licensePoolId', 'clientId'], **filter):
 			result.append(licenseOnClient.getIdent(returnType))
 		return result
 	
+	def auditSoftware_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditSoftware in self.auditSoftware_getObjects(attributes = ['softwareId', 'displayName', 'displayVersion'], **filter):
+			result.append(auditSoftware.getIdent(returnType))
+		return result
+	
+	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditSoftwareOnClients in self.auditSoftwareOnClient_getObjects(attributes = ['softwareId', 'displayName', 'displayVersion', 'clientId'], **filter):
+			result.append(auditSoftwareOnClient.getIdent(returnType))
+		return result
 	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS CONFIGDATABACKEND                                          =
@@ -234,13 +252,16 @@ class ConfigDataBackend(BackendIdentExtension):
 		Backend.__init__(self, username, password, address, **kwargs)
 	
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
+		if not attributes:
+			attributes = []
+		attributes = forceUnicodeList(attributes)
 		possibleAttributes = getPossibleClassAttributes(Class)
 		for attribute in attributes:
 			if not attribute in possibleAttributes:
-				raise BackendBadValueError("Unkown attribute '%s'" % attribute)
+				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
 		for attribute in filter.keys():
 			if not attribute in possibleAttributes:
-				raise BackendBadValueError("Unkown attribute '%s'" % attribute)
+				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
 	
 	def base_create(self):
 		pass
@@ -650,6 +671,38 @@ class ConfigDataBackend(BackendIdentExtension):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftware_insertObject(self, auditSoftware):
+		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
+		auditSoftware.setDefaults()
+	
+	def auditSoftware_updateObject(self, auditSoftware):
+		pass
+	
+	def auditSoftware_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(AuditSoftware, attributes, **filter)
+	
+	def auditSoftware_deleteObjects(self, auditSoftwares):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareOnClients                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
+		auditSoftwareOnClient.setDefaults()
+	
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+		pass
+	
+	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(AuditSoftwareOnClient, attributes, **filter)
+	
+	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   HardwareInventory                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def hardwareInventory_insertObject(self, hardwareInventory):
@@ -914,9 +967,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 	def host_createObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			logger.info(u"Creating host '%s'" % host)
-			if self.host_getObjects(
-					attributes = ['id'],
-					id = host.id):
+			if self.host_getIdents(id = host.id):
 				logger.info(u"%s already exists, updating" % host)
 				self.host_updateObject(host)
 			else:
@@ -955,9 +1006,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 	def config_createObjects(self, configs):
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Creating config %s" % config)
-			if self._backend.config_getObjects(
-					attributes = ['id'],
-					id         = config.id):
+			if self._backend.config_getIdents(id = config.id):
 				logger.info(u"Config '%s' already exists, updating" % config)
 				self._backend.config_updateObject(config)
 			else:
@@ -1022,8 +1071,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 	def configState_createObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
-			if self._backend.configState_getObjects(
-					attributes = ['configId'],
+			if self._backend.configState_getIdents(
 					configId   = configState.configId,
 					objectId   = configState.objectId):
 				logger.info(u"ConfigState '%s' already exists, updating" % configState)
@@ -1074,9 +1122,9 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 	def product_createObjects(self, products):
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Creating product %s" % product)
-			if self._backend.product_getObjects(
-					attributes = ['productId'],
-					id = product.id, productVersion = product.productVersion,
+			if self._backend.product_getIdents(
+					id             = product.id,
+					productVersion = product.productVersion,
 					packageVersion = product.packageVersion):
 				logger.info(u"Product '%s' already exists, updating" % product)
 				self._backend.product_updateObject(product)
@@ -1114,8 +1162,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 	def productProperty_createObjects(self, productProperties):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating product property %s" % productProperty)
-			if self._backend.productProperty_getObjects(
-					attributes     = ['productId'],
+			if self._backend.productProperty_getIdents(
 					productId      = productProperty.productId,
 					productVersion = productProperty.productVersion,
 					packageVersion = productProperty.packageVersion,
@@ -1203,9 +1250,9 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
 			logger.info(u"Creating productOnDepot '%s'" % productOnDepot)
-			if self._backend.productOnDepot_getObjects(
+			if self._backend.productOnDepot_getIdents(
 					productId = productOnDepot.productId,
-					depotId = productOnDepot.depotId):
+					depotId   = productOnDepot.depotId):
 				logger.info(u"ProductOnDepot '%s' already exists, updating" % productOnDepot)
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
@@ -1283,9 +1330,9 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
 		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient '%s'" % productOnClient)
-			if self._backend.productOnClient_getObjects(
+			if self._backend.productOnClient_getIdents(
 					productId = productOnClient.productId,
-					clientId = productOnClient.clientId):
+					clientId  = productOnClient.clientId):
 				logger.info(u"ProductOnClient '%s' already exists, updating" % productOnClient)
 				self._backend.productOnClient_updateObject(productOnClient)
 			else:
@@ -1357,7 +1404,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
 			logger.info(u"Creating productPropertyState '%s'" % productPropertyState)
-			if self._backend.productPropertyState_getObjects(
+			if self._backend.productPropertyState_getIdents(
 						productId  = productPropertyState.productId,
 						objectId   = productPropertyState.objectId,
 						propertyId = productPropertyState.propertyId):
@@ -1392,7 +1439,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
 			logger.info(u"Creating group '%s'" % group)
-			if self._backend.group_getObjects(id = group.id):
+			if self._backend.group_getIdents(id = group.id):
 				logger.info(u"Group '%s' already exists, updating" % group)
 				self._backend.group_updateObject(group)
 			else:
@@ -1420,7 +1467,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
 			logger.info(u"Creating %s" % objectToGroup)
-			if self._backend.objectToGroup_getObjects(
+			if self._backend.objectToGroup_getIdents(
 					groupId = objectToGroup.groupId,
 					objectId = objectToGroup.objectId):
 				logger.info(u"%s already exists, updating" % objectToGroup)
@@ -1453,7 +1500,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
 			logger.info(u"Creating licenseContract '%s'" % licenseContract)
-			if self._backend.licenseContract_getObjects(id = licenseContract.id):
+			if self._backend.licenseContract_getIdents(id = licenseContract.id):
 				logger.info(u"LicenseContract '%s' already exists, updating" % licenseContract)
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
@@ -1481,7 +1528,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
 			logger.info(u"Creating softwareLicense '%s'" % softwareLicense)
-			if self._backend.softwareLicense_getObjects(id = softwareLicense.id):
+			if self._backend.softwareLicense_getIdents(id = softwareLicense.id):
 				logger.info(u"SoftwareLicense '%s' already exists, updating" % softwareLicense)
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
@@ -1524,7 +1571,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
 			logger.info(u"Creating licensePool '%s'" % licensePool)
-			if self._backend.licensePool_getObjects(id = licensePool.id):
+			if self._backend.licensePool_getIdents(id = licensePool.id):
 				logger.info(u"LicensePool '%s' already exists, updating" % licensePool)
 				self._backend.licensePool_updateObject(licensePool)
 			else:
@@ -1552,7 +1599,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
 			logger.info(u"Creating %s" % softwareLicenseToLicensePool)
-			if self._backend.softwareLicenseToLicensePool_getObjects(
+			if self._backend.softwareLicenseToLicensePool_getIdents(
 					softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
 					licensePoolId     = softwareLicenseToLicensePool.licensePoolId):
 				logger.info(u"%s already exists, updating" % softwareLicenseToLicensePool)
@@ -1584,7 +1631,7 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
 		for licenseOnClient in licenseOnClients:
 			logger.info(u"Creating %s" % licenseOnClient)
-			if self._backend.licenseOnClient_getObjects(
+			if self._backend.licenseOnClient_getIdents(
 					softwareLicenseId = licenseOnClient.softwareLicenseId,
 					licensePoolId     = licenseOnClient.licensePoolId,
 					clientId          = licenseOnClient.clientId):
@@ -1612,16 +1659,79 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 					licensePoolId     = forceLicensePoolIdList(licensePoolId),
 					clientId          = forceHostIdList(clientId)))
 	
-
-
-
-
-
-
-
-
-
-
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftware_createObjects(self, auditSoftwares):
+		auditSoftwares = forceObjectClassList(auditSoftwares, AuditSoftware)
+		for auditSoftware in auditSoftwares:
+			logger.info(u"Creating %s" % auditSoftware)
+			if self._backend.auditSoftware_getIdents(
+					softwareId     = auditSoftware.softwareId,
+					displayName    = auditSoftware.displayName,
+					displayVersion = auditSoftware.displayVersion):
+				logger.info(u"%s already exists, updating" % auditSoftware)
+				self._backend.auditSoftware_updateObject(auditSoftware)
+			else:
+				self._backend.auditSoftware_insertObject(auditSoftware)
+	
+	def auditSoftware_updateObjects(self, auditSoftwares):
+		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
+			self._backend.auditSoftware_updateObject(auditSoftware)
+	
+	def auditSoftware_create(self, softwareId, displayName, displayVersion, uninstallString=None, binaryName=None, installSize=None):
+		hash = locals()
+		del hash['self']
+		return self.auditSoftware_createObjects(AuditSoftware.fromHash(hash))
+	
+	def auditSoftware_delete(self, softwareId, displayName, displayVersion):
+		if not softwareId:     softwareId  = []
+		if not displayName:    displayName = []
+		if not displayVersion: displayVersion = []
+		return self._backend.auditSoftware_deleteObjects(
+				self._backend.auditSoftware_getObjects(
+					softwareId     = forceUnicodeLower(softwareId),
+					displayName    = forceUnicode(displayName),
+					displayVersion = forceUnicode(displayVersion)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareOnClients                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareOnClient_createObjects(self, auditSoftwareOnClients):
+		auditSoftwareOnClients = forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient)
+		for auditSoftwareOnClient in auditSoftwareOnClients:
+			logger.info(u"Creating %s" % auditSoftwareOnClient)
+			if self._backend.auditSoftwareOnClient_getIdents(
+					softwareId     = auditSoftwareOnClient.softwareId,
+					displayName    = auditSoftwareOnClient.displayName,
+					displayVersion = auditSoftwareOnClient.displayVersion,
+					clientId       = auditSoftwareOnClient.clientId):
+				logger.info(u"%s already exists, updating" % auditSoftwareOnClient)
+				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
+			else:
+				self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
+	
+	def auditSoftwareOnClient_updateObjects(self, auditSoftwareOnClients):
+		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
+			self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
+	
+	def auditSoftwareOnClient_create(self, softwareId, displayName, displayVersion, clientId, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+		hash = locals()
+		del hash['self']
+		return self.auditSoftwareOnClient_createObjects(AuditSoftwareOnClient.fromHash(hash))
+	
+	def auditSoftwareOnClient_delete(self, softwareId, displayName, displayVersion, clientId):
+		if not softwareId:     softwareId  = []
+		if not displayName:    displayName = []
+		if not displayVersion: displayVersion = []
+		if not clientId:       clientId = []
+		return self._backend.auditSoftwareOnClient_deleteObjects(
+				self._backend.auditSoftwareOnClient_getObjects(
+					softwareId     = forceUnicodeLower(softwareId),
+					displayName    = forceUnicode(displayName),
+					displayVersion = forceUnicode(displayVersion),
+					clientId       = forceHostId(clientId)))
+	
 
 
 

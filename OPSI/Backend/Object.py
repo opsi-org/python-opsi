@@ -1627,7 +1627,7 @@ Entity.subClasses['LicenseContract'] = LicenseContract
 
 class SoftwareLicense(Entity):
 	subClasses = {}
-	foreignIdAttributes = Object.foreignIdAttributes + ['softwareLicenseId']
+	foreignIdAttributes = Entity.foreignIdAttributes + ['softwareLicenseId']
 	backendMethodPrefix = 'softwareLicense'
 	
 	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
@@ -1790,7 +1790,7 @@ SoftwareLicense.subClasses['ConcurrentSoftwareLicense'] = ConcurrentSoftwareLice
 
 class LicensePool(Entity):
 	subClasses = {}
-	foreignIdAttributes = Object.foreignIdAttributes + ['licensePoolId']
+	foreignIdAttributes = Entity.foreignIdAttributes + ['licensePoolId']
 	backendMethodPrefix = 'licensePool'
 	
 	def __init__(self, id, description=None, productIds=None, windowsSoftwareIds=None):
@@ -1971,16 +1971,192 @@ Relationship.subClasses['LicenseOnClient'] = LicenseOnClient
 
 
 
+class AuditSoftware(Entity):
+	subClasses = {}
+	foreignIdAttributes = Entity.foreignIdAttributes
+	backendMethodPrefix = 'auditSoftware'
+	
+	def __init__(self, softwareId, displayName, displayVersion, uninstallString=None, binaryName=None, installSize=None):
+		self.uninstallString = None
+		self.binaryName = None
+		self.installSize = None
+		self.setSoftwareId(softwareId)
+		self.setDisplayName(displayName)
+		self.setDisplayVersion(displayVersion)
+		if not uninstallString is None:
+			self.setUninstallString(uninstallString)
+		if not binaryName is None:
+			self.setBinaryName(binaryName)
+		if not installSize is None:
+			self.setInstallSize(installSize)
+		
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.uninstallString is None:
+			self.setUninstallString(u"")
+		if self.binaryName is None:
+			self.setBinaryName(u"")
+		if self.installSize is None:
+			self.setInstallSize(0)
+		
+	def getSoftwareId(self):
+		return self.softwareId
+	
+	def setSoftwareId(self, softwareId):
+		self.softwareId = forceUnicodeLower(softwareId)
+	
+	def getDisplayName(self):
+		return self.displayName
+	
+	def setDisplayName(self, displayName):
+		self.displayName = forceUnicode(displayName)
+	
+	def getDisplayVersion(self):
+		return self.displayVersion
+	
+	def setDisplayVersion(self, displayVersion):
+		self.displayVersion = forceUnicode(displayVersion)
+	
+	def getUninstallString(self):
+		return self.uninstallString
+	
+	def setUninstallString(self, uninstallString):
+		self.uninstallString = forceUnicode(uninstallString)
+	
+	def getBinaryName(self):
+		return self.binaryName
+	
+	def setBinaryName(self, binaryName):
+		self.binaryName = forceUnicode(binaryName)
+	
+	def getInstallSize(self):
+		return self.installSize
+	
+	def setInstallSize(self, installSize):
+		self.installSize = forceInt(installSize)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'AuditSoftware'
+		return Entity.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return AuditSoftware.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s  softwareId '%s', displayName '%s', displayVersion '%s'>" \
+			% (self.getType(), self.softwareId, self.displayName, self.displayVersion)
+	
+Entity.subClasses['AuditSoftware'] = AuditSoftware
 
 
-
-
-
-
-
-
-
-
+class AuditSoftwareOnClient(Relationship):
+	subClasses = {}
+	backendMethodPrefix = 'auditSoftwareOnClient'
+	
+	def __init__(self, softwareId, displayName, displayVersion, clientId, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+		self.firstseen = None
+		self.lastseen = None
+		self.state = None
+		self.usageFrequency = None
+		self.lastUsed = None
+		self.setSoftwareId(softwareId)
+		self.setDisplayName(displayName)
+		self.setDisplayVersion(displayVersion)
+		self.setClientId(clientId)
+		if not firstseen is None:
+			self.setFirstseen(firstseen)
+		if not lastseen is None:
+			self.setLastseen(lastseen)
+		if not state is None:
+			self.setState(state)
+		if not usageFrequency is None:
+			self.setUsageFrequency(usageFrequency)
+		if not lastUsed is None:
+			self.setLastUsed(lastUsed)
+		
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.firstseen is None:
+			self.setFirstseen(Tools.timestamp())
+		if self.lastseen is None:
+			self.setLastseen(Tools.timestamp())
+		if self.state is None:
+			self.setState(1)
+		if self.usageFrequency is None:
+			self.setUsageFrequency(-1)
+		if self.lastUsed is None:
+			self.setLastUsed('0000-00-00 00:00:00')
+		
+	def getSoftwareId(self):
+		return self.softwareId
+	
+	def setSoftwareId(self, softwareId):
+		self.softwareId = forceUnicodeLower(softwareId)
+	
+	def getDisplayName(self):
+		return self.displayName
+	
+	def setDisplayName(self, displayName):
+		self.displayName = forceUnicode(displayName)
+	
+	def getDisplayVersion(self):
+		return self.displayVersion
+	
+	def setDisplayVersion(self, displayVersion):
+		self.displayVersion = forceUnicode(displayVersion)
+	
+	def getClientId(self):
+		return self.clientId
+	
+	def setClientId(self, clientId):
+		self.clientId = forceHostId(clientId)
+	
+	def getFirstseen(self):
+		return self.firstseen
+	
+	def setFirstseen(self, firstseen):
+		self.firstseen = forceOpsiTimestamp(firstseen)
+	
+	def getLastseen(self):
+		return self.firstseen
+	
+	def setLastseen(self, lastseen):
+		self.lastseen = forceOpsiTimestamp(lastseen)
+	
+	def getState(self):
+		return self.state
+	
+	def setState(self, state):
+		self.state = forceAuditState(state)
+	
+	def getUsageFrequency(self):
+		return self.usageFrequency
+	
+	def setUsageFrequency(self, usageFrequency):
+		self.usageFrequency = forceInt(usageFrequency)
+	
+	def getLastUsed(self):
+		return self.lastUsed
+	
+	def setLastUsed(self, lastUsed):
+		self.lastUsed = forceOpsiTimestamp(lastUsed)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'AuditSoftwareOnClient'
+		return Relationship.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return AuditSoftwareOnClient.fromHash(json.loads(jsonString))
+	
+	def __unicode__(self):
+		return u"<%s softwareId '%s', displayName '%s', displayVersion '%s', clientId '%s'>" \
+			% (self.getType(), self.softwareId, self.displayName, self.displayVersion, self.clientId)
+	
+Relationship.subClasses['AuditSoftwareOnClient'] = AuditSoftwareOnClient
 
 
 

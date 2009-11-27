@@ -530,6 +530,103 @@ class BackendTest(object):
 		)
 		self.licenseOnClients = [self.licenseOnClient1, self.licenseOnClient2]
 		
+		self.product2 = LocalbootProduct(
+			id                 = 'product2',
+			name               = u'Product 2',
+			productVersion     = '2.0',
+			packageVersion     = 'test',
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = u"uninstall.ins",
+			updateScript       = "update.ins",
+			alwaysScript       = None,
+			onceScript         = None,
+			priority           = 0,
+			description        = None,
+			advice             = "",
+			productClassNames  = ['localboot-products'],
+			windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
+		)
+		
+		# AuditSoftwares
+		self.auditSoftware1 = AuditSoftware(
+			softwareId      = '{480aa013-93a7-488c-89c3-b985b6c8440a}',
+			displayName     = 'A Software',
+			displayVersion  = '1.0.21',
+			uninstallString = 'c:\\programme\\a software\\unistall.exe /S',
+			binaryName      = u'',
+			installSize     = 129012992
+		)
+		
+		self.auditSoftware2 = AuditSoftware(
+			softwareId      = self.product2.getWindowsSoftwareIds()[0],
+			displayName     = self.product2.getName(),
+			displayVersion  = self.product2.getProductVersion(),
+			uninstallString = 'msiexec /x %s' % self.product2.getWindowsSoftwareIds()[0],
+			binaryName      = u'',
+			installSize     = 217365267
+		)
+		
+		self.auditSoftware3 = AuditSoftware(
+			softwareId      = 'my software',
+			displayName     = '',
+			displayVersion  = '',
+			uninstallString = None,
+			binaryName      = None,
+			installSize     = -1
+		)
+		self.auditSoftwares = [self.auditSoftware1, self.auditSoftware2, self.auditSoftware3]
+		
+		# AuditSoftwareOnClients
+		self.auditSoftwareOnClient1 = AuditSoftwareOnClient(
+			softwareId     = self.auditSoftware1.getSoftwareId(),
+			displayName    = self.auditSoftware1.getDisplayName(),
+			displayVersion = self.auditSoftware1.getDisplayVersion(),
+			clientId       = self.client1.getId(),
+			firstseen      = None,
+			lastseen       = None,
+			state          = None,
+			usageFrequency = 2,
+			lastUsed       = '2009-02-12 09:48:22'
+		)
+		
+		self.auditSoftwareOnClient2 = AuditSoftwareOnClient(
+			softwareId     = self.auditSoftware2.getSoftwareId(),
+			displayName    = self.auditSoftware2.getDisplayName(),
+			displayVersion = self.auditSoftware2.getDisplayVersion(),
+			clientId       = self.client1.getId(),
+			firstseen      = None,
+			lastseen       = None,
+			state          = None,
+			usageFrequency = None,
+			lastUsed       = None
+		)
+		
+		self.auditSoftwareOnClient3 = AuditSoftwareOnClient(
+			softwareId     = self.auditSoftware3.getSoftwareId(),
+			displayName    = self.auditSoftware3.getDisplayName(),
+			displayVersion = self.auditSoftware3.getDisplayVersion(),
+			clientId       = self.client1.getId(),
+			firstseen      = None,
+			lastseen       = None,
+			state          = None,
+			usageFrequency = 0,
+			lastUsed       = '2009-08-01 14:11:00'
+		)
+		
+		self.auditSoftwareOnClient4 = AuditSoftwareOnClient(
+			softwareId     = self.auditSoftware2.getSoftwareId(),
+			displayName    = self.auditSoftware2.getDisplayName(),
+			displayVersion = self.auditSoftware2.getDisplayVersion(),
+			clientId       = self.client2.getId(),
+			firstseen      = None,
+			lastseen       = None,
+			state          = None,
+			usageFrequency = 0,
+			lastUsed       = None
+		)
+		self.auditSoftwareOnClients = [self.auditSoftwareOnClient1, self.auditSoftwareOnClient2, self.auditSoftwareOnClient3, self.auditSoftwareOnClient4]
+		
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
 		self.backend.base_delete()
@@ -603,35 +700,6 @@ class BackendTest(object):
 		
 		# Configs
 		logger.notice(u"Testing config methods")
-		
-		'''
-		self.config1 = UnicodeConfig(
-			id             = u'opsi-linux-bootimage.cmdline.reboot',
-			description    = (u'Some sting üöä?').encode('latin-1'),
-			possibleValues = ['w', 'c', 'b', 'h', 'b,c'],
-			defaultValues  = ['b,c']
-		)
-		
-		self.config2 = BoolConfig(
-			id            = u'opsi-linux-bootimage.cmdline.bool',
-			description   = 'Bool?',
-			defaultValues = 'on'
-		)
-		
-		self.config3 = UnicodeConfig(
-			id             = u'some.products',
-			description    = u'Install this products',
-			possibleValues = ['product1', 'product2', 'product3', 'product4'],
-			defaultValues  = ['product1', 'product3']
-		)
-		
-		self.config4 = UnicodeConfig(
-			id             = u'network.depot_server.depot_id',
-			description    = u'Depotserver to use',
-			possibleValues = [],
-			defaultValues  = [ self.depotserver1.id ]
-		)
-		'''
 		
 		self.backend.config_createObjects( self.configs )
 		
@@ -912,6 +980,23 @@ class BackendTest(object):
 		licenseOnClients = self.backend.licenseOnClient_getObjects()
 		assert len(licenseOnClients) == len(self.licenseOnClients)
 		
+		# AuditSoftwares
+		logger.notice(u"Testing auditSoftware methods")
+		
+		self.backend.auditSoftware_createObjects(self.auditSoftwares)
+		
+		auditSoftwares = self.backend.auditSoftware_getObjects()
+		assert len(auditSoftwares) == len(self.auditSoftwares)
+		
+		# AuditSoftwareOnClients
+		logger.notice(u"Testing auditSoftwareOnClient methods")
+		
+		self.backend.auditSoftwareOnClient_createObjects(self.auditSoftwareOnClients)
+		
+		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients)
+		
+		
 		
 	def testNonObjectMethods(self):
 		# Hosts
@@ -1129,7 +1214,26 @@ class BackendTest(object):
 				)
 		
 		logger.setConsoleLevel(consoleLevel)
-
+	
+	def testMultithreading(self):
+		logger.notice(u"Starting multithreading tests")
+		import threading
+		
+		class MultiThreadTest(threading.Thread):
+			def __init__(self, backend):
+				threading.Thread.__init__(self)
+				self._backend = backend
+				
+			def run(self):
+				logger.info(u"Thread %s started" % self)
+				self._backend.host_getObjects()
+				logger.info(u"Thread %s done" % self)
+				
+		for i in range(50):
+			mtt = MultiThreadTest(self.backend)
+			mtt.start()
+			time.sleep(0.05)
+		
 class BackendManagerTest(BackendTest):
 	def __init__(self, backendManager):
 		BackendTest.__init__(self, backendManager)
