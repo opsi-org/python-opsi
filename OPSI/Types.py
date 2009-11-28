@@ -51,9 +51,10 @@ def forceList(var):
 def forceUnicode(var):
 	if type(var) is unicode:
 		return var
-	if not type(var) is str:
-		var = str(var)
-	return unicode(var, 'utf-8', 'replace')
+	if type(var) is str:
+		return unicode(var, 'utf-8', 'replace')
+	return unicode(var)
+	
 
 def forceUnicodeLower(var):
 	return forceUnicode(var).lower()

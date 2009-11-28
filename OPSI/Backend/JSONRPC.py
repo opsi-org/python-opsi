@@ -125,37 +125,54 @@ class JSONRPCBackend(Backend):
 	
 	def _createInstanceMethods(self):
 		for method in self.__interface:
-			logger.debug2(u"Found public method '%s'" % method['name'])
-			if hasattr(self.__class__, method['name']):
-				logger.debug(u"Not overwriting method %s" % method['name'])
-				continue
-			
-			argString = u''
-			callString = u''
-			for param in method.get('params', []):
-				argString += u', '
-				callString += u', '
-				if param.startswith('*'):
-					callString += param
-					argString += param
-				else:
-					callString += u'%s=%s' % (param, param)
-					argString += u'%s=None' % param
-			
-			logger.debug2(u"Arg string is: %s" % argString)
-			logger.debug2(u"Call string is: %s" % callString)
-			exec(u'def %s(self%s): return self._executeMethod("%s"%s)' % (method['name'], argString, method['name'], callString))
-			setattr(self, method['name'], new.instancemethod(eval(method['name']), self, self.__class__))
-			
-	def _executeMethod(self, methodName, **kwargs):
-		return eval(u'self._jsonRPC(method = "%s",**kwargs)' % methodName)
+			try:
+				methodName = method['name']
+				args       = method['args']
+				varargs    = method['varargs']
+				keywords   = method['keywords']
+				defaults   = method['defaults']
+				
+				argString = u''
+				callString = u''
+				for i in range(len(args)):
+					if (args[i] == 'self'):
+						continue
+					if (argString):	 argString  += u', '
+					if (callString): callString += u', '
+					argString  += args[i]
+					callString += args[i]
+					if type(defaults) in (tuple, list) and (len(defaults) + i >= len(args)):
+						default = defaults[len(defaults)-len(args)+i]
+						if type(default) is str:
+							default = u"'%s'" % default
+						elif type(default) is unicode:
+							default = u"u'%s'" % default
+						argString += u'=%s' % unicode(default)
+				if varargs:
+					for vararg in varargs:
+						if (argString):	 argString  += u', '
+						if (callString): callString += u', '
+						argString  += u'*%s' % vararg
+						callString += vararg
+				if keywords:
+					if (argString):	 argString  += u', '
+					if (callString): callString += u', '
+					argString  += u'**%s' % keywords
+					callString += keywords
+					
+				logger.debug2(u"Arg string is: %s" % argString)
+				logger.debug2(u"Call string is: %s" % callString)
+				
+				exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
+				setattr(self,methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			except Exception, e:
+				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
 	
 	def _disconnect(self):
 		if self.__connection:
 			self.__connection.close()
 		
 	def _connect(self):
-		
 		# Split address which should be something like http(s)://xxxxxxxxxx:yy/zzzzz
 		parts = self.__address.split('/')
 		if ( len(parts) < 3 or ( parts[0] != 'http:' and parts[0] != 'https:') ):
@@ -200,55 +217,13 @@ class JSONRPCBackend(Backend):
 		
 		
 	
-	def _jsonRPC(self, method, **kwargs):
-		''' This function executes a JSON-RPC and
-		    returns the result as a JSON object. '''
-		
-		def fromHash(obj):
-			newObj = None
-			if type(obj) is dict and obj.has_key('type'):
-				try:
-					c = eval('Object.%s' % obj['type'])
-					newObj = c.fromHash(obj)
-				except Exception, e:
-					logger.debug(e)
-					return obj
-			elif type(obj) is list:
-				newObj = []
-				for o in obj:
-					newObj.append(fromHash(o))
-			elif type(obj) is dict:
-				newObj = {}
-				for (k, v) in obj.items():
-					newObj[k] = fromHash(v)
-			else:
-				return obj
-			return newObj
-		
-		def toHash(obj):
-			newObj = None
-			if hasattr(obj, 'toHash'):
-				newObj = obj.toHash()
-			elif type(obj) is list:
-				newObj = []
-				for o in obj:
-					newObj.append(toHash(o))
-			elif type(obj) is dict:
-				newObj = {}
-				for (k, v) in obj.items():
-					newObj[k] = toHash(v)
-			else:
-				return obj
-			return newObj
+	def _jsonRPC(self, method, params=[]):
 		
 		logger.debug("Executing jsonrpc method '%s'" % method)
 		self.__rpcLock.acquire()
 		try:
 			# Get params
-			params = []
-			logger.debug("Keyword arguments: %s" % kwargs)
-			for (key, value) in kwargs.items():
-				params.append(toHash(value))
+			params = Object.serialize(params)
 			
 			# Create json-rpc object
 			jsonrpc = ''
@@ -270,12 +245,11 @@ class JSONRPCBackend(Backend):
 				response = json.read(response)
 			
 			if response.get('error'):
-				# Error occurred => raise BackendIOError
-				raise Exception( response.get('error') )
+				# Error occurred
+				raise Exception( u'on server: %s' % response.get('error') )
 			
 			# Return result as json object
-			result = fromHash(response.get('result'))
-			#print result
+			result = Object.deserialize(response.get('result'))
 			return result
 		finally:
 			self.__rpcLock.release()

@@ -46,6 +46,43 @@ from OPSI.Tools import generateOpsiHostKey, timestamp
 # Get logger instance
 logger = Logger()
 
+def deserialize(obj):
+	newObj = None
+	if type(obj) is dict and obj.has_key('type'):
+		try:
+			c = eval('%s' % obj['type'])
+			newObj = c.fromHash(obj)
+		except Exception, e:
+			logger.debug(e)
+			return obj
+	elif type(obj) is list:
+		newObj = []
+		for o in obj:
+			newObj.append(deserialize(o))
+	elif type(obj) is dict:
+		newObj = {}
+		for (k, v) in obj.items():
+			newObj[k] = deserialize(v)
+	else:
+		return obj
+	return newObj
+
+def serialize(obj):
+	newObj = None
+	if hasattr(obj, 'serialize'):
+		newObj = obj.serialize()
+	elif type(obj) is list:
+		newObj = []
+		for o in obj:
+			newObj.append(serialize(o))
+	elif type(obj) is dict:
+		newObj = {}
+		for (k, v) in obj.items():
+			newObj[k] = serialize(v)
+	else:
+		return obj
+	return newObj
+
 def mandatoryConstructorArgs(Class):
 	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
 	if not defaults:
@@ -116,11 +153,12 @@ class BaseObject(object):
 	
 	def __unicode__(self):
 		return u"<%s'>" % self.getType()
-		
-	def __repr__(self):
+	
+	def __str__(self):
 		return unicode(self).encode("utf-8")
 	
-	__str__ = __repr__
+	__repr__ = __unicode__
+	 
 	
 class Entity(BaseObject):
 	subClasses = {}
@@ -142,6 +180,9 @@ class Entity(BaseObject):
 		hash = copy.deepcopy(self.__dict__)
 		hash['type'] = self.getType()
 		return hash
+	
+	def serialize(self):
+		return self.toHash()
 	
 	@staticmethod
 	def fromJson(jsonString):
@@ -168,6 +209,11 @@ class Relationship(BaseObject):
 	def toHash(self):
 		return copy.deepcopy(self.__dict__)
 	
+	def serialize(self):
+		hash = self.toHash()
+		hash['type'] = self.getType()
+		return hash
+		
 	@staticmethod
 	def fromJson(jsonString):
 		return Relationship.fromHash(json.loads(jsonString))

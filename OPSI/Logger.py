@@ -418,8 +418,9 @@ class LoggerImplementation:
 		
 		if not type(message) is unicode:
 			if not type(message) is str:
-				message = str(message)
-			message = unicode(message, 'utf-8', 'replace')
+				message = unicode(message)
+			else:
+				message = unicode(message, 'utf-8', 'replace')
 		
 		if (level < LOG_CONFIDENTIAL):
 			for string in self.__confidentialStrings:

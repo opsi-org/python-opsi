@@ -112,11 +112,11 @@ class Backend:
 		methods = {}
 		for member in inspect.getmembers(self, inspect.ismethod):
 			methodName = member[0]
-			(args, varargs, varkwargs, argDefaults) = inspect.getargspec(member[1])
+			(args, varargs, keywords, defaults) = inspect.getargspec(member[1])
 			#logger.debug2(u"args: %s" % unicode(args))
 			#logger.debug2(u"varargs: %s" % unicode(varargs))
-			#logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
-			#logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
+			#logger.debug2(u"keywords: %s" % unicode(keywords))
+			#logger.debug2(u"defaults: %s" % unicode(defaults))
 			params = []
 			if args:
 				for arg in forceList(args):
@@ -125,11 +125,11 @@ class Backend:
 			if varargs:
 				for arg in forceList(varargs):
 					params.append('*' + arg)
-			if varkwargs:
-				for arg in forceList(varkwargs):
+			if keywords:
+				for arg in forceList(keywords):
 					params.append('**' + arg)
 			logger.debug2(u"Interface method name '%s' params %s" % (methodName, params))
-			methodList.append( { 'name': methodName, 'params': params} )
+			methodList.append( { 'name': methodName, 'params': params, 'args': args, 'varargs': varargs, 'keywords': keywords, 'defaults': defaults} )
 			
 		methodList.sort()
 		return methodList
