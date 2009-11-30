@@ -47,6 +47,7 @@ from Backend import *
 logger = Logger()
 
 
+
 # ======================================================================================================
 # =                                   CLASS FILE31BACKEND                                              =
 # ======================================================================================================
@@ -56,9 +57,19 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
 		self.__clientConfigDir = u'/tmp/file31/clients'
-		self.__serverConfigDir = u'/tmp/file31/servers'
 		self.__depotConfigDir = u'/tmp/file31/depots'
 		self.__opsiHostKeyFile = u'/tmp/file31/pckeys'
+		
+		self._defaultDomain = u'uib.local'
+		
+		# Return hostid of localhost
+		self.__serverId = socket.getfqdn()
+		parts = self.__serverId.split('.')
+		if (len(parts) < 3):
+			self.__serverId = parts[0] + '.' + self._defaultDomain
+		self.__serverId = self.__serverId.lower()
+
+		
 		
 	def _getClientIniFile(self, client):
 		return os.path.join(self.__clientConfigDir, client.getId() + u'.ini')
@@ -68,6 +79,131 @@ class File31Backend(ConfigDataBackend):
 	
 	def base_delete(self):
 		pass
+	
+	
+	
+	
+	
+	
+	def _filterHosts( type = '', hosts = [], opsiHostKeyFile = None, attributes = [], **filter ):
+		configDir = None
+		if   ( type == 'OpsiClient'       ): configDir = self.__clientConfigDir
+		elif ( type == 'OpsiConfigserver' ): configDir = self.__serverConfigDir
+		elif ( type == 'OpsiDepotserver'  ): configDir = self.__depotConfigDir
+		else:
+			logger.error(u"Unknown type handle: '%s'" % type)
+			return
+		
+		for item in forceList(os.listdir(configDir)):
+			hostFile = os.path.join(configDir, item)
+			hostId = None
+			host = None
+			
+			if   ( type == 'OpsiClient' ) and ( hostFile.lower.endswith('.ini') ):
+				try:
+					hostId = forceHostId(hostFile[:-4])
+				except Exception, e:
+					logger.error(u"Not a client .ini file: '%s'" % hostFile )
+					continue #no client .ini, next file
+				
+				logger.debug2(u"Adding client for filtering: '%s'" % hostId)
+				host = OpsiClient(id = hostId)
+			
+			elif ( type == 'OpsiConfigserver' ):
+				logger.debug2(u"Adding server for filtering: '%s'" % hostId)
+				host = OpsiConfigserver(id = __serverId)
+			
+			elif ( type == 'OpsiDepotserver'  ) and ( os.path.isdir(hostFile) ):
+				try:
+					hostId = forceHostId(item)
+					hostFile = os.path.join(hostFile, 'depot.ini')
+				except Exception, e:
+					logger.error(u"Not a depot path: '%s'" % hostFile )
+					continue #bad .ini, next file
+				
+				logger.debug2(u"Adding depot for filtering: '%s'" % hostId)
+				host = OpsiDepotserver(id = hostId)
+			
+			if ( opsiHostKeyFile ):
+				host.setOpsiHostKey(opsiHostKeyFile.getOpsiHostKey(host.getId()))
+				
+			if ( readIniFile ):
+				logger.debug2(u"Reading .ini: '%s'" % hostFile)
+				
+				iniFile = IniFile(filename = hostFile, ignoreCase = True)
+				# Getting ConfigParser instance (ini)
+				ini = iniFile.parse()
+				
+				for section in ini.sections():
+					for (key, value) in ini.items(section):
+						if   ( key == 'description' ):
+							host.setDescription(value)
+						elif ( key == 'notes' ):
+							host.setNotes(value)
+						elif ( key == 'hardwareaddress' ):
+							host.setHardwareAddress(value)
+						elif ( key == 'ipaddress' ):
+							host.setIpAddress(value)
+						elif ( key == 'inventorynumber' ):
+							host.setInventoryNumber(value)
+						elif ( key == 'created' ):
+							host.setCreated(value)
+						elif ( key == 'lastSeen' ):
+							host.setLastSeen(value)
+#						elif ( key == '' ) and ( section == '' ):
+#							host.(value)
+						else:
+							logger.error(u"Unknown option '%s' in file '%s'" \
+								(key, hostfile))
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+				
+				clientHash = client.toHash()
+				
+				matchedAll = True
+				
+				for key in filter.keys():
+					filterValues = forceList(filter.get(key, []))
+					if not filterValues:
+						continue
+					
+					matched = False
+					
+					for filterValue in filterValues:
+						if filterValue is None:
+							if clientHash.get(key) is None:
+								matched = True
+						elif clientHash.get(key) is None:
+							matched = False
+						elif re.search('^%s$' % filterValue.replace('*', '.*'), clientHash[key]):
+							matched = True
+						if matched:
+							logger.info(u"Matched %s=%s" % (key, filterValue))
+							break
+					if not matched:
+						matchedAll = False
+						break
+				
+				if not matchedAll:
+					continue
+				
+				hosts.append(client)
+				logger.info(u"Added a matching Client: '%s'" % clientId)
+		
+		
+	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -140,237 +276,51 @@ class File31Backend(ConfigDataBackend):
 			for key in filter.keys():
 				if key not in ('type', 'id'):
 					readIniFile = True
+					break
 		
 		hosts = []
 		
-		filterIds          = forceList(filter.get('id', []))
-		filterTypes        = forceList(filter.get('type', []))
-		filterOpsiHostKeys = forceList(filter.get('opsiHostKey', []))
-		
 		opsiHostKeyFile = None #create only, when necessary
 		
-		if ( ( filterOpsiHostKeys ) or ( 'opsiHostKey' in attributes ) ):
+		filterOpsiHostKeys = forceList(filter.get('opsiHostKey', []))
+		
+		if ( filterOpsiHostKeys ) or ( 'opsiHostKey' in attributes ):
 			opsiHostKeyFile = OpsiHostKeyFile(filename = self.__opsiHostKeyFile)
 			opsiHostKeyFile.parse()
+		
+		filterTypes = forceList(filter.get('type', []))
 		
 		if ( not filterTypes ) or ( 'OpsiClient' in filterTypes ):
 			logger.debug(u"Filtering OpsiClients.")
 			
-			clientConfigFileNames = forceList(os.listdir(self.__clientConfigDir))
-			
-			for clientConfigFileName in clientConfigFileNames:
-				clientConfigFile = os.path.join(self.__clientConfigDir, clientConfigFileName)
-				clientId = None
-				client = None
-				
-				if ( clientConfigFileName.lower().endswith('.ini') ):
-					try:
-						clientId = forceHostId(clientConfigFileName[:-4])
-					except Exception, e:
-						logger.error(u"Bad .ini file: '%s' in dir: '%s'" \
-							% (clientConfigFileName, self.__clientConfigDir))
-						
-						continue #bad .ini, next file
-				else:
-					logger.debug2(u"No .ini file: '%s' ignored." % clientConfigFileName)
-					
-					continue #no .ini, next file
-				
-				#if ( filterIds ):
-				#	matchedId = False
-				#	
-				#	for filterId in filterIds:
-				#		if ( re.search('^%s$' % filterId.replace('*', '.*'), clientId) ):
-				#			matchedId = True
-				#			break
-				#	
-				#	if ( matchedId ):
-				#		logger.debug2(u"Found a match: '%s' matches '%s'" \
-				#			% (clientConfigFileName, filterId))
-				#		
-				#	else:
-				#		continue #no match, next file
-				
-				client = OpsiClient(id = clientId)
-				
-				if ( opsiHostKeyFile ):
-					client.setOpsiHostKey(opsiHostKeyFile.getOpsiHostKey(client.getId()))
-				
-				if ( readIniFile ):
-					logger.debug2(u"Reading .ini: '%s'" % clientConfigFile)
-					
-					clientIniFile = IniFile(filename = clientConfigFile)
-					clientIni = clientIniFile.parse()
-					
-					try:
-						for (key, value) in clientIni.items(u'info'):
-							key = forceUnicodeLower(key)
-							
-							if   ( key == 'description' ):
-								client.setDescription(value)
-							elif ( key == 'notes' ):
-								client.setNotes(value)
-							elif ( key == 'hardwareaddress' ):
-								client.setHardwareAddress(value)
-							elif ( key == 'ipaddress' ):
-								client.setIpAddress(value)
-							elif ( key == 'inventorynumber' ):
-								client.setInventoryNumber(value)
-							elif ( key == 'created' ):
-								client.setCreated(value)
-							elif ( key == 'lastSeen' ):
-								client.setLastSeen(value)
-							else:
-								logger.error(u"Unknown key '%s' in file '%s'" \
-									(key, clientConfigFile))
-					except ConfigParser.NoSectionError, e:
-						logger.error(u"Failed : %s" % e)
-				
-				clientHash = client.toHash()
-				matchedAll = True
-				for key in filter.keys():
-					filterValues = forceList(filter.get(key, []))
-					if not filterValues:
-						continue
-					matched = False
-					for filterValue in filterValues:
-						if filterValue is None:
-							if clientHash.get(key) is None:
-								matched = True
-						elif clientHash.get(key) is None:
-							matched = False
-						elif re.search('^%s$' % filterValue.replace('*', '.*'), clientHash[key]):
-							matched = True
-						if matched:
-							logger.info(u"Matched %s=%s" % (key, filterValue))
-							break
-					if not matched:
-						matchedAll = False
-						break
-				
-				if not matchedAll:
-					continue
-				
-				hosts.append(client)
-				logger.info(u"Added a matching Client: '%s'" % clientId)
+			_filterHosts( type = 'OpsiClient', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, attributes = attributes, **filter )
 		
 		if ( not filterTypes ) or ( 'OpsiConfigserver' in filterTypes ):
 			logger.debug(u"Filtering OpsiConfigserver.")
 			
+			_filterHosts( type = 'OpsiConfigserver', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, attributes = attributes, **filter )
 		
 		if ( not filterTypes ) or ( 'OpsiDepotserver' in filterTypes ):
 			logger.debug(u"Filtering OpsiDepotserver.")
 			
+			_filterHosts( type = 'OpsiDepotserver', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, attributes = attributes, **filter )
+		
+		
+		
+		
+		
+#		def getDepotIds_list(self):
+#		depotIds = []
+#		for d in os.listdir(self.__depotConfigDir):
+#			if os.path.isdir( os.path.join(self.__depotConfigDir, d) ):
+#				depotIds.append( d.lower() )
+#		return depotIds
+		
+		
+		
+		
 		
 		return	hosts
-		#
-		#for type in typelist:
-		#	if   ( type == 'OpsiClient' ):
-		#		logger.debug(u'Filtering OpsiClients.')
-		#		
-		#		for clientConfigFile in os.listdir(__clientConfigDir):
-		#			if ( clientConfigFile )
-		#			#(clientConfigFile is ini?) and (clientConfigFile name is valid?)
-		#		
-		#		if ( containsOption ):
-		#			#parse files
-		#			pass
-		#	elif ( type == 'OpsiConfigserver' ):
-		#		logger.debug(u'Filtering OpsiConfigserver.')
-		#		
-		#		
-		#		
-		#		if ( containsOption ):
-		#			#parse files
-		#			pass
-		##	elif ( type == 'OpsiDepotserver' ):
-		##		logger.debug(u'Filtering OpsiDepotserver.')
-		##		
-		##		
-		##		
-		##		if ( containsOption ):
-		##			#parse files
-		##			pass
-		##	else:
-		##		logger.warning(u'Type contains unknown value: %s' type )
-		##
-		##
-		#
-		#
-		#############
-		#test = OpsiClient(id = file)
-		#test.getType() => 'OpsiClient'
-		#isinstance(test, OpsiClient):
-		#	...
-		#############
-		#
-		######################
-		#host_getObjects(attributes = ['id'], type = ['OpsiClient', 'OpsiDeposterver'], id = '*client*')
-		#filter = {
-		#	'type': 'OpsiClient',
-		#	'id':   '*client*'
-		#}
-		#filter.keys() => ['type', 'id']
-		#
-		#filter.items() => [('type', 'OpsiClient'), ('id', ...)]
-		#
-		#for (key, value) in filter.items():
-		#	value = forceList(value)
-		#	
-		#
-		######################
-		#
-		#
-		#
-		#clientfiles = os.listdir(__clientConfigDir)
-		#serverfiles = os.listdir(__serverConfigDir)
-		#depotfiles = os.listdir(__depotConfigDir)
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#for file in files:
-		#	hostIds.append()
-		#	hosts.append( OpsiClient(id = file) )
-		#
-		#
-		##read from all hosts
-		#
-		##validate filter in all hosts -> hostIds
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		#hosts = []
-		#
-		#for hostId in hostIds:
-		#	hosts.append(
-		#		OpsiClient(
-		#					id = hostId,
-		##					opsiHostKey = ,
-		##					description = ,
-		##					notes = ,
-		##					hardwareAddress = ,
-		##					ipAddress = ,
-		##					inventoryNumber = ,
-		##					created = ,
-		##					lastSeen = 
-		#		)
-		#	)
-		#
-		#return hosts
 		
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
@@ -386,6 +336,21 @@ class File31Backend(ConfigDataBackend):
 				pass
 			elif isinstance(host, OpsiDepotserver):
 				logger.info(u'Deleting OpsiDepotserver: %s' % host.getId())
+				
+				
+				
+				
+				
+#		def deleteDepot(self, depotId):
+#		depotId = self._preProcessHostId(depotId)
+#		if not depotId in self.getDepotIds_list():
+#			logger.error("Cannot delete depot '%s': does not exist" % depotId)
+#			return
+#		rmdir( os.path.join(self.__depotConfigDir, depotId), recursive=True )
+				
+				
+				
+				
 				
 				pass
 			else:
@@ -426,8 +391,3 @@ class File31Backend(ConfigDataBackend):
 
 
 
-
-
-
-
-	
