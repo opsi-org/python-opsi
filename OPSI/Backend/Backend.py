@@ -43,6 +43,8 @@ import types, new, inspect
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Backend.Object import *
+from OPSI.System import getDiskSpaceUsage
+from OPSI.Tools import md5sum, librsyncSignature, librsyncPatchFile
 
 logger = Logger()
 
@@ -108,8 +110,7 @@ class Backend:
 		#		self._defaultDomain = forceDomain(value)
 	
 	def getInterface(self):
-		methodList = []
-		methods = {}
+		methods = {};
 		for member in inspect.getmembers(self, inspect.ismethod):
 			methodName = member[0]
 			(args, varargs, keywords, defaults) = inspect.getargspec(member[1])
@@ -129,11 +130,49 @@ class Backend:
 				for arg in forceList(keywords):
 					params.append('**' + arg)
 			logger.debug2(u"Interface method name '%s' params %s" % (methodName, params))
-			methodList.append( { 'name': methodName, 'params': params, 'args': args, 'varargs': varargs, 'keywords': keywords, 'defaults': defaults} )
-			
-		methodList.sort()
+			methods[methodName] = { 'name': methodName, 'params': params, 'args': args, 'varargs': varargs, 'keywords': keywords, 'defaults': defaults}
+		
+		methodList = []
+		methodNames = methods.keys()
+		methodNames.sort()
+		for methodName in methodNames:
+			methodList.append(methods[methodName])
 		return methodList
+	
+	def exit(self):
+		pass
 
+
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                    CLASS EXTENDEDBACKEND                                           =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+class ExtendedBackend(Backend):
+	def __init__(self, backend):
+		self._backend = backend
+		self._createInstanceMethods()
+	
+	def _createInstanceMethods(self):
+		for member in inspect.getmembers(self._backend, inspect.ismethod):
+			methodName = member[0]
+			if methodName.startswith('_'):
+				# Not a public method
+				continue
+			logger.debug2(u"Found public method '%s'" % methodName)
+			if hasattr(self.__class__, methodName):
+				logger.debug(u"Not overwriting method %s" % methodName)
+				continue
+			(argString, callString) = getArgAndCallString(member[1])
+			
+			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+		
+	def _executeMethod(self, methodName, **kwargs):
+		return eval(u'self._backend.%s(**kwargs)' % methodName)
+
+
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                  CLASS BACKENDIDENTEXTENSION                                        =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class BackendIdentExtension(Backend):
 	def host_getIdents(self, returnType='unicode', **filter):
 		result = []
@@ -722,29 +761,14 @@ class ConfigDataBackend(BackendIdentExtension):
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class ExtendedConfigDataBackend(BackendIdentExtension):
+class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	
 	def __init__(self, backend):
-		self._backend = backend
-		self._createInstanceMethods()
+		ExtendedBackend.__init__(self, backend)
 	
-	def _createInstanceMethods(self):
-		for member in inspect.getmembers(self._backend, inspect.ismethod):
-			methodName = member[0]
-			if methodName.startswith('_'):
-				# Not a public method
-				continue
-			logger.debug2(u"Found public method '%s'" % methodName)
-			if hasattr(self.__class__, methodName):
-				logger.debug(u"Not overwriting method %s" % methodName)
-				continue
-			(argString, callString) = getArgAndCallString(member[1])
-			
-			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-		
-	def _executeMethod(self, methodName, **kwargs):
-		return eval(u'self._backend.%s(**kwargs)' % methodName)
+	def exit(self):
+		if self._backend:
+			self._backend.exit()
 	
 	def searchObjects(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
@@ -1732,6 +1756,67 @@ class ExtendedConfigDataBackend(BackendIdentExtension):
 					displayVersion = forceUnicode(displayVersion),
 					clientId       = forceHostId(clientId)))
 	
+
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                   CLASS DEPOTSERVERBACKEND                                         =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+class DepotserverBackend(ExtendedBackend):
+	def __init__(self, backend):
+		ExtendedBackend.__init__(self, backend)
+	
+	def exit(self):
+		if self._backend:
+			self._backend.exit()
+	
+	def depot_getMD5Sum(self, filename):
+		try:
+			res = md5sum(filename)
+			logger.info(u"MD5sum of file '%s' is '%s'" % (filename, res))
+			return res
+		except Exception, e:
+			raise BackendIOError(u"Failed to get md5sum: %s" % e)
+	
+	def depot_librsyncSignature(self, filename):
+		try:
+			return librsyncSignature(filename)
+		except Exception, e:
+			raise BackendIOError(u"Failed to get librsync signature: %s" % e)
+	
+	def depot_librsyncPatchFile(self, oldfile, deltafile, newfile):
+		try:
+			return librsyncPatchFile(oldfile, deltafile, newfile)
+		except Exception, e:
+			raise BackendIOError(u"Failed to patch file: %s" % e)
+	
+	def depot_getDiskSpaceUsage(self, path):
+		if (os.name != 'posix'):
+			raise NotImplementedError(u"Not implemented for non-posix os")
+		
+		try:
+			return getDiskSpaceUsage(path)
+		except Exception, e:
+			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

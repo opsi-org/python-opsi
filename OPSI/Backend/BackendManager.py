@@ -34,11 +34,17 @@
 
 __version__ = '3.5'
 
-import new, inspect, re, types, socket, copy
+import os, new, inspect, re, types, socket, copy
+
+if (os.name == 'posix'):
+	import PAM, pwd, grp
+elif (os.name == 'nt'):
+	import win32security, win32net
 
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI import Tools
 from Backend import *
 from OPSI.Util.File import OpsiBackendACLFile, OpsiBackendDispatchConfigFile
 
@@ -49,14 +55,13 @@ logger = Logger()
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
-class BackendManager(Backend):
+class BackendManager(ExtendedBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
-		#ConfigDataBackend.__init__(self, username, password, address, **kwargs)
-		
 		self._backend = None
 		dispatch = False
 		extend = False
 		accessControl = False
+		depotBackend = False
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -64,6 +69,8 @@ class BackendManager(Backend):
 				self._backend = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
+			elif option in ('depotbackend'):
+				depotBackend = True
 			elif (option == 'extensionconfigdir') and value:
 				extend = True
 			elif option in ('acl', 'aclfile') and value:
@@ -76,31 +83,34 @@ class BackendManager(Backend):
 		if extend:
 			self._backend = ExtendedConfigDataBackend(self._backend)
 			BackendExtender(self._backend, **kwargs)
+		if depotBackend:
+			self._backend = DepotserverBackend(self._backend)
 		if accessControl:
 			self._backend = BackendAccessControl(username = username, password = password, backend = self._backend, **kwargs)
 		self._createInstanceMethods()
 		
-	def _createInstanceMethods(self):
-		for member in inspect.getmembers(self._backend, inspect.ismethod):
-			methodName = member[0]
-			if methodName.startswith('_'):
-				# Not a public method
-				continue
-			logger.debug2(u"Found public method '%s'" % methodName)
-			#if methodName in ('exit', 'getInterface'):
-			if hasattr(self.__class__, methodName):
-				logger.debug(u"Not overwriting method %s" % methodName)
-				continue
-			(argString, callString) = getArgAndCallString(member[1])
-			
-			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
-	def _executeMethod(self, methodName, **kwargs):
-		return eval(u'self._backend.%s(**kwargs)' % methodName)
+	#def _createInstanceMethods(self):
+	#	for member in inspect.getmembers(self._backend, inspect.ismethod):
+	#		methodName = member[0]
+	#		if methodName.startswith('_'):
+	#			# Not a public method
+	#			continue
+	#		logger.debug2(u"Found public method '%s'" % methodName)
+	#		#if methodName in ('exit', 'getInterface'):
+	#		if hasattr(self.__class__, methodName):
+	#			logger.debug(u"Not overwriting method %s" % methodName)
+	#			continue
+	#		(argString, callString) = getArgAndCallString(member[1])
+	#		
+	#		exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+	#		setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+	#
+	#def _executeMethod(self, methodName, **kwargs):
+	#	return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def exit(self):
-		pass
+		logger.debug(u"Calling exit() on backend %s" % self._backend)
+		self._backend.exit()
 	
 class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = '', **kwargs):
@@ -211,8 +221,7 @@ class BackendDispatcher(ConfigDataBackend):
 			elif not res is None:
 				result = res
 		return result
-		
-
+	
 class BackendExtender(object):
 	def __init__(self, backend, **kwargs):
 		if not isinstance(backend, ExtendedConfigDataBackend):
@@ -260,14 +269,7 @@ class BackendExtender(object):
 						setattr( self._backend, key, new.instancemethod(val, self._backend, self._backend.__class__) )
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
-
-
-import os, re, codecs
-if (os.name == 'posix'):
-	import PAM, pwd, grp
-elif (os.name == 'nt'):
-	import win32security, win32net
-from OPSI import Tools
+	
 
 class BackendAccessControl(object):
 	

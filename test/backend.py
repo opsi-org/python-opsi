@@ -56,6 +56,7 @@ class BackendTest(object):
 			notes               = 'D€pot 1',
 			hardwareAddress     = None,
 			ipAddress           = None,
+			inventoryNumber     = '00000000002',
 			network             = '192.168.2.0/24',
 			maxBandwidth        = 10000
 		)
@@ -78,7 +79,7 @@ class BackendTest(object):
 			description     = 'Test client 2',
 			hardwareAddress = '00-ff0aa3:0b-B5',
 			opsiHostKey     = '59051234345678890121678901223467',
-			inventoryNumber = '00000000002'
+			inventoryNumber = '00000000003'
 		)
 		
 		self.client3 = OpsiClient(
@@ -652,6 +653,25 @@ class BackendTest(object):
 			ids.append(host.getId())
 		assert self.client1.getId() in ids
 		assert self.client2.getId() in ids
+		
+		hosts = self.backend.host_getObjects( attributes = ['description', 'notes'], ipAddress = [ None ] )
+		count = 0
+		for host in self.hosts:
+			if host.getIpAddress() is None:
+				count += 1
+		
+		assert len(hosts) == count
+		for host in hosts:
+			assert host.getIpAddress() is None
+			assert host.getInventoryNumber() is None
+			assert not host.getNotes() is None
+			assert not host.getDescription() is None
+		
+		hosts = self.backend.host_getObjects( attributes = ['description', 'notes'], ipAddress = None )
+		assert len(hosts) == len(self.hosts)
+		for host in hosts:
+			assert host.getIpAddress() is None
+			assert host.getInventoryNumber() is None
 		
 		hosts = self.backend.host_getObjects( type = [ self.clients[0].getType() ] )
 		assert len(hosts) == len(self.clients)

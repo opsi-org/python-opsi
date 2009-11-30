@@ -321,12 +321,16 @@ class MySQLBackend(ConfigDataBackend):
 				condition += u"`%s` = '%s'" % (arg, value)
 		return condition
 	
+	def exit(self):
+		if self._mysql:
+			self._mysql.close()
+	
 	def base_delete(self):
 		ConfigDataBackend.base_delete(self)
 		# Drop database
-		failure = 0
+		errors = 0
 		done = False
-		while not done and (failure < 100):
+		while not done and (errors < 100):
 			done = True
 			for i in self._mysql.getSet(u'SHOW TABLES;'):
 				try:
@@ -335,7 +339,7 @@ class MySQLBackend(ConfigDataBackend):
 				except Exception, e:
 					logger.error(e)
 					done = False
-					failure += 1
+					errors += 1
 		
 	def base_create(self):
 		ConfigDataBackend.base_create(self)

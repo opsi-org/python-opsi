@@ -35,7 +35,15 @@
 __version__ = '3.5'
 
 # Imports
-import json, os, random
+import json, os, random, base64
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
+
+# OS dependend imports
+if (os.name == 'posix'):
+	from duplicity import librsync
 
 # OPSI imports
 from OPSI.Logger import *
@@ -45,6 +53,69 @@ from OPSI.Types import *
 logger = Logger()
 
 RANDOM_DEVICE = '/dev/urandom'
+
+
+def librsyncSignature(filename):
+	if (os.name != 'posix'):
+		raise NotImplementedError(u"Not implemented for non-posix os")
+	
+	(f, sf) = (None, None)
+	try:
+		f = open(filename, 'rb')
+		sf = librsync.SigFile(f)
+		sig = base64.encodestring(sf.read())
+		f.close()
+		sf.close()
+		return sig
+	except Exception, e:
+		if f: f.close()
+		if sf: sf.close()
+		raise Exception(u"Failed to get librsync signature: %s" % e)
+
+def librsyncPatchFile(oldfile, deltafile, newfile):
+	if (os.name != 'posix'):
+		raise NotImplementedError(u"Not implemented for non-posix os")
+	
+	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
+	if (oldfile == newfile):
+		raise ValueError(u"Oldfile and newfile are the same file")
+	if (deltafile == newfile):
+		raise ValueError(u"deltafile and newfile are the same file")
+	if (deltafile == oldfile):
+		raise ValueError(u"oldfile and deltafile are the same file")
+	
+	(of, df, nf, pf) = (None, None, None, None)
+	bufsize = 1024*1024
+	try:
+		of = open(oldfile, "rb")
+		df = open(deltafile, "rb")
+		nf = open(newfile, "wb")
+		pf = librsync.PatchedFile(of, df)
+		data = True
+		while(data):
+			data = pf.read(bufsize)
+			nf.write(data)
+		nf.close()
+		pf.close()
+		df.close()
+		of.close()
+	except Exception, e:
+		if nf: nf.close()
+		if pf: pf.close()
+		if df: df.close()
+		if of: of.close()
+		raise Exception(u"Failed to patch file: %s" % e)
+
+def md5sum(filename):
+	f = open(filename, 'rb')
+	m = md5()
+	while True:
+		d = f.read(524288)
+		if not d:
+			break
+		m.update(d)
+	f.close()
+	return m.hexdigest()
 
 def randomString(length):
 	string = u''

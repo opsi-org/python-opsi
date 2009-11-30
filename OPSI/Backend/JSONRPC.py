@@ -108,6 +108,7 @@ class JSONRPCBackend(Backend):
 		self.__interface = None
 		self.__retry = True
 		self.__rpcLock = threading.Lock()
+		self.__application = 'opsi jsonrpc module version %s' % __version__
 		
 		if ( self.__address.find('/') == -1 and self.__address.find('=') == -1 ):
 			if (self.__protocol == 'https'):
@@ -118,6 +119,12 @@ class JSONRPCBackend(Backend):
 		socket.setdefaulttimeout(self.__timeout)
 		if self.__connectOnInit:
 			self._connect()
+	
+	def __del__(self):
+		try:
+			self.exit()
+		except:
+			pass
 	
 	def exit(self):
 		self._jsonRPC('exit')
@@ -131,6 +138,9 @@ class JSONRPCBackend(Backend):
 				varargs    = method['varargs']
 				keywords   = method['keywords']
 				defaults   = method['defaults']
+				
+				if (methodName == 'exit'):
+					continue
 				
 				argString = u''
 				callString = u''
@@ -219,7 +229,7 @@ class JSONRPCBackend(Backend):
 	
 	def _jsonRPC(self, method, params=[]):
 		
-		logger.debug("Executing jsonrpc method '%s'" % method)
+		logger.debug(u"Executing jsonrpc method '%s'" % method)
 		self.__rpcLock.acquire()
 		try:
 			# Get params
@@ -229,12 +239,12 @@ class JSONRPCBackend(Backend):
 			jsonrpc = ''
 			if hasattr(json, 'dumps'):
 				# python 2.6 json module
-				jsonrpc = json.dumps( {"id": 1, "method": method, "params": params } )
+				jsonrpc = json.dumps( { "id": 1, "method": method, "params": params } )
 			else:
-				jsonrpc = json.write( {"id": 1, "method": method, "params": params } )
-			logger.debug2("jsonrpc string: %s" % jsonrpc)
+				jsonrpc = json.write( { "id": 1, "method": method, "params": params } )
+			logger.debug2(u"jsonrpc string: %s" % jsonrpc)
 			
-			logger.debug2("requesting: '%s', query '%s'" % (self.__address, jsonrpc))
+			logger.debug2(u"requesting: '%s', query '%s'" % (self.__address, jsonrpc))
 			response = self.__request(self.__baseUrl, jsonrpc)
 			
 			# Read response
@@ -265,22 +275,22 @@ class JSONRPCBackend(Backend):
 			query = unicode(query, 'utf-8')
 		query = query.encode('utf-8')
 		
-		#logger.debug("__request(%s)" % request)
 		response = None
 		try:
 			if (self.__method == METHOD_GET):
 				# Request the resulting url
-				logger.debug("Using method GET")
+				logger.debug(u"Using method GET")
 				get = baseUrl + '?' + urllib.quote(query)
-				logger.debug("requesting: %s" % get)
+				logger.debug(u"requesting: %s" % get)
 				self.__connection.putrequest('GET', get)
 			else:
-				logger.debug("Using method POST")
+				logger.debug(u"Using method POST")
 				self.__connection.putrequest('POST', baseUrl)
 				self.__connection.putheader('content-type', 'application/json-rpc')
 				self.__connection.putheader('content-length', len(query))
 			
 			# Add some http headers
+			self.__connection.putheader('user-agent', self.__application)
 			self.__connection.putheader('Accept', 'application/json-rpc')
 			self.__connection.putheader('Accept', 'text/plain')
 			if self.__sessionId:
@@ -293,11 +303,11 @@ class JSONRPCBackend(Backend):
 			
 			self.__connection.endheaders()
 			if (self.__method == METHOD_POST):
-				logger.debug2("Sending query")
+				logger.debug2(u"Sending query")
 				self.__connection.send(query)
 			
 			# Get response
-			logger.debug2("Getting response")
+			logger.debug2(u"Getting response")
 			response = self.__connection.getresponse()
 			
 			# Get cookie from header
@@ -310,18 +320,18 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Request to '%s' failed, retry: %s, started: %s, now: %s, maxRetrySeconds: %s" \
 					% (self.__address, self.__retry, started, now, maxRetrySeconds))
 			if self.__retry and (now - started < maxRetrySeconds):
-				logger.warning("Request to '%s' failed: %s, trying to reconnect" % (self.__address, e))
+				logger.warning(u"Request to '%s' failed: %s, trying to reconnect" % (self.__address, e))
 				self._connect()
 				return self.__request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
 			else:
 				logger.logException(e)
-				raise BackendIOError("Request to '%s' failed: %s" % (self.__address, e))
+				raise BackendIOError(u"Request to '%s' failed: %s" % (self.__address, e))
 		
 		try:
 			# Return response content (body)
 			return response.read()
 		except Exception, e:
-			raise BackendIOError("Cannot read '%s'" % e)
+			raise BackendIOError(u"Cannot read '%s'" % e)
 	
 	
 	
