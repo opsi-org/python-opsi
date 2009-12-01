@@ -47,15 +47,22 @@ elif (os.name == 'nt'):
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Backend.Object import *
+from OPSI.Types import *
 
 # Get logger instance
 logger = Logger()
 
 class File(object):
 	def __init__(self, filename):
-		self._filename = forceUnicode(filename)
+		self._filename = forceFilename(filename)
 		self._fileHandle = None
 		self.mode = None
+	
+	def getFilename(self):
+		return self._filename
+	
+	def setFilename(self, filename):
+		self._filename = forceFilename(filename)
 	
 	def delete(self):
 		if os.path.exists(self._filename):
@@ -181,9 +188,12 @@ class ConfigFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '/', '#']):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
-		self._lines = []
 		self._parsed = False
-		
+	
+	def setFilename(self, filename):
+		TextFile.setFilename(filename)
+		self._parsed = False
+	
 	def parse(self):
 		self.readlines()
 		lines = []
@@ -401,13 +411,354 @@ class IniFile(ConfigFile):
 		self.close()
 	
 
-
-
-
-
-
-
-
-
-
+class OpsiPackageControlFile(TextFile):
+	
+	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
+	valueContinuationRegex = re.compile('^\s(.*)$')
+	optionRegex = re.compile('^(\S+)\s*\:\s*(.*)$')
+	
+	def __init__(self, filename, lockFailTimeout = 2000):
+		TextFile.__init__(self, filename, lockFailTimeout)
+		self._parsed = False
+		self._sections = {}
+		self._product = None
+		self._productDependencies = []
+		self._productProperties = []
+		
+	def parse(self):
+		self.readlines()
+		
+		self._sections = {}
+		self._product = None
+		self._productDependencies = []
+		self._productProperties = []
+		
+		sectionType = None
+		option = None
+		lineNum = 0
+		for line in self._lines:
+			lineNum += 1
+			if (len(line) > 0) and line[0] in (';', '#'):
+				# Comment
+				continue
+			
+			match = self.sectionRegex.search(line)
+			if match:
+				sectionType = match.group(1).strip().lower()
+				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty'):
+					raise Exception(u"Parse error in line %s: unkown section '%s'" % (lineNum, sectionType))
+				if self._sections.has_key(sectionType):
+					self._sections[sectionType].append({})
+				else:
+					self._sections[sectionType] = [{}]
+				continue
+			
+			elif not sectionType and line:
+				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+			
+			key = None
+			value = None
+			match = self.valueContinuationRegex.search(line)
+			if match:
+				value = match.group(1)
+			else:
+				match = self.optionRegex.search(line)
+				if match:
+					key = match.group(1).lower()
+					value = match.group(2).lstrip()
+			
+			if (sectionType == 'package' and key in \
+					['version', 'depends', 'incremental']):
+				option = key
+				if   (key == 'version'):     value = forceUnicodeLower(value)
+				elif (key == 'depends'):     value = forceUnicodeLower(value)
+				elif (key == 'incremental'): value = forceBool(value)
+				
+			elif (sectionType == 'product' and key in \
+					['id', 'type', 'name', 	'description', 'advice',
+					 'version', 'packageversion', 'priority',
+					 'licenserequired', 'productclasses', 'pxeconfigtemplate',
+					 'setupscript', 'uninstallscript', 'updatescript',
+					 'alwaysscript', 'oncescript']):
+				option = key
+				if   (key == 'id'):                value = forceProductId(value)
+				elif (key == 'type'):              value = forceProductType(value)
+				elif (key == 'name'):              value = forceUnicode(value)
+				elif (key == 'description'):       value = forceUnicode(value)
+				elif (key == 'advice'):            value = forceUnicode(value)
+				elif (key == 'version'):           value = forceProductVersion(value)
+				elif (key == 'packageversion'):    value = forcePackageVersion(value)
+				elif (key == 'priority'):          value = forceProductPriority(value)
+				elif (key == 'licenserequired'):   value = forceBool(value)
+				elif (key == 'productclasses'):    value = forceUnicodeLower(value)
+				elif (key == 'pxeconfigtemplate'): value = forceFilename(value)
+				elif (key == 'setupscript'):       value = forceFilename(value)
+				elif (key == 'uninstallscript'):   value = forceFilename(value)
+				elif (key == 'updatescript'):      value = forceFilename(value)
+				elif (key == 'alwaysscript'):      value = forceFilename(value)
+				elif (key == 'oncescript'):        value = forceFilename(value)
+				elif (key == 'customscript'):      value = forceFilename(value)
+				elif (key == 'userloginscript'):   value = forceFilename(value)
+				
+			elif (sectionType == 'windows' and key in \
+					['softwareids']):
+				option = key
+				value = forceUnicodeLower(value)
+			
+			elif (sectionType == 'productdependency' and key in \
+					['action', 'requiredproduct', 'requiredclass',
+					 'requiredstatus', 'requiredaction', 'requirementtype']):
+				option = key
+				if   (key == 'action'):          value = forceActionRequest(value)
+				elif (key == 'requiredproduct'): value = forceProductId(value)
+				elif (key == 'requiredclass'):   value = forceUnicodeLower(value)
+				elif (key == 'requiredstatus'):  value = forceInstallationStatus(value)
+				elif (key == 'requiredaction'):  value = forceActionRequest(value)
+				elif (key == 'requirementtype'): value = forceRequirementType(value)
+			
+			elif (sectionType == 'productproperty' and key in \
+					['type', 'name', 'default', 'values', 'description']):
+				option = key
+				if   (key == 'type'):        value = forceProductPropertyType(value)
+				elif (key == 'name'):        value = forceUnicodeLower(value)
+				elif (key == 'default'):     value = forceUnicode(value)
+				elif (key == 'values'):      value = forceUnicode(value)
+				elif (key == 'description'): value = forceUnicode(value)
+			
+			else:
+				value = forceUnicode(line)
+			
+			if not option:
+				raise Exception(u"Parse error in line '%s': no option / bad option defined" % lineNum)
+			
+			if not self._sections[sectionType][-1].has_key(option):
+				self._sections[sectionType][-1][option] = value
+			else:
+				self._sections[sectionType][-1][option] += '\n' + value
+		
+		for (sectionType, secs) in self._sections.items():
+			for i in range(len(secs)):
+				for (option, value) in secs[i].items():
+					if (sectionType == 'product'         and option == 'productclasses') or \
+					   (sectionType == 'package'         and option == 'depends') or \
+					   (sectionType == 'productproperty' and option == 'default') or \
+					   (sectionType == 'productproperty' and option == 'values') or \
+					   (sectionType == 'windows'         and option == 'softwareids'):
+						value = value.replace(u'\n', u'')
+						value = value.replace(u'\t', u'')
+						value = value.split(u',')
+						value = map ( lambda x:x.strip(), value )
+						# Remove duplicates
+						tmp = []
+						for v in value:
+							if v and v not in tmp:
+								tmp.append(v)
+						value = tmp
+					
+					if type(value) is unicode:
+						value = value.rstrip()
+						#value = value.replace(u'\n', u'')
+						#value = value.replace(u'\t', u'')
+					
+					self._sections[sectionType][i][option] = value
+		
+		if not self._sections.get('product'):
+			raise Exception(u"Error in control file '%s': 'product' section not found" % self._filename)
+		
+		# Create Product object
+		product = self._sections['product'][0]
+		Class = None
+		if   (product.get('type') == 'NetbootProduct'):
+			Class = NetbootProduct
+		elif (product.get('type') == 'LocalbootProduct'):
+			Class = LocalbootProduct
+		else:
+			raise Exception(u"Error in control file '%s': unkown product type '%s'" % (self._filename, product.get('type')))
+		
+		self._product = Class(
+			id                 = product.get('id'),
+			name               = product.get('name'),
+			productVersion     = product.get('version'),
+			packageVersion     = self._sections.get('package',[{}])[0].get('version') or product.get('packageversion'),
+			licenseRequired    = product.get('licenserequired'),
+			setupScript        = product.get('setupscript'),
+			uninstallScript    = product.get('uninstallscript'),
+			updateScript       = product.get('updatescript'),
+			alwaysScript       = product.get('alwaysscript'),
+			onceScript         = product.get('oncescript'),
+			customScript       = product.get('customscript'),
+			priority           = product.get('priority'),
+			description        = product.get('description'),
+			advice             = product.get('advice'),
+			productClassNames  = product.get('productclasses'),
+			windowsSoftwareIds = self._sections.get('windows',[{}])[0].get('softwareids')
+		)
+		if isinstance(self._product, NetbootProduct) and product.get('pxeconfigtemplate'):
+			self._product.setPxeConfigTemplate(product.get('pxeconfigtemplate'))
+		
+		if isinstance(self._product, LocalbootProduct) and product.get('userloginscript'):
+			self._product.setUserLoginScript(product.get('userloginscript'))
+		
+		# Create ProductDependency objects
+		for productDependency in self._sections['productdependency']:
+			self._productDependencies.append(
+				ProductDependency(
+					productId                  = self._product.getId(),
+					productVersion             = self._product.getProductVersion(),
+					packageVersion             = self._product.getPackageVersion(),
+					productAction              = productDependency.get('action'),
+					requiredProductId          = productDependency.get('requiredproduct'),
+					requiredProductVersion     = None,
+					requiredPackageVersion     = None,
+					requiredAction             = productDependency.get('requiredaction'),
+					requiredInstallationStatus = productDependency.get('requiredstatus'),
+					requirementType            = productDependency.get('requirementtype')
+				)
+			)
+		
+		# Create ProductProperty objects
+		for productProperty in self._sections['productproperty']:
+			Class = UnicodeProductProperty
+			if   productProperty.get('type') in ('UnicodeProductProperty', '', None):
+				Class = UnicodeProductProperty
+			elif (productProperty.get('type') == 'BoolProductProperty'):
+				Class = BoolProductProperty
+			else:
+				raise Exception(u"Error in control file '%s': unkown product property type '%s'" % (self._filename, productProperty.get('type')))
+			self._productProperties.append(
+				Class(
+					productId      = self._product.getId(),
+					productVersion = self._product.getProductVersion(),
+					packageVersion = self._product.getPackageVersion(),
+					propertyId     = productProperty.get('name'),
+					description    = productProperty.get('description'),
+					defaultValues  = productProperty.get('default')
+				)
+			)
+			if isinstance(self._productProperties[-1], UnicodeProductProperty):
+					if productProperty.get('values'):
+						self._productProperties[-1].setPossibleValues(productProperty.get('values'))
+						self._productProperties[-1].setEditable(False)
+					else:
+						self._productProperties[-1].setEditable(True)
+		self._parsed = True
+		return self._sections
+	
+	def getProduct(self):
+		if not self._parsed:
+			self.parse()
+		return self._product
+	
+	def setProduct(self, product):
+		self._product = forceObjectClass(product, Product)
+	
+	def getProductDependencies(self):
+		if not self._parsed:
+			self.parse()
+		return self._productDependencies
+	
+	def setProductDependencies(self, productDependencies):
+		self._productDependencies = forceObjectClassList(productDependencies, ProductDependency)
+	
+	def getProductProperties(self):
+		if not self._parsed:
+			self.parse()
+		return self._productProperties
+	
+	def setProductProperties(self, productProperties):
+		self._productProperties = forceObjectClassList(productProperties, ProductProperty)
+	
+	def generate(self):
+		if not self._product:
+			raise Exception(u"Got no data to write")
+		
+		logger.info(u"Writing opsi package control file '%s'" % self._filename)
+		
+		self._lines = [ u'[Package]' ]
+		self._lines.append( u'version: %s' % self._product.getPackageVersion() )
+		self._lines.append( u'depends:' )
+		self._lines.append( u'incremental: False' )
+		self._lines.append( u'' )
+		
+		self._lines.append( u'[Product]' )
+		self._lines.append( u'type: %s' % self._product.getType() )
+		self._lines.append( u'id: %s'   % self._product.getId() )
+		self._lines.append( u'name: %s' % self._product.getName() )
+		self._lines.append( u'description: ' )
+		descLines = self._product.getDescription().split(u'\\n')
+		if (len(descLines) > 0):
+			self._lines[-1] += descLines[0]
+			if (len(descLines) > 1):
+				self._lines.extend( descLines )
+		self._lines.append( u'advice: %s'          % self._product.getAdvice() )
+		self._lines.append( u'version: %s'         % self._product.getProductVersion() )
+		self._lines.append( u'priority: %s'        % self._product.getPriority() )
+		self._lines.append( u'licenseRequired: %s' % self._product.getLicenseRequired() )
+		self._lines.append( u'productClasses: %s'  % u', '.join(self._product.getProductClassIds()) )
+		self._lines.append( u'setupScript: %s'     % self._product.getSetupScript() )
+		self._lines.append( u'uninstallScript: %s' % self._product.getUninstallScript() )
+		self._lines.append( u'updateScript: %s'    % self._product.getUpdateScript() )
+		self._lines.append( u'alwaysScript: %s'    % self._product.getAlwaysScript() )
+		self._lines.append( u'onceScript: %s'      % self._product.getOnceScript() )
+		self._lines.append( u'customScript: %s'    % self._product.getCustomScript() )
+		if isinstance(self._product, LocalbootProduct):
+			self._lines.append( u'userLoginScript: %s'   % self._product.getUserLoginScript() )
+		if isinstance(self._product, NetbootProduct):
+			self._lines.append( u'pxeConfigTemplate: %s' % self._product.getPxeConfigTemplate() )
+		self._lines.append( u'' )
+		
+		if self._product.getWindowsSoftwareIds():
+			self._lines.append( '[Windows]' )
+			self._lines.append( u'softwareIds: %s' % u', '.join(self._product.getWindowsSoftwareIds()) )
+		
+		for dependency in self._productDependencies:
+			self._lines.append( u'' )
+			self._lines.append( u'[ProductDependency]' )
+			self._lines.append( u'action: %s' % dependency.getRequiredAction() )
+			if dependency.getRequiredProductId():
+				self._lines.append( u'requiredProduct: %s' % dependency.getRequiredProductId() )
+			#if dependency.requiredProductClassId:
+			#	self._lines.append( u'requiredClass: %s'   % dependency.requiredProductClassId )
+			if dependency.getRequiredAction():
+				self._lines.append( u'requiredAction: %s'  % dependency.getRequiredAction() )
+			if dependency.getRequiredInstallationStatus():
+				self._lines.append( u'requiredStatus: %s'  % dependency.getRequiredInstallationStatus() )
+			if dependency.getRequirementType():
+				self._lines.append( u'requirementType: %s' % dependency.getRequirementType() )
+		
+		for productProperty in self._productProperties:
+			self._lines.append( u'' )
+			self._lines.append( u'[ProductProperty]' )
+			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
+			if productProperty.getDescription():
+				self._lines.append( u'description:' )
+				descLines = productProperty.getDescription().split(u'\\n')
+				if (len(descLines) > 0):
+					self._lines[-1] += descLines[0]
+					if (len(descLines) > 1):
+						self._lines.extend( descLines )
+			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+					self._lines.append( u'values: %s' % ', '.join(productProperty.getPossibleValues()) )
+			if productProperty.getDefaultValues():
+				self._lines.append( u'default: %s' % u', '.join(forceUnicodeList(productProperty.getDefaultValues())) )
+		
+		self.open('w')
+		self.writelines()
+		self.close()
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 

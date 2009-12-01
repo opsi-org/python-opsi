@@ -438,6 +438,7 @@ class MySQLBackend(ConfigDataBackend):
 					`updateScript` varchar(50),
 					`alwaysScript` varchar(50),
 					`onceScript` varchar(50),
+					`customScript` varchar(50),
 					`userLoginScript` varchar(50),
 					`priority` int,
 					`description` TEXT,

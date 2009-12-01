@@ -706,7 +706,7 @@ class Product(Entity):
 	backendMethodPrefix = 'product'
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None, userLoginScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
 		self.name = None
 		self.licenseRequired = None
@@ -715,6 +715,7 @@ class Product(Entity):
 		self.updateScript = None
 		self.alwaysScript = None
 		self.onceScript = None
+		self.customScript = None
 		self.userLoginScript = None
 		self.priority = None
 		self.description = None
@@ -739,6 +740,8 @@ class Product(Entity):
 			self.setAlwaysScript(alwaysScript)
 		if not onceScript is None:
 			self.setOnceScript(onceScript)
+		if not customScript is None:
+			self.setCustomScript(customScript)
 		if not userLoginScript is None:
 			self.setUserLoginScript(userLoginScript)
 		if not priority is None:
@@ -770,6 +773,8 @@ class Product(Entity):
 			self.setAlwaysScript(u"")
 		if self.onceScript is None:
 			self.setOnceScript(u"")
+		if not customScript is None:
+			self.setCustomScript(u"")
 		if self.userLoginScript is None:
 			self.setUserLoginScript(u"")
 		if self.priority is None:
@@ -845,6 +850,12 @@ class Product(Entity):
 	def setOnceScript(self, onceScript):
 		self.onceScript = forceFilename(onceScript)
 	
+	def getCustomScript(self):
+		return self.customScript
+	
+	def setCustomScript(self, customScript):
+		self.customScript = forceFilename(customScript)
+	
 	def getUserLoginScript(self):
 		return self.userLoginScript
 	
@@ -855,7 +866,7 @@ class Product(Entity):
 		return self.priority
 	
 	def setPriority(self, priority):
-		self.priority = forceInt(priority)
+		self.priority = forceProductPriority(priority)
 	
 	def getDescription(self):
 		return self.description
@@ -906,10 +917,10 @@ class LocalbootProduct(Product):
 	subClasses = {}
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, userLoginScript=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None, userLoginScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
-		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, userLoginScript,
+		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, userLoginScript,
 		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
 	
 	def setDefaults(self):
@@ -930,11 +941,11 @@ class NetbootProduct(Product):
 	subClasses = {}
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
+		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None,
 		     pxeConfigTemplate=''):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
-		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, None,
+		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, None,
 		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
 		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
 	

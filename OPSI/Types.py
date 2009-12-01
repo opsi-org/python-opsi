@@ -224,6 +224,22 @@ def forceProductType(var):
 		raise BackendBadValueError(u"Unknown product type: '%s'" % var)
 	return var
 
+def forceProductPropertyType(var):
+	v = forceUnicodeLower(var)
+	if v in ('unicode', 'unicodeproductproperty'):
+		var = u'UnicodeProductProperty'
+	elif v in ('bool', 'boolproductproperty'):
+		var = u'BoolProductProperty'
+	else:
+		raise BackendBadValueError(u"Unknown product property type: '%s'" % var)
+	return var
+
+def forceProductPriority(var):
+	var = forceInt(var)
+	if (var < -100): var = -100
+	if (var >  100): var =  100
+	return var
+
 def forceFilename(var):
 	return forceUnicode(var)
 
@@ -232,7 +248,7 @@ def forceInstallationStatus(var):
 	if var:
 		if (var == 'undefined'):
 			var = None
-		elif var not in ('installed', 'not_installed'):
+		elif var not in ('installed', 'not_installed', 'failed'):
 			raise BackendBadValueError(u"Bad installation status: '%s'" % var)
 	return var
 
@@ -241,7 +257,7 @@ def forceActionRequest(var):
 	if var:
 		if (var == 'undefined'):
 			var = None
-		elif var not in ('setup', 'uninstall', 'update', 'always', 'once', 'none', 'failed'):
+		elif var not in ('setup', 'uninstall', 'update', 'always', 'once', 'custom', 'none'):
 			raise BackendBadValueError(u"Bad action request: '%s'" % var)
 	return var
 
@@ -256,6 +272,8 @@ def forceActionProgress(var):
 
 def forceRequirementType(var):
 	var = forceUnicodeLower(var)
+	if not var:
+		return None
 	if not var in ('before', 'after'):
 		raise BackendBadValueError(u"Bad requirement type: '%s'" % var)
 	return var
