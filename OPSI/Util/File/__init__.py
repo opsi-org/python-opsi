@@ -402,9 +402,32 @@ class IniFile(ConfigFile):
 		if not self._configParser:
 			raise Exception(u"Got no data to write")
 		
+		sections = {}
+		for section in self._configParser.sections():
+			if type(section) is unicode:
+				section = section.encode('utf-8')
+			sections[section] = {}
+			for (option, value) in self._configParser.items(section):
+				if type(option) is unicode:
+					option = option.encode('utf-8')
+				if type(value) is unicode:
+					value = value.encode('utf-8')
+				sections[section][option] = value
+			self._configParser.remove_section(section)
+		
+		for (section, options) in sections.items():
+			self._configParser.add_section(section)
+			for (option, value) in options.items():
+				self._configParser.set(section, option, value)
+		
+		for section in self._configParser.sections():
+			for (option, value) in self._configParser.items(section):
+				print option, type(option)
+				print value, type(value)
+		
 		data = StringIO.StringIO()
 		self._configParser.write(data)
-		self._lines = data.getvalue().decode('utf-8', 'replace').replace('\r', '').split('\n')
+		self._lines = data.getvalue().decode('utf-8').replace('\r', '').split('\n')
 		
 		self.open('w')
 		self.writelines()
@@ -731,7 +754,7 @@ class OpsiPackageControlFile(TextFile):
 			self._lines.append( u'[ProductProperty]' )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
 			if productProperty.getDescription():
-				self._lines.append( u'description:' )
+				self._lines.append( u'description: ' )
 				descLines = productProperty.getDescription().split(u'\\n')
 				if (len(descLines) > 0):
 					self._lines[-1] += descLines[0]
