@@ -415,9 +415,11 @@ class IniFile(ConfigFile):
 				sections[section][option] = value
 			self._configParser.remove_section(section)
 		
-		for (section, options) in sections.items():
+		sectionNames = sections.keys()
+		sectionNames.sort()
+		for section in sectionNames:
 			self._configParser.add_section(section)
-			for (option, value) in options.items():
+			for (option, value) in sections[section].items():
 				self._configParser.set(section, option, value)
 		
 		for section in self._configParser.sections():
