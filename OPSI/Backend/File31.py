@@ -34,7 +34,7 @@
 
 __version__ = '3.5'
 
-import os, ConfigParser
+import os, socket, ConfigParser
 
 # OPSI imports
 from OPSI.Logger import *
@@ -56,9 +56,9 @@ class File31Backend(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
-		self.__clientConfigDir = u'/tmp/file31/clients'
-		self.__depotConfigDir = u'/tmp/file31/depots'
-		self.__opsiHostKeyFile = u'/tmp/file31/pckeys'
+		self.__clientConfigDir = u'/home/kerz/tmp/file31/clients'
+		self.__depotConfigDir = u'/home/kerz/tmp/file31/depots'
+		self.__opsiHostKeyFile = u'/home/kerz/tmp/file31/pckeys'
 		
 		self._defaultDomain = u'uib.local'
 		
@@ -74,6 +74,9 @@ class File31Backend(ConfigDataBackend):
 	def _getClientIniFile(self, client):
 		return os.path.join(self.__clientConfigDir, client.getId() + u'.ini')
 	
+	def _getDepotIniFile(self, depot):
+		return os.path.join(self.__depotConfigDir, depot.getId(), u'depot.ini')
+	
 	def base_create(self):
 		pass
 	
@@ -82,13 +85,10 @@ class File31Backend(ConfigDataBackend):
 	
 	
 	
-	
-	
-	
-	def _filterHosts( type = '', hosts = [], opsiHostKeyFile = None, attributes = [], **filter ):
+	def _filterHosts(self, type, hosts, opsiHostKeyFile = None, readIniFile = True, attributes = [], **filter):
 		configDir = None
 		if   ( type == 'OpsiClient'       ): configDir = self.__clientConfigDir
-		elif ( type == 'OpsiConfigserver' ): configDir = self.__serverConfigDir
+		elif ( type == 'OpsiConfigserver' ): configDir = self.__depotConfigDir
 		elif ( type == 'OpsiDepotserver'  ): configDir = self.__depotConfigDir
 		else:
 			logger.error(u"Unknown type handle: '%s'" % type)
@@ -99,9 +99,9 @@ class File31Backend(ConfigDataBackend):
 			hostId = None
 			host = None
 			
-			if   ( type == 'OpsiClient' ) and ( hostFile.lower.endswith('.ini') ):
+			if   ( type == 'OpsiClient' ) and ( hostFile.lower().endswith('.ini') ):
 				try:
-					hostId = forceHostId(hostFile[:-4])
+					hostId = forceHostId(item[:-4])
 				except Exception, e:
 					logger.error(u"Not a client .ini file: '%s'" % hostFile )
 					continue #no client .ini, next file
@@ -111,12 +111,12 @@ class File31Backend(ConfigDataBackend):
 			
 			elif ( type == 'OpsiConfigserver' ):
 				logger.debug2(u"Adding server for filtering: '%s'" % hostId)
-				host = OpsiConfigserver(id = __serverId)
+				host = OpsiConfigserver(id = self.__serverId)
 			
 			elif ( type == 'OpsiDepotserver'  ) and ( os.path.isdir(hostFile) ):
 				try:
 					hostId = forceHostId(item)
-					hostFile = os.path.join(hostFile, 'depot.ini')
+					hostFile = os.path.join(hostFile, u'depot.ini')
 				except Exception, e:
 					logger.error(u"Not a depot path: '%s'" % hostFile )
 					continue #bad .ini, next file
@@ -134,8 +134,8 @@ class File31Backend(ConfigDataBackend):
 				# Getting ConfigParser instance (ini)
 				ini = iniFile.parse()
 				
-				for section in ini.sections():
-					for (key, value) in ini.items(section):
+				if   ( type == 'OpsiClient' ):
+					for (key, value) in ini.items(u'info'):
 						if   ( key == 'description' ):
 							host.setDescription(value)
 						elif ( key == 'notes' ):
@@ -150,27 +150,43 @@ class File31Backend(ConfigDataBackend):
 							host.setCreated(value)
 						elif ( key == 'lastSeen' ):
 							host.setLastSeen(value)
-#						elif ( key == '' ) and ( section == '' ):
-#							host.(value)
 						else:
-							logger.error(u"Unknown option '%s' in file '%s'" \
-								(key, hostfile))
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
+							logger.error(u"Unknown [info] option '%s' in file '%s'" \
+								% (key, hostFile))
 				
-				clientHash = client.toHash()
+				elif ( type == 'OpsiConfigserver' ) or ( type == 'OpsiDepotserver' ):
+					for (key, value) in ini.items(u'depotshare'):
+						if   ( key == 'remoteurl' ):
+							host.setDepotRemoteUrl(value)
+						elif ( key == 'localurl' ):
+							host.setDepotLocalUrl(value)
+						else:
+							logger.error(u"Unknown [depotshare] option '%s' in file '%s'" \
+								% (key, hostFile))
+					
+					for (key, value) in ini.items(u'depotserver'):
+						if   ( key == 'notes' ):
+							host.setNotes(value)
+						elif ( key == 'network' ):
+							host.setNetwork(value)
+						elif ( key == 'description' ):
+							host.setDescription(value)
+						else:
+							logger.error(u"Unknown [depotserver] option '%s' in file '%s'" \
+								% (key, hostFile))
+					
+					for (key, value) in ini.items(u'repository'):
+						if   ( key == 'remoteurl' ):
+							host.setRepositoryRemoteUrl(value)
+						elif ( key == 'localurl' ):
+							host.setRepositoryLocalUrl(value)
+						elif ( key == 'maxbandwidth' ):
+							pass #host.setMaxBandwidth(value)
+						else:
+							logger.error(u"Unknown [repository] option '%s' in file '%s'" \
+								% (key, hostFile))
+				
+				hostHash = host.toHash()
 				
 				matchedAll = True
 				
@@ -183,25 +199,28 @@ class File31Backend(ConfigDataBackend):
 					
 					for filterValue in filterValues:
 						if filterValue is None:
-							if clientHash.get(key) is None:
+							if hostHash.get(key) is None:
 								matched = True
-						elif clientHash.get(key) is None:
+						elif hostHash.get(key) is None:
 							matched = False
-						elif re.search('^%s$' % filterValue.replace('*', '.*'), clientHash[key]):
+						elif re.search('^%s$' % filterValue.replace('*', '.*'), hostHash[key]):
 							matched = True
 						if matched:
-							logger.info(u"Matched %s=%s" % (key, filterValue))
-							break
+							logger.debug(u"Filter matched '%s' = '%s'" \
+								% (key, filterValue))
+							break #matched, next filter
+						else:
+							logger.debug2(u"Filter didn't match: '%s' = '%s'" \
+								% (key, filterValue))
 					if not matched:
 						matchedAll = False
 						break
 				
 				if not matchedAll:
-					continue
+					continue #no match, next host
 				
-				hosts.append(client)
-				logger.info(u"Added a matching Client: '%s'" % clientId)
-		
+				hosts.append(host)
+				logger.info(u"Added a matching host: '%s'" % hostId)
 		
 	
 	
@@ -218,22 +237,22 @@ class File31Backend(ConfigDataBackend):
 			newIniFile.delete()
 			newIniFile.create()
 			newIni = newIniFile.parse()
-			newIni.add_section(u'info')
 			
-			if not host.getDescription() is None:
-				newIni.set(u'info', u'description',     host.getDescription().replace(u'\n', u'\\n').replace(u'%', u''))
-			if not host.getNotes() is None:
-				newIni.set(u'info', u'notes',           host.getNotes().replace(u'\n', u'\\n').replace(u'%', u''))
-			if not host.getHardwareAddress() is None:
-				newIni.set(u'info', u'macaddress',      host.getHardwareAddress())
-			if not host.getIpAddress() is None:
-				newIni.set(u'info', u'ipaddress',       host.getIpAddress())
-			if not host.getCreated() is None:
-				newIni.set(u'info', u'created',         host.getCreated())
-			if not host.getInventoryNumber() is None:
+			newIni.add_section(u'info')
+			if ( not host.getDescription() is None ):
+				newIni.set(u'info', u'description', host.getDescription().replace(u'\n', u'\\n').replace(u'%', u''))
+			if ( not host.getNotes() is None ):
+				newIni.set(u'info', u'notes', host.getNotes().replace(u'\n', u'\\n').replace(u'%', u''))
+			if ( not host.getHardwareAddress() is None ):
+				newIni.set(u'info', u'macaddress', host.getHardwareAddress())
+			if ( not host.getIpAddress() is None ):
+				newIni.set(u'info', u'ipaddress', host.getIpAddress())
+			if ( not host.getCreated() is None ):
+				newIni.set(u'info', u'created', host.getCreated())
+			if ( not host.getInventoryNumber() is None ):
 				newIni.set(u'info', u'inventorynumber', host.getInventoryNumber())
-			if not host.getLastSeen() is None:
-				newIni.set(u'info', u'lastseen',        host.getLastSeen())
+			if ( not host.getLastSeen() is None ):
+				newIni.set(u'info', u'lastseen', host.getLastSeen())
 			
 			newIniFile.generate(newIni)
 			
@@ -247,14 +266,55 @@ class File31Backend(ConfigDataBackend):
 			logger.info(u'Created OpsiClient: %s' % host.getId())
 			
 		elif isinstance(host, OpsiConfigserver):
-			logger.info(u'Creating OpsiConfigserver: %s' % host.getId())
+			logger.info(u'Checking OpsiConfigserver: %s' % host.getId())
+			
+			print "##### if fqdn new = fqdn old, else error #####"
 			
 			pass
 		
 		elif isinstance(host, OpsiDepotserver):
 			logger.info(u'Creating OpsiDepotserver: %s' % host.getId())
 			
-			pass
+			if ( not os.path.isdir(os.path.join(self.__depotConfigDir, host.getId())) ):
+				os.mkdir(os.path.join(self.__depotConfigDir, host.getId()))
+			
+			newIniFile = IniFile(filename = self._getDepotIniFile(host), raw = True)
+			newIniFile.delete()
+			newIniFile.create()
+			newIni = newIniFile.parse()
+			
+			newIni.add_section(u'depotshare')
+			if ( not host.getDepotRemoteUrl() is None ):
+				newIni.set(u'depotshare', u'remoteurl', host.getDepotRemoteUrl())
+			if ( not host.getDepotLocalUrl() is None ):
+				newIni.set(u'depotshare', u'localurl', host.getDepotLocalUrl())
+			
+			newIni.add_section(u'depotserver')
+			if ( not host.getNotes() is None ):
+				newIni.set(u'depotserver', u'notes', host.getNotes().replace(u'\n', u'\\n').replace(u'%', u''))
+			if ( not host.getNetwork() is None ):
+				newIni.set(u'depotserver', u'network', host.getNetwork())
+			if ( not host.getDescription() is None ):
+				newIni.set(u'depotserver', u'description', host.getDescription().replace(u'\n', u'\\n').replace(u'%', u''))
+			
+			newIni.add_section(u'repository')
+			if ( not host.getRepositoryRemoteUrl() is None ):
+				newIni.set(u'repository', u'remoteurl', host.getRepositoryRemoteUrl())
+			if ( not host.getRepositoryLocalUrl() is None ):
+				newIni.set(u'repository', u'localurl', host.getRepositoryLocalUrl())
+#			if ( not host.getMaxBandwidth() is None ):
+#				newIni.set(u'repository', u'maxbandwidth', host.getMaxBandwidth())
+			
+			newIniFile.generate(newIni)
+			
+			logger.debug(u"Setting opsiHostKey for host '%s' in file %s" \
+				% (host.getId(), self.__opsiHostKeyFile))
+			opsiHostKeys = OpsiHostKeyFile(filename = self.__opsiHostKeyFile)
+			opsiHostKeys.create()
+			opsiHostKeys.setOpsiHostKey(host.getId(), host.getOpsiHostKey())
+			opsiHostKeys.generate()
+			
+			logger.info(u'Created OpsiDepotserver: %s' % host.getId())
 		
 		else:
 			raise BackendBadValueError(u'Cannot create host %s: unhandled host type: %s' \
@@ -293,17 +353,17 @@ class File31Backend(ConfigDataBackend):
 		if ( not filterTypes ) or ( 'OpsiClient' in filterTypes ):
 			logger.debug(u"Filtering OpsiClients.")
 			
-			_filterHosts( type = 'OpsiClient', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, attributes = attributes, **filter )
+			self._filterHosts( type = 'OpsiClient', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, readIniFile = readIniFile, attributes = attributes, **filter )
 		
 		if ( not filterTypes ) or ( 'OpsiConfigserver' in filterTypes ):
 			logger.debug(u"Filtering OpsiConfigserver.")
 			
-			_filterHosts( type = 'OpsiConfigserver', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, attributes = attributes, **filter )
+			self._filterHosts( type = 'OpsiConfigserver', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, readIniFile = readIniFile, attributes = attributes, **filter )
 		
 		if ( not filterTypes ) or ( 'OpsiDepotserver' in filterTypes ):
 			logger.debug(u"Filtering OpsiDepotserver.")
 			
-			_filterHosts( type = 'OpsiDepotserver', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, attributes = attributes, **filter )
+			self._filterHosts( type = 'OpsiDepotserver', hosts = hosts, opsiHostKeyFile = opsiHostKeyFile, readIniFile = readIniFile, attributes = attributes, **filter )
 		
 		
 		
