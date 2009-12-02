@@ -773,7 +773,7 @@ class Product(Entity):
 			self.setAlwaysScript(u"")
 		if self.onceScript is None:
 			self.setOnceScript(u"")
-		if not customScript is None:
+		if self.customScript is None:
 			self.setCustomScript(u"")
 		if self.userLoginScript is None:
 			self.setUserLoginScript(u"")

@@ -41,7 +41,7 @@ import json, base64, urllib, httplib, new, stat, socket, time, threading
 from OPSI.Logger import *
 from OPSI.Types import *
 from Backend import *
-import Object
+from OPSI import Object
 
 # Get logger instance
 logger = Logger()

@@ -42,7 +42,7 @@ import types, new, inspect
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Backend.Object import *
+from OPSI.Object import *
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Tools import md5sum, librsyncSignature, librsyncPatchFile
 

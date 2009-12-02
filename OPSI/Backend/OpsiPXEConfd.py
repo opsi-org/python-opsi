@@ -40,8 +40,8 @@ import socket
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from Object import *
-from Backend import *
+from OPSI.Object import *
+from OPSI.Backend.Backend import *
 
 # Get logger instance
 logger = Logger()

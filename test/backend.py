@@ -4,7 +4,7 @@
 import sys, time, random
 
 from OPSI.Logger import *
-from OPSI.Backend.Object import *
+from OPSI.Object import *
 
 logger = Logger()
 

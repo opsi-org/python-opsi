@@ -46,7 +46,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI import Tools
 from Backend import *
-from OPSI.Util.File import OpsiBackendACLFile, OpsiBackendDispatchConfigFile
+from OPSI.Util.File:Opsi import OpsiBackendACLFile, OpsiBackendDispatchConfigFile
 
 # Get logger instance
 logger = Logger()
