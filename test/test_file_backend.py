@@ -15,19 +15,6 @@ logger.setConsoleColor(True)
 
 file31Backend = File31Backend()
 
-client = OpsiClient(
-	id = 'schwarz.uib.local',
-	opsiHostKey = None,
-	description= "üöä",
-	notes = None,
-	hardwareAddress=None,
-	ipAddress = '192.168.1.1',
-	inventoryNumber=None,
-	created=None,
-	lastSeen=None)
-
-file31Backend.host_insertObject(client)
-
 #for host in file31Backend.host_getObjects():
 #	print "all hosts: '%s'" % host.toHash()
 #for host in file31Backend.host_getObjects(attributes = [], id = '*local'):

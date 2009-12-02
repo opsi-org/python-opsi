@@ -34,7 +34,7 @@
 
 __version__ = '3.5'
 
-import os, socket, ConfigParser
+import os, socket, ConfigParser, shutil
 
 # OPSI imports
 from OPSI.Logger import *
@@ -56,9 +56,10 @@ class File31Backend(ConfigDataBackend):
 	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
 		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
 		
-		self.__clientConfigDir = u'/home/kerz/tmp/file31/clients'
-		self.__depotConfigDir = u'/home/kerz/tmp/file31/depots'
-		self.__opsiHostKeyFile = u'/home/kerz/tmp/file31/pckeys'
+		self.__configBaseDir = u'/home/kerz/tmp/file31'
+		self.__clientConfigDir = os.path.join(self.__configBaseDir, 'clients')
+		self.__depotConfigDir = os.path.join(self.__configBaseDir, 'depots')
+		self.__opsiHostKeyFile = os.path.join(self.__configBaseDir, 'pckeys')
 		
 		self._defaultDomain = u'uib.local'
 		
@@ -78,12 +79,15 @@ class File31Backend(ConfigDataBackend):
 		return os.path.join(self.__depotConfigDir, depot.getId(), u'depot.ini')
 	
 	def base_create(self):
-		pass
-	
+		os.mkdir(self.__configBaseDir)
+		os.mkdir(self.__clientConfigDir)
+		os.mkdir(self.__depotConfigDir)
+		
 	def base_delete(self):
-		pass
-	
-	
+		#for f in (self.__clientConfigDir, self.__depotConfigDir, self.__opsiHostKeyFile):
+		#	if os.path.exists(f):
+		#		shutil.rmtree(f)
+		shutil.rmtree(self.__configBaseDir)
 	
 	def _filterHosts(self, type, hosts, opsiHostKeyFile = None, readIniFile = True, attributes = [], **filter):
 		configDir = None
@@ -93,6 +97,11 @@ class File31Backend(ConfigDataBackend):
 		else:
 			logger.error(u"Unknown type handle: '%s'" % type)
 			return
+		
+		idsCreated = []
+		for host in hosts:
+			print type, host.getId()
+			idsCreated.append(host.getId())
 		
 		for item in forceList(os.listdir(configDir)):
 			hostFile = os.path.join(configDir, item)
@@ -109,11 +118,7 @@ class File31Backend(ConfigDataBackend):
 				logger.debug2(u"Adding client for filtering: '%s'" % hostId)
 				host = OpsiClient(id = hostId)
 			
-			elif ( type == 'OpsiConfigserver' ):
-				logger.debug2(u"Adding server for filtering: '%s'" % hostId)
-				host = OpsiConfigserver(id = self.__serverId)
-			
-			elif ( type == 'OpsiDepotserver'  ) and ( os.path.isdir(hostFile) ):
+			elif ( ( type == 'OpsiDepotserver' ) or ( type == 'OpsiConfigserver' ) ) and ( os.path.isdir(hostFile) ):
 				try:
 					hostId = forceHostId(item)
 					hostFile = os.path.join(hostFile, u'depot.ini')
@@ -121,13 +126,21 @@ class File31Backend(ConfigDataBackend):
 					logger.error(u"Not a depot path: '%s'" % hostFile )
 					continue #bad .ini, next file
 				
-				logger.debug2(u"Adding depot for filtering: '%s'" % hostId)
-				host = OpsiDepotserver(id = hostId)
+				if ( type == 'OpsiConfigserver' ) and (hostId != self.__serverId):
+					continue
+				
+				if ( type == 'OpsiConfigserver' ):
+					logger.debug2(u"Adding server for filtering: '%s'" % hostId)
+					host = OpsiConfigserver(id = self.__serverId)
+				else:
+					logger.debug2(u"Adding depot for filtering: '%s'" % hostId)
+					host = OpsiDepotserver(id = hostId)
 			
 			if ( opsiHostKeyFile ):
 				host.setOpsiHostKey(opsiHostKeyFile.getOpsiHostKey(host.getId()))
 				
 			if ( readIniFile ):
+				print "!!!!!!!!!!!!!!!!!!!!!!!!!"
 				logger.debug2(u"Reading .ini: '%s'" % hostFile)
 				
 				iniFile = IniFile(filename = hostFile, ignoreCase = True)
@@ -148,7 +161,7 @@ class File31Backend(ConfigDataBackend):
 							host.setInventoryNumber(value)
 						elif ( key == 'created' ):
 							host.setCreated(value)
-						elif ( key == 'lastSeen' ):
+						elif ( key == 'lastseen' ):
 							host.setLastSeen(value)
 						else:
 							logger.error(u"Unknown [info] option '%s' in file '%s'" \
@@ -216,12 +229,15 @@ class File31Backend(ConfigDataBackend):
 						matchedAll = False
 						break
 				
+				
 				if not matchedAll:
 					continue #no match, next host
 				
-				hosts.append(host)
-				logger.info(u"Added a matching host: '%s'" % hostId)
-		
+				if host.getId() not in idsCreated:
+					hosts.append(host)
+					idsCreated.append(host.getId())
+					logger.info(u"Added a matching host: '%s'" % hostId)
+				
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -229,6 +245,10 @@ class File31Backend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
+		
+		if not isinstance(host, OpsiClient) and not isinstance(host, OpsiConfigserver) and not isinstance(host, OpsiDepotserver):
+			raise BackendBadValueError(u'Cannot create host %s: unhandled host type: %s' \
+				% (host, host.getType()))
 		
 		if isinstance(host, OpsiClient):
 			logger.info(u'Creating OpsiClient: %s' % host.getId())
@@ -265,14 +285,22 @@ class File31Backend(ConfigDataBackend):
 			
 			logger.info(u'Created OpsiClient: %s' % host.getId())
 			
-		elif isinstance(host, OpsiConfigserver):
+		if isinstance(host, OpsiConfigserver):
 			logger.info(u'Checking OpsiConfigserver: %s' % host.getId())
+			logger.debug(u"Setting opsiHostKey for host '%s' in file %s" \
+				% (host.getId(), self.__opsiHostKeyFile))
+			opsiHostKeys = OpsiHostKeyFile(filename = self.__opsiHostKeyFile)
+			opsiHostKeys.create()
+			opsiHostKeys.deleteOpsiHostKey(self.__serverId)
+			self.__serverId = host.getId()
+			opsiHostKeys.setOpsiHostKey(self.__serverId, host.getOpsiHostKey())
+			opsiHostKeys.generate()
 			
 			print "##### if fqdn new = fqdn old, else error #####"
 			
 			pass
 		
-		elif isinstance(host, OpsiDepotserver):
+		if isinstance(host, OpsiDepotserver) or isinstance(host, OpsiConfigserver):
 			logger.info(u'Creating OpsiDepotserver: %s' % host.getId())
 			
 			if ( not os.path.isdir(os.path.join(self.__depotConfigDir, host.getId())) ):
@@ -316,10 +344,6 @@ class File31Backend(ConfigDataBackend):
 			
 			logger.info(u'Created OpsiDepotserver: %s' % host.getId())
 		
-		else:
-			raise BackendBadValueError(u'Cannot create host %s: unhandled host type: %s' \
-				% (host, host.getType()))
-		
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
@@ -330,11 +354,16 @@ class File31Backend(ConfigDataBackend):
 		
 		logger.info(u'Getting Hosts, filter: %s' % filter)
 		
+		type = forceList(filter.get('type', []))
+		if 'OpsiDepotserver' in type and not 'OpsiConfigserver' in type:
+			type.append('OpsiConfigserver')
+			filter['type'] = type
+		
 		readIniFile = True
 		if ( len(attributes) == 1 ) and ( attributes[0] == 'id' ):
 			readIniFile = False
 			for key in filter.keys():
-				if key not in ('type', 'id'):
+				if key not in ('type', 'id', 'opsiHostKey'):
 					readIniFile = True
 					break
 		
@@ -344,7 +373,7 @@ class File31Backend(ConfigDataBackend):
 		
 		filterOpsiHostKeys = forceList(filter.get('opsiHostKey', []))
 		
-		if ( filterOpsiHostKeys ) or ( 'opsiHostKey' in attributes ):
+		if ( filterOpsiHostKeys ) or not attributes or ( 'opsiHostKey' in attributes ):
 			opsiHostKeyFile = OpsiHostKeyFile(filename = self.__opsiHostKeyFile)
 			opsiHostKeyFile.parse()
 		

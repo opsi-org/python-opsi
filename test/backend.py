@@ -642,8 +642,10 @@ class BackendTest(object):
 		self.backend.host_createObjects( self.hosts )
 		
 		hosts = self.backend.host_getObjects()
+		logger.info(u"Got hosts: %s" % hosts)
 		assert len(hosts) == len(self.hosts)
 		for host in hosts:
+			logger.info(u"Host key for host '%s': %s" % (host.getId(), host.getOpsiHostKey()))
 			assert host.getOpsiHostKey()
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ] )

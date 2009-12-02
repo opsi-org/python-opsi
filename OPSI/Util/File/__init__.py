@@ -256,6 +256,13 @@ class OpsiHostKeyFile(ConfigFile):
 		opsiHostKey = forceOpsiHostKey(opsiHostKey)
 		self._opsiHostKeys[hostId] = opsiHostKey
 	
+	def deleteOpsiHostKey(self, hostId):
+		if not self._parsed:
+			self.parse()
+		hostId = forceHostId(hostId)
+		if self._opsiHostKeys.has_key(hostId):
+			del self._opsiHostKeys[hostId]
+	
 class OpsiBackendACLFile(ConfigFile):
 	
 	aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
@@ -417,15 +424,15 @@ class IniFile(ConfigFile):
 		
 		sectionNames = sections.keys()
 		sectionNames.sort()
+		
+		# Move section 'info' to first place
+		if ( 'info' in sectionNames ):
+			sectionNames.insert(0, sectionNames.pop(sectionNames.index('info')))
+		
 		for section in sectionNames:
 			self._configParser.add_section(section)
 			for (option, value) in sections[section].items():
 				self._configParser.set(section, option, value)
-		
-		for section in self._configParser.sections():
-			for (option, value) in self._configParser.items(section):
-				print option, type(option)
-				print value, type(value)
 		
 		data = StringIO.StringIO()
 		self._configParser.write(data)
