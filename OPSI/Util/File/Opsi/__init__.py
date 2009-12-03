@@ -34,7 +34,7 @@
 
 __version__ = "3.5"
 
-import os, codecs, re, ConfigParser, StringIO, cStringIO
+import os, codecs, re, ConfigParser, StringIO, cStringIO, json
 
 if (os.name == 'posix'):
 	import fcntl
@@ -52,6 +52,20 @@ from OPSI.Util.File import *
 
 # Get logger instance
 logger = Logger()
+
+def toJson(obj):
+	if hasattr(json, 'dumps'):
+		# python 2.6 json module
+		return json.dumps(obj)
+	else:
+		return json.write(obj)
+
+def fromJson(obj):
+	if hasattr(json, 'loads'):
+		# python 2.6 json module
+		return json.loads(obj)
+	else:
+		return json.read(obj)
 
 class HostKeyFile(ConfigFile):
 	
@@ -345,10 +359,16 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'default') or \
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows'         and option == 'softwareids'):
-						value = value.replace(u'\n', u'')
-						value = value.replace(u'\t', u'')
-						value = value.split(u',')
-						value = map ( lambda x:x.strip(), value )
+					   	try:
+					   		value = fromJson(value)
+					   	except Exception, e:
+					   		logger.debug(u"Failed to read json string '%s': %s" % (value, e) )
+							value = value.replace(u'\n', u'')
+							value = value.replace(u'\t', u'')
+							value = value.split(u',')
+							value = map ( lambda x:x.strip(), value )
+						
+							
 						# Remove duplicates
 						tmp = []
 						for v in value:
@@ -539,9 +559,9 @@ class PackageControlFile(TextFile):
 					if (len(descLines) > 1):
 						self._lines.extend( descLines )
 			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
-					self._lines.append( u'values: %s' % ', '.join(productProperty.getPossibleValues()) )
+					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
 			if productProperty.getDefaultValues():
-				self._lines.append( u'default: %s' % u', '.join(forceUnicodeList(productProperty.getDefaultValues())) )
+				self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
 		
 		self.open('w')
 		self.writelines()
