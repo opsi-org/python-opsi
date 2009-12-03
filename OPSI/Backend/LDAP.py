@@ -135,13 +135,17 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
+		
+		#Create a new host
+		#if self._createOrganizationalRole(_self._hostsContainerDn
+		print host
 	
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 	
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
-	
+		return []
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 	
@@ -473,7 +477,7 @@ class LDAPObject:
 	def __init__(self, dn):
 		''' Constructor of the Object class. '''
 		if not dn:
-			raise BackendIOError("Cannot create Object, dn not defined")
+			raise BackendIOError(u"Cannot create Object, dn not defined")
 		self._dn = dn
 		self._old = self._new = {}
 		self._existsInBackend = False
@@ -486,14 +490,14 @@ class LDAPObject:
 		try:
 			self.addAttributeValue('objectClass', objectClass)
 		except Exception, e:
-			logger.warning("Failed to add objectClass '%s' to '%s': %s" \
+			logger.warning(u"Failed to add objectClass '%s' to '%s': %s" \
 						% (objectClass, self.getDn(), e) )
 		
 	def removeObjectClass(self, objectClass):
 		try:
 			self.deleteAttributeValue('objectClass', objectClass)
 		except Exception, e:
-			logger.warning("Failed to delete objectClass '%s' from '%s': %s" \
+			logger.warning(u"Failed to delete objectClass '%s' from '%s': %s" \
 						% (objectClass, self.getDn(), e) )
 	
 	def getCn(self):
@@ -517,9 +521,9 @@ class LDAPObject:
 		try:
 			objectSearch = LDAPObjectSearch(ldapSession, self._dn, scope=ldap.SCOPE_BASE)
 		except BackendMissingDataError:
-			logger.debug("exists(): object '%s' does not exist" % self._dn)
+			logger.debug(u"exists(): object '%s' does not exist" % self._dn)
 			return False
-		logger.debug("exists(): object '%s' does exist" % self._dn)
+		logger.debug(u"exists(): object '%s' does exist" % self._dn)
 		return True
 	
 	def getContainer(self):
@@ -528,13 +532,13 @@ class LDAPObject:
 	def getParent(self):
 		parts = ( ldap.explode_dn(self._dn, notypes=0) )[1:]
 		if (parts <= 1):
-			raise BackendBadValueError("Object '%s' has no parent" % self._dn)
+			raise BackendBadValueError(u"Object '%s' has no parent" % self._dn)
 		return LDAPObject(','.join(parts))
 	
 	def new(self, *objectClasses, **attributes):
 		''' Creates a new object. '''
 		if ( len(objectClasses) <= 0 ):
-			raise BackendBadValueError("No objectClasses defined!")
+			raise BackendBadValueError(u"No objectClasses defined!")
 		
 		self._new['objectClass'] = objectClasses
 		
@@ -543,7 +547,7 @@ class LDAPObject:
 		for attr in attributes:
 			self._new[attr] = [ attributes[attr] ]
 		
-		logger.debug("Created new LDAP-Object: %s" % self._new)
+		logger.debug(u"Created new LDAP-Object: %s" % self._new)
 			
 	def deleteFromDirectory(self, ldapSession, recursive = False):
 		''' Deletes an object from ldap directory. '''
@@ -576,7 +580,7 @@ class LDAPObject:
 							filter     = "(ObjectClass=*)",
 							attributes = attributes )
 		except Exception, e:
-			raise BackendIOError("Cannot read object (dn: '%s') from ldap: %s" % (self._dn, e))
+			raise BackendIOError(u"Cannot read object (dn: '%s') from ldap: %s" % (self._dn, e))
 		
 		self._existsInBackend = True
 		self._old = result[0][1]
@@ -588,10 +592,10 @@ class LDAPObject:
 
 	def writeToDirectory(self, ldapSession):
 		''' Writes the object to the ldap tree. '''
-		logger.info("Writing object %s to directory" % self.getDn())
+		logger.info(u"Writing object %s to directory" % self.getDn())
 		if self._existsInBackend:
 			if not self._readAllAttributes:
-				raise BackendIOError("Not all attributes have been read from backend - not writing to backend!")
+				raise BackendIOError(u"Not all attributes have been read from backend - not writing to backend!")
 			ldapSession.modifyByModlist(self._dn, self._old, self._new)
 		else:
 			ldapSession.addByModlist(self._dn, self._new)
@@ -617,7 +621,7 @@ class LDAPObject:
 			for keyValuePair in opsiKeyValuePairs:
 				(k, v) = keyValuePair.split('=', 1)
 				if k in ret.keys():
-					logger.warning("Opsi key-value-pair %s overwrites attribute" % k)
+					logger.warning(u"Opsi key-value-pair %s overwrites attribute" % k)
 				if valuesAsList:
 					ret[k] = [ v ]
 				else:
@@ -631,7 +635,7 @@ class LDAPObject:
 		if not self._new.has_key(attribute):
 			if (default != 'DEFAULT_UNDEFINED'):
 				return default
-			raise BackendMissingDataError("Attribute '%s' does not exist" % attribute)
+			raise BackendMissingDataError(u"Attribute '%s' does not exist" % attribute)
 		values = self._new[attribute]
 		if ( len(values) > 1 or valuesAsList):
 			return values
@@ -648,7 +652,7 @@ class LDAPObject:
 		else:
 			for i in range(len(value)):
 				value[i] = self._encodeValue(value[i])
-		logger.debug("Setting attribute '%s' to '%s'" % (attribute, value))
+		logger.debug(u"Setting attribute '%s' to '%s'" % (attribute, value))
 		self._new[attribute] = value
 	
 	def addAttributeValue(self, attribute, value):
@@ -663,15 +667,15 @@ class LDAPObject:
 	
 	def deleteAttributeValue(self, attribute, value):
 		''' Delete a value from the list of attribute values. '''
-		logger.debug("Deleting value '%s' of attribute '%s' on object '%s'" % (value, attribute, self.getDn()))
+		logger.debug(u"Deleting value '%s' of attribute '%s' on object '%s'" % (value, attribute, self.getDn()))
 		if not self._new.has_key(attribute):
-			logger.warning("Failed to delete value '%s' of attribute '%s': does not exists" % (value, attribute))
+			logger.warning(u"Failed to delete value '%s' of attribute '%s': does not exists" % (value, attribute))
 			return
 		for i in range( len(self._new[attribute]) ):
-			logger.debug2("Testing if value '%s' of attribute '%s' == '%s'" % (self._new[attribute][i], attribute, value))
+			logger.debug2(u"Testing if value '%s' of attribute '%s' == '%s'" % (self._new[attribute][i], attribute, value))
 			if (self._new[attribute][i] == value):
 				del self._new[attribute][i]
-				logger.debug("Value '%s' of attribute '%s' successfuly deleted" % (value, attribute))
+				logger.debug(u"Value '%s' of attribute '%s' successfuly deleted" % (value, attribute))
 				return
 	
 	def _encodeValue(self, value):
@@ -695,7 +699,7 @@ class LDAPObjectSearch:
 		if not baseDn:
 			baseDn = ldapSession.baseDn
 		
-		logger.debug( "Searching object => baseDn: %s, scope: %s, filter: %s" 
+		logger.debug( u'Searching object => baseDn: %s, scope: %s, filter: %s' 
 				% (baseDn, scope, filter) )
 		
 		# Storage for matching DNs
@@ -709,11 +713,11 @@ class LDAPObjectSearch:
 							filter = filter, 
 							attributes = ['dn'] )
 		except Exception, e:
-			logger.debug("LDAPObjectSearch search error: %s" % e)
+			logger.debug(u'LDAPObjectSearch search error: %s' % e)
 			raise
 		
 		for r in result:
-			logger.debug( "Found dn: %s" % r[0] )
+			logger.debug( u'Found dn: %s' % r[0] )
 			self._dns.append(r[0])
 		
 	def getCns(self):
