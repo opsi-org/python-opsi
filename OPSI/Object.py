@@ -560,6 +560,8 @@ class Config(Entity):
 		for defaultValue in self.defaultValues:
 			if not defaultValue in self.possibleValues:
 				self.possibleValues.append(defaultValue)
+		if (len(self.defaultValues) > 1):
+			self.multiValue = True
 	
 	def getEditable(self):
 		return self.editable
@@ -599,7 +601,7 @@ class UnicodeConfig(Config):
 			self.setPossibleValues(possibleValues)
 		if not defaultValues is None:
 			self.setDefaultValues(defaultValues)
-	
+		
 	def setDefaults(self):
 		Config.setDefaults(self)
 		if self.editable is None:
@@ -612,12 +614,12 @@ class UnicodeConfig(Config):
 			self.defaultValues = [u'']
 	
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = forceUnicodeList(possibleValues)
-		Config.setPossibleValues(self, self.possibleValues)
+		possibleValues = forceUnicodeList(possibleValues)
+		Config.setPossibleValues(self, possibleValues)
 	
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = forceUnicodeList(defaultValues)
-		Config.setDefaultValues(self, self.defaultValues)
+		defaultValues = forceUnicodeList(defaultValues)
+		Config.setDefaultValues(self, defaultValues)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -640,14 +642,14 @@ class BoolConfig(Config):
 		Config.setDefaults(self)
 	
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = [ True, False ]
-		Config.setPossibleValues(self, self.possibleValues)
+		possibleValues = [ True, False ]
+		Config.setPossibleValues(self, possibleValues)
 	
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = forceBoolList(defaultValues)
-		if (len(self.defaultValues) > 1):
-			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % self.defaultValues)
-		Config.setPossibleValues(self, self.possibleValues)
+		defaultValues = forceBoolList(defaultValues)
+		if (len(defaultValues) > 1):
+			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % defaultValues)
+		Config.setDefaultValues(self, defaultValues)
 		
 	@staticmethod
 	def fromHash(hash):

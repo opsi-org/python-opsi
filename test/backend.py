@@ -645,8 +645,22 @@ class BackendTest(object):
 		logger.info(u"Got hosts: %s" % hosts)
 		assert len(hosts) == len(self.hosts)
 		for host in hosts:
+			logger.debug(host)
 			logger.info(u"Host key for host '%s': %s" % (host.getId(), host.getOpsiHostKey()))
 			assert host.getOpsiHostKey()
+			for h in self.hosts:
+				if (host.id == h.id):
+					host = host.toHash()
+					h = h.toHash()
+					for (attribute, value) in h.items():
+						if not value is None:
+							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, host[attribute]))
+							if type(value) is list:
+								for v in value:
+									assert v in host[attribute]
+							else:
+								assert value == host[attribute]
+					break
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ] )
 		assert len(hosts) == 2
@@ -733,6 +747,22 @@ class BackendTest(object):
 		for config in self.configs:
 			assert config.id in ids
 		
+		for config in configs:
+			logger.debug(config)
+			for c in self.configs:
+				if (config.id == c.id):
+					config = config.toHash()
+					c = c.toHash()
+					for (attribute, value) in c.items():
+						if not value is None:
+							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, config[attribute]))
+							if type(value) is list:
+								for v in value:
+									assert v in config[attribute]
+							else:
+								assert value == config[attribute]
+					break
+		
 		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
 		assert len(configs) == 1
 		assert configs[0].getId() == self.config2.getId()
@@ -752,11 +782,11 @@ class BackendTest(object):
 		multiValueConfigNames = []
 		for config in self.configs:
 			if config.getMultiValue():
-				multiValueConfigNames.append(config.name)
+				multiValueConfigNames.append(config.id)
 		configs = self.backend.config_getObjects( attributes = [], multiValue = True )
 		assert len(configs) == len(multiValueConfigNames)
 		for config in configs:
-			assert config.name in multiValueConfigNames
+			assert config.id in multiValueConfigNames
 		
 		self.backend.config_deleteObjects(self.config1)
 		configs = self.backend.config_getObjects()
@@ -819,6 +849,25 @@ class BackendTest(object):
 			ids.append(product.getId())
 		for product in self.localbootProducts:
 			assert product.id in ids
+		
+		for product in products:
+			logger.debug(product)
+			for p in self.products:
+				if (product.id == p.id):
+					product = product.toHash()
+					p = p.toHash()
+					for (attribute, value) in p.items():
+						if (attribute == 'productClassIds'):
+							logger.warning(u"Skipping productClassIds attribute test!!!")
+							continue
+						if not value is None:
+							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, product[attribute]))
+							if type(value) is list:
+								for v in value:
+									assert v in product[attribute]
+							else:
+								assert value == product[attribute]
+					break
 		
 		self.product2.setName(u'Product 2 updated')
 		products = self.backend.product_updateObject(self.product2)
