@@ -1033,7 +1033,7 @@ class BackendTest(object):
 				notes = 'config 100',
 				hardwareAddress = None,
 				ipAddress = None,
-				network = '192.168.100.0/24',
+				networkAddress = '192.168.100.0/24',
 				maxBandwidth = 200000)
 		
 		hosts = self.backend.host_getObjects(id = 'config100.uib.local')
@@ -1050,7 +1050,7 @@ class BackendTest(object):
 				notes = 'Depot 100',
 				hardwareAddress = None,
 				ipAddress = None,
-				network = '192.168.100.0/24',
+				networkAddress = '192.168.100.0/24',
 				maxBandwidth = 0)
 		
 		hosts = self.backend.host_getObjects(id = 'depot100.uib.local')
