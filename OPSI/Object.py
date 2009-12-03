@@ -416,7 +416,7 @@ class OpsiDepotserver(Host):
 		if not repositoryRemoteUrl is None:
 			self.setRepositoryRemoteUrl(repositoryRemoteUrl)
 		if not networkAddress is None:
-			self.setNetwork(networkAddress)
+			self.setNetworkAddress(networkAddress)
 		if not maxBandwidth is None:
 			self.setMaxBandwidth(maxBandwidth)
 		
@@ -455,11 +455,11 @@ class OpsiDepotserver(Host):
 	def setRepositoryRemoteUrl(self, repositoryRemoteUrl):
 		self.repositoryRemoteUrl = forceUrl(repositoryRemoteUrl)
 	
-	def getNetwork(self):
-		return self.network
+	def getNetworkAddress(self):
+		return self.networkAddress
 	
-	def setNetwork(self, network):
-		self.network = forceNetworkAddress(network)
+	def setNetworkAddress(self, networkAddress):
+		self.networkAddress = forceNetworkAddress(networkAddress)
 	
 	def getMaxBandwidth(self):
 		return self.maxBandwidth

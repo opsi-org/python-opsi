@@ -376,7 +376,7 @@ class MySQLBackend(ConfigDataBackend):
 					`depotRemoteUrl` varchar(255),
 					`repositoryLocalUrl` varchar(128),
 					`repositoryRemoteUrl` varchar(255),
-					`network` varchar(31)
+					`networkAddress` varchar(31)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
