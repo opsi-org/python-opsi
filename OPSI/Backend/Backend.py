@@ -1008,7 +1008,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				logger.info(u"%s already exists, updating" % host)
 				self.host_updateObject(host)
 			else:
-				print host.toHash()
 				self.host_insertObject(host)
 	
 	def host_updateObjects(self, hosts):
