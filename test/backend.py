@@ -39,7 +39,7 @@ class BackendTest(object):
 			hardwareAddress     = None,
 			ipAddress           = None,
 			inventoryNumber     = '00000000001',
-			network             = '192.168.1.0/24',
+			networkAddress      = '192.168.1.0/24',
 			maxBandwidth        = 10000
 		)
 		self.configservers = [ self.configserver1 ]
@@ -57,7 +57,7 @@ class BackendTest(object):
 			hardwareAddress     = None,
 			ipAddress           = None,
 			inventoryNumber     = '00000000002',
-			network             = '192.168.2.0/24',
+			networkAddress      = '192.168.2.0/24',
 			maxBandwidth        = 10000
 		)
 		self.depotservers = [ self.depotserver1 ]

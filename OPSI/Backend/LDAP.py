@@ -176,7 +176,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj.setAttribute('opsiDepotRemoteUrl',      host.depotRemoteUrl)
 			ldapObj.setAttribute('opsiRepositoryLocalUrl',  host.repositoryLocalUrl)
 			ldapObj.setAttribute('opsiRepositoryRemoteUrl', host.repositoryRemoteUrl)
-			ldapObj.setAttribute('opsiNetworkAddress',      host.network)
+			ldapObj.setAttribute('opsiNetworkAddress',      host.networkAddress)
 			ldapObj.setAttribute('opsiMaximumBandwidth',    host.maxBandwidth)
 		
 		ldapObj.writeToDirectory(self._ldap)

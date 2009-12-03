@@ -418,7 +418,7 @@ class OpsiDepotserver(Host):
 		if not networkAddress is None:
 			self.setNetwork(networkAddress)
 		if not maxBandwidth is None:
-			self.setMaxBandwith(maxBandwidth)
+			self.setMaxBandwidth(maxBandwidth)
 		
 	def setDefaults(self):
 		Host.setDefaults(self)
