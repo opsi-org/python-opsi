@@ -186,6 +186,8 @@ class LDAPBackend(ConfigDataBackend):
 	
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
+		print "======================="
+		print attributes
 		return []
 	
 	def host_deleteObjects(self, hosts):
