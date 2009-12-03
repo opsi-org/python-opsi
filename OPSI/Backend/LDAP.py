@@ -129,23 +129,65 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productStatesContainerDn)
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
 		
-		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		
+		#bool(False) == False
+		#bool(0) == False
+		#bool(1) = True
+		#bool(None) = False
+		#bool([None]) = True
+		#bool(['']) = False
+		#bool('')  = False
+		#bool(' ') = True
+		
 		#Create a new host
 		#if self._createOrganizationalRole(_self._hostsContainerDn
-		print host
-	
+		objectClass = None
+		if isinstance(host, OpsiClient):
+			objectClass = 'opsiClient'
+		elif isinstance(host, OpsiDepotserver):
+			objectClass = 'opsiDepotserver'
+		elif isinstance(host, OpsiConfigserver):
+			objectClass = 'opsiConfigserver'
+		
+		ldapObj = LDAPObject('cn=%s,%s' % (host.id, self._hostsContainerDn))
+		ldapObj.new(objectClass,
+				opsiHostId            = host.id,
+				opsiDescription       = host.description or None,
+				opsiNotes             = host.notes or None,
+				opsiHardwareAddress   = host.hardwareAddress,
+				opsiIpAddress         = host.ipAddress,
+				opsiInventoryNumber   = host.inventoryNumber or None,
+				opsiHostKey           = host.opsiHostKey
+		)
+		if isinstance(host, OpsiClient):
+			
+			ldapObj.setAttribute('opsiCreatedTimestamp',  host.created)
+			ldapObj.setAttribute('opsiLastSeenTimestamp', host.lastSeen)
+		
+		
+		elif isinstance(host, OpsiDepotserver) or isinstance(host, OpsiConfigserver):
+			
+			ldapObj.setAttribute('opsiDepotLocalUrl',       host.depotLocalUrl)
+			ldapObj.setAttribute('opsiDepotRemoteUrl',      host.depotRemoteUrl)
+			ldapObj.setAttribute('opsiRepositoryLocalUrl',  host.repositoryLocalUrl)
+			ldapObj.setAttribute('opsiRepositoryRemoteUrl', host.repositoryRemoteUrl)
+			ldapObj.setAttribute('opsiNetworkAddress',      host.network)
+			ldapObj.setAttribute('opsiMaximumBandwidth',    host.maxBandwidth)
+		
+		ldapObj.writeToDirectory(self._ldap)
+		
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 	
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		return []
+	
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 	
@@ -544,8 +586,9 @@ class LDAPObject:
 		
 		self._new['cn'] = [ self.getCn() ]
 		
-		for attr in attributes:
-			self._new[attr] = [ attributes[attr] ]
+		
+		for (attribute, value) in attributes.items():
+			self.setAttribute(attribute, value)
 		
 		logger.debug(u"Created new LDAP-Object: %s" % self._new)
 			
@@ -639,51 +682,34 @@ class LDAPObject:
 		values = self._new[attribute]
 		if ( len(values) > 1 or valuesAsList):
 			return values
-		else:
-			return values[0]
+		return values[0]
 	
 	def setAttribute(self, attribute, value):
-		''' Set the attribute to the value given.
-		    The value's type should be list. '''
-		if ( type(value) != tuple ) and ( type(value) != list ):
-			value = [ value ]
-		if (value == ['']):
-			value = []
-		else:
-			for i in range(len(value)):
-				value[i] = self._encodeValue(value[i])
+		ldapValue = []
+		if not value is None:
+			value = forceList(value)
+			if (value != ['']):
+				for v in value:
+					ldapValue.append(forceUnicode(v).encode('utf-8'))
 		logger.debug(u"Setting attribute '%s' to '%s'" % (attribute, value))
-		self._new[attribute] = value
+		self._new[attribute] = ldapValue
 	
 	def addAttributeValue(self, attribute, value):
 		''' Add a value to an object's attribute. '''
-		if not self._new.has_key(attribute):
-			self.setAttribute(attribute, [ self._encodeValue(value) ])
+		values = forceList(self._new.get(attribute, []))
+		if value in values:
 			return
-		if value in self._new[attribute]:
-			#logger.warning("Attribute value '%s' already exists" % value.decode('utf-8', 'ignore'))
-			return
-		self._new[attribute].append( self._encodeValue(value) )
-	
+		values.append(value)
+		self.setAttribute(attribute, values)
+		
 	def deleteAttributeValue(self, attribute, value):
 		''' Delete a value from the list of attribute values. '''
-		logger.debug(u"Deleting value '%s' of attribute '%s' on object '%s'" % (value, attribute, self.getDn()))
-		if not self._new.has_key(attribute):
-			logger.warning(u"Failed to delete value '%s' of attribute '%s': does not exists" % (value, attribute))
+		values = forceList(self._new.get(attribute, []))
+		if not value in values:
 			return
-		for i in range( len(self._new[attribute]) ):
-			logger.debug2(u"Testing if value '%s' of attribute '%s' == '%s'" % (self._new[attribute][i], attribute, value))
-			if (self._new[attribute][i] == value):
-				del self._new[attribute][i]
-				logger.debug(u"Value '%s' of attribute '%s' successfuly deleted" % (value, attribute))
-				return
+		values.remove(value)
+		self.setAttribute(attribute, values)
 	
-	def _encodeValue(self, value):
-		if not value:
-			return value
-		if (type(value) != unicode):
-			value = value.decode('utf-8', 'replace')
-		return value.encode('utf-8')
 
 
 # ======================================================================================================

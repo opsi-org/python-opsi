@@ -396,14 +396,15 @@ class OpsiDepotserver(Host):
 	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
 		self.depotRemoteUrl = None
 		self.repositoryLocalUrl = None
 		self.repositoryRemoteUrl = None
-		self.network = None
+		self.networkAddress = None
+		self.maxBandwidth = None
 		if not opsiHostKey is None:
 			self.setOpsiHostKey(opsiHostKey)
 		if not depotLocalUrl is None:
@@ -414,9 +415,11 @@ class OpsiDepotserver(Host):
 			self.setRepositoryLocalUrl(repositoryLocalUrl)
 		if not repositoryRemoteUrl is None:
 			self.setRepositoryRemoteUrl(repositoryRemoteUrl)
-		if not network is None:
-			self.setNetwork(network)
-	
+		if not networkAddress is None:
+			self.setNetwork(networkAddress)
+		if not maxBandwidth is None:
+			self.setMaxBandwith(maxBandwidth)
+		
 	def setDefaults(self):
 		Host.setDefaults(self)
 		if self.opsiHostKey is None:
@@ -458,6 +461,12 @@ class OpsiDepotserver(Host):
 	def setNetwork(self, network):
 		self.network = forceNetworkAddress(network)
 	
+	def getMaxBandwidth(self):
+		return self.maxBandwidth
+	
+	def setMaxBandwidth(self, maxBandwidth):
+		self.maxBandwidth = forceInt(maxBandwidth)
+	
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'OpsiDepotserver'
@@ -478,9 +487,9 @@ class OpsiConfigserver(OpsiDepotserver):
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, network=None, maxBandwidth=None):
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None):
 		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
-		     description, notes, hardwareAddress, ipAddress, inventoryNumber, network, maxBandwidth)
+		     description, notes, hardwareAddress, ipAddress, inventoryNumber, networkAddress, maxBandwidth)
 	
 	def setDefaults(self):
 		OpsiDepotserver.setDefaults(self)
