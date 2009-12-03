@@ -149,7 +149,7 @@ class BaseObject(object):
 		pass
 	
 	def getType(self):
-		return self.__class__.__name__
+		return unicode(self.__class__.__name__)
 	
 	def __unicode__(self):
 		return u"<%s'>" % self.getType()
