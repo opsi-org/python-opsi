@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, time, random
+import sys, time, random, socket
 
 from OPSI.Logger import *
 from OPSI.Object import *
@@ -25,10 +25,13 @@ class BackendTest(object):
 		self.backend = backend
 		
 		# Hosts
-		self.hosts = []
+		serverId = socket.getfqdn()
+		if (serverId.count('.') < 2):
+			raise Exception(u"Failed to get fqdn: %s" % serverId)
 		
+		self.hosts = []
 		self.configserver1 = OpsiConfigserver(
-			id                  = 'config1.uib.local',
+			id                  = serverId,
 			opsiHostKey         = '71234545689056789012123678901234',
 			depotLocalUrl       = 'file:///opt/pcbin/install',
 			depotRemoteUrl      = 'smb://config1/opt_pcbin',

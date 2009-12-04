@@ -179,15 +179,25 @@ class MySQL:
 # ======================================================================================================
 class MySQLBackend(ConfigDataBackend):
 	
-	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+	def __init__(self, **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
 		
+		self._address  = 'localhost'
 		self._database = 'opsi'
+		self._username = None
+		self._password = None
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
-			if   (option.lower() == 'database'):
+			option = option.lower()
+			if   option in ('address'):
+				self._address = value
+			elif option in ('database'):
 				self._database = value
+			elif option in ('username'):
+				self._username = value
+			elif option in ('password'):
+				self._password = value
 		
 		warnings.showwarning = self._showwarning
 		self._mysql = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)

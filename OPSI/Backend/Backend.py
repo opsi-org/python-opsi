@@ -99,16 +99,16 @@ def getArgAndCallString(method):
 =                                        CLASS BACKEND                                               =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class Backend:
-	def __init__(self, username = '', password = '', address = '', **kwargs):
+	def __init__(self, **kwargs):
 		
-		self._username = forceUnicode(username)
-		self._password = forceUnicode(password)
-		self._address  = forceUnicode(address)
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('username'):
+				self._username = value
+			elif option in ('password'):
+				self._password = value
 		
-		#for (option, value) in kwargs.items():
-		#	if (option.lower() == 'defaultdomain'):
-		#		self._defaultDomain = forceDomain(value)
-	
 	def getInterface(self):
 		methods = {};
 		for member in inspect.getmembers(self, inspect.ismethod):
@@ -297,8 +297,8 @@ class BackendIdentExtension(Backend):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ConfigDataBackend(BackendIdentExtension):
 	
-	def __init__(self, username = '', password = '', address = '', **kwargs):
-		Backend.__init__(self, username, password, address, **kwargs)
+	def __init__(self, **kwargs):
+		Backend.__init__(self, **kwargs)
 	
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
@@ -778,6 +778,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		self._processProductPriorities = True
 		self._processProductDependencies = True
 		self._addProductOnClientDetaults = True
+		self._deleteConfigStateIfDefault = True
+		self._deleteProductPropertyStateIfDefault = True
 		
 	def exit(self):
 		if self._backend:
@@ -1104,7 +1106,35 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 						)
 					)
 		return configStates
-		
+	
+	def configState_insertObject(self, configState):
+		if self._deleteConfigStateIfDefault:
+			configs = self._backend.config_getObjects(attributes = ['defaultValues'], id = configState.configId)
+			if configs and (len(configs[0].defaultValues) == len(configState.values)):
+				isDefault = True
+				for v in configState.values:
+					if not v in configs[0].defaultValues:
+						isDefault = False
+						break
+				if isDefault:
+					logger.debug(u"Not inserting configState '%s', because it does not differ from defaults" % configState)
+					return
+		self._backend.configState_insertObject(configState)
+	
+	def configState_updateObject(self, configState):
+		if self._deleteConfigStateIfDefault:
+			configs = self._backend.config_getObjects(attributes = ['defaultValues'], id = configState.configId)
+			if configs and (len(configs[0].defaultValues) == len(configState.values)):
+				isDefault = True
+				for v in configState.values:
+					if not v in configs[0].defaultValues:
+						isDefault = False
+						break
+				if isDefault:
+					logger.debug(u"Deleting configState '%s', because it does not differ from defaults" % configState)
+					return self._backend.configState_deleteObjects(configState)
+		self._backend.configState_updateObject(configState)
+	
 	def configState_createObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
@@ -1112,9 +1142,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					configId   = configState.configId,
 					objectId   = configState.objectId):
 				logger.info(u"ConfigState '%s' already exists, updating" % configState)
-				self._backend.configState_updateObject(configState)
+				self.configState_updateObject(configState)
 			else:
-				self._backend.configState_insertObject(configState)
+				self.configState_insertObject(configState)
 	
 	def configState_updateObjects(self, configStates):
 		for configState in forceObjectClassList(configStates, ConfigState):
@@ -1123,7 +1153,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def configState_create(self, configId, objectId, values=None):
 		hash = locals()
 		del hash['self']
-		return self._backend.configState_createObjects(ConfigState.fromHash(hash))
+		return self.configState_createObjects(ConfigState.fromHash(hash))
 	
 	def configState_delete(self, configId, objectId):
 		if not configId: configId = []
@@ -1508,183 +1538,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				productOnClients = productOnClientsNew
 		return productOnClients
 	
-	
-	
-	def adjustProductStates(self, productStates, objectIds=[], options={}):
-		logger.debug("adjusting product states")
-		if not productStates:
-			return {}
-		if not objectIds:
-			raise BackendBadValueError("No object ids given")
-		if not options:
-			options = {}
-		
-		options['processPriorities'] = options.get('processPriorities', True)
-		options['processDependencies'] = options.get('processDependencies', False)
-		options['forceAccorateSequence'] = options.get('forceAccorateSequence', False)
-		
-		if options['processPriorities'] or options['processDependencies']:
-			opts = dict(options)
-			opts['processPriorities'] = False
-			opts['processDependencies'] = False
-			allProductStates = self.getProductStates_hash(objectIds, options=opts)
-			
-			# TODO: optimize for speed
-			allProducts = {}
-			allProductDependencies = {}
-			hostToDepot = {}
-			for hostId in objectIds:
-				hostId = hostId.lower()
-				depotId = self.getDepotId(hostId)
-				hostToDepot[hostId] = depotId
-				if depotId in allProducts.keys():
-					continue
-				allProducts[depotId] = {}
-				allProductDependencies[depotId] = {}
-				for productId in self.getProductIds_list(objectId = depotId):
-					allProducts[depotId][productId] = self.getProduct_hash(productId = productId, depotId = depotId)
-					allProductDependencies[depotId][productId] = self.getProductDependencies_listOfHashes(productId = productId, depotId = depotId)
-				
-			for hostId in objectIds:
-				hostId = hostId.lower()
-				products = {}
-				sequence = []
-				for productState in allProductStates[hostId]:
-					productId = productState['productId']
-					depotId = hostToDepot[hostId]
-					products[productId] = pycopy.deepcopy(allProducts[depotId][productId])
-					products[productId]['state'] = productState
-					products[productId]['dependencies'] = pycopy.deepcopy(allProductDependencies[depotId][productId])
-					for ps in productStates[hostId]:
-						if (ps['productId'] == productId):
-							sequence.append(productId)
-							if ps.get('installationStatus'):
-								products[productId]['state']['installationStatus'] = ps['installationStatus']
-							if ps.get('actionRequest'):
-								products[productId]['state']['actionRequest'] = ps['actionRequest']
-							break
-				
-				if options['processPriorities']:
-					# Sort by priority
-					priorityToProductIds = {}
-					newSequence = []
-					for (productId, product) in products.items():
-						if not productId in sequence:
-							continue
-						priority = int(products[productId]['priority'])
-						if not priorityToProductIds.has_key(priority):
-							priorityToProductIds[priority] = []
-						priorityToProductIds[priority].append(productId)
-					priorities = priorityToProductIds.keys()
-					priorities.sort()
-					priorities.reverse()
-					for priority in priorities:
-						newSequence.extend(priorityToProductIds[priority])
-					sequence = newSequence
-					
-					logger.debug("Sequence after priority sorting:")
-					for productId in sequence:
-						logger.debug("   %s (%s)" % (productId, products[productId]['priority']))
-					
-				if options['processDependencies']:
-					# Add dependent products
-					def addActionRequest(productId, actionRequest):
-						logger.debug("Adding action request '%s' for product '%s'" % (actionRequest, productId))
-						products[productId]['state']['actionRequest'] = actionRequest
-						for dependency in products[productId]['dependencies']:
-							if (dependency['action'] != actionRequest):
-								continue
-							if not products.has_key(dependency['requiredProductId']):
-								logger.warning("Got a dependency to an unkown product %s, ignoring!" % dependency['requiredProductId'])
-								continue
-							logger.debug("   Product '%s' defines a dependency to product '%s' for action '%s'" \
-									% (productId, dependency['requiredProductId'], actionRequest))
-							requiredAction = dependency['requiredAction']
-							if not requiredAction:
-								if (dependency['requiredInstallationStatus'] == products[dependency['requiredProductId']]['state']['installationStatus']):
-									continue
-								elif (dependency['requiredInstallationStatus'] == 'installed'):
-									requiredAction = 'setup'
-								elif (dependency['requiredInstallationStatus'] == 'not_installed'):
-									requiredAction = 'uninstall'
-							if (products[dependency['requiredProductId']]['state']['actionRequest'] == requiredAction):
-								continue
-							elif products[dependency['requiredProductId']]['state']['actionRequest'] not in ('undefined', 'none'):
-								raise BackendUnaccomplishableError("Cannot fulfill actions '%s' and '%s' for product '%s'" \
-									% (products[dependency['requiredProductId']]['state']['actionRequest'], requiredAction, dependency['requiredProductId']))
-							addActionRequest(dependency['requiredProductId'], requiredAction)
-					
-					for (productId, product) in products.items():
-						if product['state']['actionRequest'] in ('none', 'undefined'):
-							continue
-						addActionRequest(productId, product['state']['actionRequest'])
-				
-					# Sort by dependencies
-					for run in (1, 2):
-						for (productId, product) in products.items():
-							if product['state']['actionRequest'] in ('none', 'undefined'):
-								continue
-							logger.debug("Correcting sequence of action request '%s' for product '%s'" % (product['state']['actionRequest'], productId))
-							for dependency in products[productId]['dependencies']:
-								if (dependency['action'] != product['state']['actionRequest']):
-									continue
-								if not products.has_key(dependency['requiredProductId']):
-									logger.warning("Got a dependency to an unkown product %s, ignoring!" % dependency['requiredProductId'])
-									continue
-								logger.debug("   Product '%s' defines a dependency to product '%s' for action '%s'" \
-										% (productId, dependency['requiredProductId'], product['state']['actionRequest']))
-								if not dependency['requirementType']:
-									continue
-								(ppos, dpos) = (0, 0)
-								for i in range(len(sequence)):
-									if (sequence[i] == productId):
-										ppos = i
-									elif (sequence[i] == dependency['requiredProductId']):
-										dpos = i
-								if (dependency['requirementType'] == 'before') and (ppos < dpos):
-									if (run == 2):
-										raise BackendUnaccomplishableError("Cannot resolve sequence for products '%s', '%s'" \
-														% (productId, dependency['requiredProductId']))
-									sequence.remove(dependency['requiredProductId'])
-									sequence.insert(ppos, dependency['requiredProductId'])
-								elif (dependency['requirementType'] == 'after') and (dpos < ppos):
-									if (run == 2):
-										raise BackendUnaccomplishableError("Cannot resolve sequence for products '%s', '%s'" \
-														% (productId, dependency['requiredProductId']))
-									sequence.remove(dependency['requiredProductId'])
-									sequence.insert(ppos+1, dependency['requiredProductId'])
-						logger.debug("Sequence after dependency sorting (run %d):" % run)
-						for productId in sequence:
-							logger.debug("   %s (%s)" % (productId, products[productId]['priority']))
-						if not options['forceAccorateSequence']:
-							break
-						
-				productStates[hostId] = []
-				for productId in sequence:
-					state = products[productId]['state']
-					state['productId'] = productId
-					productStates[hostId].append(state)
-		
-		# Other options
-		for (key, values) in options.items():
-			if (key == 'actionProcessingFilter'):
-				logger.debug("action processing filter found")
-				for (k, v) in values.items():
-					if (k == "productIds"):
-						productIds = v
-						if not type(productIds) is list:
-							productIds = [productIds]
-						for hostId in productStates.keys():
-							for i in range(len(productStates[hostId])):
-								if not productStates[hostId][i]['productId'] in productIds:
-									productStates[hostId][i]['actionRequest'] = 'none'
-					else:
-						logger.warning("adjustProductStates: unkown key '%s' in %s options" % (k, key))
-			elif not key in ('processDependencies', 'processPriorities', 'forceAccorateSequence'):
-				logger.warning("adjustProductStates: unkown key '%s' in options" % key)
-		
-		return productStates
-		
 	def productOnClient_createObjects(self, productOnClients):
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
 		for productOnClient in productOnClients:

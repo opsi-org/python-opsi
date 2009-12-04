@@ -56,8 +56,10 @@ logger = Logger()
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
 class BackendManager(ExtendedBackend):
-	def __init__(self, username = '', password = '', address = '', **kwargs):
+	def __init__(self, **kwargs):
 		self._backend = None
+		username = None
+		password = None
 		dispatch = False
 		extend = False
 		accessControl = False
@@ -65,13 +67,17 @@ class BackendManager(ExtendedBackend):
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if (option == 'backend'):
+			if   option in ('username'):
+				username = value
+			elif option in ('password'):
+				password = value
+			elif option in ('backend'):
 				self._backend = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
 			elif option in ('depotbackend'):
 				depotBackend = True
-			elif (option == 'extensionconfigdir') and value:
+			elif option in ('extensionconfigdir') and value:
 				extend = True
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
@@ -79,14 +85,14 @@ class BackendManager(ExtendedBackend):
 		if not dispatch and not self._backend:
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
 		if dispatch:
-			self._backend = BackendDispatcher(username, password, address, **kwargs)
+			self._backend = BackendDispatcher(**kwargs)
 		if extend:
 			self._backend = ExtendedConfigDataBackend(self._backend)
 			BackendExtender(self._backend, **kwargs)
 		if depotBackend:
 			self._backend = DepotserverBackend(self._backend)
 		if accessControl:
-			self._backend = BackendAccessControl(username = username, password = password, backend = self._backend, **kwargs)
+			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		self._createInstanceMethods()
 		
 	#def _createInstanceMethods(self):
@@ -113,8 +119,8 @@ class BackendManager(ExtendedBackend):
 		self._backend.exit()
 	
 class BackendDispatcher(ConfigDataBackend):
-	def __init__(self, username = '', password = '', address = '', **kwargs):
-		#ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+	def __init__(self, **kwargs):
+		#ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
@@ -137,7 +143,7 @@ class BackendDispatcher(ConfigDataBackend):
 			raise BackendConfigurationError(u"Dispatcher not configured")
 		self.__loadBackends()
 		self._createInstanceMethods()
-		#ExtendedConfigDataBackend.__init__(self, username, password, address, **kwargs)
+		#ExtendedConfigDataBackend.__init__(self, **kwargs)
 	
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
@@ -273,17 +279,30 @@ class BackendExtender(object):
 
 class BackendAccessControl(object):
 	
-	def __init__(self, backend, username=None, password=None, acl=None, aclFile=None, **kwargs):
+	def __init__(self, backend, **kwargs):
 		
 		self._backend    = backend
-		self._username   = username
-		self._password   = password
-		self._acl        = acl
-		self._aclFile    = aclFile
+		self._username   = None
+		self._password   = None
+		self._acl        = None
+		self._aclFile    = None
 		self._pamService = 'common-auth'
 		self._userGroups = []
 		self._host       = None
 		
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('username'):
+				self._username = value
+			elif option in ('password'):
+				self._password = value
+			elif option in ('acl'):
+				self._acl = value
+			elif option in ('aclfile'):
+				self._aclFile = value
+			elif option in ('pamservice'):
+				self._pamService = value
+			
 		if not self._acl:
 			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
 		if not self._username:
@@ -307,6 +326,9 @@ class BackendAccessControl(object):
 				self._username = self._username.lower()
 				
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
+				
+				if not hasattr(self._backend, 'host_getObjects'):
+					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authentidate host '%s'" % self._username)
 				
 				host = self._backend.host_getObjects(id = self._username)
 				if not host:
