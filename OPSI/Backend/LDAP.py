@@ -94,6 +94,19 @@ class LDAPBackend(ConfigDataBackend):
 		self._serverObjectSearchFilter = ''
 		self._defaultDomain = None
 		
+		self._mappings = [
+			{ 'opsiAttribute': 'ipAddress', 'ldapAttribute': 'opsiIpAddress' },
+			{ 'opsiAttribute': 'ipAddress', 'ldapAttribute': 'opsiIpAddress' }
+		]
+		
+		self._opsiAttributeToLdapAttribute = {}
+		for mapping in self._mappings:
+			self._opsiAttributeToLdapAttribute[mapping['opsiAttribute']] = mapping['ldapAttribute']
+		
+		self._ldapAttributeToOpsiAttribute = {}
+		for mapping in self._mappings:
+			self._ldapAttributeToOpsiAttribute[mapping['ldapAttribute']] = mapping['opsiAttribute']
+		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
 		self._ldap = LDAPSession(
 				host	 = self._address,
@@ -141,6 +154,43 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productClassesContainerDn)
 		self._createOrganizationalRole(self._productStatesContainerDn)
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
+	
+	def _ldapObjectToOpsiObject(self, ldapObject):
+		ldapObject.readFromDirectory(self._ldap)
+		opsiClassName = None
+		if   'opsiConfigserver' in ldapObject.getObjectClasses():
+			opsiClassName = 'OpsiConfigserver'
+		elif 'opsiDepotserver'  in ldapObject.getObjectClasses():
+			opsiClassName = 'OpsiDepotserver'
+		elif 'opsiClient'       in ldapObject.getObjectClasses():
+			opsiClassName = 'OpsiClient'
+		else:
+			raise Exception(u"Unhandled ldap objectclasses %s" % ldapObject.getObjectClasses())
+		
+		opsiObjectHash = {}
+		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = True).items():
+			logger.debug(u"LDAP attribute is: %s" % attribute)
+			if attribute in ('cn', 'objectClass'):
+				continue
+			if (attribute == 'opsiHostId'):
+				attribute = 'id'
+			elif (attribute == 'opsiHostKey'):
+				attribute = 'opsiHostKey'
+			elif (attribute == 'opsiMaximumBandwidth'):
+				attribute = 'maxBandwidth'
+			
+			else:
+				attribute = attribute.replace('Timestamp', '')
+				attribute = attribute[4].lower() + attribute[5:]
+			
+			logger.debug(u"Opsi attribute is: %s" % attribute)
+			opsiValue = None
+			if value:
+				opsiValue = value[0]
+			opsiObjectHash[attribute] = opsiValue
+		
+		Class = eval(opsiClassName)
+		return Class.fromHash(opsiObjectHash)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -160,22 +210,22 @@ class LDAPBackend(ConfigDataBackend):
 		#Create a new host
 		#if self._createOrganizationalRole(_self._hostsContainerDn
 		
-		objectClass = None
+		objectClasses = []
 		if isinstance(host, OpsiClient):
-			objectClass = 'opsiClient'
-		elif isinstance(host, OpsiDepotserver):
-			objectClass = 'opsiDepotserver'
+			objectClasses = ['opsiClient']
 		elif isinstance(host, OpsiConfigserver):
-			objectClass = 'opsiConfigserver'
+			objectClasses = ['opsiConfigserver', 'opsiDepotserver']
+		elif isinstance(host, OpsiDepotserver):
+			objectClasses = ['opsiDepotserver']
 		
 		ldapObj = LDAPObject('cn=%s,%s' % (host.id, self._hostsContainerDn))
-		ldapObj.new(objectClass,
+		ldapObj.new(*objectClasses,
 				opsiHostId            = host.id,
-				opsiDescription       = host.description or None,
-				opsiNotes             = host.notes or None,
+				opsiDescription       = host.description,
+				opsiNotes             = host.notes,
 				opsiHardwareAddress   = host.hardwareAddress,
 				opsiIpAddress         = host.ipAddress,
-				opsiInventoryNumber   = host.inventoryNumber or None,
+				opsiInventoryNumber   = host.inventoryNumber or '',
 				opsiHostKey           = host.opsiHostKey
 		)
 		if isinstance(host, OpsiClient):
@@ -239,6 +289,9 @@ class LDAPBackend(ConfigDataBackend):
 		# (objectClass=opsiHost)
 		
 		
+		
+		
+		
 		ldapFilter = None
 		if filter.get('type'):
 			filters = []
@@ -274,15 +327,28 @@ class LDAPBackend(ConfigDataBackend):
 				continue
 			if (attribute == 'id'):
 				attribute = 'opsiHostId'
+			
+			if self._opsiAttributeToLdapAttribute.get(attribute):
+				attribute = self._opsiAttributeToLdapAttribute.get(attribute)
+			else:
+				attribute = 'opsi' + attribute[0].upper() + attribute[1:]
+			
 			filters = []
 			for value in forceList(values):
-				filters.append(
-					pureldap.LDAPFilter_equalityMatch(
-						attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
-						assertionValue = pureldap.LDAPAssertionValue(value)
+				if (value == None):
+					filters.append(
+						pureldap.LDAPFilter_not(
+							pureldap.LDAPFilter_present(attribute)
+						)
 					)
-				)
-			#print "yyyyyyyyyyyyyyyyyy", filters
+					
+				else:
+					filters.append(
+						pureldap.LDAPFilter_equalityMatch(
+							attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
+							assertionValue = pureldap.LDAPAssertionValue(value)
+						)
+					)
 			if filters:
 				if (len(filters) == 1):
 					andFilters.append(filters[0])
@@ -296,11 +362,126 @@ class LDAPBackend(ConfigDataBackend):
 				newFilter = pureldap.LDAPFilter_and(andFilters)
 			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
 		
-		print "=========>>>>>>>>", ldapFilter.asText()
-		
+		logger.comment(ldapFilter.asText())
 		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter.asText() )
-		print search.getObjects()
+		for ldapObject in search.getObjects():
+			hosts.append( self._ldapObjectToOpsiObject(ldapObject) )
 		
+		return hosts
+		
+		#Convert LDAPObject to OPSI-Objects
+		##### Notizen
+		#if isinstance(host, OpsiClient):
+		#	objectClass = 'opsiClient'
+		#elif isinstance(host, OpsiDepotserver):
+		#	objectClass = 'opsiDepotserver'
+		#elif isinstance(host, OpsiConfigserver):
+		#	objectClass = 'opsiConfigserver'
+		#ldapObj = LDAPObject('cn=%s,%s' % (host.id, self._hostsContainerDn))
+		#ldapObj.new(objectClass,
+		#		opsiHostId            = host.id,
+		#		opsiDescription       = host.description or None,
+		#		opsiNotes             = host.notes or None,
+		#		opsiHardwareAddress   = host.hardwareAddress,
+		#		opsiIpAddress         = host.ipAddress,
+		#		opsiInventoryNumber   = host.inventoryNumber or None,
+		#		opsiHostKey           = host.opsiHostKey
+		#)
+		#if isinstance(host, OpsiClient):
+		#	
+		#	ldapObj.setAttribute('opsiCreatedTimestamp',  host.created)
+		#	ldapObj.setAttribute('opsiLastSeenTimestamp', host.lastSeen)
+		#
+		#
+		#elif isinstance(host, OpsiDepotserver) or isinstance(host, OpsiConfigserver):
+		#	
+		#	ldapObj.setAttribute('opsiDepotLocalUrl',       host.depotLocalUrl)
+		#	ldapObj.setAttribute('opsiDepotRemoteUrl',      host.depotRemoteUrl)
+		#	ldapObj.setAttribute('opsiRepositoryLocalUrl',  host.repositoryLocalUrl)
+		#	ldapObj.setAttribute('opsiRepositoryRemoteUrl', host.repositoryRemoteUrl)
+		#	ldapObj.setAttribute('opsiNetworkAddress',      host.networkAddress)
+		#	ldapObj.setAttribute('opsiMaximumBandwidth',    host.maxBandwidth)
+		############# Notizen
+		
+		
+		#if (res):
+		#	hosthash = {}
+		#	hostobj = []
+		#	for resLdapObj in res:
+		#		print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+		#		resLdapObj.readFromDirectory(self._ldap)
+		#		for (key, value) in resLdapObj.getAttributeDict().items():
+		#			#if not key.startswith('opsi') or not value:
+		#			#	continue
+		#			if value:
+		#				hosthash[key] = value
+		#				
+		#		print hosthash
+		#		if (hosthash):
+		#			if (hosthash['objectClass'] == 'opsiClient'):
+		#				opsiclient = OpsiClient.fromHash(hosthash)
+		#				
+		#					id        	= hosthash['opsiHostId'],
+		#					opsiHostKey 	= hosthash['opsiHostKey'],
+		#					description	= hosthash['opsiDescription'],
+		#					notes		= hosthash['opsiNotes'],
+		#					hardwareAddress = hosthash['opsiHardwareAddress'],
+		#					ipAddress       = hosthash['opsiIpAddress'],
+		#					inventoryNumber = hosthash['opsiInventoryNumber'],
+		#					created         = hosthash['opsiCreatedTimestamp'],
+		#					lastSeen        = hosthash['opsiLastSeenTimestamp']
+		#				)
+		#				hosts.append(opsiclient)
+		#			elif (hosthash['objectClass'] == 'OpsiDepotserver'):
+		#				opsiclient = OpsiDepotserver(
+		#					id        	   = hosthash['opsiHostId'],
+		#					depotLocalUrl      = hosthash['opsiDepotLocalUrl'],
+		#					depotRemoteUrl     = hosthash['opsiDepotRemoteUrl']
+		#					repositoryLocalUrl = hosthash['opsiRepositoryLocalUrl']
+		#					repositoryRemoteUrl= hosthash['opsiRepositoryRemoteUrl']
+		#					description= hosthash['opsiDescription']
+		#					notes= hosthash['opsiNotes']
+		#					
+		#					
+		#					
+		#					networkAddress= hosthash['opsiDepotRemoteUrl']
+		#					maxBandwith= hosthash['opsiDepotRemoteUrl']
+		#					
+		#					
+		#					
+		#					
+		#					'opsiNotes': 'Config 1', 
+		#					'opsiNetworkAddress': '192.168.1.0/24', 
+		#					'objectClass': 'opsiDepotserver', 
+		#					'opsiHostId': 'erollinux.uib.local', 
+		#					'opsiRepositoryLocalUrl': 'file:///var/lib/opsi/products', 
+		#					'opsiDepotRemoteUrl': 'smb://config1/opt_pcbin', 
+		#					'opsiDepotLocalUrl': 'file:///opt/pcbin/install', 
+		#					'opsiInventoryNumber': '00000000001', 
+		#					'opsiMaximumBandwidth': '10000', 
+		#					'opsiRepositoryRemoteUrl': 'webdavs://config1.uib.local:4447/products', 
+		#					'opsiHostKey': '71234545689056789012123678901234', 
+		#					'opsiDescription': 'The configserver', 
+		#					'cn': 'erollinux.uib.local'}
+		#					
+		#					
+		#					opsiHostKey 	= hosthash['opsiHostKey'],
+		#					description	= hosthash['opsiDescription'],
+		#					notes		= hosthash['opsiNotes'],
+		#					hardwareAddress = hosthash['opsiHardwareAddress'],
+		#					ipAddress       = hosthash['opsiIpAddress'],
+		#					inventoryNumber = hosthash['opsiInventoryNumber'],
+		#					created         = hosthash['opsiCreatedTimestamp'],
+		#					lastSeen        = hosthash['opsiLastSeenTimestamp']
+		#				)
+		#				hosts.append(opsiclient)
+		#	print hosts
+		#	
+		#	
+		#		
+		#		
+		#return hosts
+		#	
 		#searchFilter = pureldap.LDAPFilter_and(
 		#	[
 		#		pureldap.LDAPFilter_equalityMatch(
@@ -494,176 +675,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 
 
-# ======================================================================================================
-# =                                       CLASS SESSION                                                =
-# ======================================================================================================	
 
-class LDAPSession:
-	''' This class handles the requests to a ldap server '''
-	SCOPE_SUBTREE = ldap.SCOPE_SUBTREE
-	SCOPE_BASE = ldap.SCOPE_BASE
-	
-	def __init__(self, host, username, password):
-		''' Session constructor. '''
-		self._host = host
-		self._username = username
-		self._password = password
-		self._ldap = None
-		
-		self._commandCount = 0
-		self._searchCount = 0
-		self._deleteCount = 0
-		self._addCount = 0
-		self._modifyCount = 0
-		
-	
-	def getCommandCount(self):	
-		''' Get number of all commands (requests) sent to ldap server. '''
-		return self._commandCount
-	def getSearchCount(self):
-		''' Get number of all search commands (requests) sent to ldap server. '''
-		return self._searchCount
-	def getDeleteCount(self):	
-		''' Get number of all delete commands (requests) sent to ldap server. '''
-		return self._deleteCount
-	def getAddCount(self):		
-		''' Get number of all add commands (requests) sent to ldap server. '''
-		return self._addCount
-	def getModifyCount(self):
-		''' Get number of all modify commands (requests) sent to ldap server. '''
-		return self._modifyCount
-	def getCommandStatistics(self):
-		''' Get number of all commands as dict. '''
-		return { 	'total': 	self._commandCount,
-				'search':	self._searchCount,
-				'delete':	self._deleteCount,
-				'add': 		self._addCount,
-				'modify':	self._modifyCount }
-	
-	def connect(self):
-		''' Connect to a ldap server. '''
-		self._ldap = ldap.open(self._host)
-		self._ldap.protocol_version = ldap.VERSION3
-		try:
-			self._ldap.bind_s(self._username, self._password, ldap.AUTH_SIMPLE)
-			logger.info(u'Successfully connected to LDAP-Server.')
-		except ldap.LDAPError, e:
-			logger.error(u"Bind to LDAP failed: %s" % e)
-			raise BackendIOError(u"Bind to LDAP server '%s' as '%s' failed: %s" % (self._host, self._username, e))
-	
-	def disconnect(self):
-		''' Disconnect from ldap server '''
-		if not self._ldap:
-			return
-		try:
-			self._ldap.unbind()
-		except Exception, e:
-			pass
-		
-	def search(self, baseDn, scope, filter, attributes):
-		''' This function is used to search in a ldap directory. '''
-		self._commandCount += 1
-		self._searchCount += 1
-		logger.debug(u"Searching in baseDn: %s, scope: %s, filter: '%s', attributes: '%s' " \
-					% (baseDn, scope, filter, attributes) )
-		result = []
-		try:
-			try:
-				result = self._ldap.search_s(baseDn, scope, filter, attributes)
-			except ldap.LDAPError, e:
-				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
-					# Possibly timed out
-					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
-					self.connect()
-					result = self._ldap.search_s(baseDn, scope, filter, attributes)
-				else:
-					raise
-		except Exception, e:
-			logger.debug(u"LDAP search error %s: %s" % (e.__class__, e))
-			if (e.__class__ == ldap.NO_SUCH_OBJECT):
-				raise BackendMissingDataError(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" \
-					% (baseDn, filter, scope) )
-			
-			logger.critical(u"LDAP search error %s: %s" % (e.__class__, e))
-			raise BackendIOError(u"Error searching in baseDn '%s', filter '%s', scope %s : %s" \
-					% (baseDn, filter, scope, e) )
-		if (result == []):
-			raise BackendMissingDataError(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" \
-					% (baseDn, filter, scope) )
-		return result
-	
-	def delete(self, dn):
-		''' This function is used to delete an object in a ldap directory. '''
-		self._commandCount += 1
-		self._deleteCount += 1
-		logger.debug(u"Deleting Object from LDAP, dn: '%s'" % dn)
-		try:
-			try:
-				self._ldap.delete_s(dn)
-			except ldap.LDAPError, e:
-				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
-					# Possibly timed out
-					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
-					self.connect()
-					self._ldap.delete_s(dn)
-				else:
-					raise
-		except ldap.LDAPError, e:
-			raise BackendIOError(e)
-	
-	def modifyByModlist(self, dn, old, new):
-		''' This function is used to modify an object in a ldap directory. '''
-		self._commandCount += 1
-		self._modifyCount += 1
-		
-		logger.debug(u"[old]: %s" % old)
-		logger.debug(u"[new]: %s" % new)
-		attrs = ldap.modlist.modifyModlist(old,new)
-		logger.debug(u"[change]: %s" % attrs)
-		if (attrs == []):
-			logger.debug(u"Object '%s' unchanged." % dn)
-			return
-		logger.debug(u"Modifying Object in LDAP, dn: '%s'" % dn)
-		try:
-			try:
-				self._ldap.modify_s(dn,attrs)
-			except ldap.LDAPError, e:
-				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
-					# Possibly timed out
-					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
-					self.connect()
-					self._ldap.modify_s(dn,attrs)
-				else:
-					raise
-		except ldap.LDAPError, e:
-			raise BackendIOError(e)
-		except TypeError, e:
-			raise BackendBadValueError(e)
-		
-		
-	def addByModlist(self, dn, new):
-		''' This function is used to add an object to the ldap directory. '''
-		self._commandCount += 1
-		self._addCount += 1
-		
-		attrs = ldap.modlist.addModlist(new)
-		logger.debug(u"Adding Object to LDAP, dn: '%s'" % dn)
-		logger.debug(u"attrs: '%s'" % attrs)
-		try:
-			try:
-				self._ldap.add_s(dn,attrs)
-			except ldap.LDAPError, e:
-				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
-					# Possibly timed out
-					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
-					self.connect()
-					self._ldap.add_s(dn,attrs)
-				else:
-					raise
-		except ldap.LDAPError, e:
-			raise BackendIOError(e)
-		except TypeError, e:
-			raise BackendBadValueError(e)
 
 
 
@@ -809,6 +821,8 @@ class LDAPObject:
 		ret = {}
 		
 		for (key, values) in self._new.items():
+			if (values == [' ']):
+				values = [u'']
 			if ( len(values) > 1 or valuesAsList):
 				ret[key] = values
 			else:
@@ -838,6 +852,8 @@ class LDAPObject:
 				return default
 			raise BackendMissingDataError(u"Attribute '%s' does not exist" % attribute)
 		values = self._new[attribute]
+		if (values == [' ']):
+			values = [u'']
 		if ( len(values) > 1 or valuesAsList):
 			return values
 		return values[0]
@@ -846,9 +862,10 @@ class LDAPObject:
 		ldapValue = []
 		if not value is None:
 			value = forceList(value)
-			if (value != ['']):
-				for v in value:
-					ldapValue.append(forceUnicode(v).encode('utf-8'))
+			for v in value:
+				if (v == u''):
+					v = u' '
+				ldapValue.append(forceUnicode(v).encode('utf-8'))
 		logger.debug(u"Setting attribute '%s' to '%s'" % (attribute, value))
 		self._new[attribute] = ldapValue
 	
@@ -927,8 +944,8 @@ class LDAPObjectSearch:
 		
 	def getObjects(self):
 		''' Returns all objects as Object instances. '''
-		if ( len(self._dns) <= 0 ):
-			raise BackendMissingDataError("No objects found")
+		#if ( len(self._dns) <= 0 ):
+		#	raise BackendMissingDataError("No objects found")
 		objects = []
 		for dn in self._dns:
 			objects.append( LDAPObject(dn) )
@@ -937,11 +954,181 @@ class LDAPObjectSearch:
 	def getLDAPObject(self):
 		''' Returns the first object found as Object instance. '''
 		if ( len(self._dns) <= 0 ):
-			raise BackendMissingDataError("No object found")
+			#raise BackendMissingDataError("No object found")
+			return None
 		return LDAPObject(self._dns[0])
 
 
+# ======================================================================================================
+# =                                       CLASS SESSION                                                =
+# ======================================================================================================	
 
+class LDAPSession:
+	''' This class handles the requests to a ldap server '''
+	SCOPE_SUBTREE = ldap.SCOPE_SUBTREE
+	SCOPE_BASE = ldap.SCOPE_BASE
+	
+	def __init__(self, host, username, password):
+		''' Session constructor. '''
+		self._host = host
+		self._username = username
+		self._password = password
+		self._ldap = None
+		
+		self._commandCount = 0
+		self._searchCount = 0
+		self._deleteCount = 0
+		self._addCount = 0
+		self._modifyCount = 0
+		
+	
+	def getCommandCount(self):	
+		''' Get number of all commands (requests) sent to ldap server. '''
+		return self._commandCount
+	def getSearchCount(self):
+		''' Get number of all search commands (requests) sent to ldap server. '''
+		return self._searchCount
+	def getDeleteCount(self):	
+		''' Get number of all delete commands (requests) sent to ldap server. '''
+		return self._deleteCount
+	def getAddCount(self):		
+		''' Get number of all add commands (requests) sent to ldap server. '''
+		return self._addCount
+	def getModifyCount(self):
+		''' Get number of all modify commands (requests) sent to ldap server. '''
+		return self._modifyCount
+	def getCommandStatistics(self):
+		''' Get number of all commands as dict. '''
+		return { 	'total': 	self._commandCount,
+				'search':	self._searchCount,
+				'delete':	self._deleteCount,
+				'add': 		self._addCount,
+				'modify':	self._modifyCount }
+	
+	def connect(self):
+		''' Connect to a ldap server. '''
+		self._ldap = ldap.open(self._host)
+		self._ldap.protocol_version = ldap.VERSION3
+		try:
+			self._ldap.bind_s(self._username, self._password, ldap.AUTH_SIMPLE)
+			logger.info(u'Successfully connected to LDAP-Server.')
+		except ldap.LDAPError, e:
+			logger.error(u"Bind to LDAP failed: %s" % e)
+			raise BackendIOError(u"Bind to LDAP server '%s' as '%s' failed: %s" % (self._host, self._username, e))
+	
+	def disconnect(self):
+		''' Disconnect from ldap server '''
+		if not self._ldap:
+			return
+		try:
+			self._ldap.unbind()
+		except Exception, e:
+			pass
+		
+	def search(self, baseDn, scope, filter, attributes):
+		''' This function is used to search in a ldap directory. '''
+		self._commandCount += 1
+		self._searchCount += 1
+		logger.debug(u"Searching in baseDn: %s, scope: %s, filter: '%s', attributes: '%s' " \
+					% (baseDn, scope, filter, attributes) )
+		result = []
+		try:
+			try:
+				result = self._ldap.search_s(baseDn, scope, filter, attributes)
+			except ldap.LDAPError, e:
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					result = self._ldap.search_s(baseDn, scope, filter, attributes)
+				else:
+					raise
+		except Exception, e:
+			logger.debug(u"LDAP search error %s: %s" % (e.__class__, e))
+			if (e.__class__ == ldap.NO_SUCH_OBJECT):
+				raise BackendMissingDataError(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" \
+					% (baseDn, filter, scope) )
+			
+			logger.critical(u"LDAP search error %s: %s" % (e.__class__, e))
+			raise BackendIOError(u"Error searching in baseDn '%s', filter '%s', scope %s : %s" \
+					% (baseDn, filter, scope, e) )
+		if (result == []):
+			logger.debug(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" \
+					% (baseDn, filter, scope) )
+		return result
+	
+	def delete(self, dn):
+		''' This function is used to delete an object in a ldap directory. '''
+		self._commandCount += 1
+		self._deleteCount += 1
+		logger.debug(u"Deleting Object from LDAP, dn: '%s'" % dn)
+		try:
+			try:
+				self._ldap.delete_s(dn)
+			except ldap.LDAPError, e:
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					self._ldap.delete_s(dn)
+				else:
+					raise
+		except ldap.LDAPError, e:
+			raise BackendIOError(e)
+	
+	def modifyByModlist(self, dn, old, new):
+		''' This function is used to modify an object in a ldap directory. '''
+		self._commandCount += 1
+		self._modifyCount += 1
+		
+		logger.debug(u"[old]: %s" % old)
+		logger.debug(u"[new]: %s" % new)
+		attrs = ldap.modlist.modifyModlist(old,new)
+		logger.debug(u"[change]: %s" % attrs)
+		if (attrs == []):
+			logger.debug(u"Object '%s' unchanged." % dn)
+			return
+		logger.debug(u"Modifying Object in LDAP, dn: '%s'" % dn)
+		try:
+			try:
+				self._ldap.modify_s(dn,attrs)
+			except ldap.LDAPError, e:
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					self._ldap.modify_s(dn,attrs)
+				else:
+					raise
+		except ldap.LDAPError, e:
+			raise BackendIOError(e)
+		except TypeError, e:
+			raise BackendBadValueError(e)
+		
+		
+	def addByModlist(self, dn, new):
+		''' This function is used to add an object to the ldap directory. '''
+		self._commandCount += 1
+		self._addCount += 1
+		
+		attrs = ldap.modlist.addModlist(new)
+		logger.debug(u"Adding Object to LDAP, dn: '%s'" % dn)
+		logger.debug(u"attrs: '%s'" % attrs)
+		try:
+			try:
+				self._ldap.add_s(dn,attrs)
+			except ldap.LDAPError, e:
+				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
+					# Possibly timed out
+					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
+					self.connect()
+					self._ldap.add_s(dn,attrs)
+				else:
+					raise
+		except ldap.LDAPError, e:
+			raise BackendIOError(e)
+		except TypeError, e:
+			raise BackendBadValueError(e)
 
 
 

@@ -27,7 +27,7 @@ ldapBackend = LDAPBackend(username = 'cn=admin,dc=uib,dc=local', password = 'lin
 
 bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()
-#ldapBackend.base_create()
+ldapBackend.base_create()
 bt.testObjectMethods()
 #bt.testNonObjectMethods()
 
