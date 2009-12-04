@@ -16,6 +16,14 @@ logger.setConsoleColor(True)
 
 ldapBackend = LDAPBackend(username = 'cn=admin,dc=uib,dc=local', password = 'linux123', adress = 'localhost')
 
+#ldapBackend.host_getObjects()
+#ldapBackend.host_getObjects(type = 'OpsiClient')
+#ldapBackend.host_getObjects(type = 'OpsiDepotserver')
+#ldapBackend.host_getObjects(type = ['OpsiClient', 'OpsiDepotserver'], description="something", ipAddress = ['192.168.1.1', '192.168.2.1'])
+#ldapBackend.host_getObjects(type = ['OpsiClient', None])
+#ldapBackend.host_getObjects(type = None)
+#
+#sys.exit(0)
 
 bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()

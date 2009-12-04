@@ -36,6 +36,7 @@ __version__ = '3.5'
 
 # Imports
 import ldap, ldap.modlist
+from ldaptor.protocols import pureldap
 
 # OPSI imports
 from OPSI.Logger import *
@@ -51,14 +52,22 @@ logger = Logger()
 # ======================================================================================================
 class LDAPBackend(ConfigDataBackend):
 	
-	def __init__(self, username = 'opsi', password = 'opsi', address = 'localhost', **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+	def __init__(self,**kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
 		
-		## Parse arguments
-		#for (option, value) in kwargs.items():
-		#	if   (option.lower() == 'database'):
-		#		self._database = value
-		#
+		self._address  = 'localhost'
+		self._username = None
+		self._password = None
+		
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('address'):
+				self._address = value
+			elif option in ('username'):
+				self._username = value
+			elif option in ('password'):
+				self._password = value
 		
 		# Default values
 		self._baseDn = 'dc=uib,dc=local'
@@ -96,6 +105,10 @@ class LDAPBackend(ConfigDataBackend):
 	# -------------------------------------------------
 	# -     HELPERS                                   -
 	# -------------------------------------------------
+		
+	def _objectFilterToLDAPFilter(self, filter):
+		pass
+		
 	def _createOrganizationalRole(self, dn):
 		''' This method will add a oprganizational role object
 		    with the specified DN, if it does not already exist. '''
@@ -146,6 +159,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 		#Create a new host
 		#if self._createOrganizationalRole(_self._hostsContainerDn
+		
 		objectClass = None
 		if isinstance(host, OpsiClient):
 			objectClass = 'opsiClient'
@@ -179,6 +193,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj.setAttribute('opsiNetworkAddress',      host.networkAddress)
 			ldapObj.setAttribute('opsiMaximumBandwidth',    host.maxBandwidth)
 		
+		logger.critical(u"Try to create Host in ldap")
 		ldapObj.writeToDirectory(self._ldap)
 		
 	def host_updateObject(self, host):
@@ -186,9 +201,150 @@ class LDAPBackend(ConfigDataBackend):
 	
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
-		print "======================="
-		print attributes
-		return []
+		
+		logger.info(u"Getting hosts, filter: %s" % filter)
+		hosts = []
+		
+		
+		# "type"
+		# "id"
+		# "description"
+		# "ipAddress"
+		# ...
+		# 
+		# filter = {}
+		# filter = {"type" = "OpsiClient"}
+		# (objectClass=opsiClient)
+		# filter = {"type" = ["OpsiClient", "OpsiDeposerver"]}
+		# (|(objectClass=opsiClient)(objectClass=opsiDepotserver))
+		# filter = {"type" = None}
+		# (objectClass=opsiHost)
+		# filter = {"ipAddress" = [ None, "" ] }
+		# (&(objectClass=opsiHost)(!(ipAddress=*)))
+		# filter = {"type" = "OpsiClient", "id" = "*clien*" }
+		# (&(objectClass=opsiClient)(opsiHostId=*clien*))
+		# filter = {"type" = "OpsiClient", "id" = "*clien" }
+		# filter = { "id" = "clien*" }
+		# filter = { "id" = ["client1.uib.local", "client2.uib.local"], "description" = ["desc1", "desc2"] }
+		
+		
+		# pureldap.LDAPFilter_equalityMatch      => string
+		# pureldap.LDAPFilter_substrings_initial => string*
+		# pureldap.LDAPFilter_substrings_final   => *string
+		# pureldap.LDAPFilter_substrings_any     => *string*
+		
+		# False:
+		#    None, 0, False, "", [], {}
+		
+		# (objectClass=opsiHost)
+		
+		
+		ldapFilter = None
+		if filter.get('type'):
+			filters = []
+			for objectType in forceList(filter['type']):
+				objectClass = None
+				if   (objectType == 'OpsiClient'):
+					objectClass = 'opsiClient'
+				elif (objectType == 'OpsiDepotserver'):
+					objectClass = 'opsiDepotserver'
+				elif (objectType == 'OpsiConfigserver'):
+					objectClass = 'opsiConfigserver'
+				if objectClass:
+					filters.append(
+						pureldap.LDAPFilter_equalityMatch(
+							attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
+							assertionValue = pureldap.LDAPAssertionValue(objectClass)
+						)
+					)
+			if filters:
+				if (len(filters) == 1):
+					ldapFilter = filters[0]
+				else:
+					ldapFilter = pureldap.LDAPFilter_or(filters)
+		if not ldapFilter:
+			ldapFilter = objectClassFilter = pureldap.LDAPFilter_equalityMatch(
+				attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
+				assertionValue = pureldap.LDAPAssertionValue('opsiHost')
+			)
+		
+		andFilters = []
+		for (attribute, values) in filter.items():
+			if (attribute == 'type'):
+				continue
+			if (attribute == 'id'):
+				attribute = 'opsiHostId'
+			filters = []
+			for value in forceList(values):
+				filters.append(
+					pureldap.LDAPFilter_equalityMatch(
+						attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
+						assertionValue = pureldap.LDAPAssertionValue(value)
+					)
+				)
+			#print "yyyyyyyyyyyyyyyyyy", filters
+			if filters:
+				if (len(filters) == 1):
+					andFilters.append(filters[0])
+				else:
+					andFilters.append(pureldap.LDAPFilter_or(filters))
+		if andFilters:
+			newFilter = None
+			if (len(andFilters) == 1):
+				newFilter = andFilters[0]
+			else:
+				newFilter = pureldap.LDAPFilter_and(andFilters)
+			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
+		
+		print "=========>>>>>>>>", ldapFilter.asText()
+		
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter.asText() )
+		print search.getObjects()
+		
+		#searchFilter = pureldap.LDAPFilter_and(
+		#	[
+		#		pureldap.LDAPFilter_equalityMatch(
+		#			attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
+		#			assertionValue = pureldap.LDAPAssertionValue('addressbookPerson')
+		#		)
+		#	]
+		#	+ filters)
+                #
+		#	
+		#(&()())
+		#
+		#myfilter = ''
+		#if filter is None:
+		#	return ''
+		#for (key,val) in filter:
+		#	if myfilter == '':
+		#		myfilter = "(%s=%s)" % (key, val)
+		#	else:
+		#		myfilter = ",%s=%s" % (key, val)
+		#return myfilter
+		#
+		#
+		#type = forceList(filter.get('type', []))
+		#if 'OpsiDepotServer' in type and not 'OpsiConfigserver' in type:
+		#	type.append('OpsiConfigserver')
+		#	filter['type'] = type
+		#(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
+		#
+		##for hostContainerDn in self._hostsContainerDn:
+		#search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, self._objectFilterToLDAPFilter(filter))
+		#hosts.extend( search.getObjects() )
+		#	
+		##for res in 
+		#print "======================="
+		#print hosts
+		#
+		#
+		##for hostContainerDn in self._hostsContainerDn:
+		##	search = LDAPObjectSearch(self._ldap, hostContainerDn,)
+		##	hosts.extend(search.getObjects())
+		#
+		##print hosts
+		#return []
 	
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)

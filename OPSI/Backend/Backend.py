@@ -1008,9 +1008,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			logger.info(u"Creating host '%s'" % host)
 			if self.host_getIdents(id = host.id):
 				logger.info(u"%s already exists, updating" % host)
-				self.host_updateObject(host)
+				self._backend.host_updateObject(host)
 			else:
-				self.host_insertObject(host)
+				self._backend.host_insertObject(host)
 	
 	def host_updateObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
