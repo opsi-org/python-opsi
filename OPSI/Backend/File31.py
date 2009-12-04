@@ -68,8 +68,8 @@ def fromJson(obj):
 # ======================================================================================================
 class File31Backend(ConfigDataBackend):
 	
-	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
-		ConfigDataBackend.__init__(self, username, password, address, **kwargs)
+	def __init__(self, **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self.__baseDir = '/tmp/file31'
 		self.__clientConfigDir = os.path.join(self.__baseDir, 'clients')
@@ -78,17 +78,16 @@ class File31Backend(ConfigDataBackend):
 		self.__hostKeyFile = os.path.join(self.__baseDir, 'pckeys')
 		self.__configFile = os.path.join(self.__baseDir, 'config.ini')
 		
-		self._defaultDomain = u'uib.local'
+		#self._defaultDomain = u'uib.local'
 		
-		# Return hostid of localhost
+		# Get hostid of localhost
 		self.__serverId = socket.getfqdn()
-		parts = self.__serverId.split('.')
-		if (len(parts) < 3):
-			self.__serverId = parts[0] + '.' + self._defaultDomain
+		if (self.__serverId.count('.') < 2):
+			raise Exception(u"Failed to get fqdn: %s" % self.__serverId)
 		self.__serverId = self.__serverId.lower()
 		
 		self._mappings = {
-			'Config': [
+			'Config': [                                                               # TODO: placeholders
 				{ 'fileType': 'ini', 'attribute': 'type'                  , 'section': '<id>', 'option': 'type',           'json': False     },
 				{ 'fileType': 'ini', 'attribute': 'description'           , 'section': '<id>', 'option': 'description', 'json': False         },
 				{ 'fileType': 'ini', 'attribute': 'editable'              , 'section': '<id>', 'option': 'editable' , 'json': False           },
@@ -113,12 +112,12 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'hardwareAddress',     'section': 'depotserver', 'option': 'hardwareaddress' },
 				{ 'fileType': 'ini', 'attribute': 'ipAddress',           'section': 'depotserver', 'option': 'ipaddress'       },
 				{ 'fileType': 'ini', 'attribute': 'inventoryNumber',     'section': 'depotserver', 'option': 'inventorynumber' },
-#				{ 'fileType': 'ini', 'attribute': 'network',             'section': 'depotserver', 'option': 'network'         },
+				{ 'fileType': 'ini', 'attribute': 'networkAddress',      'section': 'depotserver', 'option': 'network'         },
 				{ 'fileType': 'ini', 'attribute': 'depotRemoteUrl',      'section': 'depotshare',  'option': 'remoteurl'       },
 				{ 'fileType': 'ini', 'attribute': 'depotLocalUrl',       'section': 'depotshare',  'option': 'localurl'        },
 				{ 'fileType': 'ini', 'attribute': 'repositoryRemoteUrl', 'section': 'repository',  'option': 'remoteurl'       },
-				{ 'fileType': 'ini', 'attribute': 'repositoryLocalUrl',  'section': 'repository',  'option': 'localurl'        }#,
-#				{ 'fileType': 'ini', 'attribute': 'maxBandwidth',        'section': 'repository',  'option': 'maxbandwidth'    }
+				{ 'fileType': 'ini', 'attribute': 'repositoryLocalUrl',  'section': 'repository',  'option': 'localurl'        },
+				{ 'fileType': 'ini', 'attribute': 'maxBandwidth',        'section': 'repository',  'option': 'maxbandwidth'    }
 			],
 			'LocalbootProduct': [
 				{ 'fileType': 'lbp', 'attribute': '*', 'object': 'product' },
@@ -141,7 +140,7 @@ class File31Backend(ConfigDataBackend):
 				return os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
 			if (fileType == 'key'):
 				return os.path.join(self.__hostKeyFile)
-		elif objType in ('OpsiConfigserver', 'OpsiDepotserver'):
+		elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
 			if (fileType == 'ini'):
 				return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
 			if (fileType == 'key'):
@@ -171,6 +170,7 @@ class File31Backend(ConfigDataBackend):
 			cp = iniFile.parse()
 			for section in cp.sections():
 				objIdents.append({'id': section})
+		
 		elif objType in ('OpsiClient'):
 			for entry in os.listdir(self.__clientConfigDir):
 				if not entry.lower().endswith('.ini'):
@@ -180,11 +180,11 @@ class File31Backend(ConfigDataBackend):
 				except:
 					pass
 		
-		elif objType in ('OpsiConfigserver', 'OpsiDepotserver'):
+		elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
 			for entry in os.listdir(self.__depotConfigDir):
 				try:
 					hostId = forceHostId(entry)
-					if objType in ('OpsiConfigserver') and (hostId == self.__serverId):
+					if objType in ('OpsiConfigserver') and (hostId != self.__serverId):
 						continue
 					objIdents.append({'id': hostId})
 				except:
@@ -216,7 +216,6 @@ class File31Backend(ConfigDataBackend):
 		
 		if not needFilter:
 			return objIdents
-		
 		filteredObjIdents = []
 		for ident in objIdents:
 			if self._objectHashMatches(ident, **filter):
@@ -230,15 +229,44 @@ class File31Backend(ConfigDataBackend):
 				continue
 			matched = False
 			for filterValue in forceList(filter[attribute]):
+				logger.debug2(u"Testing match of filter value '%s' of attribute '%s' with value '%s'" % \
+					(filterValue, attribute, value))
+				if type(filterValue) is bool:
+					try:
+						value = forceBool(value)
+					except:
+						continue
 				if (filterValue == value):
 					matched = True
 					break
+				if type(filterValue) is list: # TODO: int
+					if not type(value) is list:
+						continue
+					if len(filterValue) != len(value):
+						continue
+					allElementsMatched = True
+					for v in value:
+						if not v in filterValue:
+							allElementsMatched = False
+							break
+					matched = allElementsMatched
+					if matched:
+						break
+					continue
+				if type(value) is list:
+					if filterValue in value:
+						matched = True
+						break
+					continue
 				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
 					continue
 				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
 					matched = True
 					break
-			if not matched:
+			if matched:
+				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
+					(value, filter[attribute], attribute))
+			else:
 				matchedAll = False
 				break
 		return matchedAll
@@ -263,6 +291,7 @@ class File31Backend(ConfigDataBackend):
 			if (not attributes or mapping['attribute'] in attributes) or mapping['attribute'] in filter.keys():
 				if not mappings.has_key(mapping['fileType']):
 					mappings[mapping['fileType']] = []
+				
 				mappings[mapping['fileType']].append(mapping)
 		
 		objects = []
@@ -279,6 +308,7 @@ class File31Backend(ConfigDataBackend):
 				elif (fileType == 'ini'):
 					iniFile = IniFile(filename = filename)
 					cp = iniFile.parse()
+					
 					for m in mapping:
 						try:
 							# TODO: think about placeholders <..>
@@ -290,13 +320,15 @@ class File31Backend(ConfigDataBackend):
 								value = value.replace(u'\\n', u'\n')
 							objHash[m['attribute']] = value
 						except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+							logger.info(u"No option '%s' within section '%s' in '%s'" \
+								% (m['option'], section, filename))
 							objHash[m['attribute']] = None
 				
 				elif (fileType == 'lbp' or fileType == 'nbp'):
 					packageControlFile = PackageControlFile(filename = filename)
 					if (mapping['*']['object'] == 'product'):
 						objHash = packageControlFile.getProduct().toHash()
-				
+			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
@@ -305,8 +337,8 @@ class File31Backend(ConfigDataBackend):
 	
 	def _write(self, obj, mode='create'):
 		objType = obj.getType()
-		if (objType == 'OpsiConfigserver'):
-			self.__serverId = obj.getId()
+		if (objType == 'OpsiConfigserver') and (self.__serverId != obj.getId()):
+			raise Exception(u"File31 backend can only handle config server '%s'" % self.__serverId)
 		
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
@@ -319,7 +351,9 @@ class File31Backend(ConfigDataBackend):
 		
 		for (fileType, mapping) in mappings.items():
 			filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType)
+			
 			if not os.path.exists(os.path.dirname(filename)):
+				logger.info(u"Creating path: '%s'" % os.path.dirname(filename))
 				os.mkdir(os.path.dirname(filename))
 			
 			if (fileType == 'key'):
@@ -403,11 +437,13 @@ class File31Backend(ConfigDataBackend):
 		
 		result = self._read('OpsiDepotserver', attributes, **filter)
 		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
+		
 		if opsiConfigServers:
 			for i in range(len(result)):
 				if (result[i].getId() == opsiConfigServers[0].getId()):
 					result[i] = opsiConfigServers[0]
 					break
+		
 		result.extend(self._read('OpsiClient', attributes, **filter))
 		return result
 	
@@ -455,6 +491,13 @@ class File31Backend(ConfigDataBackend):
 		print "--------------------------------------------------------- config_getObjects"
 		
 		result = self._read('Config', attributes, **filter)
+		
+		print "#########################################################attrib", attributes
+		print "#########################################################filter", filter
+		
+		for config in result:
+			print "###", config
+		
 		return result
 	
 	def config_deleteObjects(self, configs):

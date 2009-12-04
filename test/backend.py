@@ -657,7 +657,7 @@ class BackendTest(object):
 					h = h.toHash()
 					for (attribute, value) in h.items():
 						if not value is None:
-							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, host[attribute]))
+							logger.debug(u"%s: expected(%s) == got(%s) in host: '%s'" % (attribute, value, host[attribute], host['id']))
 							if type(value) is list:
 								for v in value:
 									assert v in host[attribute]
@@ -766,18 +766,21 @@ class BackendTest(object):
 								assert value == config[attribute]
 					break
 		
-		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
+		configs = self.backend.config_getObjects(defaultValues = [ self.config2.defaultValues ])
+		logger.debug(u"expected(%s), got(%s)" % (self.config2, configs))
 		assert len(configs) == 1
 		assert configs[0].getId() == self.config2.getId()
 		
 		configs = self.backend.config_getObjects(possibleValues = [])
 		assert len(configs) == len(self.configs)
 		
-		configs = self.backend.config_getObjects(possibleValues = self.config1.possibleValues, defaultValues = self.config1.defaultValues)
+		configs = self.backend.config_getObjects(possibleValues = [ self.config1.possibleValues ], defaultValues = [ self.config1.defaultValues ])
+		logger.debug(u"expected(%s), got(%s)" % (self.config1, configs))
 		assert len(configs) == 1
 		assert configs[0].getId() == self.config1.getId()
 		
 		configs = self.backend.config_getObjects(possibleValues = self.config5.possibleValues, defaultValues = self.config5.defaultValues)
+		logger.debug(u"expected(%s), got(%s)" % (self.config5, configs))
 		assert len(configs) == 2
 		for config in configs:
 			assert config.getId() in (self.config3.id, self.config5.id)
@@ -787,6 +790,7 @@ class BackendTest(object):
 			if config.getMultiValue():
 				multiValueConfigNames.append(config.id)
 		configs = self.backend.config_getObjects( attributes = [], multiValue = True )
+		logger.debug(u"expected(%s), got(%s)" % (multiValueConfigNames, configs))
 		assert len(configs) == len(multiValueConfigNames)
 		for config in configs:
 			assert config.id in multiValueConfigNames

@@ -10,7 +10,7 @@ from OPSI.Backend.Object import *
 from backend import *
 
 logger = Logger()
-logger.setConsoleLevel(LOG_DEBUG)
+logger.setConsoleLevel(LOG_CONFIDENTIAL)
 logger.setConsoleColor(True)
 
 file31Backend = File31Backend()
