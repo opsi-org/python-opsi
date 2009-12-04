@@ -766,7 +766,7 @@ class BackendTest(object):
 								assert value == config[attribute]
 					break
 		
-		configs = self.backend.config_getObjects(defaultValues = [ self.config2.defaultValues ])
+		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
 		logger.debug(u"expected(%s), got(%s)" % (self.config2, configs))
 		assert len(configs) == 1
 		assert configs[0].getId() == self.config2.getId()
@@ -774,7 +774,7 @@ class BackendTest(object):
 		configs = self.backend.config_getObjects(possibleValues = [])
 		assert len(configs) == len(self.configs)
 		
-		configs = self.backend.config_getObjects(possibleValues = [ self.config1.possibleValues ], defaultValues = [ self.config1.defaultValues ])
+		configs = self.backend.config_getObjects(possibleValues = self.config1.possibleValues, defaultValues = self.config1.defaultValues)
 		logger.debug(u"expected(%s), got(%s)" % (self.config1, configs))
 		assert len(configs) == 1
 		assert configs[0].getId() == self.config1.getId()
