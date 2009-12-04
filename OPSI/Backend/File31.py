@@ -87,13 +87,13 @@ class File31Backend(ConfigDataBackend):
 		self.__serverId = self.__serverId.lower()
 		
 		self._mappings = {
-			'Config': [                                                               # TODO: placeholders
-				{ 'fileType': 'ini', 'attribute': 'type'                  , 'section': '<id>', 'option': 'type',           'json': False     },
-				{ 'fileType': 'ini', 'attribute': 'description'           , 'section': '<id>', 'option': 'description', 'json': False         },
-				{ 'fileType': 'ini', 'attribute': 'editable'              , 'section': '<id>', 'option': 'editable' , 'json': False           },
-				{ 'fileType': 'ini', 'attribute': 'multiValue'            , 'section': '<id>', 'option': 'multivalue' , 'json': False         },
-				{ 'fileType': 'ini', 'attribute': 'possibleValues'        , 'section': '<id>', 'option': 'possiblevalues', 'json': True      },
-				{ 'fileType': 'ini', 'attribute': 'defaultValues'         , 'section': '<id>', 'option': 'defaultvalues' , 'json': True      },
+			'Config': [                                                # TODO: placeholders
+				{ 'fileType': 'ini', 'attribute': 'type'           , 'section': '<id>', 'option': 'type',           'json': False     },
+				{ 'fileType': 'ini', 'attribute': 'description'    , 'section': '<id>', 'option': 'description',    'json': False     },
+				{ 'fileType': 'ini', 'attribute': 'editable'       , 'section': '<id>', 'option': 'editable' ,      'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'multiValue'     , 'section': '<id>', 'option': 'multivalue' ,    'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'possibleValues' , 'section': '<id>', 'option': 'possiblevalues', 'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'defaultValues'  , 'section': '<id>', 'option': 'defaultvalues' , 'json': True      },
 			],
 			'OpsiClient': [
 				{ 'fileType': 'key', 'attribute': 'opsiHostKey' },
@@ -124,42 +124,41 @@ class File31Backend(ConfigDataBackend):
 			],
 			'NetbootProduct': [
 				{ 'fileType': 'nbp', 'attribute': '*', 'object': 'product' },
-			]
+			],
+			'ConfigState': [ # TODO: 
+				{ 'fileType': '-', 'attribute': '*', 'somename': 'somevalue' },
+			],
 		}
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
 		self._mappings['BoolConfig'] = self._mappings['Config']
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
-
 	
 	def _getConfigFile(self, objType, ident, fileType):
-		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			if (fileType == 'ini'):
+		if (fileType == 'key'):
+			return os.path.join(self.__hostKeyFile)
+		elif (fileType == 'ini'):
+			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 				return self.__configFile
-		elif objType in ('OpsiClient'):
-			if (fileType == 'ini'):
-				return os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
-			if (fileType == 'key'):
-				return os.path.join(self.__hostKeyFile)
-		elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
-			if (fileType == 'ini'):
-				return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
-			if (fileType == 'key'):
-				return os.path.join(self.__hostKeyFile)
-		elif objType in ('LocalbootProduct', 'NetbootProduct'):
-			if (fileType == 'lbp'):
-				return os.path.join(
-					self.__productDir,
-					ident['id'] + u'_' +
-					ident['productVersion'] + u'-' +
-					ident['packageVersion'] + u'.localboot'
-				)
-			if (fileType == 'nbp'):
-				return os.path.join(
-					self.__productDir,
-					ident['id'] + u'_' +
-					ident['productVersion'] + u'-' +
-					ident['packageVersion'] + u'.netboot'
-				)
+			elif objType in ('OpsiClient'):
+				if (fileType == 'ini'):
+					return os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
+			elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
+				if (fileType == 'ini'):
+					return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
+		elif (fileType == 'lbp'):
+			return os.path.join(
+				self.__productDir,
+				ident['id'] + u'_' +
+				ident['productVersion'] + u'-' +
+				ident['packageVersion'] + u'.localboot'
+			)
+		elif (fileType == 'nbp'):
+			return os.path.join(
+				self.__productDir,
+				ident['id'] + u'_' +
+				ident['productVersion'] + u'-' +
+				ident['packageVersion'] + u'.netboot'
+			)
 	
 	def _getIdents(self, objType, **filter):
 		objIdents = []
@@ -228,43 +227,28 @@ class File31Backend(ConfigDataBackend):
 			if not filter.get(attribute):
 				continue
 			matched = False
+			logger.comment(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
+				(filter[attribute], attribute, value))
 			for filterValue in forceList(filter[attribute]):
-				logger.debug2(u"Testing match of filter value '%s' of attribute '%s' with value '%s'" % \
-					(filterValue, attribute, value))
-				if type(filterValue) is bool:
-					try:
-						value = forceBool(value)
-					except:
-						continue
 				if (filterValue == value):
+					logger.comment("Value is equal filterValue")
 					matched = True
 					break
-				if type(filterValue) is list: # TODO: int
-					if not type(value) is list:
-						continue
-					if len(filterValue) != len(value):
-						continue
-					allElementsMatched = True
-					for v in value:
-						if not v in filterValue:
-							allElementsMatched = False
-							break
-					matched = allElementsMatched
-					if matched:
-						break
-					continue
 				if type(value) is list:
 					if filterValue in value:
+						logger.comment("FilterValue is in list of value")
 						matched = True
 						break
 					continue
 				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
+					#still necessary?
 					continue
 				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
+					logger.comment("Value matched regex of filterValue")
 					matched = True
 					break
 			if matched:
-				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
+				logger.comment(u"Value '%s' matched filter '%s', attribute '%s'" % \
 					(value, filter[attribute], attribute))
 			else:
 				matchedAll = False
@@ -423,38 +407,46 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.host_insertObject(self, host)
 		
 		host = forceObjectClass(host, Host)
+		
+		logger.notice(u"Inserting host: '%s'" % host.getId())
 		self._write(host, mode = 'create')
+		logger.notice(u"Inserted host: '%s'" % host.getId())
 	
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
 		host = forceObjectClass(host, Host)
-		logger.info(u'Updating Host: %s' % host.getId())
+		
+		logger.notice(u"Updating host: '%s'" % host.getId())
 		self._write(host, mode = 'update')
+		logger.notice(u"Updated host: '%s'" % host.getId())
 	
 	def host_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes, **filter)
 		
+		logger.notice(u"Getting hosts ...")
 		result = self._read('OpsiDepotserver', attributes, **filter)
 		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
-		
 		if opsiConfigServers:
 			for i in range(len(result)):
 				if (result[i].getId() == opsiConfigServers[0].getId()):
 					result[i] = opsiConfigServers[0]
 					break
-		
 		result.extend(self._read('OpsiClient', attributes, **filter))
+		logger.notice(u"Got hosts.")
+		
 		return result
 	
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 		
-		for host in forceObjectClassList(hosts, Host):
-			hostKeys = HostKeyFile(self._getConfigFile(host.getType(), {'id': host.getId()}, 'key'))
+		hosts = forceObjectClassList(hosts, Host)
+		
+		logger.notice(u"Deleting hosts ...")
+		hostKeys = HostKeyFile(self._getConfigFile('', '', 'key'))
+		for host in hosts:
+			logger.info(u"Deleting host: '%s'" % host.getId())
 			hostKeys.deleteOpsiHostKey(host.getId())
-			hostKeys.generate()
-			
 			if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
 				configDir = os.path.join(self.__depotConfigDir, host.getId())
 				if os.path.exists(configDir):
@@ -463,6 +455,8 @@ class File31Backend(ConfigDataBackend):
 				configFile = self._getConfigFile(host.getType(), {'id': host.getId()}, 'ini')
 				if os.path.exists(configFile):
 					os.unlink(configFile)
+		hostKeys.generate()
+		logger.notice(u"Deleted hosts.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -470,42 +464,127 @@ class File31Backend(ConfigDataBackend):
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		print "--------------------------------------------------------- config_insertObject", config.toHash()
-		
 		config = forceObjectClass(config, Config)
-		logger.info(u'Creating config: %s' % config.getId())
+		
+		logger.notice(u"Inserting config: '%s'" % config.getId())
 		self._write(config, mode = 'create')
+		logger.notice(u"Inserted config: '%s'" % config.getId())
 	
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
-		print "--------------------------------------------------------- config_updateObject"
-		
 		config = forceObjectClass(config, Config)
-		logger.info(u'Updating config: %s' % config.getId())
+		
+		logger.notice(u"Updating config: '%s'" % config.getId())
 		self._write(config, mode = 'update')
+		logger.notice(u"Updated config: '%s'" % config.getId())
 	
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes, **filter)
 		
-		print "--------------------------------------------------------- config_getObjects"
-		
+		logger.notice(u"Getting configs ...")
 		result = self._read('Config', attributes, **filter)
-		
-		print "#########################################################attrib", attributes
-		print "#########################################################filter", filter
-		
-		for config in result:
-			print "###", config
+		logger.notice(u"Returning configs.")
 		
 		return result
 	
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		
-		print "--------------------------------------------------------- config_deleteObjects"
+		configs = forceObjectClassList(configs, Config)
 		
+		logger.notice(u"Deleting configs ...")
+		iniFile = IniFile(filename = self._getConfigFile('Config', [], 'ini'))
+		iniFile.create()
+		cp = iniFile.parse()
+		for config in configs:
+			logger.info(u"Deleting config: '%s'" % config.getId())
+			if cp.has_section(config.getId()):
+				cp.remove_section(config.getId())
+			else:
+				logger.warning(u"Cannot delete non existant section '%s'" % config.getId())
+		iniFile.generate(cp)
+		logger.notice(u"Deleted configs.")
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ConfigStates                                                                              -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def configState_insertObject(self, configState):
+		ConfigDataBackend.configState_insertObject(self, configState)
 		
+		configState = forceObjectClass(configState, ConfigState)
+		
+		logger.notice(u"Inserting configState: '%s'" % configState.getId())
+		self._write(configState, mode = 'create')
+		logger.notice(u"Inserted configState: '%s'" % configState.getId())
+	
+	def configState_updateObject(self, configState):
+		ConfigDataBackend.configState_updateObject(self, configState)
+		
+		configState = forceObjectClass(configState, ConfigState)
+		
+		logger.notice(u"Updating configState: '%s'" % configState.getId())
+		self._write(configState, mode = 'update')
+		logger.notice(u"Updated configState: '%s'" % configState.getId())
+	
+	def configState_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
+		
+		logger.notice(u"Getting configStates ...")
+		result = self._read('ConfigState', attributes, **filter)
+		logger.notice(u"Returning configStates.")
+		
+		return result
+	
+	def configState_deleteObjects(self, configStates):
+		ConfigDataBackend.config_deleteObjects(self, configStates)
+		
+		configStates = forceObjectClassList(configStates, ConfigState)
+		logger.notice(u"Deleting configStates ...")
+		for configState in configStates:
+			logger.info(u"Deleting configState: '%s'" % configState.getId())
+			# TODO: everything
+		logger.notice(u"Deleted configStates.")
+	
+	
+	
+	def configState_createObjects(self, configStates):
+		ConfigDataBackend.configState_createObjects(configState)
+	
+	def configState_updateObjects(self, configStates):
+		ConfigDataBackend.configState_updateObjects(configState)
+	
+	def configState_create(self, configId, objectId, values=None):
+		ConfigDataBackend.configState_create(configId, objectId, values)
+	
+	def configState_delete(self, configId, objectId):
+		ConfigDataBackend.configState_delete(configId, objectId)
+	
+	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[]):
+		ConfigDataBackend.configState_getClientToDepotserver(depotIds=[], clientIds=[])
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+################################################################################
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
@@ -514,25 +593,37 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.product_insertObject(self, product)
 		
 		product = forceObjectClass(product, Product)
+		
+		logger.notice(u"Inserting product: '%s'" % product.getId())
 		self._write(product, mode = 'create')
+		logger.notice(u"Inserted products.")
 	
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
 		
 		product = forceObjectClass(product, Product)
-		logger.info(u'Updating Product: %s' % product.getId())
+		
+		logger.notice(u"Updating product: '%s'" % product.getId())
 		self._write(product, mode = 'update')
+		logger.notice(u"Updated product: '%s'" % product.getId())
 	
 	def product_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.product_getObjects(self, attributes = [], **filter)
 		
+		logger.notice(u"Getting products ...")
 		result = self._read('Product', attributes, **filter)
+		logger.notice(u"Got products.")
+		
 		return result
 	
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
 		
-		for product in forceObjectClassList(products, Product):
+		products = forceObjectClassList(products, Product)
+		
+		logger.notice(u"Deleting products ...")
+		for product in products:
+			logger.info(u"Deleting product: '%s'" % product.getId())
 			if product.getType() in ('LocalbootProduct', 'NetbootProduct'):
 				configFile = self._getConfigFile(
 					product.getType(),
@@ -545,17 +636,6 @@ class File31Backend(ConfigDataBackend):
 				)
 				if os.path.exists(configFile):
 					os.unlink(configFile)
+		logger.notice(u"Deleted products.")
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-
 
