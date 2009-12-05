@@ -286,8 +286,8 @@ def forceObjectClass(var, objectClass):
 			logger.debug(e)
 	if type(var) is dict and var.has_key('type'):
 		try:
-			import Backend.Object
-			c = eval('Backend.Object.%s' % var['type'])
+			import OPSI.Object
+			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
 		except Exception, e:

@@ -46,7 +46,7 @@ elif (os.name == 'nt'):
 
 # OPSI imports
 from OPSI.Logger import *
-from OPSI.Backend.Object import *
+from OPSI.Object import *
 from OPSI.Types import *
 from OPSI.Util.File import *
 
