@@ -1484,15 +1484,18 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		
 		# Get product states from backend
 		productOnClients = self._backend.productOnClient_getObjects(attributes, **filter)
+		print "Got productOnClients"
 		if addDefaults or self._processProductPriorities or self._processProductDependencies:
 			# Get all client ids by filter
 			clientIds = self._backend.host_getIdents(id = filter.get('clientId'), returnType = 'unicode')
+			print "Got clientIds"
 			# Get depot to client assignment
 			depotToClients = {}
 			for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
 				if not depotToClients.has_key(clientToDepot['depotId']):
 					depotToClients[clientToDepot['depotId']] = []
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+			print "Got depotToClients"
 			
 			productOnDepots = {}
 			for depotId in depotToClients.keys():
@@ -1501,33 +1504,33 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 								productId      = filter.get('productId'),
 								productVersion = filter.get('productVersion'),
 								packageVersion = filter.get('packageVersion'))
-			
+			print "Got productOnDepots"
 			
 			# Create data structure for product states to find missing ones
-			pocs = {}
+			pocByClientIdAndProductId = {}
 			for clientId in clientIds:
-				pocs[clientId] = []
+				pocByClientIdAndProductId[clientId] = {}
 			for poc in productOnClients:
-				pocs[poc.clientId].append(poc.productId)
+				pocByClientIdAndProductId[poc.clientId][poc.productId] = poc
 			# Create missing product states
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					if not clientId in clientIds:
 						# Filtered
 						continue
+					print "Client", clientId
 					for pod in productOnDepots[depotId]:
-						if not pod.productId in pocs[clientId]:
+						if not pod.productId in pocByClientIdAndProductId[clientId].keys():
 							# Create default
-							productOnClients.append(
-								ProductOnClient(
+							pocByClientIdAndProductId[clientId][pod.productId] = ProductOnClient(
 									productId          = pod.productId,
 									productType        = pod.productType,
 									clientId           = clientId,
 									installationStatus = u'not_installed',
 									actionRequest      = u'none',
-								)
 							)
-			
+							
+			print "Got productOnClients Defaults"
 			if self._processProductPriorities or self._processProductDependencies:
 				productOnClientsNew = []
 				for (depotId, depotClientIds) in depotToClients.items():
@@ -1549,6 +1552,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 								depotDependencies[pod.productId] = []
 							depotDependencies[pod.productId].append(productDependency)
 					
+					print "Got products, dependencies"
 					if self._processProductPriorities:
 						# Sort by priority
 						for (productId, product) in depotProducts.items():
@@ -1569,15 +1573,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 						if not clientId in clientIds:
 							# Filtered
 							continue
-						
+						print "Client", clientId
 						sequence = list(depotProductSequence)
-						
-						productOnClientsByProductId = {}
-						for poc in productOnClients:
-							if (poc.clientId == clientId):
-								productOnClientsByProductId[poc.productId] = poc
-						for poc in productOnClientsByProductId.values():
-							productOnClients.remove(poc)
 						
 						if self._processProductDependencies:
 							# Add dependent product actions
@@ -1657,12 +1654,12 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 									logger.debug(u"   %s" % productId)
 						
 						for productId in sequence:
-							actionRequest      = productOnClientsByProductId[productId].actionRequest
-							installationStatus = productOnClientsByProductId[productId].installationStatus
+							actionRequest      = pocByClientIdAndProductId[clientId][productId].actionRequest
+							installationStatus = pocByClientIdAndProductId[clientId][productId].installationStatus
 							
 							if (not filter.get('installationStatus') or installationStatus in forceList(filter['installationStatus'])) \
 							   and (not filter.get('actionRequest') or actionRequest in forceList(filter['actionRequest'])):
-							   	   productOnClientsNew.append(productOnClientsByProductId[productId])
+							   	   productOnClientsNew.append(pocByClientIdAndProductId[clientId][productId])
 						
 				productOnClients = productOnClientsNew
 		return productOnClients
