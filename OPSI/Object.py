@@ -182,7 +182,9 @@ class Entity(BaseObject):
 		return hash
 	
 	def serialize(self):
-		return self.toHash()
+		hash = self.toHash()
+		hash['ident'] = self.getIdent()
+		return hash
 	
 	@staticmethod
 	def fromJson(jsonString):
@@ -212,6 +214,7 @@ class Relationship(BaseObject):
 	def serialize(self):
 		hash = self.toHash()
 		hash['type'] = self.getType()
+		hash['ident'] = self.getIdent()
 		return hash
 		
 	@staticmethod

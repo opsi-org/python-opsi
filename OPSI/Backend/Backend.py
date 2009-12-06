@@ -44,7 +44,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.System import getDiskSpaceUsage
-from OPSI.Tools import md5sum, librsyncSignature, librsyncPatchFile
+from OPSI.Tools import md5sum, librsyncSignature, librsyncPatchFile, timestamp
 
 logger = Logger()
 
@@ -526,29 +526,30 @@ class ConfigDataBackend(BackendIdentExtension):
 	def productOnClient_insertObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		productOnClient.setDefaults()
-		products = self.product_getObjects(
-			id = productOnClient.productId,
-			productVersion = productOnClient.productVersion,
-			packageVersion = productOnClient.packageVersion)
-		if not products:
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion))
-		if   (productOnClient.actionRequest == 'setup') and not products[0].setupScript:
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		elif (productOnClient.actionRequest == 'uninstall') and not products[0].uninstallScript:
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		elif (productOnClient.actionRequest == 'update') and not products[0].updateScript:
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		elif (productOnClient.actionRequest == 'once') and not products[0].onceScript:
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		elif (productOnClient.actionRequest == 'always') and not products[0].alwaysScript:
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-				% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		
+		if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
+			products = self.product_getObjects(
+				id = productOnClient.productId,
+				productVersion = productOnClient.productVersion,
+				packageVersion = productOnClient.packageVersion)
+			if not products:
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion))
+			if   (productOnClient.actionRequest == 'setup') and not products[0].setupScript:
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+			elif (productOnClient.actionRequest == 'uninstall') and not products[0].uninstallScript:
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+			elif (productOnClient.actionRequest == 'update') and not products[0].updateScript:
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+			elif (productOnClient.actionRequest == 'once') and not products[0].onceScript:
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+			elif (productOnClient.actionRequest == 'always') and not products[0].alwaysScript:
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+			
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 	
@@ -776,10 +777,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def __init__(self, backend):
 		ExtendedBackend.__init__(self, backend)
 		self._processProductPriorities = True
-		self._processProductDependencies = True
+		self._processProductDependencies = False
 		self._addProductOnClientDetaults = True
 		self._deleteConfigStateIfDefault = True
 		self._deleteProductPropertyStateIfDefault = True
+		self._returnObjectsOnUpdateAndCreate = True
 		
 	def exit(self):
 		if self._backend:
@@ -1004,6 +1006,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_createObjects(self, hosts):
+		result = []
 		for host in forceObjectClassList(hosts, Host):
 			logger.info(u"Creating host '%s'" % host)
 			if self.host_getIdents(id = host.id):
@@ -1011,10 +1014,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.host_updateObject(host)
 			else:
 				self._backend.host_insertObject(host)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.host_getObjects(id = host.id)
+				)
+		return result
 	
 	def host_updateObjects(self, hosts):
+		result = []
 		for host in forceObjectClassList(hosts, Host):
 			self._backend.host_updateObject(host)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.host_getObjects(id = host.id)
+				)
+		return result
 	
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
 		hash = locals()
@@ -1043,6 +1057,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_createObjects(self, configs):
+		result = []
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Creating config %s" % config)
 			if self._backend.config_getIdents(id = config.id):
@@ -1050,10 +1065,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.config_updateObject(config)
 			else:
 				self._backend.config_insertObject(config)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.config_getObjects(id = config.id)
+				)
+		return result
 	
 	def config_updateObjects(self, configs):
+		result = []
 		for config in forceObjectClassList(configs, Config):
 			self._backend.config_updateObject(config)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.config_getObjects(id = config.id)
+				)
+		return result
 	
 	def config_create(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
@@ -1136,6 +1162,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		self._backend.configState_updateObject(configState)
 	
 	def configState_createObjects(self, configStates):
+		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
 			if self._backend.configState_getIdents(
@@ -1145,10 +1172,27 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self.configState_updateObject(configState)
 			else:
 				self.configState_insertObject(configState)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.configState_getObjects(
+						configId   = configState.configId,
+						objectId   = configState.objectId
+					)
+				)
+		return result
 	
 	def configState_updateObjects(self, configStates):
+		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
 			self._backend.configState_updateObject(configState)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.configState_getObjects(
+						configId   = configState.configId,
+						objectId   = configState.objectId
+					)
+				)
+		return result
 	
 	def configState_create(self, configId, objectId, values=None):
 		hash = locals()
@@ -1187,6 +1231,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_createObjects(self, products):
+		result = []
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Creating product %s" % product)
 			if self._backend.product_getIdents(
@@ -1197,11 +1242,30 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.product_updateObject(product)
 			else:
 				self._backend.product_insertObject(product)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.product_getObjects(
+						id             = product.id,
+						productVersion = product.productVersion,
+						packageVersion = product.packageVersion
+					)
+				)
+		return result
 	
 	def product_updateObjects(self, products):
+		result = []
 		for product in forceObjectClassList(products, Product):
 			self._backend.product_updateObject(product)
-	
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.product_getObjects(
+						id             = product.id,
+						productVersion = product.productVersion,
+						packageVersion = product.packageVersion
+					)
+				)
+		return result
+		
 	def product_createLocalboot(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 					setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None,
 					priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
@@ -1227,6 +1291,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_createObjects(self, productProperties):
+		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating product property %s" % productProperty)
 			if self._backend.productProperty_getIdents(
@@ -1238,11 +1303,32 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productProperty_updateObject(productProperty)
 			else:
 				self._backend.productProperty_insertObject(productProperty)
-	
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productProperty_getObjects(
+						productId      = productProperty.productId,
+						productVersion = productProperty.productVersion,
+						packageVersion = productProperty.packageVersion,
+						propertyId     = productProperty.propertyId
+					)
+				)
+		return result
+		
 	def productProperty_updateObjects(self, productProperties):
+		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			self._backend.productProperty_updateObject(productProperty)
-	
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productProperty_getObjects(
+						productId      = productProperty.productId,
+						productVersion = productProperty.productVersion,
+						packageVersion = productProperty.packageVersion,
+						propertyId     = productProperty.propertyId
+					)
+				)
+		return result
+		
 	def productProperty_create(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
 		hash = locals()
 		del hash['self']
@@ -1274,6 +1360,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ProductDependencies                                                                       -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_createObjects(self, productDependencies):
+		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info(u"Creating product dependency %s" % productDependency)
 			if self._backend.productDependency_getIdents(
@@ -1286,10 +1373,33 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productDependency_updateObject(productDependency)
 			else:
 				self._backend.productDependency_insertObject(productDependency)
-	
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productDependency_getObjects(
+						productId         = productDependency.productId,
+						productVersion    = productDependency.productVersion,
+						packageVersion    = productDependency.packageVersion,
+						productAction     = productDependency.productAction,
+						requiredProductId = productDependency.requiredProductId
+					)
+				)
+		return result
+		
 	def productDependency_updateObjects(self, productDependencies):
+		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			self._backend.productDependency_updateObject(productDependency)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productDependency_getObjects(
+						productId         = productDependency.productId,
+						productVersion    = productDependency.productVersion,
+						packageVersion    = productDependency.packageVersion,
+						productAction     = productDependency.productAction,
+						requiredProductId = productDependency.requiredProductId
+					)
+				)
+		return result
 	
 	def productDependency_create(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
 		hash = locals()
@@ -1314,6 +1424,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_createObjects(self, productOnDepots):
+		result = []
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
 			logger.info(u"Creating productOnDepot '%s'" % productOnDepot)
@@ -1324,10 +1435,27 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
 				self._backend.productOnDepot_insertObject(productOnDepot)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productOnDepot_getObjects(
+						productId = productOnDepot.productId,
+						depotId   = productOnDepot.depotId
+					)
+				)
+		return result
 	
 	def productOnDepot_updateObjects(self, productOnDepots):
+		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			self._backend.productOnDepot_updateObject(productOnDepot)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productOnDepot_getObjects(
+						productId = productOnDepot.productId,
+						depotId   = productOnDepot.depotId
+					)
+				)
+		return result
 	
 	def productOnDepot_create(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
 		hash = locals()
@@ -1442,6 +1570,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 							# Filtered
 							continue
 						
+						sequence = list(depotProductSequence)
+						
 						productOnClientsByProductId = {}
 						for poc in productOnClients:
 							if (poc.clientId == clientId):
@@ -1485,7 +1615,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 									continue
 								addActionRequest(productOnClientsByProductId, poc)
 							
-							sequence = list(depotProductSequence)
 							for run in (1, 2):
 								for (productId, poc) in productOnClientsByProductId.items():
 									if (poc.clientId != clientId):
@@ -1538,8 +1667,56 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				productOnClients = productOnClientsNew
 		return productOnClients
 	
+	def _productOnClient_correctData(self, productOnClients):
+		newProductOnClients = []
+		insertVersions = []
+		clientIds = []
+		productIds = []
+		for productOnClient in productOnClients:
+			if not productOnClient.lastStateChange:
+				productOnClient.setLastStateChange(timestamp())
+			if not productOnClient.clientId in clientIds:
+				clientIds.append(productOnClient.clientId)
+			if not productOnClient.productId in productIds:
+				productIds.append(productOnClient.productId)
+			if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
+				# Should have version info
+				if not productOnClient.productVersion or not productOnClient.packageVersion:
+					insertVersions.append(productOnClient)
+					continue
+			else:
+				productOnClient.productVersion = None
+				productOnClient.packageVersion = None
+			newProductOnClients.append(productOnClient)
+			
+		if insertVersions:
+			productOnDepots = {}
+			depotIds = []
+			clientIdToDepotId = {}
+			
+			for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
+				if not clientToDepot['depotId'] in depotIds:
+					depotIds.append(clientToDepot['depotId'])
+				clientIdToDepotId[clientToDepot['clientId']] = clientToDepot['depotId']
+			
+			for depotId in depotIds:
+				productOnDepots[depotId] = {}
+				for productOnDepot in self._backend.productOnDepot_getObjects(
+								depotId        = depotId,
+								productId      = productIds):
+					productOnDepots[depotId][productOnDepot.productId] = productOnDepot
+			
+			for productOnClient in insertVersions:
+				productOnClient.setProductVersion( productOnDepots[clientIdToDepotId[productOnClient.clientId]][productOnClient.productId].productVersion )
+				productOnClient.setPackageVersion( productOnDepots[clientIdToDepotId[productOnClient.clientId]][productOnClient.productId].packageVersion )
+				newProductOnClients.append(productOnClient)
+				
+		return newProductOnClients
+		
 	def productOnClient_createObjects(self, productOnClients):
+		result = []
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
+		productOnClients = self._productOnClient_correctData(productOnClients)
 		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient '%s'" % productOnClient)
 			if self._backend.productOnClient_getIdents(
@@ -1549,10 +1726,17 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productOnClient_updateObject(productOnClient)
 			else:
 				self._backend.productOnClient_insertObject(productOnClient)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productOnClient_getObjects(
+						productId = productOnClient.productId,
+						clientId  = productOnClient.clientId
+					)
+				)
+		return result
 	
 	def productOnClient_updateObjects(self, productOnClients):
-		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
-			self._backend.productOnClient_updateObject(productOnClient)
+		return self.productOnClient_createObjects(productOnClients)
 	
 	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
 		hash = locals()
@@ -1613,6 +1797,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return productPropertyStates
 	
 	def productPropertyState_createObjects(self, productPropertyStates):
+		result = []
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
 			logger.info(u"Creating productPropertyState '%s'" % productPropertyState)
@@ -1624,11 +1809,30 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productPropertyState_updateObject(productPropertyState)
 			else:
 				self._backend.productPropertyState_insertObject(productPropertyState)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productPropertyState_getObjects(
+						productId  = productPropertyState.productId,
+						objectId   = productPropertyState.objectId,
+						propertyId = productPropertyState.propertyId
+					)
+				)
+		return result
 	
 	def productPropertyState_updateObjects(self, productPropertyStates):
+		result = []
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			self._backend.productPropertyState_updateObject(productPropertyState)
-	
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.productPropertyState_getObjects(
+						productId  = productPropertyState.productId,
+						objectId   = productPropertyState.objectId,
+						propertyId = productPropertyState.propertyId
+					)
+				)
+		return result
+		
 	def productPropertyState_create(self, productId, propertyId, objectId, values=None):
 		hash = locals()
 		del hash['self']
@@ -1648,6 +1852,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_createObjects(self, groups):
+		result = []
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
 			logger.info(u"Creating group '%s'" % group)
@@ -1656,10 +1861,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.group_updateObject(group)
 			else:
 				self._backend.group_insertObject(group)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.group_getObjects(id = group.id)
+				)
+		return result
 	
 	def group_updateObjects(self, groups):
+		result = []
 		for group in forceObjectClassList(groups, Group):
 			self._backend.group_updateObject(group)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.group_getObjects(id = group.id)
+				)
+		return result
 	
 	def group_createHostGroup(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
@@ -1676,6 +1892,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_createObjects(self, objectToGroups):
+		result = []
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
 			logger.info(u"Creating %s" % objectToGroup)
@@ -1686,10 +1903,27 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
 				self._backend.objectToGroup_insertObject(objectToGroup)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.objectToGroup_getObjects(
+						groupId  = objectToGroup.groupId,
+						objectId = objectToGroup.objectId
+					)
+				)
+		return result
 	
 	def objectToGroup_updateObjects(self, objectToGroups):
+		result = []
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 			self._backend.objectToGroup_updateObject(objectToGroup)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.objectToGroup_getObjects(
+						groupId  = objectToGroup.groupId,
+						objectId = objectToGroup.objectId
+					)
+				)
+		return result
 	
 	def objectToGroup_create(self, groupId, objectId):
 		hash = locals()
@@ -1701,7 +1935,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		if not objectId: objectId = []
 		return self._backend.objectToGroup_deleteObjects(
 				self._backend.objectToGroup_getObjects(
-					groupId = forceGroupIdList(groupId),
+					groupId  = forceGroupIdList(groupId),
 					objectId = forceObjectIdList(objectId)))
 	
 	
@@ -1709,6 +1943,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   LicenseContracts                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseContract_createObjects(self, licenseContracts):
+		result = []
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
 			logger.info(u"Creating licenseContract '%s'" % licenseContract)
@@ -1717,10 +1952,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
 				self._backend.licenseContract_insertObject(licenseContract)
-	
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.licenseContract_getObjects(id = licenseContract.id)
+				)
+		return result
+		
 	def licenseContract_updateObjects(self, licenseContracts):
+		result = []
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 			self._backend.licenseContract_updateObject(licenseContract)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.licenseContract_getObjects(id = licenseContract.id)
+				)
+		return result
 	
 	def licenseContract_create(self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None):
 		hash = locals()
@@ -1737,6 +1983,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   SoftwareLicenses                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicense_createObjects(self, softwareLicenses):
+		result = []
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
 			logger.info(u"Creating softwareLicense '%s'" % softwareLicense)
@@ -1745,10 +1992,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
 				self._backend.softwareLicense_insertObject(softwareLicense)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.softwareLicense_getObjects(id = softwareLicense.id)
+				)
+		return result
 	
 	def softwareLicense_updateObjects(self, softwareLicenses):
+		result = []
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 			self._backend.softwareLicense_updateObject(softwareLicense)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.softwareLicense_getObjects(id = softwareLicense.id)
+				)
+		return result
 	
 	def softwareLicense_createRetail(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
 		hash = locals()
@@ -1780,6 +2038,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   LicensePool                                                                               -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licensePool_createObjects(self, licensePools):
+		result = []
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
 			logger.info(u"Creating licensePool '%s'" % licensePool)
@@ -1788,10 +2047,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.licensePool_updateObject(licensePool)
 			else:
 				self._backend.licensePool_insertObject(licensePool)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.licensePool_getObjects(id = licensePool.id)
+				)
+		return result
 	
 	def licensePool_updateObjects(self, licensePools):
+		result = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			self._backend.softwareLicense_updateObject(licensePool)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.licensePool_getObjects(id = licensePool.id)
+				)
+		return result
 	
 	def licensePool_create(self, id, description=None, productIds=None, windowsSoftwareIds=None):
 		hash = locals()
@@ -1808,6 +2078,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   SoftwareLicenseToLicensePools                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicenseToLicensePool_createObjects(self, softwareLicenseToLicensePools):
+		result = []
 		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
 			logger.info(u"Creating %s" % softwareLicenseToLicensePool)
@@ -1818,10 +2089,27 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
 			else:
 				self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.softwareLicenseToLicensePool_getObjects(
+						softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
+						licensePoolId     = softwareLicenseToLicensePool.licensePoolId
+					)
+				)
+		return result
 	
 	def softwareLicenseToLicensePool_updateObjects(self, softwareLicenseToLicensePools):
+		result = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.softwareLicenseToLicensePool_getObjects(
+						softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
+						licensePoolId     = softwareLicenseToLicensePool.licensePoolId
+					)
+				)
+		return result
 	
 	def softwareLicenseToLicensePool_create(self, softwareLicenseId, licensePoolId, licenseKey=None):
 		hash = locals()
@@ -1840,6 +2128,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   LicenseOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseOnClient_createObjects(self, licenseOnClients):
+		result = []
 		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
 		for licenseOnClient in licenseOnClients:
 			logger.info(u"Creating %s" % licenseOnClient)
@@ -1851,10 +2140,29 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.licenseOnClient_updateObject(licenseOnClient)
 			else:
 				self._backend.licenseOnClient_insertObject(licenseOnClient)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.licenseOnClient_getObjects(
+						softwareLicenseId = licenseOnClient.softwareLicenseId,
+						licensePoolId     = licenseOnClient.licensePoolId,
+						clientId          = licenseOnClient.clientId
+					)
+				)
+		return result
 	
 	def licenseOnClient_updateObjects(self, licenseOnClients):
+		result = []
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 			self._backend.licenseOnClient_updateObject(licenseOnClient)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.licenseOnClient_getObjects(
+						softwareLicenseId = licenseOnClient.softwareLicenseId,
+						licensePoolId     = licenseOnClient.licensePoolId,
+						clientId          = licenseOnClient.clientId
+					)
+				)
+		return result
 	
 	def licenseOnClient_create(self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None):
 		hash = locals()
@@ -1875,6 +2183,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   AuditSoftwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_createObjects(self, auditSoftwares):
+		result = []
 		auditSoftwares = forceObjectClassList(auditSoftwares, AuditSoftware)
 		for auditSoftware in auditSoftwares:
 			logger.info(u"Creating %s" % auditSoftware)
@@ -1886,10 +2195,29 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.auditSoftware_updateObject(auditSoftware)
 			else:
 				self._backend.auditSoftware_insertObject(auditSoftware)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.auditSoftware_getObjects(
+						softwareId     = auditSoftware.softwareId,
+						displayName    = auditSoftware.displayName,
+						displayVersion = auditSoftware.displayVersion
+					)
+				)
+		return result
 	
 	def auditSoftware_updateObjects(self, auditSoftwares):
+		result = []
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
 			self._backend.auditSoftware_updateObject(auditSoftware)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.auditSoftware_getObjects(
+						softwareId     = auditSoftware.softwareId,
+						displayName    = auditSoftware.displayName,
+						displayVersion = auditSoftware.displayVersion
+					)
+				)
+		return result
 	
 	def auditSoftware_create(self, softwareId, displayName, displayVersion, uninstallString=None, binaryName=None, installSize=None):
 		hash = locals()
@@ -1910,6 +2238,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_createObjects(self, auditSoftwareOnClients):
+		result = []
 		auditSoftwareOnClients = forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient)
 		for auditSoftwareOnClient in auditSoftwareOnClients:
 			logger.info(u"Creating %s" % auditSoftwareOnClient)
@@ -1922,10 +2251,31 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
 			else:
 				self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.auditSoftwareOnClient_getObjects(
+						softwareId     = auditSoftwareOnClient.softwareId,
+						displayName    = auditSoftwareOnClient.displayName,
+						displayVersion = auditSoftwareOnClient.displayVersion,
+						clientId       = auditSoftwareOnClient.clientId
+					)
+				)
+		return result
 	
 	def auditSoftwareOnClient_updateObjects(self, auditSoftwareOnClients):
+		result = []
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
 			self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
+			if self._returnObjectsOnUpdateAndCreate:
+				result.extend(
+					self._backend.auditSoftwareOnClient_getObjects(
+						softwareId     = auditSoftwareOnClient.softwareId,
+						displayName    = auditSoftwareOnClient.displayName,
+						displayVersion = auditSoftwareOnClient.displayVersion,
+						clientId       = auditSoftwareOnClient.clientId
+					)
+				)
+		return result
 	
 	def auditSoftwareOnClient_create(self, softwareId, displayName, displayVersion, clientId, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
 		hash = locals()

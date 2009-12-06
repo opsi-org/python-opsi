@@ -20,7 +20,7 @@ bt = BackendTest(ExtendedConfigDataBackend(mysqlBackend))
 bt.cleanupBackend()
 bt.testObjectMethods()
 bt.testNonObjectMethods()
-#bt.testPerformance()
+bt.testPerformance()
 
 
 
