@@ -119,19 +119,18 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'repositoryLocalUrl',  'section': 'repository',  'option': 'localurl'        },
 				{ 'fileType': 'ini', 'attribute': 'maxBandwidth',        'section': 'repository',  'option': 'maxbandwidth'    }
 			],
-			'LocalbootProduct': [
-				{ 'fileType': 'lbp', 'attribute': '*', 'object': 'product' },
+			'ConfigState': [
+				{ 'fileType': 'ini', 'attribute': '*' }
 			],
-			'NetbootProduct': [
-				{ 'fileType': 'nbp', 'attribute': '*', 'object': 'product' },
-			],
-			'ConfigState': [ # TODO: 
-				{ 'fileType': '-', 'attribute': '*', 'somename': 'somevalue' },
+			'Product': [
+				{ 'fileType': 'pro', 'attribute': '*', 'object': 'product' },
 			],
 		}
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
 		self._mappings['BoolConfig'] = self._mappings['Config']
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
+		self._mappings['LocalbootProduct'] = self._mappings['Product']
+		self._mappings['NetbootProduct'] = self._mappings['Product']
 	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
@@ -140,25 +139,20 @@ class File31Backend(ConfigDataBackend):
 			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 				return self.__configFile
 			elif objType in ('OpsiClient'):
-				if (fileType == 'ini'):
-					return os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
+				return os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
 			elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
-				if (fileType == 'ini'):
-					return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
-		elif (fileType == 'lbp'):
-			return os.path.join(
-				self.__productDir,
-				ident['id'] + u'_' +
-				ident['productVersion'] + u'-' +
-				ident['packageVersion'] + u'.localboot'
-			)
-		elif (fileType == 'nbp'):
-			return os.path.join(
-				self.__productDir,
-				ident['id'] + u'_' +
-				ident['productVersion'] + u'-' +
-				ident['packageVersion'] + u'.netboot'
-			)
+				return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
+			elif objType in ('ConfigState'):
+				if ( ident['objectId'] == self.__serverId ):
+					raise Exception(u"Can't handle configStates for ConfigServer")
+				else: # is client (# TODO: depot unhandled)
+					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
+		elif (fileType == 'pro'):
+			id = ident['id'] + u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
+			if objType == 'LocalbootProduct':
+				return os.path.join(self.__productDir, id + u'.localboot')
+			elif objType == 'NetbootProduct':
+				return os.path.join(self.__productDir, id + u'.netboot')
 	
 	def _getIdents(self, objType, **filter):
 		objIdents = []
@@ -308,7 +302,7 @@ class File31Backend(ConfigDataBackend):
 								% (m['option'], section, filename))
 							objHash[m['attribute']] = None
 				
-				elif (fileType == 'lbp' or fileType == 'nbp'):
+				elif (fileType == 'pro'):
 					packageControlFile = PackageControlFile(filename = filename)
 					if (mapping['*']['object'] == 'product'):
 						objHash = packageControlFile.getProduct().toHash()
@@ -316,6 +310,7 @@ class File31Backend(ConfigDataBackend):
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
+				print "objHash: ", objHash
 				objects.append(Class.fromHash(objHash))
 		return objects
 	
@@ -349,9 +344,9 @@ class File31Backend(ConfigDataBackend):
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename)
 				if (mode == 'create'):
-					if not objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
+					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
 						iniFile.delete()
-				iniFile.create()
+						iniFile.create()
 				cp = iniFile.parse()
 				if objType in ('Config', 'UnicodeConfig', 'BoolConfig') and (mode == 'create'):
 					if cp.has_section(obj.getId()):
@@ -376,7 +371,7 @@ class File31Backend(ConfigDataBackend):
 						cp.set(section, mapping[attribute]['option'], forceUnicode(value))
 				iniFile.generate(cp)
 			
-			elif (fileType == 'lbp' or fileType == 'nbp'):
+			elif (fileType == 'pro'):
 				packageControlFile = PackageControlFile(filename = filename)
 				if (mapping['*']['object'] == 'product'):
 					if (mode == 'create'):
@@ -514,18 +509,18 @@ class File31Backend(ConfigDataBackend):
 		
 		configState = forceObjectClass(configState, ConfigState)
 		
-		logger.notice(u"Inserting configState: '%s'" % configState.getId())
+		logger.notice(u"Inserting configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'create')
-		logger.notice(u"Inserted configState: '%s'" % configState.getId())
+		logger.notice(u"Inserted configState: '%s'" % configState.getIdent())
 	
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
 		configState = forceObjectClass(configState, ConfigState)
 		
-		logger.notice(u"Updating configState: '%s'" % configState.getId())
+		logger.notice(u"Updating configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'update')
-		logger.notice(u"Updated configState: '%s'" % configState.getId())
+		logger.notice(u"Updated configState: '%s'" % configState.getIdent())
 	
 	def configState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
@@ -537,54 +532,23 @@ class File31Backend(ConfigDataBackend):
 		return result
 	
 	def configState_deleteObjects(self, configStates):
-		ConfigDataBackend.config_deleteObjects(self, configStates)
+		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		
 		configStates = forceObjectClassList(configStates, ConfigState)
 		logger.notice(u"Deleting configStates ...")
 		for configState in configStates:
-			logger.info(u"Deleting configState: '%s'" % configState.getId())
-			# TODO: everything
+			logger.info(u"Deleting configState in host: '%s'" % configState.getIdent())
+			iniFile = IniFile(filename = self._getConfigFile(
+				'ConfigState',
+				configState.getIdent(returnType = 'dict'),
+				'ini')
+			)
+			cp = iniFile.parse()
+			if cp.has_section(configState.getConfigId()):
+				cp.remove_section(configState.getConfigId())
+			iniFile.generate(cp)
+		
 		logger.notice(u"Deleted configStates.")
-	
-	
-	
-	def configState_createObjects(self, configStates):
-		ConfigDataBackend.configState_createObjects(configState)
-	
-	def configState_updateObjects(self, configStates):
-		ConfigDataBackend.configState_updateObjects(configState)
-	
-	def configState_create(self, configId, objectId, values=None):
-		ConfigDataBackend.configState_create(configId, objectId, values)
-	
-	def configState_delete(self, configId, objectId):
-		ConfigDataBackend.configState_delete(configId, objectId)
-	
-	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[]):
-		ConfigDataBackend.configState_getClientToDepotserver(depotIds=[], clientIds=[])
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-################################################################################
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
@@ -623,19 +587,11 @@ class File31Backend(ConfigDataBackend):
 		
 		logger.notice(u"Deleting products ...")
 		for product in products:
+			fileType = ''
 			logger.info(u"Deleting product: '%s'" % product.getId())
-			if product.getType() in ('LocalbootProduct', 'NetbootProduct'):
-				configFile = self._getConfigFile(
-					product.getType(),
-					{
-						'id': product.getId(),
-						'productVersion': product.getProductVersion(),
-						'packageVersion': product.getPackageVersion()
-					},
-					'ini'
-				)
-				if os.path.exists(configFile):
-					os.unlink(configFile)
+			configFile = self._getConfigFile( product.getType(), product.getIdent(), 'pro' )
+			if os.path.exists(configFile):
+				os.unlink(configFile)
 		logger.notice(u"Deleted products.")
 	
 

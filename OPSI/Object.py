@@ -560,6 +560,8 @@ class Config(Entity):
 	
 	def setDefaultValues(self, defaultValues):
 		self.defaultValues = forceList(defaultValues)
+		if self.possibleValues is None:
+			self.possibleValues = []
 		for defaultValue in self.defaultValues:
 			if not defaultValue in self.possibleValues:
 				self.possibleValues.append(defaultValue)
