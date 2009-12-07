@@ -43,6 +43,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
+from OPSI import Tools
 
 # Get logger instance
 logger = Logger()
@@ -95,17 +96,70 @@ class LDAPBackend(ConfigDataBackend):
 		self._defaultDomain = None
 		
 		self._mappings = [
-			{ 'opsiAttribute': 'ipAddress', 'ldapAttribute': 'opsiIpAddress' },
-			{ 'opsiAttribute': 'ipAddress', 'ldapAttribute': 'opsiIpAddress' }
-		]
+				{
+					'opsiClass':     'OpsiHost',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiHost' ],
+					'attributes': [
+						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiHostId' },
+						{ 'opsiAttribute': 'ipAddress',       'ldapAttribute': 'opsiIpAddress' },
+						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiDescription' },
+						{ 'opsiAttribute': 'notes',           'ldapAttribute': 'opsiNotes' },
+						{ 'opsiAttribute': 'inventoryNumber', 'ldapAttribute': 'opsiInventoryNumber' }
+					]
+				},
+				{
+					'opsiClass':      'OpsiClient',
+					'opsiSuperClass': 'OpsiHost',
+					'objectClasses':  [ 'opsiHost', 'opsiClient' ],
+					'attributes': [
+						{ 'opsiAttribute': 'created',         'ldapAttribute': 'opsiCreatedTimestamp' },
+						{ 'opsiAttribute': 'lastSeen',        'ldapAttribute': 'opsiLastSeenTimestamp' },
+						{ 'opsiAttribute': 'opsiHostKey',     'ldapAttribute': 'opsiHostKey' }
+					]
+				},
+				{
+					'opsiClass':      'OpsiDepotserver',
+					'opsiSuperClass': 'OpsiHost',
+					'objectClasses':  [ 'opsiHost', 'opsiDepotserver' ],
+					'attributes': [
+						{ 'opsiAttribute': 'depotLocalUrl',       'ldapAttribute': 'opsiDepotLocalUrl' },
+						{ 'opsiAttribute': 'depotRemoteUrl',      'ldapAttribute': 'opsiDepotRemoteUrl' },
+						{ 'opsiAttribute': 'repositoryLocalUrl',  'ldapAttribute': 'opsiRepositoryLocalUrl' },
+						{ 'opsiAttribute': 'repositoryRemoteUrl', 'ldapAttribute': 'opsiRepositoryRemoteUrl' },
+						{ 'opsiAttribute': 'networkAddress',      'ldapAttribute': 'opsiNetworkAddress' },
+						{ 'opsiAttribute': 'maxBandwidth',        'ldapAttribute': 'opsiMaximumBandwidth' },
+						{ 'opsiAttribute': 'opsiHostKey',         'ldapAttribute': 'opsiHostKey' }
+					]
+				 },
+				 {
+					'opsiClass':      'OpsiConfigserver',
+					'opsiSuperClass': 'OpsiDepotserver',
+					'objectClasses':  [ 'opsiHost', 'opsiDepotserver', 'opsiConfigserver' ],
+					'attributes': [
+					]
+				 }
+				 
+			]
 		
 		self._opsiAttributeToLdapAttribute = {}
-		for mapping in self._mappings:
-			self._opsiAttributeToLdapAttribute[mapping['opsiAttribute']] = mapping['ldapAttribute']
-		
 		self._ldapAttributeToOpsiAttribute = {}
+		self._opsiClassToLdapClasses = {}
 		for mapping in self._mappings:
-			self._ldapAttributeToOpsiAttribute[mapping['ldapAttribute']] = mapping['opsiAttribute']
+			self._opsiClassToLdapClasses[ mapping['opsiClass'] ] = mapping['objectClasses']
+			self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ] = {}
+			self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ] = {}
+			if mapping.get('opsiSuperClass'):
+				self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ] = dict( self._opsiAttributeToLdapAttribute[ mapping['opsiSuperClass'] ] )
+				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ] = dict( self._ldapAttributeToOpsiAttribute[ mapping['opsiSuperClass'] ] )
+			for attribute in mapping['attributes']:
+				self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ][ attribute['opsiAttribute'] ] = attribute['ldapAttribute']
+				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
+		
+		#print Tools.objectToBeautifiedText(self._opsiAttributeToLdapAttribute)
+		#print Tools.objectToBeautifiedText(self._ldapAttributeToOpsiAttribute)
+		#print Tools.objectToBeautifiedText(self._opsiClassToLdapClasses)
+		#print Tools.objectToBeautifiedText(self._ldapClassToOpsiClass)
 		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
 		self._ldap = LDAPSession(
@@ -156,38 +210,42 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
 	
 	def _ldapObjectToOpsiObject(self, ldapObject):
+		
+		self._ldapAttributeToOpsiAttribute
+		self._opsiClassToLdapClasses
+		
+		
 		ldapObject.readFromDirectory(self._ldap)
+		
 		opsiClassName = None
-		if   'opsiConfigserver' in ldapObject.getObjectClasses():
-			opsiClassName = 'OpsiConfigserver'
-		elif 'opsiDepotserver'  in ldapObject.getObjectClasses():
-			opsiClassName = 'OpsiDepotserver'
-		elif 'opsiClient'       in ldapObject.getObjectClasses():
-			opsiClassName = 'OpsiClient'
-		else:
-			raise Exception(u"Unhandled ldap objectclasses %s" % ldapObject.getObjectClasses())
+		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
+			matched = True
+			for objectClass in ldapObject.getObjectClasses():
+				if not objectClass in ldapClasses:
+					matched = False
+					continue
+			if matched:
+				opsiClassName = opsiClass
+				break
+		
+		if not opsiClassName:
+			raise Exception(u"Failed to get opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
+		
+		logger.info(u"Mapped ldap objectClasses %s to opsi class: %s" % (ldapObject.getObjectClasses(), opsiClassName))
 		
 		opsiObjectHash = {}
 		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = True).items():
 			logger.debug(u"LDAP attribute is: %s" % attribute)
 			if attribute in ('cn', 'objectClass'):
 				continue
-			if (attribute == 'opsiHostId'):
-				attribute = 'id'
-			elif (attribute == 'opsiHostKey'):
-				attribute = 'opsiHostKey'
-			elif (attribute == 'opsiMaximumBandwidth'):
-				attribute = 'maxBandwidth'
+			
+			if self._ldapAttributeToOpsiAttribute[opsiClassName].has_key(attribute):
+				attribute = self._ldapAttributeToOpsiAttribute[opsiClassName][attribute]
 			
 			else:
-				attribute = attribute.replace('Timestamp', '')
-				attribute = attribute[4].lower() + attribute[5:]
+				logger.error(u"No mapping found for ldap attribute '%s' of class '%s'" % (attribute, opsiClassName))
 			
-			logger.debug(u"Opsi attribute is: %s" % attribute)
-			opsiValue = None
-			if value:
-				opsiValue = value[0]
-			opsiObjectHash[attribute] = opsiValue
+			opsiObjectHash[attribute] = value
 		
 		Class = eval(opsiClassName)
 		return Class.fromHash(opsiObjectHash)
