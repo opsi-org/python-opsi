@@ -103,6 +103,7 @@ class LDAPBackend(ConfigDataBackend):
 					'attributes': [
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiHostId' },
 						{ 'opsiAttribute': 'ipAddress',       'ldapAttribute': 'opsiIpAddress' },
+						{ 'opsiAttribute': 'hardwareAddress', 'ldapAttribute': 'opsiHardwareAddress' },
 						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiDescription' },
 						{ 'opsiAttribute': 'notes',           'ldapAttribute': 'opsiNotes' },
 						{ 'opsiAttribute': 'inventoryNumber', 'ldapAttribute': 'opsiInventoryNumber' }
@@ -174,7 +175,93 @@ class LDAPBackend(ConfigDataBackend):
 	# -------------------------------------------------
 		
 	def _objectFilterToLDAPFilter(self, filter):
-		pass
+		
+		print "Filter: %s" % filter
+		ldapFilter = None
+		filters = []
+		objectTypes = []
+		for objectType in forceList(filter.get('type')):
+			if not objectType in objectTypes:
+				objectTypes.append(objectType)
+			objectClasses = self._opsiClassToLdapClasses.get(objectType)
+			if not objectClasses:
+				continue
+			
+			classFilters = []
+			for objectClass in objectClasses:
+				classFilters.append(
+					pureldap.LDAPFilter_equalityMatch(
+						attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
+						assertionValue = pureldap.LDAPAssertionValue(objectClass)
+					)
+				)
+			
+			if classFilters:
+				if (len(classFilters) == 1):
+					filters.append(classFilters[0])
+				else:
+					filters.append(pureldap.LDAPFilter_and(classFilters))
+			
+		if filters:
+			if (len(filters) == 1):
+				ldapFilter = filters[0]
+			else:
+				ldapFilter = pureldap.LDAPFilter_or(filters)
+		
+		if not ldapFilter:
+			ldapFilter = pureldap.LDAPFilter_present('objectClass')
+		
+		
+		andFilters = []
+		for (attribute, values) in filter.items():
+			if (attribute == 'type'):
+				continue
+			
+			if values is None:
+				continue
+			
+			mappingFound = False
+			for objectType in objectTypes:
+				if self._opsiAttributeToLdapAttribute[objectType].has_key(attribute):
+					attribute = self._opsiAttributeToLdapAttribute[objectType][attribute]
+					mappingFound = True
+					break
+			
+			if not mappingFound:
+				logger.error(u"No mapping found for opsi attribute '%s' of classes %s" % (attribute, objectTypes))
+			
+			filters = []
+			for value in forceList(values):
+				if (value == None):
+					filters.append(
+						pureldap.LDAPFilter_not(
+							pureldap.LDAPFilter_present(attribute)
+						)
+					)
+					
+				else:
+					filters.append(
+						pureldap.LDAPFilter_equalityMatch(
+							attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
+							assertionValue = pureldap.LDAPAssertionValue(value)
+						)
+					)
+			if filters:
+				if (len(filters) == 1):
+					andFilters.append(filters[0])
+				else:
+					andFilters.append(pureldap.LDAPFilter_or(filters))
+		if andFilters:
+			newFilter = None
+			if (len(andFilters) == 1):
+				newFilter = andFilters[0]
+			else:
+				newFilter = pureldap.LDAPFilter_and(andFilters)
+			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
+		
+		return ldapFilter.asText()
+		
+	
 		
 	def _createOrganizationalRole(self, dn):
 		''' This method will add a oprganizational role object
@@ -209,32 +296,52 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productStatesContainerDn)
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
 	
-	def _ldapObjectToOpsiObject(self, ldapObject):
+	def _ldapObjectToOpsiObject(self, ldapObject, attributes=[]):
+		'''
+			Method to convert ldap-Object to opsi-Object
 		
+		'''
 		self._ldapAttributeToOpsiAttribute
 		self._opsiClassToLdapClasses
 		
 		
 		ldapObject.readFromDirectory(self._ldap)
 		
+		logger.info(u"Searching opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
 		opsiClassName = None
 		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
+			logger.debug(u"Testing opsi class '%s' (ldapClasses: %s)" % (opsiClass, ldapClasses))
 			matched = True
 			for objectClass in ldapObject.getObjectClasses():
 				if not objectClass in ldapClasses:
 					matched = False
 					continue
+			for objectClass in ldapClasses:
+				if not objectClass in ldapObject.getObjectClasses():
+					matched = False
+					continue
+			
 			if matched:
+				logger.debug(u"Matched")
 				opsiClassName = opsiClass
 				break
 		
 		if not opsiClassName:
 			raise Exception(u"Failed to get opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
 		
+		# [ 'opsiHost', 'opsiDepotserver', 'opsiConfigserver' ],
+		# Mapped ldap objectClasses ['opsiHost', 'opsiDepotserver'] to opsi class: OpsiConfigserver
 		logger.info(u"Mapped ldap objectClasses %s to opsi class: %s" % (ldapObject.getObjectClasses(), opsiClassName))
 		
+		Class = eval(opsiClassName)
+		identAttributes = mandatoryConstructorArgs(Class)
+		if attributes:
+			for identAttribute in identAttributes:
+				if not identAttribute in attributes:
+					attributes.append(identAttribute)
+		
 		opsiObjectHash = {}
-		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = True).items():
+		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = False).items():
 			logger.debug(u"LDAP attribute is: %s" % attribute)
 			if attribute in ('cn', 'objectClass'):
 				continue
@@ -245,10 +352,54 @@ class LDAPBackend(ConfigDataBackend):
 			else:
 				logger.error(u"No mapping found for ldap attribute '%s' of class '%s'" % (attribute, opsiClassName))
 			
-			opsiObjectHash[attribute] = value
+			if not attributes or attribute in attributes:
+				opsiObjectHash[attribute] = value
 		
-		Class = eval(opsiClassName)
+		print "=============>>>>", opsiObjectHash
+		
 		return Class.fromHash(opsiObjectHash)
+	
+	def _opsiObjectToLdapObject(self, opsiObject, dn):
+		'''
+			Method to convert Opsi-Object to ldap-Object
+		'''
+		
+		objectClasses = []
+		
+		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
+			if (opsiObject.getType() == opsiClass):
+				objectClasses = ldapClasses
+				break
+		
+		if not objectClasses:
+			raise Exception(u"Failed to get ldapClasses for OpsiClass: %s" % opsiObject)
+			
+		
+		ldapObj = LDAPObject(dn)
+		ldapObj.new(*objectClasses)
+		for (attribute, value) in opsiObject.toHash().items():
+			if (attribute == 'type'):
+				continue
+			
+			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
+				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
+			else:
+				logger.error(u"No mapping found for opsi attribute '%s' of class '%s'" % (attribute, opsiObject.getType()))
+			ldapObj.setAttribute(attribute, value)
+		
+		return ldapObj
+
+		
+	def _updateLdapObject(self, ldapObject, opsiObject):
+		ldapObject.readFromDirectory(self._ldap)
+		newLdapObject = self._opsiObjectToLdapObject(opsiObject, ldapObject.getDn())
+		for (attribute, value) in newLdapObject.getAttributeDict(valuesAsList=True).items():
+			if attribute in ('cn', 'objectClass'):
+				continue
+			if not value:
+				continue
+			ldapObject.setAttribute(attribute, value)
+		ldapObject.writeToDirectory(self._ldap)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -256,339 +407,46 @@ class LDAPBackend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		
-		#bool(False) == False
-		#bool(0) == False
-		#bool(1) = True
-		#bool(None) = False
-		#bool([None]) = True
-		#bool(['']) = False
-		#bool('')  = False
-		#bool(' ') = True
-		
-		#Create a new host
-		#if self._createOrganizationalRole(_self._hostsContainerDn
-		
-		objectClasses = []
-		if isinstance(host, OpsiClient):
-			objectClasses = ['opsiClient']
-		elif isinstance(host, OpsiConfigserver):
-			objectClasses = ['opsiConfigserver', 'opsiDepotserver']
-		elif isinstance(host, OpsiDepotserver):
-			objectClasses = ['opsiDepotserver']
-		
-		ldapObj = LDAPObject('cn=%s,%s' % (host.id, self._hostsContainerDn))
-		ldapObj.new(*objectClasses,
-				opsiHostId            = host.id,
-				opsiDescription       = host.description,
-				opsiNotes             = host.notes,
-				opsiHardwareAddress   = host.hardwareAddress,
-				opsiIpAddress         = host.ipAddress,
-				opsiInventoryNumber   = host.inventoryNumber or '',
-				opsiHostKey           = host.opsiHostKey
-		)
-		if isinstance(host, OpsiClient):
-			
-			ldapObj.setAttribute('opsiCreatedTimestamp',  host.created)
-			ldapObj.setAttribute('opsiLastSeenTimestamp', host.lastSeen)
-		
-		
-		elif isinstance(host, OpsiDepotserver) or isinstance(host, OpsiConfigserver):
-			
-			ldapObj.setAttribute('opsiDepotLocalUrl',       host.depotLocalUrl)
-			ldapObj.setAttribute('opsiDepotRemoteUrl',      host.depotRemoteUrl)
-			ldapObj.setAttribute('opsiRepositoryLocalUrl',  host.repositoryLocalUrl)
-			ldapObj.setAttribute('opsiRepositoryRemoteUrl', host.repositoryRemoteUrl)
-			ldapObj.setAttribute('opsiNetworkAddress',      host.networkAddress)
-			ldapObj.setAttribute('opsiMaximumBandwidth',    host.maxBandwidth)
-		
-		logger.critical(u"Try to create Host in ldap")
-		ldapObj.writeToDirectory(self._ldap)
+		dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		logger.info(u"Creating host: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(host, dn)
+		ldapObject.writeToDirectory(self._ldap)
 		
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
-	
+		
+		dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		logger.info(u"Updating host: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, host)
+		
 	def host_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		
 		logger.info(u"Getting hosts, filter: %s" % filter)
 		hosts = []
 		
+		if not filter.get('type'):
+			filter['type'] = [ 'OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver']
 		
-		# "type"
-		# "id"
-		# "description"
-		# "ipAddress"
-		# ...
-		# 
-		# filter = {}
-		# filter = {"type" = "OpsiClient"}
-		# (objectClass=opsiClient)
-		# filter = {"type" = ["OpsiClient", "OpsiDeposerver"]}
-		# (|(objectClass=opsiClient)(objectClass=opsiDepotserver))
-		# filter = {"type" = None}
-		# (objectClass=opsiHost)
-		# filter = {"ipAddress" = [ None, "" ] }
-		# (&(objectClass=opsiHost)(!(ipAddress=*)))
-		# filter = {"type" = "OpsiClient", "id" = "*clien*" }
-		# (&(objectClass=opsiClient)(opsiHostId=*clien*))
-		# filter = {"type" = "OpsiClient", "id" = "*clien" }
-		# filter = { "id" = "clien*" }
-		# filter = { "id" = ["client1.uib.local", "client2.uib.local"], "description" = ["desc1", "desc2"] }
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
-		
-		# pureldap.LDAPFilter_equalityMatch      => string
-		# pureldap.LDAPFilter_substrings_initial => string*
-		# pureldap.LDAPFilter_substrings_final   => *string
-		# pureldap.LDAPFilter_substrings_any     => *string*
-		
-		# False:
-		#    None, 0, False, "", [], {}
-		
-		# (objectClass=opsiHost)
-		
-		
-		
-		
-		
-		ldapFilter = None
-		if filter.get('type'):
-			filters = []
-			for objectType in forceList(filter['type']):
-				objectClass = None
-				if   (objectType == 'OpsiClient'):
-					objectClass = 'opsiClient'
-				elif (objectType == 'OpsiDepotserver'):
-					objectClass = 'opsiDepotserver'
-				elif (objectType == 'OpsiConfigserver'):
-					objectClass = 'opsiConfigserver'
-				if objectClass:
-					filters.append(
-						pureldap.LDAPFilter_equalityMatch(
-							attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
-							assertionValue = pureldap.LDAPAssertionValue(objectClass)
-						)
-					)
-			if filters:
-				if (len(filters) == 1):
-					ldapFilter = filters[0]
-				else:
-					ldapFilter = pureldap.LDAPFilter_or(filters)
-		if not ldapFilter:
-			ldapFilter = objectClassFilter = pureldap.LDAPFilter_equalityMatch(
-				attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
-				assertionValue = pureldap.LDAPAssertionValue('opsiHost')
-			)
-		
-		andFilters = []
-		for (attribute, values) in filter.items():
-			if (attribute == 'type'):
-				continue
-			if (attribute == 'id'):
-				attribute = 'opsiHostId'
-			
-			if self._opsiAttributeToLdapAttribute.get(attribute):
-				attribute = self._opsiAttributeToLdapAttribute.get(attribute)
-			else:
-				attribute = 'opsi' + attribute[0].upper() + attribute[1:]
-			
-			filters = []
-			for value in forceList(values):
-				if (value == None):
-					filters.append(
-						pureldap.LDAPFilter_not(
-							pureldap.LDAPFilter_present(attribute)
-						)
-					)
-					
-				else:
-					filters.append(
-						pureldap.LDAPFilter_equalityMatch(
-							attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
-							assertionValue = pureldap.LDAPAssertionValue(value)
-						)
-					)
-			if filters:
-				if (len(filters) == 1):
-					andFilters.append(filters[0])
-				else:
-					andFilters.append(pureldap.LDAPFilter_or(filters))
-		if andFilters:
-			newFilter = None
-			if (len(andFilters) == 1):
-				newFilter = andFilters[0]
-			else:
-				newFilter = pureldap.LDAPFilter_and(andFilters)
-			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
-		
-		logger.comment(ldapFilter.asText())
-		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter.asText() )
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
-			hosts.append( self._ldapObjectToOpsiObject(ldapObject) )
-		
+			hosts.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
 		return hosts
 		
-		#Convert LDAPObject to OPSI-Objects
-		##### Notizen
-		#if isinstance(host, OpsiClient):
-		#	objectClass = 'opsiClient'
-		#elif isinstance(host, OpsiDepotserver):
-		#	objectClass = 'opsiDepotserver'
-		#elif isinstance(host, OpsiConfigserver):
-		#	objectClass = 'opsiConfigserver'
-		#ldapObj = LDAPObject('cn=%s,%s' % (host.id, self._hostsContainerDn))
-		#ldapObj.new(objectClass,
-		#		opsiHostId            = host.id,
-		#		opsiDescription       = host.description or None,
-		#		opsiNotes             = host.notes or None,
-		#		opsiHardwareAddress   = host.hardwareAddress,
-		#		opsiIpAddress         = host.ipAddress,
-		#		opsiInventoryNumber   = host.inventoryNumber or None,
-		#		opsiHostKey           = host.opsiHostKey
-		#)
-		#if isinstance(host, OpsiClient):
-		#	
-		#	ldapObj.setAttribute('opsiCreatedTimestamp',  host.created)
-		#	ldapObj.setAttribute('opsiLastSeenTimestamp', host.lastSeen)
-		#
-		#
-		#elif isinstance(host, OpsiDepotserver) or isinstance(host, OpsiConfigserver):
-		#	
-		#	ldapObj.setAttribute('opsiDepotLocalUrl',       host.depotLocalUrl)
-		#	ldapObj.setAttribute('opsiDepotRemoteUrl',      host.depotRemoteUrl)
-		#	ldapObj.setAttribute('opsiRepositoryLocalUrl',  host.repositoryLocalUrl)
-		#	ldapObj.setAttribute('opsiRepositoryRemoteUrl', host.repositoryRemoteUrl)
-		#	ldapObj.setAttribute('opsiNetworkAddress',      host.networkAddress)
-		#	ldapObj.setAttribute('opsiMaximumBandwidth',    host.maxBandwidth)
-		############# Notizen
-		
-		
-		#if (res):
-		#	hosthash = {}
-		#	hostobj = []
-		#	for resLdapObj in res:
-		#		print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-		#		resLdapObj.readFromDirectory(self._ldap)
-		#		for (key, value) in resLdapObj.getAttributeDict().items():
-		#			#if not key.startswith('opsi') or not value:
-		#			#	continue
-		#			if value:
-		#				hosthash[key] = value
-		#				
-		#		print hosthash
-		#		if (hosthash):
-		#			if (hosthash['objectClass'] == 'opsiClient'):
-		#				opsiclient = OpsiClient.fromHash(hosthash)
-		#				
-		#					id        	= hosthash['opsiHostId'],
-		#					opsiHostKey 	= hosthash['opsiHostKey'],
-		#					description	= hosthash['opsiDescription'],
-		#					notes		= hosthash['opsiNotes'],
-		#					hardwareAddress = hosthash['opsiHardwareAddress'],
-		#					ipAddress       = hosthash['opsiIpAddress'],
-		#					inventoryNumber = hosthash['opsiInventoryNumber'],
-		#					created         = hosthash['opsiCreatedTimestamp'],
-		#					lastSeen        = hosthash['opsiLastSeenTimestamp']
-		#				)
-		#				hosts.append(opsiclient)
-		#			elif (hosthash['objectClass'] == 'OpsiDepotserver'):
-		#				opsiclient = OpsiDepotserver(
-		#					id        	   = hosthash['opsiHostId'],
-		#					depotLocalUrl      = hosthash['opsiDepotLocalUrl'],
-		#					depotRemoteUrl     = hosthash['opsiDepotRemoteUrl']
-		#					repositoryLocalUrl = hosthash['opsiRepositoryLocalUrl']
-		#					repositoryRemoteUrl= hosthash['opsiRepositoryRemoteUrl']
-		#					description= hosthash['opsiDescription']
-		#					notes= hosthash['opsiNotes']
-		#					
-		#					
-		#					
-		#					networkAddress= hosthash['opsiDepotRemoteUrl']
-		#					maxBandwith= hosthash['opsiDepotRemoteUrl']
-		#					
-		#					
-		#					
-		#					
-		#					'opsiNotes': 'Config 1', 
-		#					'opsiNetworkAddress': '192.168.1.0/24', 
-		#					'objectClass': 'opsiDepotserver', 
-		#					'opsiHostId': 'erollinux.uib.local', 
-		#					'opsiRepositoryLocalUrl': 'file:///var/lib/opsi/products', 
-		#					'opsiDepotRemoteUrl': 'smb://config1/opt_pcbin', 
-		#					'opsiDepotLocalUrl': 'file:///opt/pcbin/install', 
-		#					'opsiInventoryNumber': '00000000001', 
-		#					'opsiMaximumBandwidth': '10000', 
-		#					'opsiRepositoryRemoteUrl': 'webdavs://config1.uib.local:4447/products', 
-		#					'opsiHostKey': '71234545689056789012123678901234', 
-		#					'opsiDescription': 'The configserver', 
-		#					'cn': 'erollinux.uib.local'}
-		#					
-		#					
-		#					opsiHostKey 	= hosthash['opsiHostKey'],
-		#					description	= hosthash['opsiDescription'],
-		#					notes		= hosthash['opsiNotes'],
-		#					hardwareAddress = hosthash['opsiHardwareAddress'],
-		#					ipAddress       = hosthash['opsiIpAddress'],
-		#					inventoryNumber = hosthash['opsiInventoryNumber'],
-		#					created         = hosthash['opsiCreatedTimestamp'],
-		#					lastSeen        = hosthash['opsiLastSeenTimestamp']
-		#				)
-		#				hosts.append(opsiclient)
-		#	print hosts
-		#	
-		#	
-		#		
-		#		
-		#return hosts
-		#	
-		#searchFilter = pureldap.LDAPFilter_and(
-		#	[
-		#		pureldap.LDAPFilter_equalityMatch(
-		#			attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
-		#			assertionValue = pureldap.LDAPAssertionValue('addressbookPerson')
-		#		)
-		#	]
-		#	+ filters)
-                #
-		#	
-		#(&()())
-		#
-		#myfilter = ''
-		#if filter is None:
-		#	return ''
-		#for (key,val) in filter:
-		#	if myfilter == '':
-		#		myfilter = "(%s=%s)" % (key, val)
-		#	else:
-		#		myfilter = ",%s=%s" % (key, val)
-		#return myfilter
-		#
-		#
-		#type = forceList(filter.get('type', []))
-		#if 'OpsiDepotServer' in type and not 'OpsiConfigserver' in type:
-		#	type.append('OpsiConfigserver')
-		#	filter['type'] = type
-		#(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
-		#
-		##for hostContainerDn in self._hostsContainerDn:
-		#search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, self._objectFilterToLDAPFilter(filter))
-		#hosts.extend( search.getObjects() )
-		#	
-		##for res in 
-		#print "======================="
-		#print hosts
-		#
-		#
-		##for hostContainerDn in self._hostsContainerDn:
-		##	search = LDAPObjectSearch(self._ldap, hostContainerDn,)
-		##	hosts.extend(search.getObjects())
-		#
-		##print hosts
-		#return []
-	
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
-	
-	
+		
+		logger.error(u"DELETING hosts %s" % hosts)
+		for host in forceObjectClassList(hosts, Host):
+			dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting host: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

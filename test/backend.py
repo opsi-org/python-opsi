@@ -687,6 +687,7 @@ class BackendTest(object):
 			assert not host.getDescription() is None
 		
 		hosts = self.backend.host_getObjects( attributes = ['description', 'notes'], ipAddress = None )
+		logger.debug(u"expected(%s) == got(%s)" % (self.hosts, hosts))
 		assert len(hosts) == len(self.hosts)
 		for host in hosts:
 			assert host.getIpAddress() is None
