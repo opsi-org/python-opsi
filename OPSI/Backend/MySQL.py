@@ -373,6 +373,7 @@ class MySQLBackend(ConfigDataBackend):
 					`hostId` varchar(255) NOT NULL,
 					PRIMARY KEY( `hostId` ),
 					`type` varchar(30),
+					INDEX(`type`),
 					`description` varchar(100),
 					`notes` varchar(500),
 					`hardwareAddress` varchar(17),
@@ -398,6 +399,7 @@ class MySQLBackend(ConfigDataBackend):
 					`configId` varchar(200) NOT NULL,
 					PRIMARY KEY( `configId` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`description` varchar(256),
 					`multiValue` bool NOT NULL,
 					`editable` bool NOT NULL
@@ -426,7 +428,9 @@ class MySQLBackend(ConfigDataBackend):
 					`config_state_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_state_id` ),
 					`configId` varchar(200) NOT NULL,
+					INDEX(`configId`),
 					`objectId` varchar(255) NOT NULL,
+					INDEX(`objectId`),
 					`values` text
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -441,6 +445,7 @@ class MySQLBackend(ConfigDataBackend):
 					`packageVersion` varchar(16) NOT NULL,
 					PRIMARY KEY( `productId`, `productVersion`, `packageVersion` ),
 					`type` varchar(32) NOT NULL,
+					INDEX(`type`),
 					`name` varchar(128) NOT NULL,
 					`licenseRequired` varchar(50),
 					`setupScript` varchar(50),
@@ -483,6 +488,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `depotId` ) REFERENCES HOST( `hostId` ),
 					PRIMARY KEY(  `productId`, `depotId` ),
 					`productType` varchar(16) NOT NULL,
+					INDEX(`productType`),
 					`locked` bool
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -499,6 +505,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
 					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`description` varchar(256),
 					`multiValue` bool NOT NULL,
 					`editable` bool NOT NULL
@@ -573,6 +580,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 					`propertyId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
+					INDEX(`objectId`),
 					`values` text
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -585,7 +593,9 @@ class MySQLBackend(ConfigDataBackend):
 					`groupId` varchar(255) NOT NULL,
 					PRIMARY KEY( `groupId` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`parentGroupId` varchar(255),
+					INDEX(`parentGroupId`),
 					`description` varchar(100),
 					`notes` varchar(500)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -611,6 +621,7 @@ class MySQLBackend(ConfigDataBackend):
 					`licenseContractId` VARCHAR(100) NOT NULL,
 					PRIMARY KEY( `licenseContractId` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`description` varchar(100),
 					`notes` varchar(1000),
 					`partner` varchar(100),
@@ -630,7 +641,9 @@ class MySQLBackend(ConfigDataBackend):
 					`licenseContractId` VARCHAR(100) NOT NULL,
 					FOREIGN KEY ( `licenseContractId` ) REFERENCES LICENSE_CONTRACT( `licenseContractId` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`boundToHost` varchar(50),
+					INDEX(`boundToHost`),
 					`maxInstallations` int,
 					`expirationDate` TIMESTAMP
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -644,6 +657,7 @@ class MySQLBackend(ConfigDataBackend):
 					`licensePoolId` VARCHAR(200) NOT NULL,
 					PRIMARY KEY( `licensePoolId` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`description` varchar(100)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -714,6 +728,7 @@ class MySQLBackend(ConfigDataBackend):
 					`displayVersion` varchar(100),
 					PRIMARY KEY( `softwareId`, `displayName`, `displayVersion` ),
 					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
 					`uninstallString` varchar(200),
 					`binaryName` varchar(100),
 					`installSize` BIGINT
@@ -728,9 +743,11 @@ class MySQLBackend(ConfigDataBackend):
 					`config_id` INT NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `config_id` ),
 					`clientId` varchar(255) NOT NULL,
+					INDEX(`clientId`),
 					`softwareId` varchar(100) NOT NULL,
 					`displayName` varchar(100),
 					`displayVersion` varchar(100),
+					INDEX(`softwareId`, `displayName`, `displayVersion`),
 					`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`state` TINYINT NOT NULL,

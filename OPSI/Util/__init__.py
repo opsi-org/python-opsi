@@ -48,7 +48,7 @@ from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, ssl
 
 # OPSI imports
-from Logger import *
+from OPSI.Logger import *
 from OPSI.Types import *
 
 # Get Logger instance
