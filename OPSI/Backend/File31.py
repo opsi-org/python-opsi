@@ -123,22 +123,21 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': '*' }
 			],
 			'Product': [
-				{ 'fileType': 'pro', 'attribute': '*', 'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'name',               'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'licenseRequired',    'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'setupScript',        'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'uninstallScript',    'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'updateScript',       'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'alwaysScript',       'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'onceScript',         'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'customScript',       'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'priority',           'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'description',        'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'advice',             'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'changelog',          'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'productClassNames',  'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'windowsSoftwareIds', 'object': 'product' },
-				{ 'fileType': 'pro', 'attribute': 'userLoginScript',    'object': 'product' }
+				{ 'fileType': 'pro', 'attribute': 'name',               'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'licenseRequired',    'object': 'product', 'json': True  },
+				{ 'fileType': 'pro', 'attribute': 'setupScript',        'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'uninstallScript',    'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'updateScript',       'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'alwaysScript',       'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'onceScript',         'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'customScript',       'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'priority',           'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'description',        'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'advice',             'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'changelog',          'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'productClassNames',  'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'windowsSoftwareIds', 'object': 'product', 'json': False },
+				{ 'fileType': 'pro', 'attribute': 'userLoginScript',    'object': 'product', 'json': False }
 			],
 		}
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
@@ -202,9 +201,10 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 			for entry in os.listdir(self.__productDir):
 				entry = entry.lower()
-				if not entry.endswith('.localboot'):
-					if not entry.endswith('.netboot'):
-						continue # faster than regex below
+				
+				if not ( entry.endswith('.localboot') and objType in ('Product', 'LocalbootProduct') ):
+					if not ( entry.endswith('.netboot') and objType in ('Product', 'NetbootProduct') ):
+						continue # doesn't fit: next file
 				
 				#example:            exampleexampleexa  _ 123.123 - 123.123  .localboot
 				match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
@@ -244,12 +244,10 @@ class File31Backend(ConfigDataBackend):
 				(filter[attribute], attribute, value))
 			for filterValue in forceList(filter[attribute]):
 				if (filterValue == value):
-					logger.comment("Value is equal filterValue")
 					matched = True
 					break
 				if type(value) is list:
 					if filterValue in value:
-						logger.comment("FilterValue is in list of value")
 						matched = True
 						break
 					continue
@@ -257,7 +255,6 @@ class File31Backend(ConfigDataBackend):
 					# TODO: still necessary?
 					continue
 				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
-					logger.comment("Value matched regex of filterValue")
 					matched = True
 					break
 			if matched:
@@ -320,10 +317,14 @@ class File31Backend(ConfigDataBackend):
 								% (m['option'], section, filename))
 							objHash[m['attribute']] = None
 				
-				elif (fileType == 'pro'): # TODO: returns just product-type
+				elif (fileType == 'pro'):
 					if filename and os.path.isfile(filename):
 						packageControlFile = PackageControlFile(filename = filename)
 						objHash = packageControlFile.getProduct().toHash()
+						if filename.lower().endswith('.localboot'):
+							objHash['type'] = 'LocalbootProduct'
+						elif filename.lower().endswith('.netboot'):
+							objHash['type'] = 'NetbootProduct'
 			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)

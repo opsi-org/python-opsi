@@ -253,6 +253,7 @@ class PackageControlFile(TextFile):
 		lineNum = 0
 		for line in self._lines:
 			lineNum += 1
+			
 			if (len(line) > 0) and line[0] in (';', '#'):
 				# Comment
 				continue
@@ -260,16 +261,25 @@ class PackageControlFile(TextFile):
 			match = self.sectionRegex.search(line)
 			if match:
 				sectionType = match.group(1).strip().lower()
-				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty'):
+				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty', 'changelog'):
 					raise Exception(u"Parse error in line %s: unkown section '%s'" % (lineNum, sectionType))
-				if self._sections.has_key(sectionType):
-					self._sections[sectionType].append({})
+				if (sectionType == 'changelog'):
+					self._sections[sectionType] = u''
 				else:
-					self._sections[sectionType] = [{}]
+					if self._sections.has_key(sectionType):
+						self._sections[sectionType].append({})
+					else:
+						self._sections[sectionType] = [{}]
 				continue
 			
 			elif not sectionType and line:
 				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+			
+			if (sectionType == 'changelog'):
+				if self._sections[sectionType]:
+					self._sections[sectionType] += u'\n'
+				self._sections[sectionType] += line.rstrip()
+				continue
 			
 			key = None
 			value = None
@@ -282,6 +292,8 @@ class PackageControlFile(TextFile):
 					key = match.group(1).lower()
 					value = match.group(2).lstrip()
 			
+			
+				
 			if (sectionType == 'package' and key in \
 					['version', 'depends', 'incremental']):
 				option = key
@@ -294,7 +306,7 @@ class PackageControlFile(TextFile):
 					 'version', 'packageversion', 'priority',
 					 'licenserequired', 'productclasses', 'pxeconfigtemplate',
 					 'setupscript', 'uninstallscript', 'updatescript',
-					 'alwaysscript', 'oncescript']):
+					 'alwaysscript', 'oncescript', 'customscript', 'userloginscript']):
 				option = key
 				if   (key == 'id'):                value = forceProductId(value)
 				elif (key == 'type'):              value = forceProductType(value)
@@ -353,6 +365,8 @@ class PackageControlFile(TextFile):
 					self._sections[sectionType][-1][option] += u'\n%s' % value
 		
 		for (sectionType, secs) in self._sections.items():
+			if (sectionType == 'changelog'):
+				continue
 			for i in range(len(secs)):
 				for (option, value) in secs[i].items():
 					if (sectionType == 'product'         and option == 'productclasses') or \
@@ -413,12 +427,14 @@ class PackageControlFile(TextFile):
 			description        = product.get('description'),
 			advice             = product.get('advice'),
 			productClassNames  = product.get('productclasses'),
-			windowsSoftwareIds = self._sections.get('windows',[{}])[0].get('softwareids')
+			windowsSoftwareIds = self._sections.get('windows',[{}])[0].get('softwareids', []),
+			changelog          = self._sections.get('changelog')
+			
 		)
-		if isinstance(self._product, NetbootProduct) and product.get('pxeconfigtemplate'):
+		if isinstance(self._product, NetbootProduct) and not product.get('pxeconfigtemplate') is None:
 			self._product.setPxeConfigTemplate(product.get('pxeconfigtemplate'))
 		
-		if isinstance(self._product, LocalbootProduct) and product.get('userloginscript'):
+		if isinstance(self._product, LocalbootProduct) and not product.get('userloginscript') is None:
 			self._product.setUserLoginScript(product.get('userloginscript'))
 		
 		# Create ProductDependency objects
@@ -516,7 +532,8 @@ class PackageControlFile(TextFile):
 		self._lines.append( u'version: %s'         % self._product.getProductVersion() )
 		self._lines.append( u'priority: %s'        % self._product.getPriority() )
 		self._lines.append( u'licenseRequired: %s' % self._product.getLicenseRequired() )
-		self._lines.append( u'productClasses: %s'  % u', '.join(self._product.getProductClassIds()) )
+		if not self._product.getProductClassIds() is None:
+			self._lines.append( u'productClasses: %s'  % u', '.join(self._product.getProductClassIds()) )
 		self._lines.append( u'setupScript: %s'     % self._product.getSetupScript() )
 		self._lines.append( u'uninstallScript: %s' % self._product.getUninstallScript() )
 		self._lines.append( u'updateScript: %s'    % self._product.getUpdateScript() )
@@ -563,6 +580,11 @@ class PackageControlFile(TextFile):
 					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
 			if productProperty.getDefaultValues():
 				self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
+		
+		if not self._product.getChangelog() is None:
+			self._lines.append( u'' )
+			self._lines.append( u'[Changelog]' )
+			self._lines.extend( self._product.getChangelog().split('\n') )
 		
 		self.open('w')
 		self.writelines()

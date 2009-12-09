@@ -534,24 +534,6 @@ class BackendTest(object):
 		)
 		self.licenseOnClients = [self.licenseOnClient1, self.licenseOnClient2]
 		
-		self.product2 = LocalbootProduct(
-			id                 = 'product2',
-			name               = u'Product 2',
-			productVersion     = '2.0',
-			packageVersion     = 'test',
-			licenseRequired    = False,
-			setupScript        = "setup.ins",
-			uninstallScript    = u"uninstall.ins",
-			updateScript       = "update.ins",
-			alwaysScript       = None,
-			onceScript         = None,
-			priority           = 0,
-			description        = None,
-			advice             = "",
-			productClassNames  = ['localboot-products'],
-			windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
-		)
-		
 		# AuditSoftwares
 		self.auditSoftware1 = AuditSoftware(
 			softwareId      = '{480aa013-93a7-488c-89c3-b985b6c8440a}',
@@ -871,6 +853,9 @@ class BackendTest(object):
 							logger.warning(u"Skipping productClassIds attribute test!!!")
 							continue
 						if not value is None:
+							
+							print "'%s'" % (product['id'])
+							
 							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, product[attribute]))
 							if type(value) is list:
 								for v in value:
