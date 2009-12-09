@@ -855,6 +855,7 @@ class BackendTest(object):
 						if not value is None:
 							
 							print "'%s'" % (product['id'])
+							print value
 							
 							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, product[attribute]))
 							if type(value) is list:
@@ -876,6 +877,7 @@ class BackendTest(object):
 		
 		self.backend.productProperty_createObjects(self.productProperties)
 		productProperties = self.backend.productProperty_getObjects()
+		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
 		assert len(productProperties) == len(self.productProperties)
 		
 		# ProductDependencies
