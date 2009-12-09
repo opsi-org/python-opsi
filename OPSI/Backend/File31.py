@@ -93,7 +93,7 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'editable'       , 'section': '<id>', 'option': 'editable' ,      'json': True      },
 				{ 'fileType': 'ini', 'attribute': 'multiValue'     , 'section': '<id>', 'option': 'multivalue' ,    'json': True      },
 				{ 'fileType': 'ini', 'attribute': 'possibleValues' , 'section': '<id>', 'option': 'possiblevalues', 'json': True      },
-				{ 'fileType': 'ini', 'attribute': 'defaultValues'  , 'section': '<id>', 'option': 'defaultvalues' , 'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'defaultValues'  , 'section': '<id>', 'option': 'defaultvalues' , 'json': True      }
 			],
 			'OpsiClient': [
 				{ 'fileType': 'key', 'attribute': 'opsiHostKey' },
@@ -103,7 +103,7 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'ipAddress',       'section': 'info', 'option': 'ipaddress'       },
 				{ 'fileType': 'ini', 'attribute': 'inventoryNumber', 'section': 'info', 'option': 'inventorynumber' },
 				{ 'fileType': 'ini', 'attribute': 'created',         'section': 'info', 'option': 'created'         },
-				{ 'fileType': 'ini', 'attribute': 'lastSeen',        'section': 'info', 'option': 'lastseen'        },
+				{ 'fileType': 'ini', 'attribute': 'lastSeen',        'section': 'info', 'option': 'lastseen'        }
 			],
 			'OpsiDepotserver': [
 				{ 'fileType': 'key', 'attribute': 'opsiHostKey' },
@@ -124,6 +124,21 @@ class File31Backend(ConfigDataBackend):
 			],
 			'Product': [
 				{ 'fileType': 'pro', 'attribute': '*', 'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'name',               'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'licenseRequired',    'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'setupScript',        'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'uninstallScript',    'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'updateScript',       'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'alwaysScript',       'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'onceScript',         'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'customScript',       'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'priority',           'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'description',        'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'advice',             'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'changelog',          'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'productClassNames',  'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'windowsSoftwareIds', 'object': 'product' },
+				{ 'fileType': 'pro', 'attribute': 'userLoginScript',    'object': 'product' }
 			],
 		}
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
@@ -131,6 +146,7 @@ class File31Backend(ConfigDataBackend):
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
 		self._mappings['LocalbootProduct'] = self._mappings['Product']
 		self._mappings['NetbootProduct'] = self._mappings['Product']
+		self._mappings['NetbootProduct'].append({ 'fileType': 'pro', 'attribute': 'pxeConfigTemplate', 'object': 'product' })
 	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
@@ -183,14 +199,15 @@ class File31Backend(ConfigDataBackend):
 				except:
 					pass
 		
-		elif objType in ('LocalbootProduct', 'NetbootProduct'):
+		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 			for entry in os.listdir(self.__productDir):
-				if not entry.lower().endswith('.localboot'):
-					if not entry.lower().endswith('.netboot'):
-						continue
+				entry = entry.lower()
+				if not entry.endswith('.localboot'):
+					if not entry.endswith('.netboot'):
+						continue # faster than regex below
 				
 				#example:            exampleexampleexa  _ 123.123 - 123.123  .localboot
-				match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', )
+				match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
 				if not match:
 					continue
 				
@@ -209,10 +226,12 @@ class File31Backend(ConfigDataBackend):
 		
 		if not needFilter:
 			return objIdents
+		
 		filteredObjIdents = []
 		for ident in objIdents:
 			if self._objectHashMatches(ident, **filter):
 				filteredObjIdents.append(ident)
+		
 		return filteredObjIdents
 		
 	def _objectHashMatches(self, objHash, **filter):
@@ -235,7 +254,7 @@ class File31Backend(ConfigDataBackend):
 						break
 					continue
 				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
-					#still necessary?
+					# TODO: still necessary?
 					continue
 				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
 					logger.comment("Value matched regex of filterValue")
@@ -277,7 +296,6 @@ class File31Backend(ConfigDataBackend):
 			objHash = dict(ident)
 			for (fileType, mapping) in mappings.items():
 				filename = self._getConfigFile(objType, ident, fileType)
-				
 				if (fileType == 'key'):
 					hostKeys = HostKeyFile(filename = filename)
 					for m in mapping:
@@ -302,15 +320,14 @@ class File31Backend(ConfigDataBackend):
 								% (m['option'], section, filename))
 							objHash[m['attribute']] = None
 				
-				elif (fileType == 'pro'):
-					packageControlFile = PackageControlFile(filename = filename)
-					if (mapping['*']['object'] == 'product'):
+				elif (fileType == 'pro'): # TODO: returns just product-type
+					if filename and os.path.isfile(filename):
+						packageControlFile = PackageControlFile(filename = filename)
 						objHash = packageControlFile.getProduct().toHash()
 			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
-				print "objHash: ", objHash
 				objects.append(Class.fromHash(objHash))
 		return objects
 	
@@ -343,14 +360,16 @@ class File31Backend(ConfigDataBackend):
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename)
-				if (mode == 'create'):
-					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
-						iniFile.delete()
-						iniFile.create()
+				if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver') and (mode == 'create'):
+					iniFile.delete()
+					iniFile.create()
+				
 				cp = iniFile.parse()
+				
 				if objType in ('Config', 'UnicodeConfig', 'BoolConfig') and (mode == 'create'):
 					if cp.has_section(obj.getId()):
 						cp.remove_section(obj.getId())
+				
 				for (attribute, value) in obj.toHash().items():
 					if value is None:
 						continue
@@ -373,17 +392,16 @@ class File31Backend(ConfigDataBackend):
 			
 			elif (fileType == 'pro'):
 				packageControlFile = PackageControlFile(filename = filename)
-				if (mapping['*']['object'] == 'product'):
-					if (mode == 'create'):
-						packageControlFile.setProduct(obj)
-					else:
-						productHash = packageControlFile.getProduct().toHash()
-						for (attribute, value) in obj.toHash().items():
-							if value is None:
-								continue
-							productHash[attribute] = value
-						packageControlFile.setProduct(Product.fromHash(productHash))
-					packageControlFile.generate()
+				if (mode == 'create'):
+					packageControlFile.setProduct(obj)
+				else:
+					productHash = packageControlFile.getProduct().toHash()
+					for (attribute, value) in obj.toHash().items():
+						if value is None:
+							continue
+						productHash[attribute] = value
+					packageControlFile.setProduct(Product.fromHash(productHash))
+				packageControlFile.generate()
 	
 	def base_create(self):
 		os.mkdir(self.__baseDir)
@@ -575,7 +593,8 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.product_getObjects(self, attributes = [], **filter)
 		
 		logger.notice(u"Getting products ...")
-		result = self._read('Product', attributes, **filter)
+		result = self._read('LocalbootProduct', attributes, **filter)
+		result.extend(self._read('NetbootProduct', attributes, **filter))
 		logger.notice(u"Got products.")
 		
 		return result

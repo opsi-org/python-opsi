@@ -349,7 +349,8 @@ class PackageControlFile(TextFile):
 			if not self._sections[sectionType][-1].has_key(option):
 				self._sections[sectionType][-1][option] = value
 			else:
-				self._sections[sectionType][-1][option] += '\n' + value
+				if type(self._sections[sectionType][-1][option]) is unicode:
+					self._sections[sectionType][-1][option] += u'\n%s' % value
 		
 		for (sectionType, secs) in self._sections.items():
 			for i in range(len(secs)):
@@ -421,7 +422,7 @@ class PackageControlFile(TextFile):
 			self._product.setUserLoginScript(product.get('userloginscript'))
 		
 		# Create ProductDependency objects
-		for productDependency in self._sections['productdependency']:
+		for productDependency in self._sections.get('productdependency', []):
 			self._productDependencies.append(
 				ProductDependency(
 					productId                  = self._product.getId(),
@@ -438,7 +439,7 @@ class PackageControlFile(TextFile):
 			)
 		
 		# Create ProductProperty objects
-		for productProperty in self._sections['productproperty']:
+		for productProperty in self._sections.get('productproperty', []):
 			Class = UnicodeProductProperty
 			if   productProperty.get('type') in ('UnicodeProductProperty', '', None):
 				Class = UnicodeProductProperty

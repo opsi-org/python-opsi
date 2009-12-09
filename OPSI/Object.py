@@ -968,6 +968,12 @@ class NetbootProduct(Product):
 	def setDefaults(self):
 		Product.setDefaults(self)
 	
+	def getPxeConfigTemplate(self):
+		return self.pxeConfigTemplate
+	
+	def setPxeConfigTemplate(self, pxeConfigTemplate):
+		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
+	
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'NetbootProduct'
