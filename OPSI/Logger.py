@@ -515,8 +515,8 @@ class LoggerImplementation:
 				fhEncoding = locale.getpreferredencoding()
 			
 			if self.__consoleColor:
-				m = u"%s%s%s" % (color, m, COLOR_NORMAL)
-			print >> fh, m.encode(fhEncoding, 'backslashreplace')
+				m = u"%s%s%s\n" % (color, m, COLOR_NORMAL)
+			fh.write(m.encode(fhEncoding, 'backslashreplace'))
 			
 		if (level <= self.__fileLevel):
 			# Log to file

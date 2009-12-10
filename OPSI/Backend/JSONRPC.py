@@ -63,11 +63,12 @@ def non_blocking_connect_http(self, connectTimeout=0):
 			if e[0] in (106, 10056):
 				# Transport endpoint is already connected
 				break
-			if e[0] not in (114, 115, 10035):
+			if e[0] not in (111, 114, 115, 10035):
+				# 111 = Connection refused
 				if sock:
 					sock.close()
 				raise
-			time.sleep(0.1)
+			time.sleep(0.5)
 	sock.setblocking(1)
 	self.sock = sock
 	
@@ -95,29 +96,30 @@ class JSONRPCBackend(Backend):
 			if option in ('address'):
 				self._address = value
 		
-		self.__sessionId = None
+		self._sessionId = None
 		
 		# Default values
-		self.__defaultHttpPort = 4444
-		self.__defaultHttpsPort = 4447
-		self.__protocol = u'https'
-		self.__method = METHOD_POST
-		self.__timeout = None
-		self.__connectTimeout = 30
-		self.__connectOnInit = True
-		self.__interface = None
-		self.__retry = True
-		self.__rpcLock = threading.Lock()
-		self.__application = 'opsi jsonrpc module version %s' % __version__
+		self._defaultHttpPort = 4444
+		self._defaultHttpsPort = 4447
+		self._protocol = u'https'
+		self._method = METHOD_POST
+		self._timeout = None
+		self._connectTimeout = 20
+		self._connectOnInit = True
+		self._connected = False
+		self._interface = None
+		self._retry = True
+		self._rpcLock = threading.Lock()
+		self._application = 'opsi jsonrpc module version %s' % __version__
 		
 		if ( self._address.find('/') == -1 and self._address.find('=') == -1 ):
-			if (self.__protocol == 'https'):
-				self._address = u'%s://%s:4447/rpc' % (self.__protocol, self._address)
+			if (self._protocol == 'https'):
+				self._address = u'%s://%s:4447/rpc' % (self._protocol, self._address)
 			else:
-				self._address = u'%s://%s:4444/rpc' % (self.__protocol, self._address)
+				self._address = u'%s://%s:4444/rpc' % (self._protocol, self._address)
 		
-		socket.setdefaulttimeout(self.__timeout)
-		if self.__connectOnInit:
+		socket.setdefaulttimeout(self._timeout)
+		if self._connectOnInit:
 			self._connect()
 	
 	def __del__(self):
@@ -127,11 +129,12 @@ class JSONRPCBackend(Backend):
 			pass
 	
 	def exit(self):
-		self._jsonRPC('exit')
-		self._disconnect()
+		if self._connected:
+			self._jsonRPC('exit')
+			self._disconnect()
 	
 	def _createInstanceMethods(self):
-		for method in self.__interface:
+		for method in self._interface:
 			try:
 				methodName = method['name']
 				args       = method['args']
@@ -174,13 +177,14 @@ class JSONRPCBackend(Backend):
 				logger.debug2(u"Call string is: %s" % callString)
 				
 				exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-				setattr(self,methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 			except Exception, e:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
 	
 	def _disconnect(self):
-		if self.__connection:
-			self.__connection.close()
+		if self._connection:
+			self._connection.close()
+		self._connected = False
 		
 	def _connect(self):
 		# Split address which should be something like http(s)://xxxxxxxxxx:yy/zzzzz
@@ -191,46 +195,45 @@ class JSONRPCBackend(Backend):
 		# Split port from host
 		hostAndPort = parts[2].split(':')
 		host = hostAndPort[0]
-		port = self.__defaultHttpsPort
+		port = self._defaultHttpsPort
 		if (parts[0][:-1] == 'http'):
-			self.__protocol = 'http'
-			port = self.__defaultHttpPort
+			self._protocol = 'http'
+			port = self._defaultHttpPort
 		if ( len(hostAndPort) > 1 ):
 			port = int(hostAndPort[1])
-		self.__baseUrl = u'/' + u'/'.join(parts[3:])
+		self._baseUrl = u'/' + u'/'.join(parts[3:])
 		
 		# Connect to host
 		try:
-			if (self.__protocol == 'https'):
+			if (self._protocol == 'https'):
 				logger.info(u"Opening https connection to %s:%s" % (host, port))
-				self.__connection = httplib.HTTPSConnection(host, port)
-				non_blocking_connect_https(self.__connection, self.__connectTimeout)
+				self._connection = httplib.HTTPSConnection(host, port)
+				non_blocking_connect_https(self._connection, self._connectTimeout)
 			else:
 				logger.info(u"Opening http connection to %s:%s" % (host, port))
-				self.__connection = httplib.HTTPConnection(host, port)
-				non_blocking_connect_http(self.__connection, self.__connectTimeout)
+				self._connection = httplib.HTTPConnection(host, port)
+				non_blocking_connect_http(self._connection, self._connectTimeout)
 				
-			self.__connection.connect()
+			self._connection.connect()
 			
-			if not self.__interface:
-				self.__retry = False
+			if not self._interface:
+				self._retry = False
 				try:
-					self.__interface = self._jsonRPC(u'getInterface')
+					self._interface = self._jsonRPC(u'getInterface')
 				finally:
-					self.__retry = True
+					self._retry = True
 			self._createInstanceMethods()
 			
 			logger.info(u"Successfully connected to '%s:%s'" % (host, port))
+			self._connected = True
 		except Exception, e:
 			logger.logException(e)
 			raise BackendIOError(u"Failed to connect to '%s': %s" % (self._address, e))
-		
-		
 	
 	def _jsonRPC(self, method, params=[]):
 		
 		logger.debug(u"Executing jsonrpc method '%s'" % method)
-		self.__rpcLock.acquire()
+		self._rpcLock.acquire()
 		try:
 			# Get params
 			params = Object.serialize(params)
@@ -245,7 +248,7 @@ class JSONRPCBackend(Backend):
 			logger.debug2(u"jsonrpc string: %s" % jsonrpc)
 			
 			logger.debug2(u"requesting: '%s', query '%s'" % (self._address, jsonrpc))
-			response = self.__request(self.__baseUrl, jsonrpc)
+			response = self._request(self._baseUrl, jsonrpc)
 			
 			# Read response
 			if hasattr(json, 'loads'):
@@ -262,11 +265,10 @@ class JSONRPCBackend(Backend):
 			result = Object.deserialize(response.get('result'))
 			return result
 		finally:
-			self.__rpcLock.release()
+			self._rpcLock.release()
 		
-	def __request(self, baseUrl, query='', maxRetrySeconds=5, started=None):
+	def _request(self, baseUrl, query='', maxRetrySeconds=5, started=None):
 		''' Do a http request '''
-		
 		now = time.time()
 		if not started:
 			started = now
@@ -277,52 +279,52 @@ class JSONRPCBackend(Backend):
 		
 		response = None
 		try:
-			if (self.__method == METHOD_GET):
+			if (self._method == METHOD_GET):
 				# Request the resulting url
 				logger.debug(u"Using method GET")
 				get = baseUrl + '?' + urllib.quote(query)
 				logger.debug(u"requesting: %s" % get)
-				self.__connection.putrequest('GET', get)
+				self._connection.putrequest('GET', get)
 			else:
 				logger.debug(u"Using method POST")
-				self.__connection.putrequest('POST', baseUrl)
-				self.__connection.putheader('content-type', 'application/json-rpc')
-				self.__connection.putheader('content-length', len(query))
+				self._connection.putrequest('POST', baseUrl)
+				self._connection.putheader('content-type', 'application/json-rpc')
+				self._connection.putheader('content-length', len(query))
 			
 			# Add some http headers
-			self.__connection.putheader('user-agent', self.__application)
-			self.__connection.putheader('Accept', 'application/json-rpc')
-			self.__connection.putheader('Accept', 'text/plain')
-			if self.__sessionId:
+			self._connection.putheader('user-agent', self._application)
+			self._connection.putheader('Accept', 'application/json-rpc')
+			self._connection.putheader('Accept', 'text/plain')
+			if self._sessionId:
 				# Add sessionId cookie to header
-				self.__connection.putheader('Cookie', self.__sessionId)
+				self._connection.putheader('Cookie', self._sessionId)
 			
 			# Add basic authorization header
 			auth = urllib.unquote(self._username + ':' + self._password)
-			self.__connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth).strip() )
+			self._connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth).strip() )
 			
-			self.__connection.endheaders()
-			if (self.__method == METHOD_POST):
+			self._connection.endheaders()
+			if (self._method == METHOD_POST):
 				logger.debug2(u"Sending query")
-				self.__connection.send(query)
+				self._connection.send(query)
 			
 			# Get response
 			logger.debug2(u"Getting response")
-			response = self.__connection.getresponse()
+			response = self._connection.getresponse()
 			
 			# Get cookie from header
 			cookie = response.getheader('Set-Cookie', None)
 			if cookie:
 				# Store sessionId cookie
-				self.__sessionId = cookie.split(';')[0].strip()
+				self._sessionId = cookie.split(';')[0].strip()
 		
 		except Exception, e:
 			logger.debug(u"Request to '%s' failed, retry: %s, started: %s, now: %s, maxRetrySeconds: %s" \
-					% (self._address, self.__retry, started, now, maxRetrySeconds))
-			if self.__retry and (now - started < maxRetrySeconds):
+					% (self._address, self._retry, started, now, maxRetrySeconds))
+			if self._retry and (now - started < maxRetrySeconds):
 				logger.warning(u"Request to '%s' failed: %s, trying to reconnect" % (self._address, e))
 				self._connect()
-				return self.__request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
+				return self._request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
 			else:
 				logger.logException(e)
 				raise BackendIOError(u"Request to '%s' failed: %s" % (self._address, e))

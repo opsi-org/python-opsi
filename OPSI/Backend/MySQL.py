@@ -38,6 +38,7 @@ __version__ = '3.5'
 import MySQLdb, warnings, time, json
 from _mysql_exceptions import *
 from sqlalchemy import pool
+import threading
 
 # OPSI imports
 from OPSI.Logger import *
@@ -66,7 +67,9 @@ class ConnectionPool(object):
 			def creator():
 				return MySQLdb.connect(**kwargs)
 			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)
-		
+			con = ConnectionPool.__instance.connect()
+			con.close()
+			
 		# Store instance reference as the only member in the handle
 		self.__dict__['_ConnectionPool__instance'] = ConnectionPool.__instance
 	
@@ -88,136 +91,144 @@ class MySQL:
 		self._password = password
 		self._address  = address
 		self._database = database
-		self._mysql = ConnectionPool(
-				host         = self._address,
-				user         = self._username,
-				passwd       = self._password,
-				db           = self._database,
-				use_unicode  = True,
-				charset      = 'utf8',
-				pool_size    = 20,
-				max_overflow = 10,
-				timeout      = 30
-		)
-		#print self._mysql.status()
-		#try:
-		#	self._conn = mysql.connect()
-		#except Exception, e:
-		#	raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
-		#
-		#self._cursor = self._conn.cursor(MySQLdb.cursors.DictCursor)
-	
+		self._transactionLock = threading.Lock()
+		try:
+			self._pool = ConnectionPool(
+					host         = self._address,
+					user         = self._username,
+					passwd       = self._password,
+					db           = self._database,
+					use_unicode  = True,
+					charset      = 'utf8',
+					pool_size    = 20,
+					max_overflow = 10,
+					timeout      = 30
+			)
+		except Exception, e:
+			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
+		logger.notice(u'MySQL created: %s' % self)
+		
 	def connect(self):
-		conn = self._mysql.connect()
+		self._transactionLock.acquire()
+		logger.debug2(u"Connection pool status: %s" % self._pool.status())
+		conn = self._pool.connect()
 		cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 		return (conn, cursor)
 		
 	def close(self, conn, cursor):
 		cursor.close()
 		conn.close()
-		#if not self._conn:
-		#	return
-		#logger.info(u"Closing database connection")
-		#self._cursor.close()
-		#self._conn.commit()
-		#self._conn.close()
+		self._transactionLock.release()
 	
 	def query(self, query):
 		(conn, cursor) = self.connect()
-		logger.debug2(u"query: %s" % query)
-		self.execute(query, conn, cursor)
-		self.close(conn, cursor)
+		try:
+			logger.debug2(u"query: %s" % query)
+			self.execute(query, conn, cursor)
+		finally:
+			self.close(conn, cursor)
 		return cursor.rowcount
 		
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
 		(conn, cursor) = self.connect()
-		self.execute(query, conn, cursor)
-		valueSet = cursor.fetchall()
-		if not valueSet:
-			logger.debug(u"No result for query '%s'" % query)
-			return []
-		self.close(conn, cursor)
+		try:
+			self.execute(query, conn, cursor)
+			valueSet = cursor.fetchall()
+			if not valueSet:
+				logger.debug(u"No result for query '%s'" % query)
+				return []
+		finally:
+			self.close(conn, cursor)
 		return valueSet
 		
 	def getRow(self, query):
 		logger.debug2(u"getRow: %s" % query)
 		(conn, cursor) = self.connect()
-		self.execute(query, conn, cursor)
-		row = cursor.fetchone()
-		if not row:
-			logger.debug(u"No result for query '%s'" % query)
-			return {}
-		logger.debug2(u"Result: '%s'" % row)
-		self.close(conn, cursor)
+		try:
+			self.execute(query, conn, cursor)
+			row = cursor.fetchone()
+			if not row:
+				logger.debug(u"No result for query '%s'" % query)
+				return {}
+			logger.debug2(u"Result: '%s'" % row)
+		finally:
+			self.close(conn, cursor)
 		return row
 		
 	def insert(self, table, valueHash):
 		(conn, cursor) = self.connect()
-		colNames = values = u''
-		for (key, value) in valueHash.items():
-			colNames += u"`%s`, " % key
-			if value is None:
-				values += u"NULL, "
-			elif type(value) in (float, long, int, bool):
-				values += u"%s, " % value
-			elif type(value) is str:
-				values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
-			else:
-				values += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
-			
-		query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
-		logger.debug2(u"insert: %s" % query)
-		self.execute(query, conn, cursor)
-		result = cursor.lastrowid
-		self.close(conn, cursor)
+		try:
+			colNames = values = u''
+			for (key, value) in valueHash.items():
+				colNames += u"`%s`, " % key
+				if value is None:
+					values += u"NULL, "
+				elif type(value) in (float, long, int, bool):
+					values += u"%s, " % value
+				elif type(value) is str:
+					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				else:
+					values += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+				
+			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			logger.debug2(u"insert: %s" % query)
+			self.execute(query, conn, cursor)
+			result = cursor.lastrowid
+		finally:
+			self.close(conn, cursor)
 		return result
 		
 	def update(self, table, where, valueHash):
 		(conn, cursor) = self.connect()
-		if not valueHash:
-			raise BackendBadValueError(u"No values given")
-		query = u"UPDATE `%s` SET " % table
-		for (key, value) in valueHash.items():
-			if value is None:
-				continue
-			query += u"`%s` = " % key
-			if type(value) in (float, long, int, bool):
-				query += u"%s, " % value
-			elif type(value) is str:
-				query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
-			else:
-				query += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
-		
-		query = u'%s WHERE %s;' % (query[:-2], where)
-		logger.debug2(u"update: %s" % query)
-		self.execute(query, conn, cursor)
+		try:
+			if not valueHash:
+				raise BackendBadValueError(u"No values given")
+			query = u"UPDATE `%s` SET " % table
+			for (key, value) in valueHash.items():
+				if value is None:
+					continue
+				query += u"`%s` = " % key
+				if type(value) in (float, long, int, bool):
+					query += u"%s, " % value
+				elif type(value) is str:
+					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				else:
+					query += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+			
+			query = u'%s WHERE %s;' % (query[:-2], where)
+			logger.debug2(u"update: %s" % query)
+			self.execute(query, conn, cursor)
+		finally:
+			self.close(conn, cursor)
 		return cursor.lastrowid
 	
 	def delete(self, table, where):
 		(conn, cursor) = self.connect()
-		query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
-		logger.debug2(u"delete: %s" % query)
-		self.execute(query, conn, cursor)
-		result = cursor.lastrowid
-		self.close(conn, cursor)
+		try:
+			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
+			logger.debug2(u"delete: %s" % query)
+			self.execute(query, conn, cursor)
+			result = cursor.lastrowid
+		finally:
+			self.close(conn, cursor)
 		return result
 	
 	
 	def execute(self, query, conn=None, cursor=None):
+		needClose = False
 		if not conn or not cursor:
 			(conn, cursor) = self.connect()
-		if not type(query) is unicode:
-			query = unicode(query, 'utf-8', 'replace')
-		res = cursor.execute(query)
-		conn.commit()
+			needClose = True
+		try:
+			if not type(query) is unicode:
+				query = unicode(query, 'utf-8', 'replace')
+			res = cursor.execute(query)
+			conn.commit()
+		finally:
+			if needClose:
+				self.close(conn, cursor)
 		return res
-	
-	#def info(self, conn):
-	#	return conn.info()
-	#
-	#def warningCount(self):
-	#	return conn.warning_count()
 	
 
 # ======================================================================================================
@@ -243,6 +254,7 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
 		
 		self._licenseManagementEnabled = True
+		logger.notice(u'MySQLBackend created: %s' % self)
 		
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
 		#logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))
@@ -252,6 +264,7 @@ class MySQLBackend(ConfigDataBackend):
 			logger.warning(message)
 	
 	def _createQuery(self, table, attributes=[], filter={}):
+		#print self
 		where = u''
 		select = u''
 		query = u''

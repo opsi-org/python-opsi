@@ -208,7 +208,7 @@ class BackendDispatcher(ConfigDataBackend):
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
-			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 			
 			for be in self._backends.keys():
 				if not be in methodBackends:
@@ -385,7 +385,7 @@ class BackendAccessControl(object):
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
 	def _authenticateUser(self):
 		''' Authenticate a user by the underlying operating system.

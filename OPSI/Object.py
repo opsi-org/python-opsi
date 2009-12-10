@@ -158,7 +158,7 @@ class BaseObject(object):
 		return unicode(self).encode("utf-8")
 	
 	__repr__ = __unicode__
-	 
+	
 	
 class Entity(BaseObject):
 	subClasses = {}

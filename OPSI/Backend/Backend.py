@@ -173,7 +173,7 @@ class ExtendedBackend(Backend):
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self.__class__, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 		
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
