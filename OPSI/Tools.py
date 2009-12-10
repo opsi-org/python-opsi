@@ -188,33 +188,33 @@ def jsonObjToHtml(jsonObj, level=0):
 		jsonObj = jsonObj.toHash()
 	
 	if ( type(jsonObj) == type([]) ):
-		html += ' '*hspace + '[ <br />'
+		html += '&nbsp;'*hspace + '[ <br />\n'
 		for i in range( len(jsonObj) ):
 			if type(jsonObj[i]) != type({}) and type(jsonObj[i]) != type([]):
-				html += ' '*hspace
+				html += '&nbsp'*hspace
 			html += jsonObjToHtml(jsonObj[i], level+1)
 			
 			if (i < len(jsonObj)-1):
-				html += ',<br />'
-		html += '<br />' + ' '*hspace + ']'
+				html += ',<br />\n'
+		html += '<br />\n' + '&nbsp;'*hspace + ']'
 	elif ( type(jsonObj) == type({}) ):
-		html += ' '*hspace + '{ <br />'
+		html += '&nbsp'*hspace + '{ <br />\n'
 		i = 0
 		for (key, value) in jsonObj.items():
-			html += ' '*hspace + '"<font class="json_key">' + key +  '</font>": '
+			html += '&nbsp;'*hspace + '"<font class="json_key">' + key +  '</font>": '
 			if type(value) == type({}) or type(value) == type([]):
-				html += '<br />'
+				html += '<br />\n'
 			html += jsonObjToHtml(jsonObj[key], level+1)
 			
 			if (i < len(jsonObj)-1):
-				html += ',<br />'
+				html += ',<br />\n'
 			i+=1
-		html += '<br />' + ' '*hspace + '}'
+		html += '<br />\n' + '&nbsp;'*hspace + '}'
 	else:
 		if hasattr(json, 'dumps'):
 			# python 2.6 json module
 			html += json.dumps(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
 		else:
 			html += json.write(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
-	return html.replace('\\n', '<br />' + ' '*hspace)
+	return html.replace('\\n', '<br />\n' + '&nbsp'*hspace)
 
