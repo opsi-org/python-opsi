@@ -452,12 +452,20 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
+		
+		dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		
+		logger.info(u"Creating host: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(host, dn)
+		#ldapObject.writeToDirectory(self._ldap)
+		print Tools.objectToBeautifiedText(ldapObject)
 	
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
+		#print Tools.objectToBeautifiedText(config)
 	
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
