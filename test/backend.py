@@ -892,6 +892,7 @@ class BackendTest(object):
 		
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['productId'] )
+		logger.debug(u"expected(%s) == got(%s)" % (self.productOnDepots, productOnDepots))
 		assert len(productOnDepots) == len(self.productOnDepots)
 		
 		
