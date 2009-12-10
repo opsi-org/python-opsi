@@ -100,7 +100,6 @@ def getArgAndCallString(method):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class Backend:
 	def __init__(self, **kwargs):
-		
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()

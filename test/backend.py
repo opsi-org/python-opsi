@@ -627,7 +627,7 @@ class BackendTest(object):
 		self.backend.host_createObjects( self.hosts )
 		
 		hosts = self.backend.host_getObjects()
-		logger.info(u"Got hosts: %s" % hosts)
+		logger.debug(u"expected(%s) == got(%s)" % (self.hosts, hosts))
 		assert len(hosts) == len(self.hosts)
 		for host in hosts:
 			logger.debug(host)
@@ -1284,23 +1284,44 @@ class BackendTest(object):
 		logger.setConsoleLevel(consoleLevel)
 	
 	def testMultithreading(self):
+		consoleLevel = logger.getConsoleLevel()
+		if (consoleLevel > LOG_NOTICE):
+			logger.setConsoleLevel(LOG_NOTICE)
 		logger.notice(u"Starting multithreading tests")
 		import threading
 		
 		class MultiThreadTest(threading.Thread):
-			def __init__(self, backend):
+			def __init__(self, backendTest):
 				threading.Thread.__init__(self)
-				self._backend = backend
+				self._backendTest = backendTest
 				
 			def run(self):
-				logger.info(u"Thread %s started" % self)
-				self._backend.host_getObjects()
-				logger.info(u"Thread %s done" % self)
-				
+				try:
+					logger.notice(u"Thread %s started" % self)
+					time.sleep(1)
+					self._backendTest.backend.host_getObjects()
+					self._backendTest.backend.host_deleteObjects(self._backendTest.client1)
+					self._backendTest.backend.host_getObjects()
+					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
+					self._backendTest.backend.host_createObjects(self._backendTest.client2)
+					self._backendTest.backend.host_createObjects(self._backendTest.client1)
+					self._backendTest.backend.host_getObjects()
+					self._backendTest.backend.host_createObjects(self._backendTest.client1)
+					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
+					self._backendTest.backend.host_createObjects(self._backendTest.client1)
+					self._backendTest.backend.host_getObjects()
+					logger.notice(u"Thread %s done" % self)
+				except Exception, e:
+					logger.logException(e)
+		
+		mtts = []
 		for i in range(50):
-			mtt = MultiThreadTest(self.backend)
+			mtt = MultiThreadTest(self)
+			mtts.append(mtt)
 			mtt.start()
-			time.sleep(0.05)
+		for mtt in mtts:
+			mtt.join()
+		logger.setConsoleLevel(consoleLevel)
 		
 class BackendManagerTest(BackendTest):
 	def __init__(self, backendManager):

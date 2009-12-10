@@ -88,12 +88,12 @@ def non_blocking_connect_https(self, connectTimeout=0):
 # ======================================================================================================
 class JSONRPCBackend(Backend):
 	
-	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
-		Backend.__init__(self, username, password, address, **kwargs)
-		
-		self.__address = address
-		self.__username = username
-		self.__password = password
+	def __init__(self, **kwargs):
+		Backend.__init__(self, **kwargs)
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option in ('address'):
+				self._address = value
 		
 		self.__sessionId = None
 		
@@ -110,11 +110,11 @@ class JSONRPCBackend(Backend):
 		self.__rpcLock = threading.Lock()
 		self.__application = 'opsi jsonrpc module version %s' % __version__
 		
-		if ( self.__address.find('/') == -1 and self.__address.find('=') == -1 ):
+		if ( self._address.find('/') == -1 and self._address.find('=') == -1 ):
 			if (self.__protocol == 'https'):
-				self.__address = u'%s://%s:4447/rpc' % (self.__protocol, self.__address)
+				self._address = u'%s://%s:4447/rpc' % (self.__protocol, self._address)
 			else:
-				self.__address = u'%s://%s:4444/rpc' % (self.__protocol, self.__address)
+				self._address = u'%s://%s:4444/rpc' % (self.__protocol, self._address)
 		
 		socket.setdefaulttimeout(self.__timeout)
 		if self.__connectOnInit:
@@ -184,9 +184,9 @@ class JSONRPCBackend(Backend):
 		
 	def _connect(self):
 		# Split address which should be something like http(s)://xxxxxxxxxx:yy/zzzzz
-		parts = self.__address.split('/')
+		parts = self._address.split('/')
 		if ( len(parts) < 3 or ( parts[0] != 'http:' and parts[0] != 'https:') ):
-			raise BackendBadValueError(u"Bad address: '%s'" % self.__address)
+			raise BackendBadValueError(u"Bad address: '%s'" % self._address)
 		
 		# Split port from host
 		hostAndPort = parts[2].split(':')
@@ -223,7 +223,7 @@ class JSONRPCBackend(Backend):
 			logger.info(u"Successfully connected to '%s:%s'" % (host, port))
 		except Exception, e:
 			logger.logException(e)
-			raise BackendIOError(u"Failed to connect to '%s': %s" % (self.__address, e))
+			raise BackendIOError(u"Failed to connect to '%s': %s" % (self._address, e))
 		
 		
 	
@@ -244,7 +244,7 @@ class JSONRPCBackend(Backend):
 				jsonrpc = json.write( { "id": 1, "method": method, "params": params } )
 			logger.debug2(u"jsonrpc string: %s" % jsonrpc)
 			
-			logger.debug2(u"requesting: '%s', query '%s'" % (self.__address, jsonrpc))
+			logger.debug2(u"requesting: '%s', query '%s'" % (self._address, jsonrpc))
 			response = self.__request(self.__baseUrl, jsonrpc)
 			
 			# Read response
@@ -298,7 +298,7 @@ class JSONRPCBackend(Backend):
 				self.__connection.putheader('Cookie', self.__sessionId)
 			
 			# Add basic authorization header
-			auth = urllib.unquote(self.__username + ':' + self.__password)
+			auth = urllib.unquote(self._username + ':' + self._password)
 			self.__connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth).strip() )
 			
 			self.__connection.endheaders()
@@ -318,14 +318,14 @@ class JSONRPCBackend(Backend):
 		
 		except Exception, e:
 			logger.debug(u"Request to '%s' failed, retry: %s, started: %s, now: %s, maxRetrySeconds: %s" \
-					% (self.__address, self.__retry, started, now, maxRetrySeconds))
+					% (self._address, self.__retry, started, now, maxRetrySeconds))
 			if self.__retry and (now - started < maxRetrySeconds):
-				logger.warning(u"Request to '%s' failed: %s, trying to reconnect" % (self.__address, e))
+				logger.warning(u"Request to '%s' failed: %s, trying to reconnect" % (self._address, e))
 				self._connect()
 				return self.__request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
 			else:
 				logger.logException(e)
-				raise BackendIOError(u"Request to '%s' failed: %s" % (self.__address, e))
+				raise BackendIOError(u"Request to '%s' failed: %s" % (self._address, e))
 		
 		try:
 			# Return response content (body)

@@ -37,6 +37,7 @@ __version__ = '3.5'
 # Imports
 import MySQLdb, warnings, time, json
 from _mysql_exceptions import *
+from sqlalchemy import pool
 
 # OPSI imports
 from OPSI.Logger import *
@@ -47,66 +48,112 @@ from OPSI.Backend.Backend import *
 # Get logger instance
 logger = Logger()
 
+class ConnectionPool(object):
+	# Storage for the instance reference
+	__instance = None
+	
+	def __init__(self, **kwargs):
+		""" Create singleton instance """
+		
+		# Check whether we already have an instance
+		if ConnectionPool.__instance is None:
+			# Create and remember instance
+			poolArgs = {}
+			for key in ('pool_size', 'max_overflow', 'timeout'):
+				if key in kwargs.keys():
+					poolArgs[key] = kwargs[key]
+					del kwargs[key]
+			def creator():
+				return MySQLdb.connect(**kwargs)
+			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)
+		
+		# Store instance reference as the only member in the handle
+		self.__dict__['_ConnectionPool__instance'] = ConnectionPool.__instance
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
 
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+	 	return setattr(self.__instance, attr, value)
+	
 # ======================================================================================================
 # =                                       CLASS MYSQL                                                  =
 # ======================================================================================================
 
 class MySQL:
 	def __init__(self, username = 'root', password = '', address = 'localhost', database = 'opsi'):
-		self._conn     = None
 		self._username = username
 		self._password = password
 		self._address  = address
 		self._database = database
-		
-	def connect(self):
-		try:
-			self._conn = MySQLdb.connect(
-						host        = self._address,
-						user        = self._username,
-						passwd      = self._password,
-						db          = self._database,
-						use_unicode = True,
-						charset     = 'utf8' )
-		except Exception, e:
-			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
-		
-		self._cursor = self._conn.cursor(MySQLdb.cursors.DictCursor)
+		self._mysql = ConnectionPool(
+				host         = self._address,
+				user         = self._username,
+				passwd       = self._password,
+				db           = self._database,
+				use_unicode  = True,
+				charset      = 'utf8',
+				pool_size    = 20,
+				max_overflow = 10,
+				timeout      = 30
+		)
+		#print self._mysql.status()
+		#try:
+		#	self._conn = mysql.connect()
+		#except Exception, e:
+		#	raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
+		#
+		#self._cursor = self._conn.cursor(MySQLdb.cursors.DictCursor)
 	
-	def close(self):
-		if not self._conn:
-			return
-		logger.info(u"Closing database connection")
-		self._cursor.close()
-		self._conn.commit()
-		self._conn.close()
+	def connect(self):
+		conn = self._mysql.connect()
+		cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+		return (conn, cursor)
+		
+	def close(self, conn, cursor):
+		cursor.close()
+		conn.close()
+		#if not self._conn:
+		#	return
+		#logger.info(u"Closing database connection")
+		#self._cursor.close()
+		#self._conn.commit()
+		#self._conn.close()
 	
 	def query(self, query):
+		(conn, cursor) = self.connect()
 		logger.debug2(u"query: %s" % query)
-		self.execute(query)
-		return self._cursor.rowcount
-	
+		self.execute(query, conn, cursor)
+		self.close(conn, cursor)
+		return cursor.rowcount
+		
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
-		self.execute(query)
-		valueSet = self._cursor.fetchall()
+		(conn, cursor) = self.connect()
+		self.execute(query, conn, cursor)
+		valueSet = cursor.fetchall()
 		if not valueSet:
 			logger.debug(u"No result for query '%s'" % query)
 			return []
+		self.close(conn, cursor)
 		return valueSet
 		
 	def getRow(self, query):
 		logger.debug2(u"getRow: %s" % query)
-		self.execute(query)
-		row = self._cursor.fetchone()
+		(conn, cursor) = self.connect()
+		self.execute(query, conn, cursor)
+		row = cursor.fetchone()
 		if not row:
 			logger.debug(u"No result for query '%s'" % query)
 			return {}
 		logger.debug2(u"Result: '%s'" % row)
+		self.close(conn, cursor)
 		return row
 		
 	def insert(self, table, valueHash):
+		(conn, cursor) = self.connect()
 		colNames = values = u''
 		for (key, value) in valueHash.items():
 			colNames += u"`%s`, " % key
@@ -121,10 +168,13 @@ class MySQL:
 			
 		query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 		logger.debug2(u"insert: %s" % query)
-		self.execute(query)
-		return self._cursor.lastrowid
+		self.execute(query, conn, cursor)
+		result = cursor.lastrowid
+		self.close(conn, cursor)
+		return result
 		
 	def update(self, table, where, valueHash):
+		(conn, cursor) = self.connect()
 		if not valueHash:
 			raise BackendBadValueError(u"No values given")
 		query = u"UPDATE `%s` SET " % table
@@ -141,37 +191,33 @@ class MySQL:
 		
 		query = u'%s WHERE %s;' % (query[:-2], where)
 		logger.debug2(u"update: %s" % query)
-		self.execute(query)
-		self.commit()
-		return self._cursor.lastrowid
+		self.execute(query, conn, cursor)
+		return cursor.lastrowid
 	
 	def delete(self, table, where):
+		(conn, cursor) = self.connect()
 		query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
 		logger.debug2(u"delete: %s" % query)
-		self.execute(query)
-		return self._cursor.lastrowid
-		
-	def commit(self):
-		self._conn.commit()
-		
-	def execute(self, query):
-		if not self._conn:
-			self.connect()
+		self.execute(query, conn, cursor)
+		result = cursor.lastrowid
+		self.close(conn, cursor)
+		return result
+	
+	
+	def execute(self, query, conn=None, cursor=None):
+		if not conn or not cursor:
+			(conn, cursor) = self.connect()
 		if not type(query) is unicode:
 			query = unicode(query, 'utf-8', 'replace')
-		res = self._cursor.execute(query)
-		self.commit()
+		res = cursor.execute(query)
+		conn.commit()
 		return res
 	
-	def info(self):
-		if not self._conn:
-			self.connect()
-		return self._conn.info()
-	
-	def warningCount(self):
-		if not self._conn:
-			self.connect()
-		return self._conn.warning_count()
+	#def info(self, conn):
+	#	return conn.info()
+	#
+	#def warningCount(self):
+	#	return conn.warning_count()
 	
 
 # ======================================================================================================
@@ -184,8 +230,6 @@ class MySQLBackend(ConfigDataBackend):
 		
 		self._address  = 'localhost'
 		self._database = 'opsi'
-		self._username = None
-		self._password = None
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -194,11 +238,7 @@ class MySQLBackend(ConfigDataBackend):
 				self._address = value
 			elif option in ('database'):
 				self._database = value
-			elif option in ('username'):
-				self._username = value
-			elif option in ('password'):
-				self._password = value
-		
+			
 		warnings.showwarning = self._showwarning
 		self._mysql = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
 		

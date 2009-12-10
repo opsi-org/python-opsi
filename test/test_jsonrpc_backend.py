@@ -12,7 +12,7 @@ logger = Logger()
 logger.setConsoleLevel(LOG_NOTICE)
 logger.setConsoleColor(True)
 
-jsonrpcBackend = JSONRPCBackend(username = 'username', password = 'password', adress = 'localhost')
+jsonrpcBackend = JSONRPCBackend(username = 'username', password = 'password', address = 'localhost')
 
 bt = BackendTest(jsonrpcBackend)
 bt.cleanupBackend()
