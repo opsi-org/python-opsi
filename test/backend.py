@@ -895,6 +895,10 @@ class BackendTest(object):
 		logger.debug(u"expected(%s) == got(%s)" % (self.productOnDepots, productOnDepots))
 		assert len(productOnDepots) == len(self.productOnDepots)
 		
+		self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
+		productOnDepots = self.backend.productOnDepot_getObjects()
+		assert len(productOnDepots) == len(self.productOnDepots) - 1
+		
 		
 		# ProductOnClients
 		logger.notice(u"Testing productOnClient methods")

@@ -145,10 +145,10 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'pro', 'attribute': '*' }
 			],
 			'ProductOnDepot': [
-				{ 'fileType': 'ini', 'attribute': 'productType',    'section': '<id>', 'option': 'producttype'    },
-				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<id>', 'option': 'productversion' },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<id>', 'option': 'packageversion' },
-				{ 'fileType': 'ini', 'attribute': 'depotId',        'section': '<id>', 'option': 'depotid'        }
+				{ 'fileType': 'ini', 'attribute': 'productType',    'section': '<id>', 'option': 'producttype',    'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<id>', 'option': 'productversion', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<id>', 'option': 'packageversion', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'depotId',        'section': '<id>', 'option': 'depotid',        'json': False }
 			],
 			'ProductOnClient': [
 				{ 'fileType': 'ini', 'attribute': '*' }
@@ -242,10 +242,10 @@ class File31Backend(ConfigDataBackend):
 								objIdents.append(
 									{
 									'productId': section[:-6],
-									'productType': cp.get(section, 'productType'),
-									'productVersion': cp.get(section, 'productVersion'),
-									'packageVersion': cp.get(section, 'packageVersion'),
-									'depotId': cp.get(section, hostId)
+									'productType': cp.get(section, 'producttype'),
+									'productVersion': cp.get(section, 'productversion'),
+									'packageVersion': cp.get(section, 'packageversion'),
+									'depotId': cp.get(section, 'depotid')
 									}
 								)
 					else:
@@ -380,8 +380,7 @@ class File31Backend(ConfigDataBackend):
 							# TODO: think about placeholders <..>
 							section = ''
 							if objType in ('ProductOnDepot'):
-								print "setting section to", objHash.get('productId')
-								section = m['section'].replace('<id>', objHash.get('productId'))
+								section = m['section'].replace('<id>', objHash.get('productId') + '-state')
 							else:
 								section = m['section'].replace('<id>', objHash.get('id'))
 							value = cp.get(section, m['option'])
@@ -458,6 +457,10 @@ class File31Backend(ConfigDataBackend):
 					if cp.has_section(obj.getId()):
 						cp.remove_section(obj.getId())
 				
+				if objType in ('ProductOnDepot') and (mode == 'create'):
+					if cp.has_section(obj.getProductId() + u'-state'):
+						cp.remove_section(obj.getProductId() + u'-state')
+				
 				for (attribute, value) in obj.toHash().items():
 					if value is None:
 						continue
@@ -477,9 +480,12 @@ class File31Backend(ConfigDataBackend):
 						
 						if not cp.has_section(section):
 							cp.add_section(section)
+							print "added", section
 						
 						print "set: ", mapping[attribute]['option'], "with", value
 						cp.set(section, mapping[attribute]['option'], forceUnicode(value))
+						print "done"
+				
 				iniFile.generate(cp)
 			
 			elif (fileType == 'pro'):
@@ -620,8 +626,13 @@ class File31Backend(ConfigDataBackend):
 				logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
 				# TODO: delete
 		
+		elif objType in ('ProductOnClient'):
+			for productOnDepot in productsOnDepot:
+				logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
+				# TODO: delete
+		
 		else:
-			print "unknown objType: '%s'" % objType
+			print "unhandled objType: '%s'" % objType
 		
 	
 	def base_create(self):
@@ -880,12 +891,14 @@ class File31Backend(ConfigDataBackend):
 		logger.notice(u"Inserted productOnDepot.")
 	
 	def productOnDepot_updateObject(self, productOnDepot):
+		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		
 		logger.notice(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'update')
 		logger.notice(u"Updated productOnDepot: '%s'" % productOnDepot.getIdent())
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting productsOnDepot ...")
 		result = self._read('ProductOnDepot', attributes, **filter)
@@ -900,6 +913,38 @@ class File31Backend(ConfigDataBackend):
 		self._delete(productOnDepots)
 		logger.notice(u"Deleted productOnDepots.")
 	
-
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnClient_insertObject(self, productOnClient):
+		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
+		
+		logger.notice(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
+		self._write(productOnClient, mode = 'create')
+		logger.notice(u"Inserted productOnClient.")
+	
+	def productOnClient_updateObject(self, productOnClient):
+		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
+		
+		logger.notice(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
+		self._write(productOnClient, mode = 'update')
+		logger.notice(u"Updated productOnClient: '%s'" % productOnClient.getIdent())
+	
+	def productOnClient_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting productOnClient ...")
+		result = self._read('ProductOnClient', attributes, **filter)
+		logger.notice(u"Got productOnClient.")
+		
+		return result
+	
+	def productOnClient_deleteObjects(self, productOnClients):
+		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
+		
+		logger.notice(u"Deleting productOnClients ...")
+		self._delete(productOnClients)
+		logger.notice(u"Deleted productOnClients.")
+	
 
 
