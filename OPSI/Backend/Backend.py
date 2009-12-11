@@ -281,13 +281,13 @@ class BackendIdentExtension(Backend):
 	
 	def auditSoftware_getIdents(self, returnType='unicode', **filter):
 		result = []
-		for auditSoftware in self.auditSoftware_getObjects(attributes = ['softwareId', 'displayName', 'displayVersion'], **filter):
+		for auditSoftware in self.auditSoftware_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture'], **filter):
 			result.append(auditSoftware.getIdent(returnType))
 		return result
 	
 	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
 		result = []
-		for auditSoftwareOnClients in self.auditSoftwareOnClient_getObjects(attributes = ['softwareId', 'displayName', 'displayVersion', 'clientId'], **filter):
+		for auditSoftwareOnClients in self.auditSoftwareOnClient_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'], **filter):
 			result.append(auditSoftwareOnClient.getIdent(returnType))
 		return result
 	
@@ -1047,7 +1047,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
 	
 	def host_delete(self, id):
-		if not id: id = []
+		if id is None: id = []
 		return self._backend.host_deleteObjects(
 				self._backend.host_getObjects(
 					id = forceHostIdList(id)))
@@ -1096,7 +1096,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.config_createObjects(BoolConfig.fromHash(hash))
 	
 	def config_delete(self, id):
-		if not id: id = []
+		if id is None: id = []
 		return self._backend.config_deleteObjects(
 				config_getObjects(
 					id = forceUnicodeLowerList(id)))
@@ -1199,8 +1199,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.configState_createObjects(ConfigState.fromHash(hash))
 	
 	def configState_delete(self, configId, objectId):
-		if not configId: configId = []
-		if not objectId: objectId = []
+		if configId is None: configId = []
+		if objectId is None: objectId = []
 		return self._backend.configState_deleteObjects(
 				self._backend.configState_getObjects(
 					configId = forceUnicodeLowerList(configId),
@@ -1281,7 +1281,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.product_createObjects(NetbootProduct.fromHash(hash))
 	
 	def product_delete(self, productId):
-		if not productId: productId = []
+		if productId is None: productId = []
 		return self._backend.product_deleteObjects(
 				product_getObjects(
 					productId = forceProductIdList(productId)))
@@ -1344,10 +1344,10 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
 	
 	def productProperty_delete(self, productId, productVersion, packageVersion, propertyId):
-		if not productId:      productId      = []
-		if not productVersion: productVersion = []
-		if not packageVersion: packageVersion = []
-		if not propertyId:     propertyId     = []
+		if productId is None:      productId      = []
+		if productVersion is None: productVersion = []
+		if packageVersion is None: packageVersion = []
+		if propertyId is None:     propertyId     = []
 		return self._backend.productOnDepot_deleteObjects(
 				self._backend.productOnDepot_getObjects(
 					productId      = forceProductIdList(productId),
@@ -1406,11 +1406,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.productDependency_createObjects(ProductDependency.fromHash(hash))
 	
 	def productDependency_delete(self, productId, productVersion, packageVersion, productAction, requiredProductId):
-		if not productId:         productId         = []
-		if not productVersion:    productVersion    = []
-		if not packageVersion:    packageVersion    = []
-		if not productAction:     productAction     = []
-		if not requiredProductId: requiredProductId = []
+		if productId is None:         productId         = []
+		if productVersion is None:    productVersion    = []
+		if packageVersion is None:    packageVersion    = []
+		if productAction is None:     productAction     = []
+		if requiredProductId is None: requiredProductId = []
 		return self._backend.productDependency_deleteObjects(
 				self._backend.productDependency_getObjects(
 					productId         = forceProductIdList(productId),
@@ -1462,10 +1462,10 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
 	
 	def productOnDepot_delete(self, productId, productVersion, packageVersion, depotId):
-		if not productId:      productId      = []
-		if not productVersion: productVersion = []
-		if not packageVersion: packageVersion = []
-		if not depotId:        depotId        = []
+		if productId is None:      productId      = []
+		if productVersion is None: productVersion = []
+		if packageVersion is None: packageVersion = []
+		if depotId is None:        depotId        = []
 		return self._backend.productOnDepot_deleteObjects(
 				self._backend.productOnDepot_getObjects(
 					productId = forceProductIdList(productId),
@@ -1754,8 +1754,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
 	
 	def productOnClient_delete(self, productId, clientId):
-		if not productId:  productId  = []
-		if not clientId:   clientId   = []
+		if productId is None:  productId  = []
+		if clientId is None:   clientId   = []
 		return self._backend.productOnClient_deleteObjects(
 				self._backend.productOnClient_getObjects(
 					productId = forceProductIdList(productId),
@@ -1849,9 +1849,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
 	
 	def productPropertyState_delete(self, productId, propertyId, objectId):
-		if not productId:  productId  = []
-		if not propertyId: propertyId = []
-		if not objectId:   objectId   = []
+		if productId is None:  productId  = []
+		if propertyId is None: propertyId = []
+		if objectId is None:   objectId   = []
 		return self._backend.productPropertyState_deleteObjects(
 				self._backend.productPropertyState_getObjects(
 					productId  = forceProductIdList(productId),
@@ -1893,7 +1893,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.group_createObjects(HostGroup.fromHash(hash))
 	
 	def group_delete(self, id):
-		if not id: id = []
+		if id is None: id = []
 		return self._backend.group_deleteObjects(
 				self._backend.group_getObjects(
 					id = forceGroupIdList(id)))
@@ -1984,7 +1984,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.licenseContract_createObjects(LicenseContract.fromHash(hash))
 	
 	def licenseContract_delete(self, id):
-		if not id: id = []
+		if id is None: id = []
 		return self._backend.licenseContract_deleteObjects(
 				self._backend.licenseContract_getObjects(
 					id = forceLicenseContractIdList(id)))
@@ -2039,7 +2039,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.softwareLicense_createObjects(ConcurrentSoftwareLicense.fromHash(hash))
 	
 	def softwareLicense_delete(self, id):
-		if not id: id = []
+		if id is None: id = []
 		return self._backend.softwareLicense_deleteObjects(
 				self._backend.softwareLicense_getObjects(
 					id = forceSoftwareLicenseIdList(id)))
@@ -2079,7 +2079,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.licensePool_createObjects(LicensePool.fromHash(hash))
 	
 	def licensePool_delete(self, id):
-		if not id: id = []
+		if id is None: id = []
 		return self._backend.licensePool_deleteObjects(
 				self._backend.licensePool_getObjects(
 					id = forceLicensePoolIdList(id)))
@@ -2180,9 +2180,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		return self.licenseOnClient_createObjects(LicenseOnClient.fromHash(hash))
 	
 	def licenseOnClient_delete(self, softwareLicenseId, licensePoolId, clientId):
-		if not softwareLicenseId: softwareLicenseId  = []
-		if not licensePoolId:     licensePoolId = []
-		if not clientId:          clientId = []
+		if softwareLicenseId is None: softwareLicenseId  = []
+		if licensePoolId is None:     licensePoolId = []
+		if clientId is None:          clientId = []
 		return self._backend.licenseOnClient_deleteObjects(
 				self._backend.licenseOnClient_getObjects(
 					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
@@ -2198,9 +2198,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		for auditSoftware in auditSoftwares:
 			logger.info(u"Creating %s" % auditSoftware)
 			if self._backend.auditSoftware_getIdents(
-					softwareId     = auditSoftware.softwareId,
-					displayName    = auditSoftware.displayName,
-					displayVersion = auditSoftware.displayVersion):
+					name           = auditSoftware.name,
+					version        = auditSoftware.version,
+					subVersion     = auditSoftware.subVersion,
+					language       = auditSoftware.language,
+					architecture   = auditSoftware.architecture):
 				logger.info(u"%s already exists, updating" % auditSoftware)
 				self._backend.auditSoftware_updateObject(auditSoftware)
 			else:
@@ -2208,9 +2210,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			if self._returnObjectsOnUpdateAndCreate:
 				result.extend(
 					self._backend.auditSoftware_getObjects(
-						softwareId     = auditSoftware.softwareId,
-						displayName    = auditSoftware.displayName,
-						displayVersion = auditSoftware.displayVersion
+						name           = auditSoftware.name,
+						version        = auditSoftware.version,
+						subVersion     = auditSoftware.subVersion,
+						language       = auditSoftware.language,
+						architecture   = auditSoftware.architecture
 					)
 				)
 		return result
@@ -2222,27 +2226,33 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			if self._returnObjectsOnUpdateAndCreate:
 				result.extend(
 					self._backend.auditSoftware_getObjects(
-						softwareId     = auditSoftware.softwareId,
-						displayName    = auditSoftware.displayName,
-						displayVersion = auditSoftware.displayVersion
+						name           = auditSoftware.name,
+						version        = auditSoftware.version,
+						subVersion     = auditSoftware.subVersion,
+						language       = auditSoftware.language,
+						architecture   = auditSoftware.architecture
 					)
 				)
 		return result
 	
-	def auditSoftware_create(self, softwareId, displayName, displayVersion, uninstallString=None, binaryName=None, installSize=None):
+	def auditSoftware_create(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
 		hash = locals()
 		del hash['self']
 		return self.auditSoftware_createObjects(AuditSoftware.fromHash(hash))
 	
-	def auditSoftware_delete(self, softwareId, displayName, displayVersion):
-		if not softwareId:     softwareId  = []
-		if not displayName:    displayName = []
-		if not displayVersion: displayVersion = []
+	def auditSoftware_delete(self, name, version, subVersion, language, architecture):
+		if name is None:         name  = []
+		if version is None:      version = []
+		if subVersion is None:   subVersion = []
+		if language is None:     language = []
+		if architecture is None: architecture = []
 		return self._backend.auditSoftware_deleteObjects(
 				self._backend.auditSoftware_getObjects(
-					softwareId     = forceUnicodeLower(softwareId),
-					displayName    = forceUnicode(displayName),
-					displayVersion = forceUnicode(displayVersion)))
+					name           = forceUnicodeList(name),
+					version        = forceUnicodeLowerList(version),
+					subVersion     = forceUnicodeLowerList(subVersion),
+					language       = forceLanguageCodeList(language),
+					architecture   = forceArchitectureList(architecture)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
@@ -2253,9 +2263,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		for auditSoftwareOnClient in auditSoftwareOnClients:
 			logger.info(u"Creating %s" % auditSoftwareOnClient)
 			if self._backend.auditSoftwareOnClient_getIdents(
-					softwareId     = auditSoftwareOnClient.softwareId,
-					displayName    = auditSoftwareOnClient.displayName,
-					displayVersion = auditSoftwareOnClient.displayVersion,
+					name           = auditSoftwareOnClient.name,
+					version        = auditSoftwareOnClient.version,
+					subVersion     = auditSoftwareOnClient.subVersion,
+					language       = auditSoftwareOnClient.language,
+					architecture   = auditSoftwareOnClient.architecture,
 					clientId       = auditSoftwareOnClient.clientId):
 				logger.info(u"%s already exists, updating" % auditSoftwareOnClient)
 				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
@@ -2264,9 +2276,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			if self._returnObjectsOnUpdateAndCreate:
 				result.extend(
 					self._backend.auditSoftwareOnClient_getObjects(
-						softwareId     = auditSoftwareOnClient.softwareId,
-						displayName    = auditSoftwareOnClient.displayName,
-						displayVersion = auditSoftwareOnClient.displayVersion,
+						name           = auditSoftwareOnClient.name,
+						version        = auditSoftwareOnClient.version,
+						subVersion     = auditSoftwareOnClient.subVersion,
+						language       = auditSoftwareOnClient.language,
+						architecture   = auditSoftwareOnClient.architecture,
 						clientId       = auditSoftwareOnClient.clientId
 					)
 				)
@@ -2279,29 +2293,35 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			if self._returnObjectsOnUpdateAndCreate:
 				result.extend(
 					self._backend.auditSoftwareOnClient_getObjects(
-						softwareId     = auditSoftwareOnClient.softwareId,
-						displayName    = auditSoftwareOnClient.displayName,
-						displayVersion = auditSoftwareOnClient.displayVersion,
+						name           = auditSoftwareOnClient.name,
+						version        = auditSoftwareOnClient.version,
+						subVersion     = auditSoftwareOnClient.subVersion,
+						language       = auditSoftwareOnClient.language,
+						architecture   = auditSoftwareOnClient.architecture,
 						clientId       = auditSoftwareOnClient.clientId
 					)
 				)
 		return result
 	
-	def auditSoftwareOnClient_create(self, softwareId, displayName, displayVersion, clientId, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+	def auditSoftwareOnClient_create(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
 		hash = locals()
 		del hash['self']
 		return self.auditSoftwareOnClient_createObjects(AuditSoftwareOnClient.fromHash(hash))
 	
-	def auditSoftwareOnClient_delete(self, softwareId, displayName, displayVersion, clientId):
-		if not softwareId:     softwareId  = []
-		if not displayName:    displayName = []
-		if not displayVersion: displayVersion = []
-		if not clientId:       clientId = []
+	def auditSoftwareOnClient_delete(self, name, version, subVersion, language, architecture, clientId):
+		if name is None:         name  = []
+		if version is None:      version = []
+		if subVersion is None:   subVersion = []
+		if language is None:     language = []
+		if architecture is None: architecture = []
+		if clientId is None:     clientId = []
 		return self._backend.auditSoftwareOnClient_deleteObjects(
 				self._backend.auditSoftwareOnClient_getObjects(
-					softwareId     = forceUnicodeLower(softwareId),
-					displayName    = forceUnicode(displayName),
-					displayVersion = forceUnicode(displayVersion),
+					name           = forceUnicode(name),
+					version        = forceUnicodeLower(version),
+					subVersion     = forceUnicodeLower(subVersion),
+					language       = forceLanguageCode(language),
+					architecture   = forceArchitecture(architecture),
 					clientId       = forceHostId(clientId)))
 	
 

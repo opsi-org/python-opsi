@@ -536,80 +536,102 @@ class BackendTest(object):
 		
 		# AuditSoftwares
 		self.auditSoftware1 = AuditSoftware(
-			softwareId      = '{480aa013-93a7-488c-89c3-b985b6c8440a}',
-			displayName     = 'A Software',
-			displayVersion  = '1.0.21',
-			uninstallString = 'c:\\programme\\a software\\unistall.exe /S',
-			binaryName      = u'',
-			installSize     = 129012992
+			name                  = 'A software',
+			version               = '1.0.21',
+			subVersion            = '',
+			language              = '',
+			architecture          = '',
+			windowsSoftwareId     = '{480aa013-93a7-488c-89c3-b985b6c8440a}',
+			windowsDisplayName    = 'A Software',
+			windowsDisplayVersion = '1.0.21',
+			installSize           = 129012992
 		)
 		
 		self.auditSoftware2 = AuditSoftware(
-			softwareId      = self.product2.getWindowsSoftwareIds()[0],
-			displayName     = self.product2.getName(),
-			displayVersion  = self.product2.getProductVersion(),
-			uninstallString = 'msiexec /x %s' % self.product2.getWindowsSoftwareIds()[0],
-			binaryName      = u'',
-			installSize     = 217365267
+			name                  = self.product2.getName(),
+			version               = self.product2.getProductVersion(),
+			subVersion            = '',
+			language              = 'de',
+			architecture          = 'x64',
+			windowsSoftwareId     = self.product2.getWindowsSoftwareIds()[0],
+			windowsDisplayName    = self.product2.getName(),
+			windowsDisplayVersion = self.product2.getProductVersion(),
+			installSize           = 217365267
 		)
 		
 		self.auditSoftware3 = AuditSoftware(
-			softwareId      = 'my software',
-			displayName     = '',
-			displayVersion  = '',
-			uninstallString = None,
-			binaryName      = None,
-			installSize     = -1
+			name                  = 'my software',
+			version               = '',
+			subVersion            = '',
+			language              = '',
+			architecture          = '',
+			windowsSoftwareId     = 'my software',
+			windowsDisplayName    = '',
+			windowsDisplayVersion = '',
+			installSize           = -1
 		)
 		self.auditSoftwares = [self.auditSoftware1, self.auditSoftware2, self.auditSoftware3]
 		
 		# AuditSoftwareOnClients
 		self.auditSoftwareOnClient1 = AuditSoftwareOnClient(
-			softwareId     = self.auditSoftware1.getSoftwareId(),
-			displayName    = self.auditSoftware1.getDisplayName(),
-			displayVersion = self.auditSoftware1.getDisplayVersion(),
-			clientId       = self.client1.getId(),
-			firstseen      = None,
-			lastseen       = None,
-			state          = None,
-			usageFrequency = 2,
-			lastUsed       = '2009-02-12 09:48:22'
+			name            = self.auditSoftware1.getName(),
+			version         = self.auditSoftware1.getVersion(),
+			subVersion      = self.auditSoftware1.getSubVersion(),
+			language        = self.auditSoftware1.getLanguage(),
+			architecture    = self.auditSoftware1.getArchitecture(),
+			clientId        = self.client1.getId(),
+			uninstallString = 'c:\\programme\\a software\\unistall.exe /S',
+			binaryName      = u'',
+			firstseen       = None,
+			lastseen        = None,
+			state           = None,
+			usageFrequency  = 2,
+			lastUsed        = '2009-02-12 09:48:22'
 		)
 		
 		self.auditSoftwareOnClient2 = AuditSoftwareOnClient(
-			softwareId     = self.auditSoftware2.getSoftwareId(),
-			displayName    = self.auditSoftware2.getDisplayName(),
-			displayVersion = self.auditSoftware2.getDisplayVersion(),
-			clientId       = self.client1.getId(),
-			firstseen      = None,
-			lastseen       = None,
-			state          = None,
-			usageFrequency = None,
-			lastUsed       = None
+			name            = self.auditSoftware2.getName(),
+			version         = self.auditSoftware2.getVersion(),
+			subVersion      = self.auditSoftware2.getSubVersion(),
+			language        = self.auditSoftware2.getLanguage(),
+			architecture    = self.auditSoftware2.getArchitecture(),
+			clientId        = self.client1.getId(),
+			uninstallString = 'msiexec /x %s' % self.auditSoftware2.getWindowsSoftwareId(),
+			binaryName      = u'',
+			firstseen       = None,
+			lastseen        = None,
+			state           = None,
+			usageFrequency  = None,
+			lastUsed        = None
 		)
 		
 		self.auditSoftwareOnClient3 = AuditSoftwareOnClient(
-			softwareId     = self.auditSoftware3.getSoftwareId(),
-			displayName    = self.auditSoftware3.getDisplayName(),
-			displayVersion = self.auditSoftware3.getDisplayVersion(),
-			clientId       = self.client1.getId(),
-			firstseen      = None,
-			lastseen       = None,
-			state          = None,
-			usageFrequency = 0,
-			lastUsed       = '2009-08-01 14:11:00'
+			name            = self.auditSoftware3.getName(),
+			version         = self.auditSoftware3.getVersion(),
+			subVersion      = self.auditSoftware3.getSubVersion(),
+			language        = self.auditSoftware3.getLanguage(),
+			architecture    = self.auditSoftware3.getArchitecture(),
+			clientId        = self.client1.getId(),
+			uninstallString = None,
+			firstseen       = None,
+			lastseen        = None,
+			state           = None,
+			usageFrequency  = 0,
+			lastUsed        = '2009-08-01 14:11:00'
 		)
 		
 		self.auditSoftwareOnClient4 = AuditSoftwareOnClient(
-			softwareId     = self.auditSoftware2.getSoftwareId(),
-			displayName    = self.auditSoftware2.getDisplayName(),
-			displayVersion = self.auditSoftware2.getDisplayVersion(),
-			clientId       = self.client2.getId(),
-			firstseen      = None,
-			lastseen       = None,
-			state          = None,
-			usageFrequency = 0,
-			lastUsed       = None
+			name            = self.auditSoftware2.getName(),
+			version         = self.auditSoftware2.getVersion(),
+			subVersion      = self.auditSoftware2.getSubVersion(),
+			language        = self.auditSoftware2.getLanguage(),
+			architecture    = self.auditSoftware2.getArchitecture(),
+			clientId        = self.client2.getId(),
+			firstseen       = None,
+			lastseen        = None,
+			state           = None,
+			usageFrequency  = 0,
+			lastUsed        = None
 		)
 		self.auditSoftwareOnClients = [self.auditSoftwareOnClient1, self.auditSoftwareOnClient2, self.auditSoftwareOnClient3, self.auditSoftwareOnClient4]
 		

@@ -93,7 +93,7 @@ def forceInt(var):
 	try:
 		return int(var)
 	except Exception, e:
-		raise BackendBadValueError(u"Bad int value '%s': %s" % (var, e))
+		raise ValueError(u"Bad int value '%s': %s" % (var, e))
 
 def forceUnsignedInt(var):
 	var = forceInt(var)
@@ -104,7 +104,7 @@ def forceUnsignedInt(var):
 def forceDict(var):
 	if type(var) is dict:
 		return var
-	raise BackendBadValueError(u"Not a dict '%s'")
+	raise ValueError(u"Not a dict '%s'")
 
 opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})$')
 opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
@@ -116,7 +116,7 @@ def forceOpsiTimestamp(var):
 	if not match:
 		match = re.search(opsiDateRegex, var)
 		if not match:
-			raise BackendBadValueError(u"Bad opsi timestamp: '%s'" % var)
+			raise ValueError(u"Bad opsi timestamp: '%s'" % var)
 		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
@@ -125,7 +125,7 @@ def forceHostId(var):
 	var = forceObjectId(var)
 	match = re.search(hostIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad host id: '%s'" % var)
+		raise ValueError(u"Bad host id: '%s'" % var)
 	return var
 
 def forceHostIdList(var):
@@ -141,35 +141,35 @@ def forceHardwareAddress(var):
 		return var
 	match = re.search(hardwareAddressRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad hardware address: %s" % var)
+		raise ValueError(u"Bad hardware address: %s" % var)
 	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
 ipAddressRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceIPAddress(var):
 	var = forceUnicodeLower(var)
 	if not re.search(ipAddressRegex, var):
-		raise BackendBadValueError(u"Bad ip address: '%s'" % var)
+		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
 
 networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3][0-9]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
 	var = forceUnicodeLower(var)
 	if not re.search(networkAddressRegex, var):
-		raise BackendBadValueError(u"Bad network address: '%s'" % var)
+		raise ValueError(u"Bad network address: '%s'" % var)
 	return var
 
 urlRegex = re.compile('^[a-z0-9]+://[/a-z0-9]')
 def forceUrl(var):
 	var = forceUnicodeLower(var)
 	if not re.search(urlRegex, var):
-		raise BackendBadValueError(u"Bad url: '%s'" % var)
+		raise ValueError(u"Bad url: '%s'" % var)
 	return var
 
 opsiHostKeyRegex = re.compile('^[0-9a-f]{32}$')
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(opsiHostKeyRegex, var):
-		raise BackendBadValueError(u"Bad opsi host key: '%s'" % var)
+		raise ValueError(u"Bad opsi host key: '%s'" % var)
 	return var
 
 productVersionRegex = re.compile('^[\w\.]+$')
@@ -177,7 +177,7 @@ def forceProductVersion(var):
 	var = forceUnicode(var)
 	match = re.search(productVersionRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad product version: '%s'" % var)
+		raise ValueError(u"Bad product version: '%s'" % var)
 	return var
 
 def forceProductVersionList(var):
@@ -191,7 +191,7 @@ def forcePackageVersion(var):
 	var = forceUnicode(var)
 	match = re.search(packageVersionRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad package version: '%s'" % var)
+		raise ValueError(u"Bad package version: '%s'" % var)
 	return var
 
 def forcePackageVersionList(var):
@@ -205,7 +205,7 @@ def forceProductId(var):
 	var = forceObjectId(var)
 	match = re.search(productIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad product id: '%s'" % var)
+		raise ValueError(u"Bad product id: '%s'" % var)
 	return var
 
 def forceProductIdList(var):
@@ -221,7 +221,7 @@ def forceProductType(var):
 	elif v in ('netboot', 'netbootproduct'):
 		var = u'NetbootProduct'
 	else:
-		raise BackendBadValueError(u"Unknown product type: '%s'" % var)
+		raise ValueError(u"Unknown product type: '%s'" % var)
 	return var
 
 def forceProductPropertyType(var):
@@ -231,7 +231,7 @@ def forceProductPropertyType(var):
 	elif v in ('bool', 'boolproductproperty'):
 		var = u'BoolProductProperty'
 	else:
-		raise BackendBadValueError(u"Unknown product property type: '%s'" % var)
+		raise ValueError(u"Unknown product property type: '%s'" % var)
 	return var
 
 def forceProductPriority(var):
@@ -249,7 +249,7 @@ def forceInstallationStatus(var):
 		if (var == 'undefined'):
 			var = None
 		elif var not in ('installed', 'not_installed', 'failed'):
-			raise BackendBadValueError(u"Bad installation status: '%s'" % var)
+			raise ValueError(u"Bad installation status: '%s'" % var)
 	return var
 
 def forceActionRequest(var):
@@ -258,7 +258,7 @@ def forceActionRequest(var):
 		if (var == 'undefined'):
 			var = None
 		elif var not in ('setup', 'uninstall', 'update', 'always', 'once', 'custom', 'none'):
-			raise BackendBadValueError(u"Bad action request: '%s'" % var)
+			raise ValueError(u"Bad action request: '%s'" % var)
 	return var
 
 def forceActionRequestList(var):
@@ -275,18 +275,18 @@ def forceRequirementType(var):
 	if not var:
 		return None
 	if not var in ('before', 'after'):
-		raise BackendBadValueError(u"Bad requirement type: '%s'" % var)
+		raise ValueError(u"Bad requirement type: '%s'" % var)
 	return var
 	
 def forceObjectClass(var, objectClass):
+	import OPSI.Object
 	if type(var) in (unicode, str):
 		try:
-			var = json.loads(var)
+			var = OPSI.Object.fromJson(var)
 		except Exception, e:
 			logger.debug(e)
 	if type(var) is dict and var.has_key('type'):
 		try:
-			import OPSI.Object
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
@@ -294,7 +294,7 @@ def forceObjectClass(var, objectClass):
 			logger.debug(e)
 	
 	if not isinstance(var, objectClass):
-		raise BackendBadValueError(u"Not a %s: '%s'" % (objectClass, var))
+		raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
 	return var
 	
 def forceObjectClassList(var, objectClass):
@@ -308,7 +308,7 @@ def forceGroupId(var):
 	var = forceObjectId(var)
 	match = re.search(groupIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad group id: '%s'" % var)
+		raise ValueError(u"Bad group id: '%s'" % var)
 	return var
 
 def forceGroupIdList(var):
@@ -322,7 +322,7 @@ def forceObjectId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(objectIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad object id: '%s'" % var)
+		raise ValueError(u"Bad object id: '%s'" % var)
 	return var
 
 def forceObjectIdList(var):
@@ -336,7 +336,7 @@ def forceDomain(var):
 	var = forceUnicodeLower(var)
 	match = re.search(domainRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad domain: '%s'" % var)
+		raise ValueError(u"Bad domain: '%s'" % var)
 	return var
 
 hostnameRegex = re.compile('^[a-z0-9][a-z0-9\-]*$')
@@ -344,7 +344,7 @@ def forceHostname(var):
 	var = forceUnicodeLower(var)
 	match = re.search(hostnameRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad hostname: '%s'" % var)
+		raise ValueError(u"Bad hostname: '%s'" % var)
 	return var
 
 licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
@@ -352,7 +352,7 @@ def forceLicenseContractId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(licenseContractIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad license contract id: '%s'" % var)
+		raise ValueError(u"Bad license contract id: '%s'" % var)
 	return var
 
 def forceLicenseContractIdList(var):
@@ -366,7 +366,7 @@ def forceSoftwareLicenseId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(softwareLicenseIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad software license id: '%s'" % var)
+		raise ValueError(u"Bad software license id: '%s'" % var)
 	return var
 
 def forceSoftwareLicenseIdList(var):
@@ -380,7 +380,7 @@ def forceLicensePoolId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(licensePoolIdRegex, var)
 	if not match:
-		raise BackendBadValueError(u"Bad license pool id: '%s'" % var)
+		raise ValueError(u"Bad license pool id: '%s'" % var)
 	return var
 
 def forceLicensePoolIdList(var):
@@ -392,7 +392,25 @@ def forceLicensePoolIdList(var):
 def forceAuditState(var):
 	var = forceInt(var)
 	if var not in (0, 1):
-		raise BackendBadValueError(u"Bad audit state value '%s': %s" % (var, e))
+		raise ValueError(u"Bad audit state value '%s': %s" % (var, e))
+	return var
+
+languageCodeRegex = re.compile('^([a-z]{2})-?([a-z]{2})?$')
+def forceLanguageCode(var):
+	var = forceUnicodeLower(var)
+	match = languageCodeRegex.search(var)
+	if not match:
+		raise ValueError(u"Bad language code: '%s'" % var)
+	var = match.group(1)
+	if match.group(2):
+		var += u'-' + match.group(2).upper()
+	return var
+
+architectureRegex = re.compile('^(x86|x64)$')
+def forceArchitecture(var):
+	var = forceUnicodeLower(var)
+	if not architectureRegex.search(var):
+		raise ValueError(u"Bad architecture: '%s'" % var)
 	return var
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

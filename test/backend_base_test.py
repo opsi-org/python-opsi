@@ -40,11 +40,11 @@ try:
 except OpsiError, e:
 	logger.info(u'      %s' % e)
 
-error = BackendBadValueError(u'Bad value error test')
+error = ValueError(u'Bad value error test')
 logger.info(u'   %s' % error)
 try:
 	raise error
-except OpsiError, e:
+except ValueError, e:
 	logger.info(u'      %s' % e)
 
 
@@ -94,14 +94,14 @@ assert forceInt('-100') == -100
 assert forceInt(long(1000000000000000)) == 1000000000000000
 try:
 	forceInt('abc')
-except BackendBadValueError:
+except ValueError:
 	pass
 
 assert type(forceOpsiTimestamp('2000-02-02 11:12:13')) is unicode
 assert forceOpsiTimestamp('20000202111213') == u'2000-02-02 11:12:13'
 try:
 	forceOpsiTimestamp('abc')
-except BackendBadValueError:
+except ValueError:
 	pass
 else:
 	raise Exception(u"'abc' was accepted as OpsiTimestamp")
@@ -110,7 +110,7 @@ assert forceHostId(u'client.uib.local') is u'client.uib.local'
 for i in ('abc', 'abc.def', '.uib.local', 'abc.uib.x'):
 	try:
 		forceHostId(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as hostId" % i)
@@ -121,7 +121,7 @@ for i in  ('12345678ABCD', '12-34-56-78-Ab-cD', '12:34:56:78:ab:cd', '12-34-56:7
 for i in ('12345678abc', '12345678abcdef', '1-2-3-4-5-6-7', None, True):
 	try:
 		forceHardwareAddress(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as hardwareAddress" % i)
@@ -131,7 +131,7 @@ assert type(forceIPAddress('1.1.1.1')) is unicode
 for i in ('1922.1.1.1', None, True, '1.1.1.1.', '2.2.2.2.2', 'a.2.3.4'):
 	try:
 		forceIPAddress(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as IPAddress" % i)
@@ -141,7 +141,7 @@ assert type(forceNetworkAddress('10.10.10.10/32')) is unicode
 for i in ('192.168.101.1', '192.1.1.1/40', None, True, '10.10.1/24', 'a.2.3.4/0'):
 	try:
 		forceNetworkAddress(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as NetworkAddress" % i)
@@ -153,7 +153,7 @@ for i in ('file:///', 'file:///path/to/file', 'smb://server/path', 'https://x:y@
 for i in ('abc', '/abc', 'http//server', 1, True, None):
 	try:
 		forceUrl(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as Url" % i)
@@ -163,7 +163,7 @@ assert type(forceOpsiHostKey('12345678901234567890123456789012')) is unicode
 for i in ('abCdeF7890123456789012345678901', 'abCdeF78901234567890123456789012b', 'GbCdeF78901234567890123456789012'):
 	try:
 		forceOpsiHostKey(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as OpsiHostKey" % i)
@@ -179,7 +179,7 @@ assert type(forceProductId('test-Product-1')) is unicode
 for i in (u'äöü', 'product test'):
 	try:
 		forceProductId(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as ProductId" % i)
@@ -194,7 +194,7 @@ for i in ('installed', 'not_installed'):
 for i in ('none', 'abc'):
 	try:
 		forceInstallationStatus(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as installationStatus" % i)
@@ -205,7 +205,7 @@ for i in ('setup', 'uninstall', 'update', 'once', 'always', 'none', None):
 for i in ('installed'):
 	try:
 		forceActionRequest(i)
-	except BackendBadValueError:
+	except ValueError:
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as actionRequest" % i)
@@ -213,6 +213,19 @@ for i in ('installed'):
 
 assert forceActionProgress('installing 50%') == u'installing 50%'
 assert type(forceActionProgress('installing 50%')) is unicode
+
+
+assert forceLanguageCode('dE') == u'de'
+assert forceLanguageCode('en-us') == u'en-US'
+try:
+	forceLanguageCode('de-DEU')
+except ValueError:
+	pass
+else:
+	raise Exception(u"'de-DEU' was accepted as languageCode")
+
+assert forceArchitecture('X86') == u'x86'
+assert forceArchitecture('X64') == u'x64'
 
 getPossibleClassAttributes(Host)
 

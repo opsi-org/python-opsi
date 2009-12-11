@@ -83,6 +83,23 @@ def serialize(obj):
 		return obj
 	return newObj
 
+def fromJson(obj, objectType=None):
+	if objectType and type(obj) is dict:
+		obj['type'] = objectType
+	
+	if hasattr(json, 'loads'):
+		# Python 2.6 json module
+		return deserialize(json.loads(obj))
+	else:
+		return deserialize(json.read(obj))
+	
+def toJson(obj):
+	if hasattr(json, 'loads'):
+		# Python 2.6 json module
+		return json.dumps(serialize(obj))
+	else:
+		return json.write(serialize(obj))
+
 def mandatoryConstructorArgs(Class):
 	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
 	if not defaults:
@@ -154,6 +171,9 @@ class BaseObject(object):
 	def __unicode__(self):
 		return u"<%s'>" % self.getType()
 	
+	def toJson(self):
+		return toJson(self)
+	
 	def __str__(self):
 		return unicode(self).encode("utf-8")
 	
@@ -188,8 +208,8 @@ class Entity(BaseObject):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return Entity.fromHash(json.loads(jsonString))
-
+		return fromJson(jsonString, 'Entity')
+	
 BaseObject.subClasses['Entity'] = Entity
 
 class Relationship(BaseObject):
@@ -216,13 +236,10 @@ class Relationship(BaseObject):
 		hash['type'] = self.getType()
 		hash['ident'] = self.getIdent()
 		return hash
-		
+	
 	@staticmethod
 	def fromJson(jsonString):
-		return Relationship.fromHash(json.loads(jsonString))
-	
-	def toJson(self):
-		return json.dumps(self.toHash())
+		return fromJson(jsonString, 'Relationship')
 	
 BaseObject.subClasses['Relationship'] = Relationship
 
@@ -271,7 +288,7 @@ class Object(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return Object.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'Object')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', notes '%s'>" \
@@ -330,7 +347,7 @@ class Host(Object):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return Host.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'Host')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', notes '%s', hardwareAddress '%s', ipAddress '%s'>" \
@@ -386,7 +403,7 @@ class OpsiClient(Host):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return OpsiClient.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'OpsiClient')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', hardwareAddress '%s', ipAddress '%s'>" \
@@ -477,7 +494,7 @@ class OpsiDepotserver(Host):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return OpsiDepotserver.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'OpsiDepotserver')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', notes '%s', hardwareAddress '%s', ipAddress '%s'>" \
@@ -504,7 +521,7 @@ class OpsiConfigserver(OpsiDepotserver):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return OpsiConfigserver.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'OpsiConfigserver')
 	
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 Host.subClasses['OpsiConfigserver'] = OpsiConfigserver
@@ -589,7 +606,7 @@ class Config(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return Config.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'Config')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
@@ -633,7 +650,7 @@ class UnicodeConfig(Config):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return UnicodeConfig.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'UnicodeConfig')
 	
 Config.subClasses['UnicodeConfig'] = UnicodeConfig
 
@@ -663,7 +680,7 @@ class BoolConfig(Config):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return BoolConfig.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'BoolConfig')
 	
 Config.subClasses['BoolConfig'] = BoolConfig
 
@@ -708,7 +725,7 @@ class ConfigState(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ConfigState.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ConfigState')
 	
 	def __unicode__(self):
 		return u"<%s configId '%s', objectId '%s'>" \
@@ -921,7 +938,7 @@ class Product(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return Product.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'Product')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', name '%s'>" \
@@ -949,7 +966,7 @@ class LocalbootProduct(Product):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return LocalbootProduct.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'LocalbootProduct')
 	
 Product.subClasses['LocalbootProduct'] = LocalbootProduct
 
@@ -981,7 +998,7 @@ class NetbootProduct(Product):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return NetbootProduct.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'NetbootProduct')
 	
 Product.subClasses['NetbootProduct'] = NetbootProduct
 
@@ -1086,7 +1103,7 @@ class ProductProperty(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ProductProperty.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ProductProperty')
 	
 	def __unicode__(self):
 		return u"<%s propertyId '%s', description '%s', possibleValues %s, defaultValues %s, multiValue: %s>" \
@@ -1136,7 +1153,7 @@ class UnicodeProductProperty(ProductProperty):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return UnicodeProductProperty.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'UnicodeProductProperty')
 	
 ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
 
@@ -1164,7 +1181,7 @@ class BoolProductProperty(ProductProperty):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return BoolProductProperty.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'BoolProductProperty')
 	
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
 
@@ -1264,7 +1281,7 @@ class ProductDependency(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ProductDependency.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ProductDependency')
 	
 	def __unicode__(self):
 		return u"<%s productId '%s', productVersion '%s', packageVersion '%s', productAction '%s', requiredProductId '%s'>" \
@@ -1334,7 +1351,7 @@ class ProductOnDepot(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ProductOnDepot.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ProductOnDepot')
 	
 	def __unicode__(self):
 		return u"<%s productId '%s', depotId '%s'>" \
@@ -1440,7 +1457,7 @@ class ProductOnClient(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ProductState.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ProductOnClient')
 	
 	def __unicode__(self):
 		return u"<%s clientId '%s', productId '%s'>" \
@@ -1496,7 +1513,7 @@ class ProductPropertyState(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ProductPropertyState.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ProductPropertyState')
 	
 	def __unicode__(self):
 		return u"<%s productId '%s', objectId '%s', propertyId '%s'>" \
@@ -1538,7 +1555,7 @@ class Group(Object):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return Group.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'Group')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s', notes '%s', parentGroupId '%s'>" \
@@ -1595,7 +1612,7 @@ class ObjectToGroup(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ObjectToGroup.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ObjectToGroup')
 	
 	def __unicode__(self):
 		return u"<%s groupId '%s', objectId '%s'>" \
@@ -1697,7 +1714,7 @@ class LicenseContract(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return LicenseContract.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'LicenseContract')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s'>" \
@@ -1767,7 +1784,7 @@ class SoftwareLicense(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return SoftwareLicense.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'SoftwareLicense')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', licenseContractId '%s'>" \
@@ -1791,7 +1808,7 @@ class RetailSoftwareLicense(SoftwareLicense):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return RetailSoftwareLicense.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'RetailSoftwareLicense')
 	
 SoftwareLicense.subClasses['RetailSoftwareLicense'] = RetailSoftwareLicense
 
@@ -1822,7 +1839,7 @@ class OEMSoftwareLicense(SoftwareLicense):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return OEMSoftwareLicense.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'OEMSoftwareLicense')
 	
 SoftwareLicense.subClasses['OEMSoftwareLicense'] = OEMSoftwareLicense
 
@@ -1844,7 +1861,7 @@ class VolumeSoftwareLicense(SoftwareLicense):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return VolumeSoftwareLicense.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'VolumeSoftwareLicense')
 	
 SoftwareLicense.subClasses['VolumeSoftwareLicense'] = VolumeSoftwareLicense
 
@@ -1864,7 +1881,7 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return ConcurrentSoftwareLicense.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'ConcurrentSoftwareLicense')
 	
 SoftwareLicense.subClasses['ConcurrentSoftwareLicense'] = ConcurrentSoftwareLicense
 
@@ -1925,7 +1942,7 @@ class LicensePool(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return LicensePool.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'LicensePool')
 	
 	def __unicode__(self):
 		return u"<%s id '%s', description '%s'>" \
@@ -1973,7 +1990,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return SoftwareLicenseToLicensePool.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'SoftwareLicenseToLicensePool')
 	
 	def __unicode__(self):
 		return u"<%s softwareLicenseId '%s', licensePoolId '%s'>" \
@@ -2040,7 +2057,7 @@ class LicenseOnClient(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return LicenseOnClient.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'LicenseOnClient')
 	
 	def __unicode__(self):
 		return u"<%s softwareLicenseId '%s', licensePoolId '%s', clientId '%s'>" \
@@ -2056,58 +2073,83 @@ class AuditSoftware(Entity):
 	foreignIdAttributes = Entity.foreignIdAttributes
 	backendMethodPrefix = 'auditSoftware'
 	
-	def __init__(self, softwareId, displayName, displayVersion, uninstallString=None, binaryName=None, installSize=None):
-		self.uninstallString = None
-		self.binaryName = None
+	def __init__(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
+		self.windowsSoftwareId = None
+		self.windowsDisplayName = None
+		self.windowsDisplayVersion = None
 		self.installSize = None
-		self.setSoftwareId(softwareId)
-		self.setDisplayName(displayName)
-		self.setDisplayVersion(displayVersion)
-		if not uninstallString is None:
-			self.setUninstallString(uninstallString)
-		if not binaryName is None:
-			self.setBinaryName(binaryName)
+		self.setName(name)
+		self.setVersion(version)
+		self.setSubVersion(subVersion)
+		self.setLanguage(language)
+		self.setArchitecture(architecture)
+		if not windowsSoftwareId is None:
+			self.setWindowsSoftwareId(windowsSoftwareId)
+		if not windowsDisplayName is None:
+			self.setWindowsDisplayName(windowsDisplayName)
+		if not windowsDisplayVersion is None:
+			self.setWindowsDisplayVersion(windowsDisplayVersion)
 		if not installSize is None:
 			self.setInstallSize(installSize)
 		
 	def setDefaults(self):
 		Entity.setDefaults(self)
-		if self.uninstallString is None:
-			self.setUninstallString(u"")
-		if self.binaryName is None:
-			self.setBinaryName(u"")
 		if self.installSize is None:
 			self.setInstallSize(0)
 		
-	def getSoftwareId(self):
-		return self.softwareId
+	def setName(self, name):
+		self.name = forceUnicode(name)
 	
-	def setSoftwareId(self, softwareId):
-		self.softwareId = forceUnicodeLower(softwareId)
+	def getName(self):
+		return self.name
 	
-	def getDisplayName(self):
-		return self.displayName
+	def setVersion(self, version):
+		self.version = forceUnicodeLower(version)
 	
-	def setDisplayName(self, displayName):
-		self.displayName = forceUnicode(displayName)
+	def getVersion(self):
+		return self.version
 	
-	def getDisplayVersion(self):
-		return self.displayVersion
+	def setSubVersion(self, subVersion):
+		self.subVersion = forceUnicodeLower(subVersion)
 	
-	def setDisplayVersion(self, displayVersion):
-		self.displayVersion = forceUnicode(displayVersion)
+	def getSubVersion(self):
+		return self.subVersion
 	
-	def getUninstallString(self):
-		return self.uninstallString
+	def setLanguage(self, language):
+		if not language:
+			self.language = u''
+		else:
+			self.language = forceLanguageCode(language)
 	
-	def setUninstallString(self, uninstallString):
-		self.uninstallString = forceUnicode(uninstallString)
+	def getLanguage(self):
+		return self.language
 	
-	def getBinaryName(self):
-		return self.binaryName
+	def setArchitecture(self, architecture):
+		if not architecture:
+			self.architecture = u''
+		else:
+			self.architecture = forceArchitecture(architecture)
 	
-	def setBinaryName(self, binaryName):
-		self.binaryName = forceUnicode(binaryName)
+	def getArchitecture(self):
+		return self.architecture
+	
+	def getWindowsSoftwareId(self):
+		return self.windowsSoftwareId
+	
+	def setWindowsSoftwareId(self, windowsSoftwareId):
+		self.windowsSoftwareId = forceUnicodeLower(windowsSoftwareId)
+	
+	def getWindowsDisplayName(self):
+		return self.windowsDisplayName
+	
+	def setWindowsDisplayName(self, windowsDisplayName):
+		self.windowsDisplayName = forceUnicode(windowsDisplayName)
+	
+	def getWindowsDisplayVersion(self):
+		return self.windowsDisplayVersion
+	
+	def setWindowsDisplayVersion(self, windowsDisplayVersion):
+		self.windowsDisplayVersion = forceUnicode(windowsDisplayVersion)
 	
 	def getInstallSize(self):
 		return self.installSize
@@ -2122,11 +2164,11 @@ class AuditSoftware(Entity):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return AuditSoftware.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'AuditSoftware')
 	
 	def __unicode__(self):
-		return u"<%s  softwareId '%s', displayName '%s', displayVersion '%s'>" \
-			% (self.getType(), self.softwareId, self.displayName, self.displayVersion)
+		return u"<%s name '%s', version '%s', subVersion '%s', language '%s', architecture '%s'>" \
+			% (self.getType(), self.name, self.version, self.subVersion, self.language, self.architecture)
 	
 Entity.subClasses['AuditSoftware'] = AuditSoftware
 
@@ -2135,16 +2177,24 @@ class AuditSoftwareOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditSoftwareOnClient'
 	
-	def __init__(self, softwareId, displayName, displayVersion, clientId, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+	def __init__(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+		self.uninstallString = None
+		self.binaryName = None
 		self.firstseen = None
 		self.lastseen = None
 		self.state = None
 		self.usageFrequency = None
 		self.lastUsed = None
-		self.setSoftwareId(softwareId)
-		self.setDisplayName(displayName)
-		self.setDisplayVersion(displayVersion)
+		self.setName(name)
+		self.setVersion(version)
+		self.setSubVersion(subVersion)
+		self.setLanguage(language)
+		self.setArchitecture(architecture)
 		self.setClientId(clientId)
+		if not uninstallString is None:
+			self.setUninstallString(uninstallString)
+		if not binaryName is None:
+			self.setBinaryName(binaryName)
 		if not firstseen is None:
 			self.setFirstseen(firstseen)
 		if not lastseen is None:
@@ -2158,6 +2208,10 @@ class AuditSoftwareOnClient(Relationship):
 		
 	def setDefaults(self):
 		Relationship.setDefaults(self)
+		if self.uninstallString is None:
+			self.setUninstallString(u"")
+		if self.binaryName is None:
+			self.setBinaryName(u"")
 		if self.firstseen is None:
 			self.setFirstseen(timestamp())
 		if self.lastseen is None:
@@ -2168,30 +2222,60 @@ class AuditSoftwareOnClient(Relationship):
 			self.setUsageFrequency(-1)
 		if self.lastUsed is None:
 			self.setLastUsed('0000-00-00 00:00:00')
-		
-	def getSoftwareId(self):
-		return self.softwareId
 	
-	def setSoftwareId(self, softwareId):
-		self.softwareId = forceUnicodeLower(softwareId)
+	def setName(self, name):
+		self.name = forceUnicode(name)
 	
-	def getDisplayName(self):
-		return self.displayName
+	def getName(self):
+		return self.name
 	
-	def setDisplayName(self, displayName):
-		self.displayName = forceUnicode(displayName)
+	def setVersion(self, version):
+		self.version = forceUnicodeLower(version)
 	
-	def getDisplayVersion(self):
-		return self.displayVersion
+	def getVersion(self):
+		return self.version
 	
-	def setDisplayVersion(self, displayVersion):
-		self.displayVersion = forceUnicode(displayVersion)
+	def setSubVersion(self, subVersion):
+		self.subVersion = forceUnicodeLower(subVersion)
+	
+	def getSubVersion(self):
+		return self.subVersion
+	
+	def setLanguage(self, language):
+		if not language:
+			self.language = u''
+		else:
+			self.language = forceLanguageCode(language)
+	
+	def getLanguage(self):
+		return self.language
+	
+	def setArchitecture(self, architecture):
+		if not architecture:
+			self.architecture = u''
+		else:
+			self.architecture = forceArchitecture(architecture)
+	
+	def getArchitecture(self):
+		return self.architecture
 	
 	def getClientId(self):
 		return self.clientId
 	
 	def setClientId(self, clientId):
 		self.clientId = forceHostId(clientId)
+	
+	def getUninstallString(self):
+		return self.uninstallString
+	
+	def setUninstallString(self, uninstallString):
+		self.uninstallString = forceUnicode(uninstallString)
+	
+	def getBinaryName(self):
+		return self.binaryName
+	
+	def setBinaryName(self, binaryName):
+		self.binaryName = forceUnicode(binaryName)
 	
 	def getFirstseen(self):
 		return self.firstseen
@@ -2230,11 +2314,11 @@ class AuditSoftwareOnClient(Relationship):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return AuditSoftwareOnClient.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'AuditSoftwareOnClient')
 	
 	def __unicode__(self):
-		return u"<%s softwareId '%s', displayName '%s', displayVersion '%s', clientId '%s'>" \
-			% (self.getType(), self.softwareId, self.displayName, self.displayVersion, self.clientId)
+		return u"<%s name '%s', version '%s', subVersion '%s', language '%s', architecture '%s', clientId '%s'>" \
+			% (self.getType(), self.name, self.version, self.subVersion, self.language, self.architecture, self.clientId)
 	
 Relationship.subClasses['AuditSoftwareOnClient'] = AuditSoftwareOnClient
 

@@ -776,14 +776,18 @@ class MySQLBackend(ConfigDataBackend):
 		if not 'SOFTWARE' in tables.keys():
 			logger.debug(u'Creating table SOFTWARE')
 			table = u'''CREATE TABLE `SOFTWARE` (
-					`softwareId` varchar(100) NOT NULL,
-					`displayName` varchar(100),
-					`displayVersion` varchar(100),
-					PRIMARY KEY( `softwareId`, `displayName`, `displayVersion` ),
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(5) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` ),
+					`windowsSoftwareId` varchar(100),
+					INDEX(`windowsSoftwareId`),
+					`windowsDisplayName` varchar(100),
+					`windowsDisplayVersion` varchar(100),
 					`type` varchar(30) NOT NULL,
 					INDEX(`type`),
-					`uninstallString` varchar(200),
-					`binaryName` varchar(100),
 					`installSize` BIGINT
 				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 				'''
@@ -797,10 +801,14 @@ class MySQLBackend(ConfigDataBackend):
 					PRIMARY KEY( `config_id` ),
 					`clientId` varchar(255) NOT NULL,
 					INDEX(`clientId`),
-					`softwareId` varchar(100) NOT NULL,
-					`displayName` varchar(100),
-					`displayVersion` varchar(100),
-					INDEX(`softwareId`, `displayName`, `displayVersion`),
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(5) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					INDEX( `name`, `version`, `subVersion`, `language`, `architecture` ),
+					`uninstallString` varchar(200),
+					`binaryName` varchar(100),
 					`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`state` TINYINT NOT NULL,
