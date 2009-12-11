@@ -921,6 +921,7 @@ class BackendTest(object):
 		productOnDepots = self.backend.productOnDepot_getObjects()
 		assert len(productOnDepots) == len(self.productOnDepots) - 1
 		
+		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		
 		# ProductOnClients
 		logger.notice(u"Testing productOnClient methods")

@@ -86,33 +86,14 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
 		if dispatch:
 			self._backend = BackendDispatcher(**kwargs)
+		if depotBackend:
+			self._backend = DepotserverBackend(self._backend)
 		if extend:
 			self._backend = ExtendedConfigDataBackend(self._backend)
 			BackendExtender(self._backend, **kwargs)
-		if depotBackend:
-			self._backend = DepotserverBackend(self._backend)
 		if accessControl:
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		self._createInstanceMethods()
-		
-	#def _createInstanceMethods(self):
-	#	for member in inspect.getmembers(self._backend, inspect.ismethod):
-	#		methodName = member[0]
-	#		if methodName.startswith('_'):
-	#			# Not a public method
-	#			continue
-	#		logger.debug2(u"Found public method '%s'" % methodName)
-	#		#if methodName in ('exit', 'getInterface'):
-	#		if hasattr(self.__class__, methodName):
-	#			logger.debug(u"Not overwriting method %s" % methodName)
-	#			continue
-	#		(argString, callString) = getArgAndCallString(member[1])
-	#		
-	#		exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-	#		setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	#
-	#def _executeMethod(self, methodName, **kwargs):
-	#	return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def exit(self):
 		logger.debug(u"Calling exit() on backend %s" % self._backend)

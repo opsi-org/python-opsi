@@ -63,8 +63,9 @@ def non_blocking_connect_http(self, connectTimeout=0):
 			if e[0] in (106, 10056):
 				# Transport endpoint is already connected
 				break
-			if e[0] not in (111, 114, 115, 10035):
-				# 111 = Connection refused
+			if e[0] not in (111, 114, 115, 10022, 10035):
+				# 111   = posix: Connection refused
+				# 10022 = nt: Invalid argument
 				if sock:
 					sock.close()
 				raise

@@ -592,17 +592,4 @@ class PackageControlFile(TextFile):
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 

@@ -2325,6 +2325,30 @@ Relationship.subClasses['AuditSoftwareOnClient'] = AuditSoftwareOnClient
 
 
 
+class AuditHardware(Entity):
+	subClasses = {}
+	foreignIdAttributes = Entity.foreignIdAttributes
+	backendMethodPrefix = 'auditHardware'
+	
+	def __init__(self, type, **kwargs):
+		pass
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'AuditHardware'
+		return Entity.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return fromJson(jsonString, 'AuditHardware')
+	
+	def __unicode__(self):
+		return u"<%s>" % self.getType()
+	
+Entity.subClasses['AuditHardware'] = AuditHardware
+
+
+
 
 
 

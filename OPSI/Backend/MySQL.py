@@ -106,7 +106,7 @@ class MySQL:
 			)
 		except Exception, e:
 			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
-		logger.notice(u'MySQL created: %s' % self)
+		logger.debug(u'MySQL created: %s' % self)
 		
 	def connect(self):
 		self._transactionLock.acquire()
@@ -254,7 +254,7 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
 		
 		self._licenseManagementEnabled = True
-		logger.notice(u'MySQLBackend created: %s' % self)
+		logger.debug(u'MySQLBackend created: %s' % self)
 		
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
 		#logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))

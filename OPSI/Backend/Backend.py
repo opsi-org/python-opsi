@@ -38,6 +38,7 @@ __version__ = '3.5'
 from ldaptor.protocols import pureldap
 from ldaptor import ldapfilter
 import types, new, inspect
+import copy as pycopy
 
 # OPSI imports
 from OPSI.Logger import *
@@ -45,6 +46,7 @@ from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Tools import md5sum, librsyncSignature, librsyncPatchFile, timestamp
+from OPSI.Util.File import ConfigFile
 
 logger = Logger()
 
@@ -2317,12 +2319,12 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		if clientId is None:     clientId = []
 		return self._backend.auditSoftwareOnClient_deleteObjects(
 				self._backend.auditSoftwareOnClient_getObjects(
-					name           = forceUnicode(name),
-					version        = forceUnicodeLower(version),
-					subVersion     = forceUnicodeLower(subVersion),
-					language       = forceLanguageCode(language),
-					architecture   = forceArchitecture(architecture),
-					clientId       = forceHostId(clientId)))
+					name           = forceUnicodeList(name),
+					version        = forceUnicodeLowerList(version),
+					subVersion     = forceUnicodeLowerList(subVersion),
+					language       = forceLanguageCodeList(language),
+					architecture   = forceArchitectureList(architecture),
+					clientId       = forceHostIdList(clientId)))
 	
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -2331,10 +2333,105 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend):
 		ExtendedBackend.__init__(self, backend)
-	
+		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
+		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
+		
 	def exit(self):
 		if self._backend:
 			self._backend.exit()
+	
+	def auditHardware_getConfig(self, language=None):
+		if not language:
+			language = 'en_US'
+		language = forceLanguageCode(language)
+		
+		localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
+		if not os.path.exists(localeFile):
+			logger.error(u"No translation file found for language %s, falling back to en_US" % language)
+			language = 'en_US'
+			localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
+		
+		locale = {}
+		try:
+			lf = ConfigFile(localeFile)
+			for line in lf.parse():
+				if (line.count('=') == 0):
+					continue
+				(k, v) = line.split('=', 1)
+				locale[k.strip()] = v.strip()
+		except Exception, e:
+			logger.error(u"Failed to read translation file for language %s: %s" % (language, e))
+		
+		def __inheritFromSuperClasses(classes, c, scname=None):
+			if not scname:
+				for scname in c['Class'].get('Super', []):
+					__inheritFromSuperClasses(classes, c, scname)
+			else:
+				sc = None
+				found = False
+				for cl in classes:
+					if (cl['Class'].get('Opsi') == scname):
+						clcopy = pycopy.deepcopy(cl)
+						__inheritFromSuperClasses(classes, clcopy)
+						newValues = []
+						for newValue in clcopy['Values']:
+							foundAt = -1
+							for i in range(len(c['Values'])):
+								if (c['Values'][i]['Opsi'] == newValue['Opsi']):
+									if not c['Values'][i].get('UI'):
+										c['Values'][i]['UI'] = newValue.get('UI', '')
+									foundAt = i
+									break
+							if (foundAt > -1):
+								newValue = c['Values'][foundAt]
+								del c['Values'][foundAt]
+							newValues.append(newValue)
+						found = True
+						newValues.extend(c['Values'])
+						c['Values'] = newValues
+						break
+				if not found:
+					logger.error(u"Super class '%s' of class '%s' not found!" % (scname, c['Class'].get('Opsi')))
+		
+		classes = []
+		try:
+			execfile(self._auditHardwareConfigFile)
+			for i in range(len(OPSI_HARDWARE_CLASSES)):
+				opsiClass = OPSI_HARDWARE_CLASSES[i]['Class']['Opsi']
+				if (OPSI_HARDWARE_CLASSES[i]['Class']['Type'] == 'STRUCTURAL'):
+					if locale.get(opsiClass):
+						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = locale[opsiClass]
+					else:
+						logger.error(u"No translation for class '%s' found" % opsiClass)
+						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
+				for j in range(len(OPSI_HARDWARE_CLASSES[i]['Values'])):
+					opsiProperty = OPSI_HARDWARE_CLASSES[i]['Values'][j]['Opsi']
+					if locale.get(opsiClass + '.' + opsiProperty):
+						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
+					
+			for c in OPSI_HARDWARE_CLASSES:
+				try:
+					if (c['Class'].get('Type') == 'STRUCTURAL'):
+						logger.info(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
+						ccopy = pycopy.deepcopy(c)
+						if ccopy['Class'].has_key('Super'):
+							__inheritFromSuperClasses(OPSI_HARDWARE_CLASSES, ccopy)
+							del ccopy['Class']['Super']
+						del ccopy['Class']['Type']
+						
+						# Fill up empty display names
+						for j in range(len(ccopy.get('Values', []))):
+							if not ccopy['Values'][j].get('UI'):
+								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], ccopy['Values'][j]['Opsi']))
+								ccopy['Values'][j]['UI'] = ccopy['Values'][j]['Opsi']
+						
+						classes.append(ccopy)
+				except Exception, e:
+					logger.error(u"Error in config file '%s': %s" % (self._auditHardwareConfigFile, e))
+		except Exception, e:
+			raise Exception(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
+		
+		return classes
 	
 	def depot_getMD5Sum(self, filename):
 		try:

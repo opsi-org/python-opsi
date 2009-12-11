@@ -395,7 +395,7 @@ def forceAuditState(var):
 		raise ValueError(u"Bad audit state value '%s': %s" % (var, e))
 	return var
 
-languageCodeRegex = re.compile('^([a-z]{2})-?([a-z]{2})?$')
+languageCodeRegex = re.compile('^([a-z]{2})[-_]?([a-z]{2})?$')
 def forceLanguageCode(var):
 	var = forceUnicodeLower(var)
 	match = languageCodeRegex.search(var)
@@ -403,7 +403,13 @@ def forceLanguageCode(var):
 		raise ValueError(u"Bad language code: '%s'" % var)
 	var = match.group(1)
 	if match.group(2):
-		var += u'-' + match.group(2).upper()
+		var += u'_' + match.group(2).upper()
+	return var
+
+def forceLanguageCodeList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceLanguageCode(var[i])
 	return var
 
 architectureRegex = re.compile('^(x86|x64)$')
@@ -412,6 +418,13 @@ def forceArchitecture(var):
 	if not architectureRegex.search(var):
 		raise ValueError(u"Bad architecture: '%s'" % var)
 	return var
+
+def forceArchitectureList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceArchitecture(var[i])
+	return var
+
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      EXCEPTION CLASSES                                             =
