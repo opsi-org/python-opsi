@@ -502,20 +502,33 @@ class File31Backend(ConfigDataBackend):
 							productHash[attribute] = value
 						packageControlFile.setProduct(Product.fromHash(productHash))
 				
-				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty'):
-					productProperties = packageControlFile.getProductProperties()
-					productProperties.append(obj)
-					packageControlFile.setProductProperties(productProperties)
-				
-				elif objType in ('ProductDependency'):
-					productDependencies = packageControlFile.getProductDependencies()
-					productDependencies.append(obj)
-					packageControlFile.setProductDependencies(productDependencies)
+				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+					oldList = []
+					newList = []
+					
+					if objType == 'ProductDependency':
+						oldList = packageControlFile.getProductDependencies()
+					else:
+						oldList = packageControlFile.getProductProperties()
+					
+					if (mode == 'create'):
+						newList = oldList
+						newList.append(obj)
+					else:
+						for item in oldList:
+							if item.getIdent() == obj.getIdent():
+								newList.append(obj)
+							else:
+								newList.append(item)
+					
+					if objType == 'ProductDependency':
+						packageControlFile.setProductDependencies(newList)
+					else:
+						packageControlFile.setProductProperties(newList)
 				
 				packageControlFile.generate()
 	
 	def _delete(self, objList):
-		print "objList: '%s'" % objList
 		objType = u''
 		if objList:
 			objType = objList[0].getType()
@@ -568,7 +581,7 @@ class File31Backend(ConfigDataBackend):
 				if os.path.isfile(configFile):
 					os.unlink(configFile)
 		
-		elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty'):
+		elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 			filenames = []
 			
 			# TODO: files werden nur einmal eingelesen, aber umstaendlich. wird's getestet?
@@ -587,47 +600,47 @@ class File31Backend(ConfigDataBackend):
 					% (match.group(1), match.group(2), match.group(3)) )
 				
 				matched = False
-				for productProperty in productProperties:
-					print "'%s' == '%s' ?" % (match.group(1), productProperty.getProductId())
-					if (match.group(1) == productProperty.getProductId()):
-						print "'%s' == '%s' ?" % (match.group(2), productProperty.getProductVersion())
-						if (match.group(2) == productProperty.getProductVersion()):
-							print "'%s' == '%s' ?" % (match.group(3), productProperty.getPackageVersion())
-							if (match.group(3) == productProperty.getPackageVersion()):
-								print "all fits"
+				for item in objList:
+					if (match.group(1) == item.getProductId()):
+						if (match.group(2) == item.getProductVersion()):
+							if (match.group(3) == item.getPackageVersion()):
 								matched = True
 				
 				if not matched:
 					continue
 				
 				filenames.append(os.path.join(self.__productDir, entry))
-				
+			
 			for filename in filenames:
 				packageControlFile = PackageControlFile(filename = filename)
-				pp = []
+				newList = []
+				oldList = []
 				
-				for p in packageControlFile.getProductProperties():
-					for productProperty in productProperties:
-						if not p == productProperty:
-							logger.info(u"Deleting productProperty: '%s'" % productProperty.getIdent())
+				if objType == 'ProductDependency':
+					print "listing productdependencies"
+					oldList = packageControlFile.getProductDependencies()
+				else:
+					print "listing productproperties"
+					oldList = packageControlFile.getProductProperties()
+				
+				for oldItem in oldList:
+					for item in objList:
+						if not oldItem.getIdent() == item.getIdent():
+							logger.info(u"Deleting %s: '%s'" \
+								% (objType, oldItem.getIdent()))
 							continue
-						pp.append(productProperty)
+						newList.append(item)
 				
-				packageControlFile.setProductProperties(pp)
+				packageControlFile.setProductProperties(newList)
 				packageControlFile.generate()
 		
-		elif objType in ('ProductDependency'):
-			for productDependency in productDependencies:
-				logger.info(u"Deleting productDependency: '%s'" % productDependency.getIdent())
-				# TODO: delete, maybe combined with productproperties
-		
 		elif objType in ('ProductOnDepot'):
-			for productOnDepot in productsOnDepot:
+			for productOnDepot in objList:
 				logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
 				# TODO: delete
 		
 		elif objType in ('ProductOnClient'):
-			for productOnDepot in productsOnDepot:
+			for productOnDepot in objList:
 				logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
 				# TODO: delete
 		
@@ -853,12 +866,16 @@ class File31Backend(ConfigDataBackend):
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
+		productDependency = forceObjectClass(productDependency, ProductDependency)
+		
 		logger.notice(u"Inserting productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'create')
 		logger.notice(u"Inserted productDependency.")
 	
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
+		
+		productDependency = forceObjectClass(productDependency, ProductDependency)
 		
 		logger.notice(u"Updating productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'update')
@@ -876,6 +893,8 @@ class File31Backend(ConfigDataBackend):
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		
+		productDependencies = forceObjectClassList(productDependencies, ProductDependency)
+		
 		logger.notice(u"Deleting productDependencies ...")
 		self._delete(productDependencies)
 		logger.notice(u"Deleted productDependencies.")
@@ -886,12 +905,16 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
+		
 		logger.notice(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'create')
 		logger.notice(u"Inserted productOnDepot.")
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
+		
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		
 		logger.notice(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'update')
@@ -909,6 +932,8 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
+		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
+		
 		logger.notice(u"Deleting productOnDepots ...")
 		self._delete(productOnDepots)
 		logger.notice(u"Deleted productOnDepots.")
@@ -919,12 +944,16 @@ class File31Backend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
+		
 		logger.notice(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'create')
 		logger.notice(u"Inserted productOnClient.")
 	
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
+		
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		
 		logger.notice(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'update')
@@ -941,6 +970,8 @@ class File31Backend(ConfigDataBackend):
 	
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
+		
+		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
 		
 		logger.notice(u"Deleting productOnClients ...")
 		self._delete(productOnClients)
