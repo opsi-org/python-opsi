@@ -208,7 +208,7 @@ def objectToHtml(obj, level=0):
 			i+=1
 		html += u'<br />\n' + u'&nbsp;'*hspace + u'}'
 	elif type(obj) in (str, unicode):
-		html += obj.replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace)
+		html += obj.replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace)
 	else:
 		if hasattr(json, 'dumps'):
 			# python 2.6 json module
