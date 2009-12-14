@@ -74,6 +74,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._baseDn = 'dc=uib,dc=local'
 		self._opsiBaseDn = 'cn=opsi,' + self._baseDn
 		self._hostsContainerDn = 'cn=hosts,' + self._opsiBaseDn
+		self._configContainerDn = 'cn=config,' + self._opsiBaseDn
 		self._groupsContainerDn = 'cn=groups,' + self._opsiBaseDn
 		self._productsContainerDn = 'cn=products,' + self._opsiBaseDn
 		self._productClassesContainerDn = 'cn=productClasses,' + self._opsiBaseDn
@@ -137,6 +138,25 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiClass':      'OpsiConfigserver',
 					'opsiSuperClass': 'OpsiDepotserver',
 					'objectClasses':  [ 'opsiHost', 'opsiDepotserver', 'opsiConfigserver' ],
+					'attributes': [
+					]
+				 },
+				 {
+					'opsiClass':     'Config',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiConfig' ],
+					'attributes': [
+						{ 'opsiAttribute': 'id',              'ldapAttribute': 'configId' },
+						{ 'opsiAttribute': 'description',     'ldapAttribute': 'configDescription' },
+						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'defaultValues' },
+						{ 'opsiAttribute': 'editable',        'ldapAttribute': 'editable' },
+						{ 'opsiAttribute': 'multiValue',      'ldapAttribute': 'multiValue' }
+					]
+				},
+				{
+					'opsiClass':      'UnicodeConfig',
+					'opsiSuperClass': 'Config',
+					'objectClasses':  [ 'opsiConfig', 'opsiUnicodeConfig' ],
 					'attributes': [
 					]
 				 }
@@ -288,6 +308,7 @@ class LDAPBackend(ConfigDataBackend):
 		# Create some containers
 		self._createOrganizationalRole(self._opsiBaseDn)
 		self._createOrganizationalRole(self._hostsContainerDn)
+		self._createOrganizationalRole(self._configContainerDn)
 		self._createOrganizationalRole(self._generalConfigsContainerDn)
 		self._createOrganizationalRole(self._networkConfigsContainerDn)
 		self._createOrganizationalRole(self._groupsContainerDn)
@@ -453,12 +474,12 @@ class LDAPBackend(ConfigDataBackend):
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		dn = 'cn=%s,%s' % (config.id, self._configContainerDn)
 		
-		logger.info(u"Creating host: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(host, dn)
-		#ldapObject.writeToDirectory(self._ldap)
-		print Tools.objectToBeautifiedText(ldapObject)
+		logger.info(u"Creating Config: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(config, dn)
+		ldapObject.writeToDirectory(self._ldap)
+		
 	
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
@@ -466,6 +487,15 @@ class LDAPBackend(ConfigDataBackend):
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		#print Tools.objectToBeautifiedText(config)
+		print "-----> jetzt wirds versucht -------------"
+		
+		logger.info(u"Getting configs, filter %s" % filter)
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			hosts.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return hosts
 	
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
