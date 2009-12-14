@@ -1053,12 +1053,16 @@ class MySQLBackend(ConfigDataBackend):
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
+		where = self._uniqueCondition(productProperty)
 		possibleValues = data['possibleValues']
 		defaultValues = data['defaultValues']
 		del data['possibleValues']
 		del data['defaultValues']
+		self._mysql.update('PRODUCT_PROPERTY', where, data)
 		
-		self._mysql.update('PRODUCT_PROPERTY', data)
+		if not possibleValues is None:
+			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
+		
 		for value in possibleValues:
 			self._mysql.insert('PRODUCT_PROPERTY_VALUE', {
 					'productId': data['productId'],
@@ -1107,8 +1111,9 @@ class MySQLBackend(ConfigDataBackend):
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
+		where = self._uniqueCondition(productDependency)
 		
-		self._mysql.update('PRODUCT_DEPENDENCY', data)
+		self._mysql.update('PRODUCT_DEPENDENCY', where, data)
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)

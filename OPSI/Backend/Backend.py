@@ -111,7 +111,7 @@ class Backend:
 				self._password = value
 		
 	def getInterface(self):
-		methods = {};
+		methods = {}
 		for member in inspect.getmembers(self, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
@@ -1521,6 +1521,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			logger.debug(u"   * created pocByClientIdAndProductId")
 			
 			# Create missing product states
+			# TODO: remove state if product not available on depot
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					if not clientId in clientIds:
@@ -2335,10 +2336,70 @@ class DepotserverBackend(ExtendedBackend):
 		ExtendedBackend.__init__(self, backend)
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
+		self._logDir = u'/var/log/opsi'
 		
 	def exit(self):
 		if self._backend:
 			self._backend.exit()
+	
+	# -------------------------------------------------
+	# -     LOGGING                                   -
+	# -------------------------------------------------
+	def log_write(self, logType, data, objectId=None, append=True):
+		logType = forceUnicode(logType)
+		data = forceUnicode(data)
+		if not objectId:
+			objectId = None
+		else:
+			objectId = forceObjectId(objectId)
+		append = forceBool(append)
+		
+		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
+		
+		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+		
+		if not os.path.exists( os.path.join(self._logDir, logType) ):
+			mkdir(os.path.join(self._logDir, logType), mode=0770)
+		
+		logFile = os.path.join(self._logDir, logType, objectId + '.log')
+		
+		f = None
+		if append:
+			f = codecs.open(logFile, 'a+', 'utf-8', 'replace')
+		else:
+			f = codecs.open(logFile, 'w', 'utf-8', 'replace')
+		f.write(data)
+		f.close()
+		os.chmod(logFile, 0640)
+		
+	def log_read(self, logType, objectId=None, maxSize=0):
+		logType = forceUnicode(logType)
+		if not objectId:
+			objectId = None
+		else:
+			objectId = forceObjectId(objectId)
+		maxSize = forceInt(maxSize)
+		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u'Unknown log type %s' % type)
+		
+		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u"Log type '%s' requires objectId" % type)
+		
+		logFile = os.path.join(self._logDir, logType, objectId + '.log')
+		data = u''
+		if not os.path.exists(logFile):
+			return data
+		logFile = codecs.open(logFile, 'r', 'utf-8', 'replace')
+		data = logFile.read()
+		logFile.close()
+		if maxSize and (len(data) > maxSize):
+			start = data.find('\n', len(data)-maxSize)
+			if (start == -1):
+				start = len(data)-maxSize
+			return data[start+1:]
+		return data
 	
 	def auditHardware_getConfig(self, language=None):
 		if not language:

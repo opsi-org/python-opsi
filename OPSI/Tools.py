@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-import json, os, random, base64
+import json, os, random, base64, types
 try:
 	from hashlib import md5
 except ImportError:
@@ -150,24 +150,24 @@ def timestamp(secs=0, dateOnly=False):
 def objectToBeautifiedText(obj, level=0):
 	hspace = level*10
 	text = u''
-	if ( type(obj) == type([]) ):
+	if type(obj) is types.ListType:
 		text += u' '*hspace + u'[ \n'
 		for i in range( len(obj) ):
-			if type(obj[i]) != type({}) and type(obj[i]) != type([]):
+			if not type(obj[i]) in (types.DictType, types.ListType):
 				text += u' '*hspace
 			text += objectToBeautifiedText(obj[i], level+1)
 			
 			if (i < len(obj)-1):
 				text += u',\n'
 		text += u'\n' + u' '*hspace + u']'
-	elif ( type(obj) == type({}) ):
+	elif type(obj) is types.DictType:
 		text += u' '*hspace + u'{ \n'
 		i = 0
 		for (key, value) in obj.items():
 			text += u' '*hspace + u'"' + key + u'" : '
-			if type(value) == type({}) or type(value) == type([]):
+			if type(value) in (types.DictType, types.ListType):
 				text += u'\n'
-			text += objectToBeautifiedText(obj[key], level+1)
+			text += objectToBeautifiedText(value, level+1)
 			
 			if (i < len(obj)-1):
 				text += u',\n'
@@ -181,40 +181,52 @@ def objectToBeautifiedText(obj, level=0):
 			text+= json.write(obj)
 	return text
 
-def jsonObjToHtml(jsonObj, level=0):
+def objectToHtml(obj, level=0):
 	hspace = level*10
-	html = ''
-	if hasattr(jsonObj, 'toHash'):
-		jsonObj = jsonObj.toHash()
-	
-	if ( type(jsonObj) == type([]) ):
-		html += '&nbsp;'*hspace + '[ <br />\n'
-		for i in range( len(jsonObj) ):
-			if type(jsonObj[i]) != type({}) and type(jsonObj[i]) != type([]):
-				html += '&nbsp'*hspace
-			html += jsonObjToHtml(jsonObj[i], level+1)
+	html = u''
+	if type(obj) is types.ListType:
+		html += u'&nbsp;'*hspace + u'[ <br />\n'
+		for i in range( len(obj) ):
+			if not type(obj[i]) in (types.DictType, types.ListType):
+				html += u'&nbsp;'*hspace
+			html += objectToHtml(obj[i], level+1)
 			
-			if (i < len(jsonObj)-1):
-				html += ',<br />\n'
-		html += '<br />\n' + '&nbsp;'*hspace + ']'
-	elif ( type(jsonObj) == type({}) ):
-		html += '&nbsp'*hspace + '{ <br />\n'
+			if (i < len(obj)-1):
+				html += u',<br />\n'
+		html += u'<br />\n' + u'&nbsp;'*hspace + u']'
+	elif type(obj) is types.DictType:
+		html += u'&nbsp;'*hspace + u'{ <br />\n'
 		i = 0
-		for (key, value) in jsonObj.items():
-			html += '&nbsp;'*hspace + '"<font class="json_key">' + key +  '</font>": '
-			if type(value) == type({}) or type(value) == type([]):
-				html += '<br />\n'
-			html += jsonObjToHtml(jsonObj[key], level+1)
+		for (key, value) in obj.items():
+			html += u'&nbsp;'*hspace + u'"<font class="json_key">' + key +  u'</font>": '
+			if type(value) in (types.DictType, types.ListType):
+				html += u'<br />\n'
+			html += objectToHtml(value, level+1)
 			
-			if (i < len(jsonObj)-1):
-				html += ',<br />\n'
+			if (i < len(obj)-1):
+				html += u',<br />\n'
 			i+=1
-		html += '<br />\n' + '&nbsp;'*hspace + '}'
+		html += u'<br />\n' + u'&nbsp;'*hspace + u'}'
+	elif type(obj) in (str, unicode):
+		html += obj.replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace)
 	else:
 		if hasattr(json, 'dumps'):
 			# python 2.6 json module
-			html += json.dumps(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
+			html += json.dumps(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
 		else:
-			html += json.write(jsonObj).replace('<', '&lt;').replace('>', '&gt;')
-	return html.replace('\\n', '<br />\n' + '&nbsp'*hspace)
+			html += json.write(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
+	return html
+
+
+
+
+
+
+
+
+
+
+
+
+
 

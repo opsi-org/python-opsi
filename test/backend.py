@@ -902,15 +902,14 @@ class BackendTest(object):
 		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
 		assert len(productProperties) == len(self.productProperties)
 		
-# mysql: does not work
-#		self.productProperty2.setDescription(u'updated')
-#		self.backend.productProperty_updateObject(self.productProperty2)
-#		productProperties = self.backend.productProperty_getObjects( attributes = [],\
-#			description = u'updated')
-#		
-#		assert len(productProperties) == 1
-#		print productProperties[0].getDescription()
-#		assert productProperties[0].getDescription() == u'updated'
+		self.productProperty2.setDescription(u'updated')
+		self.backend.productProperty_updateObject(self.productProperty2)
+		productProperties = self.backend.productProperty_getObjects( attributes = [],\
+			description = u'updated')
+		
+		assert len(productProperties) == 1
+		print productProperties[0].getDescription()
+		assert productProperties[0].getDescription() == u'updated'
 		
 		self.backend.productProperty_deleteObjects(self.productProperty2)
 		productProperties = self.backend.productProperty_getObjects()
