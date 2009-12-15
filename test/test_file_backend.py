@@ -12,6 +12,7 @@ from backend import *
 logger = Logger()
 logger.setConsoleLevel(LOG_CONFIDENTIAL)
 logger.setConsoleColor(True)
+#logger.setConsoleFormat('%D [%L] %M (%F|%N)')
 
 file31Backend = File31Backend()
 
@@ -31,24 +32,11 @@ pp0 = BoolProductProperty(
 #file31Backend.productProperty_deleteObjects([pp0])
 #exit()
 
-
 bt = BackendTest(ExtendedConfigDataBackend(file31Backend))
 bt.cleanupBackend()
 bt.testObjectMethods()
 #bt.testNonObjectMethods()
 #bt.testPerformance()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

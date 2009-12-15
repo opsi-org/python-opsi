@@ -907,6 +907,7 @@ class BackendTest(object):
 		productProperties = self.backend.productProperty_getObjects( attributes = [],\
 			description = u'updatedfortest')
 		
+		
 		assert len(productProperties) == 1
 		print productProperties[0].getDescription()
 		assert productProperties[0].getDescription() == u'updatedfortest'
@@ -924,21 +925,29 @@ class BackendTest(object):
 		productDependencies = self.backend.productDependency_getObjects()
 		assert len(productDependencies) == len(self.productDependencies)
 		
-		self.productDependency2.setProductAction(u'update')
+		self.productDependency2.requiredProductVersion = "2.0"
+		self.productDependency2.requirementType = None
 		self.backend.productDependency_updateObject(self.productDependency2)
-		productDependencies = self.backend.productDependency_getObjects()#\
-			#attributes = [], productAction = u'update') #only one
-		
-		print productDependencies[0].getProductAction()
-		print productDependencies[1].getProductAction()
-		assert len(productDependencies) == 1
-		assert productDependencies[0].getProductAction() == u'update'
+		productDependencies = self.backend.productDependency_getObjects()
+		assert len(productDependencies) == len(self.productDependencies)
+		for productDependency in productDependencies:
+			if productDependency.getIdent() == self.productDependency2.getIdent():
+				assert productDependency.getRequiredProductVersion() == "2.0"
+				assert productDependency.getRequirementType() == 'after'
+#				self.productDependency2.requirementType = 'after'
 		
 		self.backend.productDependency_deleteObjects(self.productDependency2)
 		productDependencies = self.backend.productDependency_getObjects()
+		
+		print self.productDependency2
+		for p in productDependencies:
+			print p
+		
 		assert len(productDependencies) == len(self.productDependencies) - 1
 		
-		self.backend.productDependency_createObjects(self.productDependency2)
+		self.backend.productDependency_createObjects(self.productDependencies)
+		productDependencies = self.backend.productDependency_getObjects()
+		assert len(productDependencies) == len(self.productDependencies)
 		
 		# ProductOnDepots
 		logger.notice(u"Testing productOnDepot methods")

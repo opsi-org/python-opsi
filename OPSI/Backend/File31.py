@@ -407,8 +407,13 @@ class File31Backend(ConfigDataBackend):
 								objHash = tmpHash
 					
 					elif objType in ('ProductDependency'):
+						print "oooooooooooooooooooooooooooooooooooooooooooooooooo"
 						for productDependency in packageControlFile.getProductProperties():
+							print productDependency
 							tmpHash = productDependency.toHash()
+							print "###############################"
+							print tmpHash
+							print "###############################"
 							if self._objectHashMatches(tmpHash, **filter):
 								objHash = tmpHash
 			
@@ -511,17 +516,26 @@ class File31Backend(ConfigDataBackend):
 					else:
 						oldList = packageControlFile.getProductProperties()
 					
-					if (mode == 'create'):
-						newList = oldList
-						newList.append(obj)
-					else:
-						print "mode", mode
-						print "obj", obj
-						for item in oldList:
-							if item.getIdent() == obj.getIdent():
+					objInOldList = False
+					for item in oldList:
+						if item.getIdent() == obj.getIdent():
+							objInOldList = True
+							if mode == 'create':
 								newList.append(obj)
 							else:
-								newList.append(item)
+								itemHash = item.toHash()
+								newHash = {}
+								for (attribute, value) in obj.toHash().items():
+									if value is None:
+										newHash[attribute] = itemHash[attribute]
+									else:
+										newHash[attribute] = value
+								newList.append(Object.fromHash(newHash))
+						else:
+							newList.append(item)
+					
+					if not objInOldList:
+						newList.append(obj)
 					
 					if objType == 'ProductDependency':
 						packageControlFile.setProductDependencies(newList)
@@ -625,15 +639,23 @@ class File31Backend(ConfigDataBackend):
 					print "listing productproperties"
 					oldList = packageControlFile.getProductProperties()
 				
+				print "searching..."
+				
 				for oldItem in oldList:
 					for item in objList:
-						if not oldItem.getIdent() == item.getIdent():
+						print "actual", oldItem
+						print "to delete", item
+						if oldItem.getIdent() == item.getIdent():
 							logger.info(u"Deleting %s: '%s'" \
 								% (objType, oldItem.getIdent()))
 							continue
 						newList.append(item)
 				
-				packageControlFile.setProductProperties(newList)
+				if objType == 'ProductDependency':
+					packageControlFile.setProductDependencies(newList)
+				else:
+					packageControlFile.setProductProperties(newList)
+				
 				packageControlFile.generate()
 		
 		elif objType in ('ProductOnDepot'):
