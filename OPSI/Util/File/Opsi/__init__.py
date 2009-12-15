@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =    opsi python library - File     =
-   = = = = = = = = = = = = = = = = = = =
+   = = = = = = = = = = = = = = = = = = = = =
+   =    opsi python library - File.Opsi    =
+   = = = = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
@@ -239,6 +239,8 @@ class PackageControlFile(TextFile):
 		self._product = None
 		self._productDependencies = []
 		self._productProperties = []
+		self._packageDedependencies = []
+		self._incrementalPackage = False
 		
 	def parse(self):
 		self.readlines()
@@ -247,6 +249,8 @@ class PackageControlFile(TextFile):
 		self._product = None
 		self._productDependencies = []
 		self._productProperties = []
+		self._packageDedependencies = []
+		self._incrementalPackage = False
 		
 		sectionType = None
 		option = None
@@ -401,6 +405,21 @@ class PackageControlFile(TextFile):
 		if not self._sections.get('product'):
 			raise Exception(u"Error in control file '%s': 'product' section not found" % self._filename)
 		
+		# Get package info
+		for (option, value) in self._sections.get('package', {}):
+			if (option == 'depends'):
+				for dep in value:
+					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
+					if not match.group(1):
+						raise Exception(u"Bad package dependency '%s' in control file" % dep)
+						continue
+					package = match.group(1)
+					version = match.group(2)
+					self._packageDedependencies.append( { 'package': package, 'version': version } )
+				
+			elif (option == 'incremental'):
+				self._incrementalPackage = forceBool(value)
+		
 		# Create Product object
 		product = self._sections['product'][0]
 		Class = None
@@ -506,6 +525,18 @@ class PackageControlFile(TextFile):
 	def setProductProperties(self, productProperties):
 		self._productProperties = forceObjectClassList(productProperties, ProductProperty)
 	
+	def getPackageDedependencies(self):
+		return self._packageDedependencies
+	
+	def setPackageDedependencies(self, packageDedependencies):
+		self._packageDedependencies = forceList(packageDedependencies)
+	
+	def getIncrementalPackage(self):
+		return self._incrementalPackage
+	
+	def setIncrementalPackage(self, incremental):
+		self._incrementalPackage = forceBool(incremental)
+	
 	def generate(self):
 		if not self._product:
 			raise Exception(u"Got no data to write")
@@ -514,8 +545,8 @@ class PackageControlFile(TextFile):
 		
 		self._lines = [ u'[Package]' ]
 		self._lines.append( u'version: %s' % self._product.getPackageVersion() )
-		self._lines.append( u'depends:' )
-		self._lines.append( u'incremental: False' )
+		self._lines.append( u'depends: %s' % ', '.join(self._packageDedependencies) )
+		self._lines.append( u'incremental: %s' % self._incrementalPackage )
 		self._lines.append( u'' )
 		
 		self._lines.append( u'[Product]' )
