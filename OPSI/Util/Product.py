@@ -44,6 +44,7 @@ import os
 from OPSI.Logger import *
 from OPSI.Util.File.Opsi import PackageControlFile
 from OPSI.Util.File.Archive import *
+from OPSI.Util import randomString
 
 logger = Logger()
 
@@ -74,7 +75,7 @@ class ProductPackageFile(ProductPackage):
 			if (len(infoFromFileName) > 2):
 				self.customName = infoFromFileName[2]
 		
-		self.tmpUnpackDir = os.path.join( self.tempDir, 'unpack.%s.%s' % (self.productId, Tools.randomString(5)) )
+		self.tmpUnpackDir = os.path.join( self.tempDir, 'unpack.%s.%s' % (self.productId, randomString(5)) )
 		
 		return
 		##################################

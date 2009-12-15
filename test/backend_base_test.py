@@ -216,7 +216,7 @@ assert type(forceActionProgress('installing 50%')) is unicode
 
 
 assert forceLanguageCode('dE') == u'de'
-assert forceLanguageCode('en-us') == u'en-US'
+assert forceLanguageCode('en-us') == u'en_US'
 try:
 	forceLanguageCode('de-DEU')
 except ValueError:

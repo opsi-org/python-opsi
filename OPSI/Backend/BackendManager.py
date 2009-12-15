@@ -44,8 +44,8 @@ elif (os.name == 'nt'):
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI import Tools
 from Backend import *
+from OPSI.Util import objectToBeautifiedText
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
 
 # Get logger instance
@@ -134,7 +134,7 @@ class BackendDispatcher(ConfigDataBackend):
 		try:
 			self._dispatchConfig = BackendDispatchConfigFile(self._dispatchConfigFile).parse()
 			logger.debug(u"Read dispatch config from file '%s':" % self._dispatchConfigFile)
-			logger.debug(Tools.objectToBeautifiedText(self._dispatchConfig))
+			logger.debug(objectToBeautifiedText(self._dispatchConfig))
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 	
@@ -349,7 +349,7 @@ class BackendAccessControl(object):
 				raise Exception(u"Acl file '%s' not found" % self._aclFile)
 			self._acl = BackendACLFile(self._aclFile).parse()
 			logger.debug(u"Read acl from file '%s':" % self._aclFile)
-			logger.debug(Tools.objectToBeautifiedText(self._acl))
+			logger.debug(objectToBeautifiedText(self._acl))
 		except Exception, e:
 			logger.logException(e)
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))

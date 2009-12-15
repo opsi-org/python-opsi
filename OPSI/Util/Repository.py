@@ -36,16 +36,14 @@ __version__ = '3.5'
 
 # Imports
 import re, stat, base64, urllib, os, shutil
-try:
-	from hashlib import md5
-except ImportError:
-	from md5 import md5
+
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Util import md5sum
 
 # Get Logger instance
 logger = Logger()
@@ -491,17 +489,6 @@ class DepotToLocalDirectorySychronizer(object):
 		if not os.path.isdir(self._destinationDirectory):
 			os.mkdir(self._destinationDirectory)
 	
-	def _md5sum(self, filename):
-		f = open(filename, 'rb')
-		m = md5()
-		while True:
-			d = f.read(8096)
-			if not d:
-				break
-			m.update(d)
-		f.close()
-		return m.hexdigest()
-	
 	def _synchronizeDirectories(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = forceUnicode(destination)
@@ -540,7 +527,7 @@ class DepotToLocalDirectorySychronizer(object):
 				elif (self._fileInfo[relSource]['type'] == 'f'):
 					bytes = int(self._fileInfo[relSource]['size'])
 					if os.path.exists(d):
-						md5s = self._md5sum(d)
+						md5s = md5sum(d)
 						logger.debug(u"      Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, bytes, md5s))
 						if (os.path.getsize(d) == bytes) and (md5s == self._fileInfo[relSource]['md5sum']):
 							if progressSubject: progressSubject.addToState(bytes)

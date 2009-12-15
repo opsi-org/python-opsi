@@ -40,7 +40,7 @@ import json, re, copy, time, inspect
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Tools import generateOpsiHostKey, timestamp
+from OPSI.Util import generateOpsiHostKey, timestamp
 
 
 # Get logger instance

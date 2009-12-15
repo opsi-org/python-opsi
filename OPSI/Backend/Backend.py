@@ -45,7 +45,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.System import getDiskSpaceUsage
-from OPSI.Tools import md5sum, librsyncSignature, librsyncPatchFile, timestamp
+from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, timestamp
 from OPSI.Util.File import ConfigFile
 
 logger = Logger()

@@ -4,7 +4,7 @@
 import sys, os, shutil
 
 from OPSI.Logger import *
-from OPSI import Tools
+from OPSI.Util import objectToBeautifiedText
 from OPSI.Backend.BackendManager import *
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from backend import *
@@ -276,13 +276,13 @@ def testComposition():
 	logger.comment(product)
 	
 	products = bm.getProducts_hash()
-	logger.comment(Tools.objectToBeautifiedText(products))
+	logger.comment(objectToBeautifiedText(products))
 	
 	products = bm.getProducts_listOfHashes()
-	logger.comment(Tools.objectToBeautifiedText(products))
+	logger.comment(objectToBeautifiedText(products))
 	
 	products = bm.getProducts_listOfHashes(depotId = bt.depotserver1.id)
-	logger.comment(Tools.objectToBeautifiedText(products))
+	logger.comment(objectToBeautifiedText(products))
 	
 	for client in bt.clients:
 		productIds = bm.getInstalledProductIds_list(objectId = client.id)
@@ -340,7 +340,7 @@ def testComposition():
 	logger.comment(actions)
 	
 	states = bm.getLocalBootProductStates_hash()
-	logger.comment(Tools.objectToBeautifiedText(states))
+	logger.comment(objectToBeautifiedText(states))
 	
 testComposition()
 
