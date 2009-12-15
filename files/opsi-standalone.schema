@@ -402,8 +402,7 @@ attributetype ( 1.3.6.1.4.1.23807.7.1.3
 	NAME 'possibleValues'
 	DESC 'Possible Values'
 	EQUALITY caseIgnoreMatch
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
-	SINGLE-VALUE )
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
 
 attributetype ( 1.3.6.1.4.1.23807.7.1.4
 	NAME 'defaultValues'
