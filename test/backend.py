@@ -902,20 +902,17 @@ class BackendTest(object):
 		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
 		assert len(productProperties) == len(self.productProperties)
 		
-		self.productProperty2.setDescription(u'updated')
+		self.productProperty2.setDescription(u'updatedfortest')
 		self.backend.productProperty_updateObject(self.productProperty2)
 		productProperties = self.backend.productProperty_getObjects( attributes = [],\
-			description = u'updated')
+			description = u'updatedfortest')
 		
 		assert len(productProperties) == 1
 		print productProperties[0].getDescription()
-		assert productProperties[0].getDescription() == u'updated'
+		assert productProperties[0].getDescription() == u'updatedfortest'
 		
 		self.backend.productProperty_deleteObjects(self.productProperty2)
 		productProperties = self.backend.productProperty_getObjects()
-		
-		print self.productProperties
-		
 		assert len(productProperties) == len(self.productProperties) - 1
 		
 		self.backend.productProperty_createObjects(self.productProperty2)
@@ -926,6 +923,22 @@ class BackendTest(object):
 		self.backend.productDependency_createObjects(self.productDependencies)
 		productDependencies = self.backend.productDependency_getObjects()
 		assert len(productDependencies) == len(self.productDependencies)
+		
+		self.productDependency2.setProductAction(u'update')
+		self.backend.productDependency_updateObject(self.productDependency2)
+		productDependencies = self.backend.productDependency_getObjects()#\
+			#attributes = [], productAction = u'update') #only one
+		
+		print productDependencies[0].getProductAction()
+		print productDependencies[1].getProductAction()
+		assert len(productDependencies) == 1
+		assert productDependencies[0].getProductAction() == u'update'
+		
+		self.backend.productDependency_deleteObjects(self.productDependency2)
+		productDependencies = self.backend.productDependency_getObjects()
+		assert len(productDependencies) == len(self.productDependencies) - 1
+		
+		self.backend.productDependency_createObjects(self.productDependency2)
 		
 		# ProductOnDepots
 		logger.notice(u"Testing productOnDepot methods")

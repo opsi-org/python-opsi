@@ -515,6 +515,8 @@ class File31Backend(ConfigDataBackend):
 						newList = oldList
 						newList.append(obj)
 					else:
+						print "mode", mode
+						print "obj", obj
 						for item in oldList:
 							if item.getIdent() == obj.getIdent():
 								newList.append(obj)
@@ -923,9 +925,9 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting productsOnDepot ...")
+		logger.notice(u"Getting productOnDepots ...")
 		result = self._read('ProductOnDepot', attributes, **filter)
-		logger.notice(u"Got productsOnDepot.")
+		logger.notice(u"Got productOnDepots.")
 		
 		return result
 	
