@@ -263,6 +263,42 @@ class CpioArchive(BaseArchive):
 
 
 
+def Archive(filename):
+	filename = forceFilename(filename)
+	Class = None
+	fileType = getFileTye(filename):
+	if   fileType.lower().startswith('posix tar archive'):
+		Class = TarArchive
+	elif fileType.lower().startswith('ascii cpio archive'):
+		Class = CpioArchive
+	elif filename.lower().endswith('tar.gz') or filename.lower().endswith('tar.gz'):
+		Class = TarArchive
+	elif filename.lower().endswith('cpio.gz') or filename.lower().endswith('cpio.gz'):
+		Class = CpioArchive
+	else:
+		raise Exception(u"Failed to guess archive type of '%s'" % filename)
+	return Class(filename)
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

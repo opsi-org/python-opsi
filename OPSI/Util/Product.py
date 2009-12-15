@@ -38,7 +38,7 @@ __version__ = '3.4.99'
 DEFAULT_TMP_DIR = u'/tmp'
 
 # Imports
-import os
+import os, shutil
 
 # OPSI imports
 from OPSI.Logger import *
@@ -55,47 +55,154 @@ class ProductPackageFile(ProductPackage):
 		if not tempDir:
 			tempDir = DEFAULT_TMP_DIR
 		tempDir = forceFilename(tempDir)
-		self.tempDir = os.path.abspath(tempDir)
-		if not os.path.isdir(self.tempDir):
-			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
+		if not os.path.isdir(tempDir):
+			raise Exception(u"Temporary directory '%s' not found" % tempDir)
 		
-		self.productId      = 'unknown'
-		self.productVersion = 'unknown'
-		self.packageVersion = 'unknown'
-		self.customName     = None
-		
-		if self.packageFile.endswith('.opsi'):
-			infoFromFileName = os.path.basename(self.packageFile)[:-1*len('.opsi')].split('_')
-			self.productId = infoFromFileName[0]
-			if (len(infoFromFileName) > 1):
-				i = infoFromFileName[1].find('-')
-				if (i != -1):
-					self.productVersion = infoFromFileName[1][:i]
-					self.packageVersion = infoFromFileName[1][i+1:]
-			if (len(infoFromFileName) > 2):
-				self.customName = infoFromFileName[2]
-		
-		self.tmpUnpackDir = os.path.join( self.tempDir, 'unpack.%s.%s' % (self.productId, randomString(5)) )
-		
-		return
-		##################################
-		self.product = Product()
-		self.packageFile = os.path.abspath(packageFile)
-		self.tempDir = os.path.abspath(tempDir)
+		self.tempDir        = os.path.abspath(tempDir)
+		self.clientDataDir  = None
 		self.installedFiles = []
+		self.tmpUnpackDir   = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
 		
-		ProductPackage.__init__(self, self.product)
-		self.clientDataDir = None
+		self.getMetaData()
 		
+		self.clientDataDir = os.path.join('/tmp', self.productId)
+	
+	def cleanup(self):
+		if os.path.isdir(self.tmpUnpackDir):
+			shutil.rmtree(self.tmpUnpackDir)
+	
+	def getMetaData(self):
+		archive = Archive(self.packageFile)
+		try:
+			logger.notice(u"Extracting meta data from archive content to: '%s'" % self.tmpUnpackDir)
+			archive.extract(targetPath = self.tmpUnpackDir, patterns=[u"OPSI*"])
+			
+			metadataArchives = []
+			basenames = []
+			for f in os.listdir(self.tmpUnpackDir):
+				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
+					logger.warning(u"Unknown content in archive: %s" % f)
+					continue
+				logger.debug(u"Metadata archive found: %s" % f)
+				metadataArchives.append(metadataArchives)
+			if not metadataArchives:
+				raise Exception(u"No metadata archive found")
+			if (len(metadataArchives) > 2):
+				raise Exception(u"More than two metadata archives found")
+			
+			# Sorting to unpack custom version metadata at last
+			metadataArchives.sort()
+			metadataArchives.reverse()
+			
+			for metadataArchive in metadataArchives:
+				archive = Archive( os.path.join(self.tmpUnpackDir, metadataArchive) )
+				archive.extract(targetPath = self.tmpUnpackDir)
+			
+			packageControlFile = os.path.join(self.tmpUnpackDir, u'control')
+			if not os.path.exists(packageControlFile):
+				raise Exception(u"No control file found in package metadata archives")
+		except Exception, e:
+			self.cleanup()
+			raise
 		
+	def unpack(self, dataArchives=True):
+		archive = Archive(self.packageFile)
 		
-		# Unpack and read control file
-		#self.lock()
-		self.unpack(dataArchives = False)
-		#self.unlock()
+		prevUmask = os.umask(0077)
+		# Create temporary directory
+		if os.path.exists(self.tmpUnpackDir):
+			shutil.rmtree(self.tmpUnpackDir)
+		os.umask(prevUmask)
+		os.mkdir(self.tmpUnpackDir)
+		try:
+			if dataArchives:
+				logger.notice(u"Extracting archive content to: '%s'" % self.tmpUnpackDir)
+				archive.extract(targetPath = self.tmpUnpackDir)
+			else:
 				
-		self.clientDataDir = os.path.join('/tmp', self.product.productId)
-
+			
+			
+		except Exception, e:
+			self.cleanup()
+			raise
+		
+		names = [u'OPSI']
+		if dataArchives:
+			os.mkdir( self.clientDataDir )
+			self.installedFiles.append( self.clientDataDir )
+			names.extend( [u'SERVER_DATA', u'CLIENT_DATA'] )
+		
+		
+		for name in names:
+			archives = []
+			if os.path.exists( os.path.join(self.tmpUnpackDir, name + '.tar.gz') ):
+				archives.append( os.path.join(self.tmpUnpackDir, name + '.tar.gz') )
+			elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.tar') ):
+				archives.append( os.path.join(self.tmpUnpackDir, name + '.tar') )
+			elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.cpio.gz') ):
+				archives.append( os.path.join(self.tmpUnpackDir, name + '.cpio.gz') )
+			elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.cpio') ):
+				archives.append( os.path.join(self.tmpUnpackDir, name + '.cpio') )
+			
+			if self.customName:
+				if os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar.gz') ):
+					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar.gz') )
+				elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar') ):
+					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar') )
+				elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio.gz') ):
+					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio.gz') )
+				elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio') ):
+					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio') )
+			
+			if not archives:
+				if (name == 'OPSI'):
+					raise Exception("Bad package: OPSI.{cpio|tar}[.gz] not found.")
+				else:
+					logger.warning("No %s archive found." % name)
+			
+			dstDir = self.tmpUnpackDir
+			if (name == 'SERVER_DATA'):
+				dstDir = '/'
+			elif (name == 'CLIENT_DATA'):
+				dstDir = self.clientDataDir
+			
+			for archive in archives:
+				try:
+					if (name != 'OPSI'):
+						for filename in Tools.getArchiveContent(archive):
+							fn = os.path.join(dstDir, filename).strip()
+							if not fn:
+								continue
+							self.installedFiles.append(fn)
+					Tools.extractArchive(archive, chdir=dstDir)
+				except Exception, e:
+					self.cleanup()
+					raise Exception("Failed to extract '%s': %s" % (self.packageFile, e))
+					
+				#os.unlink(archive)
+			
+			if (name == 'OPSI'):
+				self.controlFile = os.path.join(self.tmpUnpackDir, 'control')
+				self.readControlFile()
+				
+				if self.clientDataDir:
+					# Copy control file into client data dir
+					cfName = '%s_%s-%s' % (self.product.productId, self.product.productVersion, self.product.packageVersion)
+					if self.customName:
+						cfName = '%s_%s' % (cfName, self.customName)
+					cfName = '%s.control' % cfName
+					
+					ci = open(self.controlFile, 'r')
+					co = open(os.path.join(self.clientDataDir, cfName), 'w')
+					co.write(ci.read())
+					co.close()
+					ci.close()
+					self.installedFiles.append( os.path.join(self.clientDataDir, cfName) )
+					
+		if self.installedFiles:
+			self.installedFiles.sort()
+			for filename in self.installedFiles:
+				logger.debug("Installed file: %s" % filename)
 
 
 
