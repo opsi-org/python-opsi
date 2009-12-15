@@ -35,10 +35,11 @@
 __version__ = '3.5'
 
 # Imports
-import os, sys, subprocess
+import os, sys, subprocess, locale
 
 # OPSI imports
 from OPSI.Logger import *
+from OPSI.Types import *
 
 # Get Logger instance
 logger = Logger()
@@ -59,12 +60,18 @@ def which(cmd):
 	
 	return WHICH_CACHE[cmd]
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=False, exitOnStderr=False, captureStderr=True, encoding='utf-8'):
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None):
 	"""
 	Executes a command and returns output lines as list
 	"""
+	
+	nowait          = forceBool(nowait)
+	getHandle       = forceBool(getHandle)
+	exitOnStderr    = forceBool(exitOnStderr)
+	captureStderr   = forceBool(captureStderr)
+	
 	exitCode = 0
-	result = u''
+	result = []
 	
 	try:
 		logger.info(u"Executing: %s" % cmd)
@@ -80,6 +87,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=False, exitOnStde
 				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
 		
 		else:
+			data = ''
 			stderr = None
 			if captureStderr:
 				stderr	= subprocess.PIPE
@@ -90,6 +98,10 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=False, exitOnStde
 				stdout	= subprocess.PIPE,
 				stderr	= stderr,
 			)
+			if not encoding:
+				encoding = proc.stdin.encoding
+			if not encoding:
+				encoding = locale.getpreferredencoding()
 			
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -99,63 +111,49 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=False, exitOnStde
 				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			
 			ret = None
-			curLine = u''
-			curErrLine = u''
 			while ret is None:
 				ret = proc.poll()
 				try:
-					string = proc.stdout.read().decode(encoding)
-					if (len(string) > 0):
-						result += string
-						curLine += string
-						if (curLine.find(u'\n') != -1):
-							lines = curLine.split(u'\n')
-							for i in range(len(lines)):
-								if (i == len(lines)-1):
-									curLine = lines[i]
-								else:
-									logger.debug(u" ->>> %s" % lines[i])
+					chunk = proc.stdout.read()
+					if (len(chunk) > 0):
+						data += chunk
 				except IOError, e:
 					if (e.errno != 11):
 						raise
 				
 				if captureStderr:
 					try:
-						string = proc.stderr.read().decode(encoding)
-						if (len(string) > 0):
-							result += string
-							curErrLine += string
-							if (curErrLine.find(u'\n') != -1):
-								if exitOnStderr:
-									if (type(exitOnStderr) is bool) or (type(exitOnStderr) in (unicode, str, type(re.compile(''))) and re.search(exitOnStderr, curErrLine)):
-										raise Exception(u"Command '%s' failed: %s" % (cmd, curErrLine) )
-								lines = curErrLine.split(u'\n')
-								for i in range(len(lines)):
-									if (i == len(lines)-1):
-										curErrLine = lines[i]
-									else:
-										logger.error(u" ->>> %s" % lines[i])
+						chunk = proc.stderr.read()
+						if (len(chunk) > 0):
+							if exitOnStderr:
+								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk) )
+							data += chunk
 					except IOError, e:
 						if (e.errno != 11):
 							raise
 				
 				time.sleep(0.001)
 			
-			if curLine:
-				logger.debug(u" ->>> %s" % curLine)
-			if curErrLine:
-				logger.error(u" ->>> %s" % curErrLine)
-			
 			exitCode = ret
-			result = result.split(u'\n')
+			for line in data.split('\n'):
+				line = line.decode(encoding)
+				logger.debug(u'>>> %s' % line)
+				result.append(line)
+			if not result[-1]:
+				result = result[:-1]
 			
 	except (os.error, IOError), e:
 		# Some error occured during execution
 		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e) )
 	
 	logger.debug(u"Exit code: %s" % exitCode)
-	if exitCode and not ignoreExitCode:
-		raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, '\n'.join(result)) )
+	if exitCode:
+		if   type(ignoreExitCode) is bool and ignoreExitCode:
+			pass
+		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
+			pass
+		else:
+			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)) )
 	return result
 
 def getDiskSpaceUsage(path):

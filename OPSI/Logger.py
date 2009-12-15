@@ -516,6 +516,8 @@ class LoggerImplementation:
 			
 			if self.__consoleColor:
 				m = u"%s%s%s\n" % (color, m, COLOR_NORMAL)
+			else:
+				m = u"%s\n" % m
 			fh.write(m.encode(fhEncoding, 'backslashreplace'))
 			
 		if (level <= self.__fileLevel):

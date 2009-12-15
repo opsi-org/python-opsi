@@ -48,6 +48,13 @@ def forceList(var):
 		var = [ var ]
 	return var
 
+def forceDict(var):
+	if var is None:
+		var = {}
+	if not type(var) is dict:
+		raise ValueError(u"Bad dict value '%s'" % var)
+	return var
+
 def forceUnicode(var):
 	if type(var) is unicode:
 		return var
@@ -433,7 +440,7 @@ def forceArchitectureList(var):
 class OpsiError(Exception):
 	""" Base class for OPSI Backend exceptions. """
 	
-	ExceptionShortDescription = "OPSI-Backend generic exception"
+	ExceptionShortDescription = "Opsi error"
 	_message = None
 	
 	def __init__(self, message = ''):
@@ -457,7 +464,6 @@ class OpsiError(Exception):
 		def set(self, message):
 			self._message = forceUnicode(message)
 		return property(get, set)
-	
 	
 class BackendError(OpsiError):
 	""" Exception raised if there is an error in the backend. """
@@ -510,6 +516,9 @@ class LicenseConfigurationError(OpsiError):
 class LicenseMissingError(OpsiError):
 	""" Exception raised if a license is requested but cannot be found. """
 	ExceptionShortDescription = u"License missing error"
+
+class RepositoryError(OpsiError):
+	ExceptionShortDescription = u"Repository error"
 
 
 

@@ -2337,14 +2337,13 @@ class DepotserverBackend(ExtendedBackend):
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._logDir = u'/var/log/opsi'
+		self._packageLog = os.path.join(self._logDir, 'package.log')
+		self._packageManager = DepotserverPackageManager(self._packageLog)
 		
 	def exit(self):
 		if self._backend:
 			self._backend.exit()
 	
-	# -------------------------------------------------
-	# -     LOGGING                                   -
-	# -------------------------------------------------
 	def log_write(self, logType, data, objectId=None, append=True):
 		logType = forceUnicode(logType)
 		data = forceUnicode(data)
@@ -2523,10 +2522,194 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception, e:
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 	
+	
+	def depot_installPackage(self, filename, force=False, defaultProperties={}, tempDir=None):
+		self._packageManager.installPackage(filename, force, defaultProperties, tempDir)
+	
 
-
-
-
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                   CLASS DEPOTSERVERBACKEND                                         =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+class DepotserverPackageManager(object):
+	def __init__(self, logFile):
+		logger.setLogFile(logFile, object = self)
+		
+	def installPackage(self, filename, force=False, defaultProperties={}, tempDir=None):
+		filename = forceFilename(filename)
+		force = forceBool(force)
+		defaultProperties = forceDict(defaultProperties)
+		if tempDir:
+			tempDir = forceFilename(tempDir)
+		else:
+			tempDir = None
+		
+		if not os.path.isfile(filename):
+			raise BackendIOError(u"Package file '%s' not found" % filename)
+		
+		logger.info(u"Installing package file '%s'" % filename)
+		
+		ppf = Product.ProductPackageFile(filename, tempDir=tempDir)
+		
+		depotId = socket.getfqdn()
+		depot = self.getDepot_hash(depotId)
+		
+		clientDataDir = depot['depotLocalUrl']
+		if not clientDataDir.startswith('file:///'):
+			raise BackendBadValueError("Value '%s' not allowed for depot local url (has to start with 'file:///')" % clientDataDir)
+		clientDataDir = os.path.join(clientDataDir[7:], ppf.product.productId)
+		
+		logger.info("Setting client data dir to '%s'" % clientDataDir)
+		ppf.setClientDataDir(clientDataDir)
+		
+		lockedOnDepots = self.getProductLocks_hash(depotIds = [ depotId ]).get(ppf.product.productId, [])
+		logger.info("Product currently locked on : %s" % lockedOnDepots)
+		if depotId in lockedOnDepots and not force:
+			logger.info("Cleaning up")
+			ppf.cleanup()
+			raise BackendTemporaryError("Product '%s' currently locked on depot '%s'" % (ppf.product.productId, depotId))
+		
+		logger.info("Locking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
+		self.lockProduct(ppf.product.productId, depotIds=[ depotId ])
+		
+		exists = False
+		try:
+			exists = ppf.product.productId in self.getProductIds_list(objectId = depotId, installationStatus = 'installed')
+			if exists:
+				logger.warning("Product '%s' already exists in database" % ppf.product.productId)
+			
+			logger.info("Checking dependencies of product '%s'" % ppf.product.productId)
+			ppf.checkDependencies(configBackend=self)
+			
+			logger.info("Running preinst of product '%s'" % ppf.product.productId)
+			for line in ppf.runPreinst():
+				logger.info(" -> %s" % line)
+			
+			if exists:
+				# Delete existing product dependencies
+				logger.info("Deleting product dependencies of product '%s'" % ppf.product.productId)
+				self.deleteProductDependency(ppf.product.productId, depotIds = [ depotId ])
+				
+				# Delete productPropertyDefinitions
+				logger.info("Deleting product property definitions of product '%s'" % ppf.product.productId)
+				self.deleteProductPropertyDefinitions(ppf.product.productId, depotIds = [ depotId ])
+				
+				# Not deleting product, because this would delete client productstates as well
+			
+			if ppf.incremental:
+				logger.info("Incremental package, not deleting old client files")
+			else:
+				logger.info("Deleting old client files")
+				ppf.deleteClientDataDir()
+			
+			logger.info("Unpacking package '%s'" % filename)
+			ppf.unpack()
+			
+			ppf.writeFileInfoFile()
+			
+			ppf.setAccessRights()
+			
+			logger.info("Creating product in database")
+			self.createProduct(
+					ppf.product.productType,
+					ppf.product.productId,
+					ppf.product.name,
+					ppf.product.productVersion,
+					ppf.product.packageVersion,
+					ppf.product.licenseRequired,
+					ppf.product.setupScript,
+					ppf.product.uninstallScript,
+					ppf.product.updateScript,
+					ppf.product.alwaysScript,
+					ppf.product.onceScript,
+					ppf.product.priority,
+					ppf.product.description,
+					ppf.product.advice,
+					ppf.product.productClassNames,
+					ppf.product.pxeConfigTemplate,
+					ppf.product.windowsSoftwareIds,
+					depotIds = [ depotId ] )
+			
+			
+			if (ppf.product.productType != 'server'):
+				for d in ppf.product.productDependencies:
+					self.createProductDependency(
+						d.productId,
+						d.action,
+						d.requiredProductId,
+						d.requiredProductClassId,
+						d.requiredAction,
+						d.requiredInstallationStatus,
+						d.requirementType,
+						depotIds = [ depotId ]
+					)
+			
+				properties = {}
+				for p in ppf.product.productProperties:
+					defaultValue = p.defaultValue
+					if p.name in defaultProperties.keys():
+						defaultValue = defaultProperties[p.name]
+					
+					if type(defaultValue) is unicode: defaultValue = defaultValue.encode('utf-8')
+					
+					self.createProductPropertyDefinition(
+						p.productId,
+						p.name,
+						p.description,
+						defaultValue,
+						p.possibleValues,
+						depotIds = [ depotId ]
+					)
+					properties[p.name] = defaultValue
+				
+				#if properties:
+				#	bm.setProductProperties(p.productId, properties, objectId = depotId)
+				
+				# TODO: needed?
+				logger.info("Setting product-installation-status on depot '%s' to installed" % depotId )
+				self.setProductInstallationStatus(ppf.product.productId, depotId, 'installed')
+			
+			logger.info("Running postinst of product '%s'" % ppf.product.productId)
+			for line in ppf.runPostinst():
+				logger.info(" -> %s" % line)
+			
+			logger.info("Cleaning up")
+			ppf.cleanup()
+			
+			logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
+			self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
+			
+		except Exception, e:
+			logger.logException(e)
+			if exists:
+				# Restore product properties on product update failure
+				try:
+					properties = {}
+					for p in ppf.product.productProperties:
+						defaultValue = p.defaultValue
+						if p.name in defaultProperties.keys():
+							defaultValue = defaultProperties[p.name]
+						
+						self.createProductPropertyDefinition(
+							p.productId,
+							p.name,
+							p.description,
+							defaultValue,
+							p.possibleValues,
+							depotIds = [ depotId ]
+						)
+						properties[p.name] = defaultValue
+				except Exception, e2:
+					logger.error(e2)
+			try:
+				logger.info("Cleaning up")
+				ppf.cleanup()
+				# TODO: unlock if failed?
+				logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
+				self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
+			except Exception, e3:
+				logger.error(e3)
+			raise e
+	
 
 
 
