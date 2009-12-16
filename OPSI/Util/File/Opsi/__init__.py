@@ -239,7 +239,7 @@ class PackageControlFile(TextFile):
 		self._product = None
 		self._productDependencies = []
 		self._productProperties = []
-		self._packageDedependencies = []
+		self._packageDependencies = []
 		self._incrementalPackage = False
 		
 	def parse(self):
