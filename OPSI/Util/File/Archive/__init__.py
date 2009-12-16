@@ -92,7 +92,9 @@ class BaseArchive(object):
 			for f in fileList:
 				if not f:
 					continue
-				f = os.path.relpath(f, baseDir)
+				# python 2.6:
+				#f = os.path.relpath(f, baseDir)
+				f = f[len(baseDir):]
 				logger.info(u"Adding file '%s'" % f)
 				proc.stdin.write("%s\n" % f.encode(encoding))
 				
@@ -143,7 +145,10 @@ class TarArchive(BaseArchive):
 			targetPath = os.path.abspath(forceFilename(targetPath))
 			patterns   = forceUnicodeList(patterns)
 			if not os.path.isdir(targetPath):
-				os.mkdir(targetPath)
+				try:
+					os.mkdir(targetPath)
+				except Exception, e:
+					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
 			
 			options = u''
 			if   (self._compression == 'gzip'):
@@ -222,7 +227,10 @@ class CpioArchive(BaseArchive):
 			targetPath = os.path.abspath(forceFilename(targetPath))
 			patterns   = forceUnicodeList(patterns)
 			if not os.path.isdir(targetPath):
-				os.mkdir(targetPath)
+				try:
+					os.mkdir(targetPath)
+				except Exception, e:
+					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
 			
 			cat = System.which('cat')
 			if   (self._compression == 'gzip'):

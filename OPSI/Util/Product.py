@@ -58,32 +58,45 @@ class ProductPackageFile(object):
 		if not os.path.isdir(tempDir):
 			raise Exception(u"Temporary directory '%s' not found" % tempDir)
 		
-		self.tempDir            = os.path.abspath(tempDir)
-		self.clientDataDir      = None
-		self.installedFiles     = []
-		self.tmpUnpackDir       = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
-		self.packageControlFile = None
+		self.tempDir                  = os.path.abspath(tempDir)
+		self.clientDataDir            = None
+		self.installedFiles           = []
+		self.tmpUnpackDir             = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
+		self.packageControlFile       = None
+		self.installedClientDataFiles = []
+		self.installedServerDataFiles = []
 		
-		self.getMetaData()
-		
-		print self.packageControlFile.getProductProperties()[0]
-		
-		#self.clientDataDir = os.path.join('/tmp', self.productId)
-	
 	def cleanup(self):
+		logger.info(u"Cleaning up")
 		if os.path.isdir(self.tmpUnpackDir):
 			shutil.rmtree(self.tmpUnpackDir)
 	
+	def install(self):
+		self.runPreinst()
+		self.unpack()
+		self.setAccessRights()
+		self.runPostinst()
+		self.cleanup()
+	
+	def setClientDataDir(self, clientDataDir):
+		self.clientDataDir = os.path.abspath(forceFilename(clientDataDir))
+		logger.info(u"Client data dir set to '%s'" % self.clientDataDir)
+		
 	def getMetaData(self):
-		logger.debug(u"Getting meta data from package '%s'" % self.packageFile)
-		archive = Archive(self.packageFile)
+		logger.notice(u"Getting meta data from package '%s'" % self.packageFile)
 		try:
-			logger.notice(u"Extracting meta data from archive content to: '%s'" % self.tmpUnpackDir)
-			archive.extract(targetPath = self.tmpUnpackDir, patterns=[u"OPSI*"])
+			if not os.path.exists(self.tmpUnpackDir):
+				os.mkdir(self.tmpUnpackDir)
+				os.chmod(self.tmpUnpackDir, 0700)
+			
+			metaDataTmpDir = os.path.join(self.tmpUnpackDir, u'OPSI')
+			archive = Archive(self.packageFile)
+			
+			logger.debug(u"Extracting meta data from package '%s' to: '%s'" % (self.packageFile, metaDataTmpDir))
+			archive.extract(targetPath = metaDataTmpDir, patterns=[u"OPSI*"])
 			
 			metadataArchives = []
-			basenames = []
-			for f in os.listdir(self.tmpUnpackDir):
+			for f in os.listdir(metaDataTmpDir):
 				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
@@ -99,10 +112,10 @@ class ProductPackageFile(object):
 			metadataArchives.reverse()
 			
 			for metadataArchive in metadataArchives:
-				archive = Archive( os.path.join(self.tmpUnpackDir, metadataArchive) )
-				archive.extract(targetPath = self.tmpUnpackDir)
+				archive = Archive( os.path.join(metaDataTmpDir, metadataArchive) )
+				archive.extract(targetPath = metaDataTmpDir)
 			
-			packageControlFile = os.path.join(self.tmpUnpackDir, u'control')
+			packageControlFile = os.path.join(metaDataTmpDir, u'control')
 			if not os.path.exists(packageControlFile):
 				raise Exception(u"No control file found in package metadata archives")
 			
@@ -111,110 +124,131 @@ class ProductPackageFile(object):
 			
 		except Exception, e:
 			self.cleanup()
-			raise
+			raise Exception(u"Failed to get metadata from package '%s': %s" % (self.packageFile, e))
 		logger.debug(u"Got meta data from package '%s'" % self.packageFile)
-		
-	def unpack(self, dataArchives=True):
-		archive = Archive(self.packageFile)
-		
-		prevUmask = os.umask(0077)
-		# Create temporary directory
-		if os.path.exists(self.tmpUnpackDir):
-			shutil.rmtree(self.tmpUnpackDir)
-		os.umask(prevUmask)
-		os.mkdir(self.tmpUnpackDir)
+	
+	def extractData(self):
+		logger.notice(u"Extracting data from package '%s'" % self.packageFile)
 		try:
-			if dataArchives:
-				logger.notice(u"Extracting archive content to: '%s'" % self.tmpUnpackDir)
-				archive.extract(targetPath = self.tmpUnpackDir)
-			else:
-				pass
+			if not self.packageControlFile:
+				raise Exception(u"Metadata not present")
 			
+			if not self.clientDataDir:
+				raise Exception(u"Client data dir not set")
+			
+			archive = Archive(self.packageFile)
+			
+			logger.debug(u"Extracting data from package '%s' to: '%s'" % (self.packageFile, self.tmpUnpackDir))
+			archive.extract(targetPath = self.tmpUnpackDir, patterns=[u"CLIENT_DATA*", u"SERVER_DATA*"])
+			
+			clientDataArchives = []
+			serverDataArchives = []
+			for f in os.listdir(self.tmpUnpackDir):
+				if f.startswith('OPSI'):
+					continue
+				if not f.endswith(u'.cpio.gz') and not f.endswith(u'.tar.gz') and not f.endswith(u'.cpio') and not f.endswith(u'.tar'):
+					logger.warning(u"Unknown content in archive: %s" % f)
+					continue
+				if   f.startswith('CLIENT_DATA'):
+					logger.debug(u"Client-data archive found: %s" % f)
+					clientDataArchives.append(f)
+				elif f.startswith('SERVER_DATA'):
+					logger.debug(u"Server-data archive found: %s" % f)
+					serverDataArchives.append(f)
+				
+			if not clientDataArchives:
+				raise Exception(u"No client-data archive found")
+			if (len(clientDataArchives) > 2):
+				raise Exception(u"More than two client-data archives found")
+			if (len(serverDataArchives) > 2):
+				raise Exception(u"More than two server-data archives found")
+			
+			# Sorting to unpack custom version data at last
+			clientDataArchives.sort()
+			clientDataArchives.reverse()
+			serverDataArchives.sort()
+			serverDataArchives.reverse()
+			
+			self.installedServerDataFiles = []
+			for serverDataArchive in serverDataArchives:
+				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
+				logger.info(u"Extracting server-data archive '%s' to '/'" % archiveFile)
+				archive = Archive(archiveFile)
+				for filename in archive.content():
+					self.installedServerDataFiles.append(filename)
+				archive.extract(targetPath = u'/')
+			self.installedServerDataFiles.sort()
+			
+			productId = self.packageControlFile.getProduct().getId()
+			productClientDataDir = os.path.join(self.clientDataDir, productId)
+			
+			self.installedClientDataFiles = []
+			for clientDataArchive in clientDataArchives:
+				archiveFile = os.path.join(self.tmpUnpackDir, clientDataArchive)
+				logger.info(u"Extracting client-data archive '%s' to '%s'" % (archiveFile, productClientDataDir))
+				archive = Archive(archiveFile)
+				for filename in archive.content():
+					self.installedClientDataFiles.append(filename)
+				archive.extract(targetPath = productClientDataDir)
+			self.installedClientDataFiles.sort()
 			
 		except Exception, e:
 			self.cleanup()
-			raise
+			raise Exception(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
 		
-		names = [u'OPSI']
-		if dataArchives:
-			os.mkdir( self.clientDataDir )
-			self.installedFiles.append( self.clientDataDir )
-			names.extend( [u'SERVER_DATA', u'CLIENT_DATA'] )
+	def _runPackageScript(self, scriptName):
+		try:
+			if not self.packageControlFile:
+				raise Exception(u"Metadata not present")
+			
+			if not self.clientDataDir:
+				raise Exception(u"Client data dir not set")
+			
+			script = os.path.join(self.tmpUnpackDir, scriptName)
+			if not os.path.exists(script):
+				logger.warning(u"Package script '%s' not found" % scriptName)
+				return []
+			
+			os.chmod(script, 0700)
+			
+			productId = self.packageControlFile.getProduct().getId()
+			productClientDataDir = os.path.join(self.clientDataDir, productId)
+			
+			os.putenv('PRODUCT_ID',      productId)
+			os.putenv('CLIENT_DATA_DIR', productClientDataDir)
+			
+			return execute(script)
+		except Exception, e:
+			self.cleanup()
+			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, e))
 		
-		
-		for name in names:
-			archives = []
-			if os.path.exists( os.path.join(self.tmpUnpackDir, name + '.tar.gz') ):
-				archives.append( os.path.join(self.tmpUnpackDir, name + '.tar.gz') )
-			elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.tar') ):
-				archives.append( os.path.join(self.tmpUnpackDir, name + '.tar') )
-			elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.cpio.gz') ):
-				archives.append( os.path.join(self.tmpUnpackDir, name + '.cpio.gz') )
-			elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.cpio') ):
-				archives.append( os.path.join(self.tmpUnpackDir, name + '.cpio') )
-			
-			if self.customName:
-				if os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar.gz') ):
-					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar.gz') )
-				elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar') ):
-					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.tar') )
-				elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio.gz') ):
-					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio.gz') )
-				elif os.path.exists( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio') ):
-					archives.append( os.path.join(self.tmpUnpackDir, name + '.' + self.customName + '.cpio') )
-			
-			if not archives:
-				if (name == 'OPSI'):
-					raise Exception("Bad package: OPSI.{cpio|tar}[.gz] not found.")
-				else:
-					logger.warning("No %s archive found." % name)
-			
-			dstDir = self.tmpUnpackDir
-			if (name == 'SERVER_DATA'):
-				dstDir = '/'
-			elif (name == 'CLIENT_DATA'):
-				dstDir = self.clientDataDir
-			
-			for archive in archives:
-				try:
-					if (name != 'OPSI'):
-						for filename in Tools.getArchiveContent(archive):
-							fn = os.path.join(dstDir, filename).strip()
-							if not fn:
-								continue
-							self.installedFiles.append(fn)
-					Tools.extractArchive(archive, chdir=dstDir)
-				except Exception, e:
-					self.cleanup()
-					raise Exception("Failed to extract '%s': %s" % (self.packageFile, e))
-					
-				#os.unlink(archive)
-			
-			if (name == 'OPSI'):
-				self.controlFile = os.path.join(self.tmpUnpackDir, 'control')
-				self.readControlFile()
-				
-				if self.clientDataDir:
-					# Copy control file into client data dir
-					cfName = '%s_%s-%s' % (self.product.productId, self.product.productVersion, self.product.packageVersion)
-					if self.customName:
-						cfName = '%s_%s' % (cfName, self.customName)
-					cfName = '%s.control' % cfName
-					
-					ci = open(self.controlFile, 'r')
-					co = open(os.path.join(self.clientDataDir, cfName), 'w')
-					co.write(ci.read())
-					co.close()
-					ci.close()
-					self.installedFiles.append( os.path.join(self.clientDataDir, cfName) )
-					
-		if self.installedFiles:
-			self.installedFiles.sort()
-			for filename in self.installedFiles:
-				logger.debug("Installed file: %s" % filename)
-
-
-
-
-
-
+	def runPreinst(self):
+		return self._runPackageScript(u'preinst')
+	
+	def runPostinst(self):
+		return self._runPackageScript(u'postinst')
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

@@ -49,6 +49,7 @@ from OPSI.Logger import *
 from OPSI.Object import *
 from OPSI.Types import *
 from OPSI.Util.File import *
+from OPSI.Util import md5sum
 
 # Get logger instance
 logger = Logger()
@@ -226,6 +227,69 @@ class BackendDispatchConfigFile(ConfigFile):
 				dispatch[-1][1].append(entry.strip())
 		return dispatch
 
+class PackageContentFile(TextFile):
+	def __init__(self, filename, lockFailTimeout = 2000):
+		TextFile.__init__(self, filename, lockFailTimeout)
+		self._parsed = False
+		self._productClientDataDir = u'/'
+		self._clientDataFiles = []
+		self._productServerDataDir = u'/'
+		self._serverDataFiles = []
+		
+	def getClientDataFiles(self):
+		return self._clientDataFiles
+	
+	def setClientDataFiles(self, clientDataFiles):
+		self._clientDataFiles = forceUnicodeList(clientDataFiles)
+	
+	def getServerDataFiles(self):
+		return self._serverDataFiles
+	
+	def setServerDataFiles(self, serverDataFiles):
+		self._serverDataFiles = forceUnicodeList(serverDataFiles)
+	
+	def setProductClientDataDir(self, productClientDataDir):
+		self._productClientDataDir = forceFilename(self._productClientDataDir)
+		
+	def parse(self):
+		self.readlines()
+	
+	def generate(self):
+		self._lines = []
+		for filename in self._clientDataFiles:
+			#if (filename == self.clientDataDir):
+			#	continue
+			type   = u'f'
+			md5    = u''
+			target = u''
+			size   = 0
+			path   = os.path.join(self._productClientDataDir, filename)
+			if os.path.islink(path):
+				type   = u'l'
+				target = os.path.realpath(path)
+				if target.startswith(self._productClientDataDir):
+					target = target[len(self._productClientDataDir):]
+				else:
+					# link target not in client data dir => treat as file
+					type   = u'f'
+					size   = os.path.getsize(target)
+					md5    = Tools.md5sum(target)
+					target = u''
+			elif os.path.isdir(path):
+				type = u'd'
+			else:
+				size = os.path.getsize(path)
+				md5  = md5sum(path)
+			
+			if target:
+				self._lines.append( "%s '%s' %s '%s'\n" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')) )
+			else:
+				self._lines.append( "%s '%s' %s %s\n" % (type, filename.replace(u'\'', u'\\\''), size, md5) )
+		
+		self.open('w')
+		self.writelines()
+		self.close()
+		
 class PackageControlFile(TextFile):
 	
 	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')

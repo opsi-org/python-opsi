@@ -2550,6 +2550,13 @@ class DepotserverPackageManager(object):
 		
 		ppf = Product.ProductPackageFile(filename, tempDir=tempDir)
 		
+		
+		
+		
+		
+		
+		
+		############################
 		depotId = socket.getfqdn()
 		depot = self.getDepot_hash(depotId)
 		
@@ -2711,7 +2718,58 @@ class DepotserverPackageManager(object):
 			raise e
 	
 
-
+	
+	def checkDependencies(self, configBackend=None):
+		logger.info("Checking package dependencies")
+		for dependency in self.dependencies:
+			package = dependency.get('package')
+			version = dependency.get('version')
+			clientDataDir = ''
+			if configBackend:
+				if not package in configBackend.getProductIds_list():
+					raise Exception("Dependent package '%s' not installed" % package)
+			else:
+				clientDataDir = os.path.join( os.path.dirname(self.clientDataDir), package)
+				if not os.path.isdir(clientDataDir):
+					raise Exception("Dependent package '%s' not found at '%s'" % (package, clientDataDir))
+				
+			if not version:
+				logger.info("Fulfilled product dependency '%s'" % package)
+				continue
+			
+			condition = '=='
+			requiredVersion = '0'
+			match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
+			if not match:
+				raise Exception("Bad version string '%s' in dependency" % version)
+			
+			condition = match.group(1)
+			requiredVersion = match.group(2)
+			
+			availableVersion = ''
+			if configBackend:
+				productInfo = configBackend.getProduct_hash(package)
+				availableVersion = productInfo.get('productVersion', '') + '-' + productInfo.get('packageVersion', '')
+			else:
+				controlFile = None
+				for f in os.listdir(clientDataDir):
+					if f.startswith(package) and f.endswith('.control'):
+						controlFile = os.path.join(clientDataDir, f)
+				if not controlFile:
+					raise Exception("Control-file of dependent package '%s' not found in '%s'" % (package, clientDataDir))
+				
+				dependendPackage = ProductPackage(Product(package))
+				dependendPackage.controlFile = controlFile
+				dependendPackage.readControlFile()
+				availableVersion = dependendPackage.product.productVersion + '-' + dependendPackage.product.packageVersion
+			
+			if Tools.compareVersions(availableVersion, condition, requiredVersion):
+				logger.info("Fulfilled product dependency '%s %s %s' (available version: %s)" \
+							% (package, condition, requiredVersion, availableVersion))
+			else:
+				raise Exception("Unfulfilled product dependency '%s %s %s' (available version: %s)" \
+							% (package, condition, requiredVersion, availableVersion))
+	
 
 
 
