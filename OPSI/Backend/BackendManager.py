@@ -126,6 +126,12 @@ class BackendDispatcher(ConfigDataBackend):
 		self._createInstanceMethods()
 		#ExtendedConfigDataBackend.__init__(self, **kwargs)
 	
+	def dispatcher_getConfig(self):
+		return self._dispatchConfig
+	
+	def dispatcher_getBackendNames(self):
+		return self._backends.keys()
+	
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
 			raise BackendConfigurationError(u"No dispatch config file defined")
