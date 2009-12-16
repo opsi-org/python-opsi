@@ -42,7 +42,7 @@ import os, shutil
 
 # OPSI imports
 from OPSI.Logger import *
-from OPSI.Util.File.Opsi import PackageControlFile
+from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import *
 from OPSI.Util import randomString
 
@@ -81,6 +81,16 @@ class ProductPackageFile(object):
 	def setClientDataDir(self, clientDataDir):
 		self.clientDataDir = os.path.abspath(forceFilename(clientDataDir))
 		logger.info(u"Client data dir set to '%s'" % self.clientDataDir)
+	
+	def createPackageContentFile(self):
+		productId = self.packageControlFile.getProduct().getId()
+		productClientDataDir = os.path.join(self.clientDataDir, productId)
+		packageContentFile = os.path.join(productClientDataDir, productId + u'.files')
+		
+		packageContentFile = PackageContentFile(packageContentFile)
+		packageContentFile.setProductClientDataDir(productClientDataDir)
+		packageContentFile.setClientDataFiles(self.installedClientDataFiles)
+		packageContentFile.generate()
 		
 	def getMetaData(self):
 		logger.notice(u"Getting meta data from package '%s'" % self.packageFile)

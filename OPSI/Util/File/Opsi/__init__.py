@@ -264,6 +264,9 @@ class PackageContentFile(TextFile):
 			target = u''
 			size   = 0
 			path   = os.path.join(self._productClientDataDir, filename)
+			print filename
+			print self._productClientDataDir
+			print path
 			if os.path.islink(path):
 				type   = u'l'
 				target = os.path.realpath(path)
@@ -273,7 +276,7 @@ class PackageContentFile(TextFile):
 					# link target not in client data dir => treat as file
 					type   = u'f'
 					size   = os.path.getsize(target)
-					md5    = Tools.md5sum(target)
+					md5    = md5sum(target)
 					target = u''
 			elif os.path.isdir(path):
 				type = u'd'
@@ -403,15 +406,17 @@ class PackageControlFile(TextFile):
 				value = forceUnicodeLower(value)
 			
 			elif (sectionType == 'productdependency' and key in \
-					['action', 'requiredproduct', 'requiredclass',
-					 'requiredstatus', 'requiredaction', 'requirementtype']):
+					['action', 'requiredproduct', 'requiredproductversion', 'requiredpackageversion',
+					 'requiredclass', 'requiredstatus', 'requiredaction', 'requirementtype']):
 				option = key
-				if   (key == 'action'):          value = forceActionRequest(value)
-				elif (key == 'requiredproduct'): value = forceProductId(value)
-				elif (key == 'requiredclass'):   value = forceUnicodeLower(value)
-				elif (key == 'requiredstatus'):  value = forceInstallationStatus(value)
-				elif (key == 'requiredaction'):  value = forceActionRequest(value)
-				elif (key == 'requirementtype'): value = forceRequirementType(value)
+				if   (key == 'action'):                 value = forceActionRequest(value)
+				elif (key == 'requiredproduct'):        value = forceProductId(value)
+				elif (key == 'requiredproductversion'): value = forceProductVersion(value)
+				elif (key == 'requiredpackageversion'): value = forcePackageVersion(value)
+				elif (key == 'requiredclass'):          value = forceUnicodeLower(value)
+				elif (key == 'requiredstatus'):         value = forceInstallationStatus(value)
+				elif (key == 'requiredaction'):         value = forceActionRequest(value)
+				elif (key == 'requirementtype'):        value = forceRequirementType(value)
 			
 			elif (sectionType == 'productproperty' and key in \
 					['type', 'name', 'default', 'values', 'description']):
@@ -546,8 +551,8 @@ class PackageControlFile(TextFile):
 					packageVersion             = self._product.getPackageVersion(),
 					productAction              = productDependency.get('action'),
 					requiredProductId          = productDependency.get('requiredproduct'),
-					requiredProductVersion     = None,
-					requiredPackageVersion     = None,
+					requiredProductVersion     = productDependency.get('requiredproductversion'),
+					requiredPackageVersion     = productDependency.get('requiredpackageversion'),
 					requiredAction             = productDependency.get('requiredaction'),
 					requiredInstallationStatus = productDependency.get('requiredstatus'),
 					requirementType            = productDependency.get('requirementtype')
@@ -695,6 +700,10 @@ class PackageControlFile(TextFile):
 				self._lines.append( u'requiredProduct: %s' % dependency.getRequiredProductId() )
 			#if dependency.requiredProductClassId:
 			#	self._lines.append( u'requiredClass: %s'   % dependency.requiredProductClassId )
+			if dependency.getRequiredProductVersion():
+				self._lines.append( u'requiredProductVersion: %s' % dependency.getRequiredProductVersion() )
+			if dependency.getRequiredPackageVersion():
+				self._lines.append( u'requiredPackageVersion: %s' % dependency.getRequiredPackageVersion() )
 			if dependency.getRequiredAction():
 				self._lines.append( u'requiredAction: %s'  % dependency.getRequiredAction() )
 			if dependency.getRequiredInstallationStatus():
