@@ -249,11 +249,12 @@ class PackageContentFile(TextFile):
 		self._serverDataFiles = forceUnicodeList(serverDataFiles)
 	
 	def setProductClientDataDir(self, productClientDataDir):
-		self._productClientDataDir = forceFilename(self._productClientDataDir)
+		self._productClientDataDir = forceFilename(productClientDataDir)
 		
 	def parse(self):
+		raise NotImplementedError("parse not implemented")
 		self.readlines()
-	
+		
 	def generate(self):
 		self._lines = []
 		for filename in self._clientDataFiles:
@@ -264,9 +265,6 @@ class PackageContentFile(TextFile):
 			target = u''
 			size   = 0
 			path   = os.path.join(self._productClientDataDir, filename)
-			print filename
-			print self._productClientDataDir
-			print path
 			if os.path.islink(path):
 				type   = u'l'
 				target = os.path.realpath(path)
@@ -285,9 +283,9 @@ class PackageContentFile(TextFile):
 				md5  = md5sum(path)
 			
 			if target:
-				self._lines.append( "%s '%s' %s '%s'\n" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')) )
+				self._lines.append( "%s '%s' %s '%s'" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')) )
 			else:
-				self._lines.append( "%s '%s' %s %s\n" % (type, filename.replace(u'\'', u'\\\''), size, md5) )
+				self._lines.append( "%s '%s' %s %s" % (type, filename.replace(u'\'', u'\\\''), size, md5) )
 		
 		self.open('w')
 		self.writelines()

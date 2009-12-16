@@ -35,16 +35,20 @@
 __version__ = '3.4.99'
 
 # Globals
-DEFAULT_TMP_DIR = u'/tmp'
+DEFAULT_TMP_DIR               = u'/tmp'
+DEFAULT_CLIENT_DATA_GROUP     = 'pcpatch'
+DEFAULT_CLIENT_DATA_FILE_MODE = 0660
+DEFAULT_CLIENT_DATA_DIR_MODE  = 0770
 
 # Imports
-import os, shutil
+import os, pwd, grp, shutil
 
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import *
 from OPSI.Util import randomString
+from OPSI.System import execute
 
 logger = Logger()
 
@@ -71,28 +75,44 @@ class ProductPackageFile(object):
 		if os.path.isdir(self.tmpUnpackDir):
 			shutil.rmtree(self.tmpUnpackDir)
 	
-	def install(self):
-		self.runPreinst()
-		self.unpack()
-		self.setAccessRights()
-		self.runPostinst()
-		self.cleanup()
-	
 	def setClientDataDir(self, clientDataDir):
 		self.clientDataDir = os.path.abspath(forceFilename(clientDataDir))
 		logger.info(u"Client data dir set to '%s'" % self.clientDataDir)
 	
-	def createPackageContentFile(self):
+	def getProductClientDataDir(self):
+		if not self.packageControlFile:
+			raise Exception(u"Metadata not present")
+		
+		if not self.clientDataDir:
+			raise Exception(u"Client data dir not set")
+		
 		productId = self.packageControlFile.getProduct().getId()
-		productClientDataDir = os.path.join(self.clientDataDir, productId)
-		packageContentFile = os.path.join(productClientDataDir, productId + u'.files')
+		return os.path.join(self.clientDataDir, productId)
+	
+	def uninstall(self):
+		logger.notice(u"Uninstalling package")
+		self.deleteProductClientDataDir()
+	
+	def deleteProductClientDataDir(self):
+		productClientDataDir = self.getProductClientDataDir()
+		logger.notice(u"Deleting product client-data dir '%s'" % productClientDataDir)
+		if os.path.exists(productClientDataDir):
+			shutil.rmtree(productClientDataDir)
 		
-		packageContentFile = PackageContentFile(packageContentFile)
-		packageContentFile.setProductClientDataDir(productClientDataDir)
-		packageContentFile.setClientDataFiles(self.installedClientDataFiles)
-		packageContentFile.generate()
-		
+	def install(self, clientDataDir):
+		self.setClientDataDir(clientDataDir)
+		self.getMetaData()
+		self.runPreinst()
+		self.extractData()
+		self.createPackageContentFile()
+		self.setAccessRights()
+		self.runPostinst()
+		self.cleanup()
+	
 	def getMetaData(self):
+		if self.packageControlFile:
+			# Already done
+			return
 		logger.notice(u"Getting meta data from package '%s'" % self.packageFile)
 		try:
 			if not os.path.exists(self.tmpUnpackDir):
@@ -189,8 +209,7 @@ class ProductPackageFile(object):
 				archive.extract(targetPath = u'/')
 			self.installedServerDataFiles.sort()
 			
-			productId = self.packageControlFile.getProduct().getId()
-			productClientDataDir = os.path.join(self.clientDataDir, productId)
+			productClientDataDir = self.getProductClientDataDir()
 			
 			self.installedClientDataFiles = []
 			for clientDataArchive in clientDataArchives:
@@ -205,8 +224,9 @@ class ProductPackageFile(object):
 		except Exception, e:
 			self.cleanup()
 			raise Exception(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
-		
-	def _runPackageScript(self, scriptName):
+	
+	def setAccessRights(self):
+		logger.notice(u"Setting access rights of client-data files")
 		try:
 			if not self.packageControlFile:
 				raise Exception(u"Metadata not present")
@@ -214,7 +234,66 @@ class ProductPackageFile(object):
 			if not self.clientDataDir:
 				raise Exception(u"Client data dir not set")
 			
-			script = os.path.join(self.tmpUnpackDir, scriptName)
+			user = pwd.getpwuid(os.getuid())[0]
+			productClientDataDir = self.getProductClientDataDir()
+			
+			for filename in self.installedClientDataFiles:
+				path = os.path.join(productClientDataDir, filename)
+				
+				(mode, group) = (DEFAULT_CLIENT_DATA_FILE_MODE, DEFAULT_CLIENT_DATA_GROUP)
+				
+				if os.path.isdir(path):
+					mode = DEFAULT_CLIENT_DATA_DIR_MODE
+				
+				logger.info(u"Setting owner of '%s' to '%s:%s'" % (path, user, group))
+				try:
+					os.chown(path, pwd.getpwnam(user)[2], grp.getgrnam(group)[2])
+				except Exception, e:
+					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, user, group, e))
+				
+				logger.info(u"Setting access rights of '%s' to '%o'" % (path, mode))
+				try:
+					os.chmod(path, mode)
+				except Exception, e:
+					raise Exception(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, e))
+		except Exception, e:
+			self.cleanup()
+			raise Exception(u"Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
+		
+	def createPackageContentFile(self):
+		logger.notice(u"Creating package content file")
+		try:
+			if not self.packageControlFile:
+				raise Exception(u"Metadata not present")
+			
+			if not self.clientDataDir:
+				raise Exception(u"Client data dir not set")
+			
+			productId = self.packageControlFile.getProduct().getId()
+			productClientDataDir = self.getProductClientDataDir()
+			packageContentFile = os.path.join(productClientDataDir, productId + u'.files')
+			
+			packageContentFile = PackageContentFile(packageContentFile)
+			packageContentFile.setProductClientDataDir(productClientDataDir)
+			packageContentFile.setClientDataFiles(self.installedClientDataFiles)
+			packageContentFile.generate()
+			
+			self.installedClientDataFiles.append(productId + u'.files')
+			
+		except Exception, e:
+			self.cleanup()
+			raise Exception(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
+		
+	def _runPackageScript(self, scriptName):
+		logger.notice(u"Running package script '%s'" % scriptName)
+		try:
+			if not self.packageControlFile:
+				raise Exception(u"Metadata not present")
+			
+			if not self.clientDataDir:
+				raise Exception(u"Client data dir not set")
+			
+			script = os.path.join(self.tmpUnpackDir, u'OPSI', scriptName)
 			if not os.path.exists(script):
 				logger.warning(u"Package script '%s' not found" % scriptName)
 				return []
@@ -222,7 +301,7 @@ class ProductPackageFile(object):
 			os.chmod(script, 0700)
 			
 			productId = self.packageControlFile.getProduct().getId()
-			productClientDataDir = os.path.join(self.clientDataDir, productId)
+			productClientDataDir = self.getProductClientDataDir()
 			
 			os.putenv('PRODUCT_ID',      productId)
 			os.putenv('CLIENT_DATA_DIR', productClientDataDir)

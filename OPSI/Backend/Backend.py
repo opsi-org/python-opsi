@@ -37,7 +37,7 @@ __version__ = '3.5'
 # Imports
 from ldaptor.protocols import pureldap
 from ldaptor import ldapfilter
-import types, new, inspect
+import types, new, inspect, socket
 import copy as pycopy
 
 # OPSI imports
@@ -47,6 +47,7 @@ from OPSI.Object import *
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, timestamp
 from OPSI.Util.File import ConfigFile
+from OPSI.Util.Product import ProductPackageFile
 
 logger = Logger()
 
@@ -2333,12 +2334,19 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend):
+		if not isinstance(backend, ExtendedConfigDataBackend):
+			raise Exception("Need instance of ExtendedConfigDataBackend as backend")
+		
 		ExtendedBackend.__init__(self, backend)
+		
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._logDir = u'/var/log/opsi'
 		self._packageLog = os.path.join(self._logDir, 'package.log')
-		self._packageManager = DepotserverPackageManager(self._packageLog)
+		self._depotId = forceHostId(socket.getfqdn())
+		if not self.host_getIdents(id = self._depotId):
+			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotBackend._depotId)
+		self._packageManager = DepotserverPackageManager(self)
 		
 	def exit(self):
 		if self._backend:
@@ -2531,195 +2539,114 @@ class DepotserverBackend(ExtendedBackend):
 =                                   CLASS DEPOTSERVERBACKEND                                         =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DepotserverPackageManager(object):
-	def __init__(self, logFile):
-		logger.setLogFile(logFile, object = self)
+	def __init__(self, depotBackend):
+		self._depotBackend = depotBackend
+		logger.setLogFile(self._depotBackend._packageLog, object = self)
 		
 	def installPackage(self, filename, force=False, defaultProperties={}, tempDir=None):
-		filename = forceFilename(filename)
-		force = forceBool(force)
-		defaultProperties = forceDict(defaultProperties)
-		if tempDir:
-			tempDir = forceFilename(tempDir)
-		else:
-			tempDir = None
-		
-		if not os.path.isfile(filename):
-			raise BackendIOError(u"Package file '%s' not found" % filename)
-		
-		logger.info(u"Installing package file '%s'" % filename)
-		
-		ppf = Product.ProductPackageFile(filename, tempDir=tempDir)
-		
-		
-		
-		
-		
-		
-		
-		############################
-		depotId = socket.getfqdn()
-		depot = self.getDepot_hash(depotId)
-		
-		clientDataDir = depot['depotLocalUrl']
-		if not clientDataDir.startswith('file:///'):
-			raise BackendBadValueError("Value '%s' not allowed for depot local url (has to start with 'file:///')" % clientDataDir)
-		clientDataDir = os.path.join(clientDataDir[7:], ppf.product.productId)
-		
-		logger.info("Setting client data dir to '%s'" % clientDataDir)
-		ppf.setClientDataDir(clientDataDir)
-		
-		lockedOnDepots = self.getProductLocks_hash(depotIds = [ depotId ]).get(ppf.product.productId, [])
-		logger.info("Product currently locked on : %s" % lockedOnDepots)
-		if depotId in lockedOnDepots and not force:
-			logger.info("Cleaning up")
-			ppf.cleanup()
-			raise BackendTemporaryError("Product '%s' currently locked on depot '%s'" % (ppf.product.productId, depotId))
-		
-		logger.info("Locking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
-		self.lockProduct(ppf.product.productId, depotIds=[ depotId ])
-		
-		exists = False
+		depotId = self._depotBackend._depotId
+		logger.notice(u"Installing package file '%s' on depot '%s'" % (filename, depotId))
 		try:
-			exists = ppf.product.productId in self.getProductIds_list(objectId = depotId, installationStatus = 'installed')
-			if exists:
-				logger.warning("Product '%s' already exists in database" % ppf.product.productId)
-			
-			logger.info("Checking dependencies of product '%s'" % ppf.product.productId)
-			ppf.checkDependencies(configBackend=self)
-			
-			logger.info("Running preinst of product '%s'" % ppf.product.productId)
-			for line in ppf.runPreinst():
-				logger.info(" -> %s" % line)
-			
-			if exists:
-				# Delete existing product dependencies
-				logger.info("Deleting product dependencies of product '%s'" % ppf.product.productId)
-				self.deleteProductDependency(ppf.product.productId, depotIds = [ depotId ])
-				
-				# Delete productPropertyDefinitions
-				logger.info("Deleting product property definitions of product '%s'" % ppf.product.productId)
-				self.deleteProductPropertyDefinitions(ppf.product.productId, depotIds = [ depotId ])
-				
-				# Not deleting product, because this would delete client productstates as well
-			
-			if ppf.incremental:
-				logger.info("Incremental package, not deleting old client files")
+			filename = forceFilename(filename)
+			force = forceBool(force)
+			defaultProperties = forceDict(defaultProperties)
+			if tempDir:
+				tempDir = forceFilename(tempDir)
 			else:
-				logger.info("Deleting old client files")
-				ppf.deleteClientDataDir()
+				tempDir = None
 			
-			logger.info("Unpacking package '%s'" % filename)
-			ppf.unpack()
+			if not os.path.isfile(filename):
+				raise BackendIOError(u"Package file '%s' not found" % filename)
 			
-			ppf.writeFileInfoFile()
+			depots = self._depotBackend.host_getObjects(id = depotId)
+			if not depots:
+				raise BackendMissingDataError(u"Depot '%s' not found in backend" % depotId)
+			depot = depots[0]
 			
-			ppf.setAccessRights()
+			depotLocalUrl = depot.getDepotLocalUrl()
+			if not depotLocalUrl.startswith(u'file:///'):
+				raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depotLocalUrl)
+			clientDataDir = depotLocalUrl[7:]
 			
-			logger.info("Creating product in database")
-			self.createProduct(
-					ppf.product.productType,
-					ppf.product.productId,
-					ppf.product.name,
-					ppf.product.productVersion,
-					ppf.product.packageVersion,
-					ppf.product.licenseRequired,
-					ppf.product.setupScript,
-					ppf.product.uninstallScript,
-					ppf.product.updateScript,
-					ppf.product.alwaysScript,
-					ppf.product.onceScript,
-					ppf.product.priority,
-					ppf.product.description,
-					ppf.product.advice,
-					ppf.product.productClassNames,
-					ppf.product.pxeConfigTemplate,
-					ppf.product.windowsSoftwareIds,
-					depotIds = [ depotId ] )
-			
-			
-			if (ppf.product.productType != 'server'):
-				for d in ppf.product.productDependencies:
-					self.createProductDependency(
-						d.productId,
-						d.action,
-						d.requiredProductId,
-						d.requiredProductClassId,
-						d.requiredAction,
-						d.requiredInstallationStatus,
-						d.requirementType,
-						depotIds = [ depotId ]
-					)
-			
-				properties = {}
-				for p in ppf.product.productProperties:
-					defaultValue = p.defaultValue
-					if p.name in defaultProperties.keys():
-						defaultValue = defaultProperties[p.name]
-					
-					if type(defaultValue) is unicode: defaultValue = defaultValue.encode('utf-8')
-					
-					self.createProductPropertyDefinition(
-						p.productId,
-						p.name,
-						p.description,
-						defaultValue,
-						p.possibleValues,
-						depotIds = [ depotId ]
-					)
-					properties[p.name] = defaultValue
+			ppf = ProductPackageFile(filename, tempDir=tempDir)
+			ppf.setClientDataDir(clientDataDir)
+			ppf.getMetaData()
+			try:
+				product = ppf.packageControlFile.getProduct()
 				
-				#if properties:
-				#	bm.setProductProperties(p.productId, properties, objectId = depotId)
+				productOnDepot = None
+				productOnDepots = self._depotBackend.productOnDepot_getObjects(depotId = depotId, productId = product.getId())
+				if productOnDepots:
+					productOnDepot = productOnDepots[0]
+					if productOnDepots.getLocked():
+						logger.notice(u"Product currently locked on depot '%s'" % depotId)
+						if not force:
+							raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+				else:
+					productOnDepot = ProductOnDepot(
+						productId      = product.getId(),
+						productType    = product.getType(),
+						productVersion = product.getProductVersion(),
+						packageVersion = product.getPackageVersion(),
+						depotId        = depotId
+					)
 				
-				# TODO: needed?
-				logger.info("Setting product-installation-status on depot '%s' to installed" % depotId )
-				self.setProductInstallationStatus(ppf.product.productId, depotId, 'installed')
-			
-			logger.info("Running postinst of product '%s'" % ppf.product.productId)
-			for line in ppf.runPostinst():
-				logger.info(" -> %s" % line)
-			
-			logger.info("Cleaning up")
-			ppf.cleanup()
-			
-			logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
-			self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
+				logger.notice(u"Locking product '%s' on depot '%s'" % (productOnDepot.getProductId(), depotId))
+				productOnDepot.setLocked(True)
+				self._depotBackend.productOnDepot_updateObject(productOnDepot)
+				
+				self.checkDependencies(ppf)
+				
+				for line in ppf.runPreinst():
+					logger.info(u"[preinst] -> %s" % line)
+				
+				logger.info(u"Deleting product dependencies of product %s" % product)
+				self._depotBackend.productDependency_deleteObjects(
+					self._depotBackend.productDependency_getObjects(
+							productId      = product.getId(),
+							productVersion = product.getProductVersion(),
+							packageVersion = product.getPackageVersion() ) )
+				
+				logger.info(u"Deleting product properties of product %s" % product)
+				self._depotBackend.productProperty_deleteObjects(
+					self._depotBackend.productProperty_getObjects(
+							productId      = product.getId(),
+							productVersion = product.getProductVersion(),
+							packageVersion = product.getPackageVersion() ) )
+				
+				if ppf.packageControlFile.getIncrementalPackage():
+					logger.info(u"Incremental package, not deleting old client-data files")
+				else:
+					logger.info(u"Deleting old client-data dir")
+					ppf.deleteProductClientDataDir()
+				
+				ppf.extractData()
+				ppf.createPackageContentFile()
+				ppf.setAccessRights()
+				
+				self._depotBackend.product_createObjects(product)
+				self._depotBackend.productDependency_createObjects(ppf.packageControlFile.getProductDependencies())
+				self._depotBackend.productProperty_createObjects(ppf.packageControlFile.getProductProperties())
+				
+				ppf.runPostinst()
+				
+				ppf.cleanup()
+				
+				logger.notice(u"Unlocking product '%s' on depot '%s'" % (productOnDepot.getProductId(), depotId))
+				productOnDepot.setLocked(False)
+				self._depotBackend.productOnDepot_updateObject(productOnDepot)
+				
+			except Exception:
+				ppf.cleanup()
+				raise
 			
 		except Exception, e:
 			logger.logException(e)
-			if exists:
-				# Restore product properties on product update failure
-				try:
-					properties = {}
-					for p in ppf.product.productProperties:
-						defaultValue = p.defaultValue
-						if p.name in defaultProperties.keys():
-							defaultValue = defaultProperties[p.name]
-						
-						self.createProductPropertyDefinition(
-							p.productId,
-							p.name,
-							p.description,
-							defaultValue,
-							p.possibleValues,
-							depotIds = [ depotId ]
-						)
-						properties[p.name] = defaultValue
-				except Exception, e2:
-					logger.error(e2)
-			try:
-				logger.info("Cleaning up")
-				ppf.cleanup()
-				# TODO: unlock if failed?
-				logger.info("Unlocking product '%s' on depot '%s'" % (ppf.product.productId, depotId))
-				self.unlockProduct(ppf.product.productId, depotIds=[ depotId ])
-			except Exception, e3:
-				logger.error(e3)
-			raise e
-	
-
-	
+			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
+		
+		
 	def checkDependencies(self, configBackend=None):
+		raise Exception("TODO")
 		logger.info("Checking package dependencies")
 		for dependency in self.dependencies:
 			package = dependency.get('package')

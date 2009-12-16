@@ -86,11 +86,13 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
 		if dispatch:
 			self._backend = BackendDispatcher(**kwargs)
+		if extend or depotBackend:
+			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
+			self._backend = ExtendedConfigDataBackend(self._backend)
+		if extend:
+			BackendExtender(self._backend, **kwargs)
 		if depotBackend:
 			self._backend = DepotserverBackend(self._backend)
-		if extend:
-			self._backend = ExtendedConfigDataBackend(self._backend)
-			BackendExtender(self._backend, **kwargs)
 		if accessControl:
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		self._createInstanceMethods()
