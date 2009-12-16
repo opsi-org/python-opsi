@@ -690,7 +690,7 @@ class PackageControlFile(TextFile):
 		for dependency in self._productDependencies:
 			self._lines.append( u'' )
 			self._lines.append( u'[ProductDependency]' )
-			self._lines.append( u'action: %s' % dependency.getRequiredAction() )
+			self._lines.append( u'action: %s' % dependency.getProductAction() )
 			if dependency.getRequiredProductId():
 				self._lines.append( u'requiredProduct: %s' % dependency.getRequiredProductId() )
 			#if dependency.requiredProductClassId:

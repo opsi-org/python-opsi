@@ -407,15 +407,11 @@ class File31Backend(ConfigDataBackend):
 								objHash = tmpHash
 					
 					elif objType in ('ProductDependency'):
-						print "oooooooooooooooooooooooooooooooooooooooooooooooooo"
-						for productDependency in packageControlFile.getProductProperties():
-							print productDependency
+						for productDependency in packageControlFile.getProductDependencies():
 							tmpHash = productDependency.toHash()
-							print "###############################"
-							print tmpHash
-							print "###############################"
 							if self._objectHashMatches(tmpHash, **filter):
 								objHash = tmpHash
+								print "matches"
 			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
@@ -518,6 +514,9 @@ class File31Backend(ConfigDataBackend):
 					
 					objInOldList = False
 					for item in oldList:
+						print "item in oldList:"
+						print item
+						print
 						if item.getIdent() == obj.getIdent():
 							objInOldList = True
 							if mode == 'create':
@@ -527,8 +526,10 @@ class File31Backend(ConfigDataBackend):
 								newHash = {}
 								for (attribute, value) in obj.toHash().items():
 									if value is None:
+										print "value is NONE, setting old value", value, "/", attribute
 										newHash[attribute] = itemHash[attribute]
 									else:
+										print "value is NOT NONE, setting new value", value, "/", attribute
 										newHash[attribute] = value
 								newList.append(Object.fromHash(newHash))
 						else:
@@ -539,10 +540,24 @@ class File31Backend(ConfigDataBackend):
 					
 					if objType == 'ProductDependency':
 						packageControlFile.setProductDependencies(newList)
+################
+						print "before generate"
+						for p in packageControlFile.getProductDependencies():
+							print p
+################
 					else:
 						packageControlFile.setProductProperties(newList)
 				
 				packageControlFile.generate()
+################
+				if objType == 'ProductDependency':
+					for p in packageControlFile.getProductDependencies():
+						print "---", p
+					print "after generate"
+					pack = PackageControlFile(filename = filename)
+					for p in pack.getProductDependencies():
+						print p
+################
 	
 	def _delete(self, objList):
 		objType = u''
