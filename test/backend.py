@@ -925,16 +925,6 @@ class BackendTest(object):
 		productDependencies = self.backend.productDependency_getObjects()
 		assert len(productDependencies) == len(self.productDependencies)
 		
-		print "created:"
-		for p in productDependencies:
-			print p
-		
-		print "expected:"
-		for p in self.productDependencies:
-			print p
-		
-		exit()
-		
 		self.productDependency2.requiredProductVersion = "2.0"
 		self.productDependency2.requirementType = None
 		self.backend.productDependency_updateObject(self.productDependency2)
@@ -943,6 +933,7 @@ class BackendTest(object):
 		assert len(productDependencies) == len(self.productDependencies)
 		for productDependency in productDependencies:
 			if productDependency.getIdent() == self.productDependency2.getIdent():
+				print productDependency.getRequiredProductVersion()
 				assert productDependency.getRequiredProductVersion() == "2.0"
 				assert productDependency.getRequirementType() == 'after'
 #				self.productDependency2.requirementType = 'after'
@@ -966,6 +957,15 @@ class BackendTest(object):
 		
 		self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
 		productOnDepots = self.backend.productOnDepot_getObjects()
+		
+		print "expected:"
+		for p in self.productOnDepots:
+			print p
+		
+		print "got:"
+		for p in productOnDepots:
+			print p
+		
 		assert len(productOnDepots) == len(self.productOnDepots) - 1
 		
 		self.backend.productOnDepot_createObjects(self.productOnDepots)

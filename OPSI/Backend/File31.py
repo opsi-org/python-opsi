@@ -1,5 +1,3 @@
-
-
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
@@ -145,15 +143,23 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'pro', 'attribute': '*' }
 			],
 			'ProductOnDepot': [
-				{ 'fileType': 'ini', 'attribute': 'productType',    'section': '<id>', 'option': 'producttype',    'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<id>', 'option': 'productversion', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<id>', 'option': 'packageversion', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'depotId',        'section': '<id>', 'option': 'depotid',        'json': False }
+				{ 'fileType': 'ini', 'attribute': 'productType',    'section': '<productId>', 'option': 'producttype',    'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>', 'option': 'productversion', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>', 'option': 'packageversion', 'json': False }
 			],
 			'ProductOnClient': [
-				{ 'fileType': 'ini', 'attribute': '*' }
+				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>', 'option': 'producttype',        'json': False },
+				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productId>', 'option': 'installationstatus', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productId>', 'option': 'actionrequest',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>', 'option': 'actionprogress',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>', 'option': 'productversion',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>', 'option': 'packageversion',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'lastStateChange',    'section': '<productId>', 'option': 'laststatechange',    'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>', 'option': 'producttype',        'json': False },
+				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productId>', 'option': 'installationstatus', 'json': False }
 			],
 		}
+		
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
 		self._mappings['BoolConfig'] = self._mappings['Config']
 		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
@@ -182,6 +188,8 @@ class File31Backend(ConfigDataBackend):
 					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('ProductOnDepot'):
 				return os.path.join(self.__depotConfigDir, ident['depotId'], u'depot.ini')
+			elif objType in ('ProductOnClient'):
+				return os.path.join(self.__depotConfigDir, ident['clientId'] + u'.ini')
 		
 		elif (fileType == 'pro'):
 			ver = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
@@ -217,12 +225,35 @@ class File31Backend(ConfigDataBackend):
 			for section in cp.sections():
 				objIdents.append({'id': section})
 		
-		elif objType in ('OpsiClient'):
+		elif objType in ('OpsiClient', 'ProductOnClient'):
 			for entry in os.listdir(self.__clientConfigDir):
 				if not entry.lower().endswith('.ini'):
 					continue
 				try:
-					objIdents.append({'id': forceHostId(entry[:-4])})
+					hostId = forceHostId(entry[:-4])
+					
+					if objType == 'ProductOnClient':
+						iniFile = IniFile(filename = self._getConfigFile(
+							'ProductOnClient', {'clientId': hostId}, 'ini'))
+						iniFile.create()
+						cp = iniFile.parse()
+						for section in cp.sections():
+							if section.endswith('-state'):
+								objIdents.append(
+									{
+									'productId':          section[:-6],
+									'productType':        cp.get(section, 'productType'),
+									'clientId':           cp.get(section, 'clientId'),
+									'installationStatus': cp.get(section, 'installationStatus'),
+									'actionRequest':      cp.get(section, 'actionRequest'),
+									'actionProgress':     cp.get(section, 'actionProgress'),
+									'productVersion':     cp.get(section, 'productVersion'),
+									'packageVersion':     cp.get(section, 'packageVersion'),
+									'lastStateChange':    cp.get(section, 'lastStateChange')
+									}
+								)
+					else:
+						objIdents.append({'id': hostId})
 				except:
 					pass
 		
@@ -230,22 +261,23 @@ class File31Backend(ConfigDataBackend):
 			for entry in os.listdir(self.__depotConfigDir):
 				try:
 					hostId = forceHostId(entry)
-					if objType in ('OpsiConfigserver') and (hostId != self.__serverId):
+					if objType == 'OpsiConfigserver' and hostId != self.__serverId:
 						continue
 					
 					if objType == 'ProductOnDepot':
-						iniFile = IniFile(filename = self._getConfigFile('OpsiDepotserver', {'id': hostId}, 'ini'))
+						iniFile = IniFile(filename = self._getConfigFile(
+							'ProductOnDepot', {'depotId': hostId}, 'ini'))
 						iniFile.create()
 						cp = iniFile.parse()
 						for section in cp.sections():
 							if section.endswith('-state'):
 								objIdents.append(
 									{
-									'productId': section[:-6],
-									'productType': cp.get(section, 'producttype'),
+									'productId':      section[:-6],
+									'productType':    cp.get(section, 'producttype'),
 									'productVersion': cp.get(section, 'productversion'),
 									'packageVersion': cp.get(section, 'packageversion'),
-									'depotId': cp.get(section, 'depotid')
+									'depotId':        cp.get(section, 'depotid')
 									}
 								)
 					else:
@@ -377,12 +409,12 @@ class File31Backend(ConfigDataBackend):
 					
 					for m in mapping:
 						try:
-							# TODO: think about placeholders <..>
-							section = ''
-							if objType in ('ProductOnDepot'):
-								section = m['section'].replace('<id>', objHash.get('productId') + '-state')
-							else:
-								section = m['section'].replace('<id>', objHash.get('id'))
+							section = m['section']
+							if section == '<id>':
+								section = objHash.get('id')
+							elif section == '<productId>':
+								section = objHash.get('productId') + '-state'
+							
 							value = cp.get(section, m['option'])
 							if m.get('json'):
 								value = fromJson(value)
@@ -411,7 +443,6 @@ class File31Backend(ConfigDataBackend):
 							tmpHash = productDependency.toHash()
 							if self._objectHashMatches(tmpHash, **filter):
 								objHash = tmpHash
-								print "matches"
 			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
@@ -458,7 +489,7 @@ class File31Backend(ConfigDataBackend):
 					if cp.has_section(obj.getId()):
 						cp.remove_section(obj.getId())
 				
-				if objType in ('ProductOnDepot') and (mode == 'create'):
+				if objType in ('ProductOnDepot', 'ProductOnClient') and (mode == 'create'):
 					if cp.has_section(obj.getProductId() + u'-state'):
 						cp.remove_section(obj.getProductId() + u'-state')
 				
@@ -468,16 +499,15 @@ class File31Backend(ConfigDataBackend):
 					
 					if mapping.has_key(attribute):
 						section = mapping[attribute]['section']
+						if section == '<id>':
+							section = obj.getId()
+						elif section == '<productId>':
+							section = obj.getProductId() + '-state'
+						
 						if mapping[attribute].get('json'):
 							value = toJson(value)
 						elif ( isinstance(value, str) or isinstance(value, unicode) ):
 							value = value.replace(u'\n', u'\\n').replace(u'%', u'')
-						# TODO: think about placeholders <..>
-						if ( section == '<id>'):
-							if objType in ('ProductOnDepot'):
-								section = obj.getProductId() + u'-state'
-							else:
-								section = obj.getId()
 						
 						if not cp.has_section(section):
 							cp.add_section(section)
@@ -514,9 +544,6 @@ class File31Backend(ConfigDataBackend):
 					
 					objInOldList = False
 					for item in oldList:
-						print "item in oldList:"
-						print item
-						print
 						if item.getIdent() == obj.getIdent():
 							objInOldList = True
 							if mode == 'create':
@@ -526,12 +553,12 @@ class File31Backend(ConfigDataBackend):
 								newHash = {}
 								for (attribute, value) in obj.toHash().items():
 									if value is None:
-										print "value is NONE, setting old value", value, "/", attribute
 										newHash[attribute] = itemHash[attribute]
 									else:
-										print "value is NOT NONE, setting new value", value, "/", attribute
 										newHash[attribute] = value
-								newList.append(Object.fromHash(newHash))
+								
+								Class = eval(objType)
+								newList.append(Class.fromHash(newHash))
 						else:
 							newList.append(item)
 					
@@ -540,24 +567,10 @@ class File31Backend(ConfigDataBackend):
 					
 					if objType == 'ProductDependency':
 						packageControlFile.setProductDependencies(newList)
-################
-						print "before generate"
-						for p in packageControlFile.getProductDependencies():
-							print p
-################
 					else:
 						packageControlFile.setProductProperties(newList)
 				
 				packageControlFile.generate()
-################
-				if objType == 'ProductDependency':
-					for p in packageControlFile.getProductDependencies():
-						print "---", p
-					print "after generate"
-					pack = PackageControlFile(filename = filename)
-					for p in pack.getProductDependencies():
-						print p
-################
 	
 	def _delete(self, objList):
 		objType = u''
@@ -648,18 +661,12 @@ class File31Backend(ConfigDataBackend):
 				oldList = []
 				
 				if objType == 'ProductDependency':
-					print "listing productdependencies"
 					oldList = packageControlFile.getProductDependencies()
 				else:
-					print "listing productproperties"
 					oldList = packageControlFile.getProductProperties()
-				
-				print "searching..."
 				
 				for oldItem in oldList:
 					for item in objList:
-						print "actual", oldItem
-						print "to delete", item
 						if oldItem.getIdent() == item.getIdent():
 							logger.info(u"Deleting %s: '%s'" \
 								% (objType, oldItem.getIdent()))
@@ -673,18 +680,53 @@ class File31Backend(ConfigDataBackend):
 				
 				packageControlFile.generate()
 		
-		elif objType in ('ProductOnDepot'):
-			for productOnDepot in objList:
-				logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
-				# TODO: delete
-		
-		elif objType in ('ProductOnClient'):
-			for productOnDepot in objList:
-				logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
-				# TODO: delete
+		elif objType in ('ProductOnDepot', 'ProductOnClient'):
+			ids = []
+			for p in objList:
+				tmpId = ''
+				if objType == 'ProductOnDepot':
+					tmpId = p.getDepotId()
+				elif objType == 'ProductOnClient':
+					tmpId = p.getClientId()
+				
+				inIds = False
+				for id in ids:
+					if id == tmpId:
+						inIds = True
+						break
+				
+				if not inIds:
+					ids.append(tmpId)
+			
+			for id in ids:
+				iniFile = None
+				
+				if objType == 'ProductOnDepot':
+					iniFile = IniFile(filename = self._getConfigFile(
+						'ProductOnDepot', {'depotId': id}, 'ini')
+					)
+				elif objType == 'ProductOnClient':
+					iniFile = IniFile(filename = self._getConfigFile(
+						'ProductOnClient', {'clientId': id}, 'ini')
+					)
+				
+				cp = iniFile.parse()
+				
+				for p in objList:
+					tmpId = ''
+					if objType == 'ProductOnDepot':
+						tmpId = p.getDepotId()
+					elif objType == 'ProductOnClient':
+						tmpId = p.getClientId()
+					
+					if id == tmpId and cp.has_section(id + '-state'):
+						logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
+						cp.remove_section(id + '-state')
+				
+				iniFile.generate(cp)
 		
 		else:
-			print "unhandled objType: '%s'" % objType
+			logger.warning(u"unhandled objType: '%s'" % objType)
 		
 	
 	def base_create(self):
