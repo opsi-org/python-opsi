@@ -75,6 +75,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._opsiBaseDn = 'cn=opsi,' + self._baseDn
 		self._hostsContainerDn = 'cn=hosts,' + self._opsiBaseDn
 		self._configContainerDn = 'cn=configs,' + self._opsiBaseDn
+		self._configStateContainerDn = 'cn=configState,' + self._opsiBaseDn
 		self._groupsContainerDn = 'cn=groups,' + self._opsiBaseDn
 		self._productsContainerDn = 'cn=products,' + self._opsiBaseDn
 		self._productClassesContainerDn = 'cn=productClasses,' + self._opsiBaseDn
@@ -146,7 +147,7 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfig' ],
 					'attributes': [
-						{ 'opsiAttribute': 'id',              'ldapAttribute': 'configId' },
+						{ 'opsiAttribute': 'id',              'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'description',     'ldapAttribute': 'configDescription' },
 						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'defaultValues' },
 						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'possibleValues' },
@@ -321,6 +322,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._opsiBaseDn)
 		self._createOrganizationalRole(self._hostsContainerDn)
 		self._createOrganizationalRole(self._configContainerDn)
+		self._createOrganizationalRole(self._configStateContainerDn)
 		self._createOrganizationalRole(self._generalConfigsContainerDn)
 		self._createOrganizationalRole(self._networkConfigsContainerDn)
 		self._createOrganizationalRole(self._groupsContainerDn)
@@ -376,14 +378,18 @@ class LDAPBackend(ConfigDataBackend):
 		opsiObjectHash = {}
 		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = False).items():
 			logger.debug(u"LDAP attribute is: %s" % attribute)
-			if attribute in ('cn', 'objectClass'):
+			if attribute in ('objectClass'):
 				continue
 			
 			if self._ldapAttributeToOpsiAttribute[opsiClassName].has_key(attribute):
 				attribute = self._ldapAttributeToOpsiAttribute[opsiClassName][attribute]
-			
 			else:
 				logger.error(u"No mapping found for ldap attribute '%s' of class '%s'" % (attribute, opsiClassName))
+			
+			if attribute in ('cn'):
+				continue
+			
+			
 			
 			if not attributes or attribute in attributes:
 				opsiObjectHash[attribute] = value
