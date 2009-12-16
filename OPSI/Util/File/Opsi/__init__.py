@@ -408,7 +408,7 @@ class PackageControlFile(TextFile):
 			raise Exception(u"Error in control file '%s': 'product' section not found" % self._filename)
 		
 		# Get package info
-		for (option, value) in self._sections.get('package', {}):
+		for (option, value) in self._sections.get('package', {}).items():
 			if (option == 'depends'):
 				for dep in value:
 					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
