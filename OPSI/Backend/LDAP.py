@@ -74,7 +74,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._baseDn = 'dc=uib,dc=local'
 		self._opsiBaseDn = 'cn=opsi,' + self._baseDn
 		self._hostsContainerDn = 'cn=hosts,' + self._opsiBaseDn
-		self._configContainerDn = 'cn=config,' + self._opsiBaseDn
+		self._configContainerDn = 'cn=configs,' + self._opsiBaseDn
 		self._groupsContainerDn = 'cn=groups,' + self._opsiBaseDn
 		self._productsContainerDn = 'cn=products,' + self._opsiBaseDn
 		self._productClassesContainerDn = 'cn=productClasses,' + self._opsiBaseDn
@@ -149,6 +149,7 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'configId' },
 						{ 'opsiAttribute': 'description',     'ldapAttribute': 'configDescription' },
 						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'defaultValues' },
+						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'possibleValues' },
 						{ 'opsiAttribute': 'editable',        'ldapAttribute': 'editable' },
 						{ 'opsiAttribute': 'multiValue',      'ldapAttribute': 'multiValue' }
 					]
@@ -159,7 +160,15 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses':  [ 'opsiConfig', 'opsiUnicodeConfig' ],
 					'attributes': [
 					]
+				 },
+				 {
+					'opsiClass':      'BoolConfig',
+					'opsiSuperClass': 'Config',
+					'objectClasses':  [ 'opsiConfig', 'opsiBoolConfig' ],
+					'attributes': [
+					]
 				 }
+				 
 				 
 			]
 		
@@ -260,6 +269,9 @@ class LDAPBackend(ConfigDataBackend):
 					)
 					
 				else:
+					if type(value) is bool:
+						if value: value = u'TRUE'
+						else: value = u'FALSE'
 					filters.append(
 						pureldap.LDAPFilter_equalityMatch(
 							attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
@@ -401,7 +413,7 @@ class LDAPBackend(ConfigDataBackend):
 		for (attribute, value) in opsiObject.toHash().items():
 			if (attribute == 'type'):
 				continue
-			
+			print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",value
 			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
 				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
 			else:
@@ -484,21 +496,37 @@ class LDAPBackend(ConfigDataBackend):
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
+		dn = 'cn=%s,%s' % (config.id, self._configContainerDn)
+		logger.info(u"Updating config: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, config)
+		
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
-		#print Tools.objectToBeautifiedText(config)
-		print "-----> jetzt wirds versucht -------------"
 		
 		logger.info(u"Getting configs, filter %s" % filter)
+		configs = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'Config', 'UnicodeConfig', 'BoolConfig']
+			
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
-		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._configContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
-			hosts.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
-		return hosts
+			configs.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return configs
 	
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
+		
+		logger.error(u"DELETING configs %s" % configs)
+		for config in forceObjectClassList(configs, Config):
+			dn = 'cn=%s,%s' % (config.id, self._configContainerDn)
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting configs: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -817,6 +845,9 @@ class LDAPObject:
 		if not value is None:
 			value = forceList(value)
 			for v in value:
+				if type(v) is bool:
+					if v: v = u'TRUE'
+					else: v = u'FALSE'
 				if (v == u''):
 					v = u' '
 				ldapValue.append(forceUnicode(v).encode('utf-8'))

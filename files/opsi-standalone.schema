@@ -408,21 +408,20 @@ attributetype ( 1.3.6.1.4.1.23807.7.1.4
 	NAME 'defaultValues'
 	DESC 'Default Values'
 	EQUALITY caseIgnoreMatch
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
-	SINGLE-VALUE )
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15  )
 
 attributetype ( 1.3.6.1.4.1.23807.7.1.5
 	NAME 'editable'
 	DESC 'Editable'
 	EQUALITY booleanMatch
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
 	SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.23807.7.1.6
 	NAME 'multiValue'
 	DESC 'Is MultiValue'
 	EQUALITY booleanMatch
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
 	SINGLE-VALUE )
 
 objectclass ( 1.3.6.1.4.1.23807.7.2.1
@@ -430,7 +429,7 @@ objectclass ( 1.3.6.1.4.1.23807.7.2.1
 	SUP top
 	ABSTRACT
 	DESC 'Opsi Config'
-	MUST ( configId )
+	MUST ( cn $ configId )
 	MAY ( configDescription $ possibleValues $ defaultValues $ editable $ multiValue ) )
 
 objectclass ( 1.3.6.1.4.1.23807.7.3.1
@@ -438,16 +437,14 @@ objectclass ( 1.3.6.1.4.1.23807.7.3.1
 	SUP opsiConfig
 	STRUCTURAL
 	DESC 'Opsi Unicode Config'
-	MUST ( configId )
-	MAY ( configDescription $ possibleValues $ defaultValues $ editable $ multiValue ) )
+	MUST ( cn $ configId ) )
 
 objectclass ( 1.3.6.1.4.1.23807.7.4.1
 	NAME 'opsiBoolConfig'
 	SUP opsiConfig
 	STRUCTURAL
 	DESC 'Opsi Bool Config'
-	MUST ( configId )
-	MAY ( ConfigDescription $ defaultValues ) )
+	MUST ( cn $ configId ) )
 
 
 # $OID: 1.3.6.1.4.1.23807.8 (Groups) $
