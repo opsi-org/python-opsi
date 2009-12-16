@@ -72,6 +72,12 @@ def forceUnicodeList(var):
 		var[i] = forceUnicode(var[i])
 	return var
 
+def forceDictList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceDict(var[i])
+	return var
+
 def forceUnicodeLowerList(var):
 	var = forceList(var)
 	for i in range(len(var)):

@@ -135,12 +135,13 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 				time.sleep(0.001)
 			
 			exitCode = ret
-			for line in data.split('\n'):
-				line = line.decode(encoding)
-				logger.debug(u'>>> %s' % line)
-				result.append(line)
-			if not result[-1]:
-				result = result[:-1]
+			if data:
+				for line in data.split('\n'):
+					line = line.decode(encoding)
+					logger.debug(u'>>> %s' % line)
+					result.append(line)
+				if not result[-1]:
+					result = result[:-1]
 			
 	except (os.error, IOError), e:
 		# Some error occured during execution

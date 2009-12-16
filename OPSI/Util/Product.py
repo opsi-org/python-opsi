@@ -48,7 +48,7 @@ from OPSI.Util import randomString
 
 logger = Logger()
 
-class ProductPackageFile(ProductPackage):
+class ProductPackageFile(object):
 	
 	def __init__(self, packageFile, tempDir = None):
 		self.packageFile = forceFilename(packageFile)
@@ -58,20 +58,24 @@ class ProductPackageFile(ProductPackage):
 		if not os.path.isdir(tempDir):
 			raise Exception(u"Temporary directory '%s' not found" % tempDir)
 		
-		self.tempDir        = os.path.abspath(tempDir)
-		self.clientDataDir  = None
-		self.installedFiles = []
-		self.tmpUnpackDir   = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
+		self.tempDir            = os.path.abspath(tempDir)
+		self.clientDataDir      = None
+		self.installedFiles     = []
+		self.tmpUnpackDir       = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
+		self.packageControlFile = None
 		
 		self.getMetaData()
 		
-		self.clientDataDir = os.path.join('/tmp', self.productId)
+		print self.packageControlFile.getProductProperties()[0]
+		
+		#self.clientDataDir = os.path.join('/tmp', self.productId)
 	
 	def cleanup(self):
 		if os.path.isdir(self.tmpUnpackDir):
 			shutil.rmtree(self.tmpUnpackDir)
 	
 	def getMetaData(self):
+		logger.debug(u"Getting meta data from package '%s'" % self.packageFile)
 		archive = Archive(self.packageFile)
 		try:
 			logger.notice(u"Extracting meta data from archive content to: '%s'" % self.tmpUnpackDir)
@@ -84,7 +88,7 @@ class ProductPackageFile(ProductPackage):
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
 				logger.debug(u"Metadata archive found: %s" % f)
-				metadataArchives.append(metadataArchives)
+				metadataArchives.append(f)
 			if not metadataArchives:
 				raise Exception(u"No metadata archive found")
 			if (len(metadataArchives) > 2):
@@ -101,9 +105,14 @@ class ProductPackageFile(ProductPackage):
 			packageControlFile = os.path.join(self.tmpUnpackDir, u'control')
 			if not os.path.exists(packageControlFile):
 				raise Exception(u"No control file found in package metadata archives")
+			
+			self.packageControlFile = PackageControlFile(packageControlFile)
+			self.packageControlFile.parse()
+			
 		except Exception, e:
 			self.cleanup()
 			raise
+		logger.debug(u"Got meta data from package '%s'" % self.packageFile)
 		
 	def unpack(self, dataArchives=True):
 		archive = Archive(self.packageFile)
@@ -119,7 +128,7 @@ class ProductPackageFile(ProductPackage):
 				logger.notice(u"Extracting archive content to: '%s'" % self.tmpUnpackDir)
 				archive.extract(targetPath = self.tmpUnpackDir)
 			else:
-				
+				pass
 			
 			
 		except Exception, e:

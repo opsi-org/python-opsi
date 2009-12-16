@@ -71,8 +71,11 @@ class BaseArchive(object):
 	
 	def _create(self, fileList, baseDir, command):
 		curDir = os.path.abspath(os.getcwd())
-		os.chdir(baseDir)
 		try:
+			baseDir = os.path.abspath(forceFilename(baseDir))
+			if not os.path.isdir(baseDir):
+				raise Exception(u"Base dir '%s' not found" % baseDir)
+			os.chdir(baseDir)
 			
 			logger.info(u"Executing: %s" % command )
 			proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -133,12 +136,14 @@ class TarArchive(BaseArchive):
 					names.append(unicode(line))
 			return names
 		except Exception, e:
-			raise Exception(u"Failed to get archive content: %s" % e)
+			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 	
 	def extract(self, targetPath='.', patterns=[]):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
 			patterns   = forceUnicodeList(patterns)
+			if not os.path.isdir(targetPath):
+				os.mkdir(targetPath)
 			
 			options = u''
 			if   (self._compression == 'gzip'):
@@ -158,13 +163,16 @@ class TarArchive(BaseArchive):
 			
 			System.execute(u'%s %s --directory "%s" --extract --file "%s"' % (System.which('tar'), options, targetPath, self._filename))
 		except Exception, e:
-			raise Exception(u"Failed to extract archive: %s" % e)
+			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 	
 	def create(self, fileList, baseDir='.', dereference=False, compression=None):
 		try:
 			fileList    = forceUnicodeList(fileList)
 			baseDir     = os.path.abspath(forceFilename(baseDir))
 			dereference = forceBool(dereference)
+			
+			if not os.path.isdir(baseDir):
+				raise Exception(u"Base dir '%s' not found" % baseDir)
 			
 			if compression:
 				compression = forceUnicodeLower(compression)
@@ -186,7 +194,7 @@ class TarArchive(BaseArchive):
 			self._create(fileList, baseDir, command)
 			
 		except Exception, e:
-			raise Exception(u"Failed to create archive: %s" % e)
+			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 	
 class CpioArchive(BaseArchive):
 	def __init__(self, filename):
@@ -207,12 +215,14 @@ class CpioArchive(BaseArchive):
 					names.append(unicode(line))
 			return names
 		except Exception, e:
-			raise Exception(u"Failed to get archive content: %s" % e)
+			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 	
 	def extract(self, targetPath='.', patterns=[]):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
 			patterns   = forceUnicodeList(patterns)
+			if not os.path.isdir(targetPath):
+				os.mkdir(targetPath)
 			
 			cat = System.which('cat')
 			if   (self._compression == 'gzip'):
@@ -231,13 +241,16 @@ class CpioArchive(BaseArchive):
 			finally:
 				os.chdir(curDir)
 		except Exception, e:
-			raise Exception(u"Failed to extract archive: %s" % e)
+			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 	
 	def create(self, fileList, baseDir='.', dereference=False, compression=None):
 		try:
 			fileList    = forceUnicodeList(fileList)
 			baseDir     = os.path.abspath(forceFilename(baseDir))
 			dereference = forceBool(dereference)
+			
+			if not os.path.isdir(baseDir):
+				raise Exception(u"Base dir '%s' not found" % baseDir)
 			
 			if compression:
 				compression = forceUnicodeLower(compression)
@@ -259,14 +272,14 @@ class CpioArchive(BaseArchive):
 			self._create(fileList, baseDir, command)
 			
 		except Exception, e:
-			raise Exception(u"Failed to create archive: %s" % e)
+			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 
 
 def Archive(filename):
 	filename = forceFilename(filename)
 	Class = None
-	fileType = getFileTye(filename):
+	fileType = getFileTye(filename)
 	if   fileType.lower().startswith('posix tar archive'):
 		Class = TarArchive
 	elif fileType.lower().startswith('ascii cpio archive'):

@@ -249,7 +249,7 @@ class PackageControlFile(TextFile):
 		self._product = None
 		self._productDependencies = []
 		self._productProperties = []
-		self._packageDedependencies = []
+		self._packageDependencies = []
 		self._incrementalPackage = False
 		
 		sectionType = None
@@ -261,6 +261,8 @@ class PackageControlFile(TextFile):
 			if (len(line) > 0) and line[0] in (';', '#'):
 				# Comment
 				continue
+			
+			line = line.replace('\r', '')
 			
 			match = self.sectionRegex.search(line)
 			if match:
@@ -379,9 +381,9 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows'         and option == 'softwareids'):
 					   	try:
-					   		value = fromJson(value)
+					   		value = fromJson(value.strip())
 					   	except Exception, e:
-					   		logger.debug(u"Failed to read json string '%s': %s" % (value, e) )
+					   		logger.debug(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							value = value.split(u',')
@@ -415,7 +417,21 @@ class PackageControlFile(TextFile):
 						continue
 					package = match.group(1)
 					version = match.group(2)
-					self._packageDedependencies.append( { 'package': package, 'version': version } )
+					condition = None
+					if version:
+						match = re.search('^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
+						if not match:
+							raise Exception(u"Bad version string '%s' in package dependency" % version)
+						
+						condition = match.group(1)
+						if not condition:
+							condition = u'='
+						if not condition in (u'=', u'<', u'<=', u'>', u'>='):
+							raise Exception(u"Bad condition string '%s' in package dependency" % condition)
+						version = match.group(2)
+					else:
+						version = None
+					self._packageDependencies.append( { 'package': package, 'condition': condition, 'version': version } )
 				
 			elif (option == 'incremental'):
 				self._incrementalPackage = forceBool(value)
@@ -455,6 +471,7 @@ class PackageControlFile(TextFile):
 		
 		if isinstance(self._product, LocalbootProduct) and not product.get('userloginscript') is None:
 			self._product.setUserLoginScript(product.get('userloginscript'))
+		self._product.setDefaults()
 		
 		# Create ProductDependency objects
 		for productDependency in self._sections.get('productdependency', []):
@@ -472,6 +489,7 @@ class PackageControlFile(TextFile):
 					requirementType            = productDependency.get('requirementtype')
 				)
 			)
+			self._productDependencies[-1].setDefaults()
 		
 		# Create ProductProperty objects
 		for productProperty in self._sections.get('productproperty', []):
@@ -498,6 +516,7 @@ class PackageControlFile(TextFile):
 						self._productProperties[-1].setEditable(False)
 					else:
 						self._productProperties[-1].setEditable(True)
+			self._productProperties[-1].setDefaults()
 		self._parsed = True
 		return self._sections
 	
@@ -525,13 +544,29 @@ class PackageControlFile(TextFile):
 	def setProductProperties(self, productProperties):
 		self._productProperties = forceObjectClassList(productProperties, ProductProperty)
 	
-	def getPackageDedependencies(self):
-		return self._packageDedependencies
+	def getPackageDependencies(self):
+		if not self._parsed:
+			self.parse()
+		return self._packageDependencies
 	
-	def setPackageDedependencies(self, packageDedependencies):
-		self._packageDedependencies = forceList(packageDedependencies)
+	def setPackageDependencies(self, packageDependencies):
+		self._packageDependencies = []
+		for packageDependency in forceDictList(packageDependencies):
+			if not packageDependency.get('package'):
+				raise ValueError(u"No package given: %s" % packageDependency)
+			if packageDependency.get('version') in (None, ''):
+				packageDependency['version'] = None
+				packageDependency['condition'] = None
+			else:
+				if not packageDependency.get('condition'):
+					packageDependency['condition'] = u'='
+				if not packageDependency['condition'] in (u'=', u'<', u'<=', u'>', u'>='):
+					raise Exception(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
+			self._packageDependencies.append(packageDependency)
 	
 	def getIncrementalPackage(self):
+		if not self._parsed:
+			self.parse()
 		return self._incrementalPackage
 	
 	def setIncrementalPackage(self, incremental):
@@ -545,7 +580,14 @@ class PackageControlFile(TextFile):
 		
 		self._lines = [ u'[Package]' ]
 		self._lines.append( u'version: %s' % self._product.getPackageVersion() )
-		self._lines.append( u'depends: %s' % ', '.join(self._packageDedependencies) )
+		depends = u''
+		for packageDependency in self._packageDependencies:
+			if depends: depends += u', '
+			depends += packageDependency['package']
+			if packageDependency['version']:
+				depends += ' (%s %s)'(packageDependency['condition'], packageDependency['version'])
+		
+		self._lines.append( u'depends: %s' % ', '.join(self._packageDependencies) )
 		self._lines.append( u'incremental: %s' % self._incrementalPackage )
 		self._lines.append( u'' )
 		
