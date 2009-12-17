@@ -158,6 +158,9 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>', 'option': 'producttype',        'json': False },
 				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productId>', 'option': 'installationstatus', 'json': False }
 			],
+			'ProductPropertyState': [
+				{ 'fileType': 'ini', 'attribute': '*' }
+			],
 		}
 		
 		self._mappings['UnicodeConfig'] = self._mappings['Config']
@@ -184,32 +187,39 @@ class File31Backend(ConfigDataBackend):
 			elif objType in ('ConfigState'):
 				if ( ident['objectId'] == self.__serverId ):
 					raise Exception(u"Can't handle configStates for ConfigServer")
-				else: # should be client (# TODO: depot unhandled)
+				elif os.path.isdir(os.path.join(self.__depotConfigDir, ident['objectId'])):
+					raise Exception(u"Can't handle configStates for DepotServer")
+				else:
 					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('ProductOnDepot'):
 				return os.path.join(self.__depotConfigDir, ident['depotId'], u'depot.ini')
 			elif objType in ('ProductOnClient'):
 				return os.path.join(self.__depotConfigDir, ident['clientId'] + u'.ini')
+			elif objType in ('ProductPropertyState'):
+				if os.path.isdir(os.path.join(self.__depotConfigDir, ident['objectId'])):
+					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
+				else:
+					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 		
 		elif (fileType == 'pro'):
-			ver = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
+			pVer = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
 			
 			if objType == 'LocalbootProduct':
-				return os.path.join(self.__productDir, ident['id'] + ver + u'.localboot')
+				return os.path.join(self.__productDir, ident['id'] + pVer + u'.localboot')
 			elif objType == 'NetbootProduct':
-				return os.path.join(self.__productDir, ident['id'] + ver + u'.netboot')
+				return os.path.join(self.__productDir, ident['id'] + pVer + u'.netboot')
 			elif objType in ('Product', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-				id = u''
+				pId = u''
 				if objType == 'Product':
-					id = ident['id']
+					pId = ident['id']
 				else:
-					id = ident['productId']
+					pId = ident['productId']
 				
 				# instead of searching the whole dir, let's check the only possible files
-				if os.path.isfile(os.path.join(self.__productDir, id + ver + u'.localboot')):
-					return os.path.join(self.__productDir, id + ver + u'.localboot')
-				elif os.path.isfile(os.path.join(self.__productDir, id + ver + u'.netboot')):
-					return os.path.join(self.__productDir, id + ver + u'.netboot')
+				if os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.localboot')):
+					return os.path.join(self.__productDir, pId + pVer + u'.localboot')
+				elif os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.netboot')):
+					return os.path.join(self.__productDir, pId + pVer + u'.netboot')
 		
 		logger.error(u"No config-file returned! objType: '%s' fileType: '%s' filter: '%s'" % (objType, fileType, filter))
 		
@@ -243,7 +253,7 @@ class File31Backend(ConfigDataBackend):
 									{
 									'productId':          section[:-6],
 									'productType':        cp.get(section, 'productType'),
-									'clientId':           cp.get(section, 'clientId'),
+									'clientId':           hostId,
 									'installationStatus': cp.get(section, 'installationStatus'),
 									'actionRequest':      cp.get(section, 'actionRequest'),
 									'actionProgress':     cp.get(section, 'actionProgress'),
@@ -277,7 +287,7 @@ class File31Backend(ConfigDataBackend):
 									'productType':    cp.get(section, 'producttype'),
 									'productVersion': cp.get(section, 'productversion'),
 									'packageVersion': cp.get(section, 'packageversion'),
-									'depotId':        cp.get(section, 'depotid')
+									'depotId':        hostId
 									}
 								)
 					else:
@@ -511,11 +521,8 @@ class File31Backend(ConfigDataBackend):
 						
 						if not cp.has_section(section):
 							cp.add_section(section)
-							print "added", section
 						
-						print "set: ", mapping[attribute]['option'], "with", value
 						cp.set(section, mapping[attribute]['option'], forceUnicode(value))
-						print "done"
 				
 				iniFile.generate(cp)
 			
@@ -606,7 +613,7 @@ class File31Backend(ConfigDataBackend):
 		
 		elif objType in ('ConfigState'):
 			for configState in objList:
-				logger.info(u"Deleting configState in host: '%s'" % configState.getIdent())
+				logger.info(u"Deleting configState in host: '%s'" % configState.getObjectId())
 				iniFile = IniFile(filename = self._getConfigFile(
 					'ConfigState',
 					configState.getIdent(returnType = 'dict'),
@@ -619,7 +626,6 @@ class File31Backend(ConfigDataBackend):
 		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 			for product in objList:
-				fileType = ''
 				logger.info(u"Deleting product: '%s'" % product.getId())
 				configFile = self._getConfigFile( product.getType(), product.getIdent(), 'pro' )
 				if os.path.isfile(configFile):
@@ -681,7 +687,7 @@ class File31Backend(ConfigDataBackend):
 				packageControlFile.generate()
 		
 		elif objType in ('ProductOnDepot', 'ProductOnClient'):
-			ids = []
+			hostIds = []
 			for p in objList:
 				tmpId = ''
 				if objType == 'ProductOnDepot':
@@ -689,25 +695,25 @@ class File31Backend(ConfigDataBackend):
 				elif objType == 'ProductOnClient':
 					tmpId = p.getClientId()
 				
-				inIds = False
-				for id in ids:
-					if id == tmpId:
-						inIds = True
+				inHostIds = False
+				for hostId in hostIds:
+					if hostId == tmpId:
+						inHostIds = True
 						break
 				
-				if not inIds:
-					ids.append(tmpId)
+				if not inHostIds:
+					hostIds.append(tmpId)
 			
-			for id in ids:
+			for hostId in hostIds:
 				iniFile = None
 				
 				if objType == 'ProductOnDepot':
 					iniFile = IniFile(filename = self._getConfigFile(
-						'ProductOnDepot', {'depotId': id}, 'ini')
+						'ProductOnDepot', {'depotId': hostId}, 'ini')
 					)
 				elif objType == 'ProductOnClient':
 					iniFile = IniFile(filename = self._getConfigFile(
-						'ProductOnClient', {'clientId': id}, 'ini')
+						'ProductOnClient', {'clientId': hostId}, 'ini')
 					)
 				
 				cp = iniFile.parse()
@@ -719,10 +725,23 @@ class File31Backend(ConfigDataBackend):
 					elif objType == 'ProductOnClient':
 						tmpId = p.getClientId()
 					
-					if id == tmpId and cp.has_section(id + '-state'):
-						logger.info(u"Deleting productOnDepot: '%s'" % productOnDepot.getIdent())
-						cp.remove_section(id + '-state')
+					if hostId == tmpId and cp.has_section(p.getProductId() + '-state'):
+						logger.info(u"Deleting productOnDepot: '%s'" % p.getIdent())
+						cp.remove_section(p.getProductId() + '-state')
 				
+				iniFile.generate(cp)
+		
+		elif objType in ('ProductPropertyState'):
+			for roductPropertyState in objList:
+				logger.info(u"Deleting productPropertyState in host: '%s'" % configState.getObjectId())
+				iniFile = IniFile(filename = self._getConfigFile(
+					'ProductPropertyState',
+					productPropertyState.getIdent(returnType = 'dict'),
+					'ini')
+				)
+				cp = iniFile.parse()
+				if cp.has_section():
+					cp.remove_section()
 				iniFile.generate(cp)
 		
 		else:

@@ -876,9 +876,6 @@ class BackendTest(object):
 							continue
 						if not value is None:
 							
-							print "'%s'" % (product['id'])
-							print value
-							
 							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, product[attribute]))
 							if type(value) is list:
 								for v in value:
@@ -909,7 +906,6 @@ class BackendTest(object):
 		
 		
 		assert len(productProperties) == 1
-		print productProperties[0].getDescription()
 		assert productProperties[0].getDescription() == u'updatedfortest'
 		
 		self.backend.productProperty_deleteObjects(self.productProperty2)
@@ -933,7 +929,6 @@ class BackendTest(object):
 		assert len(productDependencies) == len(self.productDependencies)
 		for productDependency in productDependencies:
 			if productDependency.getIdent() == self.productDependency2.getIdent():
-				print productDependency.getRequiredProductVersion()
 				assert productDependency.getRequiredProductVersion() == "2.0"
 				assert productDependency.getRequirementType() == 'after'
 #				self.productDependency2.requirementType = 'after'
@@ -957,14 +952,6 @@ class BackendTest(object):
 		
 		self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
 		productOnDepots = self.backend.productOnDepot_getObjects()
-		
-		print "expected:"
-		for p in self.productOnDepots:
-			print p
-		
-		print "got:"
-		for p in productOnDepots:
-			print p
 		
 		assert len(productOnDepots) == len(self.productOnDepots) - 1
 		
