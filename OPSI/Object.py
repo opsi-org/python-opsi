@@ -2330,13 +2330,17 @@ class AuditHardware(Entity):
 	foreignIdAttributes = Entity.foreignIdAttributes
 	backendMethodPrefix = 'auditHardware'
 	
-	def __init__(self, type, **kwargs):
-		pass
+	def __init__(self, hardwareClass, **kwargs):
+		self.hardwareClass = forceUnicode(hardwareClass)
+		self.__dict__.update(kwargs)
+		
+	def getHardwareClass(self):
+		return self.hardwareClass
 	
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'AuditHardware'
-		return Entity.fromHash(hash)
+		if hash.has_key('type'): del hash['type']
+		return AuditHardware(**hash)
 	
 	@staticmethod
 	def fromJson(jsonString):

@@ -19,9 +19,11 @@ mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi
 bt = BackendTest(ExtendedConfigDataBackend(mysqlBackend))
 bt.cleanupBackend()
 bt.testObjectMethods()
-bt.testNonObjectMethods()
+bt.testLicenseManagementObjectMethods()
+bt.testInventoryObjectMethods()
+#bt.testNonObjectMethods()
 #bt.testPerformance()
-bt.testMultithreading()
+#bt.testMultithreading()
 
 
 

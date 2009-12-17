@@ -635,6 +635,16 @@ class BackendTest(object):
 		)
 		self.auditSoftwareOnClients = [self.auditSoftwareOnClient1, self.auditSoftwareOnClient2, self.auditSoftwareOnClient3, self.auditSoftwareOnClient4]
 		
+		
+		# AuditHardwares
+		self.auditHardware1 = AuditHardware(
+			hardwareClass = 'CHASSIS',
+			name          = 'Manufacturer XX-112',
+			description   = 'A chassis',
+			chassisType   = 'Desktop'
+		)
+		self.auditHardwares = [ self.auditHardware1 ]
+		
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
 		self.backend.base_delete()
@@ -1034,7 +1044,9 @@ class BackendTest(object):
 		assert len(objectToGroups) == len(client2ObjectToGroups)
 		for objectToGroup in objectToGroups:
 			assert objectToGroup.objectId == self.client2.id
-		
+	
+	
+	def testLicenseManagementObjectMethods(self):
 		# LicenseContracts
 		logger.notice(u"Testing licenseContract methods")
 		
@@ -1109,7 +1121,8 @@ class BackendTest(object):
 		
 		licenseOnClients = self.backend.licenseOnClient_getObjects()
 		assert len(licenseOnClients) == len(self.licenseOnClients)
-		
+	
+	def testInventoryObjectMethods(self):
 		# AuditSoftwares
 		logger.notice(u"Testing auditSoftware methods")
 		
@@ -1126,7 +1139,25 @@ class BackendTest(object):
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
 		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients)
 		
+		# AuditHardwares
+		logger.notice(u"Testing auditHardware methods")
 		
+		self.backend.auditHardware_createObjects(self.auditHardwares)
+		
+		auditHardwares = self.backend.auditHardware_getObjects()
+		assert len(auditHardwares) == len(self.auditHardwares)
+		
+		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = 'CHASSIS')
+		assert len(auditHardwares) == len(self.auditHardwares)
+		
+		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = 'CH*SS*IS')
+		assert len(auditHardwares) == len(self.auditHardwares)
+		
+		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHASSIS', 'OTHER'])
+		assert len(auditHardwares) == len(self.auditHardwares)
+		
+		auditHardwares = self.backend.auditHardware_getObjects(['description'])
+		print auditHardwares[0].toHash()
 		
 	def testNonObjectMethods(self):
 		# Hosts

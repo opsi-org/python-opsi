@@ -114,6 +114,14 @@ def forceUnsignedInt(var):
 		var = var*(-1)
 	return var
 
+def forceFloat(var):
+	if type(var) is float:
+		return var
+	try:
+		return float(var)
+	except Exception, e:
+		raise ValueError(u"Bad float value '%s': %s" % (var, e))
+
 def forceDict(var):
 	if type(var) is dict:
 		return var
@@ -525,6 +533,38 @@ class LicenseMissingError(OpsiError):
 
 class RepositoryError(OpsiError):
 	ExceptionShortDescription = u"Repository error"
+
+class OpsiAuthenticationError(OpsiError):
+	ExceptionShortDescription = u"Opsi authentication error"
+
+class OpsiBadRpcError(OpsiError):
+	ExceptionShortDescription = u"Opsi bad rpc error"
+
+class OpsiRpcError(OpsiError):
+	ExceptionShortDescription = u"Opsi rpc error"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

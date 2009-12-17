@@ -254,6 +254,17 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
 		
 		self._licenseManagementEnabled = True
+		
+		self._auditHardwareConfig = {}
+		for config in self.auditHardware_getConfig():
+			hwClass = config['Class']['Opsi']
+			self._auditHardwareConfig[hwClass] = {}
+			for value in config['Values']:
+				self._auditHardwareConfig[hwClass][value['Opsi']] = {
+					'Type':  value["Type"],
+					'Scope': value["Scope"]
+				}
+		
 		logger.debug(u'MySQLBackend created: %s' % self)
 		
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
@@ -385,8 +396,7 @@ class MySQLBackend(ConfigDataBackend):
 		return condition
 	
 	def exit(self):
-		if self._mysql:
-			self._mysql.close()
+		pass
 	
 	def base_delete(self):
 		ConfigDataBackend.base_delete(self)
@@ -772,7 +782,7 @@ class MySQLBackend(ConfigDataBackend):
 			self._mysql.execute(table)
 		
 		
-		# Software audit database
+		# Software audit tables
 		if not 'SOFTWARE' in tables.keys():
 			logger.debug(u'Creating table SOFTWARE')
 			table = u'''CREATE TABLE `SOFTWARE` (
@@ -818,6 +828,85 @@ class MySQLBackend(ConfigDataBackend):
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
+		
+		# Hardware audit tables
+		for (hwClass, values) in self._auditHardwareConfig.items():
+			logger.info(u"Processing hardware class '%s'" % hwClass)
+			
+			hardwareDeviceTableName = u'HARDWARE_DEVICE_' + hwClass
+			hardwareConfigTableName = u'HARDWARE_CONFIG_' + hwClass
+			
+			hardwareDeviceTable = u'CREATE TABLE `' + hardwareDeviceTableName + '` (\n' + \
+						u'`hardware_id` INT NOT NULL AUTO_INCREMENT,\n' + \
+						u'PRIMARY KEY( `hardware_id` ),\n'
+			hardwareConfigTable = u'CREATE TABLE `' + hardwareConfigTableName + '` (\n' + \
+						u'`config_id` INT NOT NULL AUTO_INCREMENT,\n' + \
+						u'PRIMARY KEY( `config_id` ),\n' + \
+						u'`hostId` varchar(50) NOT NULL,\n' + \
+						u'`hardware_id` INT NOT NULL,\n' + \
+						u'`audit_firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+						u'`audit_lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+						u'`audit_state` TINYINT NOT NULL,\n'
+			
+			hardwareDeviceTableExists = hardwareDeviceTableName in tables.keys()
+			hardwareConfigTableExists = hardwareConfigTableName in tables.keys()
+			
+			if hardwareDeviceTableExists:
+				hardwareDeviceTable = u'ALTER TABLE `' + hardwareDeviceTableName + u'`\n'
+			if hardwareConfigTableExists:
+				hardwareConfigTable = u'ALTER TABLE `' + hardwareConfigTableName + u'`\n'
+			
+			for (value, valueInfo) in values.items():
+				logger.debug(u"  Processing value '%s'" % value)
+				if   (valueInfo['Scope'] == 'g'):
+					if hardwareDeviceTableExists:
+						if value in tables[hardwareDeviceTableName]:
+							# Column exists => change
+							hardwareDeviceTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
+						else:
+							# Column does not exist => add
+							hardwareDeviceTable += u'ADD `%s` %s NULL,\n' % (value, value)
+					else:
+						hardwareDeviceTable += u'`%s` %s NULL,\n' % (value, valueInfo["Type"])
+				elif (valueInfo['Scope'] == 'i'):
+					if hardwareConfigTableExists:
+						if value in tables[hardwareConfigTableName]:
+							# Column exists => change
+							hardwareConfigTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
+						else:
+							# Column does not exist => add
+							hardwareConfigTable += u'ADD `%s` %s NULL,\n' % (value, valueInfo['Type'])
+					else:
+						hardwareConfigTable += u'`%s` %s NULL,\n' % (value, valueInfo['Type'])
+			
+			# Remove leading and trailing whitespace
+			hardwareDeviceTable = hardwareDeviceTable.strip()
+			hardwareConfigTable = hardwareConfigTable.strip()
+			
+			# Remove trailing comma
+			if (hardwareDeviceTable[-1] == u','):
+				hardwareDeviceTable = hardwareDeviceTable[:-1]
+			if (hardwareConfigTable[-1] == u','):
+				hardwareConfigTable = hardwareConfigTable[:-1]
+			
+			# Finish sql query
+			if hardwareDeviceTableExists:
+				hardwareDeviceTable += u' ;\n'
+			else:
+				hardwareDeviceTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET=utf8;\n'
+			
+			if hardwareConfigTableExists:
+				hardwareConfigTable += u' ;\n'
+			else:
+				hardwareConfigTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET=utf8;\n'
+			
+			# Log sql query
+			logger.debug(hardwareDeviceTable)
+			logger.debug(hardwareConfigTable)
+			
+			# Execute sql query
+			self._mysql.execute(hardwareDeviceTable)
+			self._mysql.execute(hardwareConfigTable)
 		
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1551,6 +1640,100 @@ class MySQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(auditSoftwareOnClient)
 			self._mysql.delete('SOFTWARE_CONFIG', where)
 	
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditHardware_insertObject(self, auditHardware):
+		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
+		
+		hardwareClass = auditHardware.getHardwareClass()
+		values = self._auditHardwareConfig.get(hardwareClass)
+		if values is None:
+			raise BackendConfigurationError(u"Hardware class '%s' not found in config" % hardwareClass)
+		
+		table = u'HARDWARE_DEVICE_' + hardwareClass
+		data = auditHardware.toHash()
+		del data['hardwareClass']
+		del data['type']
+		
+		for attribute in data.keys():
+			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+			if valueInfo is None:
+				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
+			scope = valueInfo.get('Scope', '')
+			if (scope != 'g'):
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has scope '%s'" % (attribute, hardwareClass, scope))
+			type = valueInfo.get('Type', '')
+			if type.startswith('varchar'):
+				data[attribute] = forceUnicode(data[attribute])
+			elif (type.find('int') != -1):
+				data[attribute] = forceInt(data[attribute])
+			elif (type == 'double'):
+				data[attribute] = forceFloat(data[attribute])
+			else:
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+		
+		self._mysql.insert(table, data)
+		
+	def auditHardware_updateObject(self, auditHardware):
+		pass
+	
+	def auditHardware_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditHardware, filter: %s" % filter)
+		auditHardwares = []
+		hardwareClasses = []
+		hardwareClass = filter.get('hardwareClass')
+		if not hardwareClass is None:
+			for hwc in forceUnicodeList(hardwareClass):
+				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
+				for key in self._auditHardwareConfig.keys():
+					if regex.search(key):
+						if not key in hardwareClasses:
+							hardwareClasses.append(key)
+			if not hardwareClasses:
+				return auditHardwares
+		if not hardwareClasses:
+			for key in self._auditHardwareConfig.keys():
+				hardwareClasses.append(key)
+		
+		if filter.has_key('hardwareClass'):
+			del filter['hardwareClass']
+		
+		for hardwareClass in hardwareClasses:
+			for res in self._mysql.getSet(self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, filter)):
+				res['hardwareClass'] = hardwareClass
+				if res.has_key('hardware_id'):
+					del res['hardware_id']
+				for attribute in self._auditHardwareConfig[hardwareClass].keys():
+					if not res.has_key(attribute):
+						res[attribute] = None
+				auditHardwares.append(AuditHardware.fromHash(res))
+		
+		return auditHardwares
+	
+	def auditHardware_deleteObjects(self, auditHardwares):
+		pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

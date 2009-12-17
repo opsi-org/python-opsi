@@ -88,6 +88,24 @@ class KillableThread(threading.Thread):
 
 
 
+
+def toJson(obj):
+	if hasattr(json, 'dumps'):
+		# python 2.6 json module
+		return json.dumps(obj)
+	else:
+		return json.write(obj)
+
+def fromJson(obj):
+	if hasattr(json, 'loads'):
+		# python 2.6 json module
+		return json.loads(obj)
+	else:
+		return json.read(obj)
+
+
+
+
 def librsyncSignature(filename):
 	if (os.name != 'posix'):
 		raise NotImplementedError(u"Not implemented for non-posix os")
@@ -241,7 +259,7 @@ def objectToHtml(obj, level=0):
 			i+=1
 		html += u'<br />\n' + u'&nbsp;'*hspace + u'}'
 	elif type(obj) in (str, unicode):
-		html += obj.replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace)
+		html += u'"' + obj.replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace) + u'"'
 	else:
 		if hasattr(json, 'dumps'):
 			# python 2.6 json module
@@ -253,7 +271,99 @@ def objectToHtml(obj, level=0):
 
 
 
-
+def compareVersions(v1, condition, v2):
+	v1 = forceUnicode(v1)
+	v2 = forceUnicode(v2)
+	
+	if not condition:
+		condition = u'=='
+	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
+		raise Exception(u"Bad condition '%s'" % condition)
+	if (condition == u'='):
+		condition = u'=='
+	
+	v1ProductVersion = u'0'
+	v1PackageVersion = u'0'
+	
+	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v1)
+	if not match:
+		raise Exception(u"Bad version string '%s'" % v1)
+	
+	v1ProductVersion = match.group(1)
+	if match.group(2):
+		v1PackageVersion = match.group(2)
+	
+	v2ProductVersion = u'0'
+	v2PackageVersion = u'0'
+	
+	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v2)
+	if not match:
+		raise Exception(u"Bad version string '%s'" % v2)
+	
+	v2ProductVersion = match.group(1)
+	if match.group(2):
+		v2PackageVersion = match.group(2)
+	
+	for (v1, v2) in ( (v1ProductVersion, v2ProductVersion), (v1PackageVersion, v2PackageVersion) ):
+		v1p = v1.split(u'.')
+		v2p = v2.split(u'.')
+		while len(v1p) < len(v2p):
+			v1p.append(u'0')
+		while len(v2p) < len(v1p):
+			v2p.append(u'0')
+		for i in range(len(v1p)):
+			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
+				cv1 = u''
+				cv2 = u''
+				
+				match = re.search('^(\d+)(\D*.*)$', v1p[i])
+				if match:
+					cv1 = int(match.group(1))
+					v1p[i] = match.group(2)
+				else:
+					match = re.search('^(\D+)(\d*.*)$', v1p[i])
+					if match:
+						cv1 = match.group(1)
+						v1p[i] = match.group(2)
+				
+				match = re.search('^(\d+)(\D*.*)$', v2p[i])
+				if match:
+					cv2 = int(match.group(1))
+					v2p[i] = match.group(2)
+				else:
+					match = re.search('^(\D+)(\d*.*)$', v2p[i])
+					if match:
+						cv2 = match.group(1)
+						v2p[i] = match.group(2)
+				
+				if (cv1 == u''): cv1 = chr(1)
+				if (cv2 == u''): cv2 = chr(1)
+				if (cv1 == cv2):
+					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
+					continue
+				
+				if type(cv1) is not int: cv1 = u"'%s'" % cv1
+				if type(cv2) is not int: cv2 = u"'%s'" % cv2
+				
+				b = eval( u"%s %s %s" % (cv1, condition, cv2) )
+				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
+				if not b:
+					logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
+						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+					return False
+				else:
+					logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
+						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+					return True
+	if (condition.find(u'=') == -1):
+		logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
+			% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+		return False
+	logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
+		% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
+	return True
+	
+	
 
 
 

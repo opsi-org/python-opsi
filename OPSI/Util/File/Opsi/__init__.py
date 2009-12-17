@@ -34,7 +34,7 @@
 
 __version__ = "3.5"
 
-import os, codecs, re, ConfigParser, StringIO, cStringIO, json
+import os, codecs, re, ConfigParser, StringIO, cStringIO
 
 if (os.name == 'posix'):
 	import fcntl
@@ -49,24 +49,10 @@ from OPSI.Logger import *
 from OPSI.Object import *
 from OPSI.Types import *
 from OPSI.Util.File import *
-from OPSI.Util import md5sum
+from OPSI.Util import md5sum, toJson, fromJson
 
 # Get logger instance
 logger = Logger()
-
-def toJson(obj):
-	if hasattr(json, 'dumps'):
-		# python 2.6 json module
-		return json.dumps(obj)
-	else:
-		return json.write(obj)
-
-def fromJson(obj):
-	if hasattr(json, 'loads'):
-		# python 2.6 json module
-		return json.loads(obj)
-	else:
-		return json.read(obj)
 
 class HostKeyFile(ConfigFile):
 	

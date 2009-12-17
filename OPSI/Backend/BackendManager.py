@@ -58,6 +58,8 @@ logger = Logger()
 class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
 		self._backend = None
+		self._backendConfigDir = None
+		
 		username = None
 		password = None
 		dispatch = False
@@ -72,7 +74,11 @@ class BackendManager(ExtendedBackend):
 			elif option in ('password'):
 				password = value
 			elif option in ('backend'):
+				if type(value) in (str, unicode):
+					value = self.__loadBackend(value)
 				self._backend = value
+			elif (option == 'backendconfigdir'):
+				self._backendConfigDir = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
 			elif option in ('depotbackend'):
@@ -89,14 +95,34 @@ class BackendManager(ExtendedBackend):
 		if extend or depotBackend:
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
 			self._backend = ExtendedConfigDataBackend(self._backend)
-		if extend:
-			BackendExtender(self._backend, **kwargs)
 		if depotBackend:
 			self._backend = DepotserverBackend(self._backend)
+		if extend:
+			BackendExtender(self._backend, **kwargs)
 		if accessControl:
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		self._createInstanceMethods()
 	
+	def __loadBackend(self, name):
+		if not self._backendConfigDir:
+			raise BackendConfigurationError(u"Backend config dir not given")
+		if not os.path.exists(self._backendConfigDir):
+			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
+		if not re.search('^[a-zA-Z0-9-_]+$', name):
+			raise ValueError(u"Bad backend config name '%s'" % name)
+		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
+		if not os.path.exists(backendConfigFile):
+			raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
+		
+		l = {'module': '', 'config': {}}
+		execfile(backendConfigFile, l)
+		if not l['module']:
+			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
+		if not type(l['config']) is dict:
+			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
+		exec(u'from %s import %sBackend' % (l['module'], l['module']))
+		return eval(u'%sBackend(**l["config"])' % l['module'])
+		
 	def exit(self):
 		logger.debug(u"Calling exit() on backend %s" % self._backend)
 		self._backend.exit()
@@ -148,6 +174,8 @@ class BackendDispatcher(ConfigDataBackend):
 	
 	def __loadBackends(self):
 		backends = []
+		if not self._backendConfigDir:
+			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 		for i in range(len(self._dispatchConfig)):
@@ -219,8 +247,8 @@ class BackendDispatcher(ConfigDataBackend):
 	
 class BackendExtender(object):
 	def __init__(self, backend, **kwargs):
-		if not isinstance(backend, ExtendedConfigDataBackend):
-			raise Exception("Need instance of ExtendedConfigDataBackend as backend")
+		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend):
+			raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
 		self._backend = backend
 		#ExtendedConfigDataBackend.__init__(self, backend)
 		

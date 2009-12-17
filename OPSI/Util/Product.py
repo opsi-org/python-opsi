@@ -27,7 +27,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    
-   @copyright:	uib GmbH <info@uib.de>
+   @copyright: uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
@@ -187,7 +187,7 @@ class ProductPackageFile(object):
 					serverDataArchives.append(f)
 				
 			if not clientDataArchives:
-				raise Exception(u"No client-data archive found")
+				logger.warning(u"No client-data archive found")
 			if (len(clientDataArchives) > 2):
 				raise Exception(u"More than two client-data archives found")
 			if (len(serverDataArchives) > 2):
@@ -210,6 +210,8 @@ class ProductPackageFile(object):
 			self.installedServerDataFiles.sort()
 			
 			productClientDataDir = self.getProductClientDataDir()
+			if not os.path.exists(productClientDataDir):
+				os.mkdir(productClientDataDir)
 			
 			self.installedClientDataFiles = []
 			for clientDataArchive in clientDataArchives:
