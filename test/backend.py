@@ -128,7 +128,14 @@ class BackendTest(object):
 			defaultValues  = ['product3']
 		)
 		
-		self.configs = [ self.config1, self.config2, self.config3, self.config4, self.config5 ]
+		self.config6 = UnicodeConfig(
+			id             = u'%username%',
+			description    = u'username',
+			possibleValues = None,
+			defaultValues  = ['opsi']
+		)
+		
+		self.configs = [ self.config1, self.config2, self.config3, self.config4, self.config5, self.config6 ]
 		
 		# ConfigStates
 		self.configState1 = ConfigState(
@@ -148,7 +155,13 @@ class BackendTest(object):
 			objectId = self.client2.getId(),
 			values   = [False]
 		)
-		self.configStates = [ self.configState1, self.configState2, self.configState3 ]
+		
+		self.configState4 = ConfigState(
+			configId = self.config6.getId(),
+			objectId = self.client2.getId(),
+			values   = ['user']
+		)
+		self.configStates = [ self.configState1, self.configState2, self.configState3, self.configState4 ]
 		
 		# Products
 		self.products = []
@@ -638,13 +651,111 @@ class BackendTest(object):
 		
 		# AuditHardwares
 		self.auditHardware1 = AuditHardware(
-			hardwareClass = 'CHASSIS',
-			name          = 'Manufacturer XX-112',
-			description   = 'A chassis',
-			chassisType   = 'Desktop'
+			hardwareClass       = 'COMPUTER_SYSTEM',
+			description         = 'a pc',
+			vendor              = 'Dell',
+			model               = 'xyz',
 		)
-		self.auditHardwares = [ self.auditHardware1 ]
 		
+		self.auditHardware2 = AuditHardware(
+			hardwareClass       = 'COMPUTER_SYSTEM',
+			description         =  None,
+			vendor              = 'HP',
+			model               = '0815',
+		)
+		
+		self.auditHardware3 = AuditHardware(
+			hardwareClass       = 'BASE_BOARD',
+			name                = 'MSI 2442',
+			description         = 'AMD motherboard',
+			vendor              = 'MSI',
+			model               = 'äüöüöäüöüäüööüö11',
+			product             = None
+		)
+		
+		self.auditHardware4 = AuditHardware(
+			hardwareClass       = 'CHASSIS',
+			name                = 'Manufacturer XX-112',
+			description         = 'A chassis',
+			chassisType         = 'Desktop'
+		)
+		self.auditHardwares = [ self.auditHardware1, self.auditHardware2, self.auditHardware3, self.auditHardware4 ]
+		
+		# AuditHardwareOnHosts
+		self.auditHardwareOnHost1 = AuditHardwareOnHost(
+			hostId              = self.client1.getId(),
+			hardwareClass       = 'COMPUTER_SYSTEM',
+			description         = self.auditHardware1.description,
+			vendor              = self.auditHardware1.vendor,
+			model               = self.auditHardware1.model,
+			
+			serialNumber        = '843391034-2192',
+			systemType          = 'Desktop',
+			totalPhysicalMemory = 1073741824
+		)
+		
+		self.auditHardwareOnHost2 = AuditHardwareOnHost(
+			hostId              = self.client2.getId(),
+			hardwareClass       = 'COMPUTER_SYSTEM',
+			description         = self.auditHardware1.description,
+			vendor              = self.auditHardware1.vendor,
+			model               = self.auditHardware1.model,
+			
+			serialNumber        = '142343234-9571',
+			systemType          = 'Desktop',
+			totalPhysicalMemory = 1073741824
+		)
+		
+		self.auditHardwareOnHost3 = AuditHardwareOnHost(
+			hostId              = self.client3.getId(),
+			hardwareClass       = 'COMPUTER_SYSTEM',
+			description         = self.auditHardware2.description,
+			vendor              = self.auditHardware2.vendor,
+			model               = self.auditHardware2.model,
+			
+			serialNumber        = 'a63c09dd234a213',
+			systemType          = None,
+			totalPhysicalMemory = 536870912
+		)
+		
+		self.auditHardwareOnHost4 = AuditHardwareOnHost(
+			hostId              = self.client1.getId(),
+			hardwareClass       = 'BASE_BOARD',
+			name                = self.auditHardware3.name,
+			description         = self.auditHardware3.description,
+			vendor              = self.auditHardware3.vendor,
+			model               = self.auditHardware3.model,
+			product             = self.auditHardware3.product,
+			
+			serialNumber        = 'xxxx-asjdks-sll3kf03-828112'
+		)
+		
+		self.auditHardwareOnHost5 = AuditHardwareOnHost(
+			hostId              = self.client2.getId(),
+			hardwareClass       = 'BASE_BOARD',
+			name                = self.auditHardware3.name,
+			description         = self.auditHardware3.description,
+			vendor              = self.auditHardware3.vendor,
+			model               = self.auditHardware3.model,
+			product             = self.auditHardware3.product,
+			
+			serialNumber        = 'xxxx-asjdks-sll3kf03-213791'
+		)
+		
+		self.auditHardwareOnHost6 = AuditHardwareOnHost(
+			hostId              = self.client3.getId(),
+			hardwareClass       = 'BASE_BOARD',
+			name                = self.auditHardware3.name,
+			description         = self.auditHardware3.description,
+			vendor              = self.auditHardware3.vendor,
+			model               = self.auditHardware3.model,
+			product             = self.auditHardware3.product,
+			
+			serialNumber        = 'xxxx-asjdks-sll3kf03-132290'
+		)
+		
+		self.auditHardwareOnHosts = [ self.auditHardwareOnHost1, self.auditHardwareOnHost2, self.auditHardwareOnHost3, self.auditHardwareOnHost4, self.auditHardwareOnHost6, self.auditHardwareOnHost6 ]
+	
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
 		self.backend.base_delete()
@@ -1147,17 +1258,37 @@ class BackendTest(object):
 		auditHardwares = self.backend.auditHardware_getObjects()
 		assert len(auditHardwares) == len(self.auditHardwares)
 		
-		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = 'CHASSIS')
-		assert len(auditHardwares) == len(self.auditHardwares)
+		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHASSIS', 'COMPUTER_SYSTEM'])
+		for auditHardware in auditHardwares:
+			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM']
 		
-		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = 'CH*SS*IS')
-		assert len(auditHardwares) == len(self.auditHardwares)
-		
-		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHASSIS', 'OTHER'])
-		assert len(auditHardwares) == len(self.auditHardwares)
+		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHA*IS', '*UTER_SYS*'])
+		for auditHardware in auditHardwares:
+			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM']
 		
 		auditHardwares = self.backend.auditHardware_getObjects(['description'])
-		print auditHardwares[0].toHash()
+		for auditHardware in auditHardwares:
+			assert auditHardware.toHash().get('name') is None
+		
+		self.backend.auditHardware_deleteObjects([ self.auditHardware1, self.auditHardware2 ])
+		auditHardwares = self.backend.auditHardware_getObjects()
+		assert len(auditHardwares) == len(self.auditHardwares) - 2
+		
+		self.backend.auditHardware_updateObjects([ self.auditHardware1, self.auditHardware2 ])
+		auditHardwares = self.backend.auditHardware_getObjects()
+		assert len(auditHardwares) == len(self.auditHardwares)
+		
+		self.backend.auditHardware_createObjects(self.auditHardwares)
+		
+		# AuditHardwareOnHosts
+		logger.notice(u"Testing auditHardwareOnHost methods")
+		
+		self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHosts)
+		
+		
+		
+		
+		
 		
 	def testNonObjectMethods(self):
 		# Hosts
