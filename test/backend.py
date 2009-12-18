@@ -967,6 +967,12 @@ class BackendTest(object):
 		assert len(configStates) == 1
 		assert configStates[0].getValues() == [True]
 		
+		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
+		assert len(configStates) == 1
+		print self.configState4.toHash()
+		print configStates[0].toHash()
+		assert configStates[0].getValues()[0] == self.configState4.getValues()[0]
+		
 		# Products
 		logger.notice(u"Testing product methods")
 		

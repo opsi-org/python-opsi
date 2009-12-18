@@ -76,6 +76,7 @@ class File31Backend(ConfigDataBackend):
 		self.__hostKeyFile = os.path.join(self.__baseDir, 'pckeys')
 		self.__configFile = os.path.join(self.__baseDir, 'config.ini')
 		
+		self._placeholderRegex = re.compile('<([^>]+)>')
 		#self._defaultDomain = u'uib.local'
 		
 		# Get hostid of localhost
@@ -118,7 +119,7 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'maxBandwidth',        'section': 'repository',  'option': 'maxbandwidth'    }
 			],
 			'ConfigState': [
-				{ 'fileType': 'ini', 'attribute': '*' }
+				{ 'fileType': 'ini', 'attribute': 'values', 'section': 'generalconfig', 'option': '<configId>',    'json': True }
 			],
 			'Product': [
 				{ 'fileType': 'pro', 'attribute': 'name',               'object': 'product' },
@@ -143,20 +144,20 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'pro', 'attribute': '*' }
 			],
 			'ProductOnDepot': [
-				{ 'fileType': 'ini', 'attribute': 'productType',    'section': '<productId>', 'option': 'producttype',    'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>', 'option': 'productversion', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>', 'option': 'packageversion', 'json': False }
+				{ 'fileType': 'ini', 'attribute': 'productType',    'section': '<productId>-state', 'option': 'producttype',    'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>-state', 'option': 'productversion', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False }
 			],
 			'ProductOnClient': [
-				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>', 'option': 'producttype',        'json': False },
-				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productId>', 'option': 'installationstatus', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productId>', 'option': 'actionrequest',      'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>', 'option': 'actionprogress',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>', 'option': 'productversion',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>', 'option': 'packageversion',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'lastStateChange',    'section': '<productId>', 'option': 'laststatechange',    'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>', 'option': 'producttype',        'json': False },
-				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productId>', 'option': 'installationstatus', 'json': False }
+				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>-state', 'option': 'producttype',        'json': False },
+				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productId>-state', 'option': 'installationstatus', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productId>-state', 'option': 'actionrequest',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>-state', 'option': 'actionprogress',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>-state', 'option': 'productversion',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>-state', 'option': 'packageversion',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'lastStateChange',    'section': '<productId>-state', 'option': 'laststatechange',    'json': False },
+				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
 			],
 			'ProductPropertyState': [
 				{ 'fileType': 'ini', 'attribute': '*' }
@@ -299,7 +300,7 @@ class File31Backend(ConfigDataBackend):
 			for entry in os.listdir(self.__productDir):
 				entry = entry.lower()
 				# productId, productVersion, packageVersion, propertyId
-				if not ( entry.endswith('.localboot') and objType !='NetbootProduct' ):
+				if not ( entry.endswith('.localboot') and objType != 'NetbootProduct' ):
 					if not ( entry.endswith('.netboot') and objType != 'LocalbootProduct' ):
 						continue # doesn't fit: next file
 				
@@ -323,6 +324,11 @@ class File31Backend(ConfigDataBackend):
 					else:
 						for productProperty in packageControlFile.getProductProperties():
 							objIdents.append(productProperty.toHash())
+		
+		elif objType in ('ConfigState'):
+			print "#######################################"
+			print filter
+			print "#######################################"
 		
 		if not objIdents:
 			return objIdents
@@ -405,6 +411,7 @@ class File31Backend(ConfigDataBackend):
 		objects = []
 		for ident in self._getIdents(objType, **filter):
 			objHash = dict(ident)
+			
 			for (fileType, mapping) in mappings.items():
 				filename = self._getConfigFile(objType, ident, fileType)
 				
@@ -418,23 +425,44 @@ class File31Backend(ConfigDataBackend):
 					cp = iniFile.parse()
 					
 					for m in mapping:
-						try:
-							section = m['section']
-							if section == '<id>':
-								section = objHash.get('id')
-							elif section == '<productId>':
-								section = objHash.get('productId') + '-state'
+						attribute = m['attribute']
+						section = m['section']
+						option = m['option']
+						
+						match = self._placeholderRegex.search(section)
+						if match:
+							replaceValue = objHash[match.group(1)]
+							if objType in ('ProductOnClient'):
+								replaceValue.replace('LocabootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+							section = section.replace(u'<%s>' % match.group(1), replaceValue)
+						
+						match = self._placeholderRegex.search(option)
+						if match:
+							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+						
+						value = None
+						
+						if cp.has_option(section, option):
+							value = cp.get(section, option)
 							
-							value = cp.get(section, m['option'])
 							if m.get('json'):
 								value = fromJson(value)
 							else:
 								value = value.replace(u'\\n', u'\n')
-							objHash[m['attribute']] = value
-						except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-							logger.info(u"No option '%s' within section '%s' in '%s'" \
-								% (m['option'], section, filename))
-							objHash[m['attribute']] = None
+							
+							if objType in ('ProductOnClient'):
+								if attribute == 'installationStatus' and value.find(u':' != -1):
+									value = value.split(u':', 1)[0]
+								elif attribute == 'actionRequest' and value.find(u':' != -1):
+									value = value.split(u':', 1)[1]
+						
+						objHash[m['attribute']] = value
+						
+						if objType == 'ConfigState':
+							print "attribute",   attribute
+							print "section",     section
+							print "option",      option
+							print "value",       value
 				
 				elif (fileType == 'pro'):
 					packageControlFile = PackageControlFile(filename = filename)
@@ -461,7 +489,9 @@ class File31Backend(ConfigDataBackend):
 		return objects
 	
 	def _write(self, obj, mode='create'):
+		
 		objType = obj.getType()
+		
 		if (objType == 'OpsiConfigserver') and (self.__serverId != obj.getId()):
 			raise Exception(u"File31 backend can only handle config server '%s'" % self.__serverId)
 		
@@ -489,6 +519,7 @@ class File31Backend(ConfigDataBackend):
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename)
+				
 				if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver') and (mode == 'create'):
 					iniFile.delete()
 					iniFile.create()
@@ -503,26 +534,55 @@ class File31Backend(ConfigDataBackend):
 					if cp.has_section(obj.getProductId() + u'-state'):
 						cp.remove_section(obj.getProductId() + u'-state')
 				
-				for (attribute, value) in obj.toHash().items():
-					if value is None:
+				objHash = obj.toHash()
+				for (attribute, value) in objHash.items():
+					if value is None and (mode == 'update'):
 						continue
 					
-					if mapping.has_key(attribute):
-						section = mapping[attribute]['section']
-						if section == '<id>':
-							section = obj.getId()
-						elif section == '<productId>':
-							section = obj.getProductId() + '-state'
+					attributeMapping = mapping.get(attribute, mapping.get('*'))
+					
+					if not attributeMapping is None:
+						section = attributeMapping['section']
+						option = attributeMapping['option']
 						
-						if mapping[attribute].get('json'):
+						match = self._placeholderRegex.search(section)
+						if match:
+							replaceValue = objHash[match.group(1)]
+							if objType in ('ProductOnClient'):
+								replaceValue.replace('LocabootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+							section = section.replace(u'<%s>' % match.group(1), replaceValue)
+						
+						match = self._placeholderRegex.search(option)
+						if match:
+							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+						
+						if objType in ('ProductOnClient'):
+							if attribute in ('installationStatus', 'actionRequest'):
+								(installationStatus, actionRequest) = (u'somestring', u'otherstring')
+								if cp.has_option(section, option):
+									installationStatus = cp.get(section, option)
+								if installationStatus.find(u':') != -1:
+									(installationStatus, actionRequest) = installationStatus.split(u':', 1)
+								if not value is None:
+									if   (attribute == 'installationStatus'):
+										installationStatus = value
+									elif (attribute == 'actionRequest'):
+										actionRequest = value
+								value = installationStatus + u':' + actionRequest
+						
+						if value is None:
+							if cp.has_option(section, option):
+								cp.remove_option(section, option)
+							continue
+						
+						if attributeMapping.get('json'):
 							value = toJson(value)
 						elif ( isinstance(value, str) or isinstance(value, unicode) ):
-							value = value.replace(u'\n', u'\\n').replace(u'%', u'')
+							value = value.replace(u'\n', u'\\n')
 						
 						if not cp.has_section(section):
 							cp.add_section(section)
-						
-						cp.set(section, mapping[attribute]['option'], forceUnicode(value))
+						cp.set(section, option, forceUnicode(value).replace('%', '%%'))
 				
 				iniFile.generate(cp)
 			
@@ -620,8 +680,8 @@ class File31Backend(ConfigDataBackend):
 					'ini')
 				)
 				cp = iniFile.parse()
-				if cp.has_section(configState.getConfigId()):
-					cp.remove_section(configState.getConfigId())
+				if cp.has_option('generalconfig', configState.getConfigId()):
+					cp.remove_option('generalconfig', configState.getConfigId())
 				iniFile.generate(cp)
 		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
