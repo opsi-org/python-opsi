@@ -2331,9 +2331,12 @@ class AuditHardware(Entity):
 	backendMethodPrefix = 'auditHardware'
 	
 	def __init__(self, hardwareClass, **kwargs):
-		self.hardwareClass = forceUnicode(hardwareClass)
+		self.setHardwareClass(hardwareClass)
 		self.__dict__.update(kwargs)
-		
+	
+	def setHardwareClass(self, hardwareClass):
+		self.hardwareClass = forceUnicode(hardwareClass)
+	
 	def getHardwareClass(self):
 		return self.hardwareClass
 	
@@ -2351,6 +2354,77 @@ class AuditHardware(Entity):
 	
 Entity.subClasses['AuditHardware'] = AuditHardware
 
+
+class AuditHardwareOnHost(Relationship):
+	subClasses = {}
+	backendMethodPrefix = 'auditHardwareOnHost'
+	
+	def __init__(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
+		self.firstseen = None
+		self.lastseen = None
+		self.state = None
+		self.setHostId(hostId)
+		self.setHardwareClass(hardwareClass)
+		self.__dict__.update(kwargs)
+		if not firstseen is None:
+			self.setFirstseen(firstseen)
+		if not lastseen is None:
+			self.setLastseen(lastseen)
+		if not state is None:
+			self.setState(state)
+		
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		if self.firstseen is None:
+			self.setFirstseen(timestamp())
+		if self.lastseen is None:
+			self.setLastseen(timestamp())
+		if self.state is None:
+			self.setState(1)
+	
+	def getHostId(self):
+		return self.hostId
+	
+	def setHostId(self, hostId):
+		self.hostId = forceHostId(hostId)
+	
+	def setHardwareClass(self, hardwareClass):
+		self.hardwareClass = forceUnicode(hardwareClass)
+	
+	def getHardwareClass(self):
+		return self.hardwareClass
+	
+	def getFirstseen(self):
+		return self.firstseen
+	
+	def setFirstseen(self, firstseen):
+		self.firstseen = forceOpsiTimestamp(firstseen)
+	
+	def getLastseen(self):
+		return self.firstseen
+	
+	def setLastseen(self, lastseen):
+		self.lastseen = forceOpsiTimestamp(lastseen)
+	
+	def getState(self):
+		return self.state
+	
+	def setState(self, state):
+		self.state = forceAuditState(state)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'AuditHardwareOnHost'
+		return Relationship.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return fromJson(jsonString, 'AuditHardwareOnHost')
+	
+	def __unicode__(self):
+		return u"<%s hardwareClass '%s', hostId '%s'>" % (self.getType(), self.hardwareClass, self.hostId)
+	
+Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
 
 
 

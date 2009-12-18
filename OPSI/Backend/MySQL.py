@@ -1644,15 +1644,42 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditHardware_insertObject(self, auditHardware):
-		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
+	
+	def _uniqueAuditHardwareCondition(self, auditHardware):
+		if hasattr(auditHardware, 'toHash'):
+			auditHardware = auditHardware.toHash()
+		hardwareClass = auditHardware['hardwareClass']
+		del auditHardware['hardwareClass']
+		del auditHardware['type']
 		
+		where = u''
+		for (attribute, value) in auditHardware.items():
+			if value is None:
+				continue
+			if where:
+				where += u' and '
+			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+			if valueInfo is None:
+				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
+			scope = valueInfo.get('Scope', '')
+			if (scope != 'g'):
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has scope '%s'" % (attribute, hardwareClass, scope))
+			type = valueInfo.get('Type', '')
+			if type.startswith('varchar'):
+				where += u"`%s` = '%s'" % (attribute, forceUnicode(value))
+			elif (type.find('int') != -1):
+				where += u"`%s` = %s" % (attribute, forceInt(value))
+			elif (type == 'double'):
+				where += u"`%s` = %s" % (attribute, forceFloat(value))
+			else:
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+		return where
+	
+	def _auditHardwareObjectToDatabaseHash(self, auditHardware):
 		hardwareClass = auditHardware.getHardwareClass()
-		values = self._auditHardwareConfig.get(hardwareClass)
-		if values is None:
+		if self._auditHardwareConfig.get(hardwareClass) is None:
 			raise BackendConfigurationError(u"Hardware class '%s' not found in config" % hardwareClass)
 		
-		table = u'HARDWARE_DEVICE_' + hardwareClass
 		data = auditHardware.toHash()
 		del data['hardwareClass']
 		del data['type']
@@ -1673,15 +1700,35 @@ class MySQLBackend(ConfigDataBackend):
 				data[attribute] = forceFloat(data[attribute])
 			else:
 				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+		return data
+	
+	def _getHardwareIds(self, auditHardware):
+		hardwareIds = []
+		table = u'HARDWARE_DEVICE_' + auditHardware['hardwareClass']
+		for res in self._mysql.getSet( u'SELECT hardware_id from `%s` where %s' % (table, self._uniqueAuditHardwareCondition(auditHardware)) ):
+			hardwareIds.append(res['hardwareId'])
+		return hardwareIds
+	
+	def auditHardware_insertObject(self, auditHardware):
+		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
-		self._mysql.insert(table, data)
+		hardwareClass = auditHardware.getHardwareClass()
+		table = u'HARDWARE_DEVICE_' + hardwareClass
+		where = self._uniqueAuditHardwareCondition(auditHardware)
+		if not self._mysql.getSet( u'SELECT hardware_id from `%s` where %s' % (table, where) ):
+			data = self._auditHardwareObjectToDatabaseHash(auditHardware)
+			self._mysql.insert(table, data)
 		
 	def auditHardware_updateObject(self, auditHardware):
-		pass
+		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
+		
+		logger.info(u"Updating auditHardware: %s" % auditHardware)
+		self.auditHardware_insertObject(auditHardware)
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
-		logger.info(u"Getting auditHardware, filter: %s" % filter)
+		
+		logger.info(u"Getting auditHardwares, filter: %s" % filter)
 		auditHardwares = []
 		hardwareClasses = []
 		hardwareClass = filter.get('hardwareClass')
@@ -1714,14 +1761,190 @@ class MySQLBackend(ConfigDataBackend):
 		return auditHardwares
 	
 	def auditHardware_deleteObjects(self, auditHardwares):
-		pass
-
-
-
-
-
-
-
+		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
+		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
+			logger.info(u"Deleting auditHardware: %s" % auditHardware)
+			where = self._uniqueAuditHardwareCondition(auditHardware)
+			self._mysql.delete( u'HARDWARE_DEVICE_' + auditHardware.getHardwareClass(), where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwareOnHosts                                                                      -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def _uniqueAuditHardwareOnHostCondition(self, auditHardwareOnHost):
+		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
+		hardwareIds = self._getHardwareIds(self, auditHardware):
+		where = u''
+		for (attribute, value) in auditHardwareOnHost.items():
+			if value is None:
+				continue
+			if (attribute == 'state'):
+				if where: where += u' and '
+				where += u"`audit_%s` = %s" % (attribute, forceAuditState(value))
+				continue
+			elif (attribute == 'hostId'):
+				if where: where += u' and '
+				where += u"`%s` = '%s'" % (attribute, forceHostId(value))
+				continue
+			elif attribute in ('firstseen', 'lastseen'):
+				if where: where += u' and '
+				where += u"`audit_%s` = '%s'" % (attribute, forceOpsiTimestamp(value))
+				continue
+			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+			if valueInfo is None:
+				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
+			scope = valueInfo.get('Scope', '')
+			if (scope != 'i'):
+				auditHardware[attribute] = value
+				continue
+			if where: where += u' and '
+			type = valueInfo.get('Type', '')
+			if type.startswith('varchar'):
+				where += u"`%s` = '%s'" % (attribute, forceUnicode(value))
+			elif (type.find('int') != -1):
+				where += u"`%s` = %s" % (attribute, forceInt(value))
+			elif (type == 'double'):
+				where += u"`%s` = %s" % (attribute, forceFloat(value))
+			else:
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+		
+		
+		
+		return where
+	
+	def _extractAuditHardwareHash(self, auditHardwareOnHost):
+		if hasattr(auditHardwareOnHost, 'toHash'):
+			auditHardwareOnHost = auditHardwareOnHost.toHash()
+		
+		hardwareClass = auditHardwareOnHost['hardwareClass']
+		
+		auditHardware = { 'type': 'AuditHardware' }
+		auditHardwareOnHostNew = { 'type': 'AuditHardwareOnHost' }
+		for (attribute, value) in auditHardwareOnHost.items():
+			if value is None:
+				continue
+			if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+				auditHardwareOnHostNew[attribute] = value
+				continue
+			if attribute in ('hardwareClass'):
+				auditHardware[attribute] = value
+				auditHardwareOnHostNew[attribute] = value
+				continue
+			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+			if valueInfo is None:
+				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
+			scope = valueInfo.get('Scope', '')
+			if (scope == 'g'):
+				auditHardware[attribute] = value
+			auditHardwareOnHostNew[attribute] = value
+		return (auditHardware, auditHardwareOnHostNew)
+		
+	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
+		hardwareClass = auditHardwareOnHost.getHardwareClass()
+		if self._auditHardwareConfig.get(hardwareClass) is None:
+			raise BackendConfigurationError(u"Hardware class '%s' not found in config" % hardwareClass)
+		
+		data = auditHardwareOnHost.toHash()
+		del data['hardwareClass']
+		
+		auditHardware = { 'hardwareClass': hardwareClass, 'type': 'AuditHardware' }
+		
+		for attribute in data.keys():
+			if (attribute == 'state'):
+				data['audit_%s' % attribute] = forceAuditState(data[attribute])
+				continue
+			elif (attribute == 'hostId'):
+				data[attribute] = forceHostId(data[attribute])
+				continue
+			elif attribute in ('firstseen', 'lastseen'):
+				data['audit_%s' % attribute] = forceOpsiTimestamp(data[attribute])
+				continue
+			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+			if valueInfo is None:
+				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
+			scope = valueInfo.get('Scope', '')
+			if (scope != 'i'):
+				auditHardware[attribute] = data[attribute]
+				continue
+			type = valueInfo.get('Type', '')
+			if type.startswith('varchar'):
+				data[attribute] = forceUnicode(data[attribute])
+			elif (type.find('int') != -1):
+				data[attribute] = forceInt(data[attribute])
+			elif (type == 'double'):
+				data[attribute] = forceFloat(data[attribute])
+			else:
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+		
+		for res in self._mysql.getSet( u'SELECT hardware_id from `HARDWARE_DEVICE_%s` where %s' \
+					% (hardwareClass, self._uniqueAuditHardwareCondition(auditHardware)) ):
+			data['hardware_id'] = res['hardware_id']
+		
+		return data
+		
+	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
+		
+		hardwareClass = auditHardwareOnHost.getHardwareClass()
+		table = u'HARDWARE_CONFIG_' + hardwareClass
+		where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
+		if not self._mysql.getSet( u'SELECT config_id from `%s` where %s' % (table, where) ):
+			data = self._auditHardwareOnHostObjectToDatabaseHash(auditHardwareOnHost)
+			self._mysql.insert(table, data)
+		
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
+		
+		logger.info(u"Updating auditHardware: %s" % auditHardwareOnHost)
+		self.auditHardwareOnHost_insertObject(auditHardwareOnHost)
+		
+	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting auditHardwareOnHosts, filter: %s" % filter)
+		auditHardwareOnHosts = []
+		hardwareClasses = []
+		hardwareClass = filter.get('hardwareClass')
+		if not hardwareClass is None:
+			for hwc in forceUnicodeList(hardwareClass):
+				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
+				for key in self._auditHardwareConfig.keys():
+					if regex.search(key):
+						if not key in hardwareClasses:
+							hardwareClasses.append(key)
+			if not hardwareClasses:
+				return auditHardwares
+		if not hardwareClasses:
+			for key in self._auditHardwareConfig.keys():
+				hardwareClasses.append(key)
+		
+		if filter.has_key('hardwareClass'):
+			del filter['hardwareClass']
+		
+		for hardwareClass in hardwareClasses:
+			for res in self._mysql.getSet(self._createQuery(u'HARDWARE_CONFIG_' + hardwareClass, attributes, filter)):
+				res['hardwareClass'] = hardwareClass
+				if res.has_key('config_id'):
+					del res['config_id']
+				for attribute in self._auditHardwareConfig[hardwareClass].keys():
+					if not res.has_key(attribute):
+						res[attribute] = None
+				auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(res))
+		
+		return auditHardwareOnHosts
+	
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
+		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost)
+			where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
+			self._mysql.delete( u'HARDWARE_CONFIG_' + auditHardwareOnHost.getHardwareClass(), where)
+	
+	
+	
+	
+	
+	
+	
 
 
 

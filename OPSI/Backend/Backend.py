@@ -864,8 +864,23 @@ class ConfigDataBackend(BackendIdentExtension):
 			raise Exception(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 		
 		return classes
-
-
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwareOnHosts                                                                      -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
+		auditHardwareOnHost.setDefaults()
+	
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		pass
+	
+	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
+		pass
+	
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+		pass
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -2448,11 +2463,56 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	
 	def auditHardware_delete(self, hardwareClass, **kwargs):
 		if hardwareClass is None: hardwareClass  = []
+		for key in kwargs.keys():
+			if kwargs[key] is None: kwargs[key] = []
+		
 		return self._backend.auditHardware_deleteObjects(
 				self._backend.auditHardware_getObjects(
-					hardwareClass  = hardwareClass, **kwargs))
+					hardwareClass  = hardwareClass,
+					**kwargs ))
 	
-
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwareOnHosts                                                                      -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditHardwareOnHost_createObjects(self, auditHardwareOnHosts):
+		result = []
+		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
+		for auditHardwareOnHost in auditHardwareOnHosts:
+			logger.info(u"Creating %s" % auditHardwareOnHost)
+			self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
+		return result
+	
+	def auditHardwareOnHost_updateObjects(self, auditHardwareOnHosts):
+		result = []
+		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
+		return result
+	
+	def auditHardwareOnHost_create(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
+		hash = locals()
+		del hash['self']
+		return self.auditHardwareOnHost_createObjects(AuditHardwareOnHost.fromHash(hash))
+	
+	def auditHardwareOnHost_delete(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
+		if hostId is None:        hostId  = []
+		if hardwareClass is None: hardwareClass  = []
+		if firstseen is None:     firstseen  = []
+		if lastseen is None:      lastseen  = []
+		if state is None:         state  = []
+		for key in kwargs.keys():
+			if kwargs[key] is None: kwargs[key] = []
+		
+		return self._backend.auditHardwareOnHost_deleteObjects(
+				self._backend.auditHardwareOnHost_getObjects(
+					hostId         = hostId,
+					hardwareClass  = hardwareClass,
+					firstseen      = firstseen,
+					lastseen       = lastseen,
+					state          = state,
+					**kwargs ))
+	
+	
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS DEPOTSERVERBACKEND                                         =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''

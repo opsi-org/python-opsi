@@ -234,7 +234,7 @@ class IniFile(ConfigFile):
 		else:
 			self._configParser = ConfigParser.SafeConfigParser()
 		try:
-			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines)) )
+			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines).replace('%%', '%')) )
 		except Exception, e:
 			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 		
@@ -276,7 +276,7 @@ class IniFile(ConfigFile):
 		
 		data = StringIO.StringIO()
 		self._configParser.write(data)
-		self._lines = data.getvalue().decode('utf-8').replace('\r', '').split('\n')
+		self._lines = data.getvalue().decode('utf-8').replace('\r', '').replace('%', '%%').split('\n')
 		
 		self.open('w')
 		self.writelines()
