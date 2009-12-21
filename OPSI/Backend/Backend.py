@@ -1248,7 +1248,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def configState_insertObject(self, configState):
 		if self._deleteConfigStateIfDefault:
 			configs = self._backend.config_getObjects(attributes = ['defaultValues'], id = configState.configId)
-			if configs and (len(configs[0].defaultValues) == len(configState.values)):
+			if configs and not configs[0].defaultValues and (len(configs[0].defaultValues) == len(configState.values)):
 				isDefault = True
 				for v in configState.values:
 					if not v in configs[0].defaultValues:
@@ -1262,7 +1262,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def configState_updateObject(self, configState):
 		if self._deleteConfigStateIfDefault:
 			configs = self._backend.config_getObjects(attributes = ['defaultValues'], id = configState.configId)
-			if configs and (len(configs[0].defaultValues) == len(configState.values)):
+			if configs and not configs[0].defaultValues is None and (len(configs[0].defaultValues) == len(configState.values)):
 				isDefault = True
 				for v in configState.values:
 					if not v in configs[0].defaultValues:

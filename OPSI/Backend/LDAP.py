@@ -174,7 +174,7 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfigState' ],
 					'attributes': [
-						{ 'opsiAttribute': 'configId',              'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'configId',        'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'objectId',        'ldapAttribute': 'opsiObjectId' },
 						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValues' }
 					]
@@ -552,16 +552,25 @@ class LDAPBackend(ConfigDataBackend):
 		
 		print ">>>>>>>>>>>>>>>>>>>> HALLLLOOOOOOO"
 		
-		dn = 'cn=%s,%s' % (config.id, self._configStateContainerDn)
+		containerDn = 'cn=%s,%s' % (configState.objectId, self._configStateContainerDn)
+		self._createOrganizationalRole(containerDn)
+		dn = 'cn=%s,%s' % (configState.configId, containerDn)
 		
 		logger.info(u"Creating ConfigState: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(configState, dn)
 		ldapObject.writeToDirectory(self._ldap)
 	
 	def configState_updateObject(self, configState):
+		print ">>>>>>>>>>>>>>>>>>>> UPDATE 1"
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
+		print ">>>>>>>>>>>>>>>>>>>> UPDATE"
 		
+		dn = 'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
+		
+		logger.info(u"Updating configState: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, configState)
 	
 	def configState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
@@ -582,6 +591,13 @@ class LDAPBackend(ConfigDataBackend):
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 	
+		logger.error(u"DELETING configStates %s" % configStates)
+		for configState in forceObjectClassList(configStates, ConfigState):
+			dn = 'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting configState: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
