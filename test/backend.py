@@ -961,7 +961,6 @@ class BackendTest(object):
 		#for configState in configStates:
 		#	assert not (configState.objectId == self.configState2.objectId and configState.configId == self.configState2.configId)
 		
-		print "------------------------------- update configState"
 		self.configState3.setValues([True])
 		self.backend.configState_updateObject(self.configState3)
 		configStates = self.backend.configState_getObjects(objectId = self.configState3.getObjectId(), configId = self.configState3.getConfigId())
