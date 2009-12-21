@@ -43,7 +43,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-from OPSI import Tools
+#from OPSI import Tools
 
 # Get logger instance
 logger = Logger()
@@ -228,8 +228,8 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
-						
+						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' }
+					]
 				},
 				{
 					'opsiClass':     'ProductDependency',
@@ -241,11 +241,6 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
 						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
-						
-						
-						
-						
-						
 						{ 'opsiAttribute': 'name',                  'ldapAttribute': 'opsiProductName' },
 						{ 'opsiAttribute': 'licenseRequired',       'ldapAttribute': 'opsiProductLicenseRequired' },
 						{ 'opsiAttribute': 'setupScript',           'ldapAttribute': 'opsiSetupScript' },
@@ -261,7 +256,7 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'changelog',             'ldapAttribute': 'opsiProductChangeLog' },
 						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' }
 					]
-				},
+				}
 				 
 				 
 			]

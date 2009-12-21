@@ -383,13 +383,13 @@ attributetype ( 1.3.6.1.4.1.23807.5.1.5
 	DESC 'reference to required product objects'
 	SINGLE-VALUE )
 
-attributetype ( 1.3.6.1.4.1.23807.3.1.7
+attributetype ( 1.3.6.1.4.1.23807.5.1.7
 	NAME 'opsiRequiredProductId'
 	DESC 'opsi required Product ID'
 	EQUALITY caseIgnoreMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
 	SINGLE-VALUE )
-	
+
 attributetype ( 1.3.6.1.4.1.23807.5.1.6
 	NAME 'opsiRequiredProductClassReference'
 	SUP opsiProductClassReference
@@ -500,6 +500,14 @@ objectclass ( 1.3.6.1.4.1.23807.14.2.1
 	MAY ( opsiValues ) )
 
 #15 ProductProperty
+
+attributetype ( 1.3.6.1.4.1.23807.15.1.1
+	NAME 'opsiPropertyId'
+	DESC 'opsi Property ID'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
 
 objectclass ( 1.3.6.1.4.1.23807.15.2.1
 	NAME 'opsiProductProperty'
@@ -673,7 +681,7 @@ objectclass ( 1.3.6.1.4.1.23807.12.2.1
 # $OID: 1.3.6.1.4.1.23807.13 (ProductProperty) $
 
 objectclass ( 1.3.6.1.4.1.23807.13.2.1
-	NAME 'opsiProductProperty'
+	NAME 'opsiProductPropertie'
 	SUP top
 	STRUCTURAL
 	DESC 'product property'
