@@ -596,7 +596,7 @@ class Config(Entity):
 	
 	def setMultiValue(self, multiValue):
 		self.multiValue = forceBool(multiValue)
-		if (len(self.defaultValues) > 1):
+		if not self.defaultValues is None and (len(self.defaultValues) > 1):
 			self.multiValue = True
 	
 	@staticmethod

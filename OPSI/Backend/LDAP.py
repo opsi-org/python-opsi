@@ -148,11 +148,11 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses': [ 'opsiConfig' ],
 					'attributes': [
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'cn' },
-						{ 'opsiAttribute': 'description',     'ldapAttribute': 'configDescription' },
-						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'defaultValues' },
-						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'possibleValues' },
-						{ 'opsiAttribute': 'editable',        'ldapAttribute': 'editable' },
-						{ 'opsiAttribute': 'multiValue',      'ldapAttribute': 'multiValue' }
+						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiConfigDescription' },
+						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'opsiDefaultValues' },
+						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'opsiPossibleValues' },
+						{ 'opsiAttribute': 'editable',        'ldapAttribute': 'opsiEditable' },
+						{ 'opsiAttribute': 'multiValue',      'ldapAttribute': 'opsiMultiValue' }
 					]
 				},
 				{
@@ -168,7 +168,17 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses':  [ 'opsiConfig', 'opsiBoolConfig' ],
 					'attributes': [
 					]
-				 }
+				 },
+				 {
+					'opsiClass':     'ConfigState',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiConfigState' ],
+					'attributes': [
+						{ 'opsiAttribute': 'configId',              'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'objectId',        'ldapAttribute': 'opsiObjectId' },
+						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValues' }
+					]
+				}
 				 
 				 
 			]
@@ -206,7 +216,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 	def _objectFilterToLDAPFilter(self, filter):
 		
-		print "Filter: %s" % filter
+		#print "Filter: %s" % filter
 		ldapFilter = None
 		filters = []
 		objectTypes = []
@@ -394,7 +404,7 @@ class LDAPBackend(ConfigDataBackend):
 			if not attributes or attribute in attributes:
 				opsiObjectHash[attribute] = value
 		
-		print "=============>>>>", opsiObjectHash
+		#print "=============>>>>", opsiObjectHash
 		
 		return Class.fromHash(opsiObjectHash)
 	
@@ -419,7 +429,7 @@ class LDAPBackend(ConfigDataBackend):
 		for (attribute, value) in opsiObject.toHash().items():
 			if (attribute == 'type'):
 				continue
-			print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",value
+			#print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",value
 			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
 				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
 			else:
@@ -539,13 +549,36 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
+		
+		print ">>>>>>>>>>>>>>>>>>>> HALLLLOOOOOOO"
+		
+		dn = 'cn=%s,%s' % (config.id, self._configStateContainerDn)
+		
+		logger.info(u"Creating ConfigState: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(configState, dn)
+		ldapObject.writeToDirectory(self._ldap)
 	
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
+		
+		
 	
 	def configState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
-	
+		
+		logger.info(u"Getting configState, filter %s" % filter)
+		configStates = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ConfigState']
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._configStateContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			configStates.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return configStates
+		
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 	
