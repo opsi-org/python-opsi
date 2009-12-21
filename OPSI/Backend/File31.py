@@ -227,6 +227,7 @@ class File31Backend(ConfigDataBackend):
 		return
 	
 	def _getIdents(self, objType, **filter):
+		logger.debug(u"Getting idents for '%s' with filter '%s'" % (objType, filter))
 		objIdents = []
 		
 		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
@@ -326,9 +327,45 @@ class File31Backend(ConfigDataBackend):
 							objIdents.append(productProperty.toHash())
 		
 		elif objType in ('ConfigState'):
-			print "#######################################"
-			print filter
-			print "#######################################"
+			filenames = []
+			
+			#if ini, but no hostid -> unhandled exception
+			if 'objectId' in filter:
+				for objectId in forceHostIdList(filter['objectId']):
+					if os.path.isfile(os.path.join(self.__depotConfigDir, objectId, u'depot.ini')):
+						filenames.append(os.path.join(self.__depotConfigDir, forceHostId(objectId), u'depot.ini'))
+					elif os.path.isfile(os.path.join(self.__clientConfigDir, objectId + u'.ini')):
+						filenames.append(os.path.join(self.__clientConfigDir, forceHostId(objectId) + u'.ini'))
+			else:
+				for entry in os.listdir(self.__depotConfigDir):
+					if os.path.isfile(os.path.join(self.__depotConfigDir, entry, u'depot.ini')):
+						filenames.append(os.path.join(self.__depotConfigDir, forceHostId(entry), u'depot.ini'))
+				
+				for entry in os.listdir(self.__clientConfigDir):
+					if os.path.isfile(os.path.join(self.__clientConfigDir, entry[:-4] + u'.ini')):
+						filenames.append(os.path.join(self.__clientConfigDir, forceHostId(entry[:-4]) + u'.ini'))
+			
+			for filename in filenames:
+				iniFile = IniFile(filename = filename)
+				iniFile.create()
+				cp = iniFile.parse()
+				
+				if cp.has_section('generalconfig'):
+					objectId = os.path.basename(filename)[:-4]
+					if objectId == 'depot.ini':
+						objectId = os.path.basename(os.path.dirname(filename))[:-4]
+					
+					for option in cp.options('generalconfig'):
+						objIdents.append(
+							{
+							'configId': option,
+							'objectId': objectId,
+							'values': cp.get('generalconfig', option)
+							}
+						)
+		
+		else:
+			logger.warning(u"Unhandled object type '%s'" % objType)
 		
 		if not objIdents:
 			return objIdents
@@ -457,12 +494,6 @@ class File31Backend(ConfigDataBackend):
 									value = value.split(u':', 1)[1]
 						
 						objHash[m['attribute']] = value
-						
-						if objType == 'ConfigState':
-							print "attribute",   attribute
-							print "section",     section
-							print "option",      option
-							print "value",       value
 				
 				elif (fileType == 'pro'):
 					packageControlFile = PackageControlFile(filename = filename)
@@ -1137,5 +1168,53 @@ class File31Backend(ConfigDataBackend):
 		self._delete(productOnClients)
 		logger.notice(u"Deleted productOnClients.")
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductPropertyStates                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productPropertyState_insertObject(self, productPropertyState):
+		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
+		
+		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
+		
+		logger.notice(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
+		self._write(productPropertyState, mode = 'create')
+		logger.notice(u"Inserted productPropertyState.")
+	
+	def productPropertyState_updateObject(self, productPropertyState):
+		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
+		
+		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
+		
+		logger.notice(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
+		self._write(productPropertyState, mode = 'update')
+		logger.notice(u"Updated productPropertyState: '%s'" % productPropertyState.getIdent())
+	
+	def productPropertyState_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting productPropertyStates ...")
+		result = self._read('ProductPropertyState', attributes, **filter)
+		logger.notice(u"Got productPropertyStates.")
+		
+		return result
+	
+	def productPropertyState_deleteObjects(self, productPropertyStates):
+		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
+		
+		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
+		
+		logger.notice(u"Deleting productPropertyStates ...")
+		self._delete(productPropertyStates)
+		logger.notice(u"Deleted productPropertyStates.")
+	
+	
+	
+	
+	
+
+
+
+
+
 
 
