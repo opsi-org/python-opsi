@@ -868,12 +868,16 @@ class ConfigDataBackend(BackendIdentExtension):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditHardwareOnHost_setObsolete(self, hostId):
+		pass
+	
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		auditHardwareOnHost.setDefaults()
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
-		pass
+		auditHardwareOnHost.setLastseen(timestamp())
+		auditHardwareOnHost.setState(1)
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		pass
@@ -1211,7 +1215,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def config_delete(self, id):
 		if id is None: id = []
 		return self._backend.config_deleteObjects(
-				config_getObjects(
+				self.config_getObjects(
 					id = forceUnicodeLowerList(id)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2446,8 +2450,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
 		for auditHardware in auditHardwares:
-			logger.info(u"Creating %s" % auditHardware)
-			self._backend.auditHardware_insertObject(auditHardware)
+			data = auditHardware.toHash()
+			if self.auditHardware_getObjects(attributes = [], **data):
+				logger.info(u"%s already exists, nothing to do" % auditHardware)
+			else:
+				self._backend.auditHardware_insertObject(auditHardware)
 		return result
 	
 	def auditHardware_updateObjects(self, auditHardwares):
@@ -2478,10 +2485,17 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
 		for auditHardwareOnHost in auditHardwareOnHosts:
-			logger.info(u"Creating %s" % auditHardwareOnHost)
-			self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
+			data = auditHardwareOnHost.toHash()
+			del data['firstseen']
+			del data['lastseen']
+			del data['state']
+			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **data):
+				logger.info(u"%s already exists, updating" % auditHardwareOnHost)
+				self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
+			else:
+				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
 		return result
-	
+		
 	def auditHardwareOnHost_updateObjects(self, auditHardwareOnHosts):
 		result = []
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):

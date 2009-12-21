@@ -2340,6 +2340,10 @@ class AuditHardware(Entity):
 	def getHardwareClass(self):
 		return self.hardwareClass
 	
+	def serialize(self):
+		hash = self.toHash()
+		return hash
+	
 	@staticmethod
 	def fromHash(hash):
 		if hash.has_key('type'): del hash['type']
@@ -2412,11 +2416,15 @@ class AuditHardwareOnHost(Relationship):
 	def setState(self, state):
 		self.state = forceAuditState(state)
 	
+	def serialize(self):
+		hash = self.toHash()
+		return hash
+	
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'AuditHardwareOnHost'
-		return Relationship.fromHash(hash)
-	
+		if hash.has_key('type'): del hash['type']
+		return AuditHardwareOnHost(**hash)
+		
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'AuditHardwareOnHost')

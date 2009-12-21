@@ -365,8 +365,42 @@ def compareVersions(v1, condition, v2):
 	
 	
 
-
-
+unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
+def removeUnit(x):
+	match = unitRegex.search(x)
+	if not match:
+		return x
+	
+	if (match.group(1).find('.') != -1):
+		value = float(match.group(1))
+	else:
+		value = int(match.group(1))
+	unit = match.group(2)
+	mult = 1000
+	
+	if unit.lower().endswith('hz'):
+		unit = unit[:-2]
+	elif unit.lower().endswith('bits'):
+		mult = 1024
+		unit = unit[:-4]
+	elif unit.lower().endswith('b'):
+		mult = 1024
+		unit = unit[:-1]
+	elif unit.lower().endswith('s') or unit.lower().endswith('v'):
+		unit = unit[:-1]
+	
+	if unit.endswith('n'):
+		return float(value)/(mult*mult)
+	if unit.endswith('m'):
+		return float(value)/(mult)
+	if unit.lower().endswith('k'):
+		return value*mult
+	if unit.endswith('M'):
+		return value*mult*mult
+	if unit.endswith('G'):
+		return value*mult*mult*mult
+	
+	return value
 
 
 

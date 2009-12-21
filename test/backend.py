@@ -240,7 +240,25 @@ class BackendTest(object):
 			windowsSoftwareIds = []
 		)
 		
-		self.localbootProducts = [ self.product2, self.product3, self.product4 ]
+		self.product5 = LocalbootProduct(
+			id                 = 'product4',
+			name               = u'Product 4',
+			productVersion     = "3.0",
+			packageVersion     = 25,
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = "uninstall.ins",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
+			priority           = 0,
+			description        = "",
+			advice             = "",
+			productClassNames  = [],
+			windowsSoftwareIds = []
+		)
+		
+		self.localbootProducts = [ self.product2, self.product3, self.product4, self.product5 ]
 		self.products.extend(self.localbootProducts)
 		
 		# ProductProperties
@@ -754,7 +772,7 @@ class BackendTest(object):
 			serialNumber        = 'xxxx-asjdks-sll3kf03-132290'
 		)
 		
-		self.auditHardwareOnHosts = [ self.auditHardwareOnHost1, self.auditHardwareOnHost2, self.auditHardwareOnHost3, self.auditHardwareOnHost4, self.auditHardwareOnHost6, self.auditHardwareOnHost6 ]
+		self.auditHardwareOnHosts = [ self.auditHardwareOnHost1, self.auditHardwareOnHost2, self.auditHardwareOnHost3, self.auditHardwareOnHost4, self.auditHardwareOnHost5, self.auditHardwareOnHost6 ]
 	
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
@@ -994,7 +1012,7 @@ class BackendTest(object):
 		for product in products:
 			logger.debug(product)
 			for p in self.products:
-				if (product.id == p.id):
+				if (product.id == p.id) and (product.productVersion == p.productVersion) and (product.packageVersion == p.packageVersion):
 					product = product.toHash()
 					p = p.toHash()
 					for (attribute, value) in p.items():
@@ -1262,6 +1280,7 @@ class BackendTest(object):
 		self.backend.auditHardware_createObjects(self.auditHardwares)
 		
 		auditHardwares = self.backend.auditHardware_getObjects()
+		logger.debug(u"expected(%s) == got(%s)" % (self.auditHardwares, auditHardwares))
 		assert len(auditHardwares) == len(self.auditHardwares)
 		
 		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHASSIS', 'COMPUTER_SYSTEM'])
