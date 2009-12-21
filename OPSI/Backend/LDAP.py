@@ -146,8 +146,9 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiClass':     'Config',
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfig' ],
+					'cn': 'id',
 					'attributes': [
-						{ 'opsiAttribute': 'id',              'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiConfigId' },
 						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiConfigDescription' },
 						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'opsiDefaultValues' },
 						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'opsiPossibleValues' },
@@ -178,7 +179,89 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'objectId',        'ldapAttribute': 'opsiObjectId' },
 						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValues' }
 					]
-				}
+				},
+				{
+					'opsiClass':     'Product',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiProduct' ],
+					'attributes': [
+						{ 'opsiAttribute': 'id',                    'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'name',                  'ldapAttribute': 'opsiProductName' },
+						{ 'opsiAttribute': 'licenseRequired',       'ldapAttribute': 'opsiProductLicenseRequired' },
+						{ 'opsiAttribute': 'setupScript',           'ldapAttribute': 'opsiSetupScript' },
+						{ 'opsiAttribute': 'uninstallScript',       'ldapAttribute': 'opsiUninstallScript' },
+						{ 'opsiAttribute': 'updateScript',          'ldapAttribute': 'opsiUpdateScript' },
+						{ 'opsiAttribute': 'alwaysScript',          'ldapAttribute': 'opsiAlwaysScript' },
+						{ 'opsiAttribute': 'onceScript',            'ldapAttribute': 'opsiOnceScript' },
+						{ 'opsiAttribute': 'customScript',          'ldapAttribute': 'opsiCustomScript' },
+						{ 'opsiAttribute': 'userLoginScript',       'ldapAttribute': 'opsiUserLoginScript' },
+						{ 'opsiAttribute': 'priority',        	    'ldapAttribute': 'opsiProductPriority' },
+						{ 'opsiAttribute': 'description',           'ldapAttribute': 'description' },
+						{ 'opsiAttribute': 'advice',                'ldapAttribute': 'opsiProductAdvice' },
+						{ 'opsiAttribute': 'changelog',             'ldapAttribute': 'opsiProductChangeLog' },
+						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' }
+					]
+				},
+				{
+					'opsiClass':      'LocalbootProduct',
+					'opsiSuperClass': 'Product',
+					'objectClasses':  [ 'opsiProduct', 'opsiLocalBootProduct' ],
+					'attributes': [
+					]
+				 },
+				 {
+					'opsiClass':     'NetbootProduct',
+					'opsiSuperClass': 'Product',
+					'objectClasses': [ 'opsiProduct', 'opsiNetBootProduct' ],
+					'attributes': [
+						{ 'opsiAttribute': 'pxeConfigTemplate',    'ldapAttribute': 'opsiPxeConfigTemplate' }
+					]
+				},
+				{
+					'opsiClass':     'ProductProperty',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiProductProperty' ],
+					'cn': 'id',
+					'attributes': [
+						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
+						
+				},
+				{
+					'opsiClass':     'ProductDependency',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiDependency' ],
+					'cn': 'id',
+					'attributes': [
+						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
+						
+						
+						
+						
+						
+						{ 'opsiAttribute': 'name',                  'ldapAttribute': 'opsiProductName' },
+						{ 'opsiAttribute': 'licenseRequired',       'ldapAttribute': 'opsiProductLicenseRequired' },
+						{ 'opsiAttribute': 'setupScript',           'ldapAttribute': 'opsiSetupScript' },
+						{ 'opsiAttribute': 'uninstallScript',       'ldapAttribute': 'opsiUninstallScript' },
+						{ 'opsiAttribute': 'updateScript',          'ldapAttribute': 'opsiUpdateScript' },
+						{ 'opsiAttribute': 'alwaysScript',          'ldapAttribute': 'opsiAlwaysScript' },
+						{ 'opsiAttribute': 'onceScript',            'ldapAttribute': 'opsiOnceScript' },
+						{ 'opsiAttribute': 'customScript',          'ldapAttribute': 'opsiCustomScript' },
+						{ 'opsiAttribute': 'userLoginScript',       'ldapAttribute': 'opsiUserLoginScript' },
+						{ 'opsiAttribute': 'priority',        	    'ldapAttribute': 'opsiProductPriority' },
+						{ 'opsiAttribute': 'description',           'ldapAttribute': 'description' },
+						{ 'opsiAttribute': 'advice',                'ldapAttribute': 'opsiProductAdvice' },
+						{ 'opsiAttribute': 'changelog',             'ldapAttribute': 'opsiProductChangeLog' },
+						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' }
+					]
+				},
 				 
 				 
 			]
@@ -429,6 +512,8 @@ class LDAPBackend(ConfigDataBackend):
 		for (attribute, value) in opsiObject.toHash().items():
 			if (attribute == 'type'):
 				continue
+			if (attribute == 'productClassIds'):
+				value = []
 			#print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",value
 			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
 				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
@@ -550,8 +635,6 @@ class LDAPBackend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
-		print ">>>>>>>>>>>>>>>>>>>> HALLLLOOOOOOO"
-		
 		containerDn = 'cn=%s,%s' % (configState.objectId, self._configStateContainerDn)
 		self._createOrganizationalRole(containerDn)
 		dn = 'cn=%s,%s' % (configState.configId, containerDn)
@@ -561,10 +644,7 @@ class LDAPBackend(ConfigDataBackend):
 		ldapObject.writeToDirectory(self._ldap)
 	
 	def configState_updateObject(self, configState):
-		print ">>>>>>>>>>>>>>>>>>>> UPDATE 1"
 		ConfigDataBackend.configState_updateObject(self, configState)
-		
-		print ">>>>>>>>>>>>>>>>>>>> UPDATE"
 		
 		dn = 'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
 		
@@ -604,22 +684,67 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
+		
+		dn = 'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
+		
+		logger.info(u"Creating Product: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(product, dn)
+		ldapObject.writeToDirectory(self._ldap)
 	
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
-	
+		
+		dn = 'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
+		logger.info(u"Updating product: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, product)
+		
 	def product_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 	
+		print ">>>>>>>>>>>>>>>>>>>>>>>>>>> getObject", filter
+		logger.info(u"Getting products, filter %s" % filter)
+		products = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'Product', 'LocalbootProduct', 'NetbootProduct' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return products
+		
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
 	
 	
+		logger.error(u"DELETING products %s" % products)
+		for product in forceObjectClassList(products, Product):
+			dn = 'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting products: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
+		
+		containerDn = 'cn=productProperties,cn=%s_%s-%s,%s' \
+			% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
+		
+		self._createOrganizationalRole(containerDn)
+		
+		dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
+		
+		logger.info(u"Creating ProductProperty: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(product, dn)
+		ldapObject.writeToDirectory(self._ldap)
+		
 	
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
@@ -630,6 +755,33 @@ class LDAPBackend(ConfigDataBackend):
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductDependencies                                                                       -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productDependency_insertObject(self, productDependency):
+		ConfigDataBackend.productDependency_insertObject(self, productDependency)
+		
+		containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
+			% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
+		self._createOrganizationalRole(containerDn)
+		
+		containerDn = 'cn=%s,%s' % (productDependency.productAction, containerDn)
+		self._createOrganizationalRole(containerDn)
+		
+		dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
+		
+		logger.info(u"Creating productDependency: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(product, dn)
+		ldapObject.writeToDirectory(self._ldap)
+		
+	def productDependency_updateObject(self, productDependency):
+		ConfigDataBackend.productDependency_updateObject(self, productDependency)
+	
+	def productDependency_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
+	
+	def productDependency_deleteObjects(self, productDependencies):
+		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
