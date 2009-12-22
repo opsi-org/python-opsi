@@ -1162,7 +1162,7 @@ class BoolProductProperty(ProductProperty):
 	
 	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, defaultValues=None):
 		ProductProperty.__init__(self, productId, productVersion, packageVersion, propertyId, description, [ True, False ], defaultValues, False, False)
-		if (len(self.defaultValues) > 1):
+		if not self.defaultValues is None and (len(self.defaultValues) > 1):
 			raise BackendBadValueError(u"Bool product property cannot have multiple default values: %s" % self.defaultValues)
 	
 	def setDefaults(self):
