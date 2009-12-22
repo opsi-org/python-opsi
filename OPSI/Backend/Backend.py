@@ -1818,9 +1818,10 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 									logger.debug(u"         %s" % productId)
 						
 						for productId in sequence:
-							logger.debug(u"   - adding results (productId: '%s', clientId: '%s')" % (productId, clientId))
 							actionRequest      = pocByClientIdAndProductId[clientId][productId].actionRequest
 							installationStatus = pocByClientIdAndProductId[clientId][productId].installationStatus
+							logger.debug(u"   - adding results (clientId: '%s', productId: '%s', installationStatus: '%s', actionRequest: '%s')" \
+										% (clientId, productId, installationStatus, actionRequest))
 							
 							if (not filter.get('installationStatus') or installationStatus in forceList(filter['installationStatus'])) \
 							   and (not filter.get('actionRequest') or actionRequest in forceList(filter['actionRequest'])):
