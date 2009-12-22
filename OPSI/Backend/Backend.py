@@ -1617,16 +1617,24 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_getObjects(self, attributes=[], **filter):
-		addDefaults = ((not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
-				and (not filter.get('actionRequest') or 'none' in forceList(filter['actionRequest'])) \
-				and self._addProductOnClientDefaults) or self._processProductPriorities or self._processProductDependencies
+		addDefaults = self._addProductOnClientDefaults \
+				and (not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
+				and (not filter.get('actionRequest')      or 'none'          in forceList(filter['actionRequest']))
 		
 		# Get product states from backend
 		if self._processProductPriorities or self._processProductDependencies:
 			# We need all attributes in this case!
 			attributes = []
 		
-		productOnClients = self._backend.productOnClient_getObjects(attributes, **filter)
+		pocFilter = dict(filter)
+		if (addDefaults or self._processProductPriorities or self._processProductDependencies):
+			pocFilter = {}
+			for (key, value) in filter.items():
+				if key in ('installationStatus', 'actionRequest'):
+					continue
+			pocFilter[key] = value
+		
+		productOnClients = self._backend.productOnClient_getObjects(attributes, **pocFilter)
 		logger.debug(u"Got productOnClients")
 		
 		if addDefaults or self._processProductPriorities or self._processProductDependencies:
@@ -1666,7 +1674,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 			
 			# Create missing product states
-			# TODO: remove state if product not available on depot
+			# TODO: remove state if product not available on clients depot
+			#if addDefaults:
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					if not clientId in clientIds:
@@ -1688,7 +1697,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 								pocByClientIdAndProductId[clientId][pod.productId] = poc
 							else:
 								productOnClients.append(poc)
-			
+				
 			logger.debug(u"   * created productOnClient defaults")
 			#for (clientId, pocs) in pocByClientIdAndProductId.items():
 			#	for (productId, poc) in pocs.items():
@@ -1826,7 +1835,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 							if (not filter.get('installationStatus') or installationStatus in forceList(filter['installationStatus'])) \
 							   and (not filter.get('actionRequest') or actionRequest in forceList(filter['actionRequest'])):
 							   	   productOnClientsNew.append(pocByClientIdAndProductId[clientId][productId])
-							productOnClientsNew.append(pocByClientIdAndProductId[clientId][productId])
 				productOnClients = productOnClientsNew
 		return productOnClients
 	
