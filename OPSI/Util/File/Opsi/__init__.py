@@ -698,6 +698,7 @@ class PackageControlFile(TextFile):
 		for productProperty in self._productProperties:
 			self._lines.append( u'' )
 			self._lines.append( u'[ProductProperty]' )
+			self._lines.append( u'type: %s' % productProperty.getType() )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
 			if productProperty.getDescription():
 				self._lines.append( u'description: ' )
