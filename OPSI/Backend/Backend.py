@@ -1622,6 +1622,10 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				and self._addProductOnClientDefaults) or self._processProductPriorities or self._processProductDependencies
 		
 		# Get product states from backend
+		if self._processProductPriorities or self._processProductDependencies:
+			# We need all attributes in this case!
+			attributes = []
+		
 		productOnClients = self._backend.productOnClient_getObjects(attributes, **filter)
 		logger.debug(u"Got productOnClients")
 		
@@ -1657,6 +1661,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				pocByClientIdAndProductId[poc.clientId][poc.productId] = poc
 				
 			logger.debug(u"   * created pocByClientIdAndProductId")
+			#for (clientId, pocs) in pocByClientIdAndProductId.items():
+			#	for (productId, poc) in pocs.items():
+			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 			
 			# Create missing product states
 			# TODO: remove state if product not available on depot
@@ -1668,6 +1675,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					
 					for pod in productOnDepots[depotId]:
 						if not pocByClientIdAndProductId[clientId].has_key(pod.productId):
+							logger.debug(u"Creating default productOnClient for clientId '%s', productId '%s'" % (clientId, pod.productId))
 							# Create default
 							poc = ProductOnClient(
 									productId          = pod.productId,
@@ -1682,6 +1690,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 								productOnClients.append(poc)
 			
 			logger.debug(u"   * created productOnClient defaults")
+			#for (clientId, pocs) in pocByClientIdAndProductId.items():
+			#	for (productId, poc) in pocs.items():
+			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 			if self._processProductPriorities or self._processProductDependencies:
 				productOnClientsNew = []
 				logger.debug(u"   * processing product priorities/dependencies")
@@ -1807,14 +1818,14 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 									logger.debug(u"         %s" % productId)
 						
 						for productId in sequence:
-							logger.debug(u"   - adding results")
+							logger.debug(u"   - adding results (productId: '%s', clientId: '%s')" % (productId, clientId))
 							actionRequest      = pocByClientIdAndProductId[clientId][productId].actionRequest
 							installationStatus = pocByClientIdAndProductId[clientId][productId].installationStatus
 							
 							if (not filter.get('installationStatus') or installationStatus in forceList(filter['installationStatus'])) \
 							   and (not filter.get('actionRequest') or actionRequest in forceList(filter['actionRequest'])):
 							   	   productOnClientsNew.append(pocByClientIdAndProductId[clientId][productId])
-						
+							productOnClientsNew.append(pocByClientIdAndProductId[clientId][productId])
 				productOnClients = productOnClientsNew
 		return productOnClients
 	
