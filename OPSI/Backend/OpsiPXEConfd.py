@@ -112,6 +112,9 @@ class OpsiPXEConfdBackend(DataBackend):
 		except Exception, e:
 			raise BackendIOError(u"Failed to write PXE boot configuration: %s" % e)
 	
+	def backend_exit(self):
+		pass
+	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductStates                                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

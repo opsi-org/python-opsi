@@ -394,11 +394,11 @@ class MySQLBackend(ConfigDataBackend):
 				condition += u"`%s` = '%s'" % (arg, value)
 		return condition
 	
-	def exit(self):
+	def backend_exit(self):
 		pass
 	
-	def base_delete(self):
-		ConfigDataBackend.base_delete(self)
+	def backend_deleteBase(self):
+		ConfigDataBackend.backend_deleteBase(self)
 		# Drop database
 		errors = 0
 		done = False
@@ -413,8 +413,8 @@ class MySQLBackend(ConfigDataBackend):
 					done = False
 					errors += 1
 		
-	def base_create(self):
-		ConfigDataBackend.base_create(self)
+	def backend_createBase(self):
+		ConfigDataBackend.backend_createBase(self)
 		# Hardware audit database
 		tables = {}
 		logger.debug(u"Current tables:")
@@ -2031,7 +2031,7 @@ class MySQLBackend(ConfigDataBackend):
 					if v is None:
 						pass
 					elif attribute in ('hostId'):
-						v = forceHostId(v)
+						v = forceUnicode(v)
 					elif attribute in ('audit_state'):
 						v = forceAuditState(v)
 					elif attribute in ('audit_firstseen', 'audit_lastseen'):

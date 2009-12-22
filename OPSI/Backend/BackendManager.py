@@ -123,9 +123,9 @@ class BackendManager(ExtendedBackend):
 		exec(u'from %s import %sBackend' % (l['module'], l['module']))
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 		
-	def exit(self):
-		logger.debug(u"Calling exit() on backend %s" % self._backend)
-		self._backend.exit()
+	def backend_exit(self):
+		logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
+		self._backend.backend_exit()
 	
 class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, **kwargs):

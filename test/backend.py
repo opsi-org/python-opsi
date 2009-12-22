@@ -776,11 +776,11 @@ class BackendTest(object):
 	
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
-		self.backend.base_delete()
+		self.backend.backend_deleteBase()
 	
 	def testObjectMethods(self):
 		logger.notice(u"Creating base")
-		self.backend.base_create()
+		self.backend.backend_createBase()
 		
 		# Hosts
 		logger.notice(u"Testing host methods")

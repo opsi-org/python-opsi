@@ -16,12 +16,12 @@ jsonrpcBackend = JSONRPCBackend(username = 'username', password = 'password', ad
 
 bt = BackendTest(jsonrpcBackend)
 #bt.cleanupBackend()
-#jsonrpcBackend.base_create()
+#jsonrpcBackend.backend_createBase()
 #bt.testObjectMethods()
 #bt.testNonObjectMethods()
 bt.testMultithreading()
 
-jsonrpcBackend.exit()
+jsonrpcBackend.backend_exit()
 
 
 

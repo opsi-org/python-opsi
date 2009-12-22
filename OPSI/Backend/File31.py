@@ -839,6 +839,10 @@ class File31Backend(ConfigDataBackend):
 			logger.warning(u"unhandled objType: '%s'" % objType)
 		
 	
+	
+	def backend_exit(self):
+		pass
+	
 	def base_create(self):
 		os.mkdir(self.__baseDir)
 		os.mkdir(self.__clientConfigDir)

@@ -111,7 +111,7 @@ class Backend:
 			elif option in ('password'):
 				self._password = value
 		
-	def getInterface(self):
+	def backend_getInterface(self):
 		methods = {}
 		for member in inspect.getmembers(self, inspect.ismethod):
 			methodName = member[0]
@@ -151,7 +151,7 @@ class Backend:
 			methodList.append(methods[methodName])
 		return methodList
 	
-	def exit(self):
+	def backend_exit(self):
 		pass
 
 
@@ -316,10 +316,10 @@ class ConfigDataBackend(BackendIdentExtension):
 			if not attribute in possibleAttributes:
 				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
 	
-	def base_create(self):
+	def backend_createBase(self):
 		pass
 	
-	def base_delete(self):
+	def backend_deleteBase(self):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -906,11 +906,11 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 						'Scope': value["Scope"]
 					}
 		
-	def exit(self):
+	def backend_exit(self):
 		if self._backend:
-			self._backend.exit()
+			self._backend.backend_exit()
 	
-	def searchObjects(self, filter):
+	def backend_searchObjects(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
@@ -2563,9 +2563,9 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotBackend._depotId)
 		self._packageManager = DepotserverPackageManager(self)
 		
-	def exit(self):
+	def backend_exit(self):
 		if self._backend:
-			self._backend.exit()
+			self._backend.backend_exit()
 	
 	def log_write(self, logType, data, objectId=None, append=True):
 		logType = forceUnicode(logType)

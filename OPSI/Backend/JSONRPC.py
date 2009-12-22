@@ -125,13 +125,13 @@ class JSONRPCBackend(Backend):
 	
 	def __del__(self):
 		try:
-			self.exit()
+			self.backend_exit()
 		except:
 			pass
 	
-	def exit(self):
+	def backend_exit(self):
 		if self._connected:
-			self._jsonRPC('exit')
+			self._jsonRPC('backend_exit')
 			self._disconnect()
 	
 	def _createInstanceMethods(self):
@@ -143,7 +143,7 @@ class JSONRPCBackend(Backend):
 				keywords   = method['keywords']
 				defaults   = method['defaults']
 				
-				if (methodName == 'exit'):
+				if (methodName == 'backend_exit'):
 					continue
 				
 				argString = u''
@@ -220,7 +220,7 @@ class JSONRPCBackend(Backend):
 			if not self._interface:
 				self._retry = False
 				try:
-					self._interface = self._jsonRPC(u'getInterface')
+					self._interface = self._jsonRPC(u'backend_getInterface')
 				finally:
 					self._retry = True
 			self._createInstanceMethods()

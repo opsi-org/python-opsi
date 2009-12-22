@@ -396,15 +396,15 @@ class LDAPBackend(ConfigDataBackend):
 			organizationalRole.writeToDirectory(self._ldap)
 			logger.info(u"Organizational role '%s' created" % dn)
 	
-	def base_delete(self):
-		ConfigDataBackend.base_delete(self)
+	def backend_deleteBase(self):
+		ConfigDataBackend.backend_deleteBase(self)
 		ldapobj = LDAPObject(self._opsiBaseDn)
 		if ldapobj.exists(self._ldap):
 			ldapobj.deleteFromDirectory(self._ldap, recursive = True)
 		
 		
-	def base_create(self):
-		ConfigDataBackend.base_create(self)
+	def backend_createBase(self):
+		ConfigDataBackend.backend_createBase(self)
 		
 		# Create some containers
 		self._createOrganizationalRole(self._opsiBaseDn)
@@ -418,6 +418,10 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productClassesContainerDn)
 		self._createOrganizationalRole(self._productStatesContainerDn)
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
+	
+	
+	def backend_exit(self):
+		pass
 	
 	def _ldapObjectToOpsiObject(self, ldapObject, attributes=[]):
 		'''
@@ -529,7 +533,7 @@ class LDAPBackend(ConfigDataBackend):
 				continue
 			ldapObject.setAttribute(attribute, value)
 		ldapObject.writeToDirectory(self._ldap)
-		
+	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
