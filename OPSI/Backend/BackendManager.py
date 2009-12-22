@@ -122,14 +122,10 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 		exec(u'from %s import %sBackend' % (l['module'], l['module']))
 		return eval(u'%sBackend(**l["config"])' % l['module'])
-		
-	def backend_exit(self):
-		logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
-		self._backend.backend_exit()
+	
 	
 class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, **kwargs):
-		#ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
@@ -152,7 +148,6 @@ class BackendDispatcher(ConfigDataBackend):
 			raise BackendConfigurationError(u"Dispatcher not configured")
 		self.__loadBackends()
 		self._createInstanceMethods()
-		#ExtendedConfigDataBackend.__init__(self, **kwargs)
 	
 	def dispatcher_getConfig(self):
 		return self._dispatchConfig

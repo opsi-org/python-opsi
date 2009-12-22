@@ -151,6 +151,12 @@ class Backend:
 			methodList.append(methods[methodName])
 		return methodList
 	
+	def backend_setOptions(self):
+		pass
+	
+	def backend_getOptions(self, options):
+		return {}
+	
 	def backend_exit(self):
 		pass
 
@@ -180,7 +186,17 @@ class ExtendedBackend(Backend):
 		
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
-
+	
+	def backend_exit(self):
+		logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
+		self._backend.backend_exit()
+	
+	def backend_setOptions(self, options):
+		self._backend.backend_setOptions(options)
+	
+	def backend_getOptions(self):
+		return self._backend.backend_getOptions()
+	
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDIDENTEXTENSION                                        =
