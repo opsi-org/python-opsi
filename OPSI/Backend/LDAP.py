@@ -83,6 +83,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._generalConfigsContainerDn = 'cn=generalConfigs,' + self._opsiBaseDn
 		self._networkConfigsContainerDn = 'cn=networkConfigs,' + self._opsiBaseDn
 		self._productPropertiesContainerDn = 'cn=productProperties,' + self._opsiBaseDn
+		self._productOnDepotContainerDn = 'cn=productOnDepot,' + self._opsiBaseDn
 		self._hostAttributeDescription = 'opsiDescription'
 		self._hostAttributeNotes = 'opsiNotes'
 		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
@@ -149,9 +150,9 @@ class LDAPBackend(ConfigDataBackend):
 					'cn': 'id',
 					'attributes': [
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiConfigId' },
-						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiConfigDescription' },
-						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'opsiDefaultValues' },
-						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'opsiPossibleValues' },
+						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiDescription' },
+						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'opsiDefaultValue' },
+						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'opsiPossibleValue' },
 						{ 'opsiAttribute': 'editable',        'ldapAttribute': 'opsiEditable' },
 						{ 'opsiAttribute': 'multiValue',      'ldapAttribute': 'opsiMultiValue' }
 					]
@@ -177,7 +178,7 @@ class LDAPBackend(ConfigDataBackend):
 					'attributes': [
 						{ 'opsiAttribute': 'configId',        'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'objectId',        'ldapAttribute': 'opsiObjectId' },
-						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValues' }
+						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValue' }
 					]
 				},
 				{
@@ -185,6 +186,7 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProduct' ],
 					'attributes': [
+						{ 'opsiAttribute': 'id',                    'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'id',                    'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
@@ -223,38 +225,65 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiClass':     'ProductProperty',
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductProperty' ],
-					'cn': 'id',
 					'attributes': [
+						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'propertyId',            'ldapAttribute': 'opsiPropertyId' },
 						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' }
+						{ 'opsiAttribute': 'description',           'ldapAttribute': 'opsiDescription' },
+						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
+						{ 'opsiAttribute': 'possibleValues',        'ldapAttribute': 'opsiPossibleValue' },
+						{ 'opsiAttribute': 'defaultValues',         'ldapAttribute': 'opsiDefaultValue' },
+						{ 'opsiAttribute': 'editable',              'ldapAttribute': 'opsiEditable' },
+						{ 'opsiAttribute': 'multiValue',            'ldapAttribute': 'opsiMultiValue' }
+					]
+				},
+				{
+					'opsiClass':      'UnicodeProductProperty',
+					'opsiSuperClass': 'ProductProperty',
+					'objectClasses':  [ 'opsiProductProperty', 'opsiUnicodeProductProperty' ],
+					'attributes': [
+					]
+				 },
+				 {
+					'opsiClass':     'BoolProductProperty',
+					'opsiSuperClass': 'ProductProperty',
+					'objectClasses': [ 'opsiProductProperty', 'opsiUnicodeProductProperty' ],
+					'attributes': [
+						{ 'opsiAttribute': 'pxeConfigTemplate',    'ldapAttribute': 'opsiPxeConfigTemplate' }
 					]
 				},
 				{
 					'opsiClass':     'ProductDependency',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiDependency' ],
-					'cn': 'id',
+					'objectClasses': [ 'opsiProductDependency' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
-						{ 'opsiAttribute': 'name',                  'ldapAttribute': 'opsiProductName' },
-						{ 'opsiAttribute': 'licenseRequired',       'ldapAttribute': 'opsiProductLicenseRequired' },
-						{ 'opsiAttribute': 'setupScript',           'ldapAttribute': 'opsiSetupScript' },
-						{ 'opsiAttribute': 'uninstallScript',       'ldapAttribute': 'opsiUninstallScript' },
-						{ 'opsiAttribute': 'updateScript',          'ldapAttribute': 'opsiUpdateScript' },
-						{ 'opsiAttribute': 'alwaysScript',          'ldapAttribute': 'opsiAlwaysScript' },
-						{ 'opsiAttribute': 'onceScript',            'ldapAttribute': 'opsiOnceScript' },
-						{ 'opsiAttribute': 'customScript',          'ldapAttribute': 'opsiCustomScript' },
-						{ 'opsiAttribute': 'userLoginScript',       'ldapAttribute': 'opsiUserLoginScript' },
-						{ 'opsiAttribute': 'priority',        	    'ldapAttribute': 'opsiProductPriority' },
-						{ 'opsiAttribute': 'description',           'ldapAttribute': 'description' },
-						{ 'opsiAttribute': 'advice',                'ldapAttribute': 'opsiProductAdvice' },
-						{ 'opsiAttribute': 'changelog',             'ldapAttribute': 'opsiProductChangeLog' },
-						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' }
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'requiredProductId',             'ldapAttribute': 'opsiRequiredProductId' },
+						{ 'opsiAttribute': 'requiredAction',                'ldapAttribute': 'opsiActionRequired' },
+						{ 'opsiAttribute': 'productAction',                 'ldapAttribute': 'opsiProductAction' },
+						{ 'opsiAttribute': 'requiredProductVersion',        'ldapAttribute': 'opsiRequiredProductVersion' },
+						{ 'opsiAttribute': 'requiredPackageVersion',        'ldapAttribute': 'opsiRequiredPackageVersion' },
+						{ 'opsiAttribute': 'requiredInstallationStatus',    'ldapAttribute': 'opsiInstallationStatusRequired' },
+						{ 'opsiAttribute': 'requirementType',               'ldapAttribute': 'opsiRequirementType' }
+					]
+				},
+				{
+					'opsiClass':     'ProductOnDepot',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiProductOnDepot' ],
+					'attributes': [
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productType',                   'ldapAttribute': 'opsiProductType' },
+						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'depotId',                       'ldapAttribute': 'opsiDepotId' },
+						{ 'opsiAttribute': 'locked',                        'ldapAttribute': 'opsiLocked' }
 					]
 				}
 				 
@@ -334,7 +363,9 @@ class LDAPBackend(ConfigDataBackend):
 		for (attribute, values) in filter.items():
 			if (attribute == 'type'):
 				continue
-			
+			if (attribute == 'cn'):
+				continue
+				
 			if values is None:
 				continue
 			
@@ -418,6 +449,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productClassesContainerDn)
 		self._createOrganizationalRole(self._productStatesContainerDn)
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
+		self._createOrganizationalRole(self._productOnDepotContainerDn)
 	
 	
 	def backend_exit(self):
@@ -741,18 +773,52 @@ class LDAPBackend(ConfigDataBackend):
 		dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
 		
 		logger.info(u"Creating ProductProperty: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(product, dn)
+		ldapObject = self._opsiObjectToLdapObject(productProperty, dn)
 		ldapObject.writeToDirectory(self._ldap)
 		
 	
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
+		
+		containerDn = 'cn=productProperties,cn=%s_%s-%s,%s' \
+			% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
+		
+		dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
+		
+		logger.info(u"Updating ProductProperty: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, productProperty)
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting productProperty, filter %s" % filter)
+		properties = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			properties.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return properties
 	
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
+		
+		logger.error(u"DELETING productProperties %s" % productProperties)
+		for productProperty in forceObjectClassList(productProperties, ProductProperty):
+			containerDn = 'cn=productProperties,cn=%s_%s-%s,%s' \
+				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
+			
+			dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
+			
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting configState: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies                                                                       -
@@ -770,32 +836,108 @@ class LDAPBackend(ConfigDataBackend):
 		dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
 		
 		logger.info(u"Creating productDependency: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(product, dn)
+		ldapObject = self._opsiObjectToLdapObject(productDependency, dn)
 		ldapObject.writeToDirectory(self._ldap)
 		
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
-	
+		
+		containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
+			% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
+		containerDn = 'cn=%s,%s' % (productDependency.productAction, containerDn)
+		dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
+		
+		logger.info(u"Updating ProductDependency: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, productDependency)
+		
 	def productDependency_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting productDependency, filter %s" % filter)
+		dependencies = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ProductDependency' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			dependencies.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return dependencies
 	
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
+		
+		logger.error(u"DELETING productDependency %s" % productDependencies)
+		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
+			containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
+				% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
+			containerDn = 'cn=%s,%s' % (productDependency.productAction, containerDn)
+			dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
+			
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting productDependency: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
+		
+		#containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
+		#	% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion, self._productOnDepotContainerDn)
+		
+		containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
+		self._createOrganizationalRole(containerDn)
+		
+		dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
+		
+		logger.info(u"Creating ProductOnDepot: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(productOnDepot, dn)
+		ldapObject.writeToDirectory(self._ldap)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 	
+		containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
+		dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
+		
+		logger.info(u"Updating ProductOnDepot: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, productOnDepot)
+		
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting productOnDepot, filter %s" % filter)
+		products = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ProductOnDepot' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._productOnDepotContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return products
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
+		
+		logger.error(u"DELETING productDependency %s" % productOnDepots)
+		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
+			containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
+			dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
+			
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting productOnDepot: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
@@ -858,9 +1000,9 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 
 
-	
-	
-		
+
+
+
 
 
 
