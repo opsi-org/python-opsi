@@ -1126,7 +1126,7 @@ class BackendTest(object):
 		
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
 		productPropertyStates = self.backend.productPropertyState_getObjects()
-		#assert len(productPropertyStates) == len(self.productPropertyStates)
+		assert len(productPropertyStates) == len(self.productPropertyStates)
 		
 		
 		# Groups

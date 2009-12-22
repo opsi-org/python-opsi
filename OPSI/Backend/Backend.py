@@ -589,7 +589,7 @@ class ConfigDataBackend(BackendIdentExtension):
 					productId  = productPropertyState.productId,
 					propertyId = productPropertyState.propertyId):
 			raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
-				% (productPropertyState.productId, productPropertyState.propertyId))
+				% (productPropertyState.propertyId, productPropertyState.productId))
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		pass
