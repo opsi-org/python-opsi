@@ -1058,6 +1058,12 @@ class BackendTest(object):
 		assert len(productProperties) == len(self.productProperties) - 1
 		
 		self.backend.productProperty_createObjects(self.productProperty2)
+		self.backend.productProperty_createObjects(self.productProperty1)
+		productProperties = self.backend.productProperty_getObjects()
+		for productProperty in productProperties:
+			print productProperty.toHash()
+		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
+		assert len(productProperties) == len(self.productProperties)
 		
 		# ProductDependencies
 		logger.notice(u"Testing ProductDependency methods")

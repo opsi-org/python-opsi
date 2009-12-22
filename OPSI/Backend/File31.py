@@ -566,9 +566,6 @@ class File31Backend(ConfigDataBackend):
 	def _write(self, obj, mode='create'):
 		objType = obj.getType()
 		
-		print "########################################################################################"
-		print objType
-		
 		if (objType == 'OpsiConfigserver') and (self.__serverId != obj.getId()):
 			raise Exception(u"File31 backend can only handle config server '%s'" % self.__serverId)
 		
@@ -690,6 +687,8 @@ class File31Backend(ConfigDataBackend):
 						packageControlFile.setProduct(Product.fromHash(productHash))
 				
 				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+					print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+					print objType
 					oldList = []
 					newList = []
 					
@@ -705,13 +704,11 @@ class File31Backend(ConfigDataBackend):
 							if mode == 'create':
 								newList.append(obj)
 							else:
-								itemHash = item.toHash()
-								newHash = {}
+								oldHash = item.toHash()
+								newHash = obj.toHash()
 								for (attribute, value) in obj.toHash().items():
 									if value is None:
-										newHash[attribute] = itemHash[attribute]
-									else:
-										newHash[attribute] = value
+										newHash[attribute] = oldHash[attribute]
 								
 								Class = eval(objType)
 								newList.append(Class.fromHash(newHash))
@@ -895,6 +892,7 @@ class File31Backend(ConfigDataBackend):
 		
 		elif objType in ('Group'):
 			iniFile = IniFile(filename = self._getConfigFile('Group', {}, 'ini'))
+			iniFile.create()
 			cp = iniFile.parse()
 			for group in objList:
 				logger.info(u"Deleting group: '%s'" % group.getId())
