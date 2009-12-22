@@ -303,7 +303,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
-	
+		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
 			attributes = []
@@ -868,16 +868,12 @@ class ConfigDataBackend(BackendIdentExtension):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditHardwareOnHost_setObsolete(self, hostId):
-		pass
-	
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		auditHardwareOnHost.setDefaults()
-	
+		
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
-		auditHardwareOnHost.setLastseen(timestamp())
-		auditHardwareOnHost.setState(1)
+		pass
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		pass
@@ -898,6 +894,17 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		self._deleteConfigStateIfDefault = True
 		self._deleteProductPropertyStateIfDefault = True
 		self._returnObjectsOnUpdateAndCreate = True
+		self._auditHardwareConfig = {}
+		
+		if hasattr(self._backend, 'auditHardware_getConfig'):
+			for config in self._backend.auditHardware_getConfig():
+				hwClass = config['Class']['Opsi']
+				self._auditHardwareConfig[hwClass] = {}
+				for value in config['Values']:
+					self._auditHardwareConfig[hwClass][value['Opsi']] = {
+						'Type':  value["Type"],
+						'Scope': value["Scope"]
+					}
 		
 	def exit(self):
 		if self._backend:
@@ -2485,12 +2492,18 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
 		for auditHardwareOnHost in auditHardwareOnHosts:
-			data = auditHardwareOnHost.toHash()
-			del data['firstseen']
-			del data['lastseen']
-			del data['state']
-			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **data):
+			filter = { 'hardwareClass': auditHardwareOnHost.getHardwareClass() }
+			for attribute in self._auditHardwareConfig[auditHardwareOnHost.getHardwareClass()].keys():
+				if not hasattr(auditHardwareOnHost, attribute):
+					filter[attribute] = [ None ]
+					setattr(auditHardwareOnHost, attribute, None)
+				else:
+					filter[attribute] = getattr(auditHardwareOnHost, attribute)
+			
+			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
 				logger.info(u"%s already exists, updating" % auditHardwareOnHost)
+				auditHardwareOnHost.setLastseen(timestamp())
+				auditHardwareOnHost.setState(1)
 				self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
@@ -2525,6 +2538,13 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					state          = state,
 					**kwargs ))
 	
+	def auditHardwareOnHost_setObsolete(self, hostId):
+		if hostId is None: hostId  = []
+		hostId = forceHostIdList(hostId)
+		auditHardwareOnHosts = self.auditHardwareOnHost_getObjects(hostId = hostId, state = 1)
+		for i in range(len(auditHardwareOnHosts)):
+			auditHardwareOnHosts[i].setState(0)
+		self.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
 	
 	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
