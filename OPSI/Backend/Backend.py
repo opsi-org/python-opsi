@@ -1632,7 +1632,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			for (key, value) in filter.items():
 				if key in ('installationStatus', 'actionRequest'):
 					continue
-			pocFilter[key] = value
+				pocFilter[key] = value
 		
 		productOnClients = self._backend.productOnClient_getObjects(attributes, **pocFilter)
 		logger.debug(u"Got productOnClients")

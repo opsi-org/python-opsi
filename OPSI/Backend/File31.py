@@ -908,13 +908,13 @@ class File31Backend(ConfigDataBackend):
 	def backend_exit(self):
 		pass
 	
-	def base_create(self):
+	def backend_createBase(self):
 		os.mkdir(self.__baseDir)
 		os.mkdir(self.__clientConfigDir)
 		os.mkdir(self.__depotConfigDir)
 		os.mkdir(self.__productDir)
 	
-	def base_delete(self):
+	def backend_deleteBase(self):
 		if os.path.exists(self.__baseDir):
 			shutil.rmtree(self.__baseDir)
 	

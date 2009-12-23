@@ -18,19 +18,19 @@ file31Backend = File31Backend()
 
 
 
-pp0 = BoolProductProperty(
-	productId      = 'product1',
-	productVersion = 'pp0prodVe',
-	packageVersion = 'pp0packVe',
-	propertyId     = 'pp0propId',
-	description    = 'pp0desc',
-	defaultValues  = True
-)
-
-
+#pp0 = BoolProductProperty(
+#	productId      = 'product1',
+#	productVersion = 'pp0prodVe',
+#	packageVersion = 'pp0packVe',
+#	propertyId     = 'pp0propId',
+#	description    = 'pp0desc',
+#	defaultValues  = True
+#)
 
 #file31Backend.productProperty_deleteObjects([pp0])
 #exit()
+
+
 
 bt = BackendTest(ExtendedConfigDataBackend(file31Backend))
 bt.cleanupBackend()
