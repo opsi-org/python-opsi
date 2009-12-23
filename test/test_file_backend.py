@@ -10,7 +10,20 @@ from OPSI.Backend.Object import *
 from backend import *
 
 logger = Logger()
-logger.setConsoleLevel(LOG_CONFIDENTIAL)
+
+loglevel = LOG_NONE
+loglevel = LOG_COMMENT
+loglevel = LOG_CRITICAL
+loglevel = LOG_ERROR
+loglevel = LOG_WARNING
+loglevel = LOG_NOTICE
+loglevel = LOG_INFO
+#loglevel = LOG_DEBUG
+#loglevel = LOG_DEBUG2
+#loglevel = LOG_CONFIDENTIAL
+
+
+logger.setConsoleLevel(loglevel)
 logger.setConsoleColor(True)
 #logger.setConsoleFormat('%D [%L] %M (%F|%N)')
 

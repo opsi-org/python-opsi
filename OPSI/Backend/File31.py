@@ -436,7 +436,7 @@ class File31Backend(ConfigDataBackend):
 			if not filter.get(attribute):
 				continue
 			matched = False
-			logger.comment(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
+			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
 				(filter[attribute], attribute, value))
 			for filterValue in forceList(filter[attribute]):
 				if (filterValue == value):
@@ -454,7 +454,7 @@ class File31Backend(ConfigDataBackend):
 					matched = True
 					break
 			if matched:
-				logger.comment(u"Value '%s' matched filter '%s', attribute '%s'" % \
+				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
 					(value, filter[attribute], attribute))
 			else:
 				matchedAll = False
@@ -492,6 +492,9 @@ class File31Backend(ConfigDataBackend):
 		objects = []
 		for ident in self._getIdents(objType, **filter):
 			objHash = dict(ident)
+			
+			if objType == 'ProductPropertyState':
+				print "000 ",objType,"000",ident,"000"
 			
 			for (fileType, mapping) in mappings.items():
 				filename = self._getConfigFile(objType, ident, fileType)
@@ -545,7 +548,6 @@ class File31Backend(ConfigDataBackend):
 						objHash = packageControlFile.getProduct().toHash()
 					
 					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty'):
-						# TODO: no boolproperty?
 						for productProperty in packageControlFile.getProductProperties():
 							tmpHash = productProperty.toHash()
 							if self._objectHashMatches(tmpHash, **filter):
@@ -615,8 +617,6 @@ class File31Backend(ConfigDataBackend):
 				
 				objHash = obj.toHash()
 				
-				print objHash
-				
 				for (attribute, value) in objHash.items():
 					if value is None and (mode == 'update'):
 						continue
@@ -665,9 +665,6 @@ class File31Backend(ConfigDataBackend):
 						if not cp.has_section(section):
 							cp.add_section(section)
 						
-						print "#########################"
-						print "setting [", section, "] with option '", option, "' to value '", value, "'"
-						
 						cp.set(section, option, forceUnicode(value).replace('%', '%%'))
 				
 				iniFile.generate(cp)
@@ -687,8 +684,6 @@ class File31Backend(ConfigDataBackend):
 						packageControlFile.setProduct(Product.fromHash(productHash))
 				
 				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-					print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
-					print objType
 					oldList = []
 					newList = []
 					
@@ -698,22 +693,22 @@ class File31Backend(ConfigDataBackend):
 						oldList = packageControlFile.getProductProperties()
 					
 					objInOldList = False
-					for item in oldList:
-						if item.getIdent() == obj.getIdent():
+					for oldItem in oldList:
+						if oldItem.getIdent() == obj.getIdent():
 							objInOldList = True
+							
 							if mode == 'create':
 								newList.append(obj)
 							else:
-								oldHash = item.toHash()
-								newHash = obj.toHash()
+								newHash = oldItem.toHash()
 								for (attribute, value) in obj.toHash().items():
-									if value is None:
-										newHash[attribute] = oldHash[attribute]
+									if value is not None:
+										newHash[attribute] = value
 								
 								Class = eval(objType)
 								newList.append(Class.fromHash(newHash))
 						else:
-							newList.append(item)
+							newList.append(oldItem)
 					
 					if not objInOldList:
 						newList.append(obj)

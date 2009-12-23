@@ -1043,6 +1043,22 @@ class BackendTest(object):
 		productProperties = self.backend.productProperty_getObjects()
 		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
 		assert len(productProperties) == len(self.productProperties)
+		for productProperty in productProperties:
+			logger.debug(productProperty)
+			for p in self.productProperties:
+				if (productProperty.productId == p.productId)           and (productProperty.propertyId == p.propertyId) and \
+				   (productProperty.productVersion == p.productVersion) and (productProperty.packageVersion == p.packageVersion):
+					productProperty = productProperty.toHash()
+					p = p.toHash()
+					for (attribute, value) in p.items():
+						if not value is None:
+							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, productProperty[attribute]))
+							if type(value) is list:
+								for v in value:
+									assert v in productProperty[attribute]
+							else:
+								assert value == productProperty[attribute]
+					break
 		
 		self.productProperty2.setDescription(u'updatedfortest')
 		self.backend.productProperty_updateObject(self.productProperty2)
@@ -1128,12 +1144,15 @@ class BackendTest(object):
 		assert productOnClients[0].getClientId() == self.client1.getId()
 		
 		# ProductPropertyStates
-		logger.notice(u"Testing productPropertyState methods")
 		
+		logger.notice(u"Testing productPropertyState methods")
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
 		productPropertyStates = self.backend.productPropertyState_getObjects()
+		
+		logger.debug(u"expected(%s) == got(%s)" % (self.productPropertyStates, productPropertyStates))
 		assert len(productPropertyStates) == len(self.productPropertyStates)
 		
+		exit()
 		
 		# Groups
 		logger.notice(u"Testing group methods")
