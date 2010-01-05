@@ -348,7 +348,25 @@ class BackendTest(object):
 			locked         = False
 		)
 		
-		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3 ]
+		self.productOnDepot4 = ProductOnDepot(
+			productId      = self.product3.getId(),
+			productType    = self.product3.getType(),
+			productVersion = self.product3.getProductVersion(),
+			packageVersion = self.product3.getPackageVersion(),
+			depotId        = self.configserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot5 = ProductOnDepot(
+			productId      = self.product5.getId(),
+			productType    = self.product5.getType(),
+			productVersion = self.product5.getProductVersion(),
+			packageVersion = self.product5.getPackageVersion(),
+			depotId        = self.configserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3, self.productOnDepot4, self.productOnDepot5 ]
 		
 		# ProductOnClients
 		self.productOnClient1 = ProductOnClient(
