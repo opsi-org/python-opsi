@@ -1072,6 +1072,7 @@ class BackendTest(object):
 						if not value is None:
 							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, productProperty[attribute]))
 							if type(value) is list:
+								print "productProperty: ", productProperty
 								for v in value:
 									assert v in productProperty[attribute]
 							else:

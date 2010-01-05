@@ -543,15 +543,22 @@ class File31Backend(ConfigDataBackend):
 						objHash[m['attribute']] = value
 				
 				elif (fileType == 'pro'):
+					inside = False
+					
 					packageControlFile = PackageControlFile(filename = filename)
 					if   objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 						objHash = packageControlFile.getProduct().toHash()
 					
 					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty'):
 						for productProperty in packageControlFile.getProductProperties():
-							tmpHash = productProperty.toHash()
-							if self._objectHashMatches(tmpHash, **filter):
-								objHash = tmpHash
+							#TODO: unschön, auch für productdependency
+							for o in objects:
+								if productProperty.getIdent() == o.getIdent():
+									inside = True
+							if not inside:
+								tmpHash = productProperty.toHash()
+								if self._objectHashMatches(tmpHash, **filter):
+									objHash = tmpHash
 					
 					elif objType in ('ProductDependency'):
 						for productDependency in packageControlFile.getProductDependencies():

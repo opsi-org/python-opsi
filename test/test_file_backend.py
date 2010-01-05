@@ -18,8 +18,8 @@ loglevel = LOG_ERROR
 loglevel = LOG_WARNING
 loglevel = LOG_NOTICE
 loglevel = LOG_INFO
-#loglevel = LOG_DEBUG
-#loglevel = LOG_DEBUG2
+loglevel = LOG_DEBUG
+loglevel = LOG_DEBUG2
 #loglevel = LOG_CONFIDENTIAL
 
 
