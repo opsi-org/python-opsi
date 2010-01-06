@@ -403,13 +403,15 @@ class PackageControlFile(TextFile):
 				elif (key == 'requirementtype'):        value = forceRequirementType(value)
 			
 			elif (sectionType == 'productproperty' and key in \
-					['type', 'name', 'default', 'values', 'description']):
+					['type', 'name', 'default', 'values', 'description', 'editable', 'multivalue']):
 				option = key
 				if   (key == 'type'):        value = forceProductPropertyType(value)
 				elif (key == 'name'):        value = forceUnicodeLower(value)
 				elif (key == 'default'):     value = forceUnicode(value)
 				elif (key == 'values'):      value = forceUnicode(value)
 				elif (key == 'description'): value = forceUnicode(value)
+				elif (key == 'editable'):    value = forceBool(value)
+				elif (key == 'multivalue'):  value = forceBool(value)
 			
 			else:
 				value = forceUnicode(line)
@@ -564,11 +566,18 @@ class PackageControlFile(TextFile):
 				)
 			)
 			if isinstance(self._productProperties[-1], UnicodeProductProperty):
-					if productProperty.get('values'):
-						self._productProperties[-1].setPossibleValues(productProperty.get('values'))
+				if not productProperty.get('values') is None:
+					self._productProperties[-1].setPossibleValues(productProperty.get('values'))
+				if not productProperty.get('editable') is None:
+					self._productProperties[-1].setEditable(productProperty['editable'])
+				else:
+					if not productProperty.get('values') is None:
 						self._productProperties[-1].setEditable(False)
 					else:
 						self._productProperties[-1].setEditable(True)
+				if not productProperty.get('multivalue') is None:
+					self._productProperties[-1].setMultiValue(productProperty['multivalue'])
+				
 			self._productProperties[-1].setDefaults()
 		self._parsed = True
 		return self._sections
@@ -700,6 +709,9 @@ class PackageControlFile(TextFile):
 			self._lines.append( u'[ProductProperty]' )
 			self._lines.append( u'type: %s' % productProperty.getType() )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
+			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+				self._lines.append( u'multivalue: %s' % productProperty.getMultiValue() )
+				self._lines.append( u'editable: %s' % productProperty.getEditable() )
 			if productProperty.getDescription():
 				self._lines.append( u'description: ' )
 				descLines = productProperty.getDescription().split(u'\\n')
@@ -710,7 +722,10 @@ class PackageControlFile(TextFile):
 			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
 			if productProperty.getDefaultValues():
-				self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
+				if isinstance(productProperty, BoolProductProperty):
+					self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
+				else:
+					self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
 		
 		if not self._product.getChangelog() is None:
 			self._lines.append( u'' )
