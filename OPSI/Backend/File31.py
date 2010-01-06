@@ -163,8 +163,13 @@ class File31Backend(ConfigDataBackend):
 			'ProductPropertyState': [
 				{ 'fileType': 'ini', 'attribute': 'values', 'section': '<productId>-install', 'option': '<propertyId>',    'json': True }
 			],
-			'ClientGroup': [
-				{ 'fileType': 'ini', 'attribute': 'values', 'section': '<groupId>', 'option': '<clientId>' }
+			'Group': [
+				{ 'fileType': 'ini', 'attribute': 'description',   'section': '<id>', 'option': 'description'   },
+				{ 'fileType': 'ini', 'attribute': 'parentGroupId', 'section': '<id>', 'option': 'parentgroupid' },
+				{ 'fileType': 'ini', 'attribute': 'notes',         'section': '<id>', 'option': 'notes'         }
+			],
+			'ObjectToGroup': [
+				{ 'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>' }
 			]
 		}
 		
@@ -177,6 +182,8 @@ class File31Backend(ConfigDataBackend):
 		self._mappings['NetbootProduct'].append({ 'fileType': 'pro', 'attribute': 'pxeConfigTemplate', 'object': 'product' })
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
+		self._mappings['HostGroup'] = self._mappings['Group']
+		#self._mappings['HostGroup'].append({ 'fileType': 'ini', 'attribute': '*', 'object': '<hostId>' })
 	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
@@ -205,7 +212,7 @@ class File31Backend(ConfigDataBackend):
 					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
 				else:
 					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
-			elif objType in ('Group'):
+			elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 				return os.path.join(self.__clientGroupsFile)
 		
 		elif (fileType == 'pro'):
@@ -261,13 +268,7 @@ class File31Backend(ConfigDataBackend):
 									{
 									'productId':          section[:-6],
 									'productType':        cp.get(section, 'productType'),
-									'clientId':           hostId,
-									'installationStatus': cp.get(section, 'installationStatus'),
-									'actionRequest':      cp.get(section, 'actionRequest'),
-									'actionProgress':     cp.get(section, 'actionProgress'),
-									'productVersion':     cp.get(section, 'productVersion'),
-									'packageVersion':     cp.get(section, 'packageVersion'),
-									'lastStateChange':    cp.get(section, 'lastStateChange')
+									'clientId':           hostId
 									}
 								)
 					else:
@@ -327,10 +328,10 @@ class File31Backend(ConfigDataBackend):
 					packageControlFile = PackageControlFile(filename = filename)
 					if objType == 'ProductDependency':
 						for productDependency in packageControlFile.getProductDependencies():
-							objIdents.append(productDependency.toHash())
+							objIdents.append(productDependency.getIdent(returnType = 'dict'))
 					else:
 						for productProperty in packageControlFile.getProductProperties():
-							objIdents.append(productProperty.toHash())
+							objIdents.append(productProperty.getIdent(returnType = 'dict'))
 		
 		elif objType in ('ConfigState'):
 			filenames = []
@@ -396,20 +397,35 @@ class File31Backend(ConfigDataBackend):
 							}
 						)
 		
-		elif objType in ('Group'):
+		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
+			iniFile.create()
 			cp = iniFile.parse()
 			
 			for section in cp.sections():
-				objIdents.append(
-					{
-					'id': section
-					}
-				)
+				if objType == 'ObjectToGroup':
+					for option in cp.options(section):
+						try:
+							if not option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
+								objIdents.append(
+									{
+									'groupId': section,
+									'objectId': forceHostId(option)
+									}
+								)
+						except:
+							logger.error(u"_getIdents(): Found bad option '%s' in section '%s' in file '%s'" \
+								% (option, section, filename))
+				else:
+					objIdents.append(
+						{
+						'id': section
+						}
+					)
 		
 		else:
-			logger.warning(u"Unhandled object type '%s'" % objType)
+			logger.warning(u"_getIdents(): Unhandled objType '%s'" % objType)
 		
 		if not objIdents:
 			return objIdents
@@ -493,9 +509,6 @@ class File31Backend(ConfigDataBackend):
 		for ident in self._getIdents(objType, **filter):
 			objHash = dict(ident)
 			
-			if objType == 'ProductPropertyState':
-				print "000 ",objType,"000",ident,"000"
-			
 			for (fileType, mapping) in mappings.items():
 				filename = self._getConfigFile(objType, ident, fileType)
 				
@@ -517,7 +530,7 @@ class File31Backend(ConfigDataBackend):
 						if match:
 							replaceValue = objHash[match.group(1)]
 							if objType in ('ProductOnClient'):
-								replaceValue.replace('LocabootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 							section = section.replace(u'<%s>' % match.group(1), replaceValue)
 						
 						match = self._placeholderRegex.search(option)
@@ -543,28 +556,28 @@ class File31Backend(ConfigDataBackend):
 						objHash[m['attribute']] = value
 				
 				elif (fileType == 'pro'):
-					inside = False
-					
 					packageControlFile = PackageControlFile(filename = filename)
+					
 					if   objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 						objHash = packageControlFile.getProduct().toHash()
 					
-					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty'):
-						for productProperty in packageControlFile.getProductProperties():
-							#TODO: unschön, auch für productdependency
-							for o in objects:
-								if productProperty.getIdent() == o.getIdent():
-									inside = True
-							if not inside:
-								tmpHash = productProperty.toHash()
-								if self._objectHashMatches(tmpHash, **filter):
-									objHash = tmpHash
-					
-					elif objType in ('ProductDependency'):
-						for productDependency in packageControlFile.getProductDependencies():
-							tmpHash = productDependency.toHash()
-							if self._objectHashMatches(tmpHash, **filter):
-								objHash = tmpHash
+					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+						knownObjects = []
+						if objType in ('ProductDependency'):
+							knownObjects = packageControlFile.getProductDependencies()
+						else:
+							knownObjects = packageControlFile.getProductProperties()
+						
+						for obj in knownObjects:
+							objIdent = obj.getIdent(returnType = 'dict')
+							matches = True
+							for (key, value) in ident.items():
+								if (objIdent[key] != value):
+									matches = False
+									break
+							if matches:
+								objHash = obj.toHash()
+								break
 			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
@@ -603,24 +616,25 @@ class File31Backend(ConfigDataBackend):
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename)
-				
-				if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver') and (mode == 'create'):
-					iniFile.delete()
-					iniFile.create()
-				
+				iniFile.create()
 				cp = iniFile.parse()
 				
-				if objType in ('Config', 'UnicodeConfig', 'BoolConfig') and (mode == 'create'):
-					if cp.has_section(obj.getId()):
-						cp.remove_section(obj.getId())
-				
-				if objType in ('ProductOnDepot', 'ProductOnClient') and (mode == 'create'):
-					if cp.has_section(obj.getProductId() + u'-state'):
-						cp.remove_section(obj.getProductId() + u'-state')
-				
-				if objType in ('ProductPropertyState') and (mode == 'create'):
-					if cp.has_section(obj.getPropertyId() + u'-install'):
-						cp.remove_section(obj.getPropertyId() + u'-install')
+				if (mode == 'create'):
+					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
+						iniFile.delete()
+						iniFile.create()
+					else:
+						newSection = ''
+						
+						if   objType in ('Config', 'UnicodeConfig', 'BoolConfig', 'Group', 'HostGroup'):
+							newSection = obj.getId()
+						elif objType in ('ProductOnDepot', 'ProductOnClient'):
+							newSection = obj.getProductId() + u'-state'
+						elif objType in ('ProductPropertyState'):
+							newSection = obj.getPropertyId() + u'-install'
+						
+						if newSection != '' and cp.has_section(newSection):
+							cp.remove_section(newSection)
 				
 				objHash = obj.toHash()
 				
@@ -638,7 +652,7 @@ class File31Backend(ConfigDataBackend):
 						if match:
 							replaceValue = objHash[match.group(1)]
 							if objType in ('ProductOnClient'):
-								replaceValue.replace('LocabootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 							section = section.replace(u'<%s>' % match.group(1), replaceValue)
 						
 						match = self._placeholderRegex.search(option)
@@ -892,8 +906,8 @@ class File31Backend(ConfigDataBackend):
 					cp.remove_section(productPropertyState.getProductId() + u"-install")
 					iniFile.generate(cp)
 		
-		elif objType in ('Group'):
-			iniFile = IniFile(filename = self._getConfigFile('Group', {}, 'ini'))
+		elif objType in ('Group', 'HostGroup'):
+			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
 			iniFile.create()
 			cp = iniFile.parse()
 			for group in objList:
@@ -902,8 +916,18 @@ class File31Backend(ConfigDataBackend):
 					cp.remove_section(group.getId())
 			iniFile.generate(cp)
 		
+		elif objType in ('ObjectToGroup'):
+			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
+			iniFile.create()
+			cp = iniFile.parse()
+			for objectToGroup in objList:
+				logger.info(u"Deleting ObjectToGroup: '%s'" % ObjectToGroup.getIdent())
+				if cp.has_section(ObjectToGroup.getGroupId()) and cp.has_option(ObjectToGroup.getObjectId()):
+					cp.remove_option(ObjectToGroup.getObjectId())
+			iniFile.generate(cp)
+		
 		else:
-			logger.warning(u"unhandled objType: '%s'" % objType)
+			logger.warning(u"_delete(): unhandled objType: '%s'" % objType)
 		
 	
 	
@@ -1303,7 +1327,7 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting groups ...")
-		result = self._read('Groups', attributes, **filter)
+		result = self._read('Group', attributes, **filter)
 		logger.notice(u"Got groups.")
 		
 		return result
@@ -1316,6 +1340,45 @@ class File31Backend(ConfigDataBackend):
 		logger.notice(u"Deleting groups ...")
 		self._delete(groups)
 		logger.notice(u"Deleted groups.")
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ObjectToGroups                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def objectToGroup_insertObject(self, objectToGroup):
+		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
+		
+		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
+		
+		logger.notice(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
+		self._write(objectToGroup, mode = 'create')
+		logger.notice(u"Inserted objectToGroup.")
+	
+	def objectToGroup_updateObject(self, objectToGroup):
+		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
+		
+		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
+		
+		logger.notice(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
+		self._write(objectToGroup, mode = 'update')
+		logger.notice(u"Updated objectToGroup.")
+	
+	def objectToGroup_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting objectToGroups ...")
+		result = self._read('ObjectToGroup', attributes, **filter)
+		logger.notice(u"Got objectToGroups.")
+		
+		return result
+	
+	def objectToGroup_deleteObjects(self, objectToGroups):
+		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
+		
+		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
+		
+		logger.notice(u"Deleting objectToGroups ...")
+		self._delete(objectToGroups)
+		logger.notice(u"Deleted objectToGroups.")
 	
 	
 	
