@@ -244,7 +244,7 @@ class File31Backend(ConfigDataBackend):
 		objIdents = []
 		
 		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			iniFile = IniFile(filename = self.__configFile)
+			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
 			iniFile.create()
 			cp = iniFile.parse()
 			for section in cp.sections():
@@ -259,7 +259,7 @@ class File31Backend(ConfigDataBackend):
 					
 					if objType == 'ProductOnClient':
 						iniFile = IniFile(filename = self._getConfigFile(
-							'ProductOnClient', {'clientId': hostId}, 'ini'))
+							objType, {'clientId': hostId}, 'ini'))
 						iniFile.create()
 						cp = iniFile.parse()
 						for section in cp.sections():
@@ -285,7 +285,7 @@ class File31Backend(ConfigDataBackend):
 					
 					if objType == 'ProductOnDepot':
 						iniFile = IniFile(filename = self._getConfigFile(
-							'ProductOnDepot', {'depotId': hostId}, 'ini'))
+							objType, {'depotId': hostId}, 'ini'))
 						iniFile.create()
 						cp = iniFile.parse()
 						for section in cp.sections():
@@ -333,28 +333,28 @@ class File31Backend(ConfigDataBackend):
 						for productProperty in packageControlFile.getProductProperties():
 							objIdents.append(productProperty.getIdent(returnType = 'dict'))
 		
-		elif objType in ('ConfigState'):
-			filenames = []
+		elif objType in ('ConfigState', 'ProductPropertyState'):
+			objectIds = []
 			
 			for entry in os.listdir(self.__clientConfigDir):
 				if not entry.lower().endswith('.ini'):
 					continue
+				
 				try:
-					forceHostId(entry[:-4])
-					filenames.append(os.path.join(self.__clientConfigDir, entry))
+					objectIds.append(forceHostId(entry[:-4]))
 				except:
 					pass
 			
-			for filename in filenames:
-				objectId = forceHostId(os.path.basename(filename)[:-4])
+			for objectId in objectIds:
 				if not self._objectHashMatches({'objectId': objectId }, **filter):
 					continue
 				
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = self._getConfigFile(
+					objType, {'objectId': objectId}, 'ini'))
 				iniFile.create()
 				cp = iniFile.parse()
 				
-				if cp.has_section('generalconfig'):
+				if objType == 'ConfigState' and cp.has_section('generalconfig'):
 					for option in cp.options('generalconfig'):
 						objIdents.append(
 							{
@@ -362,40 +362,19 @@ class File31Backend(ConfigDataBackend):
 							'objectId': objectId
 							}
 						)
-		
-		elif objType in ('ProductPropertyState'):
-			filenames = []
-			
-			for entry in os.listdir(self.__clientConfigDir):
-				if not entry.lower().endswith('.ini'):
-					continue
-				try:
-					forceHostId(entry[:-4])
-					filenames.append(os.path.join(self.__clientConfigDir, entry))
-				except:
-					pass
-			
-			for filename in filenames:
-				objectId = forceHostId(os.path.basename(filename)[:-4])
-				if not self._objectHashMatches({'objectId': objectId }, **filter):
-					continue
-				
-				iniFile = IniFile(filename = filename)
-				iniFile.create()
-				cp = iniFile.parse()
-				
-				for section in cp.sections():
-					if not section.endswith('-install'):
-						continue
-					
-					for option in cp.options(section):
-						objIdents.append(
-							{
-							'productId': section[:-8],
-							'propertyId': option,
-							'objectId': objectId
-							}
-						)
+				elif objType == 'ProductPropertyState':
+					for section in cp.sections():
+						if not section.endswith('-install'):
+							continue
+						
+						for option in cp.options(section):
+							objIdents.append(
+								{
+								'productId': section[:-8],
+								'propertyId': option,
+								'objectId': objectId
+								}
+							)
 		
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
@@ -458,17 +437,21 @@ class File31Backend(ConfigDataBackend):
 				if (filterValue == value):
 					matched = True
 					break
+				
 				if type(value) is list:
 					if filterValue in value:
 						matched = True
 						break
 					continue
+				
 				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
 					# TODO: still necessary?
 					continue
+				
 				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
 					matched = True
 					break
+			
 			if matched:
 				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
 					(value, filter[attribute], attribute))
@@ -589,7 +572,8 @@ class File31Backend(ConfigDataBackend):
 		objType = obj.getType()
 		
 		if (objType == 'OpsiConfigserver') and (self.__serverId != obj.getId()):
-			raise Exception(u"File31 backend can only handle config server '%s'" % self.__serverId)
+			raise Exception(u"File31 backend can only handle config server '%s', not '%s'" \
+				% (self.__serverId, obj.getId()))
 		
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
@@ -762,7 +746,7 @@ class File31Backend(ConfigDataBackend):
 			hostKeys.generate()
 		
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			iniFile = IniFile(filename = self._getConfigFile('Config', [], 'ini'))
+			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
 			iniFile.create()
 			cp = iniFile.parse()
 			for config in objList:
@@ -777,10 +761,7 @@ class File31Backend(ConfigDataBackend):
 			for configState in objList:
 				logger.info(u"Deleting configState in host: '%s'" % configState.getObjectId())
 				iniFile = IniFile(filename = self._getConfigFile(
-					'ConfigState',
-					configState.getIdent(returnType = 'dict'),
-					'ini')
-				)
+					objType, configState.getIdent(returnType = 'dict'), 'ini'))
 				cp = iniFile.parse()
 				if cp.has_option('generalconfig', configState.getConfigId()):
 					cp.remove_option('generalconfig', configState.getConfigId())
@@ -867,17 +848,14 @@ class File31Backend(ConfigDataBackend):
 					hostIds.append(tmpId)
 			
 			for hostId in hostIds:
-				iniFile = None
+				filename = None
 				
 				if objType == 'ProductOnDepot':
-					iniFile = IniFile(filename = self._getConfigFile(
-						'ProductOnDepot', {'depotId': hostId}, 'ini')
-					)
+					filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
 				elif objType == 'ProductOnClient':
-					iniFile = IniFile(filename = self._getConfigFile(
-						'ProductOnClient', {'clientId': hostId}, 'ini')
-					)
+					filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
 				
+				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
 				
 				for p in objList:
@@ -897,11 +875,9 @@ class File31Backend(ConfigDataBackend):
 			for productPropertyState in objList:
 				logger.info(u"Deleting productPropertyState in host: '%s'" % productPropertyState.getObjectId())
 				iniFile = IniFile(filename = self._getConfigFile(
-					'ProductPropertyState',
-					productPropertyState.getIdent(returnType = 'dict'),
-					'ini')
-				)
+					objType, productPropertyState.getIdent(returnType = 'dict'), 'ini'))
 				cp = iniFile.parse()
+				
 				if cp.has_section(productPropertyState.getProductId() + u"-install"):
 					cp.remove_section(productPropertyState.getProductId() + u"-install")
 					iniFile.generate(cp)
@@ -950,7 +926,7 @@ class File31Backend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		
-		host = forceObjectClass(host, Host)
+		#host = forceObjectClass(host, Host)
 		
 		logger.notice(u"Inserting host: '%s'" % host.getIdent())
 		self._write(host, mode = 'create')
@@ -959,7 +935,7 @@ class File31Backend(ConfigDataBackend):
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
-		host = forceObjectClass(host, Host)
+		#host = forceObjectClass(host, Host)
 		
 		logger.notice(u"Updating host: '%s'" % host.getIdent())
 		self._write(host, mode = 'update')
@@ -996,7 +972,7 @@ class File31Backend(ConfigDataBackend):
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		config = forceObjectClass(config, Config)
+		#config = forceObjectClass(config, Config)
 		
 		logger.notice(u"Inserting config: '%s'" % config.getIdent())
 		self._write(config, mode = 'create')
@@ -1005,7 +981,7 @@ class File31Backend(ConfigDataBackend):
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
-		config = forceObjectClass(config, Config)
+		#config = forceObjectClass(config, Config)
 		
 		logger.notice(u"Updating config: '%s'" % config.getIdent())
 		self._write(config, mode = 'update')
@@ -1035,7 +1011,7 @@ class File31Backend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
-		configState = forceObjectClass(configState, ConfigState)
+		#configState = forceObjectClass(configState, ConfigState)
 		
 		logger.notice(u"Inserting configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'create')
@@ -1044,7 +1020,7 @@ class File31Backend(ConfigDataBackend):
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
-		configState = forceObjectClass(configState, ConfigState)
+		#configState = forceObjectClass(configState, ConfigState)
 		
 		logger.notice(u"Updating configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'update')
@@ -1063,6 +1039,7 @@ class File31Backend(ConfigDataBackend):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		
 		configStates = forceObjectClassList(configStates, ConfigState)
+		
 		logger.notice(u"Deleting configStates ...")
 		self._delete(configStates)
 		logger.notice(u"Deleted configStates.")
@@ -1073,7 +1050,7 @@ class File31Backend(ConfigDataBackend):
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
 		
-		product = forceObjectClass(product, Product)
+		#product = forceObjectClass(product, Product)
 		
 		logger.notice(u"Inserting product: '%s'" % product.getIdent())
 		self._write(product, mode = 'create')
@@ -1082,7 +1059,7 @@ class File31Backend(ConfigDataBackend):
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
 		
-		product = forceObjectClass(product, Product)
+		#product = forceObjectClass(product, Product)
 		
 		logger.notice(u"Updating product: '%s'" % product.getIdent())
 		self._write(product, mode = 'update')
@@ -1113,7 +1090,7 @@ class File31Backend(ConfigDataBackend):
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		
-		productProperty = forceObjectClass(productProperty, ProductProperty)
+		#productProperty = forceObjectClass(productProperty, ProductProperty)
 		
 		logger.notice(u"Inserting productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'create')
@@ -1122,7 +1099,7 @@ class File31Backend(ConfigDataBackend):
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		
-		productProperty = forceObjectClass(productProperty, ProductProperty)
+		#productProperty = forceObjectClass(productProperty, ProductProperty)
 		
 		logger.notice(u"Updating productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'update')
@@ -1152,7 +1129,7 @@ class File31Backend(ConfigDataBackend):
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
-		productDependency = forceObjectClass(productDependency, ProductDependency)
+		#productDependency = forceObjectClass(productDependency, ProductDependency)
 		
 		logger.notice(u"Inserting productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'create')
@@ -1161,7 +1138,7 @@ class File31Backend(ConfigDataBackend):
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		
-		productDependency = forceObjectClass(productDependency, ProductDependency)
+		#productDependency = forceObjectClass(productDependency, ProductDependency)
 		
 		logger.notice(u"Updating productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'update')
@@ -1191,7 +1168,7 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
-		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
+		#productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		
 		logger.notice(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'create')
@@ -1200,7 +1177,7 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		
-		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
+		#productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		
 		logger.notice(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'update')
@@ -1230,7 +1207,7 @@ class File31Backend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
-		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
+		#productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		
 		logger.notice(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'create')
@@ -1239,7 +1216,7 @@ class File31Backend(ConfigDataBackend):
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		
-		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
+		#productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		
 		logger.notice(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'update')
@@ -1269,7 +1246,7 @@ class File31Backend(ConfigDataBackend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		
-		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
+		#productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		
 		logger.notice(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'create')
@@ -1278,7 +1255,7 @@ class File31Backend(ConfigDataBackend):
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		
-		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
+		#productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		
 		logger.notice(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'update')
@@ -1308,7 +1285,7 @@ class File31Backend(ConfigDataBackend):
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
 		
-		group = forceObjectClass(group, Group)
+		#group = forceObjectClass(group, Group)
 		
 		logger.notice(u"Inserting group: '%s'" % group.getIdent())
 		self._write(group, mode = 'create')
@@ -1317,7 +1294,7 @@ class File31Backend(ConfigDataBackend):
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
 		
-		group = forceObjectClass(group, Group)
+		#group = forceObjectClass(group, Group)
 		
 		logger.notice(u"Updating group: '%s'" % group.getIdent())
 		self._write(group, mode = 'update')
@@ -1347,7 +1324,7 @@ class File31Backend(ConfigDataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
-		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
+		#objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		
 		logger.notice(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'create')
@@ -1356,7 +1333,7 @@ class File31Backend(ConfigDataBackend):
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
-		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
+		#objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		
 		logger.notice(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'update')
@@ -1385,10 +1362,6 @@ class File31Backend(ConfigDataBackend):
 	
 	
 	
-
-
-
-
 
 
 

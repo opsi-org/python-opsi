@@ -1005,8 +1005,6 @@ class BackendTest(object):
 		
 		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
 		assert len(configStates) == 1
-		print self.configState4.toHash()
-		print configStates[0].toHash()
 		assert configStates[0].getValues()[0] == self.configState4.getValues()[0]
 		
 		# Products
@@ -1072,7 +1070,6 @@ class BackendTest(object):
 						if not value is None:
 							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, productProperty[attribute]))
 							if type(value) is list:
-								print "productProperty: ", productProperty
 								for v in value:
 									assert v in productProperty[attribute]
 							else:
@@ -1095,8 +1092,6 @@ class BackendTest(object):
 		self.backend.productProperty_createObjects(self.productProperty2)
 		self.backend.productProperty_createObjects(self.productProperty1)
 		productProperties = self.backend.productProperty_getObjects()
-		for productProperty in productProperties:
-			print productProperty.toHash()
 		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
 		assert len(productProperties) == len(self.productProperties)
 		
