@@ -1136,6 +1136,12 @@ class BackendTest(object):
 		
 		assert len(productOnDepots) == len(self.productOnDepots) - 1
 		
+		self.productOnDepot2.setPackageVersion(9009)
+		self.backend.productOnDepot_updateObject(self.productOnDepot2)
+		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['packageVersion'], packageVersion = '9009' )
+		print productOnDepots
+		assert len(productOnDepots) == 1
+		
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		
 		# ProductOnClients
@@ -1156,6 +1162,19 @@ class BackendTest(object):
 		assert len(productOnClients) == 1
 		assert productOnClients[0].getProductId() == self.product2.getId()
 		assert productOnClients[0].getClientId() == self.client1.getId()
+		
+		self.productOnClient2.setLastStateChange('2010-01-01 05:55:55')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(lastStateChange = '2010-01-01 05:55:55')
+		assert len(productOnClients) == 1
+		
+		self.backend.productOnClient_createObjects(self.productOnClients)
+		self.backend.productOnClient_deleteObjects(self.productOnClient3)
+		productOnClients = self.backend.productOnClient_getObjects()
+		assert len(productOnClients) == len(self.productOnClients) -1
+		
+		self.backend.productOnClient_createObjects(self.productOnClients)
+		
 		
 		# ProductPropertyStates
 		
@@ -1179,7 +1198,7 @@ class BackendTest(object):
 		assert groups[0].getId() == self.groups[0].id
 		
 		self.group1.setDescription(u'new description')
-		self.backend.group_createObjects(self.group1)
+		self.backend.group_updateObject(self.group1)
 		
 		groups = self.backend.group_getObjects(description = self.group1.description)
 		assert len(groups) == 1
