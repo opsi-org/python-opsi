@@ -1136,12 +1136,6 @@ class BackendTest(object):
 		
 		assert len(productOnDepots) == len(self.productOnDepots) - 1
 		
-		self.productOnDepot2.setPackageVersion(9009)
-		self.backend.productOnDepot_updateObject(self.productOnDepot2)
-		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['packageVersion'], packageVersion = '9009' )
-		print productOnDepots
-		assert len(productOnDepots) == 1
-		
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		
 		# ProductOnClients

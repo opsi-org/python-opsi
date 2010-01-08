@@ -523,16 +523,22 @@ class ConfigDataBackend(BackendIdentExtension):
 	def productOnDepot_insertObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		productOnDepot.setDefaults()
-		products = self.product_getObjects(
+		if not self.product_getIdents(
 			id = productOnDepot.productId,
 			productVersion = productOnDepot.productVersion,
-			packageVersion = productOnDepot.packageVersion)
-		if not products:
+			packageVersion = productOnDepot.packageVersion):
+			
 			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
 				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 		
 	def productOnDepot_updateObject(self, productOnDepot):
-		pass
+		if not self.product_getIdents(
+			id = productOnDepot.productId,
+			productVersion = productOnDepot.productVersion,
+			packageVersion = productOnDepot.packageVersion):
+			
+			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnDepot, attributes, **filter)
