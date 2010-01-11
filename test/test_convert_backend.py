@@ -62,6 +62,7 @@ def check(one, two):
 			idents.append(obj.getIdent(returnType = 'unicode'))
 		
 		objects = eval('%s.%s_getObjects()' % (two, objectType))
+		logger.warning(u"expected: '%s' got: '%s'" % (idents, objects))
 		assert len(objects) == len(idents)
 		for obj in objects:
 			assert obj.getIdent(returnType = 'unicode') in idents
@@ -90,9 +91,18 @@ mysqlBackend.objectToGroup_createObjects(         fileBackend.objectToGroup_getO
 
 check('fileBackend', 'mysqlBackend')
 
+fileBackend.host_deleteObjects(                  fileBackend.host_getObjects()                 )
+fileBackend.config_deleteObjects(                fileBackend.config_getObjects()               )
+fileBackend.configState_deleteObjects(           fileBackend.configState_getObjects()          )
+fileBackend.product_deleteObjects(               fileBackend.product_getObjects()              )
+fileBackend.productProperty_deleteObjects(       fileBackend.productProperty_getObjects()      )
+fileBackend.productDependency_deleteObjects(     fileBackend.productDependency_getObjects()    )
+fileBackend.productOnDepot_deleteObjects(        fileBackend.productOnDepot_getObjects()       )
+fileBackend.productOnClient_deleteObjects(       fileBackend.productOnClient_getObjects()      )
+fileBackend.productPropertyState_deleteObjects(  fileBackend.productPropertyState_getObjects() )
+fileBackend.group_deleteObjects(                 fileBackend.group_getObjects()                )
+fileBackend.objectToGroup_deleteObjects(         fileBackend.objectToGroup_getObjects()        )
 
-
-#btfileBackend.cleanupBackend()
 
 #convert mysqlBackend -> btfileBackend
 fileBackend.host_createObjects(                  mysqlBackend.host_getObjects()                 )

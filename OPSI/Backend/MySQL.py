@@ -1110,9 +1110,9 @@ class MySQLBackend(ConfigDataBackend):
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
 		for product in forceObjectClassList(products, Product):
-			logger.info("Deleting product %s" % config)
+			logger.info("Deleting product %s" % product)
 			where = self._uniqueCondition(product)
-			self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
+			self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % product.getId())
 			self._mysql.delete('PRODUCT', where)
 	
 	

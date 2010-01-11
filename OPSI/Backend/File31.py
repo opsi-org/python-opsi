@@ -897,9 +897,9 @@ class File31Backend(ConfigDataBackend):
 			iniFile.create()
 			cp = iniFile.parse()
 			for objectToGroup in objList:
-				logger.info(u"Deleting ObjectToGroup: '%s'" % ObjectToGroup.getIdent())
-				if cp.has_section(ObjectToGroup.getGroupId()) and cp.has_option(ObjectToGroup.getObjectId()):
-					cp.remove_option(ObjectToGroup.getObjectId())
+				logger.info(u"Deleting ObjectToGroup: '%s'" % objectToGroup.getIdent())
+				if cp.has_option(objectToGroup.getGroupId(), objectToGroup.getObjectId()):
+					cp.remove_option(objectToGroup.getGroupId(), objectToGroup.getObjectId())
 			iniFile.generate(cp)
 		
 		else:
