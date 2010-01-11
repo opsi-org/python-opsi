@@ -84,6 +84,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._networkConfigsContainerDn = 'cn=networkConfigs,' + self._opsiBaseDn
 		self._productPropertiesContainerDn = 'cn=productProperties,' + self._opsiBaseDn
 		self._productOnDepotContainerDn = 'cn=productOnDepot,' + self._opsiBaseDn
+		self._productOnClientContainerDn = 'cn=productOnClient,' + self._opsiBaseDn
 		self._hostAttributeDescription = 'opsiDescription'
 		self._hostAttributeNotes = 'opsiNotes'
 		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
@@ -285,6 +286,23 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'depotId',                       'ldapAttribute': 'opsiDepotId' },
 						{ 'opsiAttribute': 'locked',                        'ldapAttribute': 'opsiLocked' }
 					]
+				},
+				{
+					'opsiClass':     'ProductOnClient',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiProductOnClient' ],
+					'attributes': [
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productType',                   'ldapAttribute': 'opsiProductType' },
+						{ 'opsiAttribute': 'clientId',                      'ldapAttribute': 'opsiClientId' },
+						{ 'opsiAttribute': 'installationStatus',            'ldapAttribute': 'opsiProductInstallationStatus' },
+						{ 'opsiAttribute': 'actionRequest',                 'ldapAttribute': 'opsiProductActionRequest' },
+						{ 'opsiAttribute': 'actionProgress',                'ldapAttribute': 'opsiProductActionProgress' },
+						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'lastStateChange',               'ldapAttribute': 'lastStateChange' }
+					]
 				}
 				 
 				 
@@ -450,6 +468,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productStatesContainerDn)
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
 		self._createOrganizationalRole(self._productOnDepotContainerDn)
+		self._createOrganizationalRole(self._productOnClientContainerDn)
 	
 	
 	def backend_exit(self):
@@ -927,7 +946,7 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
-		logger.error(u"DELETING productDependency %s" % productOnDepots)
+		logger.error(u"DELETING productOnDepot %s" % productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
 			dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
@@ -943,14 +962,57 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
+		#containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
+		#	% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion, self._productOnDepotContainerDn)
+		
+		containerDn = 'cn=%s,%s' % (productOnClient.clientId, self._productOnClientContainerDn)
+		self._createOrganizationalRole(containerDn)
+		
+		dn = 'cn=%s,%s' % (productOnClient.productId, containerDn)
+		
+		logger.info(u"Creating ProductOnClient: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(productOnClient, dn)
+		ldapObject.writeToDirectory(self._ldap)
+		
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
+		
+		containerDn = 'cn=%s,%s' % (productOnClient.clientId, self._productOnClientContainerDn)
+		dn = 'cn=%s,%s' % (productOnClient.productId, containerDn)
+		
+		logger.info(u"Updating ProductOnClient: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, productOnClient)
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting productOnClient, filter %s" % filter)
+		products = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ProductOnClient' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._productOnClientContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return products
 	
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
+		
+		logger.error(u"DELETING productOnClient %s" % productOnClients)
+		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
+			containerDn = 'cn=%s,%s' % (productOnClient.clientId, self._productOnClientContainerDn)
+			dn = 'cn=%s,%s' % (productOnClient.productId, containerDn)
+			
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting productOnClient: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
