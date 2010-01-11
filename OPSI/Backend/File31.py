@@ -183,7 +183,6 @@ class File31Backend(ConfigDataBackend):
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['HostGroup'] = self._mappings['Group']
-		#self._mappings['HostGroup'].append({ 'fileType': 'ini', 'attribute': '*', 'object': '<hostId>' })
 	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
@@ -198,9 +197,11 @@ class File31Backend(ConfigDataBackend):
 				return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
 			elif objType in ('ConfigState'):
 				if ( ident['objectId'] == self.__serverId ):
-					raise Exception(u"Can't handle configStates for ConfigServer")
+					#raise Exception(u"Can't handle configStates for ConfigServer")
+					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
 				elif os.path.isdir(os.path.join(self.__depotConfigDir, ident['objectId'])):
-					raise Exception(u"Can't handle configStates for DepotServer")
+					#raise Exception(u"Can't handle configStates for DepotServer")
+					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
 				else:
 					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('ProductOnDepot'):
@@ -260,7 +261,6 @@ class File31Backend(ConfigDataBackend):
 					if objType == 'ProductOnClient':
 						iniFile = IniFile(filename = self._getConfigFile(
 							objType, {'clientId': hostId}, 'ini'))
-						iniFile.create()
 						cp = iniFile.parse()
 						for section in cp.sections():
 							if section.endswith('-state'):
@@ -286,7 +286,6 @@ class File31Backend(ConfigDataBackend):
 					if objType == 'ProductOnDepot':
 						iniFile = IniFile(filename = self._getConfigFile(
 							objType, {'depotId': hostId}, 'ini'))
-						iniFile.create()
 						cp = iniFile.parse()
 						for section in cp.sections():
 							if section.endswith('-state'):
@@ -349,8 +348,12 @@ class File31Backend(ConfigDataBackend):
 				if not self._objectHashMatches({'objectId': objectId }, **filter):
 					continue
 				
-				iniFile = IniFile(filename = self._getConfigFile(
-					objType, {'objectId': objectId}, 'ini'))
+				filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
+				
+				if not os.path.isfile(filename):
+					continue
+				
+				iniFile = IniFile(filename = filename)
 				iniFile.create()
 				cp = iniFile.parse()
 				
@@ -571,9 +574,16 @@ class File31Backend(ConfigDataBackend):
 	def _write(self, obj, mode='create'):
 		objType = obj.getType()
 		
-		if (objType == 'OpsiConfigserver') and (self.__serverId != obj.getId()):
-			raise Exception(u"File31 backend can only handle config server '%s', not '%s'" \
-				% (self.__serverId, obj.getId()))
+		if (objType == 'OpsiConfigserver'):
+			if (self.__serverId != obj.getId()):
+				raise Exception(u"File31 backend can only handle this config server '%s', not '%s'" \
+					% (self.__serverId, obj.getId()))
+#		elif (objType == 'OpsiDepotserver'):
+#			if os.path.isfile(self._getConfigFile('OpsiClient', {'id':obj.getId()}, 'ini')):
+#				raise Exception(u"depot id is a client")
+#		elif (objType == 'OpsiClient'):
+#			if os.path.isfile(self._getConfigFile('OpsiDepotserver', {'id':obj.getId()}, 'ini')):
+#				raise Exception(u"client id is a depot")
 		
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
@@ -585,7 +595,7 @@ class File31Backend(ConfigDataBackend):
 			mappings[mapping['fileType']][mapping['attribute']] = mapping
 		
 		for (fileType, mapping) in mappings.items():
-			filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType)
+			filename = self._getConfigFile(objType, obj.getIdent(returnType = 'dict'), fileType)
 			
 			if not os.path.exists(os.path.dirname(filename)):
 				logger.info(u"Creating path: '%s'" % os.path.dirname(filename))
@@ -770,7 +780,7 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 			for product in objList:
 				logger.info(u"Deleting product: '%s'" % product.getId())
-				configFile = self._getConfigFile( product.getType(), product.getIdent(), 'pro' )
+				configFile = self._getConfigFile( objType, product.getIdent(returnType = 'dict'), 'pro' )
 				if os.path.isfile(configFile):
 					os.unlink(configFile)
 		

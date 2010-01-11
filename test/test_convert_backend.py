@@ -44,28 +44,31 @@ btfileBackend.testObjectMethods()
 mysqlBackend.backend_createBase()
 
 def check(one, two):
-	for objectType in (
-	'host',
-	'config',
-	'configState',
-	'product',
-	'productProperty',
-	'productDependency',
-	'productOnDepot',
-	'productOnClient',
-	'productPropertyState',
-	'group',
-	'objectToGroup'):
-		idents = []
-		objects = eval('%s.%s_getObjects()' % (one, objectType))
-		for obj in objects:
-			idents.append(obj.getIdent(returnType = 'unicode'))
+	for objectType in ('host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup'):
+		oneIdents = []
+		twoIdents = []
 		
-		objects = eval('%s.%s_getObjects()' % (two, objectType))
-		logger.warning(u"expected: '%s' got: '%s'" % (idents, objects))
-		assert len(objects) == len(idents)
-		for obj in objects:
-			assert obj.getIdent(returnType = 'unicode') in idents
+		oneObjects = eval('%s.%s_getObjects()' % (one, objectType))
+		twoObjects = eval('%s.%s_getObjects()' % (two, objectType))
+		
+		for oneObject in oneObjects:
+			oneIdents.append(oneObject.getIdent(returnType = 'unicode'))
+		for twoObject in twoObjects:
+			twoIdents.append(twoObject.getIdent(returnType = 'unicode'))
+		
+		logger.warning(u"assert length %s\noneIdents: '%s'\ntwoIdents: '%s'" \
+			% (objectType, oneIdents, twoIdents))
+		assert len(oneIdents) == len(twoIdents)
+		
+		for oneIdent in oneIdents:
+			isSameIdent = False
+			for twoIdent in twoIdents:
+				if oneIdent == twoIdent:
+					isSameIdent = True
+					break
+			logger.warning(u"assert oneIdent '%s' is in twoIdents: '%s'" % (oneIdent, isSameIdent))
+			assert isSameIdent
+		
 
 
 
@@ -104,6 +107,19 @@ fileBackend.group_deleteObjects(                 fileBackend.group_getObjects() 
 fileBackend.objectToGroup_deleteObjects(         fileBackend.objectToGroup_getObjects()        )
 
 
+
+for objectType in ('host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup'):
+	idents = []
+	
+	objects = eval('fileBackend.%s_getObjects()' % objectType)
+	
+	for obj in objects:
+		idents.append(obj.getIdent(returnType = 'unicode'))
+	
+	logger.warning(u"assert length %s-idents: '%s'" \
+		% (objectType, idents))
+	assert len(idents) == 0
+
 #convert mysqlBackend -> btfileBackend
 fileBackend.host_createObjects(                  mysqlBackend.host_getObjects()                 )
 fileBackend.config_createObjects(                mysqlBackend.config_getObjects()               )
@@ -118,4 +134,9 @@ fileBackend.group_createObjects(                 mysqlBackend.group_getObjects()
 fileBackend.objectToGroup_createObjects(         mysqlBackend.objectToGroup_getObjects()        )
 
 check('mysqlBackend', 'fileBackend')
+
+m = mysqlBackend.host_getObjects()
+f = fileBackend.host_getObjects()
+print "m:", m, "\nf:", f
+
 

@@ -78,9 +78,6 @@ class HostKeyFile(ConfigFile):
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, e))
 	
 	def generate(self):
-		if not self._opsiHostKeys:
-			raise Exception(u"Got no data to write")
-		
 		self._lines = []
 		hostIds = self._opsiHostKeys.keys()
 		hostIds.sort()
