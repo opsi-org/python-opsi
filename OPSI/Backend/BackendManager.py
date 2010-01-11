@@ -59,6 +59,7 @@ class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
 		self._backend = None
 		self._backendConfigDir = None
+		self._options = {}
 		
 		username = None
 		password = None
@@ -155,6 +156,21 @@ class BackendDispatcher(ConfigDataBackend):
 	def dispatcher_getBackendNames(self):
 		return self._backends.keys()
 	
+	def backend_setOptions(self, options):
+		options = forceDict(options)
+		for be in self._backends.keys():
+			beOptions = self._backends[be]['instance'].backend_getOptions()
+			for (key, value) in options.items():
+				if key in beOptions.keys():
+					beOptions[key] = value
+			self._backends[be]['instance'].backend_setOptions(beOptions)
+		
+	def backend_getOptions(self):
+		options = {}
+		for be in self._backends.keys():
+			options.update(self._backends[be]['instance'].backend_getOptions())
+		return options
+		
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
 			raise BackendConfigurationError(u"No dispatch config file defined")

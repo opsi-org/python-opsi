@@ -151,12 +151,6 @@ class Backend:
 			methodList.append(methods[methodName])
 		return methodList
 	
-	def backend_setOptions(self):
-		pass
-	
-	def backend_getOptions(self, options):
-		return {}
-	
 	def backend_exit(self):
 		pass
 
@@ -187,15 +181,15 @@ class ExtendedBackend(Backend):
 	def _executeMethod(self, methodName, **kwargs):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
+	def backend_setOptions(self, options):
+		return self._backend.backend_setOptions(options)
+		
+	def backend_getOptions(self):
+		return self._backend.backend_getOptions()
+	
 	def backend_exit(self):
 		logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
 		self._backend.backend_exit()
-	
-	def backend_setOptions(self, options):
-		self._backend.backend_setOptions(options)
-	
-	def backend_getOptions(self):
-		return self._backend.backend_getOptions()
 	
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -910,12 +904,16 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	
 	def __init__(self, backend):
 		ExtendedBackend.__init__(self, backend)
-		self._processProductPriorities = False
-		self._processProductDependencies = False
-		self._addProductOnClientDefaults = True # TODO: False
-		self._deleteConfigStateIfDefault = True
-		self._deleteProductPropertyStateIfDefault = True
-		self._returnObjectsOnUpdateAndCreate = True
+		self._options = {
+			'processProductPriorities':            False,
+			'processProductDependencies':          False,
+			'addProductOnClientDefaults':          False,
+			'addProductPropertyStateDefaults':     False,
+			'addConfigStateDefaults':              False,
+			'deleteConfigStateIfDefault':          False,
+			#'deleteProductPropertyStateIfDefault': False,
+			'returnObjectsOnUpdateAndCreate':      False
+		}
 		self._auditHardwareConfig = {}
 		
 		if hasattr(self._backend, 'auditHardware_getConfig'):
@@ -931,6 +929,18 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def backend_exit(self):
 		if self._backend:
 			self._backend.backend_exit()
+	
+	def backend_setOptions(self, options):
+		options = forceDict(options)
+		for (key, value) in options.items():
+			if not key in self._options.keys():
+				raise ValueError(u"No such option '%s'" % key)
+			if type(value) != type(self._options[key]):
+				raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
+			self._options[key] = value
+		
+	def backend_getOptions(self):
+		return self._options
 	
 	def backend_searchObjects(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
@@ -1159,7 +1169,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.host_updateObject(host)
 			else:
 				self._backend.host_insertObject(host)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.host_getObjects(id = host.id)
 				)
@@ -1169,7 +1179,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for host in forceObjectClassList(hosts, Host):
 			self._backend.host_updateObject(host)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.host_getObjects(id = host.id)
 				)
@@ -1210,7 +1220,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.config_updateObject(config)
 			else:
 				self._backend.config_insertObject(config)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.config_getObjects(id = config.id)
 				)
@@ -1220,7 +1230,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for config in forceObjectClassList(configs, Config):
 			self._backend.config_updateObject(config)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.config_getObjects(id = config.id)
 				)
@@ -1251,35 +1261,42 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_getObjects(self, attributes=[], **filter):
+		# objectIds can only be client ids
+		
 		# Get product states from backend
 		configStates = self._backend.configState_getObjects(attributes, **filter)
-		# Get objectIds
-		objectIds = self._backend.host_getIdents(id = filter.get('objectId'), returnType = 'unicode')
+		
+		if not self._options['addConfigStateDefaults']:
+			return configStates
+		
 		# Create data structure for config states to find missing ones
 		css = {}
-		for objectId in objectIds:
-			css[objectId] = []
-		for cs in self._backend.configState_getObjects(attributes = ['objectId', 'configId'], objectId = objectIds):
-			css[cs.objectId].append(cs.configId)
+		for cs in self._backend.configState_getIdents(
+						objectId   = filter.get('objectId', []),
+						configId   = filter.get('configId', []),
+						returnType = 'dict'):
+			if not css.has_key(cs['objectId']):
+				css[cs['objectId']] = []
+			css[cs['objectId']].append(cs['configId'])
+		
+		clientIds = self._backend.host_getIdents(type = 'OpsiClient', id = filter.get('objectId'), returnType = 'unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id = filter.get('configId')):
-			logger.debug("Default values for '%s': %s" % (config.id, config.defaultValues))
-			if filter.get('configId') and not config.id in filter['configId']:
-				continue
-			for objectId in objectIds:
-				if not config.id in css[objectId]:
-					# Create default
+			logger.debug(u"Default values for '%s': %s" % (config.id, config.defaultValues))
+			for clientId in clientIds:
+				if not config.id in css.get(clientId, []):
+					# Config state does not exist for client => create default
 					configStates.append(
 						ConfigState(
 							configId = config.id,
-							objectId = objectId,
+							objectId = clientId,
 							values   = config.defaultValues
 						)
 					)
 		return configStates
 	
 	def configState_insertObject(self, configState):
-		if self._deleteConfigStateIfDefault:
+		if self._options['deleteConfigStateIfDefault']:
 			configs = self._backend.config_getObjects(attributes = ['defaultValues'], id = configState.configId)
 			if configs and not configs[0].defaultValues and (len(configs[0].defaultValues) == len(configState.values)):
 				isDefault = True
@@ -1293,7 +1310,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		self._backend.configState_insertObject(configState)
 	
 	def configState_updateObject(self, configState):
-		if self._deleteConfigStateIfDefault:
+		if self._options['deleteConfigStateIfDefault']:
 			configs = self._backend.config_getObjects(attributes = ['defaultValues'], id = configState.configId)
 			if configs and not configs[0].defaultValues is None and (len(configs[0].defaultValues) == len(configState.values)):
 				isDefault = True
@@ -1317,7 +1334,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self.configState_updateObject(configState)
 			else:
 				self.configState_insertObject(configState)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.configState_getObjects(
 						configId   = configState.configId,
@@ -1330,7 +1347,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
 			self._backend.configState_updateObject(configState)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.configState_getObjects(
 						configId   = configState.configId,
@@ -1387,7 +1404,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.product_updateObject(product)
 			else:
 				self._backend.product_insertObject(product)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.product_getObjects(
 						id             = product.id,
@@ -1401,7 +1418,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for product in forceObjectClassList(products, Product):
 			self._backend.product_updateObject(product)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.product_getObjects(
 						id             = product.id,
@@ -1448,7 +1465,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productProperty_updateObject(productProperty)
 			else:
 				self._backend.productProperty_insertObject(productProperty)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productProperty_getObjects(
 						productId      = productProperty.productId,
@@ -1463,7 +1480,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			self._backend.productProperty_updateObject(productProperty)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productProperty_getObjects(
 						productId      = productProperty.productId,
@@ -1518,7 +1535,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productDependency_updateObject(productDependency)
 			else:
 				self._backend.productDependency_insertObject(productDependency)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productDependency_getObjects(
 						productId         = productDependency.productId,
@@ -1534,7 +1551,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			self._backend.productDependency_updateObject(productDependency)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productDependency_getObjects(
 						productId         = productDependency.productId,
@@ -1580,7 +1597,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
 				self._backend.productOnDepot_insertObject(productOnDepot)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productOnDepot_getObjects(
 						productId = productOnDepot.productId,
@@ -1593,7 +1610,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			self._backend.productOnDepot_updateObject(productOnDepot)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productOnDepot_getObjects(
 						productId = productOnDepot.productId,
@@ -1655,7 +1672,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				and (not filter.get('packageVersion')     or [ None ] == filter['packageVersion']) \
 				and (not filter.get('lastStateChange')    or [ None ] == filter['lastStateChange'])
 		
-		if (self._addProductOnClientDefaults and defaultMatchesFilter) or self._processProductDependencies:
+		if (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) or self._options['processProductDependencies']:
 			# Do not filter out ProductOnClients on the basis of these attributes in this case
 			# If filter is kept unchanged we cannot distinguish between "missing" and "filtered" ProductOnClients
 			# We also need to know installationStatus and actionRequest of every product to test if dependencies are fulfilled
@@ -1665,7 +1682,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					continue
 				pocFilter[key] = value
 		
-		if self._processProductDependencies and attributes:
+		if self._options['processProductDependencies'] and attributes:
 			# In this case we definetly need to add the following attributes
 			if not 'installationStatus' in pocAttributes: pocAttributes.append('installationStatus')
 			if not 'actionRequest'      in pocAttributes: pocAttributes.append('actionRequest')
@@ -1682,7 +1699,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		#    * we should sort by priority (processProductPriorities)
 		#    * ProductOnClients should be created to achieve product dependencies (processProductDependencies)
 			
-		if not (self._addProductOnClientDefaults and defaultMatchesFilter) and not self._processProductPriorities and not self._processProductDependencies:
+		if not (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) and not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
 			# No adjustment needed => done!
 			return productOnClients
 		
@@ -1723,7 +1740,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 		
 		# Create missing product states if addProductOnClientDefaults is set
-		if self._addProductOnClientDefaults:
+		if self._options['addProductOnClientDefaults']:
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
@@ -1737,7 +1754,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 									actionRequest      = u'none',
 							)
 							productOnClients.append(poc)
-							if self._processProductPriorities or self._processProductDependencies:
+							if self._options['processProductPriorities'] or self._options['processProductDependencies']:
 								pocByClientIdAndProductId[clientId][pod.productId] = poc
 			
 			logger.debug(u"   * created productOnClient defaults")
@@ -1746,7 +1763,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 		
 		
-		if not self._processProductPriorities and not self._processProductDependencies:
+		if not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
 			# No more adjustments needed => done!
 			return productOnClients
 		
@@ -1776,7 +1793,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					depotDependencies[pod.productId].append(productDependency)
 			
 			logger.debug(u"      * got product informations for depot %s" % depotId)
-			if self._processProductPriorities:
+			if self._options['processProductPriorities']:
 				logger.debug(u"      * Sorting products by priority for depot %s" % depotId)
 				for (productId, product) in depotProducts.items():
 					if not priorityToProductIds.has_key(product.getPriority()):
@@ -1796,7 +1813,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				logger.debug(u"         * client %s" % clientId)
 				sequence = list(depotProductSequence)
 				
-				if self._processProductDependencies:
+				if self._options['processProductDependencies']:
 					logger.debug(u"            - processing dependencies")
 					# Add dependent product actions
 					def addActionRequest(pocByClientIdAndProductId, clientId, poc, addedInfo):
@@ -1962,7 +1979,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productOnClient_updateObject(productOnClient)
 			else:
 				self._backend.productOnClient_insertObject(productOnClient)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productOnClient_getObjects(
 						productId = productOnClient.productId,
@@ -1991,43 +2008,48 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_getObjects(self, attributes=[], **filter):
-		# Get product properties from backend
+		# objectIds can be depot ids or client ids
+		
+		# Get product property states
 		productPropertyStates = self._backend.productPropertyState_getObjects(attributes, **filter)
-		# Get objectIds
-		objectIds = self._backend.host_getIdents(type = 'OpsiClient', id = filter.get('objectId'), returnType = 'unicode')
-		# Get depotIds
-		depotIdToClientIds = {}
-		for configState in self.configState_getClientToDepotserver(clientIds = filter.get('objectIds')):
-			if not configState['depotId'] in depotIdToClientIds.keys():
-				depotIdToClientIds[configState['depotId']] = []
-			depotIdToClientIds[configState['depotId']].append(configState['clientId'])
+		
+		if not self._options['addProductPropertyStateDefaults']:
+			return productPropertyStates
+		
+		# Get depot to client assignment
+		depotToClients = {}
+		for clientToDepot in self.configState_getClientToDepotserver(clientIds = filter.get('objectId', [])):
+			if not depotToClients.has_key(clientToDepot['depotId']):
+				depotToClients[clientToDepot['depotId']] = []
+			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+		
 		# Create data structure for product property states to find missing ones
 		ppss = {}
-		for objectId in objectIds:
-			ppss[objectId] = []
-		for pps in self._backend.productPropertyState_getObjects(attributes = ['objectId', 'propertyId'], objectId = objectIds):
-			ppss[pps.objectId].append(pps.propertyId)
+		for pps in self._backend.productPropertyState_getIdents(
+						objectId   = filter.get('objectId', []),
+						productId  = filter.get('productId', []),
+						propertyId = filter.get('propertyId', []),
+						returnType = 'dict'):
+			if not ppss.has_key(pps['objectId']):
+				ppss[pps['objectId']] = {}
+			if not ppss[pps['objectId']].has_key(pps['productId']):
+				ppss[pps['objectId']][pps['productId']] = []
+			ppss[pps['objectId']][pps['productId']].append(pps['propertyId'])
+		
 		# Create missing product property states
-		for (depotId, clientIds) in depotIdToClientIds.items():
-			for productOnDepot in self.productOnDepot_getObjects(depotId = depotId, productId = filter.get('productId')):
-				# TODO: Use productPropertyState of depot as default!
-				for productProperty in self._backend.productProperty_getObjects(
-								productId      = productOnDepot.productId,
-								productVersion = productOnDepot.productVersion,
-								packageVersion = productOnDepot.packageVersion,
-								propertyId     = filter.get('propertyId')):
-					for clientId in clientIds:
-						if not clientId in objectIds:
-							# Filtered
-							continue
-						if productProperty.propertyId in ppss[clientId]:
-							continue
+		for (depotId, clientIds) in depotToClients.items():
+			depotFilter = dict(filter)
+			depotFilter['objectId'] = depotId
+			for pps in self._backend.productPropertyState_getObjects(attributes, **depotFilter):
+				for clientId in clientIds:
+					if not pps.propertyId in ppss.get(clientId, {}).get(pps.productId, []):
+						# Product property for client does not exist => add default (values of depot)
 						productPropertyStates.append(
 							ProductPropertyState(
-								productId  = productProperty.productId,
-								propertyId = productProperty.propertyId,
-								objectId   = clientId,
-								values     = productProperty.defaultValues
+								productId   = pps.productId,
+								propertyId  = pps.propertyId,
+								objectId    = clientId,
+								values      = pps.values
 							)
 						)
 		return productPropertyStates
@@ -2045,7 +2067,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.productPropertyState_updateObject(productPropertyState)
 			else:
 				self._backend.productPropertyState_insertObject(productPropertyState)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productPropertyState_getObjects(
 						productId  = productPropertyState.productId,
@@ -2059,7 +2081,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			self._backend.productPropertyState_updateObject(productPropertyState)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productPropertyState_getObjects(
 						productId  = productPropertyState.productId,
@@ -2097,7 +2119,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.group_updateObject(group)
 			else:
 				self._backend.group_insertObject(group)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.group_getObjects(id = group.id)
 				)
@@ -2107,7 +2129,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for group in forceObjectClassList(groups, Group):
 			self._backend.group_updateObject(group)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.group_getObjects(id = group.id)
 				)
@@ -2139,7 +2161,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
 				self._backend.objectToGroup_insertObject(objectToGroup)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
 						groupId  = objectToGroup.groupId,
@@ -2152,7 +2174,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 			self._backend.objectToGroup_updateObject(objectToGroup)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
 						groupId  = objectToGroup.groupId,
@@ -2188,7 +2210,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
 				self._backend.licenseContract_insertObject(licenseContract)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licenseContract_getObjects(id = licenseContract.id)
 				)
@@ -2198,7 +2220,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 			self._backend.licenseContract_updateObject(licenseContract)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licenseContract_getObjects(id = licenseContract.id)
 				)
@@ -2228,7 +2250,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
 				self._backend.softwareLicense_insertObject(softwareLicense)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.softwareLicense_getObjects(id = softwareLicense.id)
 				)
@@ -2238,7 +2260,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 			self._backend.softwareLicense_updateObject(softwareLicense)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.softwareLicense_getObjects(id = softwareLicense.id)
 				)
@@ -2283,7 +2305,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.licensePool_updateObject(licensePool)
 			else:
 				self._backend.licensePool_insertObject(licensePool)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licensePool_getObjects(id = licensePool.id)
 				)
@@ -2293,7 +2315,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			self._backend.softwareLicense_updateObject(licensePool)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licensePool_getObjects(id = licensePool.id)
 				)
@@ -2325,7 +2347,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
 			else:
 				self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.softwareLicenseToLicensePool_getObjects(
 						softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
@@ -2338,7 +2360,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.softwareLicenseToLicensePool_getObjects(
 						softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
@@ -2376,7 +2398,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.licenseOnClient_updateObject(licenseOnClient)
 			else:
 				self._backend.licenseOnClient_insertObject(licenseOnClient)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licenseOnClient_getObjects(
 						softwareLicenseId = licenseOnClient.softwareLicenseId,
@@ -2390,7 +2412,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 			self._backend.licenseOnClient_updateObject(licenseOnClient)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licenseOnClient_getObjects(
 						softwareLicenseId = licenseOnClient.softwareLicenseId,
@@ -2433,7 +2455,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.auditSoftware_updateObject(auditSoftware)
 			else:
 				self._backend.auditSoftware_insertObject(auditSoftware)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.auditSoftware_getObjects(
 						name           = auditSoftware.name,
@@ -2449,7 +2471,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
 			self._backend.auditSoftware_updateObject(auditSoftware)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.auditSoftware_getObjects(
 						name           = auditSoftware.name,
@@ -2499,7 +2521,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
 			else:
 				self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.auditSoftwareOnClient_getObjects(
 						name           = auditSoftwareOnClient.name,
@@ -2516,7 +2538,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
 			self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
-			if self._returnObjectsOnUpdateAndCreate:
+			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.auditSoftwareOnClient_getObjects(
 						name           = auditSoftwareOnClient.name,
@@ -2663,7 +2685,7 @@ class DepotserverBackend(ExtendedBackend):
 		if not self.host_getIdents(id = self._depotId):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotBackend._depotId)
 		self._packageManager = DepotserverPackageManager(self)
-		
+	
 	def backend_exit(self):
 		if self._backend:
 			self._backend.backend_exit()
