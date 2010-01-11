@@ -912,7 +912,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		ExtendedBackend.__init__(self, backend)
 		self._processProductPriorities = False
 		self._processProductDependencies = False
-		self._addProductOnClientDefaults = False
+		self._addProductOnClientDefaults = True # TODO: False
 		self._deleteConfigStateIfDefault = True
 		self._deleteProductPropertyStateIfDefault = True
 		self._returnObjectsOnUpdateAndCreate = True
