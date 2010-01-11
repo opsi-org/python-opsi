@@ -249,7 +249,7 @@ class LDAPBackend(ConfigDataBackend):
 				 {
 					'opsiClass':     'BoolProductProperty',
 					'opsiSuperClass': 'ProductProperty',
-					'objectClasses': [ 'opsiProductProperty', 'opsiUnicodeProductProperty' ],
+					'objectClasses': [ 'opsiProductProperty', 'opsiBoolProductProperty' ],
 					'attributes': [
 						{ 'opsiAttribute': 'pxeConfigTemplate',    'ldapAttribute': 'opsiPxeConfigTemplate' }
 					]
@@ -513,12 +513,10 @@ class LDAPBackend(ConfigDataBackend):
 			if attribute in ('cn'):
 				continue
 			
-			
-			
 			if not attributes or attribute in attributes:
 				opsiObjectHash[attribute] = value
 		
-		#print "=============>>>>", opsiObjectHash
+		print "=============>>>>", opsiObjectHash
 		
 		return Class.fromHash(opsiObjectHash)
 	
