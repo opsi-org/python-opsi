@@ -85,6 +85,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._productPropertiesContainerDn = 'cn=productProperties,' + self._opsiBaseDn
 		self._productOnDepotContainerDn = 'cn=productOnDepot,' + self._opsiBaseDn
 		self._productOnClientContainerDn = 'cn=productOnClient,' + self._opsiBaseDn
+		self._productPropertyStatesContainerDn = 'cn=productPropertyStates,' + self._opsiBaseDn
 		self._hostAttributeDescription = 'opsiDescription'
 		self._hostAttributeNotes = 'opsiNotes'
 		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
@@ -303,6 +304,18 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
 						{ 'opsiAttribute': 'lastStateChange',               'ldapAttribute': 'lastStateChange' }
 					]
+				},
+				{
+					'opsiClass':     'ProductPropertyState',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiProductPropertyState' ],
+					'attributes': [
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'propertyId',                    'ldapAttribute': 'opsiPropertyId' },
+						{ 'opsiAttribute': 'objectId',                      'ldapAttribute': 'opsiObjectId' },
+						{ 'opsiAttribute': 'values',                        'ldapAttribute': 'opsiProductPropertyValues' }
+					]
 				}
 				 
 				 
@@ -469,6 +482,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productPropertiesContainerDn)
 		self._createOrganizationalRole(self._productOnDepotContainerDn)
 		self._createOrganizationalRole(self._productOnClientContainerDn)
+		self._createOrganizationalRole(self._productPropertyStatesContainerDn)
 	
 	
 	def backend_exit(self):
@@ -1019,15 +1033,56 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
+		
+		containerDn = 'cn=%s,%s' % (productPropertyState.objectId, self._productPropertyStatesContainerDn)
+		self._createOrganizationalRole(containerDn)
+		containerDn = 'cn=%s,%s' % (productPropertyState.productId, containerDn)
+		self._createOrganizationalRole(containerDn)
+		
+		dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
+		
+		logger.info(u"Creating ProductPropertyState: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(productPropertyState, dn)
+		ldapObject.writeToDirectory(self._ldap)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
+		
+		containerDn = 'cn=%s,cn=%s,%s' % (productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
+		dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
+		
+		logger.info(u"Updating ProductPropertyState: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, productOnClient)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting ProductPropertyState, filter %s" % filter)
+		propertyStates = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ProductPropertyState' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._productPropertyStatesContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			propertyStates.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return propertyStates
 	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
+		
+		logger.error(u"DELETING productPropertyStates %s" % productPropertyStates)
+		for productOnClient in forceObjectClassList(productPropertyStates, ProductPropertyState):
+			containerDn = 'cn=%s,cn=%s,%s' % (productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
+			dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
+			
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting productPropertyStates: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
