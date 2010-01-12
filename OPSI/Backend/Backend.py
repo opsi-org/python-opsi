@@ -1375,7 +1375,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			depotIds = self.host_getIdents(type = 'OpsiDepotserver')
 		
 		knownClientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
-		configId = 'network.depot_server.depot_id'
+		configId = 'clientconfig.depot.id'
 		for configState in self.configState_getObjects(configId = configId, objectId = clientIds):
 			if not configState.objectId in knownClientIds:
 				logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)

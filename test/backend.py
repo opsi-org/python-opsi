@@ -115,7 +115,7 @@ class BackendTest(object):
 		)
 		
 		self.config4 = UnicodeConfig(
-			id             = u'network.depot_server.depot_id',
+			id             = u'clientconfig.depot.id',
 			description    = u'Depotserver to use',
 			possibleValues = [],
 			defaultValues  = [ self.depotserver1.id ]
