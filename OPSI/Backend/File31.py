@@ -738,56 +738,64 @@ class File31Backend(ConfigDataBackend):
 	def _delete(self, objList):
 		objType = u''
 		if objList:
+			#objType is not always correct, but _getConfigFile() is
+			#within loops obj.getType() is used
 			objType = objList[0].getType()
 		
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
-			hostKeys = HostKeyFile(self._getConfigFile('', '', 'key'))
-			for host in objList:
-				logger.info(u"Deleting host: '%s'" % host.getId())
-				hostKeys.deleteOpsiHostKey(host.getId())
-				if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
-					configDir = os.path.join(self.__depotConfigDir, host.getId())
-					if os.path.isdir(configDir):
-						shutil.rmtree(configDir)
-				elif host.getType() in ('OpsiClient'):
-					configFile = self._getConfigFile(host.getType(), {'id': host.getId()}, 'ini')
-					if os.path.isfile(configFile):
-						os.unlink(configFile)
-			hostKeys.generate()
+			hostKeyFile = HostKeyFile(self._getConfigFile('', {}, 'key'))
+			for obj in objList:
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				hostKeyFile.deleteOpsiHostKey(obj.getId())
+				#TODO: can delete configserver?
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
+				if obj.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+					if os.path.isdir(os.path.dirname(filename)):
+						shutil.rmtree(os.path.dirname(filename))
+				elif obj.getType() in ('OpsiClient'):
+					if os.path.isfile(filename):
+						os.unlink(filename)
+			hostKeyFile.generate()
 		
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
+			filename = self._getConfigFile(objType, {}, 'ini')
+			iniFile = IniFile(filename = filename)
 			iniFile.create()
 			cp = iniFile.parse()
-			for config in objList:
-				logger.info(u"Deleting config: '%s'" % config.getId())
-				if cp.has_section(config.getId()):
-					cp.remove_section(config.getId())
-				else:
-					logger.warning(u"Cannot delete non existant section '%s'" % config.getId())
+			for obj in objList:
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				if cp.has_section(obj.getId()):
+					cp.remove_section(obj.getId())
+					logger.debug2(u"Removed section '%s'" % obj.getId())
 			iniFile.generate(cp)
 		
 		elif objType in ('ConfigState'):
-			for configState in objList:
-				logger.info(u"Deleting configState in host: '%s'" % configState.getObjectId())
-				iniFile = IniFile(filename = self._getConfigFile(
-					objType, configState.getIdent(returnType = 'dict'), 'ini'))
+			#TODO: opens every file anew
+			for obj in objList:
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
+				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
-				if cp.has_option('generalconfig', configState.getConfigId()):
-					cp.remove_option('generalconfig', configState.getConfigId())
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				if cp.has_option('generalconfig', obj.getConfigId()):
+					cp.remove_option('generalconfig', obj.getConfigId())
+					logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
 				iniFile.generate(cp)
 		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-			for product in objList:
-				logger.info(u"Deleting product: '%s'" % product.getId())
-				configFile = self._getConfigFile( objType, product.getIdent(returnType = 'dict'), 'pro' )
-				if os.path.isfile(configFile):
-					os.unlink(configFile)
+			for obj in objList:
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'pro' )
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				if os.path.isfile(filename):
+					os.unlink(filename)
+					logger.debug2(u"Removed file '%s'" % filename)
 		
 		elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 			filenames = []
 			
-			# TODO: files werden nur einmal eingelesen, aber umstaendlich. wird's getestet?
+			# TODO: files werden nur einmal eingelesen, aber umstaendlich
 			for entry in os.listdir(self.__productDir):
 				entry = entry.lower()
 				# productId, productVersion, packageVersion, propertyId
@@ -824,11 +832,11 @@ class File31Backend(ConfigDataBackend):
 				else:
 					oldList = packageControlFile.getProductProperties()
 				
-				for oldItem in oldList:
-					for item in objList:
-						if oldItem.getIdent() == item.getIdent():
-							logger.info(u"Deleting %s: '%s'" \
-								% (objType, oldItem.getIdent()))
+				for obj in objList:
+					logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					for oldItem in oldList:
+						if oldItem.getIdent() == obj.getIdent():
+							logger.debug2(u"Removed '%s'" % obj.getIdent())
 							continue
 						newList.append(item)
 				
@@ -840,76 +848,64 @@ class File31Backend(ConfigDataBackend):
 				packageControlFile.generate()
 		
 		elif objType in ('ProductOnDepot', 'ProductOnClient'):
-			hostIds = []
-			for p in objList:
-				tmpId = ''
-				if objType == 'ProductOnDepot':
-					tmpId = p.getDepotId()
-				elif objType == 'ProductOnClient':
-					tmpId = p.getClientId()
+			filenames = []
+			for obj in objList:
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
 				
-				inHostIds = False
-				for hostId in hostIds:
-					if hostId == tmpId:
-						inHostIds = True
+				inFilenames = False
+				for f in filenames:
+					if filename == f:
+						inFilenames = True
 						break
 				
-				if not inHostIds:
-					hostIds.append(tmpId)
+				if not inFilenames:
+					filenames.append(filename)
 			
-			for hostId in hostIds:
-				filename = None
-				
-				if objType == 'ProductOnDepot':
-					filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
-				elif objType == 'ProductOnClient':
-					filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
-				
+			for filename in filenames:
 				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
 				
-				for p in objList:
-					tmpId = ''
-					if objType == 'ProductOnDepot':
-						tmpId = p.getDepotId()
-					elif objType == 'ProductOnClient':
-						tmpId = p.getClientId()
-					
-					if hostId == tmpId and cp.has_section(p.getProductId() + '-state'):
-						logger.info(u"Deleting productOnDepot: '%s'" % p.getIdent())
-						cp.remove_section(p.getProductId() + '-state')
+				for obj in objList:
+					logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					if cp.has_section(obj.getProductId() + '-state'):
+						cp.remove_section(obj.getProductId() + '-state')
+						logger.debug2(u"Removed section '%s'" % obj.getProductId() + '-state')
 				
 				iniFile.generate(cp)
 		
 		elif objType in ('ProductPropertyState'):
-			for productPropertyState in objList:
-				logger.info(u"Deleting productPropertyState in host: '%s'" % productPropertyState.getObjectId())
-				iniFile = IniFile(filename = self._getConfigFile(
-					objType, productPropertyState.getIdent(returnType = 'dict'), 'ini'))
+			for obj in objList:
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
+				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
 				
-				if cp.has_section(productPropertyState.getProductId() + u"-install"):
-					cp.remove_section(productPropertyState.getProductId() + u"-install")
-					iniFile.generate(cp)
+				if cp.has_section(obj.getProductId() + '-install'):
+					cp.remove_section(obj.getProductId() + '-install')
+					logger.debug2(u"Removed section '%s'" % obj.getProductId() + '-install')
+				
+				iniFile.generate(cp)
 		
-		elif objType in ('Group', 'HostGroup'):
-			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
+		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
+			filename = self._getConfigFile(objType, {}, 'ini')
+			iniFile = IniFile(filename = filename)
 			iniFile.create()
 			cp = iniFile.parse()
-			for group in objList:
-				logger.info(u"Deleting group: '%s'" % group.getId())
-				if cp.has_section(group.getId()):
-					cp.remove_section(group.getId())
-			iniFile.generate(cp)
-		
-		elif objType in ('ObjectToGroup'):
-			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
-			iniFile.create()
-			cp = iniFile.parse()
-			for objectToGroup in objList:
-				logger.info(u"Deleting ObjectToGroup: '%s'" % objectToGroup.getIdent())
-				if cp.has_option(objectToGroup.getGroupId(), objectToGroup.getObjectId()):
-					cp.remove_option(objectToGroup.getGroupId(), objectToGroup.getObjectId())
+			
+			for obj in objList:
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				if obj.getType() in ('Group', 'HostGroup'):
+					if cp.has_section(obj.getId()):
+						cp.remove_section(obj.getId())
+						logger.debug2(u"Removed section '%s'" % obj.getId())
+				else:
+					if cp.has_option(obj.getGroupId(), obj.getObjectId()):
+						cp.remove_option(obj.getGroupId(), obj.getObjectId())
+						logger.debug2(u"Removed option '%s' in section '%s'" \
+							% (obj.getGroupId(), obj.getObjectId()))
+			
 			iniFile.generate(cp)
 		
 		else:

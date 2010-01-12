@@ -135,8 +135,7 @@ fileBackend.objectToGroup_createObjects(         mysqlBackend.objectToGroup_getO
 
 check('mysqlBackend', 'fileBackend')
 
-m = mysqlBackend.host_getObjects()
-f = fileBackend.host_getObjects()
-print "m:", m, "\nf:", f
-
+print "-------------------------------------"
+print "- seem to work ... all tests passed -"
+print "-------------------------------------"
 

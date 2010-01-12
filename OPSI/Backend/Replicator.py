@@ -35,11 +35,13 @@
 __version__ = '3.5'
 
 # Imports
+import time
 
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
+from OPSI.Util.Message import *
 
 # Get logger instance
 logger = Logger()
@@ -87,6 +89,14 @@ class BackendReplicator:
 		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s" \
 				% (serverIds, depotIds, clientIds, groupIds, productIds))
 		
+		
+		
+		self.__overallProgressSubject.setMessage(u"TEST")
+		for i in range(100):
+			self.__overallProgressSubject.addToState(1)
+			time.sleep(0.1)
+		
+		return
 		# Servers
 		knownServerIds = self.__readBackend.host_getIdents(type = 'OpsiConfigserver', returnType = 'unicode')
 		if serverIds:
@@ -96,20 +106,29 @@ class BackendReplicator:
 		else:
 			self.__serverIds = knownServerIds
 		
-	
+		# Converting servers
+		self.__currentProgressSubject.reset()
+		self.__currentProgressSubject.setEnd(len(self.__serverIds))
+		self.__currentProgressSubject.setMessage(u'Converting servers')
 		
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 	
 	
 	
