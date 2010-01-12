@@ -42,9 +42,13 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Util.Message import *
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 # Get logger instance
 logger = Logger()
+
+OBJTYPES = ['host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup']
+
 
 # ======================================================================================================
 # =                                 CLASS BACKENDREPLICATOR                                            =
@@ -54,6 +58,10 @@ class BackendReplicator:
 	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True):
 		self.__readBackend  = readBackend
 		self.__writeBackend = writeBackend
+		
+		self._extendedReadBackend = ExtendedConfigDataBackend(self.__readBackend)
+		self._extendedWriteBackend = ExtendedConfigDataBackend(self.__writeBackend)
+		
 		self.__newServerId  = None
 		if newServerId:
 			self.__newServerId = forceHostId(newServerId)
@@ -74,12 +82,44 @@ class BackendReplicator:
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 	
+	def check(self, rb, wb, checkType = None):
+		objTypes = []
+		if checkType == None:
+			objTypes = OBJTYPES
+		else:
+			objTypes.append(checkType)
+		
+		for objType in objTypes:
+			readIdents = []
+			writeIdents = []
+			
+			for readObj in eval('rb.%s_getObjects()' % (objType)):
+				readIdents.append(readObj.getIdent(returnType = 'unicode'))
+			for writeObj in eval('wb.%s_getObjects()' % (objType)):
+				writeIdents.append(writeObj.getIdent(returnType = 'unicode'))
+			
+			self.__overallProgressSubject.setMessage(u"%s: #readIdents: '%s' #writeIdents: '%s'" % (objType, readIdents, writeIdents))
+			assert len(readIdents) == len(writeIdents)
+			
+			for readIdent in readIdents:
+				isSameIdent = False
+				for writeIdent in writeIdents:
+					if readIdent == writeIdent:
+						isSameIdent = True
+						break
+				self.__overallProgressSubject.setMessage(u"readIdent '%s' is in writeIdents: '%s'" % (readIdent, isSameIdent))
+				assert isSameIdent
+	
 	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[]):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
 		None as the only element of a list means: replicate none
 		'''
+		
+		rb = self._extendedReadBackend
+		wb = self._extendedWriteBackend
+		
 		serverIds  = forceList(serverIds)
 		depotIds   = forceList(depotIds)
 		clientIds  = forceList(clientIds)
@@ -91,12 +131,13 @@ class BackendReplicator:
 		
 		
 		
-		self.__overallProgressSubject.setMessage(u"TEST")
-		for i in range(100):
-			self.__overallProgressSubject.addToState(1)
-			time.sleep(0.1)
+#		self.__overallProgressSubject.setMessage(u"TEST")
+#		for i in range(100):
+#			self.__overallProgressSubject.addToState(1)
+#			time.sleep(0.1)
+#		
+#		return
 		
-		return
 		# Servers
 		knownServerIds = self.__readBackend.host_getIdents(type = 'OpsiConfigserver', returnType = 'unicode')
 		if serverIds:
@@ -107,25 +148,30 @@ class BackendReplicator:
 			self.__serverIds = knownServerIds
 		
 		# Converting servers
-		self.__currentProgressSubject.reset()
-		self.__currentProgressSubject.setEnd(len(self.__serverIds))
-		self.__currentProgressSubject.setMessage(u'Converting servers')
+#		self.__currentProgressSubject.reset()
+#		self.__currentProgressSubject.setEnd(len(self.__serverIds))
+#		self.__currentProgressSubject.setMessage(u'Converting servers')
 		
 		
 		
+		if self.__cleanupFirst:
+			self.__overallProgressSubject.setMessage(u"Cleaning up first!")
+			for objType in OBJTYPES:
+				self.__overallProgressSubject.setMessage(u"Deleting %s" % objType)
+				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (objType, objType))
+#				self.check(rb, wb, objType)
 		
+		self.__overallProgressSubject.setMessage(u"Replicating ...")
+		for objType in OBJTYPES:
+			self.__overallProgressSubject.setMessage(u"Creating %s" % objType)
+			eval('wb.%s_createObjects(rb.%s_getObjects())' % (objType, objType))
+#			self.check(rb, wb, objType)
 		
+		self.__overallProgressSubject.setMessage(u"Replicating done!")
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+		self.__overallProgressSubject.setMessage(u"Checking ...")
+		self.check(rb, wb)
+		self.__overallProgressSubject.setMessage(u"Checking done!")
 		
 		
 		
