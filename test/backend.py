@@ -1001,6 +1001,7 @@ class BackendTest(object):
 		self.backend.configState_updateObject(self.configState3)
 		configStates = self.backend.configState_getObjects(objectId = self.configState3.getObjectId(), configId = self.configState3.getConfigId())
 		assert len(configStates) == 1
+		logger.debug(u"expected(%s), got(%s)" % ([True], configStates[0].getValues()))
 		assert configStates[0].getValues() == [True]
 		
 		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
@@ -1165,8 +1166,13 @@ class BackendTest(object):
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		self.backend.productOnClient_deleteObjects(self.productOnClient3)
 		productOnClients = self.backend.productOnClient_getObjects()
-		assert len(productOnClients) == len(self.productOnClients) -1
+		logger.critical(">>>>>>>>>>>>>>>>>>> %s" % self.productOnClients)
+		for productOnClient in productOnClients:
+			print "%s,%s" % (productOnClient.clientId,productOnClient.productId)
+		logger.critical("<<<<<<<<<<<<<<<<<<< %s" % productOnClients)
+		assert len(productOnClients) == len(self.productOnClients) - 1
 		
+			
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		
 		

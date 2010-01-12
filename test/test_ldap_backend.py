@@ -9,7 +9,7 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from backend import *
 
 logger = Logger()
-logger.setConsoleLevel(LOG_DEBUG2)
+logger.setConsoleLevel(LOG_DEBUG)
 logger.setConsoleColor(True)
 
 
@@ -36,6 +36,7 @@ ldapBackend.host_getObjects(type = ['OpsiClient', None])
 ldapBackend.host_getObjects(type = None)
 sys.exit(0)
 '''
+
 
 bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()

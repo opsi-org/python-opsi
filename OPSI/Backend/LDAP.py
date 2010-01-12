@@ -1001,6 +1001,9 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		
+		
+		#========================================
+		
 		logger.info(u"Getting productOnClient, filter %s" % filter)
 		products = []
 		
@@ -1013,7 +1016,22 @@ class LDAPBackend(ConfigDataBackend):
 		for ldapObject in search.getObjects():
 			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
 		return products
-	
+		#========================================
+		"""
+		
+		logger.critical(u"Getting productOnClient, filter %s" % filter)
+		products = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ProductOnClient' ]
+			
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		logger.critical(">>>>>>>>>>>>>>>>>>>>===================== %s" % ldapFilter)
+		search = LDAPObjectSearch(self._ldap, self._productOnClientContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return products
+		"""
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		
@@ -1258,7 +1276,7 @@ class LDAPObject:
 		else:
 			ldapSession.addByModlist(self._dn, self._new)
 	
-	def getAttributeDict(self, valuesAsList=False, unpackOpsiKeyValuePairs=False):
+	def getAttributeDict(self, valuesAsList=False):
 		''' Get all attributes of object as dict.
 		    All values in self._new are lists by default, 
 		    a list of length 0 becomes the value None
@@ -1268,24 +1286,13 @@ class LDAPObject:
 		for (key, values) in self._new.items():
 			if (values == [' ']):
 				values = [u'']
+			for i in range(len(values)):
+				if   values[i] == u'TRUE':  self._new[key][i] = True
+				elif values[i] == u'FALSE': self._new[key][i] = False
 			if ( len(values) > 1 or valuesAsList):
 				ret[key] = values
 			else:
 				ret[key] = values[0]
-		
-		if unpackOpsiKeyValuePairs and ret.get('opsiKeyValuePair'):
-			opsiKeyValuePairs = ret['opsiKeyValuePair']
-			del ret['opsiKeyValuePair']
-			if not type(opsiKeyValuePairs) in (list, tuple):
-				opsiKeyValuePairs = [ opsiKeyValuePairs ]
-			for keyValuePair in opsiKeyValuePairs:
-				(k, v) = keyValuePair.split('=', 1)
-				if k in ret.keys():
-					logger.warning(u"Opsi key-value-pair %s overwrites attribute" % k)
-				if valuesAsList:
-					ret[k] = [ v ]
-				else:
-					ret[k] = v
 		return ret
 		
 	def getAttribute(self, attribute, default='DEFAULT_UNDEFINED', valuesAsList=False ):
@@ -1299,6 +1306,9 @@ class LDAPObject:
 		values = self._new[attribute]
 		if (values == [' ']):
 			values = [u'']
+		for i in range(len(values)):
+			if   values[i] == u'TRUE':  values[i] = True
+			elif values[i] == u'FALSE': values[i] = False
 		if ( len(values) > 1 or valuesAsList):
 			return values
 		return values[0]
