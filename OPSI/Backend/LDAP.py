@@ -86,6 +86,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._productOnDepotContainerDn = 'cn=productOnDepot,' + self._opsiBaseDn
 		self._productOnClientContainerDn = 'cn=productOnClient,' + self._opsiBaseDn
 		self._productPropertyStatesContainerDn = 'cn=productPropertyStates,' + self._opsiBaseDn
+		self._objectToGroupContainerDn = 'cn=objectToGroup,' + self._opsiBaseDn
 		self._hostAttributeDescription = 'opsiDescription'
 		self._hostAttributeNotes = 'opsiNotes'
 		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
@@ -328,6 +329,16 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'notes',                      'ldapAttribute': 'opsiNotes' },
 						{ 'opsiAttribute': 'parentGroupId',                        'ldapAttribute': 'opsiParentGroupId' }
 					]
+				},
+				{
+					'opsiClass':     'ObjectToGroup',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiObjectToGroup' ],
+					'attributes': [
+						{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'opsiGroupId' },
+						{ 'opsiAttribute': 'objectId',                    'ldapAttribute': 'opsiObjectId' }
+					]
 				}
 			]
 		
@@ -493,6 +504,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productOnDepotContainerDn)
 		self._createOrganizationalRole(self._productOnClientContainerDn)
 		self._createOrganizationalRole(self._productPropertyStatesContainerDn)
+		self._createOrganizationalRole(self._objectToGroupContainerDn)
 	
 	
 	def backend_exit(self):
@@ -1011,9 +1023,6 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		
-		
-		#========================================
-		
 		logger.info(u"Getting productOnClient, filter %s" % filter)
 		products = []
 		
@@ -1026,22 +1035,7 @@ class LDAPBackend(ConfigDataBackend):
 		for ldapObject in search.getObjects():
 			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
 		return products
-		#========================================
-		"""
 		
-		logger.critical(u"Getting productOnClient, filter %s" % filter)
-		products = []
-		
-		if not filter.get('type'):
-			filter['type'] = [ 'ProductOnClient' ]
-			
-		ldapFilter = self._objectFilterToLDAPFilter(filter)
-		logger.critical(">>>>>>>>>>>>>>>>>>>>===================== %s" % ldapFilter)
-		search = LDAPObjectSearch(self._ldap, self._productOnClientContainerDn, filter=ldapFilter )
-		for ldapObject in search.getObjects():
-			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
-		return products
-		"""
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		
@@ -1163,15 +1157,64 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
+		
+		containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
+		self._createOrganizationalRole(containerDn)
+		dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
+		
+		logger.info(u"Creating objectToGroup: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(objectToGroup, dn)
+		ldapObject.writeToDirectory(self._ldap)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
+		
+		#dn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
+		containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
+		dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
+		
+		logger.info(u"Updating objectToGroup: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, objectToGroup)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting objectToGroup, filter: %s" % filter)
+		objectToGroups = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'ObjectToGroup' ]
+		
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._objectToGroupContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			objectToGroups.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return objectToGroups
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
+		
+		logger.error(u"DELETING objectToGroups %s" % objectToGroups)
+		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
+			containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
+			dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
+			
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting objectToGroups: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+		
+		"""
+		logger.error(u"DELETING objectToGroups %s" % objectToGroups)
+		for group in forceObjectClassList(objectToGroups, ObjectToGroup):
+			dn = 'cn=%s,%s' % (group.id, self._objectToGroupContainerDn)
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting group: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				"""
 
 
 
