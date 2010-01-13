@@ -599,12 +599,12 @@ class File31Backend(ConfigDataBackend):
 			
 			if not os.path.exists(os.path.dirname(filename)):
 				logger.info(u"Creating path: '%s'" % os.path.dirname(filename))
-				os.mkdir(os.path.dirname(filename))
+				self.backend_mkdir(os.path.dirname(filename))
 			
 			if (fileType == 'key'):
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
 					hostKeys = HostKeyFile(filename = filename)
-					iniFile.create(group = 'pcpatch', mode = 0660)
+					hostKeys.create(group = 'pcpatch', mode = 0660)
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 			
@@ -615,9 +615,11 @@ class File31Backend(ConfigDataBackend):
 				
 				if (mode == 'create'):
 					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
-						#TODO: copy /var/lib/opsi/template/proto.ini -> <id>.ini
 						iniFile.delete()
+						shutil.copyfile('/var/lib/opsi/template/proto.ini', filename)
+						iniFile = IniFile(filename = filename)
 						iniFile.create(group = 'pcpatch', mode = 0660)
+						cp = iniFile.parse()
 					else:
 						newSection = ''
 						
@@ -687,6 +689,7 @@ class File31Backend(ConfigDataBackend):
 			
 			elif (fileType == 'pro'):
 				packageControlFile = PackageControlFile(filename = filename)
+				packageControlFile.create(group = 'pcpatch', mode = 0660)
 				
 				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 					if (mode == 'create'):
@@ -762,7 +765,6 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
-			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			for obj in objList:
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
@@ -918,14 +920,23 @@ class File31Backend(ConfigDataBackend):
 		pass
 	
 	def backend_createBase(self):
-		os.mkdir(self.__baseDir)
-		os.mkdir(self.__clientConfigDir)
-		os.mkdir(self.__depotConfigDir)
-		os.mkdir(self.__productDir)
+		self.backend_mkdir(self.__baseDir)
+		self.backend_mkdir(self.__clientConfigDir)
+		self.backend_mkdir(self.__depotConfigDir)
+		self.backend_mkdir(self.__productDir)
 	
 	def backend_deleteBase(self):
 		if os.path.exists(self.__baseDir):
 			shutil.rmtree(self.__baseDir)
+	
+	def backend_mkdir(self, dirname):
+		if not dirname.startswith(self.__baseDir):
+			raise Exception(u"Not in BaseDir!")
+		
+		os.mkdir(dirname)
+		os.chmod(dirname, 0770)
+		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
+
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -

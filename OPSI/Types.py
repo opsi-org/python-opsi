@@ -115,7 +115,6 @@ def forceUnsignedInt(var):
 	return var
 
 def forceOct(var):
-	print type(var)
 	if type(var) is int:
 		return var
 	try:
