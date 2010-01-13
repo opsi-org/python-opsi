@@ -170,6 +170,11 @@ class File31Backend(ConfigDataBackend):
 			],
 			'ObjectToGroup': [
 				{ 'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>' }
+			],
+			'sw': [
+				{ 'fileType': 'sw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'sw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'sw', 'attribute': '', 'section': '', 'option': '' }
 			]
 		}
 		
@@ -944,16 +949,12 @@ class File31Backend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		
-		#host = forceObjectClass(host, Host)
-		
 		logger.notice(u"Inserting host: '%s'" % host.getIdent())
 		self._write(host, mode = 'create')
 		logger.notice(u"Inserted host.")
 	
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
-		
-		#host = forceObjectClass(host, Host)
 		
 		logger.notice(u"Updating host: '%s'" % host.getIdent())
 		self._write(host, mode = 'update')
@@ -978,10 +979,8 @@ class File31Backend(ConfigDataBackend):
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 		
-		hosts = forceObjectClassList(hosts, Host)
-		
 		logger.notice(u"Deleting hosts ...")
-		self._delete(hosts)
+		self._delete(forceObjectClassList(hosts, Host))
 		logger.notice(u"Deleted hosts.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -990,16 +989,12 @@ class File31Backend(ConfigDataBackend):
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		#config = forceObjectClass(config, Config)
-		
 		logger.notice(u"Inserting config: '%s'" % config.getIdent())
 		self._write(config, mode = 'create')
 		logger.notice(u"Inserted config.")
 	
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
-		
-		#config = forceObjectClass(config, Config)
 		
 		logger.notice(u"Updating config: '%s'" % config.getIdent())
 		self._write(config, mode = 'update')
@@ -1017,10 +1012,8 @@ class File31Backend(ConfigDataBackend):
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		
-		configs = forceObjectClassList(configs, Config)
-		
 		logger.notice(u"Deleting configs ...")
-		self._delete(configs)
+		self._delete(forceObjectClassList(configs, Config))
 		logger.notice(u"Deleted configs.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1029,16 +1022,12 @@ class File31Backend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
-		#configState = forceObjectClass(configState, ConfigState)
-		
 		logger.notice(u"Inserting configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'create')
 		logger.notice(u"Inserted configState.")
 	
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
-		
-		#configState = forceObjectClass(configState, ConfigState)
 		
 		logger.notice(u"Updating configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'update')
@@ -1056,10 +1045,8 @@ class File31Backend(ConfigDataBackend):
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		
-		configStates = forceObjectClassList(configStates, ConfigState)
-		
 		logger.notice(u"Deleting configStates ...")
-		self._delete(configStates)
+		self._delete(forceObjectClassList(configStates, ConfigState))
 		logger.notice(u"Deleted configStates.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1068,16 +1055,12 @@ class File31Backend(ConfigDataBackend):
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
 		
-		#product = forceObjectClass(product, Product)
-		
 		logger.notice(u"Inserting product: '%s'" % product.getIdent())
 		self._write(product, mode = 'create')
 		logger.notice(u"Inserted product.")
 	
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
-		
-		#product = forceObjectClass(product, Product)
 		
 		logger.notice(u"Updating product: '%s'" % product.getIdent())
 		self._write(product, mode = 'update')
@@ -1096,10 +1079,8 @@ class File31Backend(ConfigDataBackend):
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
 		
-		products = forceObjectClassList(products, Product)
-		
 		logger.notice(u"Deleting products ...")
-		self._delete(products)
+		self._delete(forceObjectClassList(products, Product))
 		logger.notice(u"Deleted products.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1108,16 +1089,12 @@ class File31Backend(ConfigDataBackend):
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		
-		#productProperty = forceObjectClass(productProperty, ProductProperty)
-		
 		logger.notice(u"Inserting productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'create')
 		logger.notice(u"Inserted productProperty.")
 	
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
-		
-		#productProperty = forceObjectClass(productProperty, ProductProperty)
 		
 		logger.notice(u"Updating productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'update')
@@ -1135,10 +1112,8 @@ class File31Backend(ConfigDataBackend):
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		
-		productProperties = forceObjectClassList(productProperties, ProductProperty)
-		
 		logger.notice(u"Deleting productProperties ...")
-		self._delete(productProperties)
+		self._delete(forceObjectClassList(productProperties, ProductProperty))
 		logger.notice(u"Deleted productProperties.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1147,16 +1122,12 @@ class File31Backend(ConfigDataBackend):
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
-		#productDependency = forceObjectClass(productDependency, ProductDependency)
-		
 		logger.notice(u"Inserting productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'create')
 		logger.notice(u"Inserted productDependency.")
 	
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
-		
-		#productDependency = forceObjectClass(productDependency, ProductDependency)
 		
 		logger.notice(u"Updating productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'update')
@@ -1174,10 +1145,8 @@ class File31Backend(ConfigDataBackend):
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		
-		productDependencies = forceObjectClassList(productDependencies, ProductDependency)
-		
 		logger.notice(u"Deleting productDependencies ...")
-		self._delete(productDependencies)
+		self._delete(forceObjectClassList(productDependencies, ProductDependency))
 		logger.notice(u"Deleted productDependencies.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1186,16 +1155,12 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
-		#productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
-		
 		logger.notice(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'create')
 		logger.notice(u"Inserted productOnDepot.")
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
-		
-		#productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		
 		logger.notice(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'update')
@@ -1213,10 +1178,8 @@ class File31Backend(ConfigDataBackend):
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
-		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
-		
 		logger.notice(u"Deleting productOnDepots ...")
-		self._delete(productOnDepots)
+		self._delete(forceObjectClassList(productOnDepots, ProductOnDepot))
 		logger.notice(u"Deleted productOnDepots.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1225,16 +1188,12 @@ class File31Backend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
-		#productOnClient = forceObjectClass(productOnClient, ProductOnClient)
-		
 		logger.notice(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'create')
 		logger.notice(u"Inserted productOnClient.")
 	
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
-		
-		#productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		
 		logger.notice(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'update')
@@ -1252,10 +1211,8 @@ class File31Backend(ConfigDataBackend):
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		
-		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
-		
 		logger.notice(u"Deleting productOnClients ...")
-		self._delete(productOnClients)
+		self._delete(forceObjectClassList(productOnClients, ProductOnClient))
 		logger.notice(u"Deleted productOnClients.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1264,16 +1221,12 @@ class File31Backend(ConfigDataBackend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		
-		#productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
-		
 		logger.notice(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'create')
 		logger.notice(u"Inserted productPropertyState.")
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
-		
-		#productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		
 		logger.notice(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'update')
@@ -1291,10 +1244,8 @@ class File31Backend(ConfigDataBackend):
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		
-		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
-		
 		logger.notice(u"Deleting productPropertyStates ...")
-		self._delete(productPropertyStates)
+		self._delete(forceObjectClassList(productPropertyStates, ProductPropertyState))
 		logger.notice(u"Deleted productPropertyStates.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1303,16 +1254,12 @@ class File31Backend(ConfigDataBackend):
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
 		
-		#group = forceObjectClass(group, Group)
-		
 		logger.notice(u"Inserting group: '%s'" % group.getIdent())
 		self._write(group, mode = 'create')
 		logger.notice(u"Inserted group.")
 	
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
-		
-		#group = forceObjectClass(group, Group)
 		
 		logger.notice(u"Updating group: '%s'" % group.getIdent())
 		self._write(group, mode = 'update')
@@ -1330,10 +1277,8 @@ class File31Backend(ConfigDataBackend):
 	def group_deleteObjects(self, groups):
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		
-		groups = forceObjectClassList(groups, Group)
-		
 		logger.notice(u"Deleting groups ...")
-		self._delete(groups)
+		self._delete(forceObjectClassList(groups, Group))
 		logger.notice(u"Deleted groups.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1342,16 +1287,12 @@ class File31Backend(ConfigDataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
-		#objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
-		
 		logger.notice(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'create')
 		logger.notice(u"Inserted objectToGroup.")
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
-		
-		#objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		
 		logger.notice(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'update')
@@ -1369,11 +1310,146 @@ class File31Backend(ConfigDataBackend):
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		
-		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
-		
 		logger.notice(u"Deleting objectToGroups ...")
-		self._delete(objectToGroups)
+		self._delete(forceObjectClassList(objectToGroups, ObjectToGroup))
 		logger.notice(u"Deleted objectToGroups.")
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftware_insertObject(self, auditSoftware):
+		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
+		
+		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
+		self._write(auditSoftware, mode = 'create')
+		logger.notice(u"Inserted auditSoftware.")
+	
+	def auditSoftware_updateObject(self, auditSoftware):
+		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
+		
+		logger.notice(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
+		self._write(auditSoftware, mode = 'update')
+		logger.notice(u"Updated auditSoftware.")
+	
+	def auditSoftware_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting auditSoftwares ...")
+		result = self._read('AuditSoftware', attributes, **filter)
+		logger.notice(u"Got auditSoftwares.")
+		
+		return result
+	
+	def auditSoftware_deleteObjects(self, auditSoftwares):
+		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
+		
+		logger.notice(u"Deleting auditSoftwares ...")
+		self._delete(forceObjectClassList(auditSoftwares, AuditSoftware))
+		logger.notice(u"Deleted auditSoftwares.")
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareOnClients                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
+		
+		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
+		self._write(auditSoftwareOnClient, mode = 'create')
+		logger.notice(u"Inserted auditSoftwareOnClient.")
+	
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
+		
+		logger.notice(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
+		self._write(auditSoftwareOnClient, mode = 'update')
+		logger.notice(u"Updated auditSoftwareOnClient.")
+	
+	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting auditSoftwareOnClients ...")
+		result = self._read('AuditSoftwareOnClient', attributes, **filter)
+		logger.notice(u"Got auditSoftwareOnClients.")
+		
+		return result
+	
+	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
+		
+		logger.notice(u"Deleting auditSoftwareOnClients ...")
+		self._delete(forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient))
+		logger.notice(u"Deleted auditSoftwareOnClients.")
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	
+	def auditHardware_insertObject(self, auditHardware):
+		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
+		
+		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
+		self._write(auditHardware, mode = 'create')
+		logger.notice(u"Inserted auditHardware.")
+	
+	def auditHardware_updateObject(self, auditHardware):
+		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
+		
+		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
+		self._write(auditHardware, mode = 'update')
+		logger.notice(u"Updated auditHardware.")
+	
+	def auditHardware_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting auditHardwares ...")
+		result = self._read('AuditHardware', attributes, **filter)
+		logger.notice(u"Got auditHardwares.")
+		
+		return result
+	
+	def auditHardware_deleteObjects(self, auditHardwares):
+		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
+		
+		logger.notice(u"Deleting auditHardwares ...")
+		self._delete(forceObjectClassList(auditHardwares, AuditHardware))
+		logger.notice(u"Deleted auditHardwares.")
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwareOnHosts                                                                      -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	
+	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
+		
+		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
+		self._write(auditHardwareOnHost, mode = 'create')
+		logger.notice(u"Inserted auditHardwareOnHost.")
+	
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
+		
+		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
+		self._write(auditHardwareOnHost, mode = 'update')
+		logger.notice(u"Updated auditHardwareOnHost.")
+	
+	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
+		
+		logger.notice(u"Getting auditHardwareOnHosts ...")
+		result = self._read('AuditHardwareOnHost', attributes, **filter)
+		logger.notice(u"Got auditHardwareOnHosts.")
+		
+		return result
+	
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
+		
+		logger.notice(u"Deleting auditHardwareOnHosts ...")
+		self._delete(forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost))
+		logger.notice(u"Deleted auditHardwareOnHosts.")
+	
+	
+	
 	
 	
 	
