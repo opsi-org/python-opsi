@@ -97,6 +97,10 @@ try:
 except ValueError:
 	pass
 
+assert forceOct('666') == 0666
+assert forceOct('0666') == 0666
+assert forceOct(0666) == 0666
+
 assert type(forceOpsiTimestamp('2000-02-02 11:12:13')) is unicode
 assert forceOpsiTimestamp('20000202111213') == u'2000-02-02 11:12:13'
 try:

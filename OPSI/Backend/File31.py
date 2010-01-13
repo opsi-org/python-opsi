@@ -246,7 +246,7 @@ class File31Backend(ConfigDataBackend):
 		
 		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
-			iniFile.create()
+			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			for section in cp.sections():
 				objIdents.append({'id': section})
@@ -354,7 +354,7 @@ class File31Backend(ConfigDataBackend):
 					continue
 				
 				iniFile = IniFile(filename = filename)
-				iniFile.create()
+				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
 				
 				if objType == 'ConfigState' and cp.has_section('generalconfig'):
@@ -382,7 +382,7 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
-			iniFile.create()
+			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			
 			for section in cp.sections():
@@ -604,19 +604,20 @@ class File31Backend(ConfigDataBackend):
 			if (fileType == 'key'):
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
 					hostKeys = HostKeyFile(filename = filename)
-					hostKeys.create()
+					iniFile.create(group = 'pcpatch', mode = 0660)
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename)
-				iniFile.create()
+				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
 				
 				if (mode == 'create'):
 					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
+						#TODO: copy /var/lib/opsi/template/proto.ini -> <id>.ini
 						iniFile.delete()
-						iniFile.create()
+						iniFile.create(group = 'pcpatch', mode = 0660)
 					else:
 						newSection = ''
 						
@@ -761,7 +762,7 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
-			iniFile.create()
+			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			for obj in objList:
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
@@ -891,7 +892,7 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
-			iniFile.create()
+			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			
 			for obj in objList:

@@ -34,7 +34,7 @@
 
 __version__ = "3.5"
 
-import os, codecs, re, ConfigParser, StringIO, cStringIO
+import os, codecs, re, grp, pwd, ConfigParser, StringIO, cStringIO
 
 if (os.name == 'posix'):
 	import fcntl
@@ -55,8 +55,7 @@ class File(object):
 	def __init__(self, filename):
 		self._filename = forceFilename(filename)
 		self._fileHandle = None
-		self.mode = None
-	
+		
 	def getFilename(self):
 		return self._filename
 	
@@ -67,13 +66,44 @@ class File(object):
 		if os.path.exists(self._filename):
 			os.unlink(self._filename)
 	
-	def create(self):
+	def chown(self, user, group):
+		uid = -1
+		if type(user) is int:
+			if (user > -1):
+				uid = user
+		elif not user is None:
+			try:
+				uid = pwd.getpwnam(user)[2]
+			except KeyError:
+				raise Exception(u"Unknown user '%s'" % user)
+		
+		gid = -1
+		if type(group) is int:
+			if (group > -1):
+				gid = group
+		elif not group is None:
+			try:
+				gid = grp.getgrnam(group)[2]
+			except KeyError:
+				raise Exception(u"Unknown group '%s'" % group)
+		
+		os.chown(self._filename, uid, gid)
+	
+	def chmod(self, mode):
+		mode = forceOct(mode)
+		os.chmod(self._filename, mode)
+	
+	def create(self, user = None, group = None, mode = None):
 		if not os.path.exists(self._filename):
 			self.open('w')
 			self.close()
+		
+		if not user is None or not group is None:
+			self.chown(user, group)
+		if not mode is None:
+			self.chmod(mode)
 	
 	def open(self, mode = 'r'):
-		self.mode = mode
 		self._fileHandle = __builtins__['open'](self._filename, mode)
 		return self._fileHandle
 		
@@ -100,13 +130,13 @@ class LockableFile(File):
 	
 	def open(self, mode = 'r'):
 		File.open(self, mode)
-		self._lockFile()
+		self._lockFile(mode)
 	
 	def close(self):
 		self._unlockFile()
 		File.close(self)
 		
-	def _lockFile(self):
+	def _lockFile(self, mode='r'):
 		timeout = 0
 		while (timeout < self._lockFailTimeout):
 			# While not timed out and not locked
@@ -116,13 +146,13 @@ class LockableFile(File):
 				if (os.name =='posix'):
 					# Flags for exclusive, non-blocking lock
 					flags = fcntl.LOCK_EX | fcntl.LOCK_NB
-					if self.mode in ('r', 'rb'):
+					if mode in ('r', 'rb'):
 						# Flags for shared, non-blocking lock
 						flags = fcntl.LOCK_SH | fcntl.LOCK_NB
 					fcntl.flock(self._fileHandle.fileno(), flags)
 				elif (os.name == 'nt'):
 					flags = win32con.LOCKFILE_EXCLUSIVE_LOCK | win32con.LOCKFILE_FAIL_IMMEDIATELY
-					if self.mode in ('r', 'rb'):
+					if mode in ('r', 'rb'):
 						flags = win32con.LOCKFILE_FAIL_IMMEDIATELY
 					hfile = win32file._get_osfhandle(self._fileHandle.fileno())
 					win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, pywintypes.OVERLAPPED())
@@ -158,7 +188,7 @@ class TextFile(LockableFile):
 		
 	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
 		self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
-		self._lockFile()
+		self._lockFile(mode)
 	
 	def write(self, str):
 		if not self._fileHandle:

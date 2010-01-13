@@ -114,6 +114,25 @@ def forceUnsignedInt(var):
 		var = var*(-1)
 	return var
 
+def forceOct(var):
+	print type(var)
+	if type(var) is int:
+		return var
+	try:
+		tmp = forceUnicode(var)
+		var = ''
+		for i in range(len(tmp)):
+			x = forceInt(tmp[i])
+			if (x > 7):
+				raise Exception('too big')
+			if (i == 0) and (x != '0'):
+				var += '0'
+			var += str(x)
+		var = eval(var)
+		return var
+	except Exception, e:
+		raise ValueError(u"Bad oct value '%s': %s" % (var, e))
+
 def forceFloat(var):
 	if type(var) is float:
 		return var
