@@ -316,9 +316,19 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'objectId',                      'ldapAttribute': 'opsiObjectId' },
 						{ 'opsiAttribute': 'values',                        'ldapAttribute': 'opsiProductPropertyValues' }
 					]
+				},
+				{
+					'opsiClass':     'HostGroup',
+					'opsiSuperClass': None,
+					'objectClasses': [ 'opsiHostGroup' ],
+					'attributes': [
+						{ 'opsiAttribute': 'id',                     'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'id',                     'ldapAttribute': 'opsiGroupId' },
+						{ 'opsiAttribute': 'description',                    'ldapAttribute': 'opsiDescription' },
+						{ 'opsiAttribute': 'notes',                      'ldapAttribute': 'opsiNotes' },
+						{ 'opsiAttribute': 'parentGroupId',                        'ldapAttribute': 'opsiParentGroupId' }
+					]
 				}
-				 
-				 
 			]
 		
 		self._opsiAttributeToLdapAttribute = {}
@@ -1107,15 +1117,46 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
+		
+		dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
+		logger.info(u"Creating group: %s" % dn)
+		ldapObject = self._opsiObjectToLdapObject(group, dn)
+		ldapObject.writeToDirectory(self._ldap)
 	
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
+		
+		dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
+		logger.info(u"Updating group: %s" % dn)
+		ldapObject = LDAPObject(dn)
+		self._updateLdapObject(ldapObject, group)
 	
 	def group_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting groups, filter: %s" % filter)
+		groups = []
+		
+		if not filter.get('type'):
+			filter['type'] = [ 'HostGroup' ]
+		
+		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		
+		search = LDAPObjectSearch(self._ldap, self._groupsContainerDn, filter=ldapFilter )
+		for ldapObject in search.getObjects():
+			groups.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		return groups
 	
 	def group_deleteObjects(self, groups):
 		ConfigDataBackend.group_deleteObjects(self, groups)
+		
+		logger.error(u"DELETING groups %s" % groups)
+		for group in forceObjectClassList(groups, HostGroup):
+			dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
+			ldapObj = LDAPObject(dn)
+			if ldapObj.exists(self._ldap):
+				logger.info(u"Deleting group: %s" % dn)
+				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
