@@ -69,22 +69,26 @@ class File31Backend(ConfigDataBackend):
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		self.__baseDir = '/tmp/file31'
-		self.__clientConfigDir = os.path.join(self.__baseDir, 'clients')
-		self.__depotConfigDir  = os.path.join(self.__baseDir, 'depots')
-		self.__productDir = os.path.join(self.__baseDir, 'products')
-		self.__hostKeyFile = os.path.join(self.__baseDir, 'pckeys')
-		self.__configFile = os.path.join(self.__baseDir, 'config.ini')
-		self.__clientGroupsFile = os.path.join(self.__baseDir, 'clientgroups.ini')
-		
-		self._placeholderRegex = re.compile('<([^>]+)>')
-		#self._defaultDomain = u'uib.local'
-		
-		# Get hostid of localhost
-		self.__serverId = socket.getfqdn()
+		#fqdn configserver
+		self.__serverId = socket.getfqdn().lower()
 		if (self.__serverId.count('.') < 2):
 			raise Exception(u"Failed to get fqdn: %s" % self.__serverId)
-		self.__serverId = self.__serverId.lower()
+		
+		#dirs
+		self.__baseDir          = '/tmp/file31'
+		self.__clientConfigDir  = os.path.join(self.__baseDir, 'clients')
+		self.__depotConfigDir   = os.path.join(self.__baseDir, 'depots')
+		self.__productDir       = os.path.join(self.__baseDir, 'products')
+		self.__auditDir         = os.path.join(self.__baseDir, 'audit')
+		
+		#files
+		self.__hostKeyFile      = os.path.join(self.__baseDir, 'pckeys') #no ending
+		self.__configFile       = os.path.join(self.__baseDir, 'config.ini')
+		self.__clientGroupsFile = os.path.join(self.__baseDir, 'clientgroups.ini')
+		
+		#misc
+		#self._defaultDomain     = u'uib.local'
+		self._placeholderRegex  = re.compile('<([^>]+)>')
 		
 		self._mappings = {
 			'Config': [                                                # TODO: placeholders
@@ -171,10 +175,34 @@ class File31Backend(ConfigDataBackend):
 			'ObjectToGroup': [
 				{ 'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>' }
 			],
-			'sw': [
-				{ 'fileType': 'sw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'sw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'sw', 'attribute': '', 'section': '', 'option': '' }
+			'AuditSoftware': [
+				{ 'fileType': 'sw', 'attribute': 'windowsSoftwareId',     'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowssoftwareid'     },
+				{ 'fileType': 'sw', 'attribute': 'windowsDisplayName',    'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayname'    },
+				{ 'fileType': 'sw', 'attribute': 'windowsDisplayVersion', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayversion' },
+				{ 'fileType': 'sw', 'attribute': 'installSize',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'installsize'           }
+			],
+			'AuditHardware': [
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' }
+			],
+			'AuditSoftwareOnClient': [
+				{ 'fileType': 'sw', 'attribute': 'uninstallString', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'uninstallstring' },
+				{ 'fileType': 'sw', 'attribute': 'binaryName',      'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'binaryname'      },
+				{ 'fileType': 'sw', 'attribute': 'firstseen',       'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'firstseen'       },
+				{ 'fileType': 'sw', 'attribute': 'lastseen',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastseen'        },
+				{ 'fileType': 'sw', 'attribute': 'state',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'state'           },
+				{ 'fileType': 'sw', 'attribute': 'usageFrequency',  'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'usagefrequency'  },
+				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
+			],
+			'AuditHardware': [
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' }
+			],
+			'AuditHardwareOnHost': [
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
+				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' }
 			]
 		}
 		
@@ -188,6 +216,28 @@ class File31Backend(ConfigDataBackend):
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['HostGroup'] = self._mappings['Group']
+	
+	def backend_exit(self):
+		pass
+	
+	def backend_createBase(self):
+		self.backend_mkdir(self.__baseDir)
+		self.backend_mkdir(self.__clientConfigDir)
+		self.backend_mkdir(self.__depotConfigDir)
+		self.backend_mkdir(self.__productDir)
+		self.backend_mkdir(self.__auditDir)
+	
+	def backend_deleteBase(self):
+		if os.path.exists(self.__baseDir):
+			shutil.rmtree(self.__baseDir)
+	
+	def backend_mkdir(self, dirname):
+		if not dirname.startswith(self.__baseDir):
+			raise Exception(u"Not in BaseDir!")
+		
+		os.mkdir(dirname)
+		os.chmod(dirname, 0770)
+		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
 	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
@@ -241,6 +291,19 @@ class File31Backend(ConfigDataBackend):
 				elif os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.netboot')):
 					return os.path.join(self.__productDir, pId + pVer + u'.netboot')
 		
+		elif (fileType == 'sw'):
+			if objType == 'AuditSoftware':
+				return os.path.join(self.__auditDir, u'global.sw')
+			elif objType == 'AuditSoftwareOnClient':
+				return os.path.join(self.__auditDir, ident['clientId'] + u'.sw')
+		
+		elif (fileType == 'hw'):
+			if objType == 'AuditHardware':
+				return os.path.join(self.__auditDir, u'global.hw')
+			elif objType == 'AuditHardwareOnHost':
+				return os.path.join(self.__auditDir, ident['hostId'] + u'.hw')
+		
+		
 		logger.error(u"No config-file returned! objType: '%s' fileType: '%s' filter: '%s'" % (objType, fileType, filter))
 		
 		return
@@ -251,7 +314,6 @@ class File31Backend(ConfigDataBackend):
 		
 		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
-			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			for section in cp.sections():
 				objIdents.append({'id': section})
@@ -359,7 +421,6 @@ class File31Backend(ConfigDataBackend):
 					continue
 				
 				iniFile = IniFile(filename = filename)
-				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
 				
 				if objType == 'ConfigState' and cp.has_section('generalconfig'):
@@ -387,7 +448,6 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
-			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			
 			for section in cp.sections():
@@ -408,6 +468,63 @@ class File31Backend(ConfigDataBackend):
 					objIdents.append(
 						{
 						'id': section
+						}
+					)
+		
+		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
+			filenames = []
+			
+			fileType = 'sw'
+			idType = 'clientId'
+			if objType in ('AuditHardware', 'AuditHardwareOnHost'):
+				fileType = 'hw'
+				idType = 'hostId'
+			
+			if objType in ('AuditSoftware', 'AuditHardware'):
+				filenames.append(self._getConfigFile(objType, {}, fileType))
+			else:
+				for entry in os.listdir(self.__auditDir):
+					entry = entry.lower()
+					
+					if (entry == 'global.sw') or (entry == 'global.hw'):
+						continue
+					elif objType == 'AuditSoftwareOnClient' and not entry.endswith('.sw'):
+						continue
+					elif objType == 'AuditHardwareOnHost' and not entry.endswith('.hw'):
+						continue
+					
+					try:
+						filenames.append(self._getConfigFile(objType, {idType : forceHostId(entry[:-3])}, fileType))
+					except:
+						logger.error(u"_getIdents(): Found bad file '%s'" % filename)
+			
+			for filename in filenames:
+				iniFile = IniFile(filename = filename)
+				cp = iniFile.parse()
+				
+				for section in cp.sections():
+					idents = section.split(';')
+					if len(idents) > 5:
+						idents = section.replace('\\;', '\\~~~').split(';')
+						if len(idents) == 5:
+							for i in range(5):
+								idents[i] = idents[i].replace('\\~~~', ';')
+						else:
+							logger.error(u"_getIdents(): Too many idents in section '%s' in file '%s'" \
+								% (section, filename))
+							continue
+					elif len(idents) < 5:
+						logger.error(u"_getIdents(): Too few idents in section '%s' in file '%s'" \
+							% (section, filename))
+						continue
+					
+					objIdents.append(
+						{
+						'name' : idents[0],
+						'version' : idents[1],
+						'subVersion' : idents[2],
+						'language' : idents[3],
+						'architecture' : idents[4]
 						}
 					)
 		
@@ -433,40 +550,40 @@ class File31Backend(ConfigDataBackend):
 		
 		return filteredObjIdents
 		
-	def _objectHashMatches(self, objHash, **filter):
-		matchedAll = True
-		for (attribute, value) in objHash.items():
-			if not filter.get(attribute):
-				continue
-			matched = False
-			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
-				(filter[attribute], attribute, value))
-			for filterValue in forceList(filter[attribute]):
-				if (filterValue == value):
-					matched = True
-					break
-				
-				if type(value) is list:
-					if filterValue in value:
-						matched = True
-						break
-					continue
-				
-				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
-					# TODO: still necessary?
-					continue
-				
-				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
-					matched = True
-					break
-			
-			if matched:
-				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
-					(value, filter[attribute], attribute))
-			else:
-				matchedAll = False
-				break
-		return matchedAll
+#	def _objectHashMatches(self, objHash, **filter):
+#		matchedAll = True
+#		for (attribute, value) in objHash.items():
+#			if not filter.get(attribute):
+#				continue
+#			matched = False
+#			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
+#				(filter[attribute], attribute, value))
+#			for filterValue in forceList(filter[attribute]):
+#				if (filterValue == value):
+#					matched = True
+#					break
+#				
+#				if type(value) is list:
+#					if filterValue in value:
+#						matched = True
+#						break
+#					continue
+#				
+#				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
+#					# TODO: still necessary?
+#					continue
+#				
+#				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
+#					matched = True
+#					break
+#			
+#			if matched:
+#				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
+#					(value, filter[attribute], attribute))
+#			else:
+#				matchedAll = False
+#				break
+#		return matchedAll
 	
 	def _adaptObjectHashAttributes(self, objHash, ident, attributes):
 		if not attributes:
@@ -508,25 +625,35 @@ class File31Backend(ConfigDataBackend):
 					for m in mapping:
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 				
-				elif (fileType == 'ini'):
+				elif (fileType == 'ini') or (fileType == 'sw') or (fileType == 'hw'):
 					iniFile = IniFile(filename = filename)
 					cp = iniFile.parse()
 					
 					for m in mapping:
 						attribute = m['attribute']
-						section = m['section']
+						section = '' #will be build from sectionParts
 						option = m['option']
 						
-						match = self._placeholderRegex.search(section)
-						if match:
-							replaceValue = objHash[match.group(1)]
-							if objType in ('ProductOnClient'):
-								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
-							section = section.replace(u'<%s>' % match.group(1), replaceValue)
+						sectionParts = m['section'].split(';')
 						
-						match = self._placeholderRegex.search(option)
-						if match:
-							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+						for i in range(len(sectionParts)):
+							match = self._placeholderRegex.search(sectionParts[i])
+							if match:
+								replaceValue = objHash[match.group(1)]
+								if objType in ('ProductOnClient'):
+									replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+								sectionParts[i] = sectionParts[i].replace(u'<%s>' % match.group(1), replaceValue)
+							
+							match = self._placeholderRegex.search(option)
+							if match:
+								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+							
+							sectionPart = sectionParts[i].replace(';', '\\;')
+							
+							if section == '':
+								section = sectionParts[i]
+							else:
+								section = section + ';' + sectionParts[i]
 						
 						value = None
 						
@@ -613,15 +740,18 @@ class File31Backend(ConfigDataBackend):
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 			
-			elif (fileType == 'ini'):
+			elif (fileType == 'ini') or (fileType == 'sw') or (fileType == 'hw'):
 				iniFile = IniFile(filename = filename)
 				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
 				
 				if (mode == 'create'):
-					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
+					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver', 'AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
 						iniFile.delete()
-						shutil.copyfile('/var/lib/opsi/template/proto.ini', filename)
+						
+						if objType in ('OpsiClient'):
+							shutil.copyfile('/var/lib/opsi/template/proto.ini', filename)
+						
 						iniFile = IniFile(filename = filename)
 						iniFile.create(group = 'pcpatch', mode = 0660)
 						cp = iniFile.parse()
@@ -647,19 +777,29 @@ class File31Backend(ConfigDataBackend):
 					attributeMapping = mapping.get(attribute, mapping.get('*'))
 					
 					if not attributeMapping is None:
-						section = attributeMapping['section']
+						section = ''
 						option = attributeMapping['option']
 						
-						match = self._placeholderRegex.search(section)
-						if match:
-							replaceValue = objHash[match.group(1)]
-							if objType in ('ProductOnClient'):
-								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
-							section = section.replace(u'<%s>' % match.group(1), replaceValue)
+						sectionParts = attributeMapping['section'].split(';')
 						
-						match = self._placeholderRegex.search(option)
-						if match:
-							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+						for i in range(len(sectionParts)):
+							match = self._placeholderRegex.search(sectionParts[i])
+							if match:
+								replaceValue = objHash[match.group(1)]
+								if objType in ('ProductOnClient'):
+									replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+								sectionParts[i] = sectionParts[i].replace(u'<%s>' % match.group(1), replaceValue)
+							
+							match = self._placeholderRegex.search(option)
+							if match:
+								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+							
+							sectionPart = sectionParts[i].replace(';', '\\;')
+							
+							if section == '':
+								section = sectionPart
+							else:
+								section = section + ';' + sectionPart
 						
 						if objType in ('ProductOnClient'):
 							if attribute in ('installationStatus', 'actionRequest'):
@@ -748,7 +888,7 @@ class File31Backend(ConfigDataBackend):
 		objType = u''
 		if objList:
 			#objType is not always correct, but _getConfigFile() is
-			#within loops obj.getType() is used
+			#within ifs obj.getType() from obj in objList should be used
 			objType = objList[0].getType()
 		
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
@@ -791,10 +931,18 @@ class File31Backend(ConfigDataBackend):
 					logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
 				iniFile.generate(cp)
 		
-		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
+		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
 			for obj in objList:
+				fileType = ''
+				if obj.getType() in ('Product', 'LocalbootProduct', 'NetbootProduct'):
+					fileType = 'pro'
+				elif obj.getType() in ('AuditSoftware', 'AuditSoftwareOnClient'):
+					fileType = 'sw'
+				elif obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+					fileType = 'hw'
+				
 				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType = 'dict'), 'pro' )
+					obj.getType(), obj.getIdent(returnType = 'dict'), fileType )
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if os.path.isfile(filename):
 					os.unlink(filename)
@@ -918,30 +1066,6 @@ class File31Backend(ConfigDataBackend):
 		
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s'" % objType)
-		
-	
-	
-	def backend_exit(self):
-		pass
-	
-	def backend_createBase(self):
-		self.backend_mkdir(self.__baseDir)
-		self.backend_mkdir(self.__clientConfigDir)
-		self.backend_mkdir(self.__depotConfigDir)
-		self.backend_mkdir(self.__productDir)
-	
-	def backend_deleteBase(self):
-		if os.path.exists(self.__baseDir):
-			shutil.rmtree(self.__baseDir)
-	
-	def backend_mkdir(self, dirname):
-		if not dirname.startswith(self.__baseDir):
-			raise Exception(u"Not in BaseDir!")
-		
-		os.mkdir(dirname)
-		os.chmod(dirname, 0770)
-		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
-
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -1458,4 +1582,168 @@ class File31Backend(ConfigDataBackend):
 	
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	def getSoftwareInformation_hash(self, hostId):
+		hostId = hostId.lower()
+		ini = None
+		try:
+			ini = self.readIniFile( "%s.sw" % os.path.join(self.__auditInfoDir, hostId), raw = True )
+		except BackendIOError, e:
+			logger.warning("No software info for host '%s' found: %s" % (hostId, e))
+			return []
+		
+		info = {}
+		for section in ini.sections():
+			software = {}
+			for (key, value) in ini.items(section):
+				if   (key.lower() == "displayname"): key = "displayName"
+				elif (key.lower() == "displayversion"): key = "displayVersion"
+				software[key] = value
+			info[section] = software
+		
+		return info
+	
+	def setSoftwareInformation(self, hostId, info):
+		hostId = hostId.lower()
+		
+		if not type(info) is dict:
+			raise BackendBadValueError("Software information must be dict")
+		
+		# Time of scan
+		if not info.has_key('SCANPROPERTIES') or not info['SCANPROPERTIES']:
+			info['SCANPROPERTIES'] = { 'scantime': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) }
+		
+		self.deleteSoftwareInformation(hostId)
+		
+		iniFile = "%s.sw" % os.path.join(self.__auditInfoDir, hostId)
+		
+		if not os.path.exists(iniFile):
+			self.createFile(iniFile, 0660)
+		ini = self.readIniFile(iniFile)
+		
+		for (key, value) in info.items():
+			ini.add_section(key)
+			for (k, v) in value.items():
+				ini.set(key, str(k), str(v))
+		
+		self.writeIniFile(iniFile, ini)
+	
+	def deleteSoftwareInformation(self, hostId):
+		hostId = hostId.lower()
+		swFile = "%s.sw" % os.path.join(self.__auditInfoDir, hostId)
+		if not os.path.exists(swFile):
+			return
+		try:
+			self.deleteFile(swFile)
+		except Exception, e:
+			logger.error("Failed to delete software information for host '%s': %s" % (hostId, e))
+		
+	def getHardwareInformation_listOfHashes(self, hostId):
+		# Deprecated
+		return []
+	
+	def getHardwareInformation_hash(self, hostId):
+		hostId = hostId.lower()
+		ini = None
+		try:
+			ini = self.readIniFile( "%s.hw" % os.path.join(self.__auditInfoDir, hostId), raw = True )
+		except BackendIOError, e:
+			logger.warning("No hardware info for host '%s' found: %s" % (hostId, e))
+			return []
+		
+		info = {}
+		for section in ini.sections():
+			dev = {}
+			for (key, value) in ini.items(section):
+				try:
+					if hasattr(json, 'loads'):
+						# python 2.6 json module
+						dev[key] = json.loads(value)
+					else:
+						dev[key] = json.read(value)
+				except:
+					dev[key] = ''
+			
+			section = ('_'.join(section.split('_')[:-1])).upper()
+			if not info.has_key(section):
+				info[section] = []
+			
+			info[section].append(dev)
+		
+		return info
+	
+	def setHardwareInformation(self, hostId, info):
+		hostId = hostId.lower()
+		
+		# Time of scan
+		if not info.has_key('SCANPROPERTIES') or not info['SCANPROPERTIES']:
+			info['SCANPROPERTIES'] = [ { 'scantime': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) } ]
+		
+		if not type(info) is dict:
+			raise BackendBadValueError("Hardware information must be dict")
+		
+		self.deleteHardwareInformation(hostId)
+		
+		iniFile = "%s.hw" % os.path.join(self.__auditInfoDir, hostId)
+		
+		if not os.path.exists(iniFile):
+			self.createFile(iniFile, 0660)
+		ini = self.readIniFile(iniFile)
+		
+		for (key, values) in info.items():
+			n = 0
+			for value in values:
+				section = '%s_%d' % (key, n)
+				ini.add_section(section)
+				for (opsiName, opsiValue) in value.items():
+					if type(opsiValue) is unicode:
+						if hasattr(json, 'dumps'):
+							# python 2.6 json module
+							ini.set(section, opsiName, json.dumps(opsiValue.encode('utf-8')))
+						else:
+							ini.set(section, opsiName, json.write(opsiValue.encode('utf-8')))
+					else:
+						if hasattr(json, 'dumps'):
+							# python 2.6 json module
+							ini.set(section, opsiName, json.dumps(opsiValue))
+						else:
+							ini.set(section, opsiName, json.write(opsiValue))
+				n += 1
+		
+		self.writeIniFile(iniFile, ini)
+	
+	def deleteHardwareInformation(self, hostId):
+		hostId = hostId.lower()
+		hwFile = "%s.hw" % os.path.join(self.__auditInfoDir, hostId)
+		if not os.path.exists(hwFile):
+			return
+		try:
+			self.deleteFile(hwFile)
+		except Exception, e:
+			logger.error("Failed to delete hardware information for host '%s': %s" % (hostId, e))
+	
 

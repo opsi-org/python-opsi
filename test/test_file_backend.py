@@ -32,6 +32,7 @@ file31Backend = File31Backend()
 bt = BackendTest(ExtendedConfigDataBackend(file31Backend))
 bt.cleanupBackend()
 bt.testObjectMethods()
+bt.testInventoryObjectMethods()
 #bt.testNonObjectMethods()
 #bt.testPerformance()
 
