@@ -40,23 +40,30 @@ binary-arch: build-arch binary-stamp
 
 binary-stamp:
 	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI
-	cp -R OPSI/web2 debian/python-opsi/usr/share/python-support/python-opsi/OPSI/
 	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Backend
-	#mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/System
-	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Util/File
+	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/System
+	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Util/File/Archive
+	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Util/File/Opsi
+	
+	cp -R OPSI/web2 debian/python-opsi/usr/share/python-support/python-opsi/OPSI/
+	
 	for i in `(cd src; find OPSI -name "*.py")`; do install -m 0755 $$i debian/python-opsi/usr/share/python-support/python-opsi/$$i; done
+	
 	find debian/python-opsi/usr/share/python-support/python-opsi/OPSI -name '.svn' -exec rm -rf '{}' \; 2>/dev/null || true
+	
 	#mkdir -p debian/python-opsi/usr/share/locale/de/LC_MESSAGES
 	#install -m 0644 gettext/opsi_system_de.mo debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
 	#install -m 0644 gettext/opsi_ui_de.mo     debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
 	#mkdir -p debian/python-opsi/usr/share/locale/fr/LC_MESSAGES
 	#install -m 0644 gettext/opsi_system_fr.mo debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_system.mo
 	#install -m 0644 gettext/opsi_ui_fr.mo     debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_ui.mo
-	mkdir -p debian/python-opsi/etc/opsi/backendManager/compose.d
+	
+	mkdir -p debian/python-opsi/etc/opsi/backendManager/extend.d
 	for i in `(cd files/backendManager; find -name "*.conf")`; do install -m 0644 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
-	#for i in `(cd files/backendManager; ls *.conf)`; do install -m 0644 files/backendManager.d/$$i debian/python-opsi/etc/opsi/backendManager.d/; done
+	
 	mkdir -p debian/python-opsi/etc/opsi/backends
 	for i in `(cd files/backends; find -name "*.conf")`; do install -m 0644 files/backends/$$i debian/python-opsi/etc/opsi/backends/$$i; done
+	
 	#mkdir -p debian/python-opsi/etc/opsi/hwaudit/locales
 	#install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
 	#for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done

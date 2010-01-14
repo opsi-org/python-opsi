@@ -52,30 +52,28 @@ logger = Logger()
 # ======================================================================================================
 class ServerConnection:
 	def __init__(self, port):
-		self.__port = port
+		self.port = port
 	
 	def createUnixSocket(self):
-		logger.notice(u"Creating unix socket '%s'" % self.__port)
-		self.__socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		self.__socket.settimeout(5.0)
+		logger.notice(u"Creating unix socket '%s'" % self.port)
+		self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+		self._socket.settimeout(5.0)
 		try:
-			self.__socket.connect(self.__port)
+			self._socket.connect(self.port)
 		except Exception, e:
-			raise Exception(u"Failed to connect to socket '%s': %s" % (self.__port, e))
-		
+			raise Exception(u"Failed to connect to socket '%s': %s" % (self.port, e))
 	
 	def sendCommand(self, cmd):
 		self.createUnixSocket()
-		self.__socket.send(cmd)
+		self._socket.send( forceUnicode(cmd).encode('utf-8') )
 		result = None
 		try:
-			result = self.__socket.recv(4096)
+			result = forceUnicode(self._socket.recv(4096))
 		except Exception, e:
 			raise Exception(u"Failed to receive: %s" % e)
-		self.__socket.close()
-		if result.startswith('(ERROR)'):
+		self._socket.close()
+		if result.startswith(u'(ERROR)'):
 			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
-		return result
 	
 # ======================================================================================================
 # =                                 CLASS OPSIPXECONFDBACKEND                                          =
@@ -84,7 +82,7 @@ class OpsiPXEConfdBackend(DataBackend):
 	
 	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
 		DataBackend.__init__(self, username, password, address, **kwargs)
-		self.__port = '/var/run/opsipxeconfd.socket'
+		self.__port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
 	
 	def _writePXEBootConfiguration(self, productState):
 		if not productState.actionRequest:
