@@ -826,7 +826,7 @@ class BackendTest(object):
 		self.auditSoftware3 = AuditSoftware(
 			name                  = 'my software',
 			version               = '',
-			subVersion            = '',
+			subVersion            = 'de;en;tr',
 			language              = '',
 			architecture          = '',
 			windowsSoftwareId     = 'my software',
@@ -1533,6 +1533,8 @@ class BackendTest(object):
 		self.backend.auditSoftware_createObjects(self.auditSoftwares)
 		
 		auditSoftwares = self.backend.auditSoftware_getObjects()
+		for auditSoftware in auditSoftwares:
+			print auditSoftware.getIdent(returnType = 'dict')
 		assert len(auditSoftwares) == len(self.auditSoftwares)
 		
 		# AuditSoftwareOnClients

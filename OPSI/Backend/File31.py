@@ -313,10 +313,12 @@ class File31Backend(ConfigDataBackend):
 		objIdents = []
 		
 		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			iniFile = IniFile(filename = self._getConfigFile(objType, {}, 'ini'))
-			cp = iniFile.parse()
-			for section in cp.sections():
-				objIdents.append({'id': section})
+			filename = self._getConfigFile(objType, {}, 'ini')
+			if os.path.isfile(filename):
+				iniFile = IniFile(filename = filename)
+				cp = iniFile.parse()
+				for section in cp.sections():
+					objIdents.append({'id': section})
 		
 		elif objType in ('OpsiClient', 'ProductOnClient'):
 			for entry in os.listdir(self.__clientConfigDir):
@@ -416,10 +418,6 @@ class File31Backend(ConfigDataBackend):
 					continue
 				
 				filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
-				
-				if not os.path.isfile(filename):
-					continue
-				
 				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
 				
@@ -447,29 +445,30 @@ class File31Backend(ConfigDataBackend):
 		
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
-			iniFile = IniFile(filename = filename)
-			cp = iniFile.parse()
-			
-			for section in cp.sections():
-				if objType == 'ObjectToGroup':
-					for option in cp.options(section):
-						try:
-							if not option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
-								objIdents.append(
-									{
-									'groupId': section,
-									'objectId': forceHostId(option)
-									}
-								)
-						except:
-							logger.error(u"_getIdents(): Found bad option '%s' in section '%s' in file '%s'" \
-								% (option, section, filename))
-				else:
-					objIdents.append(
-						{
-						'id': section
-						}
-					)
+			if os.path.isfile(filename):
+				iniFile = IniFile(filename = filename)
+				cp = iniFile.parse()
+				
+				for section in cp.sections():
+					if objType == 'ObjectToGroup':
+						for option in cp.options(section):
+							try:
+								if not option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
+									objIdents.append(
+										{
+										'groupId': section,
+										'objectId': forceHostId(option)
+										}
+									)
+							except:
+								logger.error(u"_getIdents(): Found bad option '%s' in section '%s' in file '%s'" \
+									% (option, section, filename))
+					else:
+						objIdents.append(
+							{
+							'id': section
+							}
+						)
 		
 		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
 			filenames = []
@@ -481,7 +480,9 @@ class File31Backend(ConfigDataBackend):
 				idType = 'hostId'
 			
 			if objType in ('AuditSoftware', 'AuditHardware'):
-				filenames.append(self._getConfigFile(objType, {}, fileType))
+				filename = self._getConfigFile(objType, {}, fileType)
+				if os.path.isfile(filename):
+					filenames.append(filename)
 			else:
 				for entry in os.listdir(self.__auditDir):
 					entry = entry.lower()
@@ -502,6 +503,8 @@ class File31Backend(ConfigDataBackend):
 				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
 				
+				filebase = os.path.basename(filename)[:-3]
+				
 				for section in cp.sections():
 					idents = section.split(';')
 					if len(idents) > 5:
@@ -518,15 +521,18 @@ class File31Backend(ConfigDataBackend):
 							% (section, filename))
 						continue
 					
-					objIdents.append(
-						{
+					ident = {
 						'name' : idents[0],
 						'version' : idents[1],
 						'subVersion' : idents[2],
 						'language' : idents[3],
 						'architecture' : idents[4]
 						}
-					)
+					
+					if objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
+						ident[idType] = filebase
+					
+					objIdents.append(ident)
 		
 		else:
 			logger.warning(u"_getIdents(): Unhandled objType '%s'" % objType)
@@ -549,41 +555,6 @@ class File31Backend(ConfigDataBackend):
 				filteredObjIdents.append(ident)
 		
 		return filteredObjIdents
-		
-#	def _objectHashMatches(self, objHash, **filter):
-#		matchedAll = True
-#		for (attribute, value) in objHash.items():
-#			if not filter.get(attribute):
-#				continue
-#			matched = False
-#			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
-#				(filter[attribute], attribute, value))
-#			for filterValue in forceList(filter[attribute]):
-#				if (filterValue == value):
-#					matched = True
-#					break
-#				
-#				if type(value) is list:
-#					if filterValue in value:
-#						matched = True
-#						break
-#					continue
-#				
-#				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
-#					# TODO: still necessary?
-#					continue
-#				
-#				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
-#					matched = True
-#					break
-#			
-#			if matched:
-#				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
-#					(value, filter[attribute], attribute))
-#			else:
-#				matchedAll = False
-#				break
-#		return matchedAll
 	
 	def _adaptObjectHashAttributes(self, objHash, ident, attributes):
 		if not attributes:
@@ -746,7 +717,7 @@ class File31Backend(ConfigDataBackend):
 				cp = iniFile.parse()
 				
 				if (mode == 'create'):
-					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver', 'AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
+					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
 						iniFile.delete()
 						
 						if objType in ('OpsiClient'):
