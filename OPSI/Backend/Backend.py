@@ -1720,14 +1720,21 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 		logger.debug(u"   * got depotToClients")
 		
-		# Get product on depots which match the filter
+		
 		productOnDepots = {}
-		for depotId in depotToClients.keys():
-			productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
-							depotId        = depotId,
-							productId      = pocFilter.get('productId'),
-							productVersion = pocFilter.get('productVersion'),
-							packageVersion = pocFilter.get('packageVersion'))
+		if self._options['processProductDependencies']:
+			# Get ALL product on depots
+			for depotId in depotToClients.keys():
+				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(depotId = depotId)
+		else:
+			# Get product on depots which match the filter
+			for depotId in depotToClients.keys():
+				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
+								depotId        = depotId,
+								productId      = pocFilter.get('productId'),
+								productVersion = pocFilter.get('productVersion'),
+								packageVersion = pocFilter.get('packageVersion'))
+		
 		logger.debug(u"   * got productOnDepots")
 		
 		# Create data structure for product states to find missing ones
@@ -1765,7 +1772,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			#	for (productId, poc) in pocs.items():
 			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 		
-		
 		if not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
 			# No more adjustments needed => done!
 			return productOnClients
@@ -1777,18 +1783,20 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		for (depotId, depotClientIds) in depotToClients.items():
 			# Get needed product informations (priority, dependencies)
 			logger.debug(u"   * depot %s" % depotId)
+			
 			depotProducts = {}
 			depotDependencies = {}
 			depotProductSequence = []
 			priorityToProductIds = {}
 			
-			def addToDepotProducts(depotProducts, depotDependencies, productId, productVersion, packageVersion):
+			for pod in productOnDepots[depotId]:
 				product = self.product_getObjects(
-					id             = productId,
-					productVersion = productVersion,
-					packageVersion = packageVersion)
+					id             = pod.productId,
+					productVersion = pod.productVersion,
+					packageVersion = pod.packageVersion)
 				if not product:
-					return (depotProducts, depotDependencies)
+					logger.critical(u"Product '%s_%s-%s' not found" % (pod.productId, pod.productVersion, pod.packageVersion))
+					continue
 				
 				product = product[0]
 				if not depotProducts.has_key(product.id):
@@ -1801,7 +1809,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					rp = self.product_getObjects(
 							id             = pd.requiredProductId,
 							productVersion = pd.requiredProductVersion,
-							packageVersion = pd.requiredPackageVersion):
+							packageVersion = pd.requiredPackageVersion)
 					if not rp:
 						rproductv = pd.requiredProductVersion
 						if rproductv is None: rproductv = 'xxxx'
@@ -1815,15 +1823,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					if not depotDependencies.has_key(product.id):
 						depotDependencies[product.id] = []
 					depotDependencies[product.id].append(pd)
-					
-					(depotProducts, depotDependencies) = addToDepotProducts(depotProducts, depotDependencies, rp.id, rp.productVersion, rp.packageVersion)
-					
-				return (depotProducts, depotDependencies)
-				
-			for pod in productOnDepots[depotId]:
-				(depotProducts, depotDependencies) = addToDepotProducts(depotProducts, depotDependencies, pod.productId, pod.productVersion, pod.packageVersion)
 			
 			logger.debug(u"      * got product informations for depot %s" % depotId)
+			
 			if self._options['processProductPriorities']:
 				logger.debug(u"      * Sorting products by priority for depot %s" % depotId)
 				for (productId, product) in depotProducts.items():
@@ -1854,6 +1856,9 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 								continue
 							
 							logger.debug(u"              need to check dependency to product '%s'" % (dependency.requiredProductId))
+							logger.debug(u"              product '%s' requires product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
+										% (poc.productId, dependency.requiredProductId, dependency.requiredProductVersion, dependency.requiredPackageVersion, dependency.productAction))
+							
 							requiredAction     = dependency.requiredAction
 							installationStatus = 'not_installed'
 							actionRequest      = 'none'
@@ -1868,6 +1873,30 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 									requiredAction = 'setup'
 								elif (dependency.requiredInstallationStatus == 'not_installed'):
 									requiredAction = 'uninstall'
+							
+							# An action is required => check if possible
+							logger.debug(u"              need to set action '%s' for product '%s' to fulfill dependency" % (requiredAction, dependency.requiredProductId))
+							
+							setActionRequestToNone = False
+							if not depotProducts.has_key(dependency.requiredProductId):
+								logger.warning(u"              product '%s' defines dependency to product '%s', which does not exist on depot '%s'" \
+													% (poc.productId, dependency.requiredProductId, depotId))
+								setActionRequestToNone = True
+							
+							elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != depotProducts[dependency.requiredProductId].productVersion):
+								logger.warning(u"              product '%s' defines dependency to product '%s', but product version '%s' does not exist on depot '%s'" \
+													% (poc.productId, dependency.requiredProductId, dependency.requiredProductVersion, depotId))
+								setActionRequestToNone = True
+							elif (not dependency.requiredPackageVersion is None and dependency.requiredPackageVersion != depotProducts[dependency.requiredProductId].packageVersion):
+								logger.warning(u"              product '%s' defines dependency to product '%s', but package version '%s' does not exist on depot '%s'" \
+													% (poc.productId, dependency.requiredProductId, dependency.requiredPackageVersion, depotId))
+								setActionRequestToNone = True
+							
+							if setActionRequestToNone:
+								logger.warning(u"               => setting action request for product '%s' on client '%s' to 'none'!" % (poc.productId, clientId))
+								pocByClientIdAndProductId[clientId][poc.productId].actionRequest = 'none'
+								return
+							
 							if   (actionRequest == requiredAction):
 								logger.debug(u"              required action '%s' is already set" % requiredAction)
 								continue
@@ -1878,25 +1907,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 								#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
 								#		% (poc.productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
 							logger.debug(u"              need to add action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
-							
-							setActionRequestToNone = False
-							if not depotProducts.has_key(dependency.requiredProductId):
-								logger.warning(u"              product '%s' defined dependency to product '%s', which does not exist on depot '%s'" \
-													% (poc.productId, dependency.requiredProductId, depotId))
-								setActionRequestToNone = True
-							elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != depotProducts[dependency.requiredProductId].productVersion):
-								logger.warning(u"              product '%s' defined dependency to product '%s', but product version '%s' does not exist on depot '%s'" \
-													% (poc.productId, dependency.requiredProductId, dependency.requiredProductVersion, depotId))
-								setActionRequestToNone = True
-							elif (not dependency.requiredPackageVersion is None and dependency.requiredPackageVersion != depotProducts[dependency.requiredProductId].packageVersion):
-								logger.warning(u"              product '%s' defined dependency to product '%s', but package version '%s' does not exist on depot '%s'" \
-													% (poc.productId, dependency.requiredProductId, dependency.requiredPackageVersion, depotId))
-								setActionRequestToNone = True
-							
-							if setActionRequestToNone:
-								logger.warning(u"               => setting action request for product '%s' on client '%s' to 'none'!" % (poc.productId, clientId))
-								pocByClientIdAndProductId[clientId][poc.productId].actionRequest = 'none'
-								return
 							
 							if addedInfo.has_key(dependency.requiredProductId):
 								logger.warning(u"Product dependency loop detected, skipping")

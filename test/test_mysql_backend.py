@@ -22,6 +22,7 @@ bt.testObjectMethods()
 bt.testLicenseManagementObjectMethods()
 bt.testInventoryObjectMethods()
 #bt.testNonObjectMethods()
+bt.testExtendedBackend()
 #bt.testPerformance()
 #bt.testMultithreading()
 

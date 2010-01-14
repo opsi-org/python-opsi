@@ -1460,8 +1460,8 @@ class ProductOnClient(Relationship):
 		return fromJson(jsonString, 'ProductOnClient')
 	
 	def __unicode__(self):
-		return u"<%s clientId '%s', productId '%s'>" \
-			% (self.getType(), self.clientId, self.productId)
+		return u"<%s clientId '%s', productId '%s', installationStatus '%s', actionRequest '%s'>" \
+			% (self.getType(), self.clientId, self.productId, self.installationStatus, self.actionRequest)
 	
 Relationship.subClasses['ProductOnClient'] = ProductOnClient
 

@@ -63,7 +63,24 @@ class BackendTest(object):
 			networkAddress      = '192.168.2.0/24',
 			maxBandwidth        = 10000
 		)
-		self.depotservers = [ self.depotserver1 ]
+		
+		self.depotserver2 = OpsiDepotserver(
+			id                  = 'depotserver2.uib.local',
+			opsiHostKey         = '93aa22f38a678c64ef678a012d2e82f2',
+			depotLocalUrl       = 'file:///opt/pcbin/install',
+			depotRemoteUrl      = 'smb://depotserver2.uib.local/opt_pcbin',
+			repositoryLocalUrl  = 'file:///var/lib/opsi/products',
+			repositoryRemoteUrl = 'webdavs://depotserver2.uib.local:4447/products',
+			description         = 'Second depot',
+			notes               = 'no notes here',
+			hardwareAddress     = '00:01:09:07:11:aa',
+			ipAddress           = '192.168.10.1',
+			inventoryNumber     = '',
+			networkAddress      = '192.168.10.0/24',
+			maxBandwidth        = 240000
+		)
+		
+		self.depotservers = [ self.depotserver1, self.depotserver2 ]
 		self.hosts.extend(self.depotservers)
 		
 		self.client1 = OpsiClient(
@@ -90,7 +107,28 @@ class BackendTest(object):
 			description     = 'Test client 3',
 			inventoryNumber = 'XYZABC_1200292'
 		)
-		self.clients = [ self.client1, self.client2, self.client3 ]
+		
+		self.client4 = OpsiClient(
+			id              = 'client4.uib.local',
+			description     = 'Test client 4',
+		)
+		
+		self.client5 = OpsiClient(
+			id              = 'client5.uib.local',
+			description     = 'Test client 5',
+		)
+		
+		self.client6 = OpsiClient(
+			id              = 'client6.uib.local',
+			description     = 'Test client 6',
+		)
+		
+		self.client7 = OpsiClient(
+			id              = 'client7.uib.local',
+			description     = 'Test client 7',
+		)
+		
+		self.clients = [ self.client1, self.client2, self.client3, self.client4, self.client5, self.client6, self.client7 ]
 		self.hosts.extend(self.clients)
 		
 		# Configs
@@ -161,7 +199,26 @@ class BackendTest(object):
 			objectId = self.client2.getId(),
 			values   = ['user']
 		)
-		self.configStates = [ self.configState1, self.configState2, self.configState3, self.configState4 ]
+		
+		self.configState5 = ConfigState(
+			configId = self.config4.getId(),
+			objectId = self.client5.getId(),
+			values   = self.depotserver2.id
+		)
+		
+		self.configState6 = ConfigState(
+			configId = self.config4.getId(),
+			objectId = self.client6.getId(),
+			values   = self.depotserver2.id
+		)
+		
+		self.configState7 = ConfigState(
+			configId = self.config4.getId(),
+			objectId = self.client7.getId(),
+			values   = self.depotserver2.id
+		)
+		
+		self.configStates = [ self.configState1, self.configState2, self.configState3, self.configState4, self.configState5, self.configState6, self.configState7 ]
 		
 		# Products
 		self.products = []
@@ -258,7 +315,81 @@ class BackendTest(object):
 			windowsSoftwareIds = []
 		)
 		
-		self.localbootProducts = [ self.product2, self.product3, self.product4, self.product5 ]
+		self.product6 = LocalbootProduct(
+			id                 = 'product6',
+			name               = u'Product 6',
+			productVersion     = "1.0",
+			packageVersion     = 1,
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = "uninstall.ins",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
+			priority           = 0,
+			description        = "",
+			advice             = "",
+			productClassNames  = [],
+			windowsSoftwareIds = []
+		)
+		
+		self.product7 = LocalbootProduct(
+			id                 = 'product7',
+			name               = u'Product 7',
+			productVersion     = "1.0",
+			packageVersion     = 1,
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = "uninstall.ins",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
+			priority           = 0,
+			description        = "",
+			advice             = "",
+			productClassNames  = [],
+			windowsSoftwareIds = []
+		)
+		
+		self.product8 = LocalbootProduct(
+			id                 = 'product7',
+			name               = u'Product 7',
+			productVersion     = "1.0",
+			packageVersion     = 2,
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = "uninstall.ins",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
+			customScript       = "custom.ins",
+			priority           = 0,
+			description        = "",
+			advice             = "",
+			productClassNames  = [],
+			windowsSoftwareIds = []
+		)
+		
+		self.product9 = LocalbootProduct(
+			id                 = 'product9',
+			name               = u'Product 9',
+			productVersion     = "1.0",
+			packageVersion     = 2,
+			licenseRequired    = False,
+			setupScript        = "setup.ins",
+			uninstallScript    = "uninstall.ins",
+			updateScript       = None,
+			alwaysScript       = None,
+			onceScript         = None,
+			customScript       = "custom.ins",
+			priority           = 0,
+			description        = "",
+			advice             = "",
+			productClassNames  = [],
+			windowsSoftwareIds = []
+		)
+		
+		self.localbootProducts = [ self.product2, self.product3, self.product4, self.product5, self.product6, self.product7, self.product8, self.product9 ]
 		self.products.extend(self.localbootProducts)
 		
 		# ProductProperties
@@ -306,6 +437,7 @@ class BackendTest(object):
 			requiredInstallationStatus = None,
 			requirementType            = 'before'
 		)
+		
 		self.productDependency2 = ProductDependency(
 			productId                  = self.product2.id,
 			productVersion             = self.product2.productVersion,
@@ -318,7 +450,34 @@ class BackendTest(object):
 			requiredInstallationStatus = 'installed',
 			requirementType            = 'after'
 		)
-		self.productDependencies = [ self.productDependency1, self.productDependency2 ]
+		
+		self.productDependency3 = ProductDependency(
+			productId                  = self.product6.id,
+			productVersion             = self.product6.productVersion,
+			packageVersion             = self.product6.packageVersion,
+			productAction              = 'setup',
+			requiredProductId          = self.product7.id,
+			requiredProductVersion     = self.product7.productVersion,
+			requiredPackageVersion     = self.product7.packageVersion,
+			requiredAction             = None,
+			requiredInstallationStatus = 'installed',
+			requirementType            = 'after'
+		)
+		
+		self.productDependency4 = ProductDependency(
+			productId                  = self.product7.id,
+			productVersion             = self.product7.productVersion,
+			packageVersion             = self.product7.packageVersion,
+			productAction              = 'setup',
+			requiredProductId          = self.product9.id,
+			requiredProductVersion     = None,
+			requiredPackageVersion     = None,
+			requiredAction             = None,
+			requiredInstallationStatus = 'installed',
+			requirementType            = 'after'
+		)
+		
+		self.productDependencies = [ self.productDependency1, self.productDependency2, self.productDependency3, self.productDependency4 ]
 		
 		# ProductOnDepots
 		self.productOnDepot1 = ProductOnDepot(
@@ -366,7 +525,63 @@ class BackendTest(object):
 			locked         = False
 		)
 		
-		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3, self.productOnDepot4, self.productOnDepot5 ]
+		self.productOnDepot6 = ProductOnDepot(
+			productId      = self.product6.getId(),
+			productType    = self.product6.getType(),
+			productVersion = self.product6.getProductVersion(),
+			packageVersion = self.product6.getPackageVersion(),
+			depotId        = self.depotserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot7 = ProductOnDepot(
+			productId      = self.product6.getId(),
+			productType    = self.product6.getType(),
+			productVersion = self.product6.getProductVersion(),
+			packageVersion = self.product6.getPackageVersion(),
+			depotId        = self.depotserver2.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot8 = ProductOnDepot(
+			productId      = self.product7.getId(),
+			productType    = self.product7.getType(),
+			productVersion = self.product7.getProductVersion(),
+			packageVersion = self.product7.getPackageVersion(),
+			depotId        = self.depotserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot9 = ProductOnDepot(
+			productId      = self.product8.getId(),
+			productType    = self.product8.getType(),
+			productVersion = self.product8.getProductVersion(),
+			packageVersion = self.product8.getPackageVersion(),
+			depotId        = self.depotserver2.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot10 = ProductOnDepot(
+			productId      = self.product9.getId(),
+			productType    = self.product9.getType(),
+			productVersion = self.product9.getProductVersion(),
+			packageVersion = self.product9.getPackageVersion(),
+			depotId        = self.depotserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot11 = ProductOnDepot(
+			productId      = self.product9.getId(),
+			productType    = self.product9.getType(),
+			productVersion = self.product9.getProductVersion(),
+			packageVersion = self.product9.getPackageVersion(),
+			depotId        = self.depotserver2.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3, self.productOnDepot4, self.productOnDepot5,
+					 self.productOnDepot6, self.productOnDepot7, self.productOnDepot8, self.productOnDepot9, self.productOnDepot10,
+					 self.productOnDepot11 ]
 		
 		# ProductOnClients
 		self.productOnClient1 = ProductOnClient(
@@ -1166,13 +1381,10 @@ class BackendTest(object):
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		self.backend.productOnClient_deleteObjects(self.productOnClient3)
 		productOnClients = self.backend.productOnClient_getObjects()
-		logger.critical(">>>>>>>>>>>>>>>>>>> %s" % self.productOnClients)
 		for productOnClient in productOnClients:
 			print "%s,%s" % (productOnClient.clientId,productOnClient.productId)
-		logger.critical("<<<<<<<<<<<<<<<<<<< %s" % productOnClients)
 		assert len(productOnClients) == len(self.productOnClients) - 1
 		
-			
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		
 		
@@ -1493,6 +1705,95 @@ class BackendTest(object):
 		#self.backend.host_delete(id = [])
 		#hosts = self.backend.host_getObjects()
 		#assert len(hosts) == 0
+	
+	
+	def testExtendedBackend(self):
+		self.backend.backend_setOptions({
+			'processProductPriorities':            True,
+			'processProductDependencies':          True,
+			'addProductOnClientDefaults':          True,
+			'addProductPropertyStateDefaults':     True,
+			'addConfigStateDefaults':              True,
+			'deleteConfigStateIfDefault':          True,
+			'returnObjectsOnUpdateAndCreate':      False
+		})
+		
+		clientToDepots = self.backend.configState_getClientToDepotserver()
+		assert len(clientToDepots) == len(self.clients), "expected %d clientToDepots, got %d" % (len(clientToDepots), len(self.clients))
+		
+		for depotserver in self.depotservers:
+			productOnDepots = self.backend.productOnDepot_getObjects(depotId = depotserver.id)
+			for productOnDepot in productOnDepots:
+				logger.info(u"Got productOnDepot: %s" % productOnDepot)
+				
+			for clientToDepot in clientToDepots:
+				if (clientToDepot['depotId'] == depotserver.id):
+					logger.info(u"Got client to depot: %s" % clientToDepot)
+		
+		logger.notice(u"Testing productOnClient: dependencies")
+		
+		# depotserver1: client1, client2, client3, client4
+		# depotserver2: client5, client6, client7
+		
+		# depotserver1: product6_1.0-1, product7_1.0-1, product9_1.0-1
+		# depotserver2: product6_1.0-1, product7_1.0-2, product9_1.0-1
+		
+		# product6_1.0-1: setup requires product7_1.0-1
+		# product7_1.0-1: setup requires product9
+		
+		self.backend.productOnClient_create(
+			productId          = 'product6',
+			productType        = 'LocalbootProduct',
+			clientId           = 'client1.uib.local',
+			installationStatus = 'not_installed',
+			actionRequest      = 'setup')
+		
+		self.backend.productOnClient_delete(
+			productId          = 'product7',
+			clientId           = 'client1.uib.local')
+		
+		self.backend.productOnClient_delete(
+			productId          = 'product9',
+			clientId           = 'client1.uib.local')
+		
+		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local')
+		setup = []
+		for productOnClient in productOnClients:
+			logger.info(u"Got productOnClient: %s" % productOnClient)
+			if (productOnClient.actionRequest == 'setup'):
+				setup.append(productOnClient.productId)
+		assert 'product6' in setup
+		assert 'product7' in setup
+		assert 'product9' in setup
+		
+		self.backend.productOnClient_create(
+			productId          = 'product6',
+			productType        = 'LocalbootProduct',
+			clientId           = 'client5.uib.local',
+			installationStatus = 'not_installed',
+			actionRequest      = 'setup')
+		
+		self.backend.productOnClient_delete(
+			productId          = 'product7',
+			clientId           = 'client5.uib.local')
+		
+		self.backend.productOnClient_delete(
+			productId          = 'product9',
+			clientId           = 'client5.uib.local')
+		
+		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client5.uib.local')
+		setup = []
+		for productOnClient in productOnClients:
+			logger.info(u"Got productOnClient: %s" % productOnClient)
+			if (productOnClient.actionRequest == 'setup'):
+				setup.append(productOnClient.productId)
+		assert not 'product6' in setup
+		assert not 'product7' in setup
+		assert not 'product9' in setup
+		
+		
+		#productOnClients = self.backend.productOnClient_getObjects()
+		#assert len(productOnClients) == len(self.products) * len(self.clients), "expected %d productOnClients, got %d" % ((len(self.products) * len(self.clients)), len(productOnClients))
 		
 	def testPerformance(self):
 		consoleLevel = logger.getConsoleLevel()
