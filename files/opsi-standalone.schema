@@ -301,8 +301,11 @@ attributetype ( 1.3.6.1.4.1.23807.3.1.24
 	DESC 'Product User Login script'
 	SINGLE-VALUE )
 
-
-
+attributetype ( 1.3.6.1.4.1.23807.3.1.25
+	NAME 'opsiProductClassId'
+	DESC 'product class id'
+	EQUALITY caseExactIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
 
 objectclass ( 1.3.6.1.4.1.23807.3.2.1
 	NAME 'opsiProduct'
@@ -310,7 +313,7 @@ objectclass ( 1.3.6.1.4.1.23807.3.2.1
 	ABSTRACT
 	DESC 'Opsi product'
 	MUST ( cn $ opsiProductId $  opsiProductLicenseRequired $ opsiProductName $  opsiProductPriority $ opsiProductVersion $ opsiPackageVersion )
-	MAY ( description $ opsiProductAdvice $ opsiProductClassProvided $ opsiSetupScript $ opsiUninstallScript $ opsiUpdateScript $ opsiOnceScript $ opsiAlwaysScript $ opsiProductIsLocked $ opsiWindowsSoftwareId $ opsiCustomScript $ opsiUserLoginScript $ opsiProductChangeLog $ opsiProductCreationTimestamp ) )
+	MAY ( description $ opsiProductAdvice $ opsiProductClassProvided $ opsiSetupScript $ opsiUninstallScript $ opsiUpdateScript $ opsiOnceScript $ opsiAlwaysScript $ opsiProductIsLocked $ opsiProductClassId $ opsiWindowsSoftwareId $ opsiCustomScript $ opsiUserLoginScript $ opsiProductChangeLog $ opsiProductCreationTimestamp ) )
 
 objectclass ( 1.3.6.1.4.1.23807.3.2.2
 	NAME 'opsiServerProduct'
@@ -516,7 +519,7 @@ objectclass ( 1.3.6.1.4.1.23807.14.2.1
 	SUP top
 	STRUCTURAL
 	DESC 'Opsi Config State'
-	MUST ( cn $ opsiObjectId ) 
+	MUST ( cn $ opsiConfigId $ opsiObjectId ) 
 	MAY ( opsiValue ) )
 
 #15 ProductProperty

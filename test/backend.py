@@ -1532,7 +1532,7 @@ class BackendTest(object):
 		for i in range(num):
 			method = random.choice((self.backend.product_createLocalboot, self.backend.product_createNetboot))
 			method(
-				id = 'product-%d' % i,
+				id = 'product%d' % i,
 				productVersion = random.choice(('1.0', '2', 'xxx', '3.1', '4')),
 				packageVersion = random.choice(('1', '2', 'y', '3', '10', 11, 22)),
 				name = 'Product %d' % i,

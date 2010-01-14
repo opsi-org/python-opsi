@@ -150,7 +150,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiClass':     'Config',
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfig' ],
-					'cn': 'id',
 					'attributes': [
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiConfigId' },
 						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiDescription' },
@@ -179,7 +178,7 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfigState' ],
 					'attributes': [
-						{ 'opsiAttribute': 'configId',        'ldapAttribute': 'cn' },
+						{ 'opsiAttribute': 'configId',        'ldapAttribute': 'opsiConfigId' },
 						{ 'opsiAttribute': 'objectId',        'ldapAttribute': 'opsiObjectId' },
 						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValue' }
 					]
@@ -189,7 +188,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProduct' ],
 					'attributes': [
-						{ 'opsiAttribute': 'id',                    'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'id',                    'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
@@ -206,7 +204,9 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'description',           'ldapAttribute': 'description' },
 						{ 'opsiAttribute': 'advice',                'ldapAttribute': 'opsiProductAdvice' },
 						{ 'opsiAttribute': 'changelog',             'ldapAttribute': 'opsiProductChangeLog' },
-						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' }
+						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' },
+						{ 'opsiAttribute': 'productClassIds',       'ldapAttribute': 'opsiProductClassId' }
+						
 					]
 				},
 				{
@@ -229,7 +229,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductProperty' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'propertyId',            'ldapAttribute': 'opsiPropertyId' },
 						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
@@ -262,7 +261,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductDependency' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
@@ -280,7 +278,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductOnDepot' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'productType',                   'ldapAttribute': 'opsiProductType' },
 						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
@@ -294,7 +291,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductOnClient' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'productType',                   'ldapAttribute': 'opsiProductType' },
 						{ 'opsiAttribute': 'clientId',                      'ldapAttribute': 'opsiClientId' },
@@ -311,7 +307,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductPropertyState' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'propertyId',                    'ldapAttribute': 'opsiPropertyId' },
 						{ 'opsiAttribute': 'objectId',                      'ldapAttribute': 'opsiObjectId' },
@@ -323,7 +318,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiHostGroup' ],
 					'attributes': [
-						{ 'opsiAttribute': 'id',                     'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'id',                     'ldapAttribute': 'opsiGroupId' },
 						{ 'opsiAttribute': 'description',                    'ldapAttribute': 'opsiDescription' },
 						{ 'opsiAttribute': 'notes',                      'ldapAttribute': 'opsiNotes' },
@@ -335,7 +329,6 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiObjectToGroup' ],
 					'attributes': [
-						{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'cn' },
 						{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'opsiGroupId' },
 						{ 'opsiAttribute': 'objectId',                    'ldapAttribute': 'opsiObjectId' }
 					]
@@ -356,11 +349,6 @@ class LDAPBackend(ConfigDataBackend):
 				self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ][ attribute['opsiAttribute'] ] = attribute['ldapAttribute']
 				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
 		
-		#print Tools.objectToBeautifiedText(self._opsiAttributeToLdapAttribute)
-		#print Tools.objectToBeautifiedText(self._ldapAttributeToOpsiAttribute)
-		#print Tools.objectToBeautifiedText(self._opsiClassToLdapClasses)
-		#print Tools.objectToBeautifiedText(self._ldapClassToOpsiClass)
-		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
 		self._ldap = LDAPSession(
 				host	 = self._address,
@@ -375,7 +363,6 @@ class LDAPBackend(ConfigDataBackend):
 		
 	def _objectFilterToLDAPFilter(self, filter):
 		
-		#print "Filter: %s" % filter
 		ldapFilter = None
 		filters = []
 		objectTypes = []
@@ -557,7 +544,7 @@ class LDAPBackend(ConfigDataBackend):
 		opsiObjectHash = {}
 		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = False).items():
 			logger.debug(u"LDAP attribute is: %s" % attribute)
-			if attribute in ('objectClass'):
+			if attribute in ('objectClass', 'cn'):
 				continue
 			
 			if self._ldapAttributeToOpsiAttribute[opsiClassName].has_key(attribute):
@@ -570,8 +557,6 @@ class LDAPBackend(ConfigDataBackend):
 			
 			if not attributes or attribute in attributes:
 				opsiObjectHash[attribute] = value
-		
-		print "=============>>>>", opsiObjectHash
 		
 		return Class.fromHash(opsiObjectHash)
 	
@@ -598,7 +583,6 @@ class LDAPBackend(ConfigDataBackend):
 				continue
 			if (attribute == 'productClassIds'):
 				value = []
-			#print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",value
 			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
 				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
 			else:
@@ -786,7 +770,6 @@ class LDAPBackend(ConfigDataBackend):
 	def product_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 	
-		print ">>>>>>>>>>>>>>>>>>>>>>>>>>> getObject", filter
 		logger.info(u"Getting products, filter %s" % filter)
 		products = []
 		
@@ -1169,7 +1152,6 @@ class LDAPBackend(ConfigDataBackend):
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
-		#dn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
 		containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
 		dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
 		
@@ -1205,16 +1187,6 @@ class LDAPBackend(ConfigDataBackend):
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting objectToGroups: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
-		
-		"""
-		logger.error(u"DELETING objectToGroups %s" % objectToGroups)
-		for group in forceObjectClassList(objectToGroups, ObjectToGroup):
-			dn = 'cn=%s,%s' % (group.id, self._objectToGroupContainerDn)
-			ldapObj = LDAPObject(dn)
-			if ldapObj.exists(self._ldap):
-				logger.info(u"Deleting group: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
-				"""
 
 
 

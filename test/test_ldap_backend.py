@@ -11,6 +11,7 @@ from backend import *
 logger = Logger()
 logger.setConsoleLevel(LOG_DEBUG)
 logger.setConsoleColor(True)
+logger.setLogFile("out.log")
 
 
 
@@ -41,7 +42,8 @@ sys.exit(0)
 bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()
 ldapBackend.backend_createBase()
-bt.testObjectMethods()
+#bt.testObjectMethods()
+bt.testPerformance()
 #bt.testNonObjectMethods()
 
 
