@@ -153,7 +153,41 @@ class Backend:
 	
 	def backend_exit(self):
 		pass
-
+	
+	def _objectHashMatches(self, objHash, **filter):
+		matchedAll = True
+		for (attribute, value) in objHash.items():
+			if not filter.get(attribute):
+				continue
+			matched = False
+			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
+				(filter[attribute], attribute, value))
+			for filterValue in forceList(filter[attribute]):
+				if (filterValue == value):
+					matched = True
+					break
+				
+				if type(value) is list:
+					if filterValue in value:
+						matched = True
+						break
+					continue
+				
+				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
+					# TODO: still necessary?
+					continue
+				
+				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
+					matched = True
+					break
+			
+			if matched:
+				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
+					(value, filter[attribute], attribute))
+			else:
+				matchedAll = False
+				break
+		return matchedAll
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                    CLASS EXTENDEDBACKEND                                           =
@@ -1644,8 +1678,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		'''
-		##### TODO: remove state if product not available on clients depot (dynamic depot selection)
-		##### TODO: filters with placeholders
+		# TODO: remove action if product/package version in productOnClient differs from version on depot?
+		# TODO: filters with placeholders
 		
 		possible attributes/filter-keys of ProductOnClient are:
 			productId
@@ -1915,7 +1949,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 							if not pocByClientIdAndProductId[clientId].has_key(dependency.requiredProductId):
 								pocByClientIdAndProductId[clientId][dependency.requiredProductId] = ProductOnClient(
 									productId          = dependency.requiredProductId,
-									productType        = depotProducts[requiredProductId].productType,
+									productType        = depotProducts[dependency.requiredProductId].productType,
 									clientId           = clientId,
 									installationStatus = u'not_installed',
 									actionRequest      = u'none',
@@ -1964,13 +1998,24 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				for productId in sequence:
 					if not pocByClientIdAndProductId[clientId].has_key(productId):
 						continue
-					actionRequest      = pocByClientIdAndProductId[clientId][productId].actionRequest
-					installationStatus = pocByClientIdAndProductId[clientId][productId].installationStatus
-					if (not filter.get('installationStatus') or installationStatus in forceList(filter['installationStatus'])) and \
-					   (not filter.get('actionRequest')      or actionRequest      in forceList(filter['actionRequest'])):
-						logger.debug(u"            - adding results (clientId: '%s', productId: '%s', installationStatus: '%s', actionRequest: '%s')" \
-										% (clientId, productId, installationStatus, actionRequest))
-						adjustedProductOnClients.append(pocByClientIdAndProductId[clientId][productId])
+					
+					if not self._objectHashMatches({
+							'productId':          productId,
+							'productType':        pocByClientIdAndProductId[clientId][productId].productType,
+							'installationStatus': pocByClientIdAndProductId[clientId][productId].installationStatus,
+							'actionRequest':      pocByClientIdAndProductId[clientId][productId].actionRequest,
+							'actionProgress':     pocByClientIdAndProductId[clientId][productId].actionProgress,
+							'productVersion':     pocByClientIdAndProductId[clientId][productId].productVersion,
+							'packageVersion':     pocByClientIdAndProductId[clientId][productId].packageVersion,
+							'lastStateChange':    pocByClientIdAndProductId[clientId][productId].lastStateChange },
+							**filter):
+						logger.debug2(u"              filtered productOnClient %s" % pocByClientIdAndProductId[clientId][productId])
+						continue
+					logger.debug(u"            - adding results (clientId: '%s', productId: '%s', installationStatus: '%s', actionRequest: '%s')" \
+										% (	clientId, productId, \
+											pocByClientIdAndProductId[clientId][productId].installationStatus, \
+											pocByClientIdAndProductId[clientId][productId].actionRequest))
+					adjustedProductOnClients.append(pocByClientIdAndProductId[clientId][productId])
 				
 				logger.debug(u"         * client %s processed" % clientId)
 			

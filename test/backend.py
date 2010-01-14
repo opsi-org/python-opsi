@@ -1766,6 +1766,11 @@ class BackendTest(object):
 		assert 'product7' in setup
 		assert 'product9' in setup
 		
+		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = 'product6')
+		for productOnClient in productOnClients:
+			logger.info(u"Got productOnClient: %s" % productOnClient)
+			assert (productOnClient.productId == 'product6'), u"Product id filter failed, got product id: %s" % productOnClient.productId
+		
 		self.backend.productOnClient_create(
 			productId          = 'product6',
 			productType        = 'LocalbootProduct',
