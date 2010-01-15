@@ -37,7 +37,7 @@ __version__ = '3.5'
 # Imports
 from ldaptor.protocols import pureldap
 from ldaptor import ldapfilter
-import types, new, inspect, socket
+import types, new, inspect, socket, types
 import copy as pycopy
 
 # OPSI imports
@@ -160,8 +160,8 @@ class Backend:
 			if not filter.get(attribute):
 				continue
 			matched = False
-			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" % \
-				(filter[attribute], attribute, value))
+			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
+						% (filter[attribute], attribute, value))
 			for filterValue in forceList(filter[attribute]):
 				if (filterValue == value):
 					matched = True
@@ -173,8 +173,9 @@ class Backend:
 						break
 					continue
 				
-				if type(filterValue) in (types.NoneType, types.BooleanType): # TODO: int
-					# TODO: still necessary?
+				if type(filterValue) in (types.NoneType, types.BooleanType):
+					continue
+				if type(value) in (types.NoneType, types.BooleanType):
 					continue
 				
 				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
@@ -182,8 +183,8 @@ class Backend:
 					break
 			
 			if matched:
-				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" % \
-					(value, filter[attribute], attribute))
+				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
+							% (value, filter[attribute], attribute))
 			else:
 				matchedAll = False
 				break
@@ -1735,7 +1736,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'lastStateChange'):
 					continue
 				pocFilter[key] = value
-		
+			
 		if self._options['processProductDependencies'] and attributes:
 			# In this case we definetly need to add the following attributes
 			if not 'installationStatus' in pocAttributes: pocAttributes.append('installationStatus')
@@ -1823,12 +1824,15 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			#	for (productId, poc) in pocs.items():
 			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 		
+		adjustedProductOnClients = []
 		if not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
+			for productOnClient in productOnClients:
+				if self._objectHashMatches(productOnClient.toHash(), **filter):
+					adjustedProductOnClients.append(productOnClient)
 			# No more adjustments needed => done!
-			return productOnClients
+			return adjustedProductOnClients
 		
 		logger.debug(u"   * processing product priorities/dependencies")
-		adjustedProductOnClients = []
 		
 		# Process priorities/dependencies depot by depot
 		for (depotId, depotClientIds) in depotToClients.items():
