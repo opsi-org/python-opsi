@@ -181,12 +181,6 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'sw', 'attribute': 'windowsDisplayVersion', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayversion' },
 				{ 'fileType': 'sw', 'attribute': 'installSize',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'installsize'           }
 			],
-			'AuditHardware': [
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' }
-			],
 			'AuditSoftwareOnClient': [
 				{ 'fileType': 'sw', 'attribute': 'uninstallString', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'uninstallstring' },
 				{ 'fileType': 'sw', 'attribute': 'binaryName',      'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'binaryname'      },
@@ -197,14 +191,16 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
 			],
 			'AuditHardware': [
-				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>', 'option': '<**kwargs>' }
+#				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>', 'option': '<**kwargs>' }
+				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>', 'option': '**kwargs' }
 			],
 			'AuditHardwareOnHost': [
-				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen' },
-				{ 'fileType': 'hw', 'attribute': 'lastseen',  'section': '<hostId>;<hardwareClass>', 'option': 'lastseen'  },
-				{ 'fileType': 'hw', 'attribute': 'state',     'section': '<hostId>;<hardwareClass>', 'option': 'state'     },
-				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen' },
-				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>', 'option': '<**kwargs>'    }
+				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen'  },
+				{ 'fileType': 'hw', 'attribute': 'lastseen',  'section': '<hostId>;<hardwareClass>', 'option': 'lastseen'   },
+				{ 'fileType': 'hw', 'attribute': 'state',     'section': '<hostId>;<hardwareClass>', 'option': 'state'      },
+				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen'  },
+#				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>', 'option': '<**kwargs>' }
+				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>', 'option': '**kwargs' }
 			]
 		}
 		
@@ -477,9 +473,11 @@ class File31Backend(ConfigDataBackend):
 			
 			fileType = 'sw'
 			idType = 'clientId'
+			identLen = 5
 			if objType in ('AuditHardware', 'AuditHardwareOnHost'):
 				fileType = 'hw'
 				idType = 'hostId'
+				identLen = 1
 			
 			if objType in ('AuditSoftware', 'AuditHardware'):
 				filename = self._getConfigFile(objType, {}, fileType)
@@ -514,32 +512,39 @@ class File31Backend(ConfigDataBackend):
 				
 				for section in cp.sections():
 					idents = section.split(';')
-					if len(idents) > 5:
+					objIdent = {}
+					
+					if len(idents) > identLen:
 						idents = section.replace('\\;', '\\~~~').split(';')
-						if len(idents) == 5:
-							for i in range(5):
+						if len(idents) == identLen:
+							for i in range(identLen):
 								idents[i] = idents[i].replace('\\~~~', ';')
 						else:
 							logger.error(u"_getIdents(): Too many idents in section '%s' in file '%s'" \
 								% (section, filename))
 							continue
-					elif len(idents) < 5:
+					elif len(idents) < identLen:
 						logger.error(u"_getIdents(): Too few idents in section '%s' in file '%s'" \
 							% (section, filename))
 						continue
 					
-					ident = {
-						'name' : idents[0],
-						'version' : idents[1],
-						'subVersion' : idents[2],
-						'language' : idents[3],
-						'architecture' : idents[4]
-						}
+					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
+						objIdent = {
+							'name' : idents[0],
+							'version' : idents[1],
+							'subVersion' : idents[2],
+							'language' : idents[3],
+							'architecture' : idents[4]
+							}
+					else:
+						objIdent = {
+							'hardwareClass' : idents[0]
+							}
 					
 					if objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
-						ident[idType] = filebase
+						objIdent[idType] = filebase
 					
-					objIdents.append(ident)
+					objIdents.append(objIdent)
 		
 		else:
 			logger.warning(u"_getIdents(): Unhandled objType '%s'" % objType)
@@ -925,14 +930,14 @@ class File31Backend(ConfigDataBackend):
 					logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
 				iniFile.generate(cp)
 		
-		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
+		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'AuditSoftware', 'AuditHardware'):
 			for obj in objList:
 				fileType = ''
 				if obj.getType() in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 					fileType = 'pro'
-				elif obj.getType() in ('AuditSoftware', 'AuditSoftwareOnClient'):
+				elif obj.getType() in ('AuditSoftware'):
 					fileType = 'sw'
-				elif obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+				elif obj.getType() in ('AuditHardware'):
 					fileType = 'hw'
 				
 				filename = self._getConfigFile(
@@ -1041,7 +1046,6 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename)
-			iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			
 			for obj in objList:
@@ -1057,6 +1061,29 @@ class File31Backend(ConfigDataBackend):
 							% (obj.getGroupId(), obj.getObjectId()))
 			
 			iniFile.generate(cp)
+		
+		elif objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
+			for obj in objList:
+				fileType = 'sw'
+				if obj.getType() == 'AuditHardwareOnHost':
+					fileType = 'hw'
+				
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), fileType )
+				iniFile = IniFile(filename = filename)
+				cp = iniFile.parse()
+				
+				idents = obj.getIdent(returnType = 'dict')
+				section = idents['name'].replace(';', '\\;') + ';' + \
+					idents['version'].replace(';', '\\;') + ';' + \
+					idents['subVersion'].replace(';', '\\;') + ';' + \
+					idents['language'].replace(';', '\\;') + ';' + \
+					idents['architecture'].replace(';', '\\;')
+				
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				if cp.has_section(section):
+					cp.remove_section(section)
+					logger.debug2(u"Removed section '%s'" % section)
 		
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s'" % objType)
