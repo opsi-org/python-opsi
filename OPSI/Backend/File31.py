@@ -197,12 +197,14 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
 			],
 			'AuditHardware': [
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' }
+				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>' }
 			],
-			'AuditHardwareOnHost': [
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' },
-				{ 'fileType': 'hw', 'attribute': '', 'section': '', 'option': '' }
+			'AuditHardwareOnHost': [#hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs
+				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen' },
+				{ 'fileType': 'hw', 'attribute': 'lastseen',  'section': '<hostId>;<hardwareClass>', 'option': 'lastseen'  },
+				{ 'fileType': 'hw', 'attribute': 'state',     'section': '<hostId>;<hardwareClass>', 'option': 'state'     },
+				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen' },
+				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>'                        }
 			]
 		}
 		
@@ -335,9 +337,9 @@ class File31Backend(ConfigDataBackend):
 							if section.endswith('-state'):
 								objIdents.append(
 									{
-									'productId':          section[:-6],
-									'productType':        cp.get(section, 'productType'),
-									'clientId':           hostId
+									'productId': section[:-6],
+									'productType': cp.get(section, 'productType'),
+									'clientId': hostId
 									}
 								)
 					else:
@@ -360,11 +362,11 @@ class File31Backend(ConfigDataBackend):
 							if section.endswith('-state'):
 								objIdents.append(
 									{
-									'productId':      section[:-6],
-									'productType':    cp.get(section, 'producttype'),
+									'productId': section[:-6],
+									'productType': cp.get(section, 'producttype'),
 									'productVersion': cp.get(section, 'productversion'),
 									'packageVersion': cp.get(section, 'packageversion'),
-									'depotId':        hostId
+									'depotId': hostId
 									}
 								)
 					else:
@@ -486,6 +488,7 @@ class File31Backend(ConfigDataBackend):
 			else:
 				for entry in os.listdir(self.__auditDir):
 					entry = entry.lower()
+					filename = ''
 					
 					if (entry == 'global.sw') or (entry == 'global.hw'):
 						continue
@@ -495,7 +498,11 @@ class File31Backend(ConfigDataBackend):
 						continue
 					
 					try:
-						filenames.append(self._getConfigFile(objType, {idType : forceHostId(entry[:-3])}, fileType))
+						filename = self._getConfigFile(objType, {idType : forceHostId(entry[:-3])}, fileType)
+						if os.path.isfile(filename):
+							filenames.append(filename)
+						else:
+							raise Exception()
 					except:
 						logger.error(u"_getIdents(): Found bad file '%s'" % filename)
 			
@@ -611,7 +618,7 @@ class File31Backend(ConfigDataBackend):
 							match = self._placeholderRegex.search(sectionParts[i])
 							if match:
 								replaceValue = objHash[match.group(1)]
-								if objType in ('ProductOnClient'):
+								if objType == 'ProductOnClient':
 									replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 								sectionParts[i] = sectionParts[i].replace(u'<%s>' % match.group(1), replaceValue)
 							
@@ -619,8 +626,8 @@ class File31Backend(ConfigDataBackend):
 							if match:
 								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 							
+							#rebuild section
 							sectionPart = sectionParts[i].replace(';', '\\;')
-							
 							if section == '':
 								section = sectionParts[i]
 							else:
@@ -735,6 +742,30 @@ class File31Backend(ConfigDataBackend):
 							newSection = obj.getProductId() + u'-state'
 						elif objType in ('ProductPropertyState'):
 							newSection = obj.getPropertyId() + u'-install'
+						elif objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
+							idents = obj.getIdent(returnType = 'dict')
+							newSection = \
+								idents['name'].replace(';', '\\;') + ';' + \
+								idents['version'].replace(';', '\\;') + ';' + \
+								idents['subVersion'].replace(';', '\\;') + ';' + \
+								idents['language'].replace(';', '\\;') + ';' + \
+								idents['architecture'].replace(';', '\\;')
+							
+							if objType == 'AuditSoftwareOnClient':
+								newSection = newSection + ';' + idents['clientId'].replace(';', '\\;')
+						elif objType in (, 'AuditHardware', 'AuditHardwareOnHost'):
+							idents = obj.getIdent(returnType = 'dict')
+							newSection = \
+								idents['name'].replace(';', '\\;') + ';' + \
+								idents['version'].replace(';', '\\;') + ';' + \
+								idents['subVersion'].replace(';', '\\;') + ';' + \
+								idents['language'].replace(';', '\\;') + ';' + \
+								idents['architecture'].replace(';', '\\;')
+							
+							if objType == 'AuditSoftwareOnClient':
+								newSection = newSection + ';' + idents['clientId'].replace(';', '\\;')
+							if objType == 'AuditHardwareOnHost':
+								newSection = newSection + ';' + idents['hostId'].replace(';', '\\;')
 						
 						if newSection != '' and cp.has_section(newSection):
 							cp.remove_section(newSection)
@@ -765,8 +796,8 @@ class File31Backend(ConfigDataBackend):
 							if match:
 								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 							
+							#rebuild section
 							sectionPart = sectionParts[i].replace(';', '\\;')
-							
 							if section == '':
 								section = sectionPart
 							else:

@@ -2363,7 +2363,7 @@ class AuditHardwareOnHost(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditHardwareOnHost'
 	
-	def __init__(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
+	def __init__(self, hardwareClass, hostId, firstseen=None, lastseen=None, state=None, **kwargs):
 		self.firstseen = None
 		self.lastseen = None
 		self.state = None
