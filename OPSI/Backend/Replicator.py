@@ -82,14 +82,8 @@ class BackendReplicator:
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 	
-	def check(self, rb, wb, checkType = None):
-		objTypes = []
-		if checkType == None:
-			objTypes = OBJTYPES
-		else:
-			objTypes.append(checkType)
-		
-		for objType in objTypes:
+	def check(self, rb, wb):
+		for objType in OBJTYPES:
 			readIdents = []
 			writeIdents = []
 			
@@ -116,9 +110,8 @@ class BackendReplicator:
 		An empty list passed as a param means: replicate all known
 		None as the only element of a list means: replicate none
 		'''
-		
-		rb = self._extendedReadBackend
-		wb = self._extendedWriteBackend
+		self.__currentProgressSubject.reset()
+		self.__currentProgressSubject.setEnd(len(OBJTYPES) + 1)
 		
 		serverIds  = forceList(serverIds)
 		depotIds   = forceList(depotIds)
@@ -129,31 +122,37 @@ class BackendReplicator:
 		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s" \
 				% (serverIds, depotIds, clientIds, groupIds, productIds))
 		
+		rb = self._extendedReadBackend
+		wb = self._extendedWriteBackend
+		
+		hostIds = []
+		configIds = []
+		configStateIds = []
+		productPropertyIds = []
+		productDependencyIds = []
+		productOnDepotIds = []
+		productOnClientIds = []
+		productPropertyStateIds = []
+		objectToGroupIds = []
+		
+		#combining hostIds with given parameters
+		servers = rb.host_getObjects(serverIds)
+		depots = rb.host_getObjects(depotIds)
+		clients = rb.host_getObjects(clientIds)
+		
+		for server in servers:
+			if not (server.getIdent() in hostIds):
+				hostIds.append(server.getIdent())
+		for depot in depots:
+			if not (depot.getIdent() in hostIds):
+				hostIds.append(depot.getIdent())
+		for client in clients:
+			if not (client.getIdent() in hostIds):
+				hostIds.append(client.getIdent())
 		
 		
-#		self.__overallProgressSubject.setMessage(u"TEST")
-#		for i in range(100):
-#			self.__overallProgressSubject.addToState(1)
-#			time.sleep(0.1)
-#		
-#		return
 		
-		# Servers
-		knownServerIds = self.__readBackend.host_getIdents(type = 'OpsiConfigserver', returnType = 'unicode')
-		if serverIds:
-			for serverId in serverIds:
-				if serverId in knownServerIds:
-					self.__serverIds.append(serverId)
-		else:
-			self.__serverIds = knownServerIds
-		
-		# Converting servers
-#		self.__currentProgressSubject.reset()
-#		self.__currentProgressSubject.setEnd(len(self.__serverIds))
-#		self.__currentProgressSubject.setMessage(u'Converting servers')
-		
-		
-		
+		#replicate
 		if self.__cleanupFirst:
 			self.__overallProgressSubject.setMessage(u"Cleaning up first!")
 			for objType in OBJTYPES:
@@ -161,11 +160,13 @@ class BackendReplicator:
 				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (objType, objType))
 #				self.check(rb, wb, objType)
 		
+		self.__overallProgressSubject.addToState(1)
 		self.__overallProgressSubject.setMessage(u"Replicating ...")
 		for objType in OBJTYPES:
 			self.__overallProgressSubject.setMessage(u"Creating %s" % objType)
-			eval('wb.%s_createObjects(rb.%s_getObjects())' % (objType, objType))
+			eval('wb.%s_createObjects(rb.%s_getObjects(%sIds))' % (objType, objType, objType))
 #			self.check(rb, wb, objType)
+			self.__overallProgressSubject.addToState(1)
 		
 		self.__overallProgressSubject.setMessage(u"Replicating done!")
 		
@@ -175,6 +176,27 @@ class BackendReplicator:
 		
 		
 		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+#		self.__overallProgressSubject.setMessage(u"TEST")
+#		for i in range(100):
+#			self.__overallProgressSubject.addToState(1)
+#			time.sleep(0.1)
+#		
+#		return
+		
+		
+		
 	
 	
 	
+
+
+

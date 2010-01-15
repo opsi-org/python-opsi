@@ -191,16 +191,10 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
 			],
 			'AuditHardware': [
-#				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>', 'option': '<**kwargs>' }
-				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>', 'option': '**kwargs' }
+				{ 'fileType': 'hw', 'attribute': '*' }
 			],
 			'AuditHardwareOnHost': [
-				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen'  },
-				{ 'fileType': 'hw', 'attribute': 'lastseen',  'section': '<hostId>;<hardwareClass>', 'option': 'lastseen'   },
-				{ 'fileType': 'hw', 'attribute': 'state',     'section': '<hostId>;<hardwareClass>', 'option': 'state'      },
-				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen'  },
-#				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>', 'option': '<**kwargs>' }
-				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>', 'option': '**kwargs' }
+				{ 'fileType': 'hw', 'attribute': '*' }
 			]
 		}
 		
@@ -822,7 +816,9 @@ class File31Backend(ConfigDataBackend):
 						if attributeMapping.get('json'):
 							value = toJson(value)
 						elif ( isinstance(value, str) or isinstance(value, unicode) ):
-							value = value.replace(u'\n', u'\\n')
+							print "'", value, "'"
+							value = forceUnicode(value)
+							value = value.replace(u"\n", u"\\n")
 						
 						if not cp.has_section(section):
 							cp.add_section(section)
@@ -1600,171 +1596,5 @@ class File31Backend(ConfigDataBackend):
 	
 	
 	
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	def getSoftwareInformation_hash(self, hostId):
-		hostId = hostId.lower()
-		ini = None
-		try:
-			ini = self.readIniFile( "%s.sw" % os.path.join(self.__auditInfoDir, hostId), raw = True )
-		except BackendIOError, e:
-			logger.warning("No software info for host '%s' found: %s" % (hostId, e))
-			return []
-		
-		info = {}
-		for section in ini.sections():
-			software = {}
-			for (key, value) in ini.items(section):
-				if   (key.lower() == "displayname"): key = "displayName"
-				elif (key.lower() == "displayversion"): key = "displayVersion"
-				software[key] = value
-			info[section] = software
-		
-		return info
-	
-	def setSoftwareInformation(self, hostId, info):
-		hostId = hostId.lower()
-		
-		if not type(info) is dict:
-			raise BackendBadValueError("Software information must be dict")
-		
-		# Time of scan
-		if not info.has_key('SCANPROPERTIES') or not info['SCANPROPERTIES']:
-			info['SCANPROPERTIES'] = { 'scantime': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) }
-		
-		self.deleteSoftwareInformation(hostId)
-		
-		iniFile = "%s.sw" % os.path.join(self.__auditInfoDir, hostId)
-		
-		if not os.path.exists(iniFile):
-			self.createFile(iniFile, 0660)
-		ini = self.readIniFile(iniFile)
-		
-		for (key, value) in info.items():
-			ini.add_section(key)
-			for (k, v) in value.items():
-				ini.set(key, str(k), str(v))
-		
-		self.writeIniFile(iniFile, ini)
-	
-	def deleteSoftwareInformation(self, hostId):
-		hostId = hostId.lower()
-		swFile = "%s.sw" % os.path.join(self.__auditInfoDir, hostId)
-		if not os.path.exists(swFile):
-			return
-		try:
-			self.deleteFile(swFile)
-		except Exception, e:
-			logger.error("Failed to delete software information for host '%s': %s" % (hostId, e))
-		
-	def getHardwareInformation_listOfHashes(self, hostId):
-		# Deprecated
-		return []
-	
-	def getHardwareInformation_hash(self, hostId):
-		hostId = hostId.lower()
-		ini = None
-		try:
-			ini = self.readIniFile( "%s.hw" % os.path.join(self.__auditInfoDir, hostId), raw = True )
-		except BackendIOError, e:
-			logger.warning("No hardware info for host '%s' found: %s" % (hostId, e))
-			return []
-		
-		info = {}
-		for section in ini.sections():
-			dev = {}
-			for (key, value) in ini.items(section):
-				try:
-					if hasattr(json, 'loads'):
-						# python 2.6 json module
-						dev[key] = json.loads(value)
-					else:
-						dev[key] = json.read(value)
-				except:
-					dev[key] = ''
-			
-			section = ('_'.join(section.split('_')[:-1])).upper()
-			if not info.has_key(section):
-				info[section] = []
-			
-			info[section].append(dev)
-		
-		return info
-	
-	def setHardwareInformation(self, hostId, info):
-		hostId = hostId.lower()
-		
-		# Time of scan
-		if not info.has_key('SCANPROPERTIES') or not info['SCANPROPERTIES']:
-			info['SCANPROPERTIES'] = [ { 'scantime': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) } ]
-		
-		if not type(info) is dict:
-			raise BackendBadValueError("Hardware information must be dict")
-		
-		self.deleteHardwareInformation(hostId)
-		
-		iniFile = "%s.hw" % os.path.join(self.__auditInfoDir, hostId)
-		
-		if not os.path.exists(iniFile):
-			self.createFile(iniFile, 0660)
-		ini = self.readIniFile(iniFile)
-		
-		for (key, values) in info.items():
-			n = 0
-			for value in values:
-				section = '%s_%d' % (key, n)
-				ini.add_section(section)
-				for (opsiName, opsiValue) in value.items():
-					if type(opsiValue) is unicode:
-						if hasattr(json, 'dumps'):
-							# python 2.6 json module
-							ini.set(section, opsiName, json.dumps(opsiValue.encode('utf-8')))
-						else:
-							ini.set(section, opsiName, json.write(opsiValue.encode('utf-8')))
-					else:
-						if hasattr(json, 'dumps'):
-							# python 2.6 json module
-							ini.set(section, opsiName, json.dumps(opsiValue))
-						else:
-							ini.set(section, opsiName, json.write(opsiValue))
-				n += 1
-		
-		self.writeIniFile(iniFile, ini)
-	
-	def deleteHardwareInformation(self, hostId):
-		hostId = hostId.lower()
-		hwFile = "%s.hw" % os.path.join(self.__auditInfoDir, hostId)
-		if not os.path.exists(hwFile):
-			return
-		try:
-			self.deleteFile(hwFile)
-		except Exception, e:
-			logger.error("Failed to delete hardware information for host '%s': %s" % (hostId, e))
 	
 
