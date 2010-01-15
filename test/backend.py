@@ -1768,10 +1768,15 @@ class BackendTest(object):
 		assert 'product7' in setup
 		assert 'product9' in setup
 		
-		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = 'product6')
+		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['product6', 'product7'])
 		for productOnClient in productOnClients:
 			logger.info(u"Got productOnClient: %s" % productOnClient)
-			assert (productOnClient.productId == 'product6'), u"Product id filter failed, got product id: %s" % productOnClient.productId
+			assert productOnClient.productId in ('product6', 'product7'), u"Product id filter failed, got product id: %s" % productOnClient.productId
+		
+		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['*6*'])
+		for productOnClient in productOnClients:
+			logger.info(u"Got productOnClient: %s" % productOnClient)
+			assert productOnClient.productId in ('product6'), u"Product id filter failed, got product id: %s" % productOnClient.productId
 		
 		self.backend.productOnClient_create(
 			productId          = 'product6',
@@ -1798,9 +1803,6 @@ class BackendTest(object):
 		assert not 'product7' in setup
 		assert not 'product9' in setup
 		
-		
-		#productOnClients = self.backend.productOnClient_getObjects()
-		#assert len(productOnClients) == len(self.products) * len(self.clients), "expected %d productOnClients, got %d" % ((len(self.products) * len(self.clients)), len(productOnClients))
 		
 	def testPerformance(self):
 		consoleLevel = logger.getConsoleLevel()

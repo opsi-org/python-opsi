@@ -53,8 +53,9 @@ def getFileTye(filename):
 	return fileType
 
 class BaseArchive(object):
-	def __init__(self, filename):
+	def __init__(self, filename, progressSubject=None):
 		self._filename = forceFilename(filename)
+		self._progressSubject = progressSubject
 		self._compression = None
 		if os.path.exists(self._filename):
 			fileType = getFileTye(self._filename)
@@ -69,6 +70,59 @@ class BaseArchive(object):
 			else:
 				raise Exception(u"Unsupported file type '%s'" % fileType)
 	
+	def _extract(self, command, fileCount):
+		try:
+			logger.info(u"Executing: %s" % command )
+			proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			
+			encoding = proc.stdout.encoding
+			if not encoding:
+				encoding = locale.getpreferredencoding()
+			
+			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+			fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+			
+			if self._progressSubject:
+				self._progressSubject.setEnd(fileCount)
+				self._progressSubject.setState(0)
+			
+			error = ''
+			ret = None
+			while ret is None:
+				try:
+					chunk = proc.stdout.read()
+					if chunk:
+						filesExtracted = chunk.count('\n')
+						if (filesExtracted > 0):
+							if self._progressSubject:
+								self._progressSubject.addToState(filesExtracted)
+				except:
+					pass
+				try:
+					chunk = proc.stderr.read()
+					if chunk:
+						error = chunk
+						filesExtracted = chunk.count('\n')
+						if (filesExtracted > 0):
+							if self._progressSubject:
+								self._progressSubject.addToState(filesExtracted)
+				except:
+					pass
+				ret = proc.poll()
+			
+			logger.info(u"Exit code: %s" % ret)
+			
+			if (ret != 0):
+				error = error.decode(encoding, 'replace')
+				logger.error(error)
+				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
+			
+		except Exception, e:
+			logger.logException(e)
+			raise
+		
 	def _create(self, fileList, baseDir, command):
 		curDir = os.path.abspath(os.getcwd())
 		try:
@@ -87,6 +141,10 @@ class BaseArchive(object):
 			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			
+			if self._progressSubject:
+				self._progressSubject.setEnd(len(fileList))
+				self._progressSubject.setState(0)
+				
 			error = ''
 			ret = None
 			for f in fileList:
@@ -95,6 +153,8 @@ class BaseArchive(object):
 				# python 2.6:
 				#f = os.path.relpath(f, baseDir)
 				f = f[len(baseDir):]
+				while f.startswith('/'):
+					f = f[1:]
 				logger.info(u"Adding file '%s'" % f)
 				proc.stdin.write("%s\n" % f.encode(encoding))
 				
@@ -104,7 +164,9 @@ class BaseArchive(object):
 						error += chunk
 				except:
 					pass
-			
+				if self._progressSubject:
+					self._progressSubject.addToState(1)
+				
 			proc.stdin.close()
 			
 			while ret is None:
@@ -120,8 +182,8 @@ class BaseArchive(object):
 			os.chdir(curDir)
 		
 class TarArchive(BaseArchive):
-	def __init__(self, filename):
-		BaseArchive.__init__(self, filename)
+	def __init__(self, filename, progressSubject=None):
+		BaseArchive.__init__(self, filename, progressSubject)
 	
 	def content(self):
 		try:
@@ -156,17 +218,29 @@ class TarArchive(BaseArchive):
 			elif (self._compression == 'bzip2'):
 				options += u'--bzip2'
 			
+			fileCount = 0
 			for f in self.content():
-				for p in patterns:
-					try:
-						p = p.replace('*', '.*')
-						if not re.search(p, f):
-							options += u' --exclude="%s"' % f
-							continue
-					except Exception, e:
-						raise Exception(u"Bad pattern '%s': %s" % (p, e))
+				match = False
+				if not patterns:
+					match = True
+				else:
+					for p in patterns:
+						try:
+							p = p.replace('*', '.*')
+							if re.search(p, f):
+								match = True
+								break
+							fileCount += 1
+						except Exception, e:
+							raise Exception(u"Bad pattern '%s': %s" % (p, e))
+				if match:
+					fileCount += 1
+				else:
+					options += u' --exclude="%s"' % f
+				
+			command = u'%s %s --directory "%s" --extract --verbose --file "%s"' % (System.which('tar'), options, targetPath, self._filename)
+			self._extract(command, fileCount)
 			
-			System.execute(u'%s %s --directory "%s" --extract --file "%s"' % (System.which('tar'), options, targetPath, self._filename))
 		except Exception, e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 	
@@ -202,8 +276,8 @@ class TarArchive(BaseArchive):
 			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 	
 class CpioArchive(BaseArchive):
-	def __init__(self, filename):
-		BaseArchive.__init__(self, filename)
+	def __init__(self, filename, progressSubject=None):
+		BaseArchive.__init__(self, filename, progressSubject)
 	
 	def content(self):
 		try:
@@ -238,6 +312,25 @@ class CpioArchive(BaseArchive):
 			elif (self._compression == 'bzip2'):
 				cat = System.which('bzcat')
 			
+			
+			fileCount = 0
+			for f in self.content():
+				match = False
+				if not patterns:
+					match = True
+				else:
+					for p in patterns:
+						try:
+							p = p.replace('*', '.*')
+							if re.search(p, f):
+								match = True
+								break
+							fileCount += 1
+						except Exception, e:
+							raise Exception(u"Bad pattern '%s': %s" % (p, e))
+				if match:
+					fileCount += 1
+			
 			include = u''
 			for p in patterns:
 				include += ' "%s"' % p
@@ -245,7 +338,8 @@ class CpioArchive(BaseArchive):
 			curDir = os.path.abspath(os.getcwd())
 			os.chdir(targetPath)
 			try:
-				System.execute(u'%s "%s" | %s --quiet -idum %s' % (cat, self._filename, System.which('cpio'), include))
+				command = u'%s "%s" | %s --quiet -idumv %s' % (cat, self._filename, System.which('cpio'), include)
+				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
 		except Exception, e:
@@ -284,7 +378,7 @@ class CpioArchive(BaseArchive):
 
 
 
-def Archive(filename):
+def Archive(filename, progressSubject=None):
 	filename = forceFilename(filename)
 	Class = None
 	fileType = getFileTye(filename)
@@ -298,7 +392,7 @@ def Archive(filename):
 		Class = CpioArchive
 	else:
 		raise Exception(u"Failed to guess archive type of '%s'" % filename)
-	return Class(filename)
+	return Class(filename, progressSubject)
 	
 
 

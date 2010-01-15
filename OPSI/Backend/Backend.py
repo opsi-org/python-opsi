@@ -1679,7 +1679,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		'''
 		# TODO: remove action if product/package version in productOnClient differs from version on depot?
-		# TODO: filters with placeholders
 		
 		possible attributes/filter-keys of ProductOnClient are:
 			productId
