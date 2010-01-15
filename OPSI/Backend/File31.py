@@ -197,14 +197,14 @@ class File31Backend(ConfigDataBackend):
 				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
 			],
 			'AuditHardware': [
-				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>' }
+				{ 'fileType': 'hw', 'attribute': '*', 'section': '<hardwareClass>', 'option': '<**kwargs>' }
 			],
-			'AuditHardwareOnHost': [#hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs
+			'AuditHardwareOnHost': [
 				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen' },
 				{ 'fileType': 'hw', 'attribute': 'lastseen',  'section': '<hostId>;<hardwareClass>', 'option': 'lastseen'  },
 				{ 'fileType': 'hw', 'attribute': 'state',     'section': '<hostId>;<hardwareClass>', 'option': 'state'     },
 				{ 'fileType': 'hw', 'attribute': 'firstseen', 'section': '<hostId>;<hardwareClass>', 'option': 'firstseen' },
-				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>'                        }
+				{ 'fileType': 'hw', 'attribute': '*',         'section': '<hostId>;<hardwareClass>', 'option': '<**kwargs>'    }
 			]
 		}
 		
@@ -744,8 +744,7 @@ class File31Backend(ConfigDataBackend):
 							newSection = obj.getPropertyId() + u'-install'
 						elif objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
 							idents = obj.getIdent(returnType = 'dict')
-							newSection = \
-								idents['name'].replace(';', '\\;') + ';' + \
+							newSection = idents['name'].replace(';', '\\;') + ';' + \
 								idents['version'].replace(';', '\\;') + ';' + \
 								idents['subVersion'].replace(';', '\\;') + ';' + \
 								idents['language'].replace(';', '\\;') + ';' + \
@@ -753,17 +752,10 @@ class File31Backend(ConfigDataBackend):
 							
 							if objType == 'AuditSoftwareOnClient':
 								newSection = newSection + ';' + idents['clientId'].replace(';', '\\;')
-						elif objType in (, 'AuditHardware', 'AuditHardwareOnHost'):
+						elif objType in ('AuditHardware', 'AuditHardwareOnHost'):
 							idents = obj.getIdent(returnType = 'dict')
-							newSection = \
-								idents['name'].replace(';', '\\;') + ';' + \
-								idents['version'].replace(';', '\\;') + ';' + \
-								idents['subVersion'].replace(';', '\\;') + ';' + \
-								idents['language'].replace(';', '\\;') + ';' + \
-								idents['architecture'].replace(';', '\\;')
+							newSection = idents['hardwareClass'].replace(';', '\\;')
 							
-							if objType == 'AuditSoftwareOnClient':
-								newSection = newSection + ';' + idents['clientId'].replace(';', '\\;')
 							if objType == 'AuditHardwareOnHost':
 								newSection = newSection + ';' + idents['hostId'].replace(';', '\\;')
 						
