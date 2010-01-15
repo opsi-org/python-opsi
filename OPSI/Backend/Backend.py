@@ -2803,7 +2803,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageLog = os.path.join(self._logDir, 'package.log')
 		self._depotId = forceHostId(socket.getfqdn())
 		if not self.host_getIdents(id = self._depotId):
-			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotBackend._depotId)
+			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)
 	
 	def backend_exit(self):

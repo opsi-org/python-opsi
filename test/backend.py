@@ -1804,16 +1804,15 @@ class BackendTest(object):
 		assert not 'product9' in setup
 		
 		
-	def testPerformance(self):
+	def testPerformance(self, clientCount=100, productCount=50):
 		consoleLevel = logger.getConsoleLevel()
 		if (consoleLevel > LOG_NOTICE):
 			logger.setConsoleLevel(LOG_NOTICE)
 		logger.notice("Testing backend performance...")
 		
-		num = 1000
 		start = time.time()
-		for i in range(num):
-			ip = num
+		for i in range(clientCount):
+			ip = i
 			while (ip > 255):
 				ip -= 255
 			self.backend.host_createOpsiClient(
@@ -1826,20 +1825,19 @@ class BackendTest(object):
 				created = None,
 				lastSeen = None
 			)
-		logger.notice(u"Took %.2f seconds to create %d clients" % ((time.time()-start), num))
+		logger.notice(u"Took %.2f seconds to create %d clients" % ((time.time()-start), clientCount))
 		
 		start = time.time()
 		self.backend.host_getObjects(attributes = ['id'], ipAddress = '192.168.0.100')
-		logger.notice(u"Took %.2f seconds to search ip address in %d clients" % ((time.time()-start), num))
+		logger.notice(u"Took %.2f seconds to search ip address in %d clients" % ((time.time()-start), clientCount))
 		
 		#start = time.time()
 		#self.backend.host_delete(id = [])
-		#logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), num))
+		#logger.notice(u"Took %.2f seconds to delete %d clients" % ((time.time()-start), clientCount))
 		
 		
-		num = 100
 		start = time.time()
-		for i in range(num):
+		for i in range(productCount):
 			method = random.choice((self.backend.product_createLocalboot, self.backend.product_createNetboot))
 			method(
 				id = 'product%d' % i,
@@ -1860,11 +1858,11 @@ class BackendTest(object):
 				windowsSoftwareIds = None
 			)
 		
-		logger.notice(u"Took %.2f seconds to create %d products" % ((time.time()-start), num))
+		logger.notice(u"Took %.2f seconds to create %d products" % ((time.time()-start), productCount))
 		
 		#start = time.time()
 		#self.backend.product_getObjects(attributes = ['id'], uninstallScript = 'uninstall.ins')
-		#logger.notice(u"Took %.2f seconds to search uninstall script in %d products" % ((time.time()-start), num))
+		#logger.notice(u"Took %.2f seconds to search uninstall script in %d products" % ((time.time()-start), productCount))
 		
 		for product in self.backend.product_getObjects():
 			for depotId in self.backend.host_getIdents(type = 'OpsiDepotserver'):
@@ -1878,13 +1876,13 @@ class BackendTest(object):
 		
 		
 		for product in self.backend.product_getObjects():
+			actions = ['none', None]
+			if product.setupScript:     actions.append('setup')
+			if product.uninstallScript: actions.append('uninstall')
+			if product.onceScript:      actions.append('once')
+			if product.alwaysScript:    actions.append('always')
+			if product.updateScript:    actions.append('update')
 			for clientId in self.backend.host_getIdents(type = 'OpsiClient'):
-				actions = ['none', None]
-				if product.setupScript:     actions.append('setup')
-				if product.uninstallScript: actions.append('uninstall')
-				if product.onceScript:      actions.append('once')
-				if product.alwaysScript:    actions.append('always')
-				if product.updateScript:    actions.append('update')
 				self.backend.productOnClient_create(
 					productId = product.id,
 					productType = product.getType(),
