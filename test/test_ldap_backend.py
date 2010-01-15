@@ -42,8 +42,8 @@ sys.exit(0)
 bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()
 ldapBackend.backend_createBase()
-#bt.testObjectMethods()
-bt.testPerformance()
+bt.testObjectMethods()
+#bt.testPerformance()
 #bt.testNonObjectMethods()
 
 

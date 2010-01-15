@@ -378,7 +378,8 @@ class ConfigDataBackend(BackendIdentExtension):
 		
 	def host_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
-	
+		return []
+		
 	def host_deleteObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			# Remove from groups
@@ -420,7 +421,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def config_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
-	
+		return []
+		
 	def config_deleteObjects(self, configs):
 		ids = []
 		for config in forceObjectClassList(configs, Config):
@@ -449,7 +451,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def configState_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
-	
+		return []
+		
 	def configState_deleteObjects(self, configStates):
 		pass
 	
@@ -465,7 +468,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def product_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
-	
+		return []
+		
 	def product_deleteObjects(self, products):
 		productIds = []
 		for product in forceObjectClassList(products, Product):
@@ -517,7 +521,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
-	
+		return []
+		
 	def productProperty_deleteObjects(self, productProperties):
 		pass
 	
@@ -541,7 +546,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductDependency, attributes, **filter)
-	
+		return []
+		
 	def productDependency_deleteObjects(self, productDependencies):
 		pass
 	
@@ -570,7 +576,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnDepot, attributes, **filter)
-	
+		return []
+		
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		pass
 	
@@ -612,7 +619,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
-	
+		return []
+		
 	def productOnClient_deleteObjects(self, productOnClients):
 		pass
 	
@@ -633,7 +641,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
-	
+		return []
+		
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		pass
 	
@@ -649,7 +658,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def group_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Group, attributes, **filter)
-	
+		return []
+		
 	def group_deleteObjects(self, groups):
 		for group in forceObjectClassList(groups, Group):
 			self.objectToGroup_deleteObjects(
@@ -668,7 +678,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
-	
+		return []
+		
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		pass
 	
@@ -684,7 +695,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def licenseContract_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseContract, attributes, **filter)
-	
+		return []
+		
 	def licenseContract_deleteObjects(self, licenseContracts):
 		pass
 	
@@ -704,7 +716,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def softwareLicense_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicense, attributes, **filter)
-	
+		return []
+		
 	def softwareLicense_deleteObjects(self, softwareLicenses):
 		softwareLicenseIds = []
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
@@ -725,7 +738,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def licensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicensePool, attributes, **filter)
-	
+		return []
+		
 	def licensePool_deleteObjects(self, licensePools):
 		licensePoolIds = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
@@ -751,7 +765,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicenseToLicensePool, attributes, **filter)
-	
+		return []
+		
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		softwareLicenseIds = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
@@ -773,7 +788,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseOnClient, attributes, **filter)
-	
+		return []
+		
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
 		pass
 	
@@ -789,7 +805,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftware, attributes, **filter)
-	
+		return []
+		
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		pass
 	
@@ -805,7 +822,8 @@ class ConfigDataBackend(BackendIdentExtension):
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareOnClient, attributes, **filter)
-	
+		return []
+		
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		pass
 	
@@ -820,7 +838,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		pass
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
-		pass
+		return []
 	
 	def auditHardware_deleteObjects(self, auditHardwares):
 		pass
@@ -929,7 +947,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		pass
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
-		pass
+		return []
 	
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		pass
