@@ -149,7 +149,7 @@ class BaseObject(object):
 		identAttributes = self.getIdentAttributes()
 		identValues = []
 		for attr in identAttributes:
-			identValues.append(getattr(self, attr))
+			identValues.append(forceUnicode(getattr(self, attr)))
 		if returnType in ('list'):
 			return identValues
 		elif returnType in ('tuple'):
@@ -2329,10 +2329,22 @@ class AuditHardware(Entity):
 	subClasses = {}
 	foreignIdAttributes = Entity.foreignIdAttributes
 	backendMethodPrefix = 'auditHardware'
+	hardwareAttributes = {}
 	
 	def __init__(self, hardwareClass, **kwargs):
 		self.setHardwareClass(hardwareClass)
 		self.__dict__.update(kwargs)
+	
+	@staticmethod
+	def setHardwareConfig(hardwareConfig):
+		hardwareAttributes = {}
+		for config in hardwareConfig:
+			hwClass = config['Class']['Opsi']
+			hardwareAttributes[hwClass] = {}
+			for value in config['Values']:
+				if (value["Scope"] == 'g'):
+					hardwareAttributes[hwClass][value['Opsi']] = value["Type"]
+		AuditHardware.hardwareAttributes = hardwareAttributes
 	
 	def setHardwareClass(self, hardwareClass):
 		self.hardwareClass = forceUnicode(hardwareClass)
@@ -2340,6 +2352,12 @@ class AuditHardware(Entity):
 	def getHardwareClass(self):
 		return self.hardwareClass
 	
+	def getIdentAttributes(self):
+		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
+		attributes.sort()
+		attributes.insert(0, 'hardwareClass')
+		return attributes
+		
 	def serialize(self):
 		hash = self.toHash()
 		return hash
@@ -2362,6 +2380,7 @@ Entity.subClasses['AuditHardware'] = AuditHardware
 class AuditHardwareOnHost(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditHardwareOnHost'
+	hardwareAttributes = {}
 	
 	def __init__(self, hardwareClass, hostId, firstseen=None, lastseen=None, state=None, **kwargs):
 		self.firstseen = None
@@ -2376,7 +2395,17 @@ class AuditHardwareOnHost(Relationship):
 			self.setLastseen(lastseen)
 		if not state is None:
 			self.setState(state)
-		
+	
+	@staticmethod
+	def setHardwareConfig(hardwareConfig):
+		hardwareAttributes = {}
+		for config in hardwareConfig:
+			hwClass = config['Class']['Opsi']
+			hardwareAttributes[hwClass] = {}
+			for value in config['Values']:
+				hardwareAttributes[hwClass][value['Opsi']] = value["Type"]
+		AuditHardwareOnHost.hardwareAttributes = hardwareAttributes
+	
 	def setDefaults(self):
 		Relationship.setDefaults(self)
 		if self.firstseen is None:
@@ -2416,6 +2445,13 @@ class AuditHardwareOnHost(Relationship):
 	def setState(self, state):
 		self.state = forceAuditState(state)
 	
+	def getIdentAttributes(self):
+		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
+		attributes.sort()
+		attributes.insert(0, 'hostId')
+		attributes.insert(0, 'hardwareClass')
+		return attributes
+	
 	def serialize(self):
 		hash = self.toHash()
 		return hash
@@ -2434,7 +2470,7 @@ class AuditHardwareOnHost(Relationship):
 	
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
 
-
+	
 
 
 

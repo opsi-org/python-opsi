@@ -1770,6 +1770,8 @@ class MySQLBackend(ConfigDataBackend):
 		if filter.has_key('hardwareClass'):
 			del filter['hardwareClass']
 		
+		if 'hardwareClass' in attributes:
+			attributes.remove('hardwareClass')
 		
 		for hardwareClass in hardwareClasses:
 			classFilter = {}

@@ -339,6 +339,18 @@ class BackendIdentExtension(Backend):
 			result.append(auditSoftwareOnClient.getIdent(returnType))
 		return result
 	
+	def auditHardware_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditHardware in self.auditHardware_getObjects(**filter):
+			result.append(auditHardware.getIdent(returnType))
+		return result
+	
+	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditHardwareOnHost in self.auditHardwareOnHost_getObjects(**filter):
+			result.append(auditHardwareOnHost.getIdent(returnType))
+		return result
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS CONFIGDATABACKEND                                          =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -973,7 +985,10 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		self._auditHardwareConfig = {}
 		
 		if hasattr(self._backend, 'auditHardware_getConfig'):
-			for config in self._backend.auditHardware_getConfig():
+			ahwconf = self._backend.auditHardware_getConfig()
+			AuditHardware.setHardwareConfig(ahwconf)
+			AuditHardwareOnHost.setHardwareConfig(ahwconf)
+			for config in ahwconf:
 				hwClass = config['Class']['Opsi']
 				self._auditHardwareConfig[hwClass] = {}
 				for value in config['Values']:
