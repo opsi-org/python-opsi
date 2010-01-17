@@ -163,6 +163,20 @@ class Backend:
 			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
 						% (filter[attribute], attribute, value))
 			for filterValue in forceList(filter[attribute]):
+				if type(value) in (float, long, int):
+					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
+					if match:
+						operator = match.group(1)
+						if operator == '=':
+							operator = '=='
+						try:
+							matched = eval('%s %s %s' % (value, operator, match.group(2)))
+							if matched:
+								break
+						except:
+							pass
+						continue
+				
 				if (filterValue == value):
 					matched = True
 					break
@@ -1732,6 +1746,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			packageVersion     = None
 			lastStateChange    = None
 		'''
+		
 		pocAttributes = attributes
 		pocFilter = dict(filter)
 		
@@ -1752,7 +1767,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					continue
 				pocFilter[key] = value
 			
-		if self._options['processProductDependencies'] and attributes:
+		if (self._options['addProductOnClientDefaults'] or self._options['processProductDependencies'] or self._options['processProductPriorities']) and attributes:
 			# In this case we definetly need to add the following attributes
 			if not 'installationStatus' in pocAttributes: pocAttributes.append('installationStatus')
 			if not 'actionRequest'      in pocAttributes: pocAttributes.append('actionRequest')
@@ -1762,7 +1777,6 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		# Get product states from backend
 		productOnClients = self._backend.productOnClient_getObjects(pocAttributes, **pocFilter)
 		logger.debug(u"Got productOnClients")
-		
 		
 		# We need to adjust ProductOnClients if:
 		#    * missing ProductOnClients should be generated (addProductOnClientDefaults) and the default matches the filter

@@ -299,7 +299,7 @@ class MySQLBackend(ConfigDataBackend):
 				elif value is None:
 					where += u"`%s` is NULL" % key
 				else:
-					match = re.search('^\s*([>=<]+)\s*(\S+)', value)
+					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', value)
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
