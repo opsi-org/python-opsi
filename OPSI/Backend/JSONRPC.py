@@ -42,47 +42,13 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from Backend import *
 from OPSI import Object
+from OPSI.Util import non_blocking_connect_http, non_blocking_connect_https
 
 # Get logger instance
 logger = Logger()
 
 METHOD_POST = 1
 METHOD_GET = 2
-
-def non_blocking_connect_http(self, connectTimeout=0):
-	''' Non blocking connect, needed for KillableThread '''
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.setblocking(0)
-	started = time.time()
-	while True:
-		try:
-			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
-				raise socket.timeout(u"Timed out after %d seconds" % connectTimeout)
-			sock.connect((self.host, self.port))
-		except socket.error, e:
-			if e[0] in (106, 10056):
-				# Transport endpoint is already connected
-				break
-			if e[0] not in (111, 114, 115, 10022, 10035):
-				# 111   = posix: Connection refused
-				# 10022 = nt: Invalid argument
-				if sock:
-					sock.close()
-				raise
-			time.sleep(0.5)
-	sock.setblocking(1)
-	self.sock = sock
-	
-def non_blocking_connect_https(self, connectTimeout=0):
-	non_blocking_connect_http(self, connectTimeout)
-	try:
-		import ssl
-		self.sock = ssl.wrap_socket(self.sock, self.key_file, self.cert_file)
-	except ImportError, e:
-		# python < 2.6
-		ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
-		self.sock = httplib.FakeSocket(self.sock, ssl)
-
 
 
 # ======================================================================================================

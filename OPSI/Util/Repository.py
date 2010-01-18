@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-import re, stat, base64, urllib, os, shutil
+import re, stat, base64, urllib, httplib, os, shutil
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -43,7 +43,7 @@ from OPSI.web2.dav import davxml
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Util import md5sum
+from OPSI.Util import md5sum, non_blocking_connect_http, non_blocking_connect_https
 
 # Get Logger instance
 logger = Logger()
@@ -99,7 +99,7 @@ class Repository:
 			buf = src.read(bufferSize)
 			read = len(buf)
 			if (read > 0):
-				if isinstance(dst, HTTPConnection) or isinstance(dst, HTTPSConnection):
+				if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
 					dst.send(buf)
 				else:
 					dst.write(buf)
@@ -264,6 +264,7 @@ class WebDAVRepository(Repository):
 		if not match:
 			raise RepositoryError(u"Bad url: '%s'" % self._url)
 		
+		self._connectTimeout = 30
 		self._protocol = match.group(1)
 		self._host = match.group(2)
 		if (self._host.find('@') != -1):
@@ -287,10 +288,18 @@ class WebDAVRepository(Repository):
 	
 	def _connect(self):
 		logger.debug(u"WebDAVRepository _connect()")
+		
 		if self._protocol.endswith('s'):
-			self._connection = HTTPSConnection(self._host, self._port)
+			logger.info(u"Opening https connection to %s:%s" % (self._host, self._port))
+			self._connection = httplib.HTTPSConnection(self._host, self._port)
+			non_blocking_connect_http(self._connection, self._connectTimeout)
 		else:
-			self._connection = HTTPConnection(self._host, self._port)
+			logger.info(u"Opening http connection to %s:%s" % (self._host, self._port))
+			self._connection = httplib.HTTPConnection(self._host, self._port)
+			non_blocking_connect_https(self._connection, self._connectTimeout)
+		
+		self._connection.connect()
+		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
 		
 		self._connection.putrequest('PROPFIND', urllib.quote(self._absolutePath('/')))
 		if self._cookie:
@@ -310,7 +319,7 @@ class WebDAVRepository(Repository):
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
 		if cookie:
-			# Store cookie 
+			# Store cookie
 			self._cookie = cookie.split(';')[0].strip()
 	
 	def _getContent(self, destination=''):

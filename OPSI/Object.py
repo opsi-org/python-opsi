@@ -42,7 +42,6 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Util import generateOpsiHostKey, timestamp
 
-
 # Get logger instance
 logger = Logger()
 
@@ -2470,7 +2469,7 @@ class AuditHardwareOnHost(Relationship):
 	
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
 
-	
+
 
 
 

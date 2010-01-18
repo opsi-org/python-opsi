@@ -37,7 +37,7 @@ __version__ = '3.5'
 # Imports
 from ldaptor.protocols import pureldap
 from ldaptor import ldapfilter
-import types, new, inspect, socket, types
+import types, new, inspect, socket, types, shutil
 import copy as pycopy
 
 # OPSI imports
@@ -2932,6 +2932,8 @@ class DepotserverBackend(ExtendedBackend):
 	def depot_installPackage(self, filename, force=False, defaultProperties={}, tempDir=None):
 		self._packageManager.installPackage(filename, force, defaultProperties, tempDir)
 	
+	def depot_uninstallPackage(self, productId, force=False, deleteFiles=True):
+		self._packageManager.ninstallPackage(productId, force, deleteFiles)
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS DEPOTSERVERBACKEND                                         =
@@ -3084,6 +3086,52 @@ class DepotserverPackageManager(object):
 			logger.logException(e)
 			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
 		
+	
+	def uninstallPackage(self, productId, force=False, deleteFiles=True):
+		depotId = self._depotBackend._depotId
+		logger.notice(u"Uninstalling product '%s' on depot '%s'" % (productId, depotId))
+		try:
+			productId = forceProductId(productId)
+			force = forceBoolean(force)
+			deleteFiles = forceBoolean(deleteFiles)
+			
+			depot = self._depotBackend.host_getObjects(type = 'OpsiDepotserver', id = depotId)[0]
+			productOnDepots = self._depotBackend.productOnDepot_getObjects(depotId = depotId, productId = productId)
+			if not productOnDepots:
+				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
+			
+			logger.notice(u"Locking product '%s' on depot '%s'" % (productId, depotId))
+			
+			productOnDepot = productOnDepots[0]
+			if productOnDepot.getLocked():
+				logger.notice(u"Product currently locked on depot '%s'" % depotId)
+				if not force:
+					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+				logger.warning(u"Uninstallation of locked product forced")
+			productOnDepot.setLocked(True)
+			self._depotBackend.productOnDepot_updateObject(productOnDepot)
+			
+			logger.debug("Deleting product '%s'" % productId)
+			
+			#self.setProductInstallationStatus(productId, objectId = depotId, installationStatus = 'uninstalled')
+			#self.deleteProductDependency(productId, depotIds = [ depotId ])
+			#self.deleteProductProperties(productId, objectId = depotId)
+			#self.deleteProduct(productId, depotIds = [ depotId ])
+			
+			if deleteFiles:
+				if not depot.depotLocalUrl.startswith('file:///'):
+					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
+				clientDataDir = os.path.join(depot.depotLocalUrl[7:], productId)
+				
+				if os.path.exists(clientDataDir):
+					logger.info("Deleting client data dir '%s'" % clientDataDir)
+					shutil.rmtree(clientDataDir)
+				
+			self._depotBackend.productOnDepot_deleteObject(productOnDepot)
+			
+		except Exception, e:
+			logger.logException(e)
+			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, e))
 		
 	def checkDependencies(self, productPackageFile):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
