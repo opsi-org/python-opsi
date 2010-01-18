@@ -816,7 +816,6 @@ class File31Backend(ConfigDataBackend):
 						if attributeMapping.get('json'):
 							value = toJson(value)
 						elif ( isinstance(value, str) or isinstance(value, unicode) ):
-							print "'", value, "'"
 							value = forceUnicode(value)
 							value = value.replace(u"\n", u"\\n")
 						

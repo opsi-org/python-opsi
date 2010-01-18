@@ -46,7 +46,6 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 # Get logger instance
 logger = Logger()
-
 OBJTYPES = ['host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup']
 
 
@@ -55,7 +54,7 @@ OBJTYPES = ['host', 'config', 'configState', 'product', 'productProperty', 'prod
 # ======================================================================================================
 
 class BackendReplicator:
-	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True):
+	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True, verify=True):
 		self.__readBackend  = readBackend
 		self.__writeBackend = writeBackend
 		
@@ -66,6 +65,7 @@ class BackendReplicator:
 		if newServerId:
 			self.__newServerId = forceHostId(newServerId)
 		self.__cleanupFirst = forceBool(cleanupFirst)
+		self.__verify       = forceBool(verify)
 		self.__oldServerId  = u''
 		self.__serverIds    = []
 		self.__depotIds     = []
@@ -92,8 +92,9 @@ class BackendReplicator:
 			for writeObj in eval('wb.%s_getObjects()' % (objType)):
 				writeIdents.append(writeObj.getIdent(returnType = 'unicode'))
 			
-			self.__overallProgressSubject.setMessage(u"%s: #readIdents: '%s' #writeIdents: '%s'" % (objType, readIdents, writeIdents))
-			assert len(readIdents) == len(writeIdents)
+			if self.__cleanupFirst:
+				self.__overallProgressSubject.setMessage(u"%s: #readIdents: '%s' #writeIdents: '%s'" % (objType, readIdents, writeIdents))
+				assert len(readIdents) == len(writeIdents)
 			
 			for readIdent in readIdents:
 				isSameIdent = False
@@ -103,6 +104,7 @@ class BackendReplicator:
 						break
 				self.__overallProgressSubject.setMessage(u"readIdent '%s' is in writeIdents: '%s'" % (readIdent, isSameIdent))
 				assert isSameIdent
+				self.__overallProgressSubject.addToState(1)
 	
 	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[]):
 		'''
@@ -110,9 +112,6 @@ class BackendReplicator:
 		An empty list passed as a param means: replicate all known
 		None as the only element of a list means: replicate none
 		'''
-		self.__currentProgressSubject.reset()
-		self.__currentProgressSubject.setEnd(len(OBJTYPES) + 1)
-		
 		serverIds  = forceList(serverIds)
 		depotIds   = forceList(depotIds)
 		clientIds  = forceList(clientIds)
@@ -125,75 +124,138 @@ class BackendReplicator:
 		rb = self._extendedReadBackend
 		wb = self._extendedWriteBackend
 		
-		hostIds = []
-		configIds = []
-		configStateIds = []
-		productPropertyIds = []
-		productDependencyIds = []
-		productOnDepotIds = []
-		productOnClientIds = []
-		productPropertyStateIds = []
-		objectToGroupIds = []
-		
-		#combining hostIds with given parameters
-		servers = rb.host_getObjects(serverIds)
-		depots = rb.host_getObjects(depotIds)
-		clients = rb.host_getObjects(clientIds)
-		
-		for server in servers:
-			if not (server.getIdent() in hostIds):
-				hostIds.append(server.getIdent())
-		for depot in depots:
-			if not (depot.getIdent() in hostIds):
-				hostIds.append(depot.getIdent())
-		for client in clients:
-			if not (client.getIdent() in hostIds):
-				hostIds.append(client.getIdent())
 		
 		
-		
-		#replicate
 		if self.__cleanupFirst:
-			self.__overallProgressSubject.setMessage(u"Cleaning up first!")
+			print
+			self.__overallProgressSubject.reset()
+			self.__overallProgressSubject.setEnd(12)
 			for objType in OBJTYPES:
 				self.__overallProgressSubject.setMessage(u"Deleting %s" % objType)
+				self.__overallProgressSubject.addToState(1)
 				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (objType, objType))
-#				self.check(rb, wb, objType)
-		
-		self.__overallProgressSubject.addToState(1)
-		self.__overallProgressSubject.setMessage(u"Replicating ...")
-		for objType in OBJTYPES:
-			self.__overallProgressSubject.setMessage(u"Creating %s" % objType)
-			eval('wb.%s_createObjects(rb.%s_getObjects(%sIds))' % (objType, objType, objType))
-#			self.check(rb, wb, objType)
+			
+			self.__overallProgressSubject.setMessage(u"Cleaning done!")
 			self.__overallProgressSubject.addToState(1)
 		
+		
+		
+		print
+		self.__overallProgressSubject.reset()
+		self.__overallProgressSubject.setEnd(27)
+		
+		
+		
+		self.__overallProgressSubject.setMessage(u"Getting servers")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.host_getObjects(type = 'OpsiConfigserver', id = serverIds)
+		self.__overallProgressSubject.setMessage(u"Creating servers")
+		self.__overallProgressSubject.addToState(1)
+		wb.host_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting depots")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.host_getObjects(type = 'OpsiDepotserver', id = depotIds)
+		self.__overallProgressSubject.setMessage(u"Creating depots")
+		self.__overallProgressSubject.addToState(1)
+		wb.host_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting clients")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.host_getObjects(type = 'OpsiClient', id = clientIds)
+		self.__overallProgressSubject.setMessage(u"Creating clients")
+		self.__overallProgressSubject.addToState(1)
+		wb.host_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting configs")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.config_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating configs")
+		self.__overallProgressSubject.addToState(1)
+		wb.config_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting configStates")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.configState_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating configStates")
+		self.__overallProgressSubject.addToState(1)
+		wb.configState_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting products")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.product_getObjects(id = productIds)
+		self.__overallProgressSubject.setMessage(u"Creating products")
+		self.__overallProgressSubject.addToState(1)
+		wb.product_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting productProperties")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.productProperty_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating productProperties")
+		self.__overallProgressSubject.addToState(1)
+		wb.productProperty_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting productDependencies")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.productDependency_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating productDependencies")
+		self.__overallProgressSubject.addToState(1)
+		wb.productDependency_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting productOnDepots")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.productOnDepot_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating productOnDepots")
+		self.__overallProgressSubject.addToState(1)
+		wb.productOnDepot_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting productOnClients")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.productOnClient_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating productOnClients")
+		self.__overallProgressSubject.addToState(1)
+		wb.productOnClient_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting productPropertyStates")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.productPropertyState_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating productPropertyStates")
+		self.__overallProgressSubject.addToState(1)
+		wb.productPropertyState_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting groups")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.group_getObjects(type = 'group', id = groupIds)
+		self.__overallProgressSubject.setMessage(u"Creating groups")
+		self.__overallProgressSubject.addToState(1)
+		wb.group_createObjects(objs)
+		
+		self.__overallProgressSubject.setMessage(u"Getting objectToGroups")
+		self.__overallProgressSubject.addToState(1)
+		objs = rb.objectToGroup_getObjects()
+		self.__overallProgressSubject.setMessage(u"Creating objectToGroups")
+		self.__overallProgressSubject.addToState(1)
+		wb.objectToGroup_createObjects(objs)
+		
 		self.__overallProgressSubject.setMessage(u"Replicating done!")
+		self.__overallProgressSubject.addToState(1)
+		
+		
+		
+		print
+		self.__overallProgressSubject.reset()
+		self.__overallProgressSubject.setEnd(63)
+		
+		
 		
 		self.__overallProgressSubject.setMessage(u"Checking ...")
-		self.check(rb, wb)
+		self.__overallProgressSubject.addToState(1)
+		if self.__verify:
+			self.check(rb, wb)
 		self.__overallProgressSubject.setMessage(u"Checking done!")
+		self.__overallProgressSubject.addToState(1)
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-#		self.__overallProgressSubject.setMessage(u"TEST")
-#		for i in range(100):
-#			self.__overallProgressSubject.addToState(1)
-#			time.sleep(0.1)
-#		
-#		return
-		
-		
-		
+		print
 	
 	
 	
