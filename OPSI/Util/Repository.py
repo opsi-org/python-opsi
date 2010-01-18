@@ -43,6 +43,7 @@ from OPSI.web2.dav import davxml
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, non_blocking_connect_http, non_blocking_connect_https
 
 # Get Logger instance

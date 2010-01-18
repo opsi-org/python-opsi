@@ -36,14 +36,11 @@ __version__ = '3.5'
 
 # Imports
 import ctypes, threading, json, os, random, base64, types, socket
+from duplicity import librsync
 try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
-
-# OS dependend imports
-if (os.name == 'posix'):
-	from duplicity import librsync
 
 # OPSI imports
 from OPSI.Logger import *

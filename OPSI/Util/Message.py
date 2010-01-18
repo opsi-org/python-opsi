@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
    = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Util      =
+   =   opsi python library - Message   =
    = = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
