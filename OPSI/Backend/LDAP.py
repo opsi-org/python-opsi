@@ -1135,7 +1135,7 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		
 		logger.error(u"DELETING groups %s" % groups)
-		for group in forceObjectClassList(groups, HostGroup):
+		for group in forceObjectClassList(groups, Group):
 			dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
