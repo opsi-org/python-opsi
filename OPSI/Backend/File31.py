@@ -505,8 +505,17 @@ class File31Backend(ConfigDataBackend):
 				filebase = os.path.basename(filename)[:-3]
 				
 				for section in cp.sections():
-					idents = section.split(';')
+					idents = []
 					objIdent = {}
+					
+					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
+						idents = section.split(';')
+					else:
+						try:
+							forceInt(section[section.rfind('_') + 1:])
+							idents.append(section[:section.rfind('_')])
+						except:
+							pass # runs in error below
 					
 					if len(idents) > identLen:
 						idents = section.replace('\\;', '\\~~~').split(';')
@@ -517,6 +526,7 @@ class File31Backend(ConfigDataBackend):
 							logger.error(u"_getIdents(): Too many idents in section '%s' in file '%s'" \
 								% (section, filename))
 							continue
+					
 					elif len(idents) < identLen:
 						logger.error(u"_getIdents(): Too few idents in section '%s' in file '%s'" \
 							% (section, filename))
@@ -602,7 +612,7 @@ class File31Backend(ConfigDataBackend):
 					for m in mapping:
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 				
-				elif (fileType == 'ini') or (fileType == 'sw') or (fileType == 'hw'):
+				elif (fileType == 'ini') or (fileType == 'sw'):
 					iniFile = IniFile(filename = filename)
 					cp = iniFile.parse()
 					
@@ -673,6 +683,31 @@ class File31Backend(ConfigDataBackend):
 							if matches:
 								objHash = obj.toHash()
 								break
+				
+				elif (fileType == 'hw'):
+					if   objType in ('AuditHardware'):
+						# objHash only has idents
+						pass
+					
+					elif objType in ('AuditHardwareOnHost'):
+						iniFile = IniFile(filename = filename)
+						cp = iniFile.parse()
+						
+						options = {}
+						
+						for section in cp.sections():
+							if not section.startswith(ident['hardwareClass'] + '_'):
+								continue
+							
+							matched = True
+							for (key, value) in objHash.items():
+								if not (option != 'hardwareClass' and cp.has_option(section, option) and value == cp.get(section, option)):
+									matched = False
+							
+							if matched:
+								for option in ('firstseen', 'lastseen', 'state'):
+									if cp.has_option(section, option):
+										objHash[option] = cp.get(section, option)
 			
 			if self._objectHashMatches(objHash, **filter):
 				Class = eval(objType)
@@ -717,7 +752,7 @@ class File31Backend(ConfigDataBackend):
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 			
-			elif (fileType == 'ini') or (fileType == 'sw') or (fileType == 'hw'):
+			elif (fileType == 'ini') or (fileType == 'sw'):
 				iniFile = IniFile(filename = filename)
 				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
@@ -748,15 +783,8 @@ class File31Backend(ConfigDataBackend):
 								idents['subVersion'].replace(';', '\\;') + ';' + \
 								idents['language'].replace(';', '\\;') + ';' + \
 								idents['architecture'].replace(';', '\\;')
-							
 							if objType == 'AuditSoftwareOnClient':
 								newSection = newSection + ';' + idents['clientId'].replace(';', '\\;')
-						elif objType in ('AuditHardware', 'AuditHardwareOnHost'):
-							idents = obj.getIdent(returnType = 'dict')
-							newSection = idents['hardwareClass'].replace(';', '\\;')
-							
-							if objType == 'AuditHardwareOnHost':
-								newSection = newSection + ';' + idents['hostId'].replace(';', '\\;')
 						
 						if newSection != '' and cp.has_section(newSection):
 							cp.remove_section(newSection)
@@ -877,6 +905,58 @@ class File31Backend(ConfigDataBackend):
 						packageControlFile.setProductProperties(newList)
 				
 				packageControlFile.generate()
+			
+			elif (fileType == 'hw'):
+				iniFile = IniFile(filename = filename)
+				iniFile.create(group = 'pcpatch', mode = 0660)
+				cp = iniFile.parse()
+				
+				section = obj.getHardwareClass() + '_'
+				sectionNr = 0
+				options = {}
+				
+				objHashItems = obj.toHash().items()
+				
+				for oldSection in cp.sections():
+					if not oldSection.lower().startswith(section.lower()):
+						continue
+					
+					matched = True
+					for (key, value) in objHashItems:
+						if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+							matched = False
+					
+					try:
+						if matched:
+							sectionNr = forceInt(oldSection[len(section):])
+							break
+						else:
+							oldSectionNr = forceInt(oldSection[len(section):])
+							if sectionNr < oldSectionNr + 1:
+								sectionNr = oldSectionNr + 1
+					except:
+						logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
+				
+				section = section + forceUnicode(sectionNr)
+				
+				if (mode == 'create') and cp.has_section(section):
+					cp.remove_section(section)
+				
+				for (option, value) in obj.toHash().items():
+					if option == 'hardwareClass':
+						continue
+					
+					if value is None:
+						if cp.has_option(section, option):
+							cp.remove_option(section, option)
+						continue
+					
+					if not cp.has_section(section):
+						cp.add_section(section)
+					
+					cp.set(section, option, forceUnicode(value).replace('%', '%%'))
+				
+				iniFile.generate(cp)
 	
 	def _delete(self, objList):
 		objType = u''
@@ -925,18 +1005,10 @@ class File31Backend(ConfigDataBackend):
 					logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
 				iniFile.generate(cp)
 		
-		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'AuditSoftware', 'AuditHardware'):
+		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 			for obj in objList:
-				fileType = ''
-				if obj.getType() in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-					fileType = 'pro'
-				elif obj.getType() in ('AuditSoftware'):
-					fileType = 'sw'
-				elif obj.getType() in ('AuditHardware'):
-					fileType = 'hw'
-				
 				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType = 'dict'), fileType )
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'pro' )
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if os.path.isfile(filename):
 					os.unlink(filename)
@@ -1038,22 +1110,60 @@ class File31Backend(ConfigDataBackend):
 				
 				iniFile.generate(cp)
 		
-		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
-			filename = self._getConfigFile(objType, {}, 'ini')
+		elif objType in ('Group', 'HostGroup', 'ObjectToGroup', 'AuditSoftware', 'AuditHardware'):
+			fileType = 'ini'
+			if objType == 'AuditSoftware':
+				fileType = 'sw'
+			elif objType == 'AuditHardware':
+				fileType = 'hw'
+			
+			filename = self._getConfigFile(objType, {}, fileType)
 			iniFile = IniFile(filename = filename)
 			cp = iniFile.parse()
 			
 			for obj in objList:
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				section = ''
 				if obj.getType() in ('Group', 'HostGroup'):
-					if cp.has_section(obj.getId()):
-						cp.remove_section(obj.getId())
-						logger.debug2(u"Removed section '%s'" % obj.getId())
-				else:
+					section = obj.getId()
+				elif obj.getType() == 'AuditSoftware':
+					idents = obj.getIdent(returnType = 'dict')
+					section = idents['name'].replace(';', '\\;') + ';' + \
+						idents['version'].replace(';', '\\;') + ';' + \
+						idents['subVersion'].replace(';', '\\;') + ';' + \
+						idents['language'].replace(';', '\\;') + ';' + \
+						idents['architecture'].replace(';', '\\;')
+				elif obj.getType() == 'AuditHardware':
+					section = obj.getHardwareClass() + '_'
+					sectionNr = 0
+					
+					for oldSection in cp.sections():
+						if not oldSection.lower().startswith(section.lower()):
+							continue
+						
+						matched = True
+						for (key, value) in obj.toHash().items():
+							if value == None:
+								continue
+							if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+								matched = False
+						
+						if matched:
+							logger.warning(u"MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM")
+							section = oldSection
+							break
+						else:
+							logger.critical(u"mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm")
+				
+				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				if obj.getType() == 'ObjectToGroup':
 					if cp.has_option(obj.getGroupId(), obj.getObjectId()):
 						cp.remove_option(obj.getGroupId(), obj.getObjectId())
 						logger.debug2(u"Removed option '%s' in section '%s'" \
 							% (obj.getGroupId(), obj.getObjectId()))
+				else:
+					if cp.has_section(section):
+						cp.remove_section(section)
+						logger.debug2(u"Removed section '%s'" % section)
 			
 			iniFile.generate(cp)
 		
