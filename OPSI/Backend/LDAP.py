@@ -314,14 +314,21 @@ class LDAPBackend(ConfigDataBackend):
 					]
 				},
 				{
-					'opsiClass':     'HostGroup',
+					'opsiClass':     'Group',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiHostGroup' ],
+					'objectClasses': [ 'opsiGroup' ],
 					'attributes': [
 						{ 'opsiAttribute': 'id',                     'ldapAttribute': 'opsiGroupId' },
 						{ 'opsiAttribute': 'description',                    'ldapAttribute': 'opsiDescription' },
 						{ 'opsiAttribute': 'notes',                      'ldapAttribute': 'opsiNotes' },
 						{ 'opsiAttribute': 'parentGroupId',                        'ldapAttribute': 'opsiParentGroupId' }
+					]
+				},
+				{
+					'opsiClass':     'HostGroup',
+					'opsiSuperClass': 'Group',
+					'objectClasses': [ 'opsiHostGroup' ],
+					'attributes': [
 					]
 				},
 				{
