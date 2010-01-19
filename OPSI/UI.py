@@ -38,11 +38,8 @@ __version__ = '3.4.99'
 snackError = None
 
 # Imports
-import time, gettext, tty, fcntl, signal, struct, termios, locale
-try:
-	from snack import *
-except Exception, e:
-	snackError = e
+import time, gettext, locale
+from snack import *
 
 # OPSI imports
 from Logger import *
@@ -58,23 +55,16 @@ def _(string):
 def UIFactory(type = u''):
 	type = forceUnicode(type)
 	if   (type == u'snack' or type == u'SnackUI'):
-		if snackError:
-			raise snackError
 		return SnackUI()
-	
-	elif (type == u'text' or type == u'TextUI'):
-		return TextUI()
 	
 	elif (type == u'dummy' or type == u'UI'):
 		return UI()
 	
 	try:
-		if snackError:
-			raise snackError
 		return SnackUI()
 	except Exception, e:
 		logger.warning(u"Failed to create SnackUI: %s" % e)
-		return TextUI()
+		return UI()
 
 class UI:
 	def __init__(self):
@@ -711,349 +701,6 @@ class SnackProgressBox(SnackMessageBox, ProgressBox):
 		return self._state
 
 
-
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       TEXT                                                                        =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-
-class TextUI(UI):
-	from select import select
-	
-	global CRE	# erase to end of line
-	global CLEAR	# clear and reset screen
-	CRE = u"\r\033[K\r"
-	CLEAR = u"\033c\r"
-	
-	def __init__(self):
-		self.width = 0
-		self.height = 0
-		if not sys.stdin.isatty():
-			raise Exception(u"No tty!")
-		
-		self.getTerminalSize()
-		signal.signal(signal.SIGWINCH, self.updateTerminalSize)
-		print >> sys.stdout, CLEAR,
-		
-		
-	def updateTerminalSize(self, signo, stackFrame):
-		if (signo == signal.SIGWINCH):
-			self.getTerminalSize()
-			
-	def getTerminalSize(self):
-		s = struct.pack('HHHH', 0, 0, 0, 0)
-		x = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, s)
-		(self.height, self.width) = struct.unpack('HHHH', x)[:2]
-		#print "(%s,%s)" % (self.height, self.width)
-		
-	def getch(self):
-		saveAttr = tty.tcgetattr(sys.stdin)
-		newAttr = saveAttr[:]
-		newAttr[3] &= ~tty.ECHO & ~tty.ICANON
-		tty.tcsetattr(sys.stdin, tty.TCSANOW, newAttr)
-		c = ''
-		try:
-			c = sys.stdin.read(1)
-		except:
-			pass
-		
-		tty.tcsetattr(sys.stdin, tty.TCSANOW, saveAttr)
-		return c
-		
-	def printText(self, text, align=u'LEFT'):
-		text  = forceUnicode(text)
-		align = forceUnicode(align)
-		
-		for line in text.split(u'\n'):
-			if align.lower().startswith(u'c'):
-				line = int(round((self.width-len(line))/2))*u' ' + line
-				
-			elif align.lower().startswith(u'r'):
-				line = (self.width-len(line))*u' ' + line
-			print >> sys.stdout, line
-		
-	def getLine(self):
-		try:
-			return sys.stdin.readline()
-		except:
-			time.sleep(0.1)
-			return self.getline()
-	
-	def getScreen(self):
-		pass
-	
-	def getWidth(self):
-		return self.width
-		
-	def getHeight(self):
-		return self.height
-	
-	def exit(self):
-		pass
-	
-	def drawRootText(self, x=1, y=1, text=u''):
-		print >> sys.stdout, forceUnicode(text)
-	
-	def showError(self, text, title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
-		text    = forceUnicode(text)
-		title   = forceUnicode(title)
-		okLabel = forceUnicode(okLabel)
-		width   = forceInt(width)
-		height  = forceInt(height)
-		seconds = forceInt(seconds)
-		
-		print >> sys.stdout, CLEAR,
-		self.printText(u'\n--=[ %s ]=--' % title, align=u'CENTER')
-		if text:
-			print >> sys.stdout, text, u'\n'
-		if seconds:
-			time.sleep(seconds)
-		else:
-			print >> sys.stdout, _(u'(Please press any key to continue)')
-			self.getch()
-	
-	def showMessage(self, text, title=_('Message'), okLabel=_('OK'), width=-1, height=-1, seconds=0):
-		text    = forceUnicode(text)
-		title   = forceUnicode(title)
-		okLabel = forceUnicode(okLabel)
-		width   = forceInt(width)
-		height  = forceInt(height)
-		seconds = forceInt(seconds)
-		
-		print >> sys.stdout, CLEAR,
-		self.printText(u'\n--=[ %s ]=--' % title, align=u'CENTER')
-		if text:
-			print >> sys.stdout, text, u'\n'
-		if seconds:
-			time.sleep(seconds)
-		else:
-			print >> sys.stdout, _(u'(Please press any key to continue)')
-			self.getch()
-		
-	def createProgressBox(self, width=-1, height=-1, total=100, title=_('Progress'), text=''):
-		width  = forceInt(width)
-		height = forceInt(height)
-		total  = forceInt(total)
-		title  = forceUnicode(title)
-		text   = forceUnicode(text)
-		
-		progressBox = TextProgressBox(ui=self, width=width, height=height, total=total, title=title, text=text)
-		return progressBox
-	
-	def createMessageBox(self, width=-1, height=-1, title=_('Text'), text=''):
-		width  = forceInt(width)
-		height = forceInt(height)
-		title  = forceUnicode(title)
-		text   = forceUnicode(text)
-		
-		self.messageBox = TextMessageBox(ui=self, width=width, height=height, title=title, text=text)
-		return self.messageBox
-		
-	def getMessageBox(self):
-		if not self.messageBox:
-			self.createMessageBox()
-		return self.messageBox
-	
-	def getSelection(self, entries, radio=False, width=-1, height=-1, title=_('Please select'), text='', okLabel=_('OK'), cancelLabel=_('Cancel')):
-		entries     = forceList(entries)
-		radio       = forceBool(radio)
-		width       = forceInt(width)
-		height      = forceInt(height)
-		title       = forceUnicode(title)
-		text        = forceUnicode(text)
-		okLabel     = forceUnicode(okLabel)
-		cancelLabel = forceUnicode(cancelLabel)
-		
-		print >> sys.stdout, CLEAR,
-		self.printText(u'\n--=[ %s ]=--' % title, align=u'CENTER')
-		if text:
-			print >> sys.stdout, u'%s\n' % text
-		
-		for i in range(len(entries)):
-			print >> sys.stdout, u'%s(%d) %s' % (CRE, (i+1), entries[i].get('name', u''))
-			if entries[i].get('selected'):
-				print >> sys.stdout, u'(*)'
-			else:
-				print u""
-		print >> sys.stdout, _(u'\nPress <ENTER> to keep the default (*)')
-		
-		if radio:
-			c = -1
-			o = 0
-			while c not in map(lambda x:forceUnicode(x), (range(len(entries)+1)[1:])):
-				print >> sys.stdout, u'\r', _(u'Please select one of %s') % range(len(entries)+1)[1:], u':',
-				c = self.getch()
-				try:
-					o = ord(c)
-				except:
-					pass
-				if (o == 10):
-					# Enter pressed => return default
-					for entry in entries:
-						if entry.get('selected'):
-							return [ entry.get('name', u'') ]
-				print c
-			return [ entries[int(c)-1].get('name') ]
-		else:
-			sel = []
-			print >> sys.stdout, u'\r', _(u'Please select one or more of %s') % range(len(entries)+1)[1:], u':'
-			for i in range(len(entries)):
-				c = ''
-				o = 0
-				print >> sys.stdout, u'%s(%d) %s (y/n):' % (CRE, (i+1), entries[i].get('name', u''))
-				while (c.lower() not in ['y', 'n', 'j', 'n', '1', '0']):
-					c = self.getch()
-					try:
-						o = ord(c)
-					except:
-						pass
-					if (o == 10):
-						# Enter pressed => return defaults
-						sel = []
-						for entry in entries:
-							if entry.get('selected'):
-								sel.append(entry.get('name', u''))
-						return sel
-				if c in ['y', 'j', '1']:
-					sel.append(entries[i].get('name', u''))
-					print >> sys.stdout, u"*"
-				else:
-					print >> sys.stdout, u""
-			return sel
-				
-			
-	def getValues(self, entries, width=-1, title=_(u'Please fill in'), text='', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
-		entries     = forceList(entries)
-		width       = forceInt(width)
-		title       = forceUnicode(title)
-		text        = forceUnicode(text)
-		okLabel     = forceUnicode(okLabel)
-		cancelLabel = forceUnicode(cancelLabel)
-		
-		print >> sys.stdout, CLEAR,
-		self.printText(u'\n--=[ %s ]=--' % title, align=u'CENTER')
-		if text:
-			print >> sys.stdout, text, u'\n'
-		for entry in entries:
-			c = 0
-			value = entry.get('value', u'')
-			while True:
-				if entry.get('password'):
-					print >> sys.stdout, CRE + entry.get('name', u'') + u': ' + u'*'*len(value),
-				else:
-					print >> sys.stdout, CRE + entry.get('name', u'') + u': ' + value,
-				c = self.getch()
-				o = 0
-				try:
-					o = ord(c)
-					#print o
-				except:
-					pass
-				if (o == 27):
-					flags = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
-					fcntl.fcntl(sys.stdin, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-					sys.stdin.read()
-					fcntl.fcntl(sys.stdin, fcntl.F_SETFL, flags)
-					continue
-				elif (o == 10):
-					# Enter
-					print >> sys.stdout, u''
-					break
-				elif(o == 127 and len(value) > 0):
-					# Backspace
-					value = value[:-1]
-				else:
-					value += c
-			
-			if entry.get('multivalue') and ( value.find(u',') != -1 ):
-				value = map(lambda x:x.strip(), value.split(u','))
-			
-			entry['value'] = value
-			
-		return entries
-		
-	def yesno(self, text, title=_(u'Question'), okLabel=_(u'OK'), cancelLabel=_(u'Cancel'), width=-1, height=-1):
-		text        = forceUnicode(text)
-		title       = forceUnicode(title)
-		okLabel     = forceUnicode(okLabel)
-		cancelLabel = forceUnicode(cancelLabel)
-		width       = forceInt(width)
-		height      = forceInt(height)
-		
-		print >> sys.stdout, CLEAR,
-		self.printText(u'\n--=[ %s ]=--' % title, align=u'CENTER')
-		if text:
-			print >> sys.stdout, text, u'\n'
-		c = ''
-		while (c.lower() not in ['y', 'n', 'j', 'n', '1', '0']):
-			print >> sys.stdout, _(u'(y/n)'),
-			c = self.getch()
-			print c
-		if c in ['y', 'j', '1']:
-			return True
-		return False
-
-class TextMessageBox(MessageBox):
-	def __init__(self, ui, width=0, height=0, title=_(u'Title'), text=u''):
-		width  = forceInt(width)
-		height = forceInt(height)
-		title  = forceUnicode(title)
-		text   = forceUnicode(text)
-		self.ui = ui
-		self.title = title
-		self.text = text
-	
-	def show(self, seconds=0):
-		seconds = forceInt(seconds)
-		print >> sys.stdout, CLEAR,
-		self.ui.printText(u'\n--=[ %s ]=--' % self.title, align=u'CENTER')
-		if self.text:
-			print >> sys.stdout, self.text, u'\n'
-		
-	def hide(self):
-		pass
-		
-	def setText(self, text):
-		self.text = text
-		self.show()
-		
-	def addText(self, text):
-		self.text += text
-		self.show()
-	
-
-class TextProgressBox(TextMessageBox, ProgressBox):
-	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
-		width  = forceInt(width)
-		height = forceInt(height)
-		total  = forceInt(total)
-		title  = forceUnicode(title)
-		text   = forceUnicode(text)
-		TextMessageBox.__init__(self, ui, width, height, title, text)
-		self.total = total
-		self.state = 0
-	
-	def update(self):
-		percent = u'%0.2f' % (self.state*100/self.total)
-		barLen = int(round( ((self.ui.width)-9)*(float(self.state)/self.total) ))
-		bar = u'='*barLen
-		bar += u'-'*(self.ui.width-9-barLen)
-		while ( len(percent) < 3):
-			percent = u' ' + percent
-		print >> sys.stdout, u'\r' + percent + u'% [' + bar + u']',
-		sys.stdout.flush()
-		
-	def setState(self, state):
-		self.state = state
-		if (self.state > self.total):
-			self.state = self.total
-		elif(self.state < 0):
-			self.state = 0
-		self.update()
-
-	def getState(self):
-		return self.state
-
-
 if (__name__ == "__main__"):
 	uiTest = UIFactory('snack')
 	uiTest.drawRootText(x = 1, y = 1, text = u'Test root text')
@@ -1070,12 +717,15 @@ if (__name__ == "__main__"):
 		state += 10
 		pb.setState(state)
 		time.sleep(0.2)
+	time.sleep(1)
+	
 	pb = uiTest.createProgressBox(width = 30, height = 10, total = 200, title = u'Prögress', text = u'please wäit')
 	state = 0
 	while (state < 200):
-		state += 10
+		state += 20
 		pb.setState(state)
 		time.sleep(0.2)
+	time.sleep(1)
 	
 	mb = uiTest.createMessageBox(width = -1, height = -1, title = u'€€€€€€€€', text = u'@&%$§"ß')
 	mb.show()
