@@ -1122,7 +1122,7 @@ class LDAPBackend(ConfigDataBackend):
 		groups = []
 		
 		if not filter.get('type'):
-			filter['type'] = [ 'HostGroup' ]
+			filter['type'] = [ 'Group','HostGroup' ]
 		
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
