@@ -2929,11 +2929,11 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 	
 	
-	def depot_installPackage(self, filename, force=False, defaultProperties={}, tempDir=None):
-		self._packageManager.installPackage(filename, force, defaultProperties, tempDir)
+	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None):
+		self._packageManager.installPackage(filename, force, propertyDefaultValues, tempDir)
 	
 	def depot_uninstallPackage(self, productId, force=False, deleteFiles=True):
-		self._packageManager.ninstallPackage(productId, force, deleteFiles)
+		self._packageManager.uninstallPackage(productId, force, deleteFiles)
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS DEPOTSERVERBACKEND                                         =
@@ -2943,13 +2943,14 @@ class DepotserverPackageManager(object):
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object = self)
 		
-	def installPackage(self, filename, force=False, defaultProperties={}, tempDir=None):
+	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None):
 		depotId = self._depotBackend._depotId
+		logger.notice(u"====================================================================")
 		logger.notice(u"Installing package file '%s' on depot '%s'" % (filename, depotId))
 		try:
 			filename = forceFilename(filename)
 			force = forceBool(force)
-			defaultProperties = forceDict(defaultProperties)
+			propertyDefaultValues = forceDict(propertyDefaultValues)
 			if tempDir:
 				tempDir = forceFilename(tempDir)
 			else:
@@ -3026,6 +3027,12 @@ class DepotserverPackageManager(object):
 							productVersion = product.getProductVersion(),
 							packageVersion = product.getPackageVersion() ) )
 				
+				logger.info(u"Deleting product property states of product %s on depot '%s'" % (product.getId(), depotId))
+				self._depotBackend.productPropertyState_deleteObjects(
+					self._depotBackend.productPropertyState_getObjects(
+							productId = product.getId(),
+							objectId  = depotId ) )
+				
 				logger.info(u"Deleting product properties of product %s" % product)
 				self._depotBackend.productProperty_deleteObjects(
 					self._depotBackend.productProperty_getObjects(
@@ -3049,8 +3056,31 @@ class DepotserverPackageManager(object):
 					productCreated = True
 				logger.notice(u"Creating product dependencies in backend")
 				self._depotBackend.productDependency_createObjects(ppf.packageControlFile.getProductDependencies())
+				
 				logger.notice(u"Creating product properties in backend")
-				self._depotBackend.productProperty_createObjects(ppf.packageControlFile.getProductProperties())
+				productProperties = ppf.packageControlFile.getProductProperties()
+				self._depotBackend.productProperty_createObjects(productProperties)
+				
+				logger.notice(u"Setting product property states in backend")
+				productPropertyStates = []
+				for productProperty in productProperties:
+					productPropertyStates.append(
+						ProductPropertyState(
+							productId  = product.getId(),
+							propertyId = productProperty.propertyId,
+							objectId   = depotId,
+							values     = productProperty.defaultValues ) )
+				self._depotBackend.productPropertyState_createObjects(productPropertyStates)
+				
+				for productPropertyState in productPropertyStates:
+					if propertyDefaultValues.has_key(productPropertyState.propertyId):
+						try:
+							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
+						except Exception, e:
+							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
+									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, e) )
+				
+				self._depotBackend.productPropertyState_updateObjects(productPropertyStates)
 				
 				ppf.runPostinst()
 				
@@ -3089,11 +3119,12 @@ class DepotserverPackageManager(object):
 	
 	def uninstallPackage(self, productId, force=False, deleteFiles=True):
 		depotId = self._depotBackend._depotId
+		logger.notice(u"====================================================================")
 		logger.notice(u"Uninstalling product '%s' on depot '%s'" % (productId, depotId))
 		try:
 			productId = forceProductId(productId)
-			force = forceBoolean(force)
-			deleteFiles = forceBoolean(deleteFiles)
+			force = forceBool(force)
+			deleteFiles = forceBool(deleteFiles)
 			
 			depot = self._depotBackend.host_getObjects(type = 'OpsiDepotserver', id = depotId)[0]
 			productOnDepots = self._depotBackend.productOnDepot_getObjects(depotId = depotId, productId = productId)
@@ -3127,7 +3158,7 @@ class DepotserverPackageManager(object):
 					logger.info("Deleting client data dir '%s'" % clientDataDir)
 					shutil.rmtree(clientDataDir)
 				
-			self._depotBackend.productOnDepot_deleteObject(productOnDepot)
+			self._depotBackend.productOnDepot_deleteObjects(productOnDepot)
 			
 		except Exception, e:
 			logger.logException(e)

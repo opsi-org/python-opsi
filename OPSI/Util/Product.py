@@ -153,6 +153,7 @@ class ProductPackageFile(object):
 			self.packageControlFile.parse()
 			
 		except Exception, e:
+			logger.logException(e)
 			self.cleanup()
 			raise Exception(u"Failed to get metadata from package '%s': %s" % (self.packageFile, e))
 		logger.debug(u"Got meta data from package '%s'" % self.packageFile)

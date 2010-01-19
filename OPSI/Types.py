@@ -108,6 +108,12 @@ def forceInt(var):
 	except Exception, e:
 		raise ValueError(u"Bad int value '%s': %s" % (var, e))
 
+def forceIntList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceInt(var[i])
+	return var
+
 def forceUnsignedInt(var):
 	var = forceInt(var)
 	if (var < 0):

@@ -441,10 +441,9 @@ class PackageControlFile(TextFile):
 							value = value.split(u',')
 							value = map ( lambda x:x.strip(), value )
 						
-							
 						# Remove duplicates
 						tmp = []
-						for v in value:
+						for v in forceList(value):
 							if v and v not in tmp:
 								tmp.append(v)
 						value = tmp

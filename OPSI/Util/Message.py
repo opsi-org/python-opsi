@@ -132,10 +132,12 @@ class ChoiceSubject(MessageSubject):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
+		if args.has_key('radio'):
+			self._radio = forceBool(args['radio'])
 		if args.has_key('choices'):
 			self._choices = forceUnicodeList(args['choices'])
-		if args.has_key('selectedIndex'):
-			self._selectedIndex = forceInt(args['selectedIndex'])
+		if args.has_key('selectedIndexes'):
+			self._selectedIndexes = forceIntList(args['selectedIndexes'])
 		if args.has_key('callbacks'):
 			self._callbacks = args['callbacks']
 		logger.debug(u"ChoiceSubject '%s' created" % self._id)
@@ -143,22 +145,27 @@ class ChoiceSubject(MessageSubject):
 	def reset(self):
 		MessageSubject.reset(self)
 		self._choices = []
-		self._selectedIndex = -1
+		self._selectedIndexes = []
+		self._radio = True
 		
-	def setSelectedIndex(self, selectedIndex):
-		selectedIndex = forceInt(selectedIndex)
-		if (selectedIndex > len(self._choices)-1):
-			return
-		self._selectedIndex = selectedIndex
-		self._notifySelectedIndexChanged()
+	def setSelectedIndexes(self, selectedIndexes):
+		self._selectedIndexes = []
+		for selectedIndex in forceIntList(selectedIndexes):
+			if (selectedIndex < 0) or (selectedIndex > len(self._choices)-1) or selectedIndex in self._selectedIndexes:
+				continue
+			if self._radio:
+				self._selectedIndexes = [ selectedIndex ]
+			else:
+				self._selectedIndexes.append(selectedIndex)
+		self._notifySelectedIndexesChanged()
 	
-	def getSelectedIndex(self):
-		return self._selectedIndex
+	def getSelectedIndexes(self):
+		return self._selectedIndexes
 	
 	def setChoices(self, choices):
 		self._choices = forceUnicodeList(choices)
-		if (len(self._choices) > 0) and (self._selectedIndex < 0):
-			self._selectedIndex = 0
+		if (len(self._choices) > 0) and not self._selectedIndexes:
+			self._selectedIndexes = [ 0 ]
 		self._notifyChoicesChanged()
 	
 	def getChoices(self):
@@ -166,18 +173,19 @@ class ChoiceSubject(MessageSubject):
 	
 	def selectChoice(self):
 		logger.info(u"ChoiceSubject.selectChoice()")
-		if (self._selectedIndex >= 0) and (self._selectedIndex < len(self._callbacks)):
-			# Exceute callback
-			logger.notice(u"Executing callback %s" % self._callbacks[self._selectedIndex])
-			self._callbacks[self._selectedIndex](self)
+		for selectedIndex in self._selectedIndexes:
+			if (selectedIndex >= 0) and (selectedIndex < len(self._callbacks)):
+				# Exceute callback
+				logger.notice(u"Executing callback %s" % self._callbacks[selectedIndex])
+				self._callbacks[selectedIndex](self)
 		
 	def setCallbacks(self, callbacks):
 		callbacks = forceList(callbacks)
 		self._callbacks = callbacks
 	
-	def _notifySelectedIndexChanged(self):
+	def _notifySelectedIndexesChanged(self):
 		for o in self._observers:
-			o.selectedIndexChanged(self, self._selectedIndex)
+			o.selectedIndexesChanged(self, self._selectedIndex)
 	
 	def _notifyChoicesChanged(self):
 		for o in self._observers:
@@ -185,8 +193,8 @@ class ChoiceSubject(MessageSubject):
 	
 	def serializable(self):
 		s = MessageSubject.serializable(self)
-		s['choices']       = self.getChoices()
-		s['selectedIndex'] = self.getSelectedIndex()
+		s['choices']         = self.getChoices()
+		s['selectedIndexes'] = self.getSelectedIndexes()
 		return s
 
 class ProgressSubject(MessageSubject):
@@ -307,7 +315,7 @@ class ChoiceObserver(MessageObserver):
 	def __init__(self):
 		MessageObserver.__init__(self)
 	
-	def selectedIndexChanged(self, subject, selectedIndex):
+	def selectedIndexesChanged(self, subject, selectedIndexes):
 		pass
 	
 	def choicesChanged(self, subject, choices):
@@ -365,8 +373,8 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 	def messageChanged(self, subject, message):
 		self.setMessage(message, severity = subject.getSeverity())
 	
-	def selectedIndexChanged(self, subject, selectedIndex):
-		self.setSelectedIndex(selectedIndex)
+	def selectedIndexesChanged(self, subject, selectedIndexes):
+		self.setSelectedIndexes(selectedIndexes)
 	
 	def choicesChanged(self, subject, choices):
 		self.setChoices(choices)
@@ -461,12 +469,12 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		logger.debug(u"messageChanged: subject id '%s', message '%s'" % (subject.getId(), message))
 		self.notify( name = u"messageChanged", params = [subject.serializable(), message] )
 	
-	def selectedIndexChanged(self, subject, selectedIndex):
+	def selectedIndexesChanged(self, subject, selectedIndexes):
 		if not subject in self.getSubjects():
-			logger.info(u"Unknown subject %s passed to selectedIndexChanged, automatically adding subject" % subject)
+			logger.info(u"Unknown subject %s passed to selectedIndexesChanged, automatically adding subject" % subject)
 			self.addSubject(subject)
-		logger.debug(u"selectedIndexChanged: subject id '%s', selectedIndex '%s'" % (subject.getId(), selectedIndex))
-		self.notify( name = u"selectedIndexChanged", params = [ subject.serializable(), selectedIndex ] )
+		logger.debug(u"selectedIndexesChanged: subject id '%s', selectedIndexes %s" % (subject.getId(), selectedIndexes))
+		self.notify( name = u"selectedIndexesChanged", params = [ subject.serializable(), selectedIndexes ] )
 	
 	def choicesChanged(self, subject, choices):
 		if not subject in self.getSubjects():

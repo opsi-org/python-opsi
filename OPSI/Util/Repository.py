@@ -66,16 +66,16 @@ def getRepository(url, username=u'', password=u'', maxBandwidth=0):
 	
 class Repository:
 	def __init__(self, url, username=u'', password=u'', maxBandwidth=0):
-		''' maxBandwidth in bit/s'''
+		'''
+		maxBandwith must be in byte/s
+		'''
 		self._url          = forceUnicode(url)
 		self._username     = forceUnicode(username)
 		self._password     = forceUnicode(password)
 		self._path         = u''
 		self._maxBandwidth = forceInt(maxBandwidth)
-		if self._maxBandwidth:
-			self._maxBandwidth = self._maxBandwidth/8
-			if (self._maxBandwidth < 1):
-				self._maxBandwidth = 1
+		if (self._maxBandwidth < 0):
+			self._maxBandwidth = 0
 	
 	def __unicode__(self):
 		return u'<%s %s>' % (self.__class__.__name__, self._url)
@@ -95,11 +95,12 @@ class Repository:
 			if (bufferSize < 512):
 				bufferSize = 512
 		
+		speed = 0
 		while(buf):
-			t1 = time.time()
 			buf = src.read(bufferSize)
 			read = len(buf)
 			if (read > 0):
+				t1 = time.time()
 				if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
 					dst.send(buf)
 				else:
@@ -108,7 +109,7 @@ class Repository:
 				t2 = time.time()
 				dt = t2-t1
 				if self._maxBandwidth and (self._maxBandwidth > 0) and (dt > 0):
-					speed = int(read/dt)
+					speed = int((speed + (read/dt))/2)
 					wt = 0
 					if (speed > 0) and (speed > self._maxBandwidth):
 						wt = ( (float(speed)/float(self._maxBandwidth)) ** (0.1) )
@@ -127,14 +128,12 @@ class Repository:
 							waitTime = 0.00001
 				if progressSubject:
 					progressSubject.addToState(read)
-	
+					
 	def setMaxBandwidth(self, maxBandwidth):
-		''' maxBandwidth in bit/s'''
+		''' maxBandwidth in byte/s'''
 		self._maxBandwidth = forceInt(maxBandwidth)
-		if self._maxBandwidth:
-			self._maxBandwidth = int(self._maxBandwidth/8)
-			if (self._maxBandwidth < 1):
-				self._maxBandwidth = 1
+		if (self._maxBandwidth < 0):
+			self._maxBandwidth = 0
 	
 	def content(self, destination=u''):
 		raise RepositoryError(u"Not implemented")
@@ -173,40 +172,28 @@ class FileRepository(Repository):
 		content = []
 		destination = self._absolutePath(destination)
 		try:
-			for e in os.listdir(destination):
-				fs = os.stat(os.path.join(destination, e))
-				type = 'file'
-				if os.path.isdir(os.path.join(destination, e)):
-					type = 'dir'
-				content.append({
-					'name': e,
-					'size': fs[stat.ST_SIZE],
-					'type': type })
+			for f in os.listdir(destination):
+				content.append(fileInfo(destination + u'/' + f))
 		except:
 			raise RepositoryError(u"Not a directory: '%s'" % destination)
 		return content
 		
 	def fileInfo(self, destination):
 		destination = self._absolutePath(destination)
-		info = {}
 		try:
-			fs = os.stat(destination)
-			info['size'] = fs[stat.ST_SIZE]
+			
 			return info
 		except Exception, e:
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
 	
-	def download(self, source, destination, progressObserver=None):
+	def download(self, source, destination, progressSubject=None):
 		size = self.fileInfo(source)['size']
 		source = self._absolutePath(source)
 		destination = forceUnicode(destination)
 		
 		logger.debug(u"Length of binary data to download: %d" % size)
 		
-		progressSubject = ProgressSubject(id='download', end=size)
-		progressSubject.setMessage( os.path.basename(source) + ' >> ' + self._path )
-		
-		if progressObserver: progressSubject.attachObserver(progressObserver)
+		if progressSubject: progressSubject.setEnd(size)
 		
 		(src, dst) = (None, None)
 		try:
@@ -221,7 +208,7 @@ class FileRepository(Repository):
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
 						% (source, destination, e))
 	
-	def upload(self, source, destination, progressObserver=None):
+	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = self._absolutePath(destination)
 		
@@ -229,10 +216,7 @@ class FileRepository(Repository):
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
 		
-		progressSubject = ProgressSubject(id='upload', end=size)
-		progressSubject.setMessage( os.path.basename(source) + u' >> ' + self._path )
-		
-		if progressObserver: progressSubject.attachObserver(progressObserver)
+		if progressSubject: progressSubject.setEnd(size)
 		
 		(src, dst) = (None, None)
 		try:
@@ -391,17 +375,14 @@ class WebDAVRepository(Repository):
 		except Exception, e:
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
 	
-	def download(self, source, destination, progressObserver=None):
+	def download(self, source, destination, progressSubject=None):
 		destination = forceUnicode(destination)
 		size = self.fileInfo(source)['size']
 		source = self._absolutePath(source)
 		
 		logger.debug(u"Length of binary data to download: %d" % size)
 		
-		progressSubject = ProgressSubject(id='upload', end=size)
-		progressSubject.setMessage( os.path.basename(source) + u' >> ' + self._path )
-		
-		if progressObserver: progressSubject.attachObserver(progressObserver)
+		if progressSubject: progressSubject.setEnd(size)
 		
 		dst = None
 		try:
@@ -429,7 +410,7 @@ class WebDAVRepository(Repository):
 						% (source, destination, e))
 		logger.debug2(u"WebDAV download done")
 	
-	def upload(self, source, destination, progressObserver=None):
+	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = self._absolutePath(destination)
 		
@@ -437,10 +418,7 @@ class WebDAVRepository(Repository):
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
 		
-		progressSubject = ProgressSubject(id='upload', end=size)
-		progressSubject.setMessage( os.path.basename(source) + u' >> ' + self._path )
-		
-		if progressObserver: progressSubject.attachObserver(progressObserver)
+		if progressSubject: progressSubject.setEnd(size)
 		
 		src = None
 		try:
