@@ -1080,7 +1080,7 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		
 		logger.error(u"DELETING productPropertyStates %s" % productPropertyStates)
-		for productOnClient in forceObjectClassList(productPropertyStates, ProductPropertyState):
+		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			containerDn = 'cn=%s,cn=%s,%s' % (productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
 			dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
 			
