@@ -49,6 +49,7 @@ logger = Logger()
 OBJTYPES = ['host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup']
 
 
+
 # ======================================================================================================
 # =                                 CLASS BACKENDREPLICATOR                                            =
 # ======================================================================================================
@@ -167,12 +168,16 @@ class BackendReplicator:
 		self.__overallProgressSubject.addToState(1)
 		wb.host_createObjects(objs)
 		
+		if self.__cleanupFirst and self.__verify: assert len(rb.host_getObjects())                 == len(wb.host_getObjects())
+		
 		self.__overallProgressSubject.setMessage(u"Getting configs")
 		self.__overallProgressSubject.addToState(1)
 		objs = rb.config_getObjects()
 		self.__overallProgressSubject.setMessage(u"Creating configs")
 		self.__overallProgressSubject.addToState(1)
 		wb.config_createObjects(objs)
+		
+		if self.__cleanupFirst and self.__verify: assert len(rb.config_getObjects())               == len(wb.config_getObjects())
 		
 		self.__overallProgressSubject.setMessage(u"Getting configStates")
 		self.__overallProgressSubject.addToState(1)
@@ -181,12 +186,16 @@ class BackendReplicator:
 		self.__overallProgressSubject.addToState(1)
 		wb.configState_createObjects(objs)
 		
+		if self.__cleanupFirst and self.__verify: assert len(rb.configState_getObjects())          == len(wb.configState_getObjects())
+		
 		self.__overallProgressSubject.setMessage(u"Getting products")
 		self.__overallProgressSubject.addToState(1)
 		objs = rb.product_getObjects(id = productIds)
 		self.__overallProgressSubject.setMessage(u"Creating products")
 		self.__overallProgressSubject.addToState(1)
 		wb.product_createObjects(objs)
+		
+		if self.__cleanupFirst and self.__verify: assert len(rb.product_getObjects())              == len(wb.product_getObjects())
 		
 		self.__overallProgressSubject.setMessage(u"Getting productProperties")
 		self.__overallProgressSubject.addToState(1)
@@ -195,12 +204,16 @@ class BackendReplicator:
 		self.__overallProgressSubject.addToState(1)
 		wb.productProperty_createObjects(objs)
 		
+		if self.__cleanupFirst and self.__verify: assert len(rb.productProperty_getObjects())      == len(wb.productProperty_getObjects())
+		
 		self.__overallProgressSubject.setMessage(u"Getting productDependencies")
 		self.__overallProgressSubject.addToState(1)
 		objs = rb.productDependency_getObjects()
 		self.__overallProgressSubject.setMessage(u"Creating productDependencies")
 		self.__overallProgressSubject.addToState(1)
 		wb.productDependency_createObjects(objs)
+		
+		if self.__cleanupFirst and self.__verify: assert len(rb.productDependency_getObjects())    == len(wb.productDependency_getObjects())
 		
 		self.__overallProgressSubject.setMessage(u"Getting productOnDepots")
 		self.__overallProgressSubject.addToState(1)
@@ -209,12 +222,16 @@ class BackendReplicator:
 		self.__overallProgressSubject.addToState(1)
 		wb.productOnDepot_createObjects(objs)
 		
+		if self.__cleanupFirst and self.__verify: assert len(rb.productOnDepot_getObjects())       == len(wb.productOnDepot_getObjects())
+		
 		self.__overallProgressSubject.setMessage(u"Getting productOnClients")
 		self.__overallProgressSubject.addToState(1)
 		objs = rb.productOnClient_getObjects()
 		self.__overallProgressSubject.setMessage(u"Creating productOnClients")
 		self.__overallProgressSubject.addToState(1)
 		wb.productOnClient_createObjects(objs)
+		
+		if self.__cleanupFirst and self.__verify: assert len(rb.productOnClient_getObjects())      == len(wb.productOnClient_getObjects())
 		
 		self.__overallProgressSubject.setMessage(u"Getting productPropertyStates")
 		self.__overallProgressSubject.addToState(1)
@@ -223,12 +240,43 @@ class BackendReplicator:
 		self.__overallProgressSubject.addToState(1)
 		wb.productPropertyState_createObjects(objs)
 		
+		if self.__cleanupFirst and self.__verify: assert len(rb.productPropertyState_getObjects()) == len(wb.productPropertyState_getObjects())
+		
 		self.__overallProgressSubject.setMessage(u"Getting groups")
 		self.__overallProgressSubject.addToState(1)
-		objs = rb.group_getObjects(type = 'group', id = groupIds)
+		objs = rb.group_getObjects(id = groupIds)
+		
+		#sort objs
+		sortedObjs = []
+		unsortedObjs = []
+		while True:
+			for obj in objs:
+				objCanBeAppended = False
+				if (obj.getParentGroupId() == None):
+					objCanBeAppended = True
+				else:
+					for sortedObj in sortedObjs:
+						if (sortedObj.getId() == obj.getParentGroupId()):
+							objCanBeAppended = True
+							break
+				
+				if objCanBeAppended:
+					sortedObjs.append(obj)
+				else:
+					unsortedObjs.append(obj)
+			
+			if len(unsortedObjs) == 0:
+				objs = sortedObjs
+				break
+			else:
+				objs = unsortedObjs
+				unsortedObjs = []
+		
 		self.__overallProgressSubject.setMessage(u"Creating groups")
 		self.__overallProgressSubject.addToState(1)
 		wb.group_createObjects(objs)
+		
+		if self.__cleanupFirst and self.__verify: assert len(rb.group_getObjects())                == len(wb.group_getObjects())
 		
 		self.__overallProgressSubject.setMessage(u"Getting objectToGroups")
 		self.__overallProgressSubject.addToState(1)
@@ -236,6 +284,8 @@ class BackendReplicator:
 		self.__overallProgressSubject.setMessage(u"Creating objectToGroups")
 		self.__overallProgressSubject.addToState(1)
 		wb.objectToGroup_createObjects(objs)
+		
+		if self.__cleanupFirst and self.__verify: assert len(rb.objectToGroup_getObjects())        == len(wb.objectToGroup_getObjects())
 		
 		self.__overallProgressSubject.setMessage(u"Replicating done!")
 		self.__overallProgressSubject.addToState(1)
@@ -255,6 +305,8 @@ class BackendReplicator:
 		self.__overallProgressSubject.setMessage(u"Checking done!")
 		self.__overallProgressSubject.addToState(1)
 		
+		print
+		print
 		print
 	
 	
