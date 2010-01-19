@@ -132,8 +132,8 @@ class ChoiceSubject(MessageSubject):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
-		if args.has_key('radio'):
-			self._radio = forceBool(args['radio'])
+		if args.has_key('multiValue'):
+			self._multiValue = forceBool(args['multiValue'])
 		if args.has_key('choices'):
 			self._choices = forceUnicodeList(args['choices'])
 		if args.has_key('selectedIndexes'):
@@ -146,14 +146,17 @@ class ChoiceSubject(MessageSubject):
 		MessageSubject.reset(self)
 		self._choices = []
 		self._selectedIndexes = []
-		self._radio = True
-		
+		self._multiValue = True
+	
+	def getMultiValue(self):
+		return self._multiValue
+	
 	def setSelectedIndexes(self, selectedIndexes):
 		self._selectedIndexes = []
 		for selectedIndex in forceIntList(selectedIndexes):
 			if (selectedIndex < 0) or (selectedIndex > len(self._choices)-1) or selectedIndex in self._selectedIndexes:
 				continue
-			if self._radio:
+			if self._multiValue:
 				self._selectedIndexes = [ selectedIndex ]
 			else:
 				self._selectedIndexes.append(selectedIndex)
