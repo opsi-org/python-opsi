@@ -103,7 +103,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 		self._mappings = [
 				{
-					'opsiClass':     'OpsiHost',
+					'opsiClass':     'Host',
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiHost' ],
 					'attributes': [
@@ -117,7 +117,7 @@ class LDAPBackend(ConfigDataBackend):
 				},
 				{
 					'opsiClass':      'OpsiClient',
-					'opsiSuperClass': 'OpsiHost',
+					'opsiSuperClass': 'Host',
 					'objectClasses':  [ 'opsiHost', 'opsiClient' ],
 					'attributes': [
 						{ 'opsiAttribute': 'created',         'ldapAttribute': 'opsiCreatedTimestamp' },
@@ -127,7 +127,7 @@ class LDAPBackend(ConfigDataBackend):
 				},
 				{
 					'opsiClass':      'OpsiDepotserver',
-					'opsiSuperClass': 'OpsiHost',
+					'opsiSuperClass': 'Host',
 					'objectClasses':  [ 'opsiHost', 'opsiDepotserver' ],
 					'attributes': [
 						{ 'opsiAttribute': 'depotLocalUrl',       'ldapAttribute': 'opsiDepotLocalUrl' },

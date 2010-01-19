@@ -43,8 +43,8 @@ bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()
 ldapBackend.backend_createBase()
 bt.testObjectMethods()
-bt.testPerformance(clientCount=100, productCount=50)
-#bt.testNonObjectMethods()
+#bt.testPerformance(clientCount=100, productCount=50)
+bt.testNonObjectMethods()
 
 
 
