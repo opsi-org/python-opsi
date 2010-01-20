@@ -67,7 +67,7 @@ def fromJson(obj):
 class File31Backend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
-		ConfigDataBackend.__init__(self, **kwargs)
+		ConfigDataBackend.__init__(self, baseDir = '/tmp/file31', **kwargs)
 		
 		#fqdn configserver
 		self.__serverId = socket.getfqdn().lower()
@@ -75,7 +75,7 @@ class File31Backend(ConfigDataBackend):
 			raise Exception(u"Failed to get fqdn: %s" % self.__serverId)
 		
 		#dirs
-		self.__baseDir          = '/tmp/file31'
+		self.__baseDir          = baseDir
 		self.__clientConfigDir  = os.path.join(self.__baseDir, 'clients')
 		self.__depotConfigDir   = os.path.join(self.__baseDir, 'depots')
 		self.__productDir       = os.path.join(self.__baseDir, 'products')
@@ -839,18 +839,17 @@ class File31Backend(ConfigDataBackend):
 						if value is None:
 							if cp.has_option(section, option):
 								cp.remove_option(section, option)
-							continue
-						
-						if attributeMapping.get('json'):
-							value = toJson(value)
-						elif ( isinstance(value, str) or isinstance(value, unicode) ):
-							value = forceUnicode(value)
-							value = value.replace(u"\n", u"\\n")
-						
-						if not cp.has_section(section):
-							cp.add_section(section)
-						
-						cp.set(section, option, forceUnicode(value).replace('%', '%%'))
+						else:
+							if attributeMapping.get('json'):
+								value = toJson(value)
+							elif ( isinstance(value, str) or isinstance(value, unicode) ):
+								value = forceUnicode(value)
+								value = value.replace(u"\n", u"\\n")
+							
+							if not cp.has_section(section):
+								cp.add_section(section)
+							
+							cp.set(section, option, forceUnicode(value).replace('%', '%%'))
 				
 				iniFile.generate(cp)
 			
@@ -1134,7 +1133,8 @@ class File31Backend(ConfigDataBackend):
 						idents['architecture'].replace(';', '\\;')
 				elif obj.getType() == 'AuditHardware':
 					section = obj.getHardwareClass() + '_'
-					sectionNr = 0
+					
+					matched = False
 					
 					for oldSection in cp.sections():
 						if not oldSection.lower().startswith(section.lower()):
@@ -1142,17 +1142,18 @@ class File31Backend(ConfigDataBackend):
 						
 						matched = True
 						for (key, value) in obj.toHash().items():
-							if value == None:
+							if value == None or key in ('hardwareClass', 'type'):
 								continue
-							if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+							if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
 								matched = False
 						
 						if matched:
-							logger.warning(u"MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM")
 							section = oldSection
 							break
-						else:
-							logger.critical(u"mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm")
+					
+					if not matched:
+						logger.warning(u"Couldn't find match for hardwareClass '%s' in file '%s'" % (obj.getHardwareClass(), filename))
+						continue
 				
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if obj.getType() == 'ObjectToGroup':

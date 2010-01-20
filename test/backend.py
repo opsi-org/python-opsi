@@ -1537,6 +1537,24 @@ class BackendTest(object):
 			print auditSoftware.getIdent(returnType = 'dict')
 		assert len(auditSoftwares) == len(self.auditSoftwares)
 		
+		self.auditSoftware3.setWindowsDisplayName('updatedWinDisName')
+#		self.backend.auditSoftware_updateObject(self.auditSoftware3)
+#		auditSoftwares = self.backend.auditSoftware_getObjects()
+#		for a in auditSoftwares:
+#			print a.getIdent(), "|", a.getWindowsDisplayName()
+#			print
+		
+#		print self.auditSoftware3.getWindowsDisplayName()
+		assert len(auditSoftwares) == 1
+		
+		self.backend.auditSoftware_deleteObjects(self.auditSoftware3)
+		auditSoftwares = self.backend.auditSoftware_getObjects()
+		assert len(auditSoftwares) == len(self.auditSoftwares) - 1
+		
+		self.backend.auditSoftware_insertObject(self.auditSoftware3)
+		auditSoftwares = self.backend.auditSoftware_getObjects()
+		assert len(auditSoftwares) == len(self.auditSoftwares)
+		
 		# AuditSoftwareOnClients
 		logger.notice(u"Testing auditSoftwareOnClient methods")
 		
