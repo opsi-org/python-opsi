@@ -155,7 +155,7 @@ class SnackUI(UI):
 			raise Exception(u'Display to small (at least 24 lines by 40 columns needed)')
 		self.messageBox = None
 		self._screen.pushHelpLine(u"")
-	
+		
 	def __del__(self):
 		self.exit()
 	
@@ -330,6 +330,7 @@ class SnackUI(UI):
 			gridForm.add (textGrid,    col = 0, row = 0, padding = (0, 0, 0, 1))
 			gridForm.add (entryGrid,   col = 0, row = 1, padding = (0, 0, 0, 1))
 			gridForm.add (buttonsGrid, col = 0, row = 2, padding = (0, 0, 0, 0))
+			gridForm.addHotKey('ESC')
 			
 			# help line
 			helpLine = _(u"<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select") % (cancelLabel, okLabel)
@@ -338,8 +339,11 @@ class SnackUI(UI):
 			self.getScreen().pushHelpLine(forceUnicode(helpLine).encode(encoding, 'replace'))
 			
 			# run
-			buttonPressed = gridForm.runOnce()
-			
+			gridForm.addHotKey('ESC')
+			gridForm.draw()
+			buttonPressed = None
+			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
+				buttonPressed = gridForm.run()
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 			
@@ -428,12 +432,11 @@ class SnackUI(UI):
 			self.getScreen().pushHelpLine(forceUnicode(helpLine).encode(encoding, 'replace'))
 			
 			# run
+			gridForm.addHotKey('ESC')
 			gridForm.draw()
-			buttonPressed = gridForm.run()
-			
+			buttonPressed = None
 			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
 				buttonPressed = gridForm.run()
-			
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 			
@@ -515,8 +518,11 @@ class SnackUI(UI):
 			self.getScreen().pushHelpLine(forceUnicode(helpLine).encode(encoding, 'replace'))
 			
 			# run
-			buttonPressed = gridForm.runOnce()
-			
+			gridForm.addHotKey('ESC')
+			gridForm.draw()
+			buttonPressed = None
+			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
+				buttonPressed = gridForm.run()
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 			
@@ -568,8 +574,12 @@ class SnackUI(UI):
 			self.getScreen().pushHelpLine(forceUnicode(helpLine).encode(encoding, 'replace'))
 			
 			# run
-			buttonPressed = gridForm.runOnce()
-			if (buttonPressed in [ okButton, 'F12' ] ):
+			gridForm.addHotKey('ESC')
+			gridForm.draw()
+			buttonPressed = None
+			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
+				buttonPressed = gridForm.run()
+			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return True
 			return False
 		except Exception, e:

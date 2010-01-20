@@ -432,10 +432,10 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'default') or \
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows'         and option == 'softwareids'):
-					   	try:
+						try:
 					   		value = fromJson(value.strip())
 					   	except Exception, e:
-					   		logger.debug(u"Failed to read json string '%s': %s" % (value.strip(), e) )
+					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							value = value.split(u',')
@@ -444,10 +444,10 @@ class PackageControlFile(TextFile):
 						# Remove duplicates
 						tmp = []
 						for v in forceList(value):
-							if v and v not in tmp:
+							if not v in ('', None) and v not in tmp:
 								tmp.append(v)
 						value = tmp
-					
+						
 					if type(value) is unicode:
 						value = value.rstrip()
 						#value = value.replace(u'\n', u'')

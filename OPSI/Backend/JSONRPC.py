@@ -58,10 +58,15 @@ class JSONRPCBackend(Backend):
 	
 	def __init__(self, **kwargs):
 		Backend.__init__(self, **kwargs)
+		
+		self._application = 'opsi jsonrpc module version %s' % __version__
+		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option in ('address'):
 				self._address = value
+			if option in ('application'):
+				self._application = str(value)
 		
 		self._sessionId = None
 		
@@ -77,7 +82,6 @@ class JSONRPCBackend(Backend):
 		self._interface = None
 		self._retry = True
 		self._rpcLock = threading.Lock()
-		self._application = 'opsi jsonrpc module version %s' % __version__
 		
 		if ( self._address.find('/') == -1 and self._address.find('=') == -1 ):
 			if (self._protocol == 'https'):

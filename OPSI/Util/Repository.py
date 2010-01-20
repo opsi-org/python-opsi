@@ -53,19 +53,19 @@ logger = Logger()
 # =       Repositories                                                                =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-def getRepository(url, username=u'', password=u'', maxBandwidth=0):
+def getRepository(url, username=u'', password=u'', maxBandwidth=0, application=''):
 	url          = forceUnicode(url)
 	username     = forceUnicode(username)
 	password     = forceUnicode(password)
 	maxBandwidth = forceInt(maxBandwidth)
 	if re.search('^file://', url):
-		return FileRepository(url, username, password, maxBandwidth)
+		return FileRepository(url, username, password, maxBandwidth, application)
 	if re.search('^webdavs*://', url):
-		return WebDAVRepository(url, username, password, maxBandwidth)
+		return WebDAVRepository(url, username, password, maxBandwidth, application)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 	
 class Repository:
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0):
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
 		'''
 		maxBandwith must be in byte/s
 		'''
@@ -74,6 +74,10 @@ class Repository:
 		self._password     = forceUnicode(password)
 		self._path         = u''
 		self._maxBandwidth = forceInt(maxBandwidth)
+		self._application  = 'opsi repository module version %s' % __version__
+		if application:
+			self._application = str(application)
+		
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
 	
@@ -154,8 +158,8 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 	
 class FileRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0):
-		Repository.__init__(self, url, username, password, maxBandwidth)
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
+		Repository.__init__(self, url, username, password, maxBandwidth, application)
 		
 		match = re.search('^file://(/[^/]+.*)$', self._url)
 		if not match:
@@ -242,8 +246,8 @@ class FileRepository(Repository):
 		
 	
 class WebDAVRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0):
-		Repository.__init__(self, url, username, password, maxBandwidth)
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
+		Repository.__init__(self, url, username, password, maxBandwidth, application)
 		
 		match = re.search('^(webdavs*)://([^:]+:*[^:]+):(\d+)(/.*)$', self._url)
 		if not match:
@@ -287,6 +291,7 @@ class WebDAVRepository(Repository):
 		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
 		
 		self._connection.putrequest('PROPFIND', urllib.quote(self._absolutePath('/')))
+		self._connection.putheader('user-agent', self._application)
 		if self._cookie:
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
@@ -317,6 +322,10 @@ class WebDAVRepository(Repository):
 		
 		self._connection.putrequest('PROPFIND', urllib.quote(destination))
 		self._connection.putheader('depth', '1')
+		if self._cookie:
+			# Add cookie to header
+			self._connection.putheader('cookie', self._cookie)
+		self._connection.putheader('user-agent', self._application)
 		if self._cookie:
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
@@ -388,6 +397,7 @@ class WebDAVRepository(Repository):
 		try:
 			self._connect()
 			self._connection.putrequest('GET', urllib.quote(source))
+			self._connection.putheader('user-agent', self._application)
 			if self._cookie:
 				# Add cookie to header
 				self._connection.putheader('cookie', self._cookie)
@@ -424,6 +434,7 @@ class WebDAVRepository(Repository):
 		try:
 			self._connect()
 			self._connection.putrequest('PUT', urllib.quote(destination))
+			self._connection.putheader('user-agent', self._application)
 			if self._cookie:
 				# Add cookie to header
 				self._connection.putheader('cookie', self._cookie)
@@ -454,6 +465,7 @@ class WebDAVRepository(Repository):
 		destination = self._absolutePath(destination)
 		
 		self._connection.putrequest('DELETE', urllib.quote(destination))
+		self._connection.putheader('user-agent', self._application)
 		if self._cookie:
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
