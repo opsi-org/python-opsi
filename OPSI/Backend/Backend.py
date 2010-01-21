@@ -44,8 +44,8 @@ import copy as pycopy
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
-from OPSI.System import getDiskSpaceUsage
-from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, timestamp, compareVersions
+from OPSI.System import getDiskSpaceUsage, execute, which
+from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt
 from OPSI.Util.File import ConfigFile
 from OPSI.Util.Product import ProductPackageFile
 
@@ -1730,7 +1730,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		'''
-		# TODO: remove action if product/package version in productOnClient differs from version on depot?
+		# TODO: remove action if product locked on depot?
+			remove action if product/package version in productOnClient differs from version on depot?
 		
 		possible attributes/filter-keys of ProductOnClient are:
 			productId
@@ -2833,11 +2834,14 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend):
 		if not isinstance(backend, ExtendedConfigDataBackend):
-			raise Exception("DepotserverBackend needs instance of ExtendedConfigDataBackend as backend, got %s" % backend.__class__.__name__)
+			raise Exception(u"DepotserverBackend needs instance of ExtendedConfigDataBackend as backend, got %s" % backend.__class__.__name__)
 		ExtendedBackend.__init__(self, backend)
 		
-		self._logDir = u'/var/log/opsi'
-		self._packageLog = os.path.join(self._logDir, 'package.log')
+		self._logDir               = u'/var/log/opsi'
+		self._packageLog           = os.path.join(self._logDir, 'package.log')
+		self._depotCredentialsFile = u'/etc/opsi/passwd'
+		self._sshRSAPublicKeyFile  = u'/etc/ssh/ssh_host_rsa_key.pub'
+		
 		self._depotId = forceHostId(socket.getfqdn())
 		if not self.host_getIdents(id = self._depotId):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
@@ -2902,6 +2906,103 @@ class DepotserverBackend(ExtendedBackend):
 				start = len(data)-maxSize
 			return data[start+1:]
 		return data
+	
+	def depot_getCredentials(self, username = u'pcpatch', hostId = None):
+		username = forceUnicodeLower(username)
+		if hostId:
+			hostId = forceHostId(hostId)
+		
+		result = { 'password': u'', 'rsaPrivateKey': u'' }
+		
+		cf = ConfigFile(filename = self._depotCredentialsFile)
+		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		for line in cf.parse():
+			match = lineRegex.search(line)
+			if not match:
+				continue
+			if (match.group(1) == username):
+				result['password'] = match.group(2)
+				break
+		if not result['password']:
+			raise BackendMissingDataError(u"Username '%s' not found")
+		
+		depot = self.host_getObjects(id = self._depotId)
+		if not depot:
+			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
+		depot = depot[0]
+		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
+		
+		if (username == 'pcpatch'):
+			try:
+				import pwd, grp
+				uid = pwd.getpwnam(username)[2]
+				if os.geteuid() in (0, uid):
+					gid = grp.getgrnam(username)[2]
+					sshDir = os.path.join(pwd.getpwnam(username)[5], u'.ssh')
+					idRsa = os.path.join(sshDir, u'id_rsa')
+					idRsaPub = os.path.join(sshDir, u'id_rsa.pub')
+					authorizedKeys = os.path.join(sshDir, u'authorized_keys')
+					if not os.path.exists(sshDir):
+						mkdir(sshDir, 0750)
+						os.chown(sshDir, uid, gid)
+					if not os.path.exists(idRsa):
+						logger.notice(u"Creating RSA private key for user %s in '%s'" % (username, idRsa))
+						execute(u"%s -N '' -t rsa -f %s" % ( which('ssh-keygen'), idRsa))
+						os.chmod(idRsa, 0640)
+						os.chown(idRsa, uid, gid)
+						os.chmod(idRsaPub, 0644)
+						os.chown(idRsaPub, uid, gid)
+					if not os.path.exists(authorizedKeys):
+						f = open(idRsaPub, 'r')
+						f2 = open(authorizedKeys, 'w')
+						f2.write(f.read())
+						f2.close()
+						f.close()
+						os.chmod(authorizedKeys, 0600)
+						os.chown(authorizedKeys, uid, gid)
+					f = open(idRsa, 'r')
+					result['rsaPrivateKey'] = f.read()
+					f.close()
+			except Exception, e:
+				logger.debug(e)
+		if hostId:
+			host  = self.host_getObjects(id = hostId)
+			if not host:
+				raise Exception(u"Host '%s' not found in backend" % hostId)
+			host = host[0]
+			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
+			if result['rsaPrivateKey']:
+				result['rsaPrivateKey'] = blowfishEncrypt(host.opsiHostKey, result['rsaPrivateKey'])
+		return result
+		
+	def depot_setCredentials(self, username, password):
+		username = forceUnicodeLower(username)
+		password = forceUnicode(password)
+		
+		depot = self.host_getObjects(id = self._depotId)
+		if not depot:
+			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
+		depot = depot[0]
+		
+		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
+		
+		cf = ConfigFile(filename = self._depotCredentialsFile)
+		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lines = []
+		for line in cf.readlines():
+			match = lineRegex.search(line)
+			if not match and (match.group(1) != username):
+				lines.append(line)
+		lines.append(u'%s:%s\n' % (username, encodedPassword))
+		cf.open('w')
+		cf.writelines(lines)
+		cf.close()
+		
+	def depot_getHostRSAPublicKey(self):
+		f = open(self._sshRSAPublicKeyFile, 'r')
+		data = f.read()
+		f.close()
+		return forceUnicode(data)
 	
 	def depot_getMD5Sum(self, filename):
 		try:

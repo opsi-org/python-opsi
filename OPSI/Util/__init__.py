@@ -41,6 +41,7 @@ try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
+from Crypto.Cipher import Blowfish
 
 # OPSI imports
 from OPSI.Logger import *
@@ -435,7 +436,45 @@ def removeUnit(x):
 	return value
 
 
+BLOWFISH_IV = 'OPSI1234'
 
-
-
+def blowfishEncrypt(key, cleartext):
+	''' Takes cleartext string, 
+	    returns hex-encoded, blowfish-encrypted string '''
+	cleartext = forceUnicode(cleartext)
+	key = forceUnicode(key)
+	
+	while ( len(cleartext) % 8 != 0 ):
+		# Fill up with \0 until length is a mutiple of 8
+		cleartext += chr(0)
+	try:
+		key = key.decode("hex")
+	except TypeError, e:
+		raise Exception(u"Failed to hex decode key '%s'" % key)
+	
+	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
+	crypt = blowfish.encrypt(cleartext)
+	return unicode(crypt.encode("hex"))
+	
+def blowfishDecrypt(key, crypt):
+	''' Takes hex-encoded, blowfish-encrypted string, 
+	    returns cleartext string '''
+	key = forceUnicode(key)
+	crypt = forceUnicode(crypt)
+	try:
+		key = key.decode("hex")
+	except TypeError, e:
+		raise Exception(u"Failed to hex decode key '%s'" % key)
+	crypt = crypt.decode("hex")
+	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
+	cleartext = blowfish.decrypt(crypt)
+	# Remove possible \0-chars
+	if (cleartext.find('\0') != -1):
+		cleartext = cleartext[:cleartext.find('\0')]
+	try:
+		return unicode(cleartext)
+	except Exception, e:
+		logger.error(e)
+		raise Exception(u"Failed to decrypt")
+	
 
