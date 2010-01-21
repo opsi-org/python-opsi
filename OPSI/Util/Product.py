@@ -97,10 +97,18 @@ class ProductPackageFile(object):
 		self.deleteProductClientDataDir()
 	
 	def deleteProductClientDataDir(self):
-		productClientDataDir = self.getProductClientDataDir()
-		logger.notice(u"Deleting product client-data dir '%s'" % productClientDataDir)
-		if os.path.exists(productClientDataDir):
-			shutil.rmtree(productClientDataDir)
+		if not self.packageControlFile:
+			raise Exception(u"Metadata not present")
+		
+		if not self.clientDataDir:
+			raise Exception(u"Client data dir not set")
+		
+		productId = self.packageControlFile.getProduct().getId()
+		for f in os.listdir(self.clientDataDir):
+			if (f.lower() == productId.lower()):
+				clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
+				logger.info("Deleting client data dir '%s'" % clientDataDir)
+				shutil.rmtree(clientDataDir)
 		
 	def install(self, clientDataDir):
 		self.setClientDataDir(clientDataDir)

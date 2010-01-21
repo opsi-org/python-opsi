@@ -3240,11 +3240,11 @@ class DepotserverPackageManager(object):
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
-				clientDataDir = os.path.join(depot.depotLocalUrl[7:], productId)
-				
-				if os.path.exists(clientDataDir):
-					logger.info("Deleting client data dir '%s'" % clientDataDir)
-					shutil.rmtree(clientDataDir)
+				for f in os.listdir(depot.depotLocalUrl[7:]):
+					if (f.lower() == productId.lower()):
+						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
+						logger.info("Deleting client data dir '%s'" % clientDataDir)
+						shutil.rmtree(clientDataDir)
 				
 			self._depotBackend.productOnDepot_deleteObjects(productOnDepot)
 			
