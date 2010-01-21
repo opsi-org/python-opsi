@@ -439,7 +439,15 @@ class PackageControlFile(TextFile):
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							value = value.split(u',')
-							value = map ( lambda x:x.strip(), value )
+							newV = []
+							for v in value:
+								v = v.strip()
+								try:
+									v = fromJson(v)
+								except Exception, e:
+									logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
+								newV.append(v)
+							value = newV
 						
 						# Remove duplicates
 						tmp = []

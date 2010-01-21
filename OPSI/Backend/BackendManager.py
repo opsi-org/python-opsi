@@ -65,6 +65,7 @@ class BackendManager(ExtendedBackend):
 		password = None
 		dispatch = False
 		extend = False
+		extensionConfigDir = None
 		accessControl = False
 		depotBackend = False
 		
@@ -85,6 +86,9 @@ class BackendManager(ExtendedBackend):
 			elif option in ('depotbackend'):
 				depotBackend = True
 			elif option in ('extensionconfigdir') and value:
+				extensionConfigDir = value
+				extend = True
+			elif option in ('extend') and value:
 				extend = True
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
@@ -98,7 +102,7 @@ class BackendManager(ExtendedBackend):
 			self._backend = ExtendedConfigDataBackend(self._backend)
 		if depotBackend:
 			self._backend = DepotserverBackend(self._backend)
-		if extend:
+		if extensionConfigDir:
 			BackendExtender(self._backend, **kwargs)
 		if accessControl:
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)

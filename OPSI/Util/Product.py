@@ -52,6 +52,9 @@ from OPSI.System import execute
 
 logger = Logger()
 
+def _(string):
+	return string
+
 class ProductPackageFile(object):
 	
 	def __init__(self, packageFile, tempDir = None):
@@ -109,6 +112,56 @@ class ProductPackageFile(object):
 		self.runPostinst()
 		self.cleanup()
 	
+	def unpackSource(self, destinationDir=u'', newProductId=u'', progressSubject=None):
+		logger.notice(u"Extracting package source from '%s'" % self.packageFile)
+		if progressSubject: progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
+		try:
+			destinationDir = forceFilename(destinationDir)
+			newProductId   = forceUnicode(newProductId)
+			
+			archive = Archive(filename = self.packageFile, progressSubject = progressSubject)
+			
+			logger.debug(u"Extracting source from package '%s' to: '%s'" % (self.packageFile, destinationDir))
+			
+			if progressSubject: progressSubject.setMessage(_(u'Extracting archives'))
+			archive.extract(targetPath = self.tmpUnpackDir)
+			
+			for f in os.listdir(self.tmpUnpackDir):
+				archiveName = u''
+				if   f.endswith('.cpio.gz'):
+					archiveName = f[:-8]
+				elif f.endswith('.cpio'):
+					archiveName = f[:-5]
+				elif f.endswith('.tar.gz'):
+					archiveName = f[:-7]
+				elif f.endswith('tar'):
+					archiveName = f[:-4]
+				else:
+					logger.warning(u"Unknown content in archive: %s" % f)
+					continue
+				archive = Archive(filename = os.path.join(self.tmpUnpackDir, f), progressSubject = progressSubject)
+				if progressSubject: progressSubject.setMessage(_(u'Extracting archive %s') % archiveName)
+				archive.extract(targetPath = os.path.join(destinationDir, archiveName))
+			
+			if newProductId:
+				self.getMetaData()
+				product = self.packageControlFile.getProduct()
+				for scriptName in (u'setupScript', u'uninstallScript', u'updateScript', u'alwaysScript', u'onceScript', u'customScript'):
+					script = getattr(product, scriptName)
+					if not script:
+						continue
+					newScript = script.replace(product.id, newProductId)
+					os.rename(os.path.join(destinationDir, u'CLIENT_DATA', script), os.path.join(destinationDir, u'CLIENT_DATA', newScript))
+					setattr(product, scriptName, newScript)
+				product.setId(newProductId)
+				self.packageControlFile.setProduct(product)
+				self.packageControlFile.setFilename(os.path.join(destinationDir, u'OPSI', u'control'))
+				self.packageControlFile.generate()
+				
+		except Exception, e:
+			self.cleanup()
+			raise Exception(u"Failed to extract package source from '%s': %s" % (self.packageFile, e))
+		
 	def getMetaData(self):
 		if self.packageControlFile:
 			# Already done
@@ -157,7 +210,8 @@ class ProductPackageFile(object):
 			self.cleanup()
 			raise Exception(u"Failed to get metadata from package '%s': %s" % (self.packageFile, e))
 		logger.debug(u"Got meta data from package '%s'" % self.packageFile)
-	
+		return self.packageControlFile
+		
 	def extractData(self):
 		logger.notice(u"Extracting data from package '%s'" % self.packageFile)
 		try:

@@ -1455,25 +1455,29 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					objectId = forceObjectIdList(objectId)))
 	
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[]):
+		addConfigStateDefaults = self._options['addConfigStateDefaults']
 		result = []
 		if not depotIds:
 			depotIds = self.host_getIdents(type = 'OpsiDepotserver')
 		
 		knownClientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
-		configId = 'clientconfig.depot.id'
-		for configState in self.configState_getObjects(configId = configId, objectId = clientIds):
-			if not configState.objectId in knownClientIds:
-				logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
-				continue
-			depotId = configState.values[0]
-			if not depotId:
-				logger.error(u"No depot server configured for client '%s'" % configState.objectId)
-				continue
-			if not depotId in depotIds:
-				continue
-			result.append({ 'depotId': depotId, 'clientId': configState.objectId })
-		return result
-	
+		try:
+			self._options['addConfigStateDefaults'] = True
+			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
+				if not configState.objectId in knownClientIds:
+					logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
+					continue
+				depotId = configState.values[0]
+				if not depotId:
+					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
+					continue
+				if not depotId in depotIds:
+					continue
+				result.append({ 'depotId': depotId, 'clientId': configState.objectId })
+			return result
+		finally:
+			self._options['addConfigStateDefaults'] = addConfigStateDefaults
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
