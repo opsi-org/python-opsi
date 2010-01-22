@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+   Copyright (C) 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -78,37 +78,37 @@ class ServerConnection:
 # ======================================================================================================
 # =                                 CLASS OPSIPXECONFDBACKEND                                          =
 # ======================================================================================================
-class OpsiPXEConfdBackend(DataBackend):
+class OpsiPXEConfdBackend(ConfigDataBackend):
 	
-	def __init__(self, username = '', password = '', address = 'localhost', **kwargs):
-		DataBackend.__init__(self, username, password, address, **kwargs)
-		self.__port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+	def __init__(self):
+		ConfigDataBackend.__init__(self, **kwargs)
+		
+		self._port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+		
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option in ('port'):
+				self._port = value
 	
-	def _writePXEBootConfiguration(self, productState):
+	def _updatePXEBootConfiguration(self, productState):
+		if (productState.productType != 'NetbootProduct'):
+			logger.debug(u"Not a netboot product: '%s', nothing to do" % productState.productId)
+			return
 		if not productState.actionRequest:
-			logger.debug(u"No action request set for product '%s', host '%s', nothing to do" % (productState.productId, productState.hostId))
+			logger.debug(u"No action request update for product '%s', host '%s', nothing to do" % (productState.productId, productState.hostId))
 			return
-		product = self.product_getObjects(attributes = ['type'], productId = productState.productId)[0]
-		if not isinstance(product, NetbootProduct):
-			logger.debug(u"Not a netboot product: '%s', nothing to do" % product.id)
-			return
-		host = self.host_getObjects(attributes = ['ipAddress', 'hardwareAddress'], hostId = productState.hostId)[0]
 		
-		logger.info(u"Setting pxe boot configuration for host '%s', product '%s'" % (host.id, product.id))
+		logger.info(u"Updating pxe boot configuration for host '%s', product '%s'" % (productState.hostId, productState.productId))
 		
-		command = u''
-		if (productState.actionRequest == 'none'):
-			command = u'unset %s' % host.id
-		else:
-			command = u'set %s productId=%s' % (host.id, product.id)
-		
+		command = u'update %s' % productState.hostId
 		try:
-			sc = ServerConnection(self.__port)
+			sc = ServerConnection(self._port)
 			logger.info(u"Sending command '%s'" % command)
 			result = sc.sendCommand(command)
 			logger.info(u"Got result '%s'" % result)
 		except Exception, e:
-			raise BackendIOError(u"Failed to write PXE boot configuration: %s" % e)
+			raise BackendIOError(u"Failed to update PXE boot configuration: %s" % e)
 	
 	def backend_exit(self):
 		pass
@@ -117,11 +117,13 @@ class OpsiPXEConfdBackend(DataBackend):
 	# -   ProductStates                                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productState_insertObject(self, productState):
-		self._writePXEBootConfiguration(productState)
-	
+		self._updatePXEBootConfiguration(productState)
+		return []
+		
 	def productState_updateObject(self, productState):
-		self._writePXEBootConfiguration(productState)
-	
+		self._updatePXEBootConfiguration(productState)
+		return []
+		
 	def productState_getObjects(self, attributes=[], **filter):
 		return
 	
