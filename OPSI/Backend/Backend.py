@@ -942,7 +942,7 @@ class ConfigDataBackend(BackendIdentExtension):
 			for c in OPSI_HARDWARE_CLASSES:
 				try:
 					if (c['Class'].get('Type') == 'STRUCTURAL'):
-						logger.info(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
+						logger.debug(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
 						ccopy = pycopy.deepcopy(c)
 						if ccopy['Class'].has_key('Super'):
 							__inheritFromSuperClasses(OPSI_HARDWARE_CLASSES, ccopy)

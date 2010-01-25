@@ -134,6 +134,7 @@ class BackendDispatcher(ConfigDataBackend):
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
+		self._dispatchIgnoreModules = []
 		self._backendConfigDir = None
 		self._backends = {}
 		
@@ -143,6 +144,8 @@ class BackendDispatcher(ConfigDataBackend):
 				self._dispatchConfig = value
 			elif (option == 'dispatchconfigfile'):
 				self._dispatchConfigFile = value
+			elif option in ('dispatchignoremodules') and value:
+				self._dispatchIgnoreModules = forceList(value)
 			elif (option == 'backendconfigdir'):
 				self._backendConfigDir = value
 		
@@ -202,20 +205,26 @@ class BackendDispatcher(ConfigDataBackend):
 				if value in backends:
 					continue
 				backends.append(value)
+		
 		for backend in backends:
 			self._backends[backend] = {}
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
 			if not os.path.exists(backendConfigFile):
 				raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
 			l = {'module': '', 'config': {}}
+			logger.info(u"Loading backend config '%s'" % backendConfigFile)
 			execfile(backendConfigFile, l)
 			if not l['module']:
 				raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
+			if l['module'] in self._dispatchIgnoreModules:
+				logger.notice(u"Ignoring module '%s', backend '%s'" % (l['module'], backend))
+				del self._backends[backend]
+				continue
 			if not type(l['config']) is dict:
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
 			exec(u'self._backends[backend]["instance"] = %sBackend(**l["config"])' % l['module'])
-			
+	
 	def _createInstanceMethods(self):
 		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
 			methodName = member[0]
@@ -223,19 +232,21 @@ class BackendDispatcher(ConfigDataBackend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
-			methodBackends = None
+			methodBackends = []
 			for i in range(len(self._dispatchConfig)):
-				(regex, backend) = self._dispatchConfig[i]
+				(regex, backends) = self._dispatchConfig[i]
 				if not re.search(regex, methodName):
 					continue
-				logger.debug(u"Matched '%s' for method '%s', using backend '%s'" % (regex, methodName, backend))
-				if backend:
-					methodBackends = backend
+				
+				for backend in forceList(backends):
+					if not backend in self._backends.keys():
+						logger.debug(u"Ignoring backend '%s': backend not available" % backend)
+						continue
+					logger.debug(u"Matched '%s' for method '%s', using backend '%s'" % (regex, methodName, backend))
+					methodBackends.append(backend)
 				break
 			if not methodBackends:
 				continue
-			if not type(methodBackends) is list:
-				methodBackends = [ methodBackends ]
 			
 			(argString, callString) = getArgAndCallString(member[1])
 			
@@ -243,15 +254,17 @@ class BackendDispatcher(ConfigDataBackend):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 			
 			for be in self._backends.keys():
-				if not be in methodBackends:
-					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
-					
+				# Rename original method to realcall_<methodName>
+				setattr(self._backends[be]['instance'], 'realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+				# Create new method <methodName> which will be called if <methodName> will be called on this object
+				# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
+				setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
 	def _executeMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Executing method '%s' on backends: %s" % (methodName, methodBackends))
 		result = None
 		for methodBackend in methodBackends:
-			res = eval(u'self._backends[methodBackend]["instance"].%s(**kwargs)' % methodName)
+			res = eval(u'self._backends[methodBackend]["instance"].realcall_%s(**kwargs)' % methodName)
 			if type(result) is list and type(res) is list:
 				result.extend(res)
 			elif type(result) is dict and type(res) is dict:

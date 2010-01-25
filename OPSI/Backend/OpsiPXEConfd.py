@@ -74,34 +74,54 @@ class ServerConnection:
 		self._socket.close()
 		if result.startswith(u'(ERROR)'):
 			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
-	
+		return result
+		
 # ======================================================================================================
 # =                                 CLASS OPSIPXECONFDBACKEND                                          =
 # ======================================================================================================
 class OpsiPXEConfdBackend(ConfigDataBackend):
 	
-	def __init__(self):
+	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		self._port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+		self._depotId = forceHostId(socket.getfqdn())
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option in ('port'):
 				self._port = value
-	
-	def _updatePXEBootConfiguration(self, productState):
-		if (productState.productType != 'NetbootProduct'):
-			logger.debug(u"Not a netboot product: '%s', nothing to do" % productState.productId)
+			
+	def _updateProductOnClient(self, productOnClient):
+		if (productOnClient.productType != 'NetbootProduct'):
+			logger.debug(u"Not a netboot product: '%s', nothing to do" % productOnClient.productId)
 			return
-		if not productState.actionRequest:
-			logger.debug(u"No action request update for product '%s', host '%s', nothing to do" % (productState.productId, productState.hostId))
+		if not productOnClient.actionRequest:
+			logger.debug(u"No action request update for product '%s', client '%s', nothing to do" % (productOnClient.productId, productOnClient.clientId))
 			return
+		return self._updatePXEBootConfiguration(productOnClient.clientId)
 		
-		logger.info(u"Updating pxe boot configuration for host '%s', product '%s'" % (productState.hostId, productState.productId))
+	def _updateConfigState(self, configState):
+		return self._updatePXEBootConfiguration(configState.objectId)
 		
-		command = u'update %s' % productState.hostId
+	def _updatePXEBootConfiguration(self, clientId):
+		configStates = self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientId)
+		if configStates and configStates[0].values:
+			depotId = configStates[0].values[0]
+		else:
+			configs = self.config_getObjects(id = u'clientconfig.depot.id')
+			if not configs or not configs[0].defaultValues:
+				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
+			depotId = configs[0].defaultValues[0]
+		
+		if not (depotId == self._depotId):
+			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (clientId, depotId))
+			raise NotImplementedError(u"Not responsible for client '%s', forwarding request to depot '%s': NOT IMPLEMENTED" % (clientId, depotId))
+		
+		logger.info(u"Updating pxe boot configuration for client '%s'" % clientId)
+		
+		command = u'update %s' % clientId
 		try:
 			sc = ServerConnection(self._port)
 			logger.info(u"Sending command '%s'" % command)
@@ -109,28 +129,41 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			logger.info(u"Got result '%s'" % result)
 		except Exception, e:
 			raise BackendIOError(u"Failed to update PXE boot configuration: %s" % e)
-	
+		
 	def backend_exit(self):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductStates                                                                             -
+	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productState_insertObject(self, productState):
-		self._updatePXEBootConfiguration(productState)
-		return []
+	def productOnClient_insertObject(self, productOnClient):
+		self._updateProductOnClient(productOnClient)
 		
-	def productState_updateObject(self, productState):
-		self._updatePXEBootConfiguration(productState)
-		return []
+	def productOnClient_updateObject(self, productOnClient):
+		self._updateProductOnClient(productOnClient)
 		
-	def productState_getObjects(self, attributes=[], **filter):
-		return
-	
-	def productState_deleteObjects(self, productStates):
-		return
-	
-	
+	def productOnClient_deleteObjects(self, productOnClients):
+		for productOnClient in productOnClients:
+			self._updateProductOnClient(productOnClients)
+		
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ConfigStates                                                                              -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def configState_insertObject(self, configState):
+		if (configState.configId != 'clientconfig.depot.id'):
+			return
+		self._updateConfigState(configState)
+		
+	def configState_updateObject(self, configState):
+		if (configState.configId != 'clientconfig.depot.id'):
+			return
+		self._updateConfigState(configState)
+		
+	def configState_deleteObjects(self, configStates):
+		for configState in configStates:
+			if (configState.configId != 'clientconfig.depot.id'):
+				continue
+			self._updateConfigState(configState)
 	
 	
 	
