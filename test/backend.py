@@ -1381,8 +1381,6 @@ class BackendTest(object):
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		self.backend.productOnClient_deleteObjects(self.productOnClient3)
 		productOnClients = self.backend.productOnClient_getObjects()
-		for productOnClient in productOnClients:
-			print "%s,%s" % (productOnClient.clientId,productOnClient.productId)
 		assert len(productOnClients) == len(self.productOnClients) - 1
 		
 		self.backend.productOnClient_createObjects(self.productOnClients)
@@ -1533,18 +1531,22 @@ class BackendTest(object):
 		self.backend.auditSoftware_createObjects(self.auditSoftwares)
 		
 		auditSoftwares = self.backend.auditSoftware_getObjects()
-		for auditSoftware in auditSoftwares:
-			print auditSoftware.getIdent(returnType = 'dict')
 		assert len(auditSoftwares) == len(self.auditSoftwares)
 		
-		self.auditSoftware3.setWindowsDisplayName('updatedWinDisName')
-#		self.backend.auditSoftware_updateObject(self.auditSoftware3)
-#		auditSoftwares = self.backend.auditSoftware_getObjects()
-#		for a in auditSoftwares:
-#			print a.getIdent(), "|", a.getWindowsDisplayName()
-#			print
+		auditSoftware3update = AuditSoftware(
+			name                  = 'my software',
+			version               = '',
+			subVersion            = 'de;en;tr',
+			language              = '',
+			architecture          = '',
+			windowsSoftwareId     = None,
+			windowsDisplayName    = 'updatedDN',
+			windowsDisplayVersion = None,
+			installSize           = -1
+		)
 		
-#		print self.auditSoftware3.getWindowsDisplayName()
+		self.backend.auditSoftware_updateObject(auditSoftware3update)
+		auditSoftwares = self.backend.auditSoftware_getObjects(windowsDisplayName = 'updatedDN')
 		assert len(auditSoftwares) == 1
 		
 		self.backend.auditSoftware_deleteObjects(self.auditSoftware3)
@@ -1560,6 +1562,34 @@ class BackendTest(object):
 		
 		self.backend.auditSoftwareOnClient_createObjects(self.auditSoftwareOnClients)
 		
+		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients)
+		
+		auditSoftwareOnClient1update = AuditSoftwareOnClient(
+			name            = self.auditSoftware1.getName(),
+			version         = self.auditSoftware1.getVersion(),
+			subVersion      = self.auditSoftware1.getSubVersion(),
+			language        = self.auditSoftware1.getLanguage(),
+			architecture    = self.auditSoftware1.getArchitecture(),
+			clientId        = self.client1.getId(),
+			uninstallString = None,
+			binaryName      = 'updatedBN',
+			firstseen       = None,
+			lastseen        = None,
+			state           = None,
+			usageFrequency  = 2,
+			lastUsed        = '2009-02-12 09:48:22'
+		)
+		
+		self.backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
+		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects(binaryName = 'updatedBN')
+		assert len(auditSoftwareOnClients) == 1
+		
+		self.backend.auditSoftwareOnClient_deleteObjects(auditSoftwareOnClient1update)
+		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients) - 1
+		
+		self.backend.auditSoftwareOnClient_insertObject(self.auditSoftwareOnClient1)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
 		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients)
 		

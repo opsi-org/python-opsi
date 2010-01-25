@@ -66,11 +66,11 @@ def fromJson(obj):
 # ======================================================================================================
 class File31Backend(ConfigDataBackend):
 	
-	def __init__(self, **kwargs):
-		ConfigDataBackend.__init__(self, baseDir = '/tmp/file31', **kwargs)
+	def __init__(self, baseDir = '/tmp/file31', **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
 		
 		#fqdn configserver
-		self.__serverId = socket.getfqdn().lower()
+		self.__serverId = socket.getfqdn()#.lower()
 		if (self.__serverId.count('.') < 2):
 			raise Exception(u"Failed to get fqdn: %s" % self.__serverId)
 		
@@ -642,8 +642,6 @@ class File31Backend(ConfigDataBackend):
 							else:
 								section = section + ';' + sectionParts[i]
 						
-						value = None
-						
 						if cp.has_option(section, option):
 							value = cp.get(section, option)
 							
@@ -657,8 +655,8 @@ class File31Backend(ConfigDataBackend):
 									value = value.split(u':', 1)[0]
 								elif attribute == 'actionRequest' and value.find(u':' != -1):
 									value = value.split(u':', 1)[1]
-						
-						objHash[m['attribute']] = value
+							
+							objHash[m['attribute']] = value
 				
 				elif (fileType == 'pro'):
 					packageControlFile = PackageControlFile(filename = filename)
@@ -817,6 +815,7 @@ class File31Backend(ConfigDataBackend):
 							
 							#rebuild section
 							sectionPart = sectionParts[i].replace(';', '\\;')
+							
 							if section == '':
 								section = sectionPart
 							else:
@@ -836,10 +835,7 @@ class File31Backend(ConfigDataBackend):
 										actionRequest = value
 								value = installationStatus + u':' + actionRequest
 						
-						if value is None:
-							if cp.has_option(section, option):
-								cp.remove_option(section, option)
-						else:
+						if not value is None:
 							if attributeMapping.get('json'):
 								value = toJson(value)
 							elif ( isinstance(value, str) or isinstance(value, unicode) ):
