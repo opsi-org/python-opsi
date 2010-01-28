@@ -60,6 +60,7 @@ class JSONRPCBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		
 		self._application = 'opsi jsonrpc module version %s' % __version__
+		self._sessionId   = None
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -67,8 +68,8 @@ class JSONRPCBackend(Backend):
 				self._address = value
 			if option in ('application'):
 				self._application = str(value)
-		
-		self._sessionId = None
+			if option in ('sessionid'):
+				self._sessionId = str(value)
 		
 		# Default values
 		self._defaultHttpPort = 4444
@@ -82,6 +83,7 @@ class JSONRPCBackend(Backend):
 		self._interface = None
 		self._retry = True
 		self._rpcLock = threading.Lock()
+		self._backendOptions = {}
 		
 		if ( self._address.find('/') == -1 and self._address.find('=') == -1 ):
 			if (self._protocol == 'https'):
@@ -93,16 +95,18 @@ class JSONRPCBackend(Backend):
 		if self._connectOnInit:
 			self._connect()
 	
-	def __del__(self):
-		try:
-			self.backend_exit()
-		except:
-			pass
-	
+	def jsonrpc_getSessionId(self):
+		return self._sessionId
+		
 	def backend_exit(self):
 		if self._connected:
 			self._jsonRPC('backend_exit')
 			self._disconnect()
+	
+	def backend_setOptions(self, options):
+		self._backendOptions = options
+		if self._connected:
+			self._jsonRPC('backend_setOptions', [ self._backendOptions ])
 	
 	def _createInstanceMethods(self):
 		for method in self._interface:
@@ -113,7 +117,7 @@ class JSONRPCBackend(Backend):
 				keywords   = method['keywords']
 				defaults   = method['defaults']
 				
-				if (methodName == 'backend_exit'):
+				if methodName in ('backend_setOptions', 'backend_exit'):
 					continue
 				
 				argString = u''
@@ -197,6 +201,11 @@ class JSONRPCBackend(Backend):
 			
 			logger.info(u"Successfully connected to '%s:%s'" % (host, port))
 			self._connected = True
+			
+			if self._backendOptions:
+				self._rpcLock.release()
+				self.backend_setOptions(self._backendOptions)
+			
 		except Exception, e:
 			logger.logException(e)
 			raise BackendIOError(u"Failed to connect to '%s': %s" % (self._address, e))
@@ -230,7 +239,7 @@ class JSONRPCBackend(Backend):
 			
 			if response.get('error'):
 				# Error occurred
-				raise Exception( u'on server: %s' % response.get('error') )
+				raise Exception(u'Error on server: %s' % response.get('error'))
 			
 			# Return result as json object
 			result = Object.deserialize(response.get('result'))
@@ -293,7 +302,7 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Request to '%s' failed, retry: %s, started: %s, now: %s, maxRetrySeconds: %s" \
 					% (self._address, self._retry, started, now, maxRetrySeconds))
 			if self._retry and (now - started < maxRetrySeconds):
-				logger.warning(u"Request to '%s' failed: %s, trying to reconnect" % (self._address, e))
+				logger.debug(u"Request to '%s' failed: %s, trying to reconnect" % (self._address, e))
 				self._connect()
 				return self._request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
 			else:

@@ -40,64 +40,11 @@ import json, re, copy, time, inspect
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Util import generateOpsiHostKey, timestamp
+from OPSI.Util import deserialize, serialize, fromJson, toJson, generateOpsiHostKey, timestamp
 
 # Get logger instance
 logger = Logger()
 
-def deserialize(obj):
-	newObj = None
-	if type(obj) is dict and obj.has_key('type'):
-		try:
-			c = eval('%s' % obj['type'])
-			newObj = c.fromHash(obj)
-		except Exception, e:
-			logger.debug(e)
-			return obj
-	elif type(obj) is list:
-		newObj = []
-		for o in obj:
-			newObj.append(deserialize(o))
-	elif type(obj) is dict:
-		newObj = {}
-		for (k, v) in obj.items():
-			newObj[k] = deserialize(v)
-	else:
-		return obj
-	return newObj
-
-def serialize(obj):
-	newObj = None
-	if hasattr(obj, 'serialize'):
-		newObj = obj.serialize()
-	elif type(obj) is list:
-		newObj = []
-		for o in obj:
-			newObj.append(serialize(o))
-	elif type(obj) is dict:
-		newObj = {}
-		for (k, v) in obj.items():
-			newObj[k] = serialize(v)
-	else:
-		return obj
-	return newObj
-
-def fromJson(obj, objectType=None):
-	if objectType and type(obj) is dict:
-		obj['type'] = objectType
-	
-	if hasattr(json, 'loads'):
-		# Python 2.6 json module
-		return deserialize(json.loads(obj))
-	else:
-		return deserialize(json.read(obj))
-	
-def toJson(obj):
-	if hasattr(json, 'loads'):
-		# Python 2.6 json module
-		return json.dumps(serialize(obj))
-	else:
-		return json.write(serialize(obj))
 
 def mandatoryConstructorArgs(Class):
 	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)

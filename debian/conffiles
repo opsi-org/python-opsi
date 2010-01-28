@@ -5,3 +5,4 @@ etc/opsi/backendManager/extend.d/20_legacy.conf
 etc/opsi/backends/file.conf
 etc/opsi/backends/ldap.conf
 etc/opsi/backends/mysql.conf
+etc/opsi/backends/opsipxeconfd.conf

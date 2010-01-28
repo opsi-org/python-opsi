@@ -120,21 +120,60 @@ def non_blocking_connect_https(self, connectTimeout=0):
 		self.sock = httplib.FakeSocket(self.sock, ssl)
 
 
-
-
-def toJson(obj):
-	if hasattr(json, 'dumps'):
-		# python 2.6 json module
-		return json.dumps(obj)
+def deserialize(obj):
+	newObj = None
+	if type(obj) is dict and obj.has_key('type'):
+		try:
+			c = eval('%s' % obj['type'])
+			newObj = c.fromHash(obj)
+		except Exception, e:
+			logger.debug(e)
+			return obj
+	elif type(obj) is list:
+		newObj = []
+		for o in obj:
+			newObj.append(deserialize(o))
+	elif type(obj) is dict:
+		newObj = {}
+		for (k, v) in obj.items():
+			newObj[k] = deserialize(v)
 	else:
-		return json.write(obj)
+		return obj
+	return newObj
 
-def fromJson(obj):
+def serialize(obj):
+	newObj = None
+	if hasattr(obj, 'serialize'):
+		newObj = obj.serialize()
+	elif type(obj) is list:
+		newObj = []
+		for o in obj:
+			newObj.append(serialize(o))
+	elif type(obj) is dict:
+		newObj = {}
+		for (k, v) in obj.items():
+			newObj[k] = serialize(v)
+	else:
+		return obj
+	return newObj
+
+def fromJson(obj, objectType=None):
+	if objectType and type(obj) is dict:
+		obj['type'] = objectType
+	
 	if hasattr(json, 'loads'):
-		# python 2.6 json module
-		return json.loads(obj)
+		# Python 2.6 json module
+		return deserialize(json.loads(obj))
 	else:
-		return json.read(obj)
+		return deserialize(json.read(obj))
+	
+def toJson(obj):
+	if hasattr(json, 'loads'):
+		# Python 2.6 json module
+		return json.dumps(serialize(obj))
+	else:
+		return json.write(serialize(obj))
+
 
 
 
@@ -232,6 +271,9 @@ def timestamp(secs=0, dateOnly=False):
 		return time.strftime( u"%Y-%m-%d %H:%M:%S", time.localtime(secs) )
 
 def objectToBeautifiedText(obj, level=0):
+	if (level == 0):
+		obj = serialize(obj)
+	
 	hspace = level*10
 	text = u''
 	if type(obj) is types.ListType:
@@ -258,14 +300,60 @@ def objectToBeautifiedText(obj, level=0):
 			i+=1
 		text += u'\n' + u' '*hspace + u'}'
 	else:
-		if hasattr(json, 'dumps'):
-			# python 2.6 json module
-			text+= json.dumps(obj)
-		else:
-			text+= json.write(obj)
+		text += toJson(obj)
 	return text
 
+def objectToBash(obj, bashVars = {}, level=0):
+	if (level == 0):
+		obj = serialize(obj)
+	
+	varName = 'RESULT'
+	if (level > 0):
+		varName = 'RESULT%d' % level
+	
+	if not bashVars.get(varName):
+		bashVars[varName] = u''
+	
+	if hasattr(obj, 'serialize'):
+		obj = obj.serialize()
+	
+	if type(obj) is types.ListType:
+		bashVars[varName] += u'(\n'
+		for i in range( len(obj) ):
+			if type(obj[i]) in (types.DictType, types.ListType):
+				hashFound = True
+				level += 1
+				objectToBash(obj[i], bashVars, level)
+				bashVars[varName] += u'RESULT%d=${RESULT%d[*]}' % (level, level)
+			else:
+				objectToBash(obj[i], bashVars, level)
+			bashVars[varName] += u'\n'
+		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
+	elif type(obj) is types.DictType:
+		bashVars[varName] += u'(\n'
+		for (key, value) in obj.items():
+			bashVars[varName] += '%s=' % key
+			if type(value) in (types.DictType, types.ListType):
+				level += 1
+				v = objectToBash(value, bashVars, level)
+				bashVars[varName] += u'${RESULT%d[*]}' % level
+			else:
+				objectToBash(value, bashVars, level)
+			bashVars[varName] += u'\n'
+		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
+	
+	elif obj is None:
+		bashVars[varName] += u'""'
+	
+	else:
+		bashVars[varName] += u'"%s"' % forceUnicode(obj)
+	
+	return bashVars
+
 def objectToHtml(obj, level=0):
+	if (level == 0):
+		obj = serialize(obj)
+	
 	hspace = level*10
 	html = u''
 	if type(obj) is types.ListType:
@@ -294,11 +382,7 @@ def objectToHtml(obj, level=0):
 	elif type(obj) in (str, unicode):
 		html += u'"' + obj.replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace) + u'"'
 	else:
-		if hasattr(json, 'dumps'):
-			# python 2.6 json module
-			html += json.dumps(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
-		else:
-			html += json.write(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
+		toJson(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
 	return html
 
 

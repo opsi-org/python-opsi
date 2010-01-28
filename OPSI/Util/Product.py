@@ -106,7 +106,7 @@ class ProductPackageFile(object):
 		productId = self.packageControlFile.getProduct().getId()
 		for f in os.listdir(self.clientDataDir):
 			if (f.lower() == productId.lower()):
-				clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
+				clientDataDir = os.path.join(self.clientDataDir, f)
 				logger.info("Deleting client data dir '%s'" % clientDataDir)
 				shutil.rmtree(clientDataDir)
 		

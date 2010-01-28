@@ -3106,7 +3106,7 @@ class DepotserverPackageManager(object):
 				
 				logger.notice(u"Running preinst script")
 				for line in ppf.runPreinst():
-					logger.info(u"[preinst] -> %s" % line)
+					logger.info(u"[preinst] %s" % line)
 				
 				logger.notice(u"Unpacking package files")
 				if ppf.packageControlFile.getIncrementalPackage():
@@ -3185,7 +3185,7 @@ class DepotserverPackageManager(object):
 				
 				logger.notice(u"Running postinst script")
 				for line in ppf.runPostinst():
-					logger.info(u"[postinst] -> %s" % line)
+					logger.info(u"[postinst] %s" % line)
 				
 				ppf.cleanup()
 				
@@ -3198,7 +3198,7 @@ class DepotserverPackageManager(object):
 					ppf.cleanup()
 				except Exception, e2:
 					logger.error(e2)
-				raise e
+				raise
 			
 		except Exception, e:
 			logger.logException(e)
