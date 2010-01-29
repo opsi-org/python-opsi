@@ -269,6 +269,22 @@ def forceProductType(var):
 		raise ValueError(u"Unknown product type: '%s'" % var)
 	return var
 
+productPropertyIdRegex = re.compile('^[a-zA-Z0-9\_\.-]+$')
+def forceProductPropertyId(var):
+	var = forceUnicodeLower(var)
+	match = re.search(productPropertyIdRegex, var)
+	if not match:
+		raise ValueError(u"Bad product property id: '%s'" % var)
+	return var
+
+configIdRegex = re.compile('^[a-zA-Z0-9\_\.-]+$')
+def forceConfigId(var):
+	var = forceUnicodeLower(var)
+	match = re.search(configIdRegex, var)
+	if not match:
+		raise ValueError(u"Bad config id: '%s'" % var)
+	return var
+
 def forceProductPropertyType(var):
 	v = forceUnicodeLower(var)
 	if v in ('unicode', 'unicodeproductproperty'):

@@ -504,7 +504,7 @@ class Config(Entity):
 		return self.id
 	
 	def setId(self, id):
-		self.id = forceUnicodeLower(id)
+		self.id = forceConfigId(id)
 	
 	def getDescription(self):
 		return self.description
@@ -656,7 +656,7 @@ class ConfigState(Relationship):
 		return self.configId
 	
 	def setConfigId(self, configId):
-		self.configId = forceUnicodeLower(configId)
+		self.configId = forceConfigId(configId)
 	
 	def getValues(self):
 		return self.values
@@ -922,7 +922,7 @@ class NetbootProduct(Product):
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None,
 		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None,
-		     pxeConfigTemplate=''):
+		     pxeConfigTemplate=u''):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, None,
 		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
@@ -1008,7 +1008,7 @@ class ProductProperty(Entity):
 		return self.propertyId
 	
 	def setPropertyId(self, propertyId):
-		self.propertyId = forceUnicodeLower(propertyId)
+		self.propertyId = forceProductPropertyId(propertyId)
 	
 	def getDescription(self):
 		return self.description
@@ -1444,7 +1444,7 @@ class ProductPropertyState(Relationship):
 		return self.propertyId
 	
 	def setPropertyId(self, propertyId):
-		self.propertyId = forceUnicodeLower(propertyId)
+		self.propertyId = forceProductPropertyId(propertyId)
 	
 	def getValues(self):
 		return self.values

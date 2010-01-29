@@ -344,6 +344,7 @@ class SnackUI(UI):
 			buttonPressed = None
 			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
 				buttonPressed = gridForm.run()
+			self._screen.popWindow()
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 			
@@ -437,6 +438,7 @@ class SnackUI(UI):
 			buttonPressed = None
 			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
 				buttonPressed = gridForm.run()
+			self._screen.popWindow()
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 			
@@ -523,6 +525,7 @@ class SnackUI(UI):
 			buttonPressed = None
 			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
 				buttonPressed = gridForm.run()
+			self._screen.popWindow()
 			if (buttonPressed not in [ okButton, 'F12' ] ):
 				return None
 			
@@ -579,7 +582,8 @@ class SnackUI(UI):
 			buttonPressed = None
 			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
 				buttonPressed = gridForm.run()
-			if (buttonPressed not in [ okButton, 'F12' ] ):
+			self._screen.popWindow()
+			if (buttonPressed in [ okButton, 'F12' ] ):
 				return True
 			return False
 		except Exception, e:
