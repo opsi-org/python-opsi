@@ -1179,8 +1179,8 @@ class BackendTest(object):
 		self.backend.config_createObjects(self.config1)
 		
 		self.config3.setDescription(u'Updated')
-		self.config3.setDefaultValues(['1', '2'])
 		self.config3.setPossibleValues(['1', '2', '3'])
+		self.config3.setDefaultValues(['1', '2'])
 		self.backend.config_updateObject(self.config3)
 		
 		configs = self.backend.config_getObjects(description = u'Updated')

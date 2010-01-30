@@ -518,8 +518,7 @@ class Config(Entity):
 		if self.possibleValues and self.defaultValues:
 			for defaultValue in self.defaultValues:
 				if not defaultValue in self.possibleValues:
-					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-						% (defaultValue, possibleValues))
+					self.defaultValues.remove(defaultValue)
 		elif not self.possibleValues and self.defaultValues:
 			self.possibleValues = self.defaultValues
 		if self.defaultValues and (len(self.defaultValues) > 1):
@@ -1035,8 +1034,7 @@ class ProductProperty(Entity):
 		if self.possibleValues and self.defaultValues:
 			for defaultValue in self.defaultValues:
 				if not defaultValue in self.possibleValues:
-					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-						% (defaultValue, possibleValues))
+					self.defaultValues.remove(defaultValue)
 		elif not self.possibleValues and self.defaultValues:
 			self.possibleValues = self.defaultValues
 		if self.defaultValues and (len(self.defaultValues) > 1):

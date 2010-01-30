@@ -59,10 +59,11 @@ class LDAPBackend(ConfigDataBackend):
 		self._opsiBaseDn       = u'cn=opsi,dc=uib,dc=local'
 		self._hostsContainerDn = u'cn=hosts,%s' % self._opsiBaseDn
 		
-		self._hostAttributeDescription      = u'opsiDescription'
-		self._hostAttributeNotes            = u'opsiNotes'
-		self._hostAttributeHardwareAddress  = u'opsiHardwareAddress'
-		self._hostAttributeIpAddress        = u'opsiIpAddress'
+		self._hostAttributeDescription     = u'opsiDescription'
+		self._hostAttributeNotes           = u'opsiNotes'
+		self._hostAttributeHardwareAddress = u'opsiHardwareAddress'
+		self._hostAttributeIpAddress       = u'opsiIpAddress'
+		self._hostAttributeInventoryNumber = u'opsiInventoryNumber' 
 		
 		self._clientObjectSearchFilter = u''
 		self._createClientCommand      = u''
@@ -95,6 +96,8 @@ class LDAPBackend(ConfigDataBackend):
 				self._hostAttributeHardwareAddress = forceUnicode(value)
 			elif option in ('hostattributeipaddress'):
 				self._hostAttributeIpAddress = forceUnicode(value)
+			elif option in ('hostattributeinventorynumber'):
+				self._hostAttributeInventoryNumber = forceUnicode(value)
 			elif option in ('clientobjectsearchfilter'):
 				self._clientObjectSearchFilter = forceUnicode(value)
 			elif option in ('createclientcommand'):
@@ -113,13 +116,13 @@ class LDAPBackend(ConfigDataBackend):
 				self._deleteServerCommand = forceUnicode(value)
 			
 		self._configContainerDn                = u'cn=configs,%s'               % self._opsiBaseDn
-		self._configStateContainerDn           = u'cn=configState,%s'           % self._opsiBaseDn
+		self._configStateContainerDn           = u'cn=configStates,%s'          % self._opsiBaseDn
 		self._groupsContainerDn                = u'cn=groups,%s'                % self._opsiBaseDn
 		self._productsContainerDn              = u'cn=products,%s'              % self._opsiBaseDn
-		self._productOnDepotContainerDn        = u'cn=productOnDepot,%s'        % self._opsiBaseDn
-		self._productOnClientContainerDn       = u'cn=productOnClient,%s'       % self._opsiBaseDn
+		self._productOnDepotsContainerDn       = u'cn=productOnDepots,%s'       % self._opsiBaseDn
+		self._productOnClientsContainerDn      = u'cn=productOnClients,%s'      % self._opsiBaseDn
 		self._productPropertyStatesContainerDn = u'cn=productPropertyStates,%s' % self._opsiBaseDn
-		self._objectToGroupContainerDn         = u'cn=objectToGroup,%s'         % self._opsiBaseDn
+		self._objectToGroupsContainerDn        = u'cn=objectToGroups,%s'        % self._opsiBaseDn
 		
 		self._mappings = [
 				{
@@ -128,11 +131,11 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses': [ 'opsiHost' ],
 					'attributes': [
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiHostId' },
-						{ 'opsiAttribute': 'ipAddress',       'ldapAttribute': 'opsiIpAddress' },
-						{ 'opsiAttribute': 'hardwareAddress', 'ldapAttribute': 'opsiHardwareAddress' },
-						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiDescription' },
-						{ 'opsiAttribute': 'notes',           'ldapAttribute': 'opsiNotes' },
-						{ 'opsiAttribute': 'inventoryNumber', 'ldapAttribute': 'opsiInventoryNumber' }
+						{ 'opsiAttribute': 'ipAddress',       'ldapAttribute': self._hostAttributeIpAddress },
+						{ 'opsiAttribute': 'hardwareAddress', 'ldapAttribute': self._hostAttributeNotes },
+						{ 'opsiAttribute': 'description',     'ldapAttribute': self._hostAttributeDescription },
+						{ 'opsiAttribute': 'notes',           'ldapAttribute': self._hostAttributeNotes },
+						{ 'opsiAttribute': 'inventoryNumber', 'ldapAttribute': self._hostAttributeInventoryNumber }
 					]
 				},
 				{
@@ -377,10 +380,7 @@ class LDAPBackend(ConfigDataBackend):
 				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
 		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
-		self._ldap = LDAPSession(
-				host	 = self._address,
-				username = self._username, 
-				password = self._password )
+		self._ldap = LDAPSession(**args)
 		self._ldap.connect()
 		
 	
@@ -511,10 +511,10 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._groupsContainerDn)
 		self._createOrganizationalRole(self._productsContainerDn)
 		self._createOrganizationalRole(self._productClassesContainerDn)
-		self._createOrganizationalRole(self._productOnDepotContainerDn)
-		self._createOrganizationalRole(self._productOnClientContainerDn)
+		self._createOrganizationalRole(self._productOnDepotsContainerDn)
+		self._createOrganizationalRole(self._productOnClientsContainerDn)
 		self._createOrganizationalRole(self._productPropertyStatesContainerDn)
-		self._createOrganizationalRole(self._objectToGroupContainerDn)
+		self._createOrganizationalRole(self._objectToGroupsContainerDn)
 	
 	
 	def backend_exit(self):
@@ -629,10 +629,62 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def _getHostDn(self, host):
+		ldapFilter = self._objectFilterToLDAPFilter( { 'type': host.getType() } )
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
+		dn = search.getDn()
+		if dn:
+			return dn
+		
+		ldapFilter = None
+		if (host.getType() == 'OpsiClient') and self._clientObjectSearchFilter:
+			ldapFilter = self._clientObjectSearchFilter
+		if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._serverObjectSearchFilter
+			ldapFilter = self._serverObjectSearchFilter
+		
+		if ldapFilter:
+			ldapFilter = ldapFilter.replace(u'%name%',            host.id.split(u'.')[0])
+			ldapFilter = ldapFilter.replace(u'%hostname%',        host.id.split(u'.')[0])
+			ldapFilter = ldapFilter.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
+			ldapFilter = ldapFilter.replace(u'%id%',              host.id)
+			ldapFilter = ldapFilter.replace(u'%fqdn%',            host.id)
+			ldapFilter = ldapFilter.replace(u'%description%',     host.description)
+			ldapFilter = ldapFilter.replace(u'%notes%',           host.notes)
+			ldapFilter = ldapFilter.replace(u'%hardwareaddress%', host.hardwareAddress)
+			ldapFilter = ldapFilter.replace(u'%ipaddress%',       host.ipAddress)
+			ldapFilter = ldapFilter.replace(u'%inventorynumber%', host.inventoryNumber)
+			search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
+			dn = search.getDn()
+			if not dn:
+				createCommand = None
+				if (host.getType() == 'OpsiClient') and self._createClientCommand:
+					createCommand = self._createClientCommand
+				if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._createServerCommand
+					createCommand = self._createServerCommand
+				if createCommand:
+					createCommand = createCommand.replace(u'%name%',            host.id.split(u'.')[0])
+					createCommand = createCommand.replace(u'%hostname%',        host.id.split(u'.')[0])
+					createCommand = createCommand.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
+					createCommand = createCommand.replace(u'%id%',              host.id)
+					createCommand = createCommand.replace(u'%fqdn%',            host.id)
+					createCommand = createCommand.replace(u'%description%',     host.description)
+					createCommand = createCommand.replace(u'%notes%',           host.notes)
+					createCommand = createCommand.replace(u'%hardwareaddress%', host.hardwareAddress)
+					createCommand = createCommand.replace(u'%ipaddress%',       host.ipAddress)
+					createCommand = createCommand.replace(u'%inventorynumber%', host.inventoryNumber)
+					try:
+						System.execute(createCommand)
+					except Exception, e:
+						raise BackendIOError(u"Failed to create host %s: %s" % (host, e))
+					search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
+					dn = search.getDn()
+		if not dn:
+			dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		return dn
+		
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
-		
-		dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		dn = self._getHostDn()
 		logger.info(u"Creating host: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(host, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -640,7 +692,11 @@ class LDAPBackend(ConfigDataBackend):
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
-		dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+		filter = { 'type': host.getType(), 'id': host.id }
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = self._objectFilterToLDAPFilter(filter) )
+		dn = search.getDn()
+		if not dn:
+			raise Exception(u"Host %s not found" % host)
 		logger.info(u"Updating host: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, host)
@@ -664,22 +720,64 @@ class LDAPBackend(ConfigDataBackend):
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 		
-		logger.error(u"DELETING hosts %s" % hosts)
 		for host in forceObjectClassList(hosts, Host):
-			dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
+			dn = self._getHostDn(hosts)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting host: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
-		
+				if ((host.getType() == 'OpsiClient') and self._deleteClient) or (host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServer):
+					deleteCommand = None
+					if (host.getType() == 'OpsiClient') and self._deleteClientCommand:
+						deleteCommand = self._deleteClientCommand
+					if (host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServerCommand):
+						deleteCommand = self._deleteServerCommand
+					if deleteCommand:
+						deleteCommand = deleteCommand.replace(u'%name%',            host.id.split(u'.')[0])
+						deleteCommand = deleteCommand.replace(u'%hostname%',        host.id.split(u'.')[0])
+						deleteCommand = deleteCommand.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
+						deleteCommand = deleteCommand.replace(u'%id%',              host.id)
+						deleteCommand = deleteCommand.replace(u'%fqdn%',            host.id)
+						deleteCommand = deleteCommand.replace(u'%description%',     host.description)
+						deleteCommand = deleteCommand.replace(u'%notes%',           host.notes)
+						deleteCommand = deleteCommand.replace(u'%hardwareaddress%', host.hardwareAddress)
+						deleteCommand = deleteCommand.replace(u'%ipaddress%',       host.ipAddress)
+						deleteCommand = deleteCommand.replace(u'%inventorynumber%', host.inventoryNumber)
+						System.execute(deleteCommand)
+					else:
+						ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				else:
+					ldapObj.readFromDirectory(self._ldap)
+					delete = False
+					for (attribute, values) in ldapObj.getAttributeDict(valuesAsList = True).items():
+						if (attribute == 'objectClass'):
+							for oc in ('opsiHost', 'opsiClient', 'opsiDepotserver', 'opsiConfigserver'):
+								if oc in values:
+									values.remove(oc)
+							if not values:
+								# No objectclasses left
+								delete = True
+								break
+							
+						elif attribute in (	'opsiDescription', 'opsiNotes', 'opsiHardwareAddress', 'opsiIpAddress', 'opsiInventoryNumber', \
+									'opsiHostId', 'opsiCreatedTimestamp', 'opsiLastSeenTimestamp', 'opsiHostKey', \
+									'opsiDepotLocalUrl', 'opsiDepotRemoteUrl', 'opsiRepositoryLocalUrl', 'opsiRepositoryRemoteUrl', \
+									'opsiNetworkAddress', 'opsiMaximumBandwidth', 'opsiHostKey'):
+							values = []
+						else:
+							continue
+						ldapObj.setAttribute(attribute, values)
+					if delete:
+						ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+					else:
+						ldapObj.writeToDirectory(self._ldap)
+					
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		dn = 'cn=%s,%s' % (config.id, self._configContainerDn)
-		
+		dn = u'cn=%s,%s' % (config.id, self._configContainerDn)
 		logger.info(u"Creating Config: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(config, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -688,7 +786,7 @@ class LDAPBackend(ConfigDataBackend):
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
-		dn = 'cn=%s,%s' % (config.id, self._configContainerDn)
+		dn = u'cn=%s,%s' % (config.id, self._configContainerDn)
 		logger.info(u"Updating config: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, config)
@@ -712,12 +810,11 @@ class LDAPBackend(ConfigDataBackend):
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		
-		logger.error(u"DELETING configs %s" % configs)
 		for config in forceObjectClassList(configs, Config):
-			dn = 'cn=%s,%s' % (config.id, self._configContainerDn)
+			dn = u'cn=%s,%s' % (config.id, self._configContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
-				logger.info(u"Deleting configs: %s" % dn)
+				logger.info(u"Deleting config: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -726,10 +823,10 @@ class LDAPBackend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
-		containerDn = 'cn=%s,%s' % (configState.objectId, self._configStateContainerDn)
+		containerDn = u'cn=%s,%s' % (configState.objectId, self._configStateContainerDn)
 		self._createOrganizationalRole(containerDn)
-		dn = 'cn=%s,%s' % (configState.configId, containerDn)
 		
+		dn = u'cn=%s,%s' % (configState.configId, containerDn)
 		logger.info(u"Creating ConfigState: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(configState, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -737,8 +834,7 @@ class LDAPBackend(ConfigDataBackend):
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
-		dn = 'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
-		
+		dn = u'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
 		logger.info(u"Updating configState: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, configState)
@@ -746,11 +842,11 @@ class LDAPBackend(ConfigDataBackend):
 	def configState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting configState, filter %s" % filter)
+		logger.info(u"Getting configStates, filter %s" % filter)
 		configStates = []
 		
 		if not filter.get('type'):
-			filter['type'] = [ 'ConfigState']
+			filter['type'] = ['ConfigState']
 			
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
@@ -761,10 +857,9 @@ class LDAPBackend(ConfigDataBackend):
 		
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
-	
-		logger.error(u"DELETING configStates %s" % configStates)
+		
 		for configState in forceObjectClassList(configStates, ConfigState):
-			dn = 'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
+			dn = u'cn=%s,cn=%s,%s' % (configState.configId, configState.objectId, self._configStateContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting configState: %s" % dn)
@@ -776,8 +871,7 @@ class LDAPBackend(ConfigDataBackend):
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
 		
-		dn = 'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
-		
+		dn = u'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
 		logger.info(u"Creating Product: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(product, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -785,7 +879,7 @@ class LDAPBackend(ConfigDataBackend):
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
 		
-		dn = 'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
+		dn = u'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
 		logger.info(u"Updating product: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, product)
@@ -808,14 +902,12 @@ class LDAPBackend(ConfigDataBackend):
 		
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
-	
-	
-		logger.error(u"DELETING products %s" % products)
+		
 		for product in forceObjectClassList(products, Product):
-			dn = 'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
+			dn = u'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
-				logger.info(u"Deleting products: %s" % dn)
+				logger.info(u"Deleting product: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 				
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -824,13 +916,11 @@ class LDAPBackend(ConfigDataBackend):
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		
-		containerDn = 'cn=productProperties,cn=%s_%s-%s,%s' \
+		containerDn = u'cn=productProperties,cn=%s_%s-%s,%s' \
 			% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
-		
 		self._createOrganizationalRole(containerDn)
 		
-		dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
-		
+		dn = u'cn=%s,%s' % (productProperty.propertyId, containerDn)
 		logger.info(u"Creating ProductProperty: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(productProperty, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -839,11 +929,8 @@ class LDAPBackend(ConfigDataBackend):
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		
-		containerDn = 'cn=productProperties,cn=%s_%s-%s,%s' \
-			% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
-		
-		dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
-		
+		dn = u'cn=%s,cn=productProperties,cn=%s_%s-%s,%s' \
+			% (productProperty.propertyId, productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
 		logger.info(u"Updating ProductProperty: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, productProperty)
@@ -867,13 +954,9 @@ class LDAPBackend(ConfigDataBackend):
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		
-		logger.error(u"DELETING productProperties %s" % productProperties)
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			containerDn = 'cn=productProperties,cn=%s_%s-%s,%s' \
-				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
-			
-			dn = 'cn=%s,%s' % (productProperty.propertyId, containerDn)
-			
+			dn = u'cn=%s,cn=productProperties,cn=%s_%s-%s,%s' \
+				% (productProperty.propertyId, productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting configState: %s" % dn)
@@ -885,15 +968,14 @@ class LDAPBackend(ConfigDataBackend):
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
-		containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
+		containerDn = u'cn=productDependencies,cn=%s_%s-%s,%s' \
 			% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
 		self._createOrganizationalRole(containerDn)
 		
-		containerDn = 'cn=%s,%s' % (productDependency.productAction, containerDn)
+		containerDn = u'cn=%s,%s' % (productDependency.productAction, containerDn)
 		self._createOrganizationalRole(containerDn)
 		
-		dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
-		
+		dn = u'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
 		logger.info(u"Creating productDependency: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(productDependency, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -901,11 +983,8 @@ class LDAPBackend(ConfigDataBackend):
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		
-		containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
-			% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
-		containerDn = 'cn=%s,%s' % (productDependency.productAction, containerDn)
-		dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
-		
+		dn = u'cn=%s,cn=%s,cn=productDependencies,cn=%s_%s-%s,%s' \
+			% (productDependency.requiredProductId, productDependency.productAction, productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
 		logger.info(u"Updating ProductDependency: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, productDependency)
@@ -929,13 +1008,9 @@ class LDAPBackend(ConfigDataBackend):
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		
-		logger.error(u"DELETING productDependency %s" % productDependencies)
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
-				% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
-			containerDn = 'cn=%s,%s' % (productDependency.productAction, containerDn)
-			dn = 'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
-			
+			dn = u'cn=%s,cn=%s,cn=productDependencies,cn=%s_%s-%s,%s' \
+				% (productDependency.requiredProductId, productDependency.productAction, productDependency.productId, productDependency.productVersion, productDependency.packageVersion, self._productsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productDependency: %s" % dn)
@@ -947,24 +1022,18 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
-		#containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
-		#	% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion, self._productOnDepotContainerDn)
-		
-		containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
+		containerDn = u'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotsContainerDn)
 		self._createOrganizationalRole(containerDn)
 		
-		dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
-		
+		dn = u'cn=%s,%s' % (productOnDepot.productId, containerDn)
 		logger.info(u"Creating ProductOnDepot: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(productOnDepot, dn)
 		ldapObject.writeToDirectory(self._ldap)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
-	
-		containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
-		dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
 		
+		dn = u'cn=%s,cn=%s,%s' % (productOnDepot.productId, productOnDepot.depotId, self._productOnDepotsContainerDn)
 		logger.info(u"Updating ProductOnDepot: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, productOnDepot)
@@ -980,7 +1049,7 @@ class LDAPBackend(ConfigDataBackend):
 			
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
-		search = LDAPObjectSearch(self._ldap, self._productOnDepotContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productOnDepotsContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
 			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
 		return products
@@ -988,11 +1057,8 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
-		logger.error(u"DELETING productOnDepot %s" % productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			containerDn = 'cn=%s,%s' % (productOnDepot.depotId, self._productOnDepotContainerDn)
-			dn = 'cn=%s,%s' % (productOnDepot.productId, containerDn)
-			
+			dn = u'cn=%s,cn=%s,%s' % (productOnDepot.productId, productOnDepot.depotId, self._productOnDepotsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productOnDepot: %s" % dn)
@@ -1004,14 +1070,10 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
-		#containerDn = 'cn=productDependencies,cn=%s_%s-%s,%s' \
-		#	% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion, self._productOnDepotContainerDn)
-		
-		containerDn = 'cn=%s,%s' % (productOnClient.clientId, self._productOnClientContainerDn)
+		containerDn = u'cn=%s,%s' % (productOnClient.clientId, self._productOnClientsContainerDn)
 		self._createOrganizationalRole(containerDn)
 		
-		dn = 'cn=%s,%s' % (productOnClient.productId, containerDn)
-		
+		dn = u'cn=%s,%s' % (productOnClient.productId, containerDn)
 		logger.info(u"Creating ProductOnClient: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(productOnClient, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -1019,9 +1081,7 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		
-		containerDn = 'cn=%s,%s' % (productOnClient.clientId, self._productOnClientContainerDn)
-		dn = 'cn=%s,%s' % (productOnClient.productId, containerDn)
-		
+		dn = u'cn=%s,cn=%s,%s' % (productOnClient.productId, productOnClient.clientId, self._productOnClientsContainerDn)
 		logger.info(u"Updating ProductOnClient: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, productOnClient)
@@ -1037,7 +1097,7 @@ class LDAPBackend(ConfigDataBackend):
 			
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
-		search = LDAPObjectSearch(self._ldap, self._productOnClientContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productOnClientsContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
 			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
 		return products
@@ -1045,11 +1105,8 @@ class LDAPBackend(ConfigDataBackend):
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		
-		logger.error(u"DELETING productOnClient %s" % productOnClients)
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
-			containerDn = 'cn=%s,%s' % (productOnClient.clientId, self._productOnClientContainerDn)
-			dn = 'cn=%s,%s' % (productOnClient.productId, containerDn)
-			
+			dn = u'cn=%s,cn=%s,%s' % (productOnClient.productId, productOnClient.clientId, self._productOnClientsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productOnClient: %s" % dn)
@@ -1062,13 +1119,12 @@ class LDAPBackend(ConfigDataBackend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		
-		containerDn = 'cn=%s,%s' % (productPropertyState.objectId, self._productPropertyStatesContainerDn)
+		containerDn = u'cn=%s,%s' % (productPropertyState.objectId, self._productPropertyStatesContainerDn)
 		self._createOrganizationalRole(containerDn)
-		containerDn = 'cn=%s,%s' % (productPropertyState.productId, containerDn)
+		containerDn = u'cn=%s,%s' % (productPropertyState.productId, containerDn)
 		self._createOrganizationalRole(containerDn)
 		
-		dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
-		
+		dn = u'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
 		logger.info(u"Creating ProductPropertyState: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(productPropertyState, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -1076,9 +1132,7 @@ class LDAPBackend(ConfigDataBackend):
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		
-		containerDn = 'cn=%s,cn=%s,%s' % (productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
-		dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
-		
+		dn = u'cn=%s,cn=%s,cn=%s,%s' % (productPropertyState.propertyId, productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
 		logger.info(u"Updating ProductPropertyState: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, productOnClient)
@@ -1102,14 +1156,11 @@ class LDAPBackend(ConfigDataBackend):
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		
-		logger.error(u"DELETING productPropertyStates %s" % productPropertyStates)
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
-			containerDn = 'cn=%s,cn=%s,%s' % (productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
-			dn = 'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
-			
+			dn = u'cn=%s,cn=%s,cn=%s,%s' % (productPropertyState.propertyId, productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
-				logger.info(u"Deleting productPropertyStates: %s" % dn)
+				logger.info(u"Deleting productPropertyState: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1118,7 +1169,7 @@ class LDAPBackend(ConfigDataBackend):
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
 		
-		dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
+		dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 		logger.info(u"Creating group: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(group, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -1126,7 +1177,7 @@ class LDAPBackend(ConfigDataBackend):
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
 		
-		dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
+		dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 		logger.info(u"Updating group: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, group)
@@ -1138,7 +1189,7 @@ class LDAPBackend(ConfigDataBackend):
 		groups = []
 		
 		if not filter.get('type'):
-			filter['type'] = [ 'Group','HostGroup' ]
+			filter['type'] = [ 'Group', 'HostGroup' ]
 		
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
@@ -1150,9 +1201,8 @@ class LDAPBackend(ConfigDataBackend):
 	def group_deleteObjects(self, groups):
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		
-		logger.error(u"DELETING groups %s" % groups)
 		for group in forceObjectClassList(groups, Group):
-			dn = 'cn=%s,%s' % (group.id, self._groupsContainerDn)
+			dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting group: %s" % dn)
@@ -1164,10 +1214,10 @@ class LDAPBackend(ConfigDataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
-		containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
+		containerDn = u'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupsContainerDn)
 		self._createOrganizationalRole(containerDn)
-		dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
 		
+		dn = u'cn=%s,%s' % (objectToGroup.objectId, containerDn)
 		logger.info(u"Creating objectToGroup: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(objectToGroup, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -1175,9 +1225,7 @@ class LDAPBackend(ConfigDataBackend):
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
-		containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
-		dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
-		
+		dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)
 		logger.info(u"Updating objectToGroup: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		self._updateLdapObject(ldapObject, objectToGroup)
@@ -1193,7 +1241,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 		
-		search = LDAPObjectSearch(self._ldap, self._objectToGroupContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._objectToGroupsContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
 			objectToGroups.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
 		return objectToGroups
@@ -1201,23 +1249,12 @@ class LDAPBackend(ConfigDataBackend):
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		
-		logger.error(u"DELETING objectToGroups %s" % objectToGroups)
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			containerDn = 'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupContainerDn)
-			dn = 'cn=%s,%s' % (objectToGroup.objectId, containerDn)
-			
+			dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
-				logger.info(u"Deleting objectToGroups: %s" % dn)
+				logger.info(u"Deleting objectToGroup: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
-
-
-
-
-
-
-
-
 
 
 
@@ -1229,47 +1266,38 @@ class LDAPObject:
 	''' This class handles ldap objects. '''
 	
 	def __init__(self, dn):
-		''' Constructor of the Object class. '''
 		if not dn:
-			raise BackendIOError(u"Cannot create Object, dn not defined")
-		self._dn = dn
+			raise BackendBadValueError(u"Cannot create Object, dn not defined")
+		self._dn = forceUnicode(dn)
 		self._old = self._new = {}
 		self._existsInBackend = False
 	
 	def getObjectClasses(self):
-		''' Returns object's objectClasses '''
-		return self.getAttribute('objectClass', default=[], valuesAsList=True )
+		return self.getAttribute('objectClass', default = [], valuesAsList = True)
 	
 	def addObjectClass(self, objectClass):
 		try:
 			self.addAttributeValue('objectClass', objectClass)
 		except Exception, e:
-			logger.warning(u"Failed to add objectClass '%s' to '%s': %s" \
-						% (objectClass, self.getDn(), e) )
+			logger.warning(u"Failed to add objectClass '%s' to '%s': %s" % (objectClass, self.getDn(), e) )
 		
 	def removeObjectClass(self, objectClass):
 		try:
 			self.deleteAttributeValue('objectClass', objectClass)
 		except Exception, e:
-			logger.warning(u"Failed to delete objectClass '%s' from '%s': %s" \
-						% (objectClass, self.getDn(), e) )
+			logger.warning(u"Failed to delete objectClass '%s' from '%s': %s" % (objectClass, self.getDn(), e) )
 	
 	def getCn(self):
-		''' Returns the RDN without type.
-		    assuming all subClasses use CN as RDN this method returns the CN '''
-		return ( ldap.explode_dn(self._dn, notypes=1) )[0]
+		return ( ldap.explode_dn(self._dn, notypes = 1) )[0]
 	
 	def getRdn(self):
-		''' Returns the object's RDN. '''
-		return ( ldap.explode_dn(self._dn, notypes=0) )[0]
-		
+		return ( ldap.explode_dn(self._dn, notypes = 0) )[0]
+	
 	def getDn(self):
-		''' Returns the object's DN. '''
 		return self._dn
 	
 	def getContainerCn(self):
-		''' Returns the cn of the object's parent (container). '''
-		return ( ldap.explode_dn(self._dn, notypes=1) )[1]
+		return ( ldap.explode_dn(self._dn, notypes = 1) )[1]
 	
 	def exists(self, ldapSession):
 		try:
@@ -1284,20 +1312,17 @@ class LDAPObject:
 		return self.getParent()
 	
 	def getParent(self):
-		parts = ( ldap.explode_dn(self._dn, notypes=0) )[1:]
+		parts = ( ldap.explode_dn(self._dn, notypes = 0) )[1:]
 		if (parts <= 1):
 			raise BackendBadValueError(u"Object '%s' has no parent" % self._dn)
 		return LDAPObject(','.join(parts))
 	
 	def new(self, *objectClasses, **attributes):
-		''' Creates a new object. '''
 		if ( len(objectClasses) <= 0 ):
 			raise BackendBadValueError(u"No objectClasses defined!")
 		
 		self._new['objectClass'] = objectClasses
-		
 		self._new['cn'] = [ self.getCn() ]
-		
 		
 		for (attribute, value) in attributes.items():
 			self.setAttribute(attribute, value)
@@ -1305,7 +1330,6 @@ class LDAPObject:
 		logger.debug(u"Created new LDAP-Object: %s" % self._new)
 			
 	def deleteFromDirectory(self, ldapSession, recursive = False):
-		''' Deletes an object from ldap directory. '''
 		if recursive:
 			objects = []
 			try:
@@ -1332,7 +1356,7 @@ class LDAPObject:
 		try:
 			result = ldapSession.search(	baseDn     = self._dn,
 							scope      = ldap.SCOPE_BASE,
-							filter     = "(ObjectClass=*)",
+							filter     = u"(ObjectClass=*)",
 							attributes = attributes )
 		except Exception, e:
 			raise BackendIOError(u"Cannot read object (dn: '%s') from ldap: %s" % (self._dn, e))
@@ -1423,22 +1447,21 @@ class LDAPObject:
 		self.setAttribute(attribute, values)
 	
 
-
 # ======================================================================================================
-# =                                    CLASS LDAPObjectSearch                                              =
+# =                                  CLASS LDAPOBJECTSEARCH                                            =
 # ======================================================================================================
 
 class LDAPObjectSearch:
 	''' This class simplifies object searchs. '''
 	
-	def __init__(self, ldapSession, baseDn='', scope=ldap.SCOPE_SUBTREE, filter='(ObjectClass=*)'):
+	def __init__(self, ldapSession, baseDn='', scope=ldap.SCOPE_SUBTREE, filter=u'(ObjectClass=*)'):
 		''' ObjectSearch constructor. '''
 		
 		if not baseDn:
 			baseDn = ldapSession.baseDn
+		filter = forceUnicode(filter)
 		
-		logger.debug( u'Searching object => baseDn: %s, scope: %s, filter: %s' 
-				% (baseDn, scope, filter) )
+		logger.debug(u'Searching object => baseDn: %s, scope: %s, filter: %s' % (baseDn, scope, filter))
 		
 		# Storage for matching DNs
 		self._dns = []
@@ -1455,7 +1478,7 @@ class LDAPObjectSearch:
 			raise
 		
 		for r in result:
-			logger.debug( u'Found dn: %s' % r[0] )
+			logger.debug(u'Found dn: %s' % r[0])
 			self._dns.append(r[0])
 		
 	def getCns(self):
@@ -1481,8 +1504,6 @@ class LDAPObjectSearch:
 		
 	def getObjects(self):
 		''' Returns all objects as Object instances. '''
-		#if ( len(self._dns) <= 0 ):
-		#	raise BackendMissingDataError("No objects found")
 		objects = []
 		for dn in self._dns:
 			objects.append( LDAPObject(dn) )
@@ -1491,33 +1512,40 @@ class LDAPObjectSearch:
 	def getLDAPObject(self):
 		''' Returns the first object found as Object instance. '''
 		if ( len(self._dns) <= 0 ):
-			#raise BackendMissingDataError("No object found")
 			return None
 		return LDAPObject(self._dns[0])
 
-
 # ======================================================================================================
-# =                                       CLASS SESSION                                                =
+# =                                     CLASS LDAPSESSION                                              =
 # ======================================================================================================	
 
 class LDAPSession:
 	''' This class handles the requests to a ldap server '''
-	SCOPE_SUBTREE = ldap.SCOPE_SUBTREE
-	SCOPE_BASE = ldap.SCOPE_BASE
-	
-	def __init__(self, host, username, password):
+	def __init__(self, **args):
 		''' Session constructor. '''
-		self._host = host
-		self._username = username
-		self._password = password
-		self._ldap = None
+		self._address   = u'localhost'
+		self._username  = u'cn=admin,dc=uib,dc=local'
+		self._password  = u'opsi'
+		self._referrals = True
+		
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('address'):
+				self._address = forceUnicode(value)
+			elif option in ('username'):
+				self._username = forceUnicode(value)
+			elif option in ('password'):
+				self._password = forceUnicode(value)
+			elif option in ('referrals'):
+				self._referrals = forceBool(value)
 		
 		self._commandCount = 0
-		self._searchCount = 0
-		self._deleteCount = 0
-		self._addCount = 0
-		self._modifyCount = 0
+		self._searchCount  = 0
+		self._deleteCount  = 0
+		self._addCount     = 0
+		self._modifyCount  = 0
 		
+		self._ldap = None
 	
 	def getCommandCount(self):	
 		''' Get number of all commands (requests) sent to ldap server. '''
@@ -1536,23 +1564,27 @@ class LDAPSession:
 		return self._modifyCount
 	def getCommandStatistics(self):
 		''' Get number of all commands as dict. '''
-		return { 	'total': 	self._commandCount,
-				'search':	self._searchCount,
-				'delete':	self._deleteCount,
-				'add': 		self._addCount,
-				'modify':	self._modifyCount }
+		return {'total':  self._commandCount,
+			'search': self._searchCount,
+			'delete': self._deleteCount,
+			'add':    self._addCount,
+			'modify': self._modifyCount }
 	
 	def connect(self):
 		''' Connect to a ldap server. '''
-		self._ldap = ldap.open(self._host)
+		self._ldap = ldap.open(self._address)
 		self._ldap.protocol_version = ldap.VERSION3
+		if self._referrals:
+			self._ldap.set_option(ldap.OPT_REFERRALS, 1)
+		else:
+			self._ldap.set_option(ldap.OPT_REFERRALS, 0)
 		try:
 			self._ldap.bind_s(self._username, self._password, ldap.AUTH_SIMPLE)
 			logger.info(u'Successfully connected to LDAP-Server.')
 		except ldap.LDAPError, e:
 			logger.error(u"Bind to LDAP failed: %s" % e)
-			raise BackendIOError(u"Bind to LDAP server '%s' as '%s' failed: %s" % (self._host, self._username, e))
-	
+			raise BackendIOError(u"Bind to LDAP server '%s' as '%s' failed: %s" % (self._address, self._username, e))
+		
 	def disconnect(self):
 		''' Disconnect from ldap server '''
 		if not self._ldap:

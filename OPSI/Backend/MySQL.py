@@ -92,8 +92,8 @@ class MySQL:
 		self._username                  = u'opsi'
 		self._password                  = u'opsi'
 		self._database                  = u'opsi'
-		self._databaseCharset           = 'utf8',
-		self._connectionPoolSize        = 20,
+		self._databaseCharset           = 'utf8'
+		self._connectionPoolSize        = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout     = 30
 		
@@ -131,6 +131,7 @@ class MySQL:
 					timeout      = self._connectionPoolTimeout
 			)
 		except Exception, e:
+			logger.logException(e)
 			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
 		logger.debug(u'MySQL created: %s' % self)
 		
