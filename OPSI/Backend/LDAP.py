@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+   Copyright (C) 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -28,7 +28,7 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    
    @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
+   @author: Erol Ülükmen <e.ueluekmen@uib.de>, Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
 
@@ -43,7 +43,6 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-#from OPSI import Tools
 
 # Get logger instance
 logger = Logger()
@@ -56,50 +55,71 @@ class LDAPBackend(ConfigDataBackend):
 	def __init__(self,**kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		self._address  = 'localhost'
-		self._username = None
-		self._password = None
+		self._address          = u'localhost'
+		self._opsiBaseDn       = u'cn=opsi,dc=uib,dc=local'
+		self._hostsContainerDn = u'cn=hosts,%s' % self._opsiBaseDn
+		
+		self._hostAttributeDescription      = u'opsiDescription'
+		self._hostAttributeNotes            = u'opsiNotes'
+		self._hostAttributeHardwareAddress  = u'opsiHardwareAddress'
+		self._hostAttributeIpAddress        = u'opsiIpAddress'
+		
+		self._clientObjectSearchFilter = u''
+		self._createClientCommand      = u''
+		self._deleteClient             = True
+		self._deleteClientCommand      = u''
+		
+		self._serverObjectSearchFilter = u''
+		self._createServerCommand      = u''
+		self._deleteServer             = False
+		self._deleteServerCommand      = u''
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('address'):
-				self._address = value
+				self._address = forceUnicode(value)
 			elif option in ('username'):
-				self._username = value
+				self._username = forceUnicode(value)
 			elif option in ('password'):
-				self._password = value
-		
-		# Default values
-		self._baseDn = 'dc=uib,dc=local'
-		self._opsiBaseDn = 'cn=opsi,' + self._baseDn
-		self._hostsContainerDn = 'cn=hosts,' + self._opsiBaseDn
-		self._configContainerDn = 'cn=configs,' + self._opsiBaseDn
-		self._configStateContainerDn = 'cn=configState,' + self._opsiBaseDn
-		self._groupsContainerDn = 'cn=groups,' + self._opsiBaseDn
-		self._productsContainerDn = 'cn=products,' + self._opsiBaseDn
-		self._productClassesContainerDn = 'cn=productClasses,' + self._opsiBaseDn
-		self._productStatesContainerDn = 'cn=productStates,' + self._opsiBaseDn
-		self._generalConfigsContainerDn = 'cn=generalConfigs,' + self._opsiBaseDn
-		self._networkConfigsContainerDn = 'cn=networkConfigs,' + self._opsiBaseDn
-		self._productPropertiesContainerDn = 'cn=productProperties,' + self._opsiBaseDn
-		self._productOnDepotContainerDn = 'cn=productOnDepot,' + self._opsiBaseDn
-		self._productOnClientContainerDn = 'cn=productOnClient,' + self._opsiBaseDn
-		self._productPropertyStatesContainerDn = 'cn=productPropertyStates,' + self._opsiBaseDn
-		self._objectToGroupContainerDn = 'cn=objectToGroup,' + self._opsiBaseDn
-		self._hostAttributeDescription = 'opsiDescription'
-		self._hostAttributeNotes = 'opsiNotes'
-		self._hostAttributeHardwareAddress = 'opsiHardwareAddress'
-		self._hostAttributeIpAddress = 'opsiIpAddress'
-		self._createClientCommand = ''
-		self._deleteClient = True
-		self._deleteClientCommand = ''
-		self._createServerCommand = ''
-		self._deleteServer = False
-		self._deleteServerCommand = ''
-		self._clientObjectSearchFilter = ''
-		self._serverObjectSearchFilter = ''
-		self._defaultDomain = None
+				self._password = forceUnicode(value)
+			elif option in ('opsibasedn'):
+				self._opsiBaseDn = forceUnicode(value)
+			elif option in ('hostscontainerdn'):
+				self._hostsContainerDn = forceUnicode(value)
+			elif option in ('hostattributedescription'):
+				self._hostAttributeDescription = forceUnicode(value)
+			elif option in ('hostattributenotes'):
+				self._hostAttributeNotes = forceUnicode(value)
+			elif option in ('hostattributehardwareaddress'):
+				self._hostAttributeHardwareAddress = forceUnicode(value)
+			elif option in ('hostattributeipaddress'):
+				self._hostAttributeIpAddress = forceUnicode(value)
+			elif option in ('clientobjectsearchfilter'):
+				self._clientObjectSearchFilter = forceUnicode(value)
+			elif option in ('createclientcommand'):
+				self._createClientCommand = forceUnicode(value)
+			elif option in ('deleteclient'):
+				self._deleteClient = forceBool(value)
+			elif option in ('deleteclientcommand'):
+				self._deleteClientCommand = forceUnicode(value)
+			elif option in ('serverobjectsearchfilter'):
+				self._serverObjectSearchFilter = forceUnicode(value)
+			elif option in ('createservercommand'):
+				self._createServerCommand = forceUnicode(value)
+			elif option in ('deleteserver'):
+				self._deleteServer = forceBool(value)
+			elif option in ('deleteservercommand'):
+				self._deleteServerCommand = forceUnicode(value)
+			
+		self._configContainerDn                = u'cn=configs,%s'               % self._opsiBaseDn
+		self._configStateContainerDn           = u'cn=configState,%s'           % self._opsiBaseDn
+		self._groupsContainerDn                = u'cn=groups,%s'                % self._opsiBaseDn
+		self._productsContainerDn              = u'cn=products,%s'              % self._opsiBaseDn
+		self._productOnDepotContainerDn        = u'cn=productOnDepot,%s'        % self._opsiBaseDn
+		self._productOnClientContainerDn       = u'cn=productOnClient,%s'       % self._opsiBaseDn
+		self._productPropertyStatesContainerDn = u'cn=productPropertyStates,%s' % self._opsiBaseDn
+		self._objectToGroupContainerDn         = u'cn=objectToGroup,%s'         % self._opsiBaseDn
 		
 		self._mappings = [
 				{
@@ -488,13 +508,9 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._hostsContainerDn)
 		self._createOrganizationalRole(self._configContainerDn)
 		self._createOrganizationalRole(self._configStateContainerDn)
-		self._createOrganizationalRole(self._generalConfigsContainerDn)
-		self._createOrganizationalRole(self._networkConfigsContainerDn)
 		self._createOrganizationalRole(self._groupsContainerDn)
 		self._createOrganizationalRole(self._productsContainerDn)
 		self._createOrganizationalRole(self._productClassesContainerDn)
-		self._createOrganizationalRole(self._productStatesContainerDn)
-		self._createOrganizationalRole(self._productPropertiesContainerDn)
 		self._createOrganizationalRole(self._productOnDepotContainerDn)
 		self._createOrganizationalRole(self._productOnClientContainerDn)
 		self._createOrganizationalRole(self._productPropertyStatesContainerDn)

@@ -86,11 +86,37 @@ class ConnectionPool(object):
 # ======================================================================================================
 
 class MySQL:
-	def __init__(self, username = 'root', password = '', address = 'localhost', database = 'opsi'):
-		self._username = username
-		self._password = password
-		self._address  = address
-		self._database = database
+	def __init__(self, **kwargs):
+		
+		self._address                   = u'localhost'
+		self._username                  = u'opsi'
+		self._password                  = u'opsi'
+		self._database                  = u'opsi'
+		self._databaseCharset           = 'utf8',
+		self._connectionPoolSize        = 20,
+		self._connectionPoolMaxOverflow = 10
+		self._connectionPoolTimeout     = 30
+		
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('address'):
+				self._address = forceUnicode(value)
+			elif option in ('username'):
+				self._username = forceUnicode(value)
+			elif option in ('password'):
+				self._password = forceUnicode(value)
+			elif option in ('database'):
+				self._database = forceUnicode(value)
+			elif option in ('databasecharset'):
+				self._databaseCharset = str(value)
+			elif option in ('connectionpoolsize'):
+				self._connectionPoolSize = forceInt(value)
+			elif option in ('connectionpoolmaxoverflow'):
+				self._connectionPoolMaxOverflow = forceInt(value)
+			elif option in ('connectionpooltimeout'):
+				self._connectionPoolTimeout = forceInt(value)
+		
 		self._transactionLock = threading.Lock()
 		try:
 			self._pool = ConnectionPool(
@@ -99,10 +125,10 @@ class MySQL:
 					passwd       = self._password,
 					db           = self._database,
 					use_unicode  = True,
-					charset      = 'utf8',
-					pool_size    = 20,
-					max_overflow = 10,
-					timeout      = 30
+					charset      = self._databaseCharset,
+					pool_size    = self._connectionPoolSize,
+					max_overflow = self._connectionPoolMaxOverflow,
+					timeout      = self._connectionPoolTimeout
 			)
 		except Exception, e:
 			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
@@ -239,20 +265,9 @@ class MySQLBackend(ConfigDataBackend):
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		self._address  = 'localhost'
-		self._database = 'opsi'
+		self._mysql = MySQL(**kwargs)
 		
-		# Parse arguments
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if   option in ('address'):
-				self._address = value
-			elif option in ('database'):
-				self._database = value
-			
-		warnings.showwarning = self._showwarning
-		self._mysql = MySQL(username = self._username, password = self._password, address = self._address, database = self._database)
-		
+		warnings.showwarning = False
 		self._licenseManagementEnabled = True
 		
 		self._auditHardwareConfig = {}
