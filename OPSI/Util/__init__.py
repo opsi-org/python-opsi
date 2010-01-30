@@ -167,10 +167,10 @@ def fromJson(obj, objectType=None):
 	else:
 		return deserialize(json.read(obj))
 	
-def toJson(obj):
+def toJson(obj, ensureAscii=False):
 	if hasattr(json, 'loads'):
 		# Python 2.6 json module
-		return json.dumps(serialize(obj))
+		return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
 	else:
 		return json.write(serialize(obj))
 

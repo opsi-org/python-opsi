@@ -688,9 +688,9 @@ class PackageControlFile(TextFile):
 		if self._product.getWindowsSoftwareIds():
 			self._lines.append( '[Windows]' )
 			self._lines.append( u'softwareIds: %s' % u', '.join(self._product.getWindowsSoftwareIds()) )
-		
-		for dependency in self._productDependencies:
 			self._lines.append( u'' )
+			
+		for dependency in self._productDependencies:
 			self._lines.append( u'[ProductDependency]' )
 			self._lines.append( u'action: %s' % dependency.getProductAction() )
 			if dependency.getRequiredProductId():
@@ -707,9 +707,9 @@ class PackageControlFile(TextFile):
 				self._lines.append( u'requiredStatus: %s'  % dependency.getRequiredInstallationStatus() )
 			if dependency.getRequirementType():
 				self._lines.append( u'requirementType: %s' % dependency.getRequirementType() )
+			self._lines.append( u'' )
 		
 		for productProperty in self._productProperties:
-			self._lines.append( u'' )
 			self._lines.append( u'[ProductProperty]' )
 			self._lines.append( u'type: %s' % productProperty.getType() )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
@@ -724,18 +724,19 @@ class PackageControlFile(TextFile):
 					if (len(descLines) > 1):
 						self._lines.extend( descLines )
 			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
-					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
+				self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
 			if productProperty.getDefaultValues():
 				if isinstance(productProperty, BoolProductProperty):
 					self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
 				else:
 					self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
-		
-		if not self._product.getChangelog() is None:
 			self._lines.append( u'' )
+		
+		if self._product.getChangelog():
 			self._lines.append( u'[Changelog]' )
 			self._lines.extend( self._product.getChangelog().split('\n') )
-		
+			self._lines.append( u'' )
+			
 		self.open('w')
 		self.writelines()
 		self.close()

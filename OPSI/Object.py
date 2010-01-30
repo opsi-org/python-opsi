@@ -512,24 +512,40 @@ class Config(Entity):
 	def setDescription(self, description):
 		self.description = forceUnicode(description)
 	
+	def _updateValues(self):
+		if self.possibleValues is None:
+			self.possibleValues = []
+		if self.possibleValues and self.defaultValues:
+			for defaultValue in self.defaultValues:
+				if not defaultValue in self.possibleValues:
+					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
+						% (defaultValue, possibleValues))
+		elif not self.possibleValues and self.defaultValues:
+			self.possibleValues = self.defaultValues
+		if self.defaultValues and (len(self.defaultValues) > 1):
+			self.multiValue = True
+	
 	def getPossibleValues(self):
 		return self.possibleValues
 	
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = forceList(possibleValues)
-	
+		self.possibleValues = []
+		# Remove duplicates
+		for value in forceList(possibleValues):
+			if not value in self.possibleValues:
+				self.possibleValues.append(value)
+		self._updateValues()
+		
 	def getDefaultValues(self):
 		return self.defaultValues
 	
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = forceList(defaultValues)
-		if self.possibleValues is None:
-			self.possibleValues = []
-		for defaultValue in self.defaultValues:
-			if not defaultValue in self.possibleValues:
-				self.possibleValues.append(defaultValue)
-		if (len(self.defaultValues) > 1):
-			self.multiValue = True
+		self.defaultValues = []
+		# Remove duplicates
+		for value in forceList(defaultValues):
+			if not value in self.defaultValues:
+				self.defaultValues.append(value)
+		self._updateValues()
 	
 	def getEditable(self):
 		return self.editable
@@ -582,12 +598,10 @@ class UnicodeConfig(Config):
 			self.defaultValues = [u'']
 	
 	def setPossibleValues(self, possibleValues):
-		possibleValues = forceUnicodeList(possibleValues)
-		Config.setPossibleValues(self, possibleValues)
+		Config.setPossibleValues(self, forceUnicodeList(possibleValues))
 	
 	def setDefaultValues(self, defaultValues):
-		defaultValues = forceUnicodeList(defaultValues)
-		Config.setDefaultValues(self, defaultValues)
+		Config.setDefaultValues(self, forceUnicodeList(defaultValues))
 	
 	@staticmethod
 	def fromHash(hash):
@@ -610,8 +624,7 @@ class BoolConfig(Config):
 		Config.setDefaults(self)
 	
 	def setPossibleValues(self, possibleValues):
-		possibleValues = [ True, False ]
-		Config.setPossibleValues(self, possibleValues)
+		Config.setPossibleValues(self, [ True, False ])
 	
 	def setDefaultValues(self, defaultValues):
 		defaultValues = forceBoolList(defaultValues)
@@ -1016,18 +1029,41 @@ class ProductProperty(Entity):
 	def setDescription(self, description):
 		self.description = forceUnicode(description)
 	
+	def _updateValues(self):
+		if self.possibleValues is None:
+			self.possibleValues = []
+		if self.possibleValues and self.defaultValues:
+			for defaultValue in self.defaultValues:
+				if not defaultValue in self.possibleValues:
+					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
+						% (defaultValue, possibleValues))
+		elif not self.possibleValues and self.defaultValues:
+			self.possibleValues = self.defaultValues
+		if self.defaultValues and (len(self.defaultValues) > 1):
+			self.multiValue = True
+	
 	def getPossibleValues(self):
 		return self.possibleValues
 	
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = forceList(possibleValues)
-	
+		self.possibleValues = []
+		# Remove duplicates
+		for value in forceList(possibleValues):
+			if not value in self.possibleValues:
+				self.possibleValues.append(value)
+		self._updateValues()
+		
 	def getDefaultValues(self):
 		return self.defaultValues
 	
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = forceList(defaultValues)
-	
+		self.defaultValues = []
+		# Remove duplicates
+		for value in forceList(defaultValues):
+			if not value in self.defaultValues:
+				self.defaultValues.append(value)
+		self._updateValues()
+		
 	def getEditable(self):
 		return self.editable
 	
@@ -1073,25 +1109,11 @@ class UnicodeProductProperty(ProductProperty):
 		ProductProperty.setDefaults(self)
 	
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = forceUnicodeList(possibleValues)
-		if self.possibleValues and self.defaultValues:
-			for defaultValue in self.defaultValues:
-				if not defaultValue in self.possibleValues:
-					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-						% (defaultValue, possibleValues))
-		elif not self.possibleValues and self.defaultValues:
-			self.possibleValues = self.defaultValues
+		ProductProperty.setPossibleValues(self, forceUnicodeList(possibleValues))
 	
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = forceUnicodeList(defaultValues)
-		if self.possibleValues and self.defaultValues:
-			for defaultValue in self.defaultValues:
-				if not defaultValue in self.possibleValues:
-					raise BackendBadValueError(u"Default value '%s' not in possible values: %s" \
-						% (defaultValue, possibleValues))
-		elif not self.possibleValues and self.defaultValues:
-			self.possibleValues = self.defaultValues
-	
+		ProductProperty.setDefaultValues(self, forceUnicodeList(defaultValues))
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'UnicodeProductProperty'
@@ -1115,10 +1137,13 @@ class BoolProductProperty(ProductProperty):
 		ProductProperty.setDefaults(self)
 	
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = [ True, False ]
+		ProductProperty.setPossibleValues(self, [ True, False ])
 	
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = forceBoolList(defaultValues)
+		defaultValues = forceBoolList(defaultValues)
+		if (len(defaultValues) > 1):
+			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % defaultValues)
+		ProductProperty.setDefaultValues(self, defaultValues)
 	
 	@staticmethod
 	def fromHash(hash):
