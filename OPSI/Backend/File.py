@@ -62,11 +62,11 @@ def fromJson(obj):
 		return json.read(obj)
 
 # ======================================================================================================
-# =                                   CLASS FILE31BACKEND                                              =
+# =                                   CLASS FILEBACKEND                                                =
 # ======================================================================================================
-class File31Backend(ConfigDataBackend):
+class FileBackend(ConfigDataBackend):
 	
-	def __init__(self, baseDir = '/tmp/file31', **kwargs):
+	def __init__(self, baseDir = '/tmp/file', **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		#fqdn configserver
@@ -307,7 +307,7 @@ class File31Backend(ConfigDataBackend):
 		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			if os.path.isfile(filename):
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				for section in cp.sections():
 					objIdents.append({'id': section})
@@ -320,8 +320,8 @@ class File31Backend(ConfigDataBackend):
 					hostId = forceHostId(entry[:-4])
 					
 					if objType == 'ProductOnClient':
-						iniFile = IniFile(filename = self._getConfigFile(
-							objType, {'clientId': hostId}, 'ini'))
+						filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
+						iniFile = IniFile(filename = filename, ignoreCase = False)
 						cp = iniFile.parse()
 						for section in cp.sections():
 							if section.endswith('-state'):
@@ -345,8 +345,8 @@ class File31Backend(ConfigDataBackend):
 						continue
 					
 					if objType == 'ProductOnDepot':
-						iniFile = IniFile(filename = self._getConfigFile(
-							objType, {'depotId': hostId}, 'ini'))
+						filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
+						iniFile = IniFile(filename = filename, ignoreCase = False)
 						cp = iniFile.parse()
 						for section in cp.sections():
 							if section.endswith('-state'):
@@ -410,7 +410,7 @@ class File31Backend(ConfigDataBackend):
 					continue
 				
 				filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
 				if objType == 'ConfigState' and cp.has_section('generalconfig'):
@@ -438,7 +438,7 @@ class File31Backend(ConfigDataBackend):
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			if os.path.isfile(filename):
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
 				for section in cp.sections():
@@ -499,7 +499,7 @@ class File31Backend(ConfigDataBackend):
 						logger.error(u"_getIdents(): Found bad file '%s'" % filename)
 			
 			for filename in filenames:
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
 				filebase = os.path.basename(filename)[:-3]
@@ -613,7 +613,7 @@ class File31Backend(ConfigDataBackend):
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 				
 				elif (fileType == 'ini') or (fileType == 'sw'):
-					iniFile = IniFile(filename = filename)
+					iniFile = IniFile(filename = filename, ignoreCase = False)
 					cp = iniFile.parse()
 					
 					for m in mapping:
@@ -650,10 +650,11 @@ class File31Backend(ConfigDataBackend):
 							else:
 								value = value.replace(u'\\n', u'\n')
 							
-							if objType in ('ProductOnClient'):
-								if attribute == 'installationStatus' and value.find(u':' != -1):
+							print "value", value
+							if objType in ('ProductOnClient') and value.find(':') != -1:
+								if attribute == 'installationStatus':
 									value = value.split(u':', 1)[0]
-								elif attribute == 'actionRequest' and value.find(u':' != -1):
+								elif attribute == 'actionRequest':
 									value = value.split(u':', 1)[1]
 							
 							objHash[m['attribute']] = value
@@ -688,7 +689,7 @@ class File31Backend(ConfigDataBackend):
 						pass
 					
 					elif objType in ('AuditHardwareOnHost'):
-						iniFile = IniFile(filename = filename)
+						iniFile = IniFile(filename = filename, ignoreCase = False)
 						cp = iniFile.parse()
 						
 						options = {}
@@ -751,7 +752,7 @@ class File31Backend(ConfigDataBackend):
 					hostKeys.generate()
 			
 			elif (fileType == 'ini') or (fileType == 'sw'):
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
 				
@@ -762,7 +763,7 @@ class File31Backend(ConfigDataBackend):
 						if objType in ('OpsiClient'):
 							shutil.copyfile('/var/lib/opsi/template/proto.ini', filename)
 						
-						iniFile = IniFile(filename = filename)
+						iniFile = IniFile(filename = filename, ignoreCase = False)
 						iniFile.create(group = 'pcpatch', mode = 0660)
 						cp = iniFile.parse()
 					else:
@@ -902,7 +903,7 @@ class File31Backend(ConfigDataBackend):
 				packageControlFile.generate()
 			
 			elif (fileType == 'hw'):
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
 				
@@ -978,7 +979,7 @@ class File31Backend(ConfigDataBackend):
 		
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 			filename = self._getConfigFile(objType, {}, 'ini')
-			iniFile = IniFile(filename = filename)
+			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			for obj in objList:
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
@@ -992,7 +993,7 @@ class File31Backend(ConfigDataBackend):
 			for obj in objList:
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if cp.has_option('generalconfig', obj.getConfigId()):
@@ -1080,7 +1081,7 @@ class File31Backend(ConfigDataBackend):
 					filenames.append(filename)
 			
 			for filename in filenames:
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
 				for obj in objList:
@@ -1096,7 +1097,7 @@ class File31Backend(ConfigDataBackend):
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
 				if cp.has_section(obj.getProductId() + '-install'):
@@ -1113,7 +1114,7 @@ class File31Backend(ConfigDataBackend):
 				fileType = 'hw'
 			
 			filename = self._getConfigFile(objType, {}, fileType)
-			iniFile = IniFile(filename = filename)
+			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			
 			for obj in objList:
@@ -1172,7 +1173,7 @@ class File31Backend(ConfigDataBackend):
 				
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), fileType )
-				iniFile = IniFile(filename = filename)
+				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
 				idents = obj.getIdent(returnType = 'dict')

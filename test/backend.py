@@ -1583,10 +1583,18 @@ class BackendTest(object):
 		
 		self.backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects(binaryName = 'updatedBN')
+		for a in auditSoftwareOnClients:
+			print a
+		print
 		assert len(auditSoftwareOnClients) == 1
 		
 		self.backend.auditSoftwareOnClient_deleteObjects(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
+		for a in auditSoftwareOnClients:
+			print a
+		print
+		for a in self.auditSoftwareOnClients:
+			print a
 		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients) - 1
 		
 		self.backend.auditSoftwareOnClient_insertObject(self.auditSoftwareOnClient1)

@@ -4,7 +4,7 @@
 import sys, types
 
 from OPSI.Logger import *
-from OPSI.Backend.File31 import File31Backend
+from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.Object import *
 from backend import *
@@ -27,9 +27,9 @@ logger.setConsoleLevel(loglevel)
 logger.setConsoleColor(True)
 #logger.setConsoleFormat('%D [%L] %M (%F|%N)')
 
-file31Backend = File31Backend()
+fileBackend = FileBackend()
 
-bt = BackendTest(ExtendedConfigDataBackend(file31Backend))
+bt = BackendTest(ExtendedConfigDataBackend(fileBackend))
 bt.cleanupBackend()
 bt.testObjectMethods()
 bt.testInventoryObjectMethods()

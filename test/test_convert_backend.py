@@ -5,7 +5,7 @@ import sys, types
 
 from OPSI.Logger import *
 from OPSI.Backend.MySQL import MySQLBackend
-from OPSI.Backend.File31 import File31Backend
+from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.Object import *
 from backend import *
@@ -30,7 +30,7 @@ logger.setConsoleColor(True)
 
 
 #init and reset
-fileBackend = ExtendedConfigDataBackend(File31Backend())
+fileBackend = ExtendedConfigDataBackend(FileBackend())
 btfileBackend = BackendTest(fileBackend)
 btfileBackend.cleanupBackend()
 
