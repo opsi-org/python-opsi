@@ -52,7 +52,7 @@ logger = Logger()
 # ======================================================================================================
 class LDAPBackend(ConfigDataBackend):
 	
-	def __init__(self,**kwargs):
+	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._address          = u'localhost'
@@ -132,7 +132,7 @@ class LDAPBackend(ConfigDataBackend):
 					'attributes': [
 						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiHostId' },
 						{ 'opsiAttribute': 'ipAddress',       'ldapAttribute': self._hostAttributeIpAddress },
-						{ 'opsiAttribute': 'hardwareAddress', 'ldapAttribute': self._hostAttributeNotes },
+						{ 'opsiAttribute': 'hardwareAddress', 'ldapAttribute': self._hostAttributeHardwareAddress },
 						{ 'opsiAttribute': 'description',     'ldapAttribute': self._hostAttributeDescription },
 						{ 'opsiAttribute': 'notes',           'ldapAttribute': self._hostAttributeNotes },
 						{ 'opsiAttribute': 'inventoryNumber', 'ldapAttribute': self._hostAttributeInventoryNumber }
@@ -380,7 +380,7 @@ class LDAPBackend(ConfigDataBackend):
 				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
 		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
-		self._ldap = LDAPSession(**args)
+		self._ldap = LDAPSession(**kwargs)
 		self._ldap.connect()
 		
 	
@@ -510,7 +510,6 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._configStateContainerDn)
 		self._createOrganizationalRole(self._groupsContainerDn)
 		self._createOrganizationalRole(self._productsContainerDn)
-		self._createOrganizationalRole(self._productClassesContainerDn)
 		self._createOrganizationalRole(self._productOnDepotsContainerDn)
 		self._createOrganizationalRole(self._productOnClientsContainerDn)
 		self._createOrganizationalRole(self._productPropertyStatesContainerDn)
@@ -531,10 +530,10 @@ class LDAPBackend(ConfigDataBackend):
 		
 		ldapObject.readFromDirectory(self._ldap)
 		
-		logger.info(u"Searching opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
+		logger.debug2(u"Searching opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
 		opsiClassName = None
 		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
-			logger.debug(u"Testing opsi class '%s' (ldapClasses: %s)" % (opsiClass, ldapClasses))
+			logger.debug2(u"Testing opsi class '%s' (ldapClasses: %s)" % (opsiClass, ldapClasses))
 			matched = True
 			for objectClass in ldapObject.getObjectClasses():
 				if not objectClass in ldapClasses:
@@ -553,9 +552,7 @@ class LDAPBackend(ConfigDataBackend):
 		if not opsiClassName:
 			raise Exception(u"Failed to get opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
 		
-		# [ 'opsiHost', 'opsiDepotserver', 'opsiConfigserver' ],
-		# Mapped ldap objectClasses ['opsiHost', 'opsiDepotserver'] to opsi class: OpsiConfigserver
-		logger.info(u"Mapped ldap objectClasses %s to opsi class: %s" % (ldapObject.getObjectClasses(), opsiClassName))
+		logger.debug(u"Mapped ldap objectClasses %s to opsi class: %s" % (ldapObject.getObjectClasses(), opsiClassName))
 		
 		Class = eval(opsiClassName)
 		identAttributes = mandatoryConstructorArgs(Class)
@@ -639,7 +636,7 @@ class LDAPBackend(ConfigDataBackend):
 		ldapFilter = None
 		if (host.getType() == 'OpsiClient') and self._clientObjectSearchFilter:
 			ldapFilter = self._clientObjectSearchFilter
-		if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._serverObjectSearchFilter
+		if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._serverObjectSearchFilter:
 			ldapFilter = self._serverObjectSearchFilter
 		
 		if ldapFilter:
@@ -659,7 +656,7 @@ class LDAPBackend(ConfigDataBackend):
 				createCommand = None
 				if (host.getType() == 'OpsiClient') and self._createClientCommand:
 					createCommand = self._createClientCommand
-				if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._createServerCommand
+				if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._createServerCommand:
 					createCommand = self._createServerCommand
 				if createCommand:
 					createCommand = createCommand.replace(u'%name%',            host.id.split(u'.')[0])
@@ -1390,8 +1387,8 @@ class LDAPObject:
 			if (values == [' ']):
 				values = [u'']
 			for i in range(len(values)):
-				if   values[i] == u'TRUE':  self._new[key][i] = True
-				elif values[i] == u'FALSE': self._new[key][i] = False
+				if   values[i] == 'TRUE':  self._new[key][i] = True
+				elif values[i] == 'FALSE': self._new[key][i] = False
 			if ( len(values) > 1 or valuesAsList):
 				ret[key] = values
 			else:
@@ -1410,8 +1407,8 @@ class LDAPObject:
 		if (values == [' ']):
 			values = [u'']
 		for i in range(len(values)):
-			if   values[i] == u'TRUE':  values[i] = True
-			elif values[i] == u'FALSE': values[i] = False
+			if   values[i] == 'TRUE':  values[i] = True
+			elif values[i] == 'FALSE': values[i] = False
 		if ( len(values) > 1 or valuesAsList):
 			return values
 		return values[0]
@@ -1422,8 +1419,8 @@ class LDAPObject:
 			value = forceList(value)
 			for v in value:
 				if type(v) is bool:
-					if v: v = u'TRUE'
-					else: v = u'FALSE'
+					if v: v = 'TRUE'
+					else: v = 'FALSE'
 				if (v == u''):
 					v = u' '
 				ldapValue.append(forceUnicode(v).encode('utf-8'))
@@ -1521,7 +1518,7 @@ class LDAPObjectSearch:
 
 class LDAPSession:
 	''' This class handles the requests to a ldap server '''
-	def __init__(self, **args):
+	def __init__(self, **kwargs):
 		''' Session constructor. '''
 		self._address   = u'localhost'
 		self._username  = u'cn=admin,dc=uib,dc=local'

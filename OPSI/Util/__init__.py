@@ -124,10 +124,11 @@ def deserialize(obj):
 	newObj = None
 	if type(obj) is dict and obj.has_key('type'):
 		try:
-			c = eval('%s' % obj['type'])
+			import OPSI.Object
+			c = eval('OPSI.Object.%s' % obj['type'])
 			newObj = c.fromHash(obj)
 		except Exception, e:
-			logger.debug(e)
+			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, e))
 			return obj
 	elif type(obj) is list:
 		newObj = []
@@ -143,7 +144,7 @@ def deserialize(obj):
 
 def serialize(obj):
 	newObj = None
-	if hasattr(obj, 'serialize'):
+	if   hasattr(obj, 'serialize'):
 		newObj = obj.serialize()
 	elif type(obj) is list:
 		newObj = []
@@ -380,9 +381,9 @@ def objectToHtml(obj, level=0):
 			i+=1
 		html += u'<br />\n' + u'&nbsp;'*hspace + u'}'
 	elif type(obj) in (str, unicode):
-		html += u'"' + obj.replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace) + u'"'
+		html += u'"' + forceUnicode(obj).replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'<', u'&lt;').replace(u'>', u'&gt;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace) + u'"'
 	else:
-		toJson(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
+		html += toJson(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
 	return html
 
 

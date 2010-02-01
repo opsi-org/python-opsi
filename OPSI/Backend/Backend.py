@@ -614,32 +614,35 @@ class ConfigDataBackend(BackendIdentExtension):
 	def productOnClient_insertObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		productOnClient.setDefaults()
-		if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
-			products = self.product_getObjects(
-				id = productOnClient.productId,
-				productVersion = productOnClient.productVersion,
-				packageVersion = productOnClient.packageVersion)
-			if not products:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion))
-			if   (productOnClient.actionRequest == 'setup') and not products[0].setupScript:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-			elif (productOnClient.actionRequest == 'uninstall') and not products[0].uninstallScript:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-			elif (productOnClient.actionRequest == 'update') and not products[0].updateScript:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-			elif (productOnClient.actionRequest == 'once') and not products[0].onceScript:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-			elif (productOnClient.actionRequest == 'always') and not products[0].alwaysScript:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-			elif (productOnClient.actionRequest == 'custom') and not products[0].customScript:
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-					% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+		
+		# TODO: honor version?
+		
+		#if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
+		#	products = self.product_getObjects(
+		#		id = productOnClient.productId,
+		#		productVersion = productOnClient.productVersion,
+		#		packageVersion = productOnClient.packageVersion)
+		#	if not products:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion))
+		#	if   (productOnClient.actionRequest == 'setup') and not products[0].setupScript:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+		#	elif (productOnClient.actionRequest == 'uninstall') and not products[0].uninstallScript:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+		#	elif (productOnClient.actionRequest == 'update') and not products[0].updateScript:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+		#	elif (productOnClient.actionRequest == 'once') and not products[0].onceScript:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+		#	elif (productOnClient.actionRequest == 'always') and not products[0].alwaysScript:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
+		#	elif (productOnClient.actionRequest == 'custom') and not products[0].customScript:
+		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
+		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
 			
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
@@ -2313,7 +2316,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		for objectToGroup in objectToGroups:
 			logger.info(u"Creating %s" % objectToGroup)
 			if self._backend.objectToGroup_getIdents(
-					groupId = objectToGroup.groupId,
+					groupId  = objectToGroup.groupId,
 					objectId = objectToGroup.objectId):
 				logger.info(u"%s already exists, updating" % objectToGroup)
 				self._backend.objectToGroup_updateObject(objectToGroup)

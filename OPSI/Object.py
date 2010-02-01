@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # imports
-import json, re, copy, time, inspect
+import json, re, copy, time, inspect, types
 
 # OPSI imports
 from OPSI.Logger import *
@@ -74,6 +74,25 @@ def getPossibleClassAttributes(Class):
 
 def getBackendMethodPrefix(Class):
 	return Class.backendMethodPrefix
+
+def decodeIdent(Class, hash):
+	if hash.has_key('ident') and hash['ident']:
+		ident = {}
+		if type(hash['ident']) is types.DictType:
+			ident = hash['ident']
+		else:
+			identValues = []
+			if   type(hash['ident']) in (str, unicode):
+				identValues = hash['ident'].split(Class.identSeparator)
+			elif type(hash['ident']) is (tuple, list):
+				identValues = hash['ident']
+			args = mandatoryConstructorArgs(Class)
+			if (len(identValues) == len(args)):
+				for i in range(len(args)):
+					ident[args[i]] = identValues[i]
+		del hash['ident']
+		hash.update(ident)
+	return hash
 	
 class BaseObject(object):
 	subClasses = {}
@@ -137,6 +156,7 @@ class Entity(BaseObject):
 		if not hash.has_key('type'): hash['type'] = 'Entity'
 		Class = eval(hash['type'])
 		kwargs = {}
+		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
 			if hash.has_key(varname):
 				kwargs[varname] = hash[varname]
@@ -169,6 +189,7 @@ class Relationship(BaseObject):
 		if not hash.has_key('type'): hash['type'] = 'Relationship'
 		Class = eval(hash['type'])
 		kwargs = {}
+		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
 			if hash.has_key(varname):
 				kwargs[varname] = hash[varname]

@@ -935,6 +935,7 @@ class MySQLBackend(ConfigDataBackend):
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
+		#del data['type']
 		where = self._uniqueCondition(host)
 		self._mysql.update('HOST', where, data)
 	

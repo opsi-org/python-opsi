@@ -345,15 +345,15 @@ def forceObjectClass(var, objectClass):
 		try:
 			var = OPSI.Object.fromJson(var)
 		except Exception, e:
-			logger.debug(e)
+			logger.debug(u"Failed to get object from json '%s': %s" % (var, e))
 	if type(var) is dict and var.has_key('type'):
 		try:
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
 		except Exception, e:
-			logger.debug(e)
-	
+			logger.debug(u"Failed to get object from dict '%s': %s" % (var, e))
+		
 	if not isinstance(var, objectClass):
 		raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
 	return var
