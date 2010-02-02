@@ -66,7 +66,7 @@ def fromJson(obj):
 # ======================================================================================================
 class FileBackend(ConfigDataBackend):
 	
-	def __init__(self, baseDir = '/tmp/file', **kwargs):
+	def __init__(self, baseDir = u'/tmp/file', **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		#fqdn configserver
@@ -636,21 +636,21 @@ class FileBackend(ConfigDataBackend):
 								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 							
 							#rebuild section
-							sectionPart = sectionParts[i].replace(';', '\\;')
+							sectionParts[i] = sectionParts[i].replace(';', '\\;')
 							if section == '':
 								section = sectionParts[i]
 							else:
 								section = section + ';' + sectionParts[i]
 						
+						print "=========>>>> m: %s section: %s, option: %s" % (m, section, option)
 						if cp.has_option(section, option):
 							value = cp.get(section, option)
-							
+							print "=========>>>> %s section: %s, option: %s" % (value, section, option)
 							if m.get('json'):
 								value = fromJson(value)
 							else:
 								value = value.replace(u'\\n', u'\n')
 							
-							print "value", value
 							if objType in ('ProductOnClient') and value.find(':') != -1:
 								if attribute == 'installationStatus':
 									value = value.split(u':', 1)[0]
@@ -658,7 +658,8 @@ class FileBackend(ConfigDataBackend):
 									value = value.split(u':', 1)[1]
 							
 							objHash[m['attribute']] = value
-				
+					logger.debug(u"Got object hash from ini file: %s" % objHash)
+					
 				elif (fileType == 'pro'):
 					packageControlFile = PackageControlFile(filename = filename)
 					
@@ -707,9 +708,8 @@ class FileBackend(ConfigDataBackend):
 								for option in ('firstseen', 'lastseen', 'state'):
 									if cp.has_option(section, option):
 										objHash[option] = cp.get(section, option)
-			
-			if self._objectHashMatches(objHash, **filter):
-				Class = eval(objType)
+			Class = eval(objType)
+			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
 				objects.append(Class.fromHash(objHash))
 		return objects
@@ -1118,16 +1118,18 @@ class FileBackend(ConfigDataBackend):
 			cp = iniFile.parse()
 			
 			for obj in objList:
-				section = ''
+				section = u''
 				if obj.getType() in ('Group', 'HostGroup'):
 					section = obj.getId()
 				elif obj.getType() == 'AuditSoftware':
 					idents = obj.getIdent(returnType = 'dict')
-					section = idents['name'].replace(';', '\\;') + ';' + \
-						idents['version'].replace(';', '\\;') + ';' + \
-						idents['subVersion'].replace(';', '\\;') + ';' + \
-						idents['language'].replace(';', '\\;') + ';' + \
+					section = u'%s;%s;%s;%s;%s' % (
+						idents['name'].replace(';', '\\;'),
+						idents['version'].replace(';', '\\;'),
+						idents['subVersion'].replace(';', '\\;'),
+						idents['language'].replace(';', '\\;'),
 						idents['architecture'].replace(';', '\\;')
+					)
 				elif obj.getType() == 'AuditHardware':
 					section = obj.getHardwareClass() + '_'
 					
@@ -1177,16 +1179,18 @@ class FileBackend(ConfigDataBackend):
 				cp = iniFile.parse()
 				
 				idents = obj.getIdent(returnType = 'dict')
-				section = idents['name'].replace(';', '\\;') + ';' + \
-					idents['version'].replace(';', '\\;') + ';' + \
-					idents['subVersion'].replace(';', '\\;') + ';' + \
-					idents['language'].replace(';', '\\;') + ';' + \
+				section = u'%s;%s;%s;%s;%s' % (
+					idents['name'].replace(';', '\\;'),
+					idents['version'].replace(';', '\\;'),
+					idents['subVersion'].replace(';', '\\;'),
+					idents['language'].replace(';', '\\;'),
 					idents['architecture'].replace(';', '\\;')
-				
+				)
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if cp.has_section(section):
 					cp.remove_section(section)
 					logger.debug2(u"Removed section '%s'" % section)
+			iniFile.generate(cp)
 		
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s'" % objType)

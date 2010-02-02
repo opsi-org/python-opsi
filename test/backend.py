@@ -826,7 +826,7 @@ class BackendTest(object):
 		self.auditSoftware3 = AuditSoftware(
 			name                  = 'my software',
 			version               = '',
-			subVersion            = 'de;en;tr',
+			subVersion            = '12;00;01',
 			language              = '',
 			architecture          = '',
 			windowsSoftwareId     = 'my software',
@@ -834,7 +834,20 @@ class BackendTest(object):
 			windowsDisplayVersion = '',
 			installSize           = -1
 		)
-		self.auditSoftwares = [self.auditSoftware1, self.auditSoftware2, self.auditSoftware3]
+		
+		self.auditSoftware4 = AuditSoftware(
+			name                  = 'söftwäre\n;?&%$$$§$§§$$$§$',
+			version               = u'\\0012',
+			subVersion            = '\n',
+			language              = 'de',
+			architecture          = '',
+			windowsSoftwareId     = 'söftwäre\n;?&%$$$§$§§$$$§$',
+			windowsDisplayName    = 'söftwäre\n;?&%$$$§$§§$$$§$',
+			windowsDisplayVersion = '\n\r',
+			installSize           = -1
+		)
+		
+		self.auditSoftwares = [self.auditSoftware1, self.auditSoftware2, self.auditSoftware3, self.auditSoftware4]
 		
 		# AuditSoftwareOnClients
 		self.auditSoftwareOnClient1 = AuditSoftwareOnClient(
@@ -1534,19 +1547,20 @@ class BackendTest(object):
 		assert len(auditSoftwares) == len(self.auditSoftwares)
 		
 		auditSoftware3update = AuditSoftware(
-			name                  = 'my software',
-			version               = '',
-			subVersion            = 'de;en;tr',
-			language              = '',
-			architecture          = '',
-			windowsSoftwareId     = None,
+			name                  = self.auditSoftware3.name,
+			version               = self.auditSoftware3.version,
+			subVersion            = self.auditSoftware3.subVersion,
+			language              = self.auditSoftware3.language,
+			architecture          = self.auditSoftware3.architecture,
+			windowsSoftwareId     = self.auditSoftware3.windowsSoftwareId,
 			windowsDisplayName    = 'updatedDN',
-			windowsDisplayVersion = None,
-			installSize           = -1
+			windowsDisplayVersion = self.auditSoftware3.windowsDisplayVersion,
+			installSize           = self.auditSoftware3.installSize
 		)
 		
 		self.backend.auditSoftware_updateObject(auditSoftware3update)
 		auditSoftwares = self.backend.auditSoftware_getObjects(windowsDisplayName = 'updatedDN')
+		logger.debug(u"Got auditSoftwares: %s" % auditSoftwares)
 		assert len(auditSoftwares) == 1
 		
 		self.backend.auditSoftware_deleteObjects(self.auditSoftware3)
@@ -1584,10 +1598,11 @@ class BackendTest(object):
 		self.backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects(binaryName = 'updatedBN')
 		for a in auditSoftwareOnClients:
-			print a
+			print a.toHash()
 		print
 		assert len(auditSoftwareOnClients) == 1
 		
+		logger.info(u"Deleting auditSoftwareOnClient: %s" % auditSoftwareOnClient1update.toHash())
 		self.backend.auditSoftwareOnClient_deleteObjects(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
 		for a in auditSoftwareOnClients:

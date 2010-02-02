@@ -156,6 +156,7 @@ class Backend:
 	
 	def _objectHashMatches(self, objHash, **filter):
 		matchedAll = True
+		
 		for (attribute, value) in objHash.items():
 			if not filter.get(attribute):
 				continue
