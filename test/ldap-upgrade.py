@@ -21,14 +21,13 @@ backend = ExtendedConfigDataBackend(LDAPBackend(address = address, username = us
 ldap = LDAPSession(address = address, username = username, password = password)
 ldap.connect()
 
-backend.backend_createBase()
-
-for container in ('configs', 'configStates', 'objectToGroups', 'products', 'productOnClients', 'productOnDepots', 'productPropertyStates'):
-	ldapObj = LDAPObject(u"cn=%s,%s" % (container, baseDn))
+for container in ('configs', 'configStates', 'objectToGroups', 'productOnClients', 'productOnDepots', 'productPropertyStates'):
+	ldapObj = LDAPObject(u"cn=%s,%s" % (container, opsiBaseDn))
 	if ldapObj.exists(ldap):
+		logger.notice(u"Deleting container: %s" % ldapObj.getDn())
 		ldapObj.deleteFromDirectory(ldap, recursive = True)
 
-
+backend.backend_createBase()
 
 logger.notice(u"Converting opsiHost")
 search = LDAPObjectSearch(ldap, baseDn, filter = u'(objectClass=opsiConfigserver)')
@@ -99,9 +98,9 @@ for obj in search.getObjects():
 					backend.config_createObjects( UnicodeConfig(id = configId) )
 					backend.configState_createObjects( ConfigState(configId = configId, objectId = hostId, values = [ value ] ) )
 			except Exception, e:
-				logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+				logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 
 logger.notice(u"Converting opsiNetworkConfig")
 search = LDAPObjectSearch(ldap, opsiBaseDn, filter = u'(objectClass=opsiNetworkConfig)')
@@ -136,9 +135,9 @@ for obj in search.getObjects():
 					backend.config_createObjects( UnicodeConfig(id = configId) )
 					backend.configState_createObjects( ConfigState(configId = configId, objectId = hostId, values = [ value ] ) )
 			except Exception, e:
-				logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+				logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 		
 logger.notice(u"Converting opsiGroup")
 search = LDAPObjectSearch(ldap, opsiBaseDn, filter = u'(objectClass=opsiGroup)')
@@ -155,10 +154,10 @@ for obj in search.getObjects():
 				objectId = forceHostId(value.split(',')[0].split('=')[1])
 				objectToGroups.append( ObjectToGroup(groupId = groupId, objectId = objectId) )
 			except Exception, e:
-				logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+				logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 		backend.objectToGroup_createObjects(objectToGroups)
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 
 
 localbootProductIds = []
@@ -219,7 +218,7 @@ for objectClass in ('opsiLocalBootProduct', 'opsiNetBootProduct'):
 				)
 			)
 		except Exception, e:
-			logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+			logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 
 
 logger.notice(u"Converting opsiProductPropertyDefinition")
@@ -261,7 +260,7 @@ for obj in search.getObjects():
 				)
 			)
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 
 logger.notice(u"Converting opsiProductDependency")
 search = LDAPObjectSearch(ldap, opsiBaseDn, filter = u'(objectClass=opsiProductDependency)')
@@ -292,7 +291,7 @@ for obj in search.getObjects():
 			)
 		)
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 
 
 for deleteDn in deleteDns:
@@ -343,7 +342,7 @@ for obj in search.getObjects():
 			)
 		)
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 
 
 logger.notice(u"Converting opsiProductProperty")
@@ -375,10 +374,17 @@ for obj in search.getObjects():
 					)
 				)
 			except Exception, e:
-				logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+				logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
 		backend.productPropertyState_createObjects(productPropertyStates)
 	except Exception, e:
-		logger.error("Failure while processing %s: %s" % (obj.getDn(), e))
+		logger.error(u"Failure while processing %s: %s" % (obj.getDn(), e))
+
+
+for container in ('generalConfigs', 'networkConfigs', 'productClasses', 'productLicenses', 'productProperties', 'productStates'):
+	ldapObj = LDAPObject(u"cn=%s,%s" % (container, opsiBaseDn))
+	if ldapObj.exists(ldap):
+		logger.notice(u"Deleting container: %s" % ldapObj.getDn())
+		ldapObj.deleteFromDirectory(ldap, recursive = True)
 
 
 

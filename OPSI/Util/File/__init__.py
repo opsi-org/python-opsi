@@ -313,3 +313,609 @@ class IniFile(ConfigFile):
 		self.close()
 	
 
+
+
+
+
+
+
+
+
+class DHCPDConf_Component(object):
+	def __init__(self, startLine, parentBlock):
+		self.startLine = startLine
+		self.endLine = startLine
+		self.parentBlock = parentBlock
+	
+	def getShifting(self):
+		shifting = u''
+		if not self.parentBlock:
+			return shifting
+		parentBlock = self.parentBlock.parentBlock
+		while(parentBlock):
+			shifting += u'\t'
+			parentBlock = parentBlock.parentBlock
+		return shifting
+	
+	def asText(self):
+		return self.getShifting()
+	
+class DHCPDConf_Parameter(DHCPDConf_Component):
+	def __init__(self, startLine, parentBlock, key, value):
+		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+		self.key = key
+		self.value = value
+		if type(self.value) in (unicode, str):
+			if self.value.lower() in [u'yes', u'true', u'on']:
+				self.value = True
+			elif self.value.lower() in [u'no', u'false', u'off']:
+				self.value = False
+	
+	def asText(self):
+		value = self.value
+		if type(value) is bool:
+			if value:
+				value = u'on'
+			else:
+				value = u'off'
+		elif self.key in [u'filename', u'ddns-domainname'] or \
+		     re.match('.*[\'/\\\].*', value) or \
+		     re.match('^\w+\.\w+$', value) or \
+		     self.key.endswith(u'-name'):
+			value = u'"%s"' % value
+		return u"%s%s %s;" % (self.getShifting(), self.key, value)
+	
+	def asHash(self):
+		return { self.key: self.value }
+	
+class DHCPDConf_Option(DHCPDConf_Component):
+	def __init__(self, startLine, parentBlock, key, value):
+		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+		self.key = key
+		self.value = value
+		if not type(self.value) is list:
+			self.value = [ self.value ]
+	def asText(self):
+		text = u"%soption %s " % (self.getShifting(), self.key)
+		for i in range(len(self.value)):
+			value = self.value[i]
+			if re.match('.*[\'/\\\].*', value) or \
+			   re.match('^\w+\.\w+$', value) or \
+			   self.key.endswith(u'-name') or \
+			   self.key.endswith(u'-identifier'):
+				value = u'"%s"' % value
+			if (i+1 < len(self.value)):
+				value += u', '
+			text += value
+		return text + u';'
+	
+	def asHash(self):
+		return { self.key: self.value }
+	
+class DHCPDConf_Comment(DHCPDConf_Component):
+	def __init__(self, startLine, parentBlock, data):
+		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+		self._data = data
+	
+	def asText(self):
+		return self.getShifting() + u'#%s' % self._data
+	
+class DHCPDConf_EmptyLine(DHCPDConf_Component):
+	def __init__(self, startLine, parentBlock):
+		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+	
+class DHCPDConf_Block(DHCPDConf_Component):
+	def __init__(self, startLine, parentBlock, type, settings = []):
+		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+		self.type = type
+		self.settings = settings
+		self.lineRefs = {}
+		self.components = []
+		
+	def getComponents(self):
+		return self.components
+	
+	def removeComponents(self):
+		logger.debug(u"Removing components: %s" % self.components)
+		for c in list(self.components):
+			self.removeComponent(c)
+			
+	def addComponent(self, component):
+		self.components.append(component)
+		if not self.lineRefs.has_key(component.startLine):
+			self.lineRefs[component.startLine] = []
+		self.lineRefs[component.startLine].append(component)
+	
+	def removeComponent(self, component):
+		index = -1
+		for i in range(len(self.components)):
+			if (self.components[i] == component):
+				index = i
+				break
+		if (index < 0):
+			raise BackendMissingDataError(u"Component '%s' not found")
+		del self.components[index]
+		index = -1
+		
+		if self.lineRefs.has_key(component.startLine):
+			for i in range(len(self.lineRefs[component.startLine])):
+				if (self.lineRefs[component.startLine][i] == component):
+					index = i
+					break
+		if (index >= 0):
+			del self.lineRefs[component.startLine][index]
+		
+	def getOptions_hash(self, inherit = None):
+		options = {}
+		for component in self.components:
+			if not isinstance(component, DHCPDConf_Option):
+				continue
+			options[component.key] = component.value
+		
+		if inherit and (self.type != inherit) and self.parentBlock:
+			for (key, value) in self.parentBlock.getOptions_hash(inherit).items():
+				if not options.has_key(key):
+					options[key] = value
+		return options
+	
+	def getOptions(self, inherit = None):
+		options = []
+		for component in self.components:
+			if not isinstance(component, DHCPDConf_Option):
+				continue
+			options.append(component)
+		
+		if inherit and (self.type != inherit) and self.parentBlock:
+			options.extend(self.parentBlock.getOptions(inherit))
+		
+		return options
+	
+	def getParameters_hash(self, inherit = None):
+		parameters = {}
+		for component in self.components:
+			if not isinstance(component, DHCPDConf_Parameter):
+				continue
+			parameters[component.key] = component.value
+		
+		if inherit and (self.type != inherit) and self.parentBlock:
+			for (key, value) in self.parentBlock.getParameters_hash(inherit).items():
+				if not parameters.has_key(key):
+					parameters[key] = value
+		return parameters
+	
+	def getParameters(self, inherit = None):
+		parameters = []
+		for component in self.components:
+			if not isinstance(component, DHCPDConf_Parameter):
+				continue
+			options.append(component)
+		
+		if inherit and (self.type != inherit) and self.parentBlock:
+			parameters.extend(self.parentBlock.getParameters(inherit))
+		
+		return parameters
+	
+	def getBlocks(self, type, recursive = False):
+		blocks = []
+		for component in self.components:
+			if not isinstance(component, DHCPDConf_Block):
+				continue
+			if (component.type == type):
+				blocks.append(component)
+			if recursive:
+				blocks.extend(component.getBlocks(type, recursive))
+		return blocks
+	
+	def asText(self):
+		text = u''
+		shifting = self.getShifting()
+		if not isinstance(self, DHCPDConf_GlobalBlock):
+			text += shifting + u' '.join(self.settings) + u' {\n'
+		
+		notWritten = self.components
+		lineNumber = self.startLine
+		if (lineNumber < 1): lineNumber = 1
+		while (lineNumber <= self.endLine):
+			if not self.lineRefs.has_key(lineNumber) or not self.lineRefs[lineNumber]:
+				lineNumber += 1
+				continue
+			for i in range(len(self.lineRefs[lineNumber])):
+				compText = self.lineRefs[lineNumber][i].asText()
+				if (i > 0) and isinstance(self.lineRefs[lineNumber][i], DHCPDConf_Comment):
+					compText = u' ' + compText.lstrip()
+				text += compText
+				# Mark component as written
+				index = -1
+				for j in range(len(notWritten)):
+					if (notWritten[j] == self.lineRefs[lineNumber][i]):
+						index = j
+						break
+				if (index > -1):
+					del notWritten[index]
+				
+			text += u'\n'
+			lineNumber += 1
+		
+		for component in notWritten:
+			text += component.asText() + u'\n'
+		
+		if not isinstance(self, DHCPDConf_GlobalBlock):
+			# Write '}' to close block
+			text += shifting + u'}'
+		return text
+		
+class DHCPDConf_GlobalBlock(DHCPDConf_Block):
+	def __init__(self):
+		DHCPDConf_Block.__init__(self, 1, None, u'global')
+
+class DHCPDConfFile(TextFile):
+	
+	def __init__(self, filename, lockFailTimeout = 2000):
+		TextFile.__init__(self, filename)
+		
+		self._currentLine = -1
+		self._currentToken = None
+		self._currentIndex = -1
+		self._data = u''
+		self._currentBlock = None
+		self._globalBlock = None
+		self._parsed = False
+		
+		logger.debug(u"Parsing dhcpd conf file '%s'" % self._filename)
+	
+	def getGlobalBlock(self):
+		return self._globalBlock
+		
+	def parse(self):
+		self._parsed = False
+		self.readlines()
+		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
+		self._globalBlock.endLine = len(self._lines)
+		minIndex = 0
+		while True:
+			logger.debug(u"parse ==>>> %s" % self._data)
+			self._currentToken = None
+			self._currentIndex = -1
+			if not self._data.strip():
+				if not self._getNewData():
+					break
+				if not self._data.strip():
+					self._parse_emptyline()
+				continue
+			for token in ('#', ';', '{', '}'):
+				index = self._data.find(token)
+				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
+					if (self._data[:index].count('"') % 2 == 1) or (self._data[:index].count("'") % 2 == 1):
+						continue
+					self._currentToken = token
+					self._currentIndex = index
+			if not self._currentToken:
+				minIndex = len(self._data)
+				if not self._getNewData():
+					break
+				continue
+			minIndex = 0
+			if   (self._currentToken == '#'):
+				self._parse_comment()
+			elif (self._currentToken == ';'):
+				self._parse_semicolon()
+			elif (self._currentToken == '{'):
+				self._parse_lbracket()
+			elif (self._currentToken == '}'):
+				self._parse_rbracket()
+		self._parsed = True
+		
+	def generate(self):
+		if not self._globalBlock:
+			raise Exception(u"Got no data to write")
+		
+		self.open('w')
+		self.write(self._globalBlock.asText())
+		self.close()
+	
+	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters = {}):
+		if not parameters: parameters = {}
+		hostname        = forceHostname(hostname)
+		hardwareAddress = forceHardwareAddress(hardwareAddress)
+		ipAddress       = forceIPAddress(ipAddress)
+		fixedAddress    = forceUnicodeLower(fixedAddress)
+		parameters      = forceDict(parameters)
+		
+		if not self._parsed:
+			self.parse()
+		
+		logger.info(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s'" % \
+					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters) )
+		
+		existingHost = None
+		for block in self._globalBlock.getBlocks('host', recursive = True):
+			if (block.settings[1].lower() == hostname):
+				existingHost = block
+			else:
+				for (key, value) in block.getParameters_hash().items():
+					if (key == 'fixed-address') and (value.lower() == fixedAddress):
+						raise BackendBadValueError(u"Host '%s' uses the same fixed address" % block.settings[1])
+					elif (key == 'hardware') and (value.lower() == 'ethernet %s' % hardwareAddress):
+						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
+		if existingHost:
+			logger.warning(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
+			self.deleteHost(hostname)
+		
+		for (key, value) in parameters.items():
+			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
+		
+		# Calculate bitmask of host's ipaddress
+		n = ipAddress.split('.')
+		for i in range(4):
+			n[i] = forceInt(n[i])
+		ip = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+		
+		# Default parent block is global
+		parentBlock = self._globalBlock
+		
+		# Search the right subnet block
+		for block in self._globalBlock.getBlocks('subnet'):
+			# Calculate bitmask of subnet
+			n = (block.settings[1]).split('.')
+			for i in range(4):
+				n[i] = int(n[i])
+			network = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+			n = (block.settings[3]).split('.')
+			for i in range(4):
+				n[i] = int(n[i])
+			netmask = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+			
+			wildcard = netmask ^ 0xFFFFFFFFL
+			if (wildcard | ip == wildcard | network):
+				# Host matches the subnet
+				logger.debug(u"Choosing subnet %s/%s for host %s" % (block.settings[1], block.settings[3], hostname))
+				parentBlock = block
+		
+		# Search the right group for the host
+		bestGroup = None
+		bestMatchCount = 0
+		for block in parentBlock.getBlocks('group'):
+			matchCount = 0
+			blockParameters = block.getParameters_hash(inherit = 'global')
+			if blockParameters:
+				# Block has parameters set, check if they match the hosts parameters
+				for (key, value) in blockParameters.items():
+					if not parameters.has_key(key):
+						continue
+					if (parameters[key] == value):
+						matchCount += 1
+					else:
+						matchCount -= 1
+			
+			if (matchCount > bestMatchCount) or (matchCount >= 0 and not bestGroup):
+				matchCount = bestMatchCount
+				bestGroup = block
+		
+		if bestGroup:
+			parentBlock = bestGroup
+		
+		# Remove parameters which are already defined in parents
+		blockParameters = parentBlock.getParameters_hash(inherit = 'global')
+		if blockParameters:
+			for (key, value) in blockParameters.items():
+				if parameters.has_key(key) and (parameters[key] == value):
+					del parameters[key]
+		
+		hostBlock = DHCPDConf_Block(
+					startLine = -1,
+					parentBlock = parentBlock,
+					type = 'host',
+					settings = ['host', hostname] )
+		hostBlock.addComponent( DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = 'fixed-address', value = fixedAddress ) )
+		hostBlock.addComponent( DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = 'hardware', value = "ethernet %s" % hardwareAddress ) )
+		for (key, value) in parameters.items():
+			hostBlock.addComponent(
+				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
+		
+		parentBlock.addComponent(hostBlock)
+	
+	def getHost(self, hostname):
+		hostname = forceHostname(hostname)
+		
+		if not self._parsed:
+			self.parse()
+		
+		for block in self._globalBlock.getBlocks('host', recursive = True):
+			if (block.settings[1] == hostname):
+				return block.getParameters_hash()
+		return None
+		
+	def deleteHost(self, hostname):
+		hostname = forceHostname(hostname)
+		
+		if not self._parsed:
+			self.parse()
+		
+		logger.notice(u"Deleting host '%s' from dhcpd config file '%s'" % (hostname, self._filename))
+		hostBlocks = []
+		for block in self._globalBlock.getBlocks('host', recursive = True):
+			if (block.settings[1] == hostname):
+				hostBlocks.append(block)
+			else:
+				for (key, value) in block.getParameters_hash().items():
+					if (key == 'fixed-address') and (value == hostname):
+						hostBlocks.append(block)
+		if not hostBlocks:
+			logger.warning(u"Failed to remove host '%s': not found" % hostname)
+			return
+		
+		for block in hostBlocks:
+			block.parentBlock.removeComponent(block)
+	
+	def modifyHost(self, hostname, parameters):
+		hostname   = forceHostname(hostname)
+		parameters = forceDict(parameters)
+		
+		if not self._parsed:
+			self.parse()
+		
+		logger.notice(u"Modifying host '%s' in dhcpd config file '%s'" % (hostname, self.filename))
+		
+		hostBlocks = []
+		for block in self._globalBlock.getBlocks('host', recursive = True):
+			if (block.settings[1] == hostname):
+				hostBlocks.append(block)
+			else:
+				for (key, value) in block.getParameters_hash().items():
+					if (key == 'fixed-address') and (value == hostname):
+						hostBlocks.append(block)
+					elif (key == 'hardware') and (value.lower() == parameters.get('hardware')):
+						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
+		if (len(hostBlocks) != 1):
+			raise BackendBadValueError(u"Host '%s' found %d times" % (hostname, len(hostBlocks)))
+		
+		hostBlock = hostBlocks[0]
+		hostBlock.removeComponents()
+		
+		for (key, value) in parameters.items():
+			parameters[key] = Parameter(-1, None, key, value).asHash()[key]
+		
+		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
+			if not parameters.has_key(key):
+				continue
+			if (parameters[key] == value):
+				del parameters[key]
+		
+		for (key, value) in parameters.items():
+			hostBlock.addComponent(
+				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
+		
+	def _getNewData(self):
+		self._currentLine += 1
+		if (self._currentLine >= len(self._lines)):
+			return False
+		self._data += self._lines[self._currentLine]
+		return True
+	
+	def _parse_emptyline(self):
+		logger.debug(u"_parse_emptyline")
+		self._currentBlock.addComponent(
+			DHCPDConf_EmptyLine(
+				startLine   = self._currentLine,
+				parentBlock = self._currentBlock
+			)
+		)
+		self._data = self._data[:self._currentIndex]
+	
+	def _parse_comment(self):
+		logger.debug(u"_parse_comment")
+		self._currentBlock.addComponent(
+			DHCPDConf_Comment(
+				startLine   = self._currentLine,
+				parentBlock = self._currentBlock,
+				data        = self._data.strip()[1:]
+			)
+		)
+		self._data = self._data[:self._currentIndex]
+		
+	def _parse_semicolon(self):
+		logger.debug(u"_parse_semicolon")
+		data = self._data[:self._currentIndex]
+		self._data = self._data[self._currentIndex+1:]
+		
+		key = data.split()[0]
+		if (key != 'option'):
+			# Parameter
+			value = u' '.join(data.split()[1:]).strip()
+			if (len(value) > 1) and value.startswith('"') and value.endswith('"'):
+				value = value[1:-1]
+			self._currentBlock.addComponent(
+				DHCPDConf_Parameter(
+					startLine   = self._currentLine,
+					parentBlock = self._currentBlock,
+					key         = key,
+					value       = value
+				)
+			)
+			return
+		
+		# Option
+		key = data.split()[1]
+		value = u' '.join(data.split()[2:]).strip()
+		if (len(value) > 1) and value.startswith('"') and value.endswith('"'):
+			value = value[1:-1]
+		values  = []
+		quote   = u''
+		current = u''
+		for l in value:
+			if   (l == u'"'):
+				if   (quote == u'"'):
+					quote = u''
+				elif (quote == u"'"):
+					current += l
+				else:
+					quote = u'"'
+			elif (l == u"'"):
+				if   (quote == u"'"):
+					quote = u''
+				elif (quote == u'"'):
+					current += l
+				else:
+					quote = u"'"
+			elif re.search('\s', l):
+				current += l
+			elif (l == u','):
+				if quote:
+					current += l
+				else:
+					values.append(current.strip())
+					current = u''
+			else:
+				current += l
+		if current:
+			values.append(current.strip())
+		
+		self._currentBlock.addComponent(
+			DHCPDConf_Option(
+				startLine   = self._currentLine,
+				parentBlock = self._currentBlock,
+				key         = key,
+				value       = values
+			)
+		)
+		
+	def _parse_lbracket(self):
+		logger.debug(u"_parse_lbracket")
+		# Start of a block
+		data = self._data[:self._currentIndex]
+		self._data = self._data[self._currentIndex+1:]
+		# Split the block definition at whitespace
+		# The first value is the block type
+		# Example: subnet 194.31.185.0 netmask 255.255.255.0 => type is subnet
+		block = DHCPDConf_Block(
+			startLine   = self._currentLine,
+			parentBlock = self._currentBlock,
+			type        = data.split()[0].strip(),
+			settings    = data.split()
+		)
+		self._currentBlock.addComponent(block)
+		self._currentBlock = block
+		
+	def _parse_rbracket(self):
+		logger.debug(u"_parse_rbracket")
+		# End of a block
+		data = self._data[:self._currentIndex]
+		self._data = self._data[self._currentIndex+1:]
+		
+		self._currentBlock.endLine = self._currentLine
+		self._currentBlock = self._currentBlock.parentBlock
+	
+	
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

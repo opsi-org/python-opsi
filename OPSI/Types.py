@@ -149,7 +149,7 @@ def forceFloat(var):
 def forceDict(var):
 	if type(var) is dict:
 		return var
-	raise ValueError(u"Not a dict '%s'")
+	raise ValueError(u"Not a dict '%s'" % var)
 
 opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})$')
 opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')

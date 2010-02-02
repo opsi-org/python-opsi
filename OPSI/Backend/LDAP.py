@@ -53,6 +53,27 @@ logger = Logger()
 class LDAPBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
+		'''
+		If you want to speed up ldap backend, set something like:
+		
+			cachesize 10000
+			
+			index opsiObjectId eq
+			index opsiHostId eq
+			index opsiClientId eq
+			index opsiDepotId eq
+			index opsiConfigId eq
+			index opsiPropertyId eq
+			index opsiGroupId eq
+			index opsiProductId eq
+			index opsiProductVersion eq
+			index opsiPackageVersion eq
+			
+			/etc/init.d/slapd stop
+			slapindex
+			chown openldap:openldap -R /var/lib/ldap
+			/etc/init.d/slapd start
+		'''
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._address          = u'localhost'
@@ -161,15 +182,15 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'maxBandwidth',        'ldapAttribute': 'opsiMaximumBandwidth' },
 						{ 'opsiAttribute': 'opsiHostKey',         'ldapAttribute': 'opsiHostKey' }
 					]
-				 },
-				 {
+				},
+				{
 					'opsiClass':      'OpsiConfigserver',
 					'opsiSuperClass': 'OpsiDepotserver',
 					'objectClasses':  [ 'opsiHost', 'opsiDepotserver', 'opsiConfigserver' ],
 					'attributes': [
 					]
-				 },
-				 {
+				},
+				{
 					'opsiClass':     'Config',
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfig' ],
@@ -188,22 +209,22 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses':  [ 'opsiConfig', 'opsiUnicodeConfig' ],
 					'attributes': [
 					]
-				 },
-				 {
+				},
+				{
 					'opsiClass':      'BoolConfig',
 					'opsiSuperClass': 'Config',
 					'objectClasses':  [ 'opsiConfig', 'opsiBoolConfig' ],
 					'attributes': [
 					]
-				 },
-				 {
+				},
+				{
 					'opsiClass':     'ConfigState',
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiConfigState' ],
 					'attributes': [
-						{ 'opsiAttribute': 'configId',        'ldapAttribute': 'opsiConfigId' },
-						{ 'opsiAttribute': 'objectId',        'ldapAttribute': 'opsiObjectId' },
-						{ 'opsiAttribute': 'values',          'ldapAttribute': 'opsiValue' }
+						{ 'opsiAttribute': 'configId', 'ldapAttribute': 'opsiConfigId' },
+						{ 'opsiAttribute': 'objectId', 'ldapAttribute': 'opsiObjectId' },
+						{ 'opsiAttribute': 'values',   'ldapAttribute': 'opsiValue' }
 					]
 				},
 				{
@@ -211,24 +232,24 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProduct' ],
 					'attributes': [
-						{ 'opsiAttribute': 'id',                    'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'name',                  'ldapAttribute': 'opsiProductName' },
-						{ 'opsiAttribute': 'licenseRequired',       'ldapAttribute': 'opsiProductLicenseRequired' },
-						{ 'opsiAttribute': 'setupScript',           'ldapAttribute': 'opsiSetupScript' },
-						{ 'opsiAttribute': 'uninstallScript',       'ldapAttribute': 'opsiUninstallScript' },
-						{ 'opsiAttribute': 'updateScript',          'ldapAttribute': 'opsiUpdateScript' },
-						{ 'opsiAttribute': 'alwaysScript',          'ldapAttribute': 'opsiAlwaysScript' },
-						{ 'opsiAttribute': 'onceScript',            'ldapAttribute': 'opsiOnceScript' },
-						{ 'opsiAttribute': 'customScript',          'ldapAttribute': 'opsiCustomScript' },
-						{ 'opsiAttribute': 'userLoginScript',       'ldapAttribute': 'opsiUserLoginScript' },
-						{ 'opsiAttribute': 'priority',        	    'ldapAttribute': 'opsiProductPriority' },
-						{ 'opsiAttribute': 'description',           'ldapAttribute': 'description' },
-						{ 'opsiAttribute': 'advice',                'ldapAttribute': 'opsiProductAdvice' },
-						{ 'opsiAttribute': 'changelog',             'ldapAttribute': 'opsiProductChangeLog' },
-						{ 'opsiAttribute': 'windowsSoftwareIds',    'ldapAttribute': 'opsiWindowsSoftwareId' },
-						{ 'opsiAttribute': 'productClassIds',       'ldapAttribute': 'opsiProductClassId' }
+						{ 'opsiAttribute': 'id',                 'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productVersion',     'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',     'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'name',               'ldapAttribute': 'opsiProductName' },
+						{ 'opsiAttribute': 'licenseRequired',    'ldapAttribute': 'opsiProductLicenseRequired' },
+						{ 'opsiAttribute': 'setupScript',        'ldapAttribute': 'opsiSetupScript' },
+						{ 'opsiAttribute': 'uninstallScript',    'ldapAttribute': 'opsiUninstallScript' },
+						{ 'opsiAttribute': 'updateScript',       'ldapAttribute': 'opsiUpdateScript' },
+						{ 'opsiAttribute': 'alwaysScript',       'ldapAttribute': 'opsiAlwaysScript' },
+						{ 'opsiAttribute': 'onceScript',         'ldapAttribute': 'opsiOnceScript' },
+						{ 'opsiAttribute': 'customScript',       'ldapAttribute': 'opsiCustomScript' },
+						{ 'opsiAttribute': 'userLoginScript',    'ldapAttribute': 'opsiUserLoginScript' },
+						{ 'opsiAttribute': 'priority',        	 'ldapAttribute': 'opsiProductPriority' },
+						{ 'opsiAttribute': 'description',        'ldapAttribute': 'description' },
+						{ 'opsiAttribute': 'advice',             'ldapAttribute': 'opsiProductAdvice' },
+						{ 'opsiAttribute': 'changelog',          'ldapAttribute': 'opsiProductChangeLog' },
+						{ 'opsiAttribute': 'windowsSoftwareIds', 'ldapAttribute': 'opsiWindowsSoftwareId' },
+						{ 'opsiAttribute': 'productClassIds',    'ldapAttribute': 'opsiProductClassId' }
 						
 					]
 				},
@@ -238,13 +259,13 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses':  [ 'opsiProduct', 'opsiLocalBootProduct' ],
 					'attributes': [
 					]
-				 },
-				 {
+				},
+				{
 					'opsiClass':     'NetbootProduct',
 					'opsiSuperClass': 'Product',
 					'objectClasses': [ 'opsiProduct', 'opsiNetBootProduct' ],
 					'attributes': [
-						{ 'opsiAttribute': 'pxeConfigTemplate',    'ldapAttribute': 'opsiPxeConfigTemplate' }
+						{ 'opsiAttribute': 'pxeConfigTemplate', 'ldapAttribute': 'opsiPxeConfigTemplate' }
 					]
 				},
 				{
@@ -252,16 +273,16 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductProperty' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',             'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'propertyId',            'ldapAttribute': 'opsiPropertyId' },
-						{ 'opsiAttribute': 'productVersion',        'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',        'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'description',           'ldapAttribute': 'opsiDescription' },
-						{ 'opsiAttribute': 'requiredProductId',     'ldapAttribute': 'opsiRequiredProductId' },
-						{ 'opsiAttribute': 'possibleValues',        'ldapAttribute': 'opsiPossibleValue' },
-						{ 'opsiAttribute': 'defaultValues',         'ldapAttribute': 'opsiDefaultValue' },
-						{ 'opsiAttribute': 'editable',              'ldapAttribute': 'opsiEditable' },
-						{ 'opsiAttribute': 'multiValue',            'ldapAttribute': 'opsiMultiValue' }
+						{ 'opsiAttribute': 'productId',         'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'propertyId',        'ldapAttribute': 'opsiPropertyId' },
+						{ 'opsiAttribute': 'productVersion',    'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',    'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'description',       'ldapAttribute': 'opsiDescription' },
+						{ 'opsiAttribute': 'requiredProductId', 'ldapAttribute': 'opsiRequiredProductId' },
+						{ 'opsiAttribute': 'possibleValues',    'ldapAttribute': 'opsiPossibleValue' },
+						{ 'opsiAttribute': 'defaultValues',     'ldapAttribute': 'opsiDefaultValue' },
+						{ 'opsiAttribute': 'editable',          'ldapAttribute': 'opsiEditable' },
+						{ 'opsiAttribute': 'multiValue',        'ldapAttribute': 'opsiMultiValue' }
 					]
 				},
 				{
@@ -270,13 +291,13 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses':  [ 'opsiProductProperty', 'opsiUnicodeProductProperty' ],
 					'attributes': [
 					]
-				 },
-				 {
+				},
+				{
 					'opsiClass':     'BoolProductProperty',
 					'opsiSuperClass': 'ProductProperty',
 					'objectClasses': [ 'opsiProductProperty', 'opsiBoolProductProperty' ],
 					'attributes': [
-						{ 'opsiAttribute': 'pxeConfigTemplate',    'ldapAttribute': 'opsiPxeConfigTemplate' }
+						{ 'opsiAttribute': 'pxeConfigTemplate', 'ldapAttribute': 'opsiPxeConfigTemplate' }
 					]
 				},
 				{
@@ -284,16 +305,16 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductDependency' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'requiredProductId',             'ldapAttribute': 'opsiRequiredProductId' },
-						{ 'opsiAttribute': 'requiredAction',                'ldapAttribute': 'opsiActionRequired' },
-						{ 'opsiAttribute': 'productAction',                 'ldapAttribute': 'opsiProductAction' },
-						{ 'opsiAttribute': 'requiredProductVersion',        'ldapAttribute': 'opsiRequiredProductVersion' },
-						{ 'opsiAttribute': 'requiredPackageVersion',        'ldapAttribute': 'opsiRequiredPackageVersion' },
-						{ 'opsiAttribute': 'requiredInstallationStatus',    'ldapAttribute': 'opsiInstallationStatusRequired' },
-						{ 'opsiAttribute': 'requirementType',               'ldapAttribute': 'opsiRequirementType' }
+						{ 'opsiAttribute': 'productId',                  'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productVersion',             'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',             'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'requiredProductId',          'ldapAttribute': 'opsiRequiredProductId' },
+						{ 'opsiAttribute': 'requiredAction',             'ldapAttribute': 'opsiActionRequired' },
+						{ 'opsiAttribute': 'productAction',              'ldapAttribute': 'opsiProductAction' },
+						{ 'opsiAttribute': 'requiredProductVersion',     'ldapAttribute': 'opsiRequiredProductVersion' },
+						{ 'opsiAttribute': 'requiredPackageVersion',     'ldapAttribute': 'opsiRequiredPackageVersion' },
+						{ 'opsiAttribute': 'requiredInstallationStatus', 'ldapAttribute': 'opsiInstallationStatusRequired' },
+						{ 'opsiAttribute': 'requirementType',            'ldapAttribute': 'opsiRequirementType' }
 					]
 				},
 				{
@@ -301,12 +322,12 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductOnDepot' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productType',                   'ldapAttribute': 'opsiProductType' },
-						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'depotId',                       'ldapAttribute': 'opsiDepotId' },
-						{ 'opsiAttribute': 'locked',                        'ldapAttribute': 'opsiLocked' }
+						{ 'opsiAttribute': 'productId',      'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productType',    'ldapAttribute': 'opsiProductType' },
+						{ 'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'depotId',        'ldapAttribute': 'opsiDepotId' },
+						{ 'opsiAttribute': 'locked',         'ldapAttribute': 'opsiLocked' }
 					]
 				},
 				{
@@ -314,15 +335,15 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductOnClient' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productType',                   'ldapAttribute': 'opsiProductType' },
-						{ 'opsiAttribute': 'clientId',                      'ldapAttribute': 'opsiClientId' },
-						{ 'opsiAttribute': 'installationStatus',            'ldapAttribute': 'opsiProductInstallationStatus' },
-						{ 'opsiAttribute': 'actionRequest',                 'ldapAttribute': 'opsiProductActionRequest' },
-						{ 'opsiAttribute': 'actionProgress',                'ldapAttribute': 'opsiProductActionProgress' },
-						{ 'opsiAttribute': 'productVersion',                'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',                'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'lastStateChange',               'ldapAttribute': 'lastStateChange' }
+						{ 'opsiAttribute': 'productId',          'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productType',        'ldapAttribute': 'opsiProductType' },
+						{ 'opsiAttribute': 'clientId',           'ldapAttribute': 'opsiClientId' },
+						{ 'opsiAttribute': 'installationStatus', 'ldapAttribute': 'opsiProductInstallationStatus' },
+						{ 'opsiAttribute': 'actionRequest',      'ldapAttribute': 'opsiProductActionRequest' },
+						{ 'opsiAttribute': 'actionProgress',     'ldapAttribute': 'opsiProductActionProgress' },
+						{ 'opsiAttribute': 'productVersion',     'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',     'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'lastStateChange',    'ldapAttribute': 'lastStateChange' }
 					]
 				},
 				{
@@ -330,10 +351,10 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductPropertyState' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                     'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'propertyId',                    'ldapAttribute': 'opsiPropertyId' },
-						{ 'opsiAttribute': 'objectId',                      'ldapAttribute': 'opsiObjectId' },
-						{ 'opsiAttribute': 'values',                        'ldapAttribute': 'opsiProductPropertyValues' }
+						{ 'opsiAttribute': 'productId',  'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'propertyId', 'ldapAttribute': 'opsiPropertyId' },
+						{ 'opsiAttribute': 'objectId',   'ldapAttribute': 'opsiObjectId' },
+						{ 'opsiAttribute': 'values',     'ldapAttribute': 'opsiProductPropertyValues' }
 					]
 				},
 				{
@@ -341,10 +362,10 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiGroup' ],
 					'attributes': [
-						{ 'opsiAttribute': 'id',                     'ldapAttribute': 'opsiGroupId' },
-						{ 'opsiAttribute': 'description',                    'ldapAttribute': 'opsiDescription' },
-						{ 'opsiAttribute': 'notes',                      'ldapAttribute': 'opsiNotes' },
-						{ 'opsiAttribute': 'parentGroupId',                        'ldapAttribute': 'opsiParentGroupId' }
+						{ 'opsiAttribute': 'id',            'ldapAttribute': 'opsiGroupId' },
+						{ 'opsiAttribute': 'description',   'ldapAttribute': 'opsiDescription' },
+						{ 'opsiAttribute': 'notes',         'ldapAttribute': 'opsiNotes' },
+						{ 'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId' }
 					]
 				},
 				{
@@ -1458,7 +1479,7 @@ class LDAPObjectSearch:
 			baseDn = ldapSession.baseDn
 		filter = forceUnicode(filter)
 		
-		logger.debug(u'Searching object => baseDn: %s, scope: %s, filter: %s' % (baseDn, scope, filter))
+		logger.info(u'Searching objects => baseDn: %s, scope: %s, filter: %s' % (baseDn, scope, filter))
 		
 		# Storage for matching DNs
 		self._dns = []
@@ -1466,14 +1487,15 @@ class LDAPObjectSearch:
 		
 		# Execute search
 		try:
-			result = self._ldap.search( 	baseDn = baseDn, 
-							scope = scope, 
-							filter = filter, 
+			result = self._ldap.search( 	baseDn = baseDn,
+							scope = scope,
+							filter = filter,
 							attributes = ['dn'] )
 		except Exception, e:
 			logger.debug(u'LDAPObjectSearch search error: %s' % e)
 			raise
 		
+		logger.info(u'Search done, %d results' % len(result))
 		for r in result:
 			logger.debug(u'Found dn: %s' % r[0])
 			self._dns.append(r[0])
