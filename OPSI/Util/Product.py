@@ -287,10 +287,7 @@ class ProductPackageFile(object):
 		if self.clientDataFiles:
 			return self.clientDataFiles
 		
-		productClientDataDir = self.getProductClientDataDir()
-		productClientDataDirLen = len(productClientDataDir)
-		for f in findFiles(productClientDataDir):
-			self.clientDataFiles.append(f[productClientDataDirLen:])
+		self.clientDataFiles = findFiles(self.getProductClientDataDir())
 		self.clientDataFiles.sort()
 		return self.clientDataFiles
 		

@@ -3137,8 +3137,6 @@ class DepotserverPackageManager(object):
 					ppf.deleteProductClientDataDir()
 				
 				ppf.extractData()
-				ppf.createPackageContentFile()
-				ppf.setAccessRights()
 				
 				logger.info(u"Updating product dependencies of product %s" % product)
 				currentProductDependencies = {}
@@ -3208,6 +3206,8 @@ class DepotserverPackageManager(object):
 				for line in ppf.runPostinst():
 					logger.info(u"[postinst] %s" % line)
 				
+				ppf.createPackageContentFile()
+				ppf.setAccessRights()
 				ppf.cleanup()
 				
 				logger.notice(u"Unlocking product '%s' on depot '%s'" % (productOnDepot.getProductId(), depotId))
