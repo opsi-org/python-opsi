@@ -400,6 +400,8 @@ class LDAPBackend(ConfigDataBackend):
 				self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ][ attribute['opsiAttribute'] ] = attribute['ldapAttribute']
 				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
 		
+		self._ldapClassesToOpsiClassCache = {}
+		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
 		self._ldap = LDAPSession(**kwargs)
 		self._ldap.connect()
@@ -551,29 +553,34 @@ class LDAPBackend(ConfigDataBackend):
 		
 		ldapObject.readFromDirectory(self._ldap)
 		
-		logger.debug2(u"Searching opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
-		opsiClassName = None
-		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
-			logger.debug2(u"Testing opsi class '%s' (ldapClasses: %s)" % (opsiClass, ldapClasses))
-			matched = True
-			for objectClass in ldapObject.getObjectClasses():
-				if not objectClass in ldapClasses:
-					matched = False
-					continue
-			for objectClass in ldapClasses:
-				if not objectClass in ldapObject.getObjectClasses():
-					matched = False
-					continue
-			
-			if matched:
-				logger.debug(u"Matched")
-				opsiClassName = opsiClass
-				break
+		#logger.debug2(u"Searching opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
+		cacheKey = ':'.join(ldapObject.getObjectClasses())
+		opsiClassName = self._ldapClassesToOpsiClassCache.get(cacheKey)
+		if opsiClassName:
+			#logger.debug2(u"Using cached mapping: %s <=> %s" % (cacheKey, opsiClassName))
+			pass
+		else:
+			for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
+				#logger.debug2(u"Testing opsi class '%s' (ldapClasses: %s)" % (opsiClass, ldapClasses))
+				matched = True
+				for objectClass in ldapObject.getObjectClasses():
+					if not objectClass in ldapClasses:
+						matched = False
+						continue
+				for objectClass in ldapClasses:
+					if not objectClass in ldapObject.getObjectClasses():
+						matched = False
+						continue
+				
+				if matched:
+					opsiClassName = opsiClass
+					self._ldapClassesToOpsiClassCache[cacheKey] = opsiClassName
+					break
 		
 		if not opsiClassName:
 			raise Exception(u"Failed to get opsi class for ldap objectClasses: %s" % ldapObject.getObjectClasses())
 		
-		logger.debug(u"Mapped ldap objectClasses %s to opsi class: %s" % (ldapObject.getObjectClasses(), opsiClassName))
+		#logger.debug2(u"Mapped ldap objectClasses %s to opsi class: %s" % (ldapObject.getObjectClasses(), opsiClassName))
 		
 		Class = eval(opsiClassName)
 		identAttributes = mandatoryConstructorArgs(Class)
@@ -584,7 +591,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 		opsiObjectHash = {}
 		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = False).items():
-			logger.debug(u"LDAP attribute is: %s" % attribute)
+			#logger.debug2(u"LDAP attribute is: %s" % attribute)
 			if attribute in ('objectClass', 'cn'):
 				continue
 			

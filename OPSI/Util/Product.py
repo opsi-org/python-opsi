@@ -47,7 +47,7 @@ import os, pwd, grp, shutil
 from OPSI.Logger import *
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import *
-from OPSI.Util import randomString
+from OPSI.Util import randomString, findFiles
 from OPSI.System import execute
 
 logger = Logger()
@@ -65,13 +65,11 @@ class ProductPackageFile(object):
 		if not os.path.isdir(tempDir):
 			raise Exception(u"Temporary directory '%s' not found" % tempDir)
 		
-		self.tempDir                  = os.path.abspath(tempDir)
-		self.clientDataDir            = None
-		self.installedFiles           = []
-		self.tmpUnpackDir             = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
-		self.packageControlFile       = None
-		self.installedClientDataFiles = []
-		self.installedServerDataFiles = []
+		self.tempDir            = os.path.abspath(tempDir)
+		self.clientDataDir      = None
+		self.tmpUnpackDir       = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
+		self.packageControlFile = None
+		self.clientDataFiles    = []
 		
 	def cleanup(self):
 		logger.info(u"Cleaning up")
@@ -229,6 +227,8 @@ class ProductPackageFile(object):
 			if not self.clientDataDir:
 				raise Exception(u"Client data dir not set")
 			
+			self.clientDataFiles = []
+			
 			archive = Archive(self.packageFile)
 			
 			logger.debug(u"Extracting data from package '%s' to: '%s'" % (self.packageFile, self.tmpUnpackDir))
@@ -262,34 +262,38 @@ class ProductPackageFile(object):
 			serverDataArchives.sort()
 			serverDataArchives.reverse()
 			
-			self.installedServerDataFiles = []
 			for serverDataArchive in serverDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
 				logger.info(u"Extracting server-data archive '%s' to '/'" % archiveFile)
 				archive = Archive(archiveFile)
-				for filename in archive.content():
-					self.installedServerDataFiles.append(filename)
 				archive.extract(targetPath = u'/')
-			self.installedServerDataFiles.sort()
 			
 			productClientDataDir = self.getProductClientDataDir()
 			if not os.path.exists(productClientDataDir):
 				os.mkdir(productClientDataDir)
 			
-			self.installedClientDataFiles = []
 			for clientDataArchive in clientDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, clientDataArchive)
 				logger.info(u"Extracting client-data archive '%s' to '%s'" % (archiveFile, productClientDataDir))
 				archive = Archive(archiveFile)
-				for filename in archive.content():
-					self.installedClientDataFiles.append(filename)
 				archive.extract(targetPath = productClientDataDir)
-			self.installedClientDataFiles.sort()
+			
 			
 		except Exception, e:
 			self.cleanup()
 			raise Exception(u"Failed to extract data from package '%s': %s" % (self.packageFile, e))
 	
+	def getClientDataFiles(self):
+		if self.clientDataFiles:
+			return self.clientDataFiles
+		
+		productClientDataDir = self.getProductClientDataDir()
+		productClientDataDirLen = len(productClientDataDir)
+		for f in findFiles(productClientDataDir):
+			self.clientDataFiles.append(f[productClientDataDirLen:])
+		self.clientDataFiles.sort()
+		return self.clientDataFiles
+		
 	def setAccessRights(self):
 		logger.notice(u"Setting access rights of client-data files")
 		try:
@@ -302,7 +306,7 @@ class ProductPackageFile(object):
 			user = pwd.getpwuid(os.getuid())[0]
 			productClientDataDir = self.getProductClientDataDir()
 			
-			for filename in self.installedClientDataFiles:
+			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
 				
 				(mode, group) = (DEFAULT_CLIENT_DATA_FILE_MODE, DEFAULT_CLIENT_DATA_GROUP)
@@ -340,10 +344,10 @@ class ProductPackageFile(object):
 			
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
-			packageContentFile.setClientDataFiles(self.installedClientDataFiles)
+			packageContentFile.setClientDataFiles(self.getClientDataFiles())
 			packageContentFile.generate()
 			
-			self.installedClientDataFiles.append(productId + u'.files')
+			self.clientDataFiles.append(productId + u'.files')
 			
 		except Exception, e:
 			self.cleanup()

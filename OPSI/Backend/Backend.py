@@ -154,6 +154,7 @@ class Backend:
 	def backend_exit(self):
 		pass
 	
+	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
 		matchedAll = True
 		
@@ -163,40 +164,40 @@ class Backend:
 			matched = False
 			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
 						% (filter[attribute], attribute, value))
-			for filterValue in forceList(filter[attribute]):
-				if type(value) in (float, long, int):
-					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
-					if match:
-						operator = match.group(1)
-						if operator == '=':
-							operator = '=='
-						try:
-							matched = eval('%s %s %s' % (value, operator, match.group(2)))
-							if matched:
-								break
-						except:
-							pass
+			filterValues = forceList(filter[attribute])
+			if value in filterValues:
+				matched = True
+			else:
+				for filterValue in filterValues:
+					if type(value) in (float, long, int):
+						match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
+						if match:
+							operator = match.group(1)
+							if operator == '=':
+								operator = '=='
+							try:
+								matched = eval('%s %s %s' % (value, operator, match.group(2)))
+								if matched:
+									break
+							except:
+								pass
+							continue
+					
+					if type(value) is list:
+						if filterValue in value:
+							matched = True
+							break
 						continue
-				
-				if (filterValue == value):
-					matched = True
-					break
-				
-				if type(value) is list:
-					if filterValue in value:
+					
+					if type(filterValue) in (types.NoneType, types.BooleanType):
+						continue
+					if type(value) in (types.NoneType, types.BooleanType):
+						continue
+					
+					if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
 						matched = True
 						break
-					continue
 				
-				if type(filterValue) in (types.NoneType, types.BooleanType):
-					continue
-				if type(value) in (types.NoneType, types.BooleanType):
-					continue
-				
-				if re.search('^%s$' % filterValue.replace('*', '.*'), value):
-					matched = True
-					break
-			
 			if matched:
 				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
 							% (value, filter[attribute], attribute))
@@ -1775,7 +1776,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'lastStateChange'):
 					continue
 				pocFilter[key] = value
-			
+				
 		if (self._options['addProductOnClientDefaults'] or self._options['processProductDependencies'] or self._options['processProductPriorities']) and attributes:
 			# In this case we definetly need to add the following attributes
 			if not 'installationStatus' in pocAttributes: pocAttributes.append('installationStatus')
@@ -1822,6 +1823,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
 								depotId        = depotId,
 								productId      = pocFilter.get('productId'),
+								productType    = pocFilter.get('productType'),
 								productVersion = pocFilter.get('productVersion'),
 								packageVersion = pocFilter.get('packageVersion'))
 		
@@ -1864,15 +1866,30 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		
 		adjustedProductOnClients = []
 		if not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
-			for productOnClient in productOnClients:
-				if self._objectHashMatches(productOnClient.toHash(), **filter):
-					adjustedProductOnClients.append(productOnClient)
+			currentFilter = {}
+			for (key, value) in filter.items():
+				if key in ('productType', 'clientId'):
+					continue
+				currentFilter[key] = value
+				
+			if currentFilter:
+				for productOnClient in productOnClients:
+					if self._objectHashMatches(productOnClient.toHash(), **currentFilter):
+						adjustedProductOnClients.append(productOnClient)
+			else:
+				adjustedProductOnClients = productOnClients
 			# No more adjustments needed => done!
 			return adjustedProductOnClients
 		
 		logger.debug(u"   * processing product priorities/dependencies")
 		
 		# Process priorities/dependencies depot by depot
+		currentFilter = {}
+		for (key, value) in filter.items():
+			if key in ('clientId'):
+				continue
+			currentFilter[key] = value
+		
 		for (depotId, depotClientIds) in depotToClients.items():
 			# Get needed product informations (priority, dependencies)
 			logger.debug(u"   * depot %s" % depotId)
@@ -2058,7 +2075,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 					if not pocByClientIdAndProductId[clientId].has_key(productId):
 						continue
 					
-					if not self._objectHashMatches({
+					if filter and not self._objectHashMatches({
 							'productId':          productId,
 							'productType':        pocByClientIdAndProductId[clientId][productId].productType,
 							'installationStatus': pocByClientIdAndProductId[clientId][productId].installationStatus,
@@ -2067,7 +2084,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 							'productVersion':     pocByClientIdAndProductId[clientId][productId].productVersion,
 							'packageVersion':     pocByClientIdAndProductId[clientId][productId].packageVersion,
 							'lastStateChange':    pocByClientIdAndProductId[clientId][productId].lastStateChange },
-							**filter):
+							**currentFilter):
 						logger.debug2(u"              filtered productOnClient %s" % pocByClientIdAndProductId[clientId][productId])
 						continue
 					logger.debug(u"            - adding results (clientId: '%s', productId: '%s', installationStatus: '%s', actionRequest: '%s')" \

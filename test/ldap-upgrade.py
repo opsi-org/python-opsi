@@ -310,10 +310,6 @@ for obj in search.getObjects():
 		obj.readFromDirectory(ldap)
 		logger.info(u"Found product state: %s" % obj.getDn())
 		
-		clientId = forceHostId( obj.getDn().split(',')[1].split('=')[1] )
-		if not clientId in clientIds:
-			continue
-		
 		productType = 'LocalbootProduct'
 		if obj.getCn() in netbootProductIds:
 			productType = 'NetbootProduct'
@@ -328,6 +324,13 @@ for obj in search.getObjects():
 			actionRequest = forceActionRequest(obj.getAttribute('opsiProductActionRequestForced', default = None, valuesAsList = False))
 		except:
 			pass
+		
+		if (installationStatus == 'not_installed') and (actionRequest == 'none'):
+			continue
+		
+		clientId = forceHostId( obj.getDn().split(',')[1].split('=')[1] )
+		if not clientId in clientIds:
+			continue
 		
 		backend.productOnClient_insertObject(
 			ProductOnClient(

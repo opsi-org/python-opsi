@@ -46,7 +46,11 @@ from OPSI.Util import deserialize, serialize, fromJson, toJson, generateOpsiHost
 logger = Logger()
 
 
+mandatoryConstructorArgsCache = {}
 def mandatoryConstructorArgs(Class):
+	cacheKey = Class.__name__
+	if mandatoryConstructorArgsCache.has_key(cacheKey):
+		return mandatoryConstructorArgsCache[cacheKey]
 	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
 	if not defaults:
 		defaults = []
@@ -55,6 +59,7 @@ def mandatoryConstructorArgs(Class):
 		last = len(args)
 	mandatory = args[1:][:last]
 	logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class, mandatory))
+	mandatoryConstructorArgsCache[cacheKey] = mandatory
 	return mandatory
 
 def getIdentAttributes(Class):
