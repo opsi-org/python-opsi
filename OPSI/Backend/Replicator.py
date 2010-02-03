@@ -204,6 +204,7 @@ class BackendReplicator:
 							else:
 								eval('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
 						except Exception, e:
+							#logger.logException(e)
 							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
 						self.__currentProgressSubject.addToState(1)
 				self.__currentProgressSubject.setState(len(objs))

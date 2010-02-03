@@ -39,6 +39,7 @@ import os, socket, ConfigParser, shutil, json, types
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Util import toJson, fromJson
 from OPSI.Util.File import *
 from OPSI.Util.File.Opsi import *
 from Object import *
@@ -47,47 +48,36 @@ from Backend import *
 # Get logger instance
 logger = Logger()
 
-def toJson(obj):
-	if hasattr(json, 'dumps'):
-		# python 2.6 json module
-		return json.dumps(obj)
-	else:
-		return json.write(obj)
-
-def fromJson(obj):
-	if hasattr(json, 'loads'):
-		# python 2.6 json module
-		return json.loads(obj)
-	else:
-		return json.read(obj)
-
 # ======================================================================================================
 # =                                   CLASS FILEBACKEND                                                =
 # ======================================================================================================
 class FileBackend(ConfigDataBackend):
 	
-	def __init__(self, baseDir = u'/tmp/file', **kwargs):
+	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		#fqdn configserver
-		self.__serverId = socket.getfqdn()#.lower()
-		if (self.__serverId.count('.') < 2):
-			raise Exception(u"Failed to get fqdn: %s" % self.__serverId)
+		self.__baseDir     = u'/var/lib/opsi/config'
+		self.__hostKeyFile = u'/etc/opsi/pckeys'
 		
-		#dirs
-		self.__baseDir          = baseDir
-		self.__clientConfigDir  = os.path.join(self.__baseDir, 'clients')
-		self.__depotConfigDir   = os.path.join(self.__baseDir, 'depots')
-		self.__productDir       = os.path.join(self.__baseDir, 'products')
-		self.__auditDir         = os.path.join(self.__baseDir, 'audit')
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('basedir'):
+				self.__baseDir = forceFilename(value)
+			elif option in ('hostkeyfile'):
+				self.__hostKeyFile = forceFilename(value)
+			
 		
-		#files
-		self.__hostKeyFile      = os.path.join(self.__baseDir, 'pckeys') #no ending
-		self.__configFile       = os.path.join(self.__baseDir, 'config.ini')
-		self.__clientGroupsFile = os.path.join(self.__baseDir, 'clientgroups.ini')
+		self.__clientConfigDir   = os.path.join(self.__baseDir, u'clients')
+		self.__depotConfigDir    = os.path.join(self.__baseDir, u'depots')
+		self.__productDir        = os.path.join(self.__baseDir, u'products')
+		self.__auditDir          = os.path.join(self.__baseDir, u'audit')
+		self.__configFile        = os.path.join(self.__baseDir, u'config.ini')
+		self.__clientGroupsFile  = os.path.join(self.__baseDir, u'clientgroups.ini')
+		self.__clientTemplateDir = os.path.join(self.__baseDir, u'templates')
 		
-		#misc
-		#self._defaultDomain     = u'uib.local'
+		self.__defaultClientTemplateName = 'pcproto'
+		self.__serverId = forceHostId(socket.getfqdn())
 		self._placeholderRegex  = re.compile('<([^>]+)>')
 		
 		self._mappings = {
@@ -192,24 +182,59 @@ class FileBackend(ConfigDataBackend):
 		pass
 	
 	def backend_createBase(self):
-		self.backend_mkdir(self.__baseDir)
-		self.backend_mkdir(self.__clientConfigDir)
-		self.backend_mkdir(self.__depotConfigDir)
-		self.backend_mkdir(self.__productDir)
-		self.backend_mkdir(self.__auditDir)
-	
+		if not os.path.exists(self.__baseDir):
+			self._mkdir(self.__baseDir)
+		if not os.path.exists(self.__clientConfigDir):
+			self._mkdir(self.__clientConfigDir)
+		if not os.path.exists(self.__depotConfigDir):
+			self._mkdir(self.__depotConfigDir)
+		if not os.path.exists(self.__productDir):
+			self._mkdir(self.__productDir)
+		if not os.path.exists(self.__auditDir):
+			self._mkdir(self.__auditDir)
+		if not os.path.exists(self.__clientTemplateDir):
+			self._mkdir(self.__clientTemplateDir)
+		defaultTemplate = os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini')
+		if not os.path.exists(defaultTemplate):
+			self._touch(defaultTemplate)
+		if not os.path.exists(self.__configFile):
+			self._touch(self.__configFile)
+		if not os.path.exists(self.__hostKeyFile):
+			self._touch(self.__hostKeyFile)
+		if not os.path.exists(self.__clientGroupsFile):
+			self._touch(self.__clientGroupsFile)
+		
 	def backend_deleteBase(self):
 		logger.info(u"Deleting base path: '%s'" % self.__baseDir)
 		if os.path.exists(self.__baseDir):
 			shutil.rmtree(self.__baseDir)
-	
-	def backend_mkdir(self, dirname):
+		if os.path.exists(self.__clientConfigDir):
+			shutil.rmtree(self.__clientConfigDir)
+		if os.path.exists(self.__depotConfigDir):
+			shutil.rmtree(self.__depotConfigDir)
+		if os.path.exists(self.__productDir):
+			shutil.rmtree(self.__productDir)
+		if os.path.exists(self.__auditDir):
+			shutil.rmtree(self.__auditDir)
+		if os.path.exists(self.__configFile):
+			os.unlink(self.__configFile)
+		if os.path.exists(self.__hostKeyFile):
+			os.unlink(self.__hostKeyFile)
+		if os.path.exists(self.__clientGroupsFile):
+			os.unlink(self.__clientGroupsFile)
+		
+	def _mkdir(self, dirname):
 		logger.info(u"Creating path: '%s'" % dirname)
-		if not dirname.startswith(self.__baseDir):
-			raise Exception(u"Not in BaseDir!")
 		os.mkdir(dirname)
 		os.chmod(dirname, 0770)
 		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
+	
+	def _touch(self, filename):
+		logger.info(u"Creating file: '%s'" % filename)
+		f = open(filename, 'w')
+		f.close()
+		os.chmod(filename, 0660)
+		os.chown(filename, -1, grp.getgrnam('pcpatch')[2])
 	
 	def _escape(self, line, strList):
 		line = forceUnicode(line)
@@ -506,6 +531,9 @@ class FileBackend(ConfigDataBackend):
 			for (fileType, mapping) in mappings.items():
 				filename = self._getConfigFile(objType, ident, fileType)
 				
+				if not os.path.exists(os.path.dirname(filename)):
+					raise BackendIOError(u"Directory '%s' not found" % os.path.dirname(filename))
+				
 				if (fileType == 'key'):
 					hostKeys = HostKeyFile(filename = filename)
 					for m in mapping:
@@ -541,10 +569,10 @@ class FileBackend(ConfigDataBackend):
 							else:
 								section = section + ';' + sectionParts[i]
 						
-						print "=========>>>> m: %s section: %s, option: %s" % (m, section, option)
+						#print "=========>>>> m: %s section: %s, option: %s" % (m, section, option)
 						if cp.has_option(section, option):
 							value = cp.get(section, option)
-							print "=========>>>> %s section: %s, option: %s" % (value, section, option)
+							#print "=========>>>> %s section: %s, option: %s" % (value, section, option)
 							if m.get('json'):
 								value = fromJson(value)
 							else:
@@ -641,7 +669,7 @@ class FileBackend(ConfigDataBackend):
 			
 			if not os.path.exists(os.path.dirname(filename)):
 				logger.info(u"Creating path: '%s'" % os.path.dirname(filename))
-				self.backend_mkdir(os.path.dirname(filename))
+				self._mkdir(os.path.dirname(filename))
 			
 			if (fileType == 'key'):
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
@@ -660,7 +688,7 @@ class FileBackend(ConfigDataBackend):
 						iniFile.delete()
 						
 						if objType in ('OpsiClient'):
-							shutil.copyfile('/var/lib/opsi/template/proto.ini', filename)
+							shutil.copyfile(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini'), filename)
 						
 						iniFile = IniFile(filename = filename, ignoreCase = False)
 						iniFile.create(group = 'pcpatch', mode = 0660)
@@ -1404,6 +1432,7 @@ class FileBackend(ConfigDataBackend):
 	# -   AuditSoftwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_insertObject(self, auditSoftware):
+		return
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
 		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
@@ -1411,6 +1440,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditSoftware.")
 	
 	def auditSoftware_updateObject(self, auditSoftware):
+		return
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
 		logger.notice(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
@@ -1418,6 +1448,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditSoftware.")
 	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
+		return []
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditSoftwares ...")
@@ -1428,6 +1459,7 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditSoftware_deleteObjects(self, auditSoftwares):
+		return
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		
 		logger.notice(u"Deleting auditSoftwares ...")
@@ -1438,6 +1470,7 @@ class FileBackend(ConfigDataBackend):
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+		return
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
 		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
@@ -1445,6 +1478,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+		return
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
 		logger.notice(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
@@ -1452,6 +1486,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
+		return []
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditSoftwareOnClients ...")
@@ -1462,6 +1497,7 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+		return
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		
 		logger.notice(u"Deleting auditSoftwareOnClients ...")
@@ -1473,6 +1509,7 @@ class FileBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def auditHardware_insertObject(self, auditHardware):
+		return
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
 		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
@@ -1480,6 +1517,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditHardware.")
 	
 	def auditHardware_updateObject(self, auditHardware):
+		return
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
 		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
@@ -1487,6 +1525,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditHardware.")
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
+		return []
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwares ...")
@@ -1497,6 +1536,7 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditHardware_deleteObjects(self, auditHardwares):
+		return
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		
 		logger.notice(u"Deleting auditHardwares ...")
@@ -1508,6 +1548,7 @@ class FileBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+		return
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
@@ -1515,6 +1556,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		return
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
@@ -1522,6 +1564,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
+		return []
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwareOnHosts ...")
@@ -1531,6 +1574,7 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+		return
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
 		logger.notice(u"Deleting auditHardwareOnHosts ...")
@@ -1567,7 +1611,7 @@ class FileBackend(ConfigDataBackend):
 		
 		for filename in filenames:
 			iniFile = IniFile(filename = filename, ignoreCase = False)
-			if mode = 'create':
+			if (mode == 'create'):
 				iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			
