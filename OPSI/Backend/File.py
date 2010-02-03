@@ -174,27 +174,6 @@ class FileBackend(ConfigDataBackend):
 			],
 			'ObjectToGroup': [
 				{ 'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>' }
-			],
-			'AuditSoftware': [
-				{ 'fileType': 'sw', 'attribute': 'windowsSoftwareId',     'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowssoftwareid'     },
-				{ 'fileType': 'sw', 'attribute': 'windowsDisplayName',    'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayname'    },
-				{ 'fileType': 'sw', 'attribute': 'windowsDisplayVersion', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayversion' },
-				{ 'fileType': 'sw', 'attribute': 'installSize',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'installsize'           }
-			],
-			'AuditSoftwareOnClient': [
-				{ 'fileType': 'sw', 'attribute': 'uninstallString', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'uninstallstring' },
-				{ 'fileType': 'sw', 'attribute': 'binaryName',      'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'binaryname'      },
-				{ 'fileType': 'sw', 'attribute': 'firstseen',       'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'firstseen'       },
-				{ 'fileType': 'sw', 'attribute': 'lastseen',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastseen'        },
-				{ 'fileType': 'sw', 'attribute': 'state',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'state'           },
-				{ 'fileType': 'sw', 'attribute': 'usageFrequency',  'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'usagefrequency'  },
-				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
-			],
-			'AuditHardware': [
-				{ 'fileType': 'hw', 'attribute': '*' }
-			],
-			'AuditHardwareOnHost': [
-				{ 'fileType': 'hw', 'attribute': '*' }
 			]
 		}
 		
@@ -220,13 +199,14 @@ class FileBackend(ConfigDataBackend):
 		self.backend_mkdir(self.__auditDir)
 	
 	def backend_deleteBase(self):
+		logger.info(u"Deleting base path: '%s'" % self.__baseDir)
 		if os.path.exists(self.__baseDir):
 			shutil.rmtree(self.__baseDir)
 	
 	def backend_mkdir(self, dirname):
+		logger.info(u"Creating path: '%s'" % dirname)
 		if not dirname.startswith(self.__baseDir):
 			raise Exception(u"Not in BaseDir!")
-		
 		os.mkdir(dirname)
 		os.chmod(dirname, 0770)
 		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
@@ -461,94 +441,6 @@ class FileBackend(ConfigDataBackend):
 							'id': section
 							}
 						)
-		
-		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
-			filenames = []
-			
-			fileType = 'sw'
-			idType = 'clientId'
-			identLen = 5
-			if objType in ('AuditHardware', 'AuditHardwareOnHost'):
-				fileType = 'hw'
-				idType = 'hostId'
-				identLen = 1
-			
-			if objType in ('AuditSoftware', 'AuditHardware'):
-				filename = self._getConfigFile(objType, {}, fileType)
-				if os.path.isfile(filename):
-					filenames.append(filename)
-			else:
-				for entry in os.listdir(self.__auditDir):
-					entry = entry.lower()
-					filename = ''
-					
-					if (entry == 'global.sw') or (entry == 'global.hw'):
-						continue
-					elif objType == 'AuditSoftwareOnClient' and not entry.endswith('.sw'):
-						continue
-					elif objType == 'AuditHardwareOnHost' and not entry.endswith('.hw'):
-						continue
-					
-					try:
-						filename = self._getConfigFile(objType, {idType : forceHostId(entry[:-3])}, fileType)
-						if os.path.isfile(filename):
-							filenames.append(filename)
-						else:
-							raise Exception()
-					except:
-						logger.error(u"_getIdents(): Found bad file '%s'" % filename)
-			
-			for filename in filenames:
-				iniFile = IniFile(filename = filename, ignoreCase = False)
-				cp = iniFile.parse()
-				
-				filebase = os.path.basename(filename)[:-3]
-				
-				for section in cp.sections():
-					idents = []
-					objIdent = {}
-					
-					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
-						idents = section.split(';')
-					else:
-						try:
-							forceInt(section[section.rfind('_') + 1:])
-							idents.append(section[:section.rfind('_')])
-						except:
-							pass # runs in error below
-					
-					if len(idents) > identLen:
-						idents = section.replace('\\;', '\\~~~').split(';')
-						if len(idents) == identLen:
-							for i in range(identLen):
-								idents[i] = idents[i].replace('\\~~~', ';')
-						else:
-							logger.error(u"_getIdents(): Too many idents in section '%s' in file '%s'" \
-								% (section, filename))
-							continue
-					
-					elif len(idents) < identLen:
-						logger.error(u"_getIdents(): Too few idents in section '%s' in file '%s'" \
-							% (section, filename))
-						continue
-					
-					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
-						objIdent = {
-							'name' : idents[0],
-							'version' : idents[1],
-							'subVersion' : idents[2],
-							'language' : idents[3],
-							'architecture' : idents[4]
-							}
-					else:
-						objIdent = {
-							'hardwareClass' : idents[0]
-							}
-					
-					if objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
-						objIdent[idType] = filebase
-					
-					objIdents.append(objIdent)
 		
 		else:
 			logger.warning(u"_getIdents(): Unhandled objType '%s'" % objType)
@@ -1106,53 +998,13 @@ class FileBackend(ConfigDataBackend):
 				
 				iniFile.generate(cp)
 		
-		elif objType in ('Group', 'HostGroup', 'ObjectToGroup', 'AuditSoftware', 'AuditHardware'):
-			fileType = 'ini'
-			if objType == 'AuditSoftware':
-				fileType = 'sw'
-			elif objType == 'AuditHardware':
-				fileType = 'hw'
-			
-			filename = self._getConfigFile(objType, {}, fileType)
+		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
+			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			
 			for obj in objList:
-				section = u''
-				if obj.getType() in ('Group', 'HostGroup'):
-					section = obj.getId()
-				elif obj.getType() == 'AuditSoftware':
-					idents = obj.getIdent(returnType = 'dict')
-					section = u'%s;%s;%s;%s;%s' % (
-						idents['name'].replace(';', '\\;'),
-						idents['version'].replace(';', '\\;'),
-						idents['subVersion'].replace(';', '\\;'),
-						idents['language'].replace(';', '\\;'),
-						idents['architecture'].replace(';', '\\;')
-					)
-				elif obj.getType() == 'AuditHardware':
-					section = obj.getHardwareClass() + '_'
-					
-					matched = False
-					
-					for oldSection in cp.sections():
-						if not oldSection.lower().startswith(section.lower()):
-							continue
-						
-						matched = True
-						for (key, value) in obj.toHash().items():
-							if value == None or key in ('hardwareClass', 'type'):
-								continue
-							if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
-								matched = False
-						
-						if matched:
-							section = oldSection
-							break
-					
-					if not matched:
-						logger.warning(u"Couldn't find match for hardwareClass '%s' in file '%s'" % (obj.getHardwareClass(), filename))
-						continue
+				section = u'%s' % obj.getId()
 				
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if obj.getType() == 'ObjectToGroup':
@@ -1165,31 +1017,6 @@ class FileBackend(ConfigDataBackend):
 						cp.remove_section(section)
 						logger.debug2(u"Removed section '%s'" % section)
 			
-			iniFile.generate(cp)
-		
-		elif objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
-			for obj in objList:
-				fileType = 'sw'
-				if obj.getType() == 'AuditHardwareOnHost':
-					fileType = 'hw'
-				
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType = 'dict'), fileType )
-				iniFile = IniFile(filename = filename, ignoreCase = False)
-				cp = iniFile.parse()
-				
-				idents = obj.getIdent(returnType = 'dict')
-				section = u'%s;%s;%s;%s;%s' % (
-					idents['name'].replace(';', '\\;'),
-					idents['version'].replace(';', '\\;'),
-					idents['subVersion'].replace(';', '\\;'),
-					idents['language'].replace(';', '\\;'),
-					idents['architecture'].replace(';', '\\;')
-				)
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
-				if cp.has_section(section):
-					cp.remove_section(section)
-					logger.debug2(u"Removed section '%s'" % section)
 			iniFile.generate(cp)
 		
 		else:
@@ -1708,4 +1535,378 @@ class FileBackend(ConfigDataBackend):
 	
 	
 	
+			'AuditSoftware': [
+				{ 'fileType': 'sw', 'attribute': 'windowsSoftwareId',     'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowssoftwareid'     },
+				{ 'fileType': 'sw', 'attribute': 'windowsDisplayName',    'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayname'    },
+				{ 'fileType': 'sw', 'attribute': 'windowsDisplayVersion', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayversion' },
+				{ 'fileType': 'sw', 'attribute': 'installSize',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'installsize'           }
+			],
+			'AuditSoftwareOnClient': [
+				{ 'fileType': 'sw', 'attribute': 'uninstallString', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'uninstallstring' },
+				{ 'fileType': 'sw', 'attribute': 'binaryName',      'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'binaryname'      },
+				{ 'fileType': 'sw', 'attribute': 'firstseen',       'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'firstseen'       },
+				{ 'fileType': 'sw', 'attribute': 'lastseen',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastseen'        },
+				{ 'fileType': 'sw', 'attribute': 'state',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'state'           },
+				{ 'fileType': 'sw', 'attribute': 'usageFrequency',  'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'usagefrequency'  },
+				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
+			],
+			'AuditHardware': [
+				{ 'fileType': 'hw', 'attribute': '*' }
+			],
+			'AuditHardwareOnHost': [
+				{ 'fileType': 'hw', 'attribute': '*' }
+			]
+
+
+
+		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
+			filenames = []
+			
+			fileType = 'sw'
+			idType = 'clientId'
+			identLen = 5
+			if objType in ('AuditHardware', 'AuditHardwareOnHost'):
+				fileType = 'hw'
+				idType = 'hostId'
+				identLen = 1
+			
+			if objType in ('AuditSoftware', 'AuditHardware'):
+				filename = self._getConfigFile(objType, {}, fileType)
+				if os.path.isfile(filename):
+					filenames.append(filename)
+			else:
+				for entry in os.listdir(self.__auditDir):
+					entry = entry.lower()
+					filename = ''
+					
+					if (entry == 'global.sw') or (entry == 'global.hw'):
+						continue
+					elif objType == 'AuditSoftwareOnClient' and not entry.endswith('.sw'):
+						continue
+					elif objType == 'AuditHardwareOnHost' and not entry.endswith('.hw'):
+						continue
+					
+					try:
+						filename = self._getConfigFile(objType, {idType : forceHostId(entry[:-3])}, fileType)
+						if os.path.isfile(filename):
+							filenames.append(filename)
+						else:
+							raise Exception()
+					except:
+						logger.error(u"_getIdents(): Found bad file '%s'" % filename)
+			
+			for filename in filenames:
+				iniFile = IniFile(filename = filename, ignoreCase = False)
+				cp = iniFile.parse()
+				
+				filebase = os.path.basename(filename)[:-3]
+				
+				for section in cp.sections():
+					idents = []
+					objIdent = {}
+					
+					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
+						idents = section.split(';')
+					else:
+						try:
+							forceInt(section[section.rfind('_') + 1:])
+							idents.append(section[:section.rfind('_')])
+						except:
+							pass # runs in error below
+					
+					if len(idents) > identLen:
+						idents = section.replace('\\;', '\\~~~').split(';')
+						if len(idents) == identLen:
+							for i in range(identLen):
+								idents[i] = idents[i].replace('\\~~~', ';')
+						else:
+							logger.error(u"_getIdents(): Too many idents in section '%s' in file '%s'" \
+								% (section, filename))
+							continue
+					
+					elif len(idents) < identLen:
+						logger.error(u"_getIdents(): Too few idents in section '%s' in file '%s'" \
+							% (section, filename))
+						continue
+					
+					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
+						objIdent = {
+							'name' : idents[0],
+							'version' : idents[1],
+							'subVersion' : idents[2],
+							'language' : idents[3],
+							'architecture' : idents[4]
+							}
+					else:
+						objIdent = {
+							'hardwareClass' : idents[0]
+							}
+					
+					if objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
+						objIdent[idType] = filebase
+					
+					objIdents.append(objIdent)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	def _writeAudit(self, obj, mode = 'create'):
+		objHashItems = obj.toHash().items()
+		fileType = 'sw'
+		if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+			fileType = 'hw'
+		
+		filename = self._getConfigFile(objType, obj.getIdent(returnType = 'dict'), fileType)
+		
+		if mode == 'create' and not os.path.exists(os.path.dirname(filename)):
+			self.backend_mkdir(os.path.dirname(filename))
+		
+		iniFile = IniFile(filename = filename, ignoreCase = False)
+		iniFile.create(group = 'pcpatch', mode = 0660)
+		cp = iniFile.parse()
+		
+		section = u''
+		if fileType == 'sw':
+			section = u'%s;%s;%s;%s;%s' % (
+				idents['name'].replace(';', '\\;'),
+				idents['version'].replace(';', '\\;'),
+				idents['subVersion'].replace(';', '\\;'),
+				idents['language'].replace(';', '\\;'),
+				idents['architecture'].replace(';', '\\;')
+				)
+		else:
+			section == u'%s_' % obj.getHardwareClass()
+			sectionNr = 0
+			options = {}
+			
+			for oldSection in cp.sections():
+				if not oldSection.lower().startswith(section.lower()):
+					continue
+				
+				matched = True
+				for (key, value) in objHashItems:
+					if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+						matched = False
+				
+				try:
+					if matched:
+						sectionNr = forceInt(oldSection[len(section):])
+						break
+					else:
+						oldSectionNr = forceInt(oldSection[len(section):])
+						if sectionNr < oldSectionNr + 1:
+							sectionNr = oldSectionNr + 1
+				except:
+					logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
+			
+			section = section + forceUnicode(sectionNr)
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			#TODO: find number and set new section
+		
+		if mode in ('create', 'delete') and cp.has_section(section):
+			cp.remove_section(section)
+			if mode == 'create':
+				cp.add_section(section)
+				logger.info(u"Emptied section '%s' in file '%s'" % (section, filename))
+			else:
+				logger.info(u"Deleted section '%s' in file '%s'" % (section, filename))
+		
+		if mode in ('create', 'update'):
+			for (attribute, value) in objHashItems:
+				if value is None:
+					logger.debug2(u"Ignoring attribute '%s' with None-value" % (attribute))
+					continue
+				if attribute in ('name', 'version', 'subVersion', 'language', 'architecture', 'clientId', 'hostId', 'type'):
+					logger.debug2(u"Ignoring already processed attribute '%s'" % (attribute))
+					continue
+				
+				if ( isinstance(value, str) or isinstance(value, unicode) ):
+					value = forceUnicode(value)
+					value = value.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
+				
+				logger.debug(u"Adding option")
+				cp.set(section, option, value)
+		
+		iniFile.generate(cp)
+		
+		
+		
+		
+		elif (fileType == 'hw'):
+			iniFile = IniFile(filename = filename, ignoreCase = False)
+			iniFile.create(group = 'pcpatch', mode = 0660)
+			cp = iniFile.parse()
+			
+			section = obj.getHardwareClass() + '_'
+			sectionNr = 0
+			options = {}
+			
+			objHashItems = obj.toHash().items()
+			
+			for oldSection in cp.sections():
+				if not oldSection.lower().startswith(section.lower()):
+					continue
+				
+				matched = True
+				for (key, value) in objHashItems:
+					if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+						matched = False
+				
+				try:
+					if matched:
+						sectionNr = forceInt(oldSection[len(section):])
+						break
+					else:
+						oldSectionNr = forceInt(oldSection[len(section):])
+						if sectionNr < oldSectionNr + 1:
+							sectionNr = oldSectionNr + 1
+				except:
+					logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
+			
+			section = section + forceUnicode(sectionNr)
+			
+			if (mode == 'create') and cp.has_section(section):
+				cp.remove_section(section)
+			
+			for (option, value) in obj.toHash().items():
+				if option == 'hardwareClass':
+					continue
+				
+				if value is None:
+					if cp.has_option(section, option):
+						cp.remove_option(section, option)
+					continue
+				
+				if not cp.has_section(section):
+					cp.add_section(section)
+				
+				cp.set(section, option, forceUnicode(value).replace('%', '%%'))
+			
+			iniFile.generate(cp)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	def _deleteAudit(self, objList):
+		filenames = []
+		
+		for obj in objList:
+			fileType = 'sw'
+			if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+				fileType = 'hw'
+			
+			filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType)
+			if os.path.isfile(filename):
+				if not filename in filenames:
+					filenames.append(filename)
+			else:
+				logger.info(u"Could not delete %s: '%s' has no config file '%s'" % (obj.getType(), obj.getIdent()), filename)
+		
+		for filename in filenames:
+			iniFile = IniFile(filename = filename, ignoreCase = False)
+			cp = iniFile.parse()
+			
+			remainingObjs = objList
+			unprocessedObjs = []
+			
+			while not len(remainingObjs) > 0:
+				for obj in remainingObjs:
+					fileType = 'sw'
+					if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+						fileType = 'hw'
+					
+					if filename == self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType):
+						section = u''
+						
+						if fileType == 'sw':
+							idents = obj.getIdent(returnType = 'dict')
+							section = u'%s;%s;%s;%s;%s' % (
+								idents['name'].replace(';', '\\;'),
+								idents['version'].replace(';', '\\;'),
+								idents['subVersion'].replace(';', '\\;'),
+								idents['language'].replace(';', '\\;'),
+								idents['architecture'].replace(';', '\\;')
+							)
+						else:
+							section = u'%s_' % obj.getHardwareClass().replace(';', '\\;')
+							
+							matched = False
+							for oldSection in cp.sections():
+								if not oldSection.startswith(section):
+									continue
+								
+								matched = True
+								for (key, value) in obj.toHash().items():
+									if value == None or key in ('hardwareClass', 'type'):
+										continue
+									if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+										matched = False
+								
+								if matched:
+									section = oldSection
+									break
+							
+							if not matched:
+								logger.warning(u"Couldn't find match for hardwareClass '%s' in file '%s'" % (obj.getHardwareClass(), filename))
+								continue
+						
+						logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+						if cp.has_section(section):
+							cp.remove_section(section)
+							logger.debug2(u"Removed section '%s'" % section)
+					else:
+						unprocessedObjs.append(obj)
+				
+				remainingObjs = unprocessedObjs
+				unprocessedObjs = []
+			
+			iniFile.generate(cp)
+	
+
+
 
