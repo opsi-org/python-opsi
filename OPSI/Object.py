@@ -1580,6 +1580,7 @@ Group.subClasses['HostGroup'] = HostGroup
 
 class ObjectToGroup(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'objectToGroup'
 	
 	def __init__(self, groupId, objectId):
 		self.setGroupId(groupId)

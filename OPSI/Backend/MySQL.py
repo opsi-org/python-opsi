@@ -268,7 +268,7 @@ class MySQLBackend(ConfigDataBackend):
 		
 		self._mysql = MySQL(**kwargs)
 		
-		warnings.showwarning = False
+		warnings.showwarning = self._showwarning
 		self._licenseManagementEnabled = True
 		
 		self._auditHardwareConfig = {}
@@ -547,9 +547,9 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
 			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
-					PRIMARY KEY( `windowsSoftwareId`),
 					`productId` varchar(50) NOT NULL,
-					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` )
+					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
+					PRIMARY KEY( `windowsSoftwareId`, `productId` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)

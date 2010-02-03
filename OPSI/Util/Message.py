@@ -72,6 +72,9 @@ class Subject(object):
 	def getTitle(self):
 		return self._title
 	
+	def setTitle(self, title):
+		self._title = forceUnicode(title)
+	
 	def attachObserver(self, observer):
 		if not observer in self._observers:
 			self._observers.append(observer)

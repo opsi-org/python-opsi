@@ -69,6 +69,7 @@ class BackendManager(ExtendedBackend):
 		accessControl = False
 		depotBackend = False
 		
+		loadBackend = None
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('username'):
@@ -77,8 +78,9 @@ class BackendManager(ExtendedBackend):
 				password = value
 			elif option in ('backend'):
 				if type(value) in (str, unicode):
-					value = self.__loadBackend(value)
-				self._backend = value
+					loadBackend = value
+				else:
+					self._backend = value
 			elif (option == 'backendconfigdir'):
 				self._backendConfigDir = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
@@ -92,6 +94,9 @@ class BackendManager(ExtendedBackend):
 				extend = True
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
+		
+		if loadBackend:
+			self._backend = self.__loadBackend(loadBackend)
 		
 		if not dispatch and not self._backend:
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")

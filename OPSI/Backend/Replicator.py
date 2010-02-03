@@ -46,32 +46,31 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 # Get logger instance
 logger = Logger()
-OBJTYPES = [
-	'host',
-	'config',
-	'configState',
-	'product',
-	'productProperty',
-	'productDependency',
-	'productOnDepot',
-	'productOnClient',
-	'productPropertyState',
-	'group',
-	'objectToGroup',
-	'auditSoftware',
-	'auditSoftwareOnClient',
-	'auditHardware',
-	'auditHardwareOnHost'
-	]
-
-
 
 # ======================================================================================================
 # =                                 CLASS BACKENDREPLICATOR                                            =
 # ======================================================================================================
 
 class BackendReplicator:
-	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True, verify=True):
+	OBJECT_CLASSES = [
+		'Host',
+		'Product',
+		'Config',
+		'Group',
+		'AuditHardware',
+		'AuditSoftware',
+		'ProductDependency',
+		'ProductProperty',
+		'ProductOnDepot',
+		'ProductOnClient',
+		'ProductPropertyState',
+		'ConfigState',
+		'ObjectToGroup',
+		'AuditHardwareOnHost',
+		'AuditSoftwareOnClient',
+	]
+	
+	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True):
 		self.__readBackend  = readBackend
 		self.__writeBackend = writeBackend
 		
@@ -82,8 +81,8 @@ class BackendReplicator:
 		if newServerId:
 			self.__newServerId = forceHostId(newServerId)
 		self.__cleanupFirst = forceBool(cleanupFirst)
-		self.__verify       = forceBool(verify)
 		self.__oldServerId  = u''
+		self.__strict       = False
 		self.__serverIds    = []
 		self.__depotIds     = []
 		self.__clientIds    = []
@@ -98,30 +97,6 @@ class BackendReplicator:
 	
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
-	
-	def check(self, rb, wb):
-		for objType in OBJTYPES:
-			readIdents = []
-			writeIdents = []
-			
-			for readObj in eval('rb.%s_getObjects()' % (objType)):
-				readIdents.append(readObj.getIdent(returnType = 'unicode'))
-			for writeObj in eval('wb.%s_getObjects()' % (objType)):
-				writeIdents.append(writeObj.getIdent(returnType = 'unicode'))
-			
-			if self.__cleanupFirst:
-				self.__overallProgressSubject.setMessage(u"%s: #readIdents: '%s' #writeIdents: '%s'" % (objType, readIdents, writeIdents))
-				assert len(readIdents) == len(writeIdents)
-			
-			for readIdent in readIdents:
-				isSameIdent = False
-				for writeIdent in writeIdents:
-					if readIdent == writeIdent:
-						isSameIdent = True
-						break
-				self.__overallProgressSubject.setMessage(u"readIdent '%s' is in writeIdents: '%s'" % (readIdent, isSameIdent))
-				assert isSameIdent
-				self.__overallProgressSubject.addToState(1)
 	
 	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[]):
 		'''
@@ -141,204 +116,100 @@ class BackendReplicator:
 		rb = self._extendedReadBackend
 		wb = self._extendedWriteBackend
 		
+		wb.backend_createBase()
 		
+		self.__overallProgressSubject.reset()
+		end = len(self.OBJECT_CLASSES)
+		if self.__cleanupFirst:
+			end += 1
+		self.__overallProgressSubject.setEnd(end)
 		
 		if self.__cleanupFirst:
-			print
-			self.__overallProgressSubject.reset()
-			self.__overallProgressSubject.setEnd(12)
-			for objType in OBJTYPES:
-				self.__overallProgressSubject.setMessage(u"Deleting %s" % objType)
-				self.__overallProgressSubject.addToState(1)
-				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (objType, objType))
+			classSequence = list(self.OBJECT_CLASSES)
+			classSequence.reverse()
+			self.__currentProgressSubject.reset()
+			self.__currentProgressSubject.setTitle(u"Cleaning up")
+			self.__currentProgressSubject.setEnd(len(self.OBJECT_CLASSES))
+			for objClass in classSequence:
+				Class = eval(objClass)
+				self.__currentProgressSubject.addToState(1)
+				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (Class.backendMethodPrefix, Class.backendMethodPrefix))
 			
-			self.__overallProgressSubject.setMessage(u"Cleaning done!")
+			self.__overallProgressSubject.setMessage(u"Cleanup done!")
 			self.__overallProgressSubject.addToState(1)
 		
 		
-		
-		print
-		self.__overallProgressSubject.reset()
-		self.__overallProgressSubject.setEnd(27)
-		
-		
-		
-		self.__overallProgressSubject.setMessage(u"Getting servers")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.host_getObjects(type = 'OpsiConfigserver', id = serverIds)
-		self.__overallProgressSubject.setMessage(u"Creating servers")
-		self.__overallProgressSubject.addToState(1)
-		wb.host_createObjects(objs)
-		
-		self.__overallProgressSubject.setMessage(u"Getting depots")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.host_getObjects(type = 'OpsiDepotserver', id = depotIds)
-		self.__overallProgressSubject.setMessage(u"Creating depots")
-		self.__overallProgressSubject.addToState(1)
-		wb.host_createObjects(objs)
-		
-		self.__overallProgressSubject.setMessage(u"Getting clients")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.host_getObjects(type = 'OpsiClient', id = clientIds)
-		self.__overallProgressSubject.setMessage(u"Creating clients")
-		self.__overallProgressSubject.addToState(1)
-		wb.host_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.host_getObjects()) == len(wb.host_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting configs")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.config_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating configs")
-		self.__overallProgressSubject.addToState(1)
-		wb.config_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.config_getObjects()) == len(wb.config_getObjects())
-		
-		
-		
-		
-		self.__overallProgressSubject.setMessage(u"Getting configStates")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.configState_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating configStates")
-		self.__overallProgressSubject.addToState(1)
-		wb.configState_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.configState_getObjects()) == len(wb.configState_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting products")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.product_getObjects(id = productIds)
-		self.__overallProgressSubject.setMessage(u"Creating products")
-		self.__overallProgressSubject.addToState(1)
-		wb.product_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.product_getObjects()) == len(wb.product_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting productProperties")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.productProperty_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating productProperties")
-		self.__overallProgressSubject.addToState(1)
-		wb.productProperty_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.productProperty_getObjects()) == len(wb.productProperty_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting productDependencies")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.productDependency_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating productDependencies")
-		self.__overallProgressSubject.addToState(1)
-		wb.productDependency_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.productDependency_getObjects()) == len(wb.productDependency_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting productOnDepots")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.productOnDepot_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating productOnDepots")
-		self.__overallProgressSubject.addToState(1)
-		wb.productOnDepot_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.productOnDepot_getObjects()) == len(wb.productOnDepot_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting productOnClients")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.productOnClient_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating productOnClients")
-		self.__overallProgressSubject.addToState(1)
-		wb.productOnClient_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.productOnClient_getObjects()) == len(wb.productOnClient_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting productPropertyStates")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.productPropertyState_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating productPropertyStates")
-		self.__overallProgressSubject.addToState(1)
-		wb.productPropertyState_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.productPropertyState_getObjects()) == len(wb.productPropertyState_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting groups")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.group_getObjects(id = groupIds)
-		
-		#sort objs
-		sortedObjs = []
-		unsortedObjs = []
-		while True:
-			for obj in objs:
-				objCanBeAppended = False
-				if (obj.getParentGroupId() == None):
-					objCanBeAppended = True
-				else:
-					for sortedObj in sortedObjs:
-						if (sortedObj.getId() == obj.getParentGroupId()):
-							objCanBeAppended = True
-							break
-				
-				if objCanBeAppended:
-					sortedObjs.append(obj)
-				else:
-					unsortedObjs.append(obj)
+		for objClass in self.OBJECT_CLASSES:
+			subClasses = [ None ]
+			ids = []
+			if (objClass == 'Host'):
+				subClasses = [ 'OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient' ]
 			
-			if len(unsortedObjs) == 0:
-				objs = sortedObjs
-				break
-			else:
-				objs = unsortedObjs
-				unsortedObjs = []
-		
-		self.__overallProgressSubject.setMessage(u"Creating groups")
-		self.__overallProgressSubject.addToState(1)
-		wb.group_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.group_getObjects()) == len(wb.group_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Getting objectToGroups")
-		self.__overallProgressSubject.addToState(1)
-		objs = rb.objectToGroup_getObjects()
-		self.__overallProgressSubject.setMessage(u"Creating objectToGroups")
-		self.__overallProgressSubject.addToState(1)
-		wb.objectToGroup_createObjects(objs)
-		
-		if self.__cleanupFirst and self.__verify:
-			assert len(rb.objectToGroup_getObjects()) == len(wb.objectToGroup_getObjects())
-		
-		self.__overallProgressSubject.setMessage(u"Replicating done!")
-		self.__overallProgressSubject.addToState(1)
-		
-		
-		
-		print
-		self.__overallProgressSubject.reset()
-		self.__overallProgressSubject.setEnd(63)
-		
-		
-		
-		self.__overallProgressSubject.setMessage(u"Checking ...")
-		self.__overallProgressSubject.addToState(1)
-		if self.__verify:
-			self.check(rb, wb)
-		self.__overallProgressSubject.setMessage(u"Checking done!")
-		self.__overallProgressSubject.addToState(1)
-		
-		print
-		print
-		print
-	
+			methodPrefix = eval("%s.backendMethodPrefix" % objClass)
+			
+			self.__overallProgressSubject.setMessage(u"Replicating %ss" % objClass)
+			self.__currentProgressSubject.setTitle(u"Replicating %ss" % objClass)
+			for subClass in subClasses:
+				if   (subClass == 'OpsiConfigserver'):
+					ids = serverIds
+				elif (subClass == 'OpsiDepotserver'):
+					ids = depotIds
+				elif (subClass == 'OpsiClient'):
+					ids = clientIds
+				elif (objClass == 'Group'):
+					ids = groupIds
+				elif (objClass == 'Product'):
+					ids = productIds
+				
+				if not subClass:
+					subClass = objClass
+				Class = eval(subClass)
+				
+				self.__currentProgressSubject.reset()
+				self.__currentProgressSubject.setMessage(u"Reading objects")
+				self.__currentProgressSubject.setEnd(1)
+				objs = []
+				if ids:
+					objs = eval('rb.%s_getObjects(type = subClass, id = ids)' % Class.backendMethodPrefix)
+				else:
+					objs = eval('rb.%s_getObjects(type = subClass)' % Class.backendMethodPrefix)
+				self.__currentProgressSubject.addToState(1)
+				
+				if (objClass == 'Group'):
+					# Sort groups
+					sortedObjs = []
+					groupIds = []
+					while True:
+						for obj in objs:
+							if not obj.getParentGroupId() or obj.getParentGroupId() in groupIds:
+								sortedObjs.append(obj)
+								objs.remove(obj)
+								groupIds.append(obj.getId())
+						if not objs:
+							break
+					objs = sortedObjs
+				
+				self.__currentProgressSubject.reset()
+				self.__currentProgressSubject.setMessage(u"Writing objects")
+				if self.__strict:
+					self.__currentProgressSubject.setEnd(1)
+					eval('wb.%s_createObjects(objs)' % Class.backendMethodPrefix)
+					self.__currentProgressSubject.addToState(1)
+				else:
+					self.__currentProgressSubject.setEnd(len(objs))
+					for obj in objs:
+						try:
+							if self.__cleanupFirst:
+								eval('wb.%s_createObjects(obj)' % Class.backendMethodPrefix)
+							else:
+								eval('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
+						except Exception, e:
+							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
+						self.__currentProgressSubject.addToState(1)
+				self.__currentProgressSubject.setState(len(objs))
+				
+			self.__overallProgressSubject.addToState(1)
+			
 	
 	
 
