@@ -538,7 +538,7 @@ def blowfishEncrypt(key, cleartext):
 		raise Exception(u"Failed to hex decode key '%s'" % key)
 	
 	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
-	crypt = blowfish.encrypt(cleartext)
+	crypt = blowfish.encrypt(cleartext.encode('utf-8'))
 	return unicode(crypt.encode("hex"))
 	
 def blowfishDecrypt(key, crypt):
@@ -557,7 +557,7 @@ def blowfishDecrypt(key, crypt):
 	if (cleartext.find('\0') != -1):
 		cleartext = cleartext[:cleartext.find('\0')]
 	try:
-		return unicode(cleartext)
+		return unicode(cleartext, 'utf-8')
 	except Exception, e:
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
