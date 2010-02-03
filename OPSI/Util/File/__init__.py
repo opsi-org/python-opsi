@@ -237,7 +237,7 @@ class ConfigFile(TextFile):
 class IniFile(ConfigFile):
 	optionMatch = re.compile('^([^\:\=]+)([\:\=].*)$')
 	
-	def __init__(self, filename, lockFailTimeout = 2000, ignoreCase = True, raw = False):
+	def __init__(self, filename, lockFailTimeout = 2000, ignoreCase = True, raw = True):
 		ConfigFile.__init__(self, filename, commentChars = [';', '#'])
 		self._ignoreCase = forceBool(ignoreCase)
 		self._raw = forceBool(raw)

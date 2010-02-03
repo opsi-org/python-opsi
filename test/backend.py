@@ -197,7 +197,7 @@ class BackendTest(object):
 		self.configState4 = ConfigState(
 			configId = self.config6.getId(),
 			objectId = self.client2.getId(),
-			values   = ['user']
+			values   = ["-------- test --------\n4: %4\n1: %1\n2: %2\n5: %5"]
 		)
 		
 		self.configState5 = ConfigState(
@@ -1053,6 +1053,10 @@ class BackendTest(object):
 							else:
 								assert value == host[attribute]
 					break
+		
+		
+		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
+		assert len(hosts) == len(self.configservers)
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ] )
 		assert len(hosts) == 2
