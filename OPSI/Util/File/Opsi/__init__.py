@@ -115,9 +115,9 @@ class BackendACLFile(ConfigFile):
 	
 	def parse(self):
 		# acl example:
-		#    <method>: <aclType>[(aclTypeParam[(aclTypeParamValue,...)],...)]
-		#    xyz_.*:   opsi_depotserver,(attributes(id,name))
-		#    abc:      self(attributes(!opsiHostKey)),sys_group(admin, group 2, attributes(!opsiHostKey))
+		#    <method>: <aclType>[(aclTypeParam[(aclTypeParamValue,...)];...)]
+		#    xyz_.*:   opsi_depotserver;(attributes(id,name))
+		#    abc:      self(attributes(!opsiHostKey));sys_group(admin, group 2, attributes(!opsiHostKey))
 		
 		acl = []
 		for line in ConfigFile.parse(self):

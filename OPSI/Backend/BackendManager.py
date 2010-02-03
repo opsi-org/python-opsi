@@ -326,14 +326,15 @@ class BackendAccessControl(object):
 	
 	def __init__(self, backend, **kwargs):
 		
-		self._backend    = backend
-		self._username   = None
-		self._password   = None
-		self._acl        = None
-		self._aclFile    = None
-		self._pamService = 'common-auth'
-		self._userGroups = []
-		self._host       = None
+		self._backend       = backend
+		self._username      = None
+		self._password      = None
+		self._acl           = None
+		self._aclFile       = None
+		self._pamService    = 'common-auth'
+		self._userGroups    = []
+		self._host          = None
+		self._authenticated = False
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -404,6 +405,10 @@ class BackendAccessControl(object):
 		self._createInstanceMethods()
 		if self._aclFile:
 			self.__loadACLFile()
+		self._authenticated = True
+	
+	def accessControl_authenticated(self):
+		return self._authenticated
 		
 	def __loadACLFile(self):
 		try:
@@ -578,7 +583,7 @@ class BackendAccessControl(object):
 	def _executeMethod(self, methodName, **kwargs):
 		granted = False
 		newKwargs = {}
-		acls = []
+		acl = None
 		for (regex, acl) in self._acl:
 			logger.debug2(u"Testing acl %s: %s for method '%s'" % (regex, acl, methodName))
 			if not re.search(regex, methodName):
@@ -587,39 +592,44 @@ class BackendAccessControl(object):
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
+				newGranted = False
 				if (aclType == 'all'):
-					granted = True
+					newGranted = True
 				elif (aclType == 'opsi_depotserver'):
-					granted = self.isOpsiDepotserver(ids)
+					newGranted = self.isOpsiDepotserver(ids)
 				elif (aclType == 'opsi_client'):
-					granted = self.isOpsiClient(ids)
+					newGranted = self.isOpsiClient(ids)
 				elif (aclType == 'sys_group'):
-					granted = self.isMemberOfGroup(ids)
+					newGranted = self.isMemberOfGroup(ids)
 				elif (aclType == 'sys_user'):
-					granted = self.isUser(ids)
+					newGranted = self.isUser(ids)
 				elif (aclType == 'self'):
-					granted = 'partial'
+					newGranted = 'partial'
 				else:
 					logger.error(u"Unhandled acl entry type: %s" % aclType)
 					continue
 				
 				if (entry.get('denyAttributes') or entry.get('allowAttributes')):
-					granted = 'partial'
+					newGranted = 'partial'
 				
-				acls.append(entry)
-				
+				if newGranted:
+					granted = newGranted
 				if granted is True:
 					break
-		
-		logger.debug("acls: %s" % acls)
+			if granted:
+				acl = entry
+				if granted is True:
+					break
+			
+		logger.debug("acl: %s" % acl)
 		if granted:
-			logger.debug(u"Access to method '%s' granted to user '%s' by acls %s" % (methodName, self._username, acls))
+			logger.debug(u"Access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
 		else:
 			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
 		
 		if (str(granted) == 'partial'):
 			# Filter incoming params
-			newKwargs = self._filterParams(kwargs, acls)
+			newKwargs = self._filterParams(kwargs, [acl])
 		else:
 			newKwargs = kwargs
 		
@@ -630,7 +640,7 @@ class BackendAccessControl(object):
 		
 		if (str(granted) == 'partial'):
 			# Filter result
-			result = self._filterResult(result, acls)
+			result = self._filterResult(result, [acl])
 		
 		return result
 		
