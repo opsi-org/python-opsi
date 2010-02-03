@@ -179,17 +179,28 @@ class FileBackend(ConfigDataBackend):
 		pass
 	
 	def backend_createBase(self):
-		self.backend_mkdir(self.__baseDir)
-		self.backend_mkdir(self.__clientConfigDir)
-		self.backend_mkdir(self.__depotConfigDir)
-		self.backend_mkdir(self.__productDir)
-		self.backend_mkdir(self.__auditDir)
-	
+		if not os.path.exists(self.__baseDir):
+			self.backend_mkdir(self.__baseDir)
+		if not os.path.exists(self.__clientConfigDir):
+			self.backend_mkdir(self.__clientConfigDir)
+		if not os.path.exists(self.__depotConfigDir):
+			self.backend_mkdir(self.__depotConfigDir)
+		if not os.path.exists(self.__productDir):
+			self.backend_mkdir(self.__productDir)
+		if not os.path.exists(self.__auditDir):
+			self.backend_mkdir(self.__auditDir)
+		if not os.path.exists(self.__hostKeyFile):
+			f = open(self.__hostKeyFile, 'w')
+			f.close()
+			
 	def backend_deleteBase(self):
-		logger.info(u"Deleting base path: '%s'" % self.__baseDir)
 		if os.path.exists(self.__baseDir):
+			logger.info(u"Deleting base path: '%s'" % self.__baseDir)
 			shutil.rmtree(self.__baseDir)
-	
+		if os.path.exists(self.__hostKeyFile):
+			logger.info(u"Deleting host key file: '%s'" % self.__hostKeyFile)
+			os.unlink(self.__hostKeyFile)
+		
 	def backend_mkdir(self, dirname):
 		logger.info(u"Creating path: '%s'" % dirname)
 		if not dirname.startswith(self.__baseDir):
