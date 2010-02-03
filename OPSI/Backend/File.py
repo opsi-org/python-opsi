@@ -211,6 +211,13 @@ class FileBackend(ConfigDataBackend):
 		os.chmod(dirname, 0770)
 		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
 	
+	def _escape(self, line, strList):
+		line = forceUnicode(line)
+		stringList = forceUnicodeList(stringList)
+		for string in stringList:
+			line.replace(u'%s' % string, u'\\%s' % string)
+		return line
+	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
 			return os.path.join(self.__hostKeyFile)
@@ -1400,21 +1407,22 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
 		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
-		self._write(auditSoftware, mode = 'create')
+#		self._write(auditSoftware, mode = 'create')
 		logger.notice(u"Inserted auditSoftware.")
 	
 	def auditSoftware_updateObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
 		logger.notice(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
-		self._write(auditSoftware, mode = 'update')
+#		self._write(auditSoftware, mode = 'update')
 		logger.notice(u"Updated auditSoftware.")
 	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditSoftwares ...")
-		result = self._read('AuditSoftware', attributes, **filter)
+#		result = self._read('AuditSoftware', attributes, **filter)
+		result = []
 		logger.notice(u"Got auditSoftwares.")
 		
 		return result
@@ -1423,7 +1431,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		
 		logger.notice(u"Deleting auditSoftwares ...")
-		self._delete(forceObjectClassList(auditSoftwares, AuditSoftware))
+#		self._delete(forceObjectClassList(auditSoftwares, AuditSoftware))
 		logger.notice(u"Deleted auditSoftwares.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1433,21 +1441,22 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
 		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
-		self._write(auditSoftwareOnClient, mode = 'create')
+#		self._write(auditSoftwareOnClient, mode = 'create')
 		logger.notice(u"Inserted auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
 		logger.notice(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
-		self._write(auditSoftwareOnClient, mode = 'update')
+#		self._write(auditSoftwareOnClient, mode = 'update')
 		logger.notice(u"Updated auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditSoftwareOnClients ...")
-		result = self._read('AuditSoftwareOnClient', attributes, **filter)
+#		result = self._read('AuditSoftwareOnClient', attributes, **filter)
+		result = []
 		logger.notice(u"Got auditSoftwareOnClients.")
 		
 		return result
@@ -1456,7 +1465,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		
 		logger.notice(u"Deleting auditSoftwareOnClients ...")
-		self._delete(forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient))
+#		self._delete(forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient))
 		logger.notice(u"Deleted auditSoftwareOnClients.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1467,21 +1476,22 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
 		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
-		self._write(auditHardware, mode = 'create')
+#		self._write(auditHardware, mode = 'create')
 		logger.notice(u"Inserted auditHardware.")
 	
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
 		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
-		self._write(auditHardware, mode = 'update')
+#		self._write(auditHardware, mode = 'update')
 		logger.notice(u"Updated auditHardware.")
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwares ...")
-		result = self._read('AuditHardware', attributes, **filter)
+#		result = self._read('AuditHardware', attributes, **filter)
+		result = []
 		logger.notice(u"Got auditHardwares.")
 		
 		return result
@@ -1490,7 +1500,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		
 		logger.notice(u"Deleting auditHardwares ...")
-		self._delete(forceObjectClassList(auditHardwares, AuditHardware))
+#		self._delete(forceObjectClassList(auditHardwares, AuditHardware))
 		logger.notice(u"Deleted auditHardwares.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1501,21 +1511,21 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		self._write(auditHardwareOnHost, mode = 'create')
+#		self._write(auditHardwareOnHost, mode = 'create')
 		logger.notice(u"Inserted auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		self._write(auditHardwareOnHost, mode = 'update')
+#		self._write(auditHardwareOnHost, mode = 'update')
 		logger.notice(u"Updated auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwareOnHosts ...")
-		result = self._read('AuditHardwareOnHost', attributes, **filter)
+#		result = self._read('AuditHardwareOnHost', attributes, **filter)
 		logger.notice(u"Got auditHardwareOnHosts.")
 		
 		return result
@@ -1524,124 +1534,41 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
 		logger.notice(u"Deleting auditHardwareOnHosts ...")
-		self._delete(forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost))
+#		self._delete(forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost))
 		logger.notice(u"Deleted auditHardwareOnHosts.")
 	
 	
 	
 	
-	
-	
-	def _writeAudit(self, obj, mode = 'create'):
-		objHashItems = obj.toHash().items()
-		fileType = 'sw'
-		if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
-			fileType = 'hw'
+	def _audit(self, objList, mode):
+		if not mode in ('create', 'update', 'delete'):
+			raise Exception(u"Wrong parameter '%s' given!" % (mode))
 		
-		filename = self._getConfigFile(objType, obj.getIdent(returnType = 'dict'), fileType)
-		
-		if mode == 'create' and not os.path.exists(os.path.dirname(filename)):
-			self.backend_mkdir(os.path.dirname(filename))
-		
-		iniFile = IniFile(filename = filename, ignoreCase = False)
-		iniFile.create(group = 'pcpatch', mode = 0660)
-		cp = iniFile.parse()
-		
-		section = u''
-		if fileType == 'sw':
-			section = u'%s;%s;%s;%s;%s' % (
-				idents['name'].replace(';', '\\;'),
-				idents['version'].replace(';', '\\;'),
-				idents['subVersion'].replace(';', '\\;'),
-				idents['language'].replace(';', '\\;'),
-				idents['architecture'].replace(';', '\\;')
-				)
-		else:
-			section == u'%s_' % obj.getHardwareClass()
-			sectionNr = 0
-			options = {}
-			
-			for oldSection in cp.sections():
-				sectionNrIndex = oldSection.rfind('_') + 1
-				if oldSection[:sectionNrIndex] != section:
-					continue
-				
-				matched = True
-				for (key, value) in objHashItems:
-					if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
-						matched = False
-				
-				try:
-					if matched:
-						sectionNr = forceInt(oldSection[len(section):])
-						break
-					else:
-						oldSectionNr = forceInt(oldSection[len(section):])
-						if sectionNr < oldSectionNr + 1:
-							sectionNr = oldSectionNr + 1
-				except:
-					logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
-			
-			section = u'%s%s' % (section, sectionNr)
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			#TODO: find number and set new section
-		
-		if mode in ('create', 'delete') and cp.has_section(section):
-			cp.remove_section(section)
-			if mode == 'create':
-				cp.add_section(section)
-				logger.info(u"Emptied section '%s' in file '%s'" % (section, filename))
-			else:
-				logger.info(u"Deleted section '%s' in file '%s'" % (section, filename))
-		
-		if mode in ('create', 'update'):
-			for (key, value) in objHashItems:
-				option = u'%s' % (key.lower())
-				if value is None:
-					logger.debug2(u"Ignoring key '%s' with None-value" % (key))
-					continue
-				if key in ('name', 'version', 'subVersion', 'language', 'architecture', 'clientId', 'hostId', 'type'):
-					logger.debug2(u"Ignoring already processed key '%s'" % (key))
-					continue
-				
-				if ( isinstance(value, str) or isinstance(value, unicode) ):
-					value = u'%s' % value.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
-				
-				logger.info(u"Adding option '%s' with value '%s'" % (option, value))
-				cp.set(section, option, value)
-		
-		iniFile.generate(cp)
-		
-		
-		
-	
-	def _deleteAudit(self, objList):
+		objList = forceList(objList)
 		filenames = []
 		
 		for obj in objList:
-			fileType = 'sw'
-			if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+			fileType = ''
+			if obj.getType() in ('AuditSoftware', 'AuditSoftwareOnClient'):
+				fileType = 'sw'
+			elif obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
 				fileType = 'hw'
+			else:
+				logger.error(u"Wrong type delivered: '%s' in object: %s" % (obj.getType()), obj.getIdent())
+				continue
 			
 			filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType)
-			if os.path.isfile(filename):
+			if mode == 'create' or os.path.isfile(filename):
 				if not filename in filenames:
 					filenames.append(filename)
 			else:
-				logger.info(u"Could not delete %s: '%s' has no config file '%s'" % (obj.getType(), obj.getIdent()), filename)
+				logger.info(u"Could not %s %s: '%s' has no config file '%s'" \
+					% (mode, obj.getType(), obj.getIdent()), filename)
 		
 		for filename in filenames:
 			iniFile = IniFile(filename = filename, ignoreCase = False)
+			if mode = 'create':
+				iniFile.create(group = 'pcpatch', mode = 0660)
 			cp = iniFile.parse()
 			
 			remainingObjs = objList
@@ -1653,47 +1580,74 @@ class FileBackend(ConfigDataBackend):
 					if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
 						fileType = 'hw'
 					
-					if filename == self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType):
+					if filename != self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType):
+						unprocessedObjs.append(obj)
+					else:
 						section = u''
 						
-						if fileType == 'sw':
-							idents = obj.getIdent(returnType = 'dict')
+						if fileType == 'hw':
+							section == u'%s_' % obj.getHardwareClass()
+							sectionNr = 0
+							options = {}
+							
+							for oldSection in cp.sections():
+								oldSectionNrIndex = oldSection.rfind('_') + 1
+								if oldSection[:sectionNrIndex] != section:
+									continue
+								
+								matched = True
+								for (key, value) in objHashItems:
+									if key == 'hardwareClass':
+										continue
+									if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+										matched = False
+								
+								try:
+									if matched:
+										sectionNr = forceInt(oldSection[oldSectionNrIndex:])
+										break
+									else:
+										oldSectionNr = forceInt(oldSection[oldSectionNrIndex:])
+										if sectionNr < oldSectionNr + 1:
+											sectionNr = oldSectionNr + 1
+								except:
+									logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
+							
+							section = u'%s%s' % (section, sectionNr)
+						else:
 							section = u'%s;%s;%s;%s;%s' % (
 								idents['name'].replace(';', '\\;'),
 								idents['version'].replace(';', '\\;'),
 								idents['subVersion'].replace(';', '\\;'),
 								idents['language'].replace(';', '\\;'),
 								idents['architecture'].replace(';', '\\;')
-							)
-						else:
-							section = u'%s_' % obj.getHardwareClass().replace(';', '\\;')
-							
-							matched = False
-							for oldSection in cp.sections():
-								if not oldSection.startswith(section):
+								)
+						
+						if mode in ('create', 'delete') and cp.has_section(section):
+							cp.remove_section(section)
+							if mode == 'create':
+								cp.add_section(section)
+								logger.info(u"Emptied section '%s' in file '%s'" % (section, filename))
+							else:
+								logger.info(u"Deleted section '%s' in file '%s'" % (section, filename))
+						
+						if mode in ('create', 'update'):
+							for (key, value) in objHashItems:
+								option = u'%s' % (key.lower())
+								if value is None:
+									logger.debug2(u"Ignoring key '%s' with None-value" % (key))
+									continue
+								if key in ('name', 'version', 'subVersion', 'language', 'architecture', 'clientId', 'hostId', 'type'):
+									logger.debug2(u"Ignoring already processed key '%s'" % (key))
 									continue
 								
-								matched = True
-								for (key, value) in obj.toHash().items():
-									if value == None or key in ('hardwareClass', 'type'):
-										continue
-									if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
-										matched = False
+								if ( isinstance(value, str) or isinstance(value, unicode) ):
+									value = u'%s' % value.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
 								
-								if matched:
-									section = oldSection
-									break
-							
-							if not matched:
-								logger.warning(u"Couldn't find match for hardwareClass '%s' in file '%s'" % (obj.getHardwareClass(), filename))
-								continue
+								logger.info(u"Adding option '%s' with value '%s'" % (option, value))
+								cp.set(section, option, value)
 						
-						logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
-						if cp.has_section(section):
-							cp.remove_section(section)
-							logger.debug2(u"Removed section '%s'" % section)
-					else:
-						unprocessedObjs.append(obj)
+						iniFile.generate(cp)
 				
 				remainingObjs = unprocessedObjs
 				unprocessedObjs = []
