@@ -39,6 +39,7 @@ import os, socket, ConfigParser, shutil, json, types
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Util import toJson, fromJson
 from OPSI.Util.File import *
 from OPSI.Util.File.Opsi import *
 from Object import *
@@ -47,48 +48,34 @@ from Backend import *
 # Get logger instance
 logger = Logger()
 
-def toJson(obj):
-	if hasattr(json, 'dumps'):
-		# python 2.6 json module
-		return json.dumps(obj)
-	else:
-		return json.write(obj)
-
-def fromJson(obj):
-	if hasattr(json, 'loads'):
-		# python 2.6 json module
-		return json.loads(obj)
-	else:
-		return json.read(obj)
-
 # ======================================================================================================
 # =                                   CLASS FILEBACKEND                                                =
 # ======================================================================================================
 class FileBackend(ConfigDataBackend):
 	
-	def __init__(self, baseDir = u'/tmp/file', **kwargs):
+	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		#fqdn configserver
-		self.__serverId = socket.getfqdn()#.lower()
-		if (self.__serverId.count('.') < 2):
-			raise Exception(u"Failed to get fqdn: %s" % self.__serverId)
+		self.__baseDir     = u'/var/lib/opsi/config'
+		self.__hostKeyFile = u'/etc/opsi/pckeys'
 		
-		#dirs
-		self.__baseDir          = baseDir
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('basedir'):
+				self.__baseDir = forceFilename(value)
+			elif option in ('hostkeyfile'):
+				self.__hostKeyFile = forceFilename(value)
+			
 		self.__clientConfigDir  = os.path.join(self.__baseDir, 'clients')
 		self.__depotConfigDir   = os.path.join(self.__baseDir, 'depots')
 		self.__productDir       = os.path.join(self.__baseDir, 'products')
 		self.__auditDir         = os.path.join(self.__baseDir, 'audit')
-		
-		#files
-		self.__hostKeyFile      = os.path.join(self.__baseDir, 'pckeys') #no ending
 		self.__configFile       = os.path.join(self.__baseDir, 'config.ini')
 		self.__clientGroupsFile = os.path.join(self.__baseDir, 'clientgroups.ini')
 		
-		#misc
-		#self._defaultDomain     = u'uib.local'
-		self._placeholderRegex  = re.compile('<([^>]+)>')
+		self.__serverId = forceHostId(socket.getfqdn())
+		self._placeholderRegex = re.compile('<([^>]+)>')
 		
 		self._mappings = {
 			'Config': [                                                # TODO: placeholders
