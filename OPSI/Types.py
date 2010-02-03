@@ -165,12 +165,14 @@ def forceOpsiTimestamp(var):
 		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
-hostIdRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')
+hostIdRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.[a-z0-9][a-z0-9\-]*\.[a-z]{2,}\.?$')
 def forceHostId(var):
 	var = forceObjectId(var)
 	match = re.search(hostIdRegex, var)
 	if not match:
 		raise ValueError(u"Bad host id: '%s'" % var)
+	if var.endswith('.'):
+		var = var[:-1]
 	return var
 
 def forceHostIdList(var):
