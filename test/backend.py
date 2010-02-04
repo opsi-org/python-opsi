@@ -1056,6 +1056,7 @@ class BackendTest(object):
 		
 		
 		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
+		print hosts
 		assert len(hosts) == len(self.configservers)
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ] )
@@ -1238,6 +1239,14 @@ class BackendTest(object):
 		
 		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
 		assert len(configStates) == 1
+		logger.debug(u"expected(%s), got(%s)" % (self.configState4.getValues()[0], configStates[0].getValues()[0]))
+		
+		print "+++"
+		print self.configState4.getValues()[0]
+		print "+++"
+		print configStates[0].getValues()[0]
+		print "+++"
+		
 		assert configStates[0].getValues()[0] == self.configState4.getValues()[0]
 		
 		# Products

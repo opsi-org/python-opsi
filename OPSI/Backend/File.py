@@ -257,9 +257,15 @@ class FileBackend(ConfigDataBackend):
 		os.chmod(filename, 0660)
 		os.chown(filename, -1, grp.getgrnam('pcpatch')[2])
 	
+	def __escape(self, string):
+		return u'%s' % string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
+	
+	def __unescape(self, string):
+		return u'%s' % string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
+	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
-			return os.path.join(self.__hostKeyFile)
+			return self.__hostKeyFile
 		
 		elif (fileType == 'ini'):
 			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
@@ -560,16 +566,21 @@ class FileBackend(ConfigDataBackend):
 					
 					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
 						objIdent = {
-							'name' : idents[0],
-							'version' : idents[1],
-							'subVersion' : idents[2],
-							'language' : idents[3],
-							'architecture' : idents[4]
+							'name' :         self.__unescape(idents[0]),
+							'version' :      self.__unescape(idents[1]),
+							'subVersion' :   self.__unescape(idents[2]),
+							'language' :     self.__unescape(idents[3]),
+							'architecture' : self.__unescape(idents[4])
 							}
 					else:
 						objIdent = {
-							'hardwareClass' : idents[0]
+							'hardwareClass' : self.__unescape(idents[0])
 							}
+						
+						for option in cp.options(section):
+							key = self.__unescape()
+							value = self.__unescape(cp.get(section, option))
+							objIdent.append({key : value})
 					
 					if objType in ('AuditSoftwareOnClient', 'AuditHardwareOnHost'):
 						objIdent[idType] = filebase
@@ -641,40 +652,28 @@ class FileBackend(ConfigDataBackend):
 					for m in mapping:
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 				
-				elif (fileType == 'ini') or (fileType == 'sw'):
+				elif (fileType == 'ini'):
 					iniFile = IniFile(filename = filename, ignoreCase = False)
 					cp = iniFile.parse()
 					
 					for m in mapping:
 						attribute = m['attribute']
-						section = '' #will be build from sectionParts
+						section = m['section']
 						option = m['option']
 						
-						sectionParts = m['section'].split(';')
+						match = self._placeholderRegex.search(section)
+						if match:
+							replaceValue = objHash[match.group(1)]
+							if objType == 'ProductOnClient':
+								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+							section = section.replace(u'<%s>' % match.group(1), replaceValue)
 						
-						for i in range(len(sectionParts)):
-							match = self._placeholderRegex.search(sectionParts[i])
-							if match:
-								replaceValue = objHash[match.group(1)]
-								if objType == 'ProductOnClient':
-									replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
-								sectionParts[i] = sectionParts[i].replace(u'<%s>' % match.group(1), replaceValue)
-							
-							match = self._placeholderRegex.search(option)
-							if match:
-								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
-							
-							#rebuild section
-							sectionParts[i] = sectionParts[i].replace(';', '\\;')
-							if section == '':
-								section = sectionParts[i]
-							else:
-								section = section + ';' + sectionParts[i]
+						match = self._placeholderRegex.search(option)
+						if match:
+							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 						
-						#print "=========>>>> m: %s section: %s, option: %s" % (m, section, option)
 						if cp.has_option(section, option):
-							value = cp.get(section, option)
-							#print "=========>>>> %s section: %s, option: %s" % (value, section, option)
+							value = cp.get(section, option).replace('%%', '%')
 							if m.get('json'):
 								value = fromJson(value)
 							else:
@@ -712,35 +711,14 @@ class FileBackend(ConfigDataBackend):
 							if matches:
 								objHash = obj.toHash()
 								break
-				
-				elif (fileType == 'hw'):
-					if   objType in ('AuditHardware'):
-						# objHash only has idents
-						pass
-					
-					elif objType in ('AuditHardwareOnHost'):
-						iniFile = IniFile(filename = filename, ignoreCase = False)
-						cp = iniFile.parse()
-						
-						options = {}
-						
-						for section in cp.sections():
-							if not section.startswith(ident['hardwareClass'] + '_'):
-								continue
-							
-							matched = True
-							for (key, value) in objHash.items():
-								if not (option != 'hardwareClass' and cp.has_option(section, option) and value == cp.get(section, option)):
-									matched = False
-							
-							if matched:
-								for option in ('firstseen', 'lastseen', 'state'):
-									if cp.has_option(section, option):
-										objHash[option] = cp.get(section, option)
+			
 			Class = eval(objType)
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
 				objects.append(Class.fromHash(objHash))
+		
+		for obj in objects:
+			logger.debug2(u"Returning object: %s" % obj.getIdent())
 		return objects
 	
 	def _write(self, obj, mode='create'):
@@ -780,7 +758,7 @@ class FileBackend(ConfigDataBackend):
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 			
-			elif (fileType == 'ini') or (fileType == 'sw'):
+			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename, ignoreCase = False)
 				iniFile.create(group = 'pcpatch', mode = 0660)
 				cp = iniFile.parse()
@@ -804,15 +782,6 @@ class FileBackend(ConfigDataBackend):
 							newSection = obj.getProductId() + u'-state'
 						elif objType in ('ProductPropertyState'):
 							newSection = obj.getPropertyId() + u'-install'
-						elif objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
-							idents = obj.getIdent(returnType = 'dict')
-							newSection = idents['name'].replace(';', '\\;') + ';' + \
-								idents['version'].replace(';', '\\;') + ';' + \
-								idents['subVersion'].replace(';', '\\;') + ';' + \
-								idents['language'].replace(';', '\\;') + ';' + \
-								idents['architecture'].replace(';', '\\;')
-							if objType == 'AuditSoftwareOnClient':
-								newSection = newSection + ';' + idents['clientId'].replace(';', '\\;')
 						
 						if newSection != '' and cp.has_section(newSection):
 							cp.remove_section(newSection)
@@ -826,30 +795,19 @@ class FileBackend(ConfigDataBackend):
 					attributeMapping = mapping.get(attribute, mapping.get('*'))
 					
 					if not attributeMapping is None:
-						section = ''
+						section = attributeMapping['section']
 						option = attributeMapping['option']
 						
-						sectionParts = attributeMapping['section'].split(';')
+						match = self._placeholderRegex.search(section)
+						if match:
+							replaceValue = objHash[match.group(1)]
+							if objType in ('ProductOnClient'):
+								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+							section = section.replace(u'<%s>' % match.group(1), replaceValue)
 						
-						for i in range(len(sectionParts)):
-							match = self._placeholderRegex.search(sectionParts[i])
-							if match:
-								replaceValue = objHash[match.group(1)]
-								if objType in ('ProductOnClient'):
-									replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
-								sectionParts[i] = sectionParts[i].replace(u'<%s>' % match.group(1), replaceValue)
-							
-							match = self._placeholderRegex.search(option)
-							if match:
-								option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
-							
-							#rebuild section
-							sectionPart = sectionParts[i].replace(';', '\\;')
-							
-							if section == '':
-								section = sectionPart
-							else:
-								section = section + ';' + sectionPart
+						match = self._placeholderRegex.search(option)
+						if match:
+							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 						
 						if objType in ('ProductOnClient'):
 							if attribute in ('installationStatus', 'actionRequest'):
@@ -930,58 +888,6 @@ class FileBackend(ConfigDataBackend):
 						packageControlFile.setProductProperties(newList)
 				
 				packageControlFile.generate()
-			
-			elif (fileType == 'hw'):
-				iniFile = IniFile(filename = filename, ignoreCase = False)
-				iniFile.create(group = 'pcpatch', mode = 0660)
-				cp = iniFile.parse()
-				
-				section = obj.getHardwareClass() + '_'
-				sectionNr = 0
-				options = {}
-				
-				objHashItems = obj.toHash().items()
-				
-				for oldSection in cp.sections():
-					if not oldSection.lower().startswith(section.lower()):
-						continue
-					
-					matched = True
-					for (key, value) in objHashItems:
-						if not (key != 'hardwareClass' and cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
-							matched = False
-					
-					try:
-						if matched:
-							sectionNr = forceInt(oldSection[len(section):])
-							break
-						else:
-							oldSectionNr = forceInt(oldSection[len(section):])
-							if sectionNr < oldSectionNr + 1:
-								sectionNr = oldSectionNr + 1
-					except:
-						logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
-				
-				section = section + forceUnicode(sectionNr)
-				
-				if (mode == 'create') and cp.has_section(section):
-					cp.remove_section(section)
-				
-				for (option, value) in obj.toHash().items():
-					if option == 'hardwareClass':
-						continue
-					
-					if value is None:
-						if cp.has_option(section, option):
-							cp.remove_option(section, option)
-						continue
-					
-					if not cp.has_section(section):
-						cp.add_section(section)
-					
-					cp.set(section, option, forceUnicode(value).replace('%', '%%'))
-				
-				iniFile.generate(cp)
 	
 	def _delete(self, objList):
 		objType = u''
@@ -1183,10 +1089,15 @@ class FileBackend(ConfigDataBackend):
 		result = self._read('OpsiDepotserver', attributes, **filter)
 		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
 		if opsiConfigServers:
+			contained = False
 			for i in range(len(result)):
 				if (result[i].getId() == opsiConfigServers[0].getId()):
 					result[i] = opsiConfigServers[0]
+					contained = True
 					break
+			
+			if not contained:
+				result.append(opsiConfigServers)
 		result.extend(self._read('OpsiClient', attributes, **filter))
 		logger.notice(u"Got hosts.")
 		
@@ -1748,7 +1659,7 @@ class FileBackend(ConfigDataBackend):
 						section = u''
 						
 						if fileType == 'hw':
-							section == u'%s_' % obj.getHardwareClass()
+							section == u'%s_' % self.__escape(obj.getHardwareClass())
 							sectionNr = 0
 							options = {}
 							
@@ -1778,11 +1689,11 @@ class FileBackend(ConfigDataBackend):
 							section = u'%s%s' % (section, sectionNr)
 						else:
 							section = u'%s;%s;%s;%s;%s' % (
-								idents['name'].replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%'),
-								idents['version'].replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%'),
-								idents['subVersion'].replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%'),
-								idents['language'].replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%'),
-								idents['architecture'].replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
+								self.__escape(idents['name']),
+								self.__escape(idents['version']),
+								self.__escape(idents['subVersion']),
+								self.__escape(idents['language']),
+								self.__escape(idents['architecture'])
 								)
 						
 						if mode in ('create', 'delete') and cp.has_section(section):
@@ -1804,10 +1715,10 @@ class FileBackend(ConfigDataBackend):
 									continue
 								
 								if ( isinstance(value, str) or isinstance(value, unicode) ):
-									value = u'%s' % value.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
+									value = u'%s' % self.__escape(value.replace)
 								
 								logger.info(u"Adding option '%s' with value '%s'" % (option, value))
-								cp.set(section, option, value)
+								cp.set(section, option, forceUnicode(value))
 						
 						iniFile.generate(cp)
 				
@@ -1842,18 +1753,69 @@ class FileBackend(ConfigDataBackend):
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			
-			if not os.path.exists(os.path.dirname(filename)):
-				raise BackendIOError(u"Directory '%s' not found" % os.path.dirname(filename))
+			section = u''
+			
+			if fileType == 'hw':
+				section == u'%s_' % self.__escape(obj.getHardwareClass())
+				sectionNr = 0
+				options = {}
+				
+				for oldSection in cp.sections():
+					oldSectionNrIndex = oldSection.rfind('_') + 1
+					if oldSection[:sectionNrIndex] != section:
+						continue
+					
+					matched = True
+					for (key, value) in objHash.Items():
+						if key == 'hardwareClass':
+							continue
+						if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
+							matched = False
+					
+					try:
+						if matched:
+							sectionNr = forceInt(oldSection[oldSectionNrIndex:])
+							break
+						else:
+							oldSectionNr = forceInt(oldSection[oldSectionNrIndex:])
+							if sectionNr < oldSectionNr + 1:
+								sectionNr = oldSectionNr + 1
+					except:
+						logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
+				
+				section = u'%s%s' % (section, sectionNr)
+			else:
+				section = u'%s;%s;%s;%s;%s' % (
+					self.__escape(idents['name']),
+					self.__escape(idents['version']),
+					self.__escape(idents['subVersion']),
+					self.__escape(idents['language']),
+					self.__escape(idents['architecture'])
+					)
 			
 			
+			searchKeys = []
+			if objType == 'AuditSoftware':
+				searchKeys = ['windowsSoftwareId', 'windowsDisplayName', 'windowsDisplayVersion', 'installSize']
+			elif objType == 'AuditSoftwareOnClient':
+				searchKeys = ['uninstallString', 'binaryName', 'firstseen', 'lastseen', 'state', 'usageFrequency', 'lastUsed']
+			elif objType == 'AuditHardware':
+				searchKeys = []
+			elif objType == 'AuditHardwareOnHost':
+				searchKeys = ['firstseen', 'lastseen', 'state']
 			
-			#TODO: for every objType build section from ident, maybe use getIdent-code here
-			
-			for option in cp.options(section):
-				#TODO: for every objType build keys and values, append to objHash
-				pass
-			
-			
+			if len(searchKeys) > 0:
+				for option in cp.options(section):
+					key = ''
+					value = ''
+					for searchKey in searchKeys:
+						if option == searchKey.lower():
+							key = searchKey
+							value = self.__unescape(cp.get(section, option))
+							break
+					
+					if key != '':
+						objHash.append({key : value})
 			
 			Class = eval(objType)
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
