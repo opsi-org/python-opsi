@@ -258,10 +258,18 @@ class FileBackend(ConfigDataBackend):
 		os.chown(filename, -1, grp.getgrnam('pcpatch')[2])
 	
 	def __escape(self, string):
-		return u'%s' % string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
+		print "escape:", string
+		string = forceUnicode(string)
+		string = string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
+		print "escaped:", string
+		return string
 	
 	def __unescape(self, string):
-		return u'%s' % string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
+		print "unescape:", string
+		string = forceUnicode(string)
+		string = string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
+		print "unescaped:", string
+		return string
 	
 	def _getConfigFile(self, objType, ident, fileType):
 		if (fileType == 'key'):
@@ -1445,7 +1453,6 @@ class FileBackend(ConfigDataBackend):
 	# -   AuditSoftwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_insertObject(self, auditSoftware):
-		return
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
 		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
@@ -1454,7 +1461,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditSoftware.")
 	
 	def auditSoftware_updateObject(self, auditSoftware):
-		return
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
 		logger.notice(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
@@ -1463,7 +1469,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditSoftware.")
 	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
-		return []
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditSoftwares ...")
@@ -1474,7 +1479,6 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditSoftware_deleteObjects(self, auditSoftwares):
-		return
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		
 		logger.notice(u"Deleting auditSoftwares ...")
@@ -1486,7 +1490,6 @@ class FileBackend(ConfigDataBackend):
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
-		return
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
 		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
@@ -1495,7 +1498,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
-		return
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
 		logger.notice(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
@@ -1504,7 +1506,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
-		return []
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditSoftwareOnClients ...")
@@ -1515,7 +1516,6 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
-		return
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		
 		logger.notice(u"Deleting auditSoftwareOnClients ...")
@@ -1528,7 +1528,6 @@ class FileBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def auditHardware_insertObject(self, auditHardware):
-		return
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
 		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
@@ -1537,7 +1536,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditHardware.")
 	
 	def auditHardware_updateObject(self, auditHardware):
-		return
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
 		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
@@ -1546,7 +1544,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditHardware.")
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
-		return []
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwares ...")
@@ -1557,7 +1554,6 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditHardware_deleteObjects(self, auditHardwares):
-		return
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		
 		logger.notice(u"Deleting auditHardwares ...")
@@ -1570,7 +1566,6 @@ class FileBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
-		return
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
@@ -1579,7 +1574,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Inserted auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
-		return
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
@@ -1588,7 +1582,6 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Updated auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
-		return []
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwareOnHosts ...")
@@ -1599,7 +1592,6 @@ class FileBackend(ConfigDataBackend):
 		return result
 	
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
-		return
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
 		logger.notice(u"Deleting auditHardwareOnHosts ...")
@@ -1647,8 +1639,9 @@ class FileBackend(ConfigDataBackend):
 			remainingObjs = objList
 			unprocessedObjs = []
 			
-			while not len(remainingObjs) > 0:
+			while len(remainingObjs) > 0:
 				for obj in remainingObjs:
+					idents = obj.getIdent(returnType = 'dict')
 					fileType = 'sw'
 					if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
 						fileType = 'hw'
@@ -1696,8 +1689,9 @@ class FileBackend(ConfigDataBackend):
 								self.__escape(idents['architecture'])
 								)
 						
-						if mode in ('create', 'delete') and cp.has_section(section):
-							cp.remove_section(section)
+						if mode in ('create', 'delete'):
+							if cp.has_section(section):
+								cp.remove_section(section)
 							if mode == 'create':
 								cp.add_section(section)
 								logger.info(u"Emptied section '%s' in file '%s'" % (section, filename))
@@ -1705,7 +1699,7 @@ class FileBackend(ConfigDataBackend):
 								logger.info(u"Deleted section '%s' in file '%s'" % (section, filename))
 						
 						if mode in ('create', 'update'):
-							for (key, value) in objHashItems:
+							for (key, value) in obj.toHash().items():
 								option = u'%s' % (key.lower())
 								if value is None:
 									logger.debug2(u"Ignoring key '%s' with None-value" % (key))
@@ -1715,7 +1709,7 @@ class FileBackend(ConfigDataBackend):
 									continue
 								
 								if ( isinstance(value, str) or isinstance(value, unicode) ):
-									value = u'%s' % self.__escape(value.replace)
+									value = u'%s' % self.__escape(value)
 								
 								logger.info(u"Adding option '%s' with value '%s'" % (option, value))
 								cp.set(section, option, forceUnicode(value))
@@ -1734,9 +1728,9 @@ class FileBackend(ConfigDataBackend):
 			return []
 		
 		fileType = ''
-		if obj.getType() in ('AuditSoftware', 'AuditSoftwareOnClient'):
+		if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
 			fileType = 'sw'
-		elif obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
+		elif objType in ('AuditHardware', 'AuditHardwareOnHost'):
 			fileType = 'hw'
 		else:
 			logger.error(u"Wrong type delivered: '%s'" % (objType))
@@ -1746,6 +1740,7 @@ class FileBackend(ConfigDataBackend):
 		logger.debug(u"Attributes: %s" % attributes)
 		
 		objects = []
+		
 		for ident in self._getIdents(objType, **filter):
 			objHash = dict(ident)
 			
@@ -1821,6 +1816,9 @@ class FileBackend(ConfigDataBackend):
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
 				objects.append(Class.fromHash(objHash))
+		
+		for obj in objects:
+			logger.debug2(u"Returning object: %s" % obj.getIdent())
 		return objects
 	
 	

@@ -1557,6 +1557,13 @@ class BackendTest(object):
 		self.backend.auditSoftware_createObjects(self.auditSoftwares)
 		
 		auditSoftwares = self.backend.auditSoftware_getObjects()
+		print "got"
+		for a in auditSoftwares:
+			print a
+		print "expected"
+		for a in self.auditSoftwares:
+			print a
+		print
 		assert len(auditSoftwares) == len(self.auditSoftwares)
 		
 		auditSoftware3update = AuditSoftware(
