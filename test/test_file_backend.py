@@ -27,7 +27,7 @@ logger.setConsoleLevel(loglevel)
 logger.setConsoleColor(True)
 #logger.setConsoleFormat('%D [%L] %M (%F|%N)')
 
-fileBackend = FileBackend()
+fileBackend = FileBackend(baseDir = u'/tmp/opsi-file-backend-test', hostKeyFile = u'/tmp/opsi-file-backend-test/pckeys')
 
 bt = BackendTest(ExtendedConfigDataBackend(fileBackend))
 bt.cleanupBackend()

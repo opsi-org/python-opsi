@@ -236,7 +236,7 @@ class BackendTest(object):
 			priority           = '100',
 			description        = "Nothing",
 			advice             = u"No advice",
-			productClassNames  = ['class1'],
+			productClassIds    = ['class1'],
 			windowsSoftwareIds = ['{be21bd07-eb19-44e4-893a-fa4e44e5f806}', 'product1'],
 			pxeConfigTemplate  = 'special'
 		)
@@ -257,7 +257,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = None,
 			advice             = "",
-			productClassNames  = ['localboot-products'],
+			productClassIds    = ['localboot-products'],
 			windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
 		)
 		
@@ -275,7 +275,7 @@ class BackendTest(object):
 			priority           = 100,
 			description        = "---",
 			advice             = "---",
-			productClassNames  = ['localboot-products'],
+			productClassIds    = ['localboot-products'],
 			windowsSoftwareIds = []
 		)
 		
@@ -293,7 +293,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = "",
 			advice             = "",
-			productClassNames  = [],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -311,7 +311,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = "",
 			advice             = "",
-			productClassNames  = [],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -329,7 +329,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = "",
 			advice             = "",
-			productClassNames  = [],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -347,7 +347,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = "",
 			advice             = "",
-			productClassNames  = [],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -366,7 +366,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = "",
 			advice             = "",
-			productClassNames  = [],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -385,7 +385,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = "",
 			advice             = "",
-			productClassNames  = [],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -1597,7 +1597,7 @@ class BackendTest(object):
 		self.backend.auditSoftwareOnClient_createObjects(self.auditSoftwareOnClients)
 		
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients)
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients), u"Expected %s got %s" % (self.auditSoftwareOnClients, auditSoftwareOnClients)
 		
 		auditSoftwareOnClient1update = AuditSoftwareOnClient(
 			name            = self.auditSoftware1.getName(),

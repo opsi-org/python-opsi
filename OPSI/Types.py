@@ -261,6 +261,14 @@ def forceProductIdList(var):
 		var[i] = forceProductId(var[i])
 	return var
 
+packageCustomNameRegex = re.compile('^[a-zA-Z0-9]+$')
+def forcePackageCustomName(var):
+	var = forceUnicodeLower(var)
+	match = re.search(packageCustomNameRegex, var)
+	if not match:
+		raise ValueError(u"Bad package custom name: '%s'" % var)
+	return var
+
 def forceProductType(var):
 	v = forceUnicodeLower(var)
 	if v in ('localboot', 'localbootproduct'):

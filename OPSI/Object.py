@@ -935,10 +935,10 @@ class LocalbootProduct(Product):
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None, userLoginScript=None,
-		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None):
+		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, userLoginScript,
-		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
+		     priority, description, advice, changelog, productClassIds, windowsSoftwareIds)
 	
 	def setDefaults(self):
 		Product.setDefaults(self)
@@ -959,11 +959,11 @@ class NetbootProduct(Product):
 	
 	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
 		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None,
-		     priority=None, description=None, advice=None, changelog=None, productClassNames=None, windowsSoftwareIds=None,
+		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None,
 		     pxeConfigTemplate=u''):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, None,
-		     priority, description, advice, changelog, productClassNames, windowsSoftwareIds)
+		     priority, description, advice, changelog, productClassIds, windowsSoftwareIds)
 		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
 	
 	def setDefaults(self):

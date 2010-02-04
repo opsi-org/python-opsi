@@ -53,22 +53,26 @@ def getFileTye(filename):
 	return fileType
 
 class BaseArchive(object):
-	def __init__(self, filename, progressSubject=None):
+	def __init__(self, filename, compression = None, progressSubject=None):
 		self._filename = forceFilename(filename)
 		self._progressSubject = progressSubject
 		self._compression = None
-		if os.path.exists(self._filename):
+		if compression:
+			compression = forceUnicodeLower(compression)
+			if not compression in ('gzip', 'bzip2'):
+				raise Exception(u"Compression '%s' not supported" % compression)
+			self._compression = compression
+		elif os.path.exists(self._filename):
 			fileType = getFileTye(self._filename)
 			if   fileType.lower().startswith('gzip compressed data'):
-				self._compression = 'gzip'
+				self._compression = u'gzip'
 			elif fileType.lower().startswith('bzip2 compressed data'):
-				self._compression = 'bzip2'
-			elif fileType.lower().startswith('posix tar archive') and isinstance(self, TarArchive):
-				self._compression = None
-			elif fileType.lower().startswith('ascii cpio archive') and isinstance(self, CpioArchive):
-				self._compression = None
+				self._compression = u'bzip2'
 			else:
-				raise Exception(u"Unsupported file type '%s'" % fileType)
+				self._compression = None
+			
+	def getFilename(self):
+		return self._filename
 	
 	def _extract(self, command, fileCount):
 		try:
@@ -150,28 +154,40 @@ class BaseArchive(object):
 			for f in fileList:
 				if not f:
 					continue
+				if not os.path.exists(f):
+					raise Exception(u"File '%s' not found" % f)
 				# python 2.6:
-				#f = os.path.relpath(f, baseDir)
-				f = f[len(baseDir):]
-				while f.startswith('/'):
-					f = f[1:]
+				if f.startswith(baseDir):
+					#f = os.path.relpath(f, baseDir)
+					f = f[len(baseDir):]
+					while f.startswith('/'):
+						f = f[1:]
 				logger.info(u"Adding file '%s'" % f)
 				proc.stdin.write("%s\n" % f.encode(encoding))
 				
 				try:
 					chunk = proc.stderr.read()
 					if chunk:
+						if self._progressSubject:
+							self._progressSubject.addToState(chunk.count('\n'))
 						error += chunk
 				except:
 					pass
-				if self._progressSubject:
-					self._progressSubject.addToState(1)
 				
 			proc.stdin.close()
 			
 			while ret is None:
 				ret = proc.poll()
-			
+				
+				try:
+					chunk = proc.stderr.read()
+					if chunk:
+						if self._progressSubject:
+							self._progressSubject.addToState(chunk.count('\n'))
+						error += chunk
+				except:
+					pass
+				
 			logger.info(u"Exit code: %s" % ret)
 			
 			if (ret != 0):
@@ -182,8 +198,8 @@ class BaseArchive(object):
 			os.chdir(curDir)
 		
 class TarArchive(BaseArchive):
-	def __init__(self, filename, progressSubject=None):
-		BaseArchive.__init__(self, filename, progressSubject)
+	def __init__(self, filename, compression = None, progressSubject=None):
+		BaseArchive.__init__(self, filename, compression, progressSubject)
 	
 	def content(self):
 		try:
@@ -244,7 +260,7 @@ class TarArchive(BaseArchive):
 		except Exception, e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 	
-	def create(self, fileList, baseDir='.', dereference=False, compression=None):
+	def create(self, fileList, baseDir='.', dereference=False):
 		try:
 			fileList    = forceUnicodeList(fileList)
 			baseDir     = os.path.abspath(forceFilename(baseDir))
@@ -253,15 +269,7 @@ class TarArchive(BaseArchive):
 			if not os.path.isdir(baseDir):
 				raise Exception(u"Base dir '%s' not found" % baseDir)
 			
-			if compression:
-				compression = forceUnicodeLower(compression)
-				if compression not in ('gzip', 'bzip2'):
-					raise Exception(u"Compression '%s' not supported" % compression)
-				self._compression = compression
-			else:
-				self._compression = None
-			
-			command = u'%s --no-recursion --create --files-from -' % System.which('tar')
+			command = u'%s --no-recursion --verbose --create --files-from -' % System.which('tar')
 			if dereference:
 				command += ' --dereference'
 			if   (self._compression == 'gzip'):
@@ -276,8 +284,8 @@ class TarArchive(BaseArchive):
 			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 	
 class CpioArchive(BaseArchive):
-	def __init__(self, filename, progressSubject=None):
-		BaseArchive.__init__(self, filename, progressSubject)
+	def __init__(self, filename, compression = None, progressSubject=None):
+		BaseArchive.__init__(self, filename, compression, progressSubject)
 	
 	def content(self):
 		try:
@@ -345,7 +353,7 @@ class CpioArchive(BaseArchive):
 		except Exception, e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 	
-	def create(self, fileList, baseDir='.', dereference=False, compression=None):
+	def create(self, fileList, baseDir='.', dereference=False):
 		try:
 			fileList    = forceUnicodeList(fileList)
 			baseDir     = os.path.abspath(forceFilename(baseDir))
@@ -354,15 +362,7 @@ class CpioArchive(BaseArchive):
 			if not os.path.isdir(baseDir):
 				raise Exception(u"Base dir '%s' not found" % baseDir)
 			
-			if compression:
-				compression = forceUnicodeLower(compression)
-				if compression not in ('gzip', 'bzip2'):
-					raise Exception(u"Compression '%s' not supported" % compression)
-				self._compression = compression
-			else:
-				self._compression = None
-			
-			command = u'%s --quiet -o -H crc' % System.which('cpio')
+			command = u'%s --quiet -v -o -H crc' % System.which('cpio')
 			if dereference:
 				command += ' --dereference'
 			if   (self._compression == 'gzip'):
@@ -378,21 +378,31 @@ class CpioArchive(BaseArchive):
 
 
 
-def Archive(filename, progressSubject=None):
+def Archive(filename, format = None, compression = None, progressSubject=None):
 	filename = forceFilename(filename)
 	Class = None
-	fileType = getFileTye(filename)
-	if   fileType.lower().startswith('posix tar archive'):
-		Class = TarArchive
-	elif fileType.lower().startswith('ascii cpio archive'):
-		Class = CpioArchive
-	elif filename.lower().endswith('tar.gz') or filename.lower().endswith('tar.gz'):
-		Class = TarArchive
-	elif filename.lower().endswith('cpio.gz') or filename.lower().endswith('cpio.gz'):
-		Class = CpioArchive
-	else:
+	if format:
+		format = forceUnicodeLower(format)
+		if not format in ('tar', 'cpio'):
+			raise Exception(u"Unsupported format '%s'" % format)
+		if   (format == 'tar'):
+			Class = TarArchive
+		elif (format == 'cpio'):
+			Class = CpioArchive
+		
+	elif os.path.exists(filename):
+		fileType = getFileTye(filename)
+		if   (fileType.lower().find('tar archive') != -1):
+			Class = TarArchive
+		elif (fileType.lower().find('cpio archive') != -1):
+			Class = CpioArchive
+		elif filename.lower().endswith('tar') or filename.lower().endswith('tar.gz'):
+			Class = TarArchive
+		elif filename.lower().endswith('cpio') or filename.lower().endswith('cpio.gz'):
+			Class = CpioArchive
+	if not Class:
 		raise Exception(u"Failed to guess archive type of '%s'" % filename)
-	return Class(filename, progressSubject)
+	return Class(filename = filename, compression = compression, progressSubject = progressSubject)
 	
 
 

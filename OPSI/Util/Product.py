@@ -39,6 +39,8 @@ DEFAULT_TMP_DIR               = u'/tmp'
 DEFAULT_CLIENT_DATA_GROUP     = 'pcpatch'
 DEFAULT_CLIENT_DATA_FILE_MODE = 0660
 DEFAULT_CLIENT_DATA_DIR_MODE  = 0770
+EXCLUDE_DIRS_ON_PACK          = u'^\.svn$'
+EXCLUDE_FILES_ON_PACK         = u'~$'
 
 # Imports
 import os, pwd, grp, shutil
@@ -58,14 +60,16 @@ def _(string):
 class ProductPackageFile(object):
 	
 	def __init__(self, packageFile, tempDir = None):
-		self.packageFile = forceFilename(packageFile)
+		self.packageFile = os.path.abspath(forceFilename(packageFile))
+		if not os.path.exists(self.packageFile):
+			raise Exception(u"Package file '%s' not found" % self.packageFile)
+		
 		if not tempDir:
 			tempDir = DEFAULT_TMP_DIR
-		tempDir = forceFilename(tempDir)
-		if not os.path.isdir(tempDir):
-			raise Exception(u"Temporary directory '%s' not found" % tempDir)
+		self.tempDir = os.path.abspath(forceFilename(tempDir))
+		if not os.path.isdir(self.tempDir):
+			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
 		
-		self.tempDir            = os.path.abspath(tempDir)
 		self.clientDataDir      = None
 		self.tmpUnpackDir       = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
 		self.packageControlFile = None
@@ -384,11 +388,135 @@ class ProductPackageFile(object):
 		return self._runPackageScript(u'postinst')
 	
 	
+class ProductPackageSource(object):
 	
+	def __init__(self, packageSourceDir, tempDir = None, customName = None, customOnly = False, packageFileDestDir = None, format = 'cpio', compression = 'gzip', dereference = False):
+		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
+		if not os.path.isdir(self.packageSourceDir):
+			raise Exception(u"Package source directory '%s' not found" % self.packageSourceDir)
+		
+		if not tempDir:
+			tempDir = DEFAULT_TMP_DIR
+		self.tempDir = os.path.abspath(forceFilename(tempDir))
+		if not os.path.isdir(self.tempDir):
+			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
+		
+		self.customName = None
+		if customName:
+			self.customName = forcePackageCustomName(self.customName)
+		
+		self.customOnly = forceBool(customOnly)
+		
+		if format:
+			if not format in (u'cpio', u'tar'):
+				raise Exception(u"Format '%s' not supported" % format)
+			self.format = format
+		else:
+			self.format = u'cpio'
+		
+		if not compression:
+			self.compression = None
+		else:
+			if not compression in (u'gzip', u'bzip2'):
+				raise Exception(u"Compression '%s' not supported" % compression)
+			self.compression = compression
+		
+		self.dereference = forceBool(dereference)
+		
+		if not packageFileDestDir:
+			packageFileDestDir = self.packageSourceDir
+		packageFileDestDir = os.path.abspath(forceFilename(packageFileDestDir))
+		if not os.path.isdir(packageFileDestDir):
+			raise Exception(u"Package destination directory '%s' not found" % packageFileDestDir)
+		
+		packageControlFile = os.path.join(self.packageSourceDir, u'OPSI', u'control')
+		if customName and os.path.exists( os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control') ):
+			packageControlFile = os.path.join(self.packageSourceDir, u'OPSI.%s' % customName, u'control')
+		self.packageControlFile = PackageControlFile(packageControlFile)
+		self.packageControlFile.parse()
+		
+		customName = u''
+		if self.customName:
+			customName = u'_%s' % self.customName
+		self.packageFile = os.path.join(packageFileDestDir, u"%s_%s-%s%s.opsi" % (
+				self.packageControlFile.getProduct().id,
+				self.packageControlFile.getProduct().productVersion,
+				self.packageControlFile.getProduct().packageVersion,
+				customName ))
+		
+		self.tmpPackDir = os.path.join(self.tempDir, u'.opsi.pack.%s' % randomString(5))
 	
+	def cleanup(self):
+		logger.info(u"Cleaning up")
+		if os.path.isdir(self.tmpPackDir):
+			shutil.rmtree(self.tmpPackDir)
 	
-	
-	
+	def pack(self, progressSubject=None):
+		# Create temporary directory
+		if os.path.exists(self.tmpPackDir):
+			shutil.rmtree(self.tmpPackDir)
+		os.mkdir(self.tmpPackDir)
+		
+		try:
+			archives = []
+			dirs = [ u'CLIENT_DATA', u'SERVER_DATA', u'OPSI' ]
+			if self.customName:
+				found = False
+				for i in range(len(dirs)):
+					customDir = u"%s.%s" % (dirs[i], self.customName)
+					if os.path.exists( os.path.join(self.packageSourceDir, customDir) ):
+						found = True
+						if self.customOnly:
+							dirs[i] = customDir
+						else:
+							dirs.append(customDir)
+				if not found:
+					raise Exception(u"No custom dirs found for '%s'" % self.customName)
+			
+			for d in dirs:
+				if not os.path.exists( os.path.join(self.packageSourceDir, d) ) and (d != u'OPSI'):
+					logger.warning(u"Directory '%s' does not exist!" % os.path.join(self.packageSourceDir, d))
+					continue
+				
+				fileList = findFiles( os.path.join(self.packageSourceDir, d), excludeDir = EXCLUDE_DIRS_ON_PACK, excludeFile = EXCLUDE_FILES_ON_PACK )
+				
+				if d.startswith(u'SERVER_DATA'):
+					# Never change permissions of existing directories in /
+					tmp = []
+					for f in fileList:
+						if (f.find(os.sep) == -1):
+							logger.info(u"Skipping dir '%s'" % f)
+							continue
+						tmp.append(f)
+					
+					fileList = tmp
+				
+				if not fileList:
+					logger.notice(u"Skipping empty dir '%s'" % os.path.join(self.packageSourceDir, d))
+					continue
+				
+				filename = os.path.join(self.tmpPackDir, u'%s.%s' % (d, self.format))
+				if   (self.compression == 'gzip'):
+					filename += u'.gz'
+				elif (self.compression == 'bzip2'):
+					filename += u'.bz2'
+				archive = Archive(filename, format = self.format, compression = self.compression, progressSubject = progressSubject)
+				if progressSubject:
+					progressSubject.reset()
+					progressSubject.setMessage(u'Creating archive %s' % os.path.basename(archive.getFilename()))
+				archive.create(fileList = fileList, baseDir = os.path.join(self.packageSourceDir, d), dereference = self.dereference)
+				archives.append(filename)
+			
+			archive = Archive(self.packageFile, format = self.format, compression = None, progressSubject = progressSubject)
+			if progressSubject:
+				progressSubject.reset()
+				progressSubject.setMessage(u'Creating archive %s' % os.path.basename(archive.getFilename()))
+			archive.create(fileList = archives, baseDir = self.tmpPackDir)
+			
+		except Exception, e:
+			self.cleanup()
+			raise Exception(u"Failed to create package '%s': %s" % (self.packageFile, e))
+		
 	
 	
 	

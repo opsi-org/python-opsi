@@ -520,7 +520,7 @@ class PackageControlFile(TextFile):
 			priority           = product.get('priority'),
 			description        = product.get('description'),
 			advice             = product.get('advice'),
-			productClassNames  = product.get('productclasses'),
+			productClassIds    = product.get('productclasses'),
 			windowsSoftwareIds = self._sections.get('windows',[{}])[0].get('softwareids', []),
 			changelog          = self._sections.get('changelog')
 			
