@@ -532,7 +532,6 @@ class FileBackend(ConfigDataBackend):
 				filebase = os.path.basename(filename)[:-3]
 				
 				for section in cp.sections():
-					idents = []
 					objIdent = {}
 					
 					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
@@ -552,7 +551,7 @@ class FileBackend(ConfigDataBackend):
 							objIdent['clientId'] = forceHostId(filebase)
 					else:
 						objIdent = {
-							'hardwareClass' : self.__unescape(idents[0])
+							'hardwareClass' : self.__unescape(section[section.rfind('_'):])
 							}
 						
 						for (key, value) in cp.items(section):
@@ -1644,8 +1643,6 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_insertObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
-		return
-		
 		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
 		#self._write(auditHardware, mode = 'create')
 		self._setAudit(auditHardware, mode = 'create')
@@ -1653,8 +1650,6 @@ class FileBackend(ConfigDataBackend):
 	
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
-		
-		return
 		
 		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
 		#self._write(auditHardware, mode = 'update')
@@ -1664,19 +1659,15 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
-		return []
-		
 		logger.notice(u"Getting auditHardwares ...")
 		#result = self._read('AuditHardware', attributes, **filter)
-		result = self._getAudit(auditHardware, mode = 'create')
+		result = self._getAudit('AuditHardware', attributes, **filter)
 		logger.notice(u"Got auditHardwares.")
 		
 		return result
 	
 	def auditHardware_deleteObjects(self, auditHardwares):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
-		
-		return
 		
 		logger.notice(u"Deleting auditHardwares ...")
 		#self._delete(forceObjectClassList(auditHardwares, AuditHardware))
@@ -1690,8 +1681,6 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
-		return
-		
 		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		#self._write(auditHardwareOnHost, mode = 'create')
 		self._setAudit(auditHardwareOnHost, mode = 'create')
@@ -1700,8 +1689,6 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
-		return
-		
 		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		#self._write(auditHardwareOnHost, mode = 'update')
 		self._setAudit(auditHardwareOnHost, mode = 'update')
@@ -1709,8 +1696,6 @@ class FileBackend(ConfigDataBackend):
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
-		
-		return []
 		
 		logger.notice(u"Getting auditHardwareOnHosts ...")
 		#result = self._read('AuditHardwareOnHost', attributes, **filter)
@@ -1721,8 +1706,6 @@ class FileBackend(ConfigDataBackend):
 	
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
-		
-		return
 		
 		logger.notice(u"Deleting auditHardwareOnHosts ...")
 		#self._delete(forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost))
@@ -1782,18 +1765,18 @@ class FileBackend(ConfigDataBackend):
 						section = u''
 						
 						if fileType == 'hw':
-							section == u'%s_' % self.__escape(obj.getHardwareClass())
+							section = u'%s_' % (self.__escape(obj.getHardwareClass()))
 							sectionNr = 0
 							options = {}
 							
 							for oldSection in cp.sections():
 								oldSectionNrIndex = oldSection.rfind('_') + 1
-								if oldSection[:sectionNrIndex] != section:
+								if oldSection[:oldSectionNrIndex] != section:
 									continue
 								
 								matched = True
-								for (key, value) in objHashItems:
-									if key == 'hardwareClass':
+								for (key, value) in obj.toHash().items():
+									if key in ('hardwareClass', 'hostId'):
 										continue
 									if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
 										matched = False
@@ -1833,7 +1816,7 @@ class FileBackend(ConfigDataBackend):
 								if value is None:
 									logger.debug2(u"Ignoring key '%s' with None-value" % (key))
 									continue
-								if key in ('name', 'version', 'subVersion', 'language', 'architecture', 'clientId', 'hostId', 'type'):
+								if key in ('name', 'version', 'subVersion', 'language', 'architecture', 'clientId', 'hardwareClass', 'hostId', 'type'):
 									logger.debug2(u"Ignoring already processed key '%s'" % (key))
 									continue
 								
@@ -1871,7 +1854,6 @@ class FileBackend(ConfigDataBackend):
 		objects = []
 		
 		for ident in self._getIdents(objType, **filter):
-			print ident
 			objHash = dict(ident)
 			
 			filename = self._getConfigFile(objType, ident, fileType)
@@ -1910,11 +1892,6 @@ class FileBackend(ConfigDataBackend):
 				
 				section = u'%s%s' % (section, sectionNr)
 			else:
-				print "----", self.__escape(ident['name'])
-				print "----", self.__escape(ident['version'])
-				print "----", self.__escape(ident['subVersion'])
-				print "----", self.__escape(ident['language'])
-				print "----", self.__escape(ident['architecture'])
 				section = u'%s;%s;%s;%s;%s' % (
 					self.__escape(ident['name']),
 					self.__escape(ident['version']),
@@ -1923,7 +1900,6 @@ class FileBackend(ConfigDataBackend):
 					self.__escape(ident['architecture'])
 					)
 			
-			print "===============>>>>>>>>>>>>", section
 			searchKeys = []
 			if objType == 'AuditSoftware':
 				searchKeys = ['windowsSoftwareId', 'windowsDisplayName', 'windowsDisplayVersion', 'installSize']
@@ -1935,11 +1911,6 @@ class FileBackend(ConfigDataBackend):
 				searchKeys = ['firstseen', 'lastseen', 'state']
 			
 			if len(searchKeys) > 0:
-				for sec in cp.sections():
-					print "------>>>>>>>", sec
-					if sec == section:
-						print "FOUND"
-						break
 				for option in cp.options(sec):
 					key = ''
 					value = ''
@@ -1949,9 +1920,9 @@ class FileBackend(ConfigDataBackend):
 							value = self.__unescape(cp.get(section.encode('utf-8'), option))
 							break
 					
-					#if key != '':
-					#	objIdent[key] = value
-					#	#objHash.append({key : value})
+					if key != '':
+						objIdent[key] = value
+						objHash.append({key : value})
 			
 			Class = eval(objType)
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
