@@ -168,6 +168,46 @@ def getDiskSpaceUsage(path):
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
 
+def getEthernetDevices():
+	devices = []
+	f = open("/proc/net/dev")
+	for line in f.readlines():
+		line = line.strip()
+		if not line or (line.find(':') == -1):
+			continue
+		device = line.split(':')[0].strip()
+		if device.startswith('eth') or device.startswith('tr'):
+			logger.info(u"Found ethernet device: '%s'" % device)
+			devices.append(device)
+	f.close()
+	return devices
+
+def getNetworkDeviceConfig(device):
+	if not device:
+		raise Exception(u"No device given")
+	
+	result = {
+		'hardwareAddress': None,
+		'ipAddress':       None,
+		'broadcast':       None,
+		'netmask':         None
+	}
+	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
+		line = line.lower().strip()
+		match = re.search('\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
+		if match:
+			result['hardwareAddress'] = forceHardwareAddress(match.group(1))
+			continue
+		if line.startswith('inet '):
+			parts = line.split(':')
+			if (len(parts) != 4):
+				logger.error(u"Unexpected ifconfig line '%s'" % line)
+				continue
+			result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
+			result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
+			result['netmask']   = forceIpAddress(parts[3].split()[0].strip())
+	return result
+
 
 
 

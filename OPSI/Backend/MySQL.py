@@ -1762,7 +1762,10 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
 		logger.info(u"Updating auditHardware: %s" % auditHardware)
-		self.auditHardware_insertObject(auditHardware)
+		data = self._objectToDatabaseHash(auditHardware)
+		table = u'HARDWARE_DEVICE_' + auditHardware['hardwareClass']
+		where = self._uniqueCondition(auditHardware)
+		self._mysql.update(table, where, data)
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
