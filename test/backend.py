@@ -1635,7 +1635,15 @@ class BackendTest(object):
 		auditHardwares = self.backend.auditHardware_getObjects()
 		assert len(auditHardwares) == len(self.auditHardwares) - 2
 		
-		self.backend.auditHardware_updateObjects([ self.auditHardware1, self.auditHardware2 ])
+		try:
+			self.backend.auditHardware_updateObjects([ self.auditHardware1, self.auditHardware2 ])
+		except:
+			pass
+		
+		assert len(auditHardwares) == len(self.auditHardwares) - 2
+		
+		self.backend.auditHardware_createObjects([ self.auditHardware1, self.auditHardware2 ])
+		
 		auditHardwares = self.backend.auditHardware_getObjects()
 		assert len(auditHardwares) == len(self.auditHardwares)
 		
