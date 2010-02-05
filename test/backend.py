@@ -1654,6 +1654,42 @@ class BackendTest(object):
 		
 		self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHosts)
 		
+		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"Expected %s got %s" % (self.auditHardwareOnHosts, auditHardwareOnHosts)
+		
+		auditHardwareOnHost4update = AuditHardwareOnHost(
+			hostId              = self.client1.getId(),
+			hardwareClass       = 'BASE_BOARD',
+			lastseen            = '0707-07-07 07:07:07',
+			name                = self.auditHardware3.name,
+			description         = self.auditHardware3.description,
+			vendor              = self.auditHardware3.vendor,
+			model               = self.auditHardware3.model,
+			product             = self.auditHardware3.product,
+			
+			serialNumber        = 'xxxx-asjdks-sll3kf03-828112'
+		)
+		
+		print "starts here"
+		self.backend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
+		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen = '0707-07-07 07:07:07')
+		assert len(auditHardwareOnHosts) == 1
+		
+		logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost4update.toHash())
+		self.backend.auditHardwareOnHost_deleteObjects(auditHardwareOnHost4update)
+		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) - 1
+		
+		self.backend.auditHardwareOnHost_insertObject(self.auditHardwareOnHost4)
+		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)
+		
+		
+		
+		
+		
+		
+		
 		
 		
 		

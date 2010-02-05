@@ -332,7 +332,7 @@ class FileBackend(ConfigDataBackend):
 				return os.path.join(self.__auditDir, ident['hostId'] + u'.hw')
 		
 		
-		logger.error(u"No config-file returned! objType: '%s' fileType: '%s' filter: '%s'" % (objType, fileType, filter))
+		logger.error(u"No config-file returned! objType '%s', ident '%s', fileType '%s'" % (objType, ident, fileType))
 		
 		return
 	
@@ -544,18 +544,17 @@ class FileBackend(ConfigDataBackend):
 							}
 						for key in objIdent.keys():
 							try:
-								objIdent[key] = self.__unescape(cp.get(section, key.lower()))
+								objIdent[str(key)] = self.__unescape(cp.get(section, key.lower()))
 							except:
 								pass
 						if (objType == 'AuditSoftwareOnClient'):
 							objIdent['clientId'] = forceHostId(filebase)
 					else:
-						objIdent = {
-							'hardwareClass' : self.__unescape(section[section.rfind('_'):])
-							}
-						
 						for (key, value) in cp.items(section):
-							objIdent[key] = self.__unescape(value)
+							objIdent[str(key)] = self.__unescape(value)
+						
+						if (objType == 'AuditHardwareOnHost'):
+							objIdent['hostId'] = forceHostId(filebase)
 					
 					objIdents.append(objIdent)
 		
@@ -1437,7 +1436,7 @@ class FileBackend(ConfigDataBackend):
 		section = u'SOFTWARE_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditSoftware.toHash().items():
-			if value is None:
+			if (value is None) or (key == 'type'):
 				continue
 			ini.set(section, key, self.__escape(value))
 		iniFile.generate(ini)
@@ -1497,6 +1496,7 @@ class FileBackend(ConfigDataBackend):
 					pass
 			
 			if self._objectHashMatches(objHash, **filter):
+				#TODO: adaptObjHash?
 				result.append(AuditSoftware.fromHash(objHash))
 		logger.notice(u"Got objectToGroups.")
 		
@@ -1549,7 +1549,7 @@ class FileBackend(ConfigDataBackend):
 		section = u'SOFTWARE_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditSoftwareOnClient.toHash().items():
-			if value is None:
+			if (value is None):
 				continue
 			ini.set(section, key, self.__escape(value))
 		iniFile.generate(ini)
@@ -1677,7 +1677,7 @@ class FileBackend(ConfigDataBackend):
 		section = u'HARDWARE_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditHardware.toHash().items():
-			if value is None:
+			if (value is None) or (key == 'type'):
 				continue
 			ini.set(section, key.lower(), self.__escape(value))
 		iniFile.generate(ini)
@@ -1781,7 +1781,7 @@ class FileBackend(ConfigDataBackend):
 		section = u'HARDWARE_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditHardwareOnHost.toHash().items():
-			if value is None:
+			if (value is None) or (key == 'hostId'):
 				continue
 			ini.set(section, key.lower(), self.__escape(value))
 		iniFile.generate(ini)
@@ -1791,7 +1791,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"hostId": auditHardwareOnHost.hostId }, 'hw')
+		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
@@ -1803,7 +1803,7 @@ class FileBackend(ConfigDataBackend):
 					found = False
 					break
 			if found:
-				for (key, value) in auditSoftwareOnClient.toHash().items():
+				for (key, value) in auditHardwareOnHost.toHash().items():
 					if value is None:
 						continue
 					ini.set(section, key.lower(), self.__escape(value))
@@ -1818,6 +1818,8 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Getting auditHardwareOnHosts ...")
 		filenames = {}
 		for ident in self._getIdents('AuditHardwareOnHost', **filter):
+			print "ident:", ident
+			print "filter:", filter
 			if not ident['hostId'] in filenames.keys():
 				filenames[ident['hostId']] = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
 		
@@ -1829,7 +1831,7 @@ class FileBackend(ConfigDataBackend):
 			ini = iniFile.parse()
 			for section in ini.sections():
 				objHash = {
-				u'hostId': hostId
+				'hostId': hostId
 				}
 				for option in ini.options(section):
 					if option.lower() == u'hardwareclass':
