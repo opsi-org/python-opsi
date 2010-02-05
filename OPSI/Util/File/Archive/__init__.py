@@ -95,15 +95,15 @@ class BaseArchive(object):
 			error = ''
 			ret = None
 			while ret is None:
-				try:
-					chunk = proc.stdout.read()
-					if chunk:
-						filesExtracted = chunk.count('\n')
-						if (filesExtracted > 0):
-							if self._progressSubject:
-								self._progressSubject.addToState(filesExtracted)
-				except:
-					pass
+				#try:
+				#	chunk = proc.stdout.read()
+				#	if chunk:
+				#		filesExtracted = chunk.count('\n')
+				#		if (filesExtracted > 0):
+				#			if self._progressSubject:
+				#				self._progressSubject.addToState(filesExtracted)
+				#except:
+				#	pass
 				try:
 					chunk = proc.stderr.read()
 					if chunk:
@@ -122,6 +122,8 @@ class BaseArchive(object):
 				error = error.decode(encoding, 'replace')
 				logger.error(error)
 				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
+			if self._progressSubject:
+				self._progressSubject.setState(fileCount)
 			
 		except Exception, e:
 			logger.logException(e)
@@ -194,6 +196,8 @@ class BaseArchive(object):
 				error = error.decode(encoding, 'replace')
 				logger.error(error)
 				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
+			if self._progressSubject:
+				self._progressSubject.setState(len(fileList))
 		finally:
 			os.chdir(curDir)
 		

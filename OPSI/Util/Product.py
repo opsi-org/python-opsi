@@ -122,12 +122,13 @@ class ProductPackageFile(object):
 		self.runPostinst()
 		self.cleanup()
 	
-	def unpackSource(self, destinationDir=u'', newProductId=u'', progressSubject=None):
+	def unpackSource(self, destinationDir=u'.', newProductId=None, progressSubject=None):
 		logger.notice(u"Extracting package source from '%s'" % self.packageFile)
 		if progressSubject: progressSubject.setMessage(_(u"Extracting package source from '%s'") % self.packageFile)
 		try:
 			destinationDir = forceFilename(destinationDir)
-			newProductId   = forceUnicode(newProductId)
+			if newProductId:
+				newProductId = forceUnicode(newProductId)
 			
 			archive = Archive(filename = self.packageFile, progressSubject = progressSubject)
 			
@@ -446,6 +447,9 @@ class ProductPackageSource(object):
 		
 		self.tmpPackDir = os.path.join(self.tempDir, u'.opsi.pack.%s' % randomString(5))
 	
+	def getPackageFile(self):
+		return self.packageFile
+		
 	def cleanup(self):
 		logger.info(u"Cleaning up")
 		if os.path.isdir(self.tmpPackDir):
@@ -475,7 +479,7 @@ class ProductPackageSource(object):
 			
 			for d in dirs:
 				if not os.path.exists( os.path.join(self.packageSourceDir, d) ) and (d != u'OPSI'):
-					logger.warning(u"Directory '%s' does not exist!" % os.path.join(self.packageSourceDir, d))
+					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
 					continue
 				
 				fileList = findFiles( os.path.join(self.packageSourceDir, d), excludeDir = EXCLUDE_DIRS_ON_PACK, excludeFile = EXCLUDE_FILES_ON_PACK )
