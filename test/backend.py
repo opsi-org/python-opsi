@@ -1056,7 +1056,6 @@ class BackendTest(object):
 		
 		
 		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
-		print hosts
 		assert len(hosts) == len(self.configservers)
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ] )
@@ -1240,12 +1239,6 @@ class BackendTest(object):
 		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
 		assert len(configStates) == 1
 		logger.debug(u"expected(%s), got(%s)" % (self.configState4.getValues()[0], configStates[0].getValues()[0]))
-		
-		print "+++"
-		print self.configState4.getValues()[0]
-		print "+++"
-		print configStates[0].getValues()[0]
-		print "+++"
 		
 		assert configStates[0].getValues()[0] == self.configState4.getValues()[0]
 		
@@ -1557,13 +1550,6 @@ class BackendTest(object):
 		self.backend.auditSoftware_createObjects(self.auditSoftwares)
 		
 		auditSoftwares = self.backend.auditSoftware_getObjects()
-		print "got"
-		for a in auditSoftwares:
-			print a
-		print "expected"
-		for a in self.auditSoftwares:
-			print a
-		print
 		assert len(auditSoftwares) == len(self.auditSoftwares)
 		
 		auditSoftware3update = AuditSoftware(
@@ -1617,19 +1603,11 @@ class BackendTest(object):
 		
 		self.backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects(binaryName = 'updatedBN')
-		for a in auditSoftwareOnClients:
-			print a.toHash()
-		print
 		assert len(auditSoftwareOnClients) == 1
 		
 		logger.info(u"Deleting auditSoftwareOnClient: %s" % auditSoftwareOnClient1update.toHash())
 		self.backend.auditSoftwareOnClient_deleteObjects(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-		for a in auditSoftwareOnClients:
-			print a
-		print
-		for a in self.auditSoftwareOnClients:
-			print a
 		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients) - 1
 		
 		self.backend.auditSoftwareOnClient_insertObject(self.auditSoftwareOnClient1)
@@ -1652,10 +1630,6 @@ class BackendTest(object):
 		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHA*IS', '*UTER_SYS*'])
 		for auditHardware in auditHardwares:
 			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM']
-		
-		auditHardwares = self.backend.auditHardware_getObjects(['description'])
-		for auditHardware in auditHardwares:
-			assert auditHardware.toHash().get('name') is None
 		
 		self.backend.auditHardware_deleteObjects([ self.auditHardware1, self.auditHardware2 ])
 		auditHardwares = self.backend.auditHardware_getObjects()

@@ -1419,6 +1419,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_insertObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
+		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		if not os.path.exists(filename):
@@ -1440,10 +1441,12 @@ class FileBackend(ConfigDataBackend):
 				continue
 			ini.set(section, key, self.__escape(value))
 		iniFile.generate(ini)
+		logger.notice(u"Inserted auditSoftware.")
 		
 	def auditSoftware_updateObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
+		logger.notice(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1463,10 +1466,12 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(ini)
 				return
 		raise Exception(u"AuditSoftware %s not found" % auditSoftware)
+		logger.notice(u"Updated auditSoftware.")
 		
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
+		logger.notice(u"Getting objectToGroups ...")
 		result = []
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		if not os.path.exists(filename):
@@ -1493,11 +1498,14 @@ class FileBackend(ConfigDataBackend):
 			
 			if self._objectHashMatches(objHash, **filter):
 				result.append(AuditSoftware.fromHash(objHash))
+		logger.notice(u"Got objectToGroups.")
+		
 		return result
 	
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		
+		logger.notice(u"Deleting auditSoftwares ...")
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1515,6 +1523,7 @@ class FileBackend(ConfigDataBackend):
 				if found:
 					ini.remove_section(section)
 		iniFile.generate(ini)
+		logger.notice(u"Deleted auditSoftwares.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
@@ -1522,6 +1531,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
+		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
 		iniFile = IniFile(filename = filename)
 		if not os.path.exists(filename):
@@ -1543,10 +1553,12 @@ class FileBackend(ConfigDataBackend):
 				continue
 			ini.set(section, key, self.__escape(value))
 		iniFile.generate(ini)
+		logger.notice(u"Inserted auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
+		logger.notice(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1565,11 +1577,13 @@ class FileBackend(ConfigDataBackend):
 					ini.set(section, key, self.__escape(value))
 				iniFile.generate(ini)
 				return
-		raise Exception(u"AuditSoftwareOnClient %s not found" % auditSoftwareOnClient)
+		raise Exception(u"auditSoftwareOnClient %s not found" % auditSoftwareOnClient)
+		logger.notice(u"Updated auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		
+		logger.notice(u"Getting auditSoftwareOnClients ...")
 		filenames = {}
 		for ident in self._getIdents('AuditSoftwareOnClient', **filter):
 			if not ident['clientId'] in filenames.keys():
@@ -1605,11 +1619,14 @@ class FileBackend(ConfigDataBackend):
 				
 				if self._objectHashMatches(objHash, **filter):
 					result.append(AuditSoftwareOnClient.fromHash(objHash))
+		logger.notice(u"Got auditSoftwareOnClients.")
+		
 		return result
 	
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		
+		logger.notice(u"Deleting auditSoftwareOnClients ...")
 		filenames = {}
 		idents = {}
 		for auditSoftwareOnClient in  forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
@@ -1633,8 +1650,7 @@ class FileBackend(ConfigDataBackend):
 					if found:
 						ini.remove_section(section)
 			iniFile.generate(ini)
-			
-		
+		logger.notice(u"Deleted auditSoftwareOnClients.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
@@ -1644,24 +1660,70 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
 		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
-		#self._write(auditHardware, mode = 'create')
-		self._setAudit(auditHardware, mode = 'create')
+		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+		iniFile = IniFile(filename = filename)
+		if not os.path.exists(filename):
+			iniFile.create(group = 'pcpatch', mode = 0660)
+		
+		ini = iniFile.parse()
+		
+		nums = []
+		for section in ini.sections():
+			nums.append(int(section.split('_')[-1]))
+		num = 0
+		while num in nums:
+			num += 1
+		
+		section = u'HARDWARE_%d' % num
+		ini.add_section(section)
+		for (key, value) in auditHardware.toHash().items():
+			if value is None:
+				continue
+			ini.set(section, key.lower(), self.__escape(value))
+		iniFile.generate(ini)
 		logger.notice(u"Inserted auditHardware.")
 	
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
 		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
-		#self._write(auditHardware, mode = 'update')
-		self._setAudit(auditHardware, mode = 'update')
+		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+		iniFile = IniFile(filename = filename)
+		ini = iniFile.parse()
+		ident = auditHardware.getIdent(returnType = 'dict')
+		
+		for section in ini.sections():
+			found = True
+			for (key, value) in ident.items():
+				if not ini.has_option(section, key.lower()):
+					continue
+				if (self.__unescape(ini.get(section, key.lower())) != value):
+					found = False
+					break
+			if not found:
+				raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
 		logger.notice(u"Updated auditHardware.")
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwares ...")
-		#result = self._read('AuditHardware', attributes, **filter)
-		result = self._getAudit('AuditHardware', attributes, **filter)
+		result = []
+		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+		if not os.path.exists(filename):
+			return result
+		iniFile = IniFile(filename = filename)
+		ini = iniFile.parse()
+		for section in ini.sections():
+			objHash = {}
+			for option in ini.options(section):
+				if option.lower() == 'hardwareclass':
+					objHash['hardwareClass'] = self.__unescape(ini.get(section, option))
+				else:
+					objHash[str(option)] = self.__unescape(ini.get(section, option))
+			
+			if self._objectHashMatches(objHash, **filter):
+				result.append(AuditHardware.fromHash(objHash))
 		logger.notice(u"Got auditHardwares.")
 		
 		return result
@@ -1670,8 +1732,28 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		
 		logger.notice(u"Deleting auditHardwares ...")
-		#self._delete(forceObjectClassList(auditHardwares, AuditHardware))
-		self._setAudit(auditHardwares, mode = 'delete')
+		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+		iniFile = IniFile(filename = filename)
+		ini = iniFile.parse()
+		idents = []
+		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
+			idents.append(auditHardware.getIdent(returnType = 'dict'))
+		
+		for section in ini.sections():
+			for ident in idents:
+				found = True
+				for (key, value) in ident.items():
+					if not ini.has_option(section, key.lower()):
+						continue
+					if (self.__unescape(ini.get(section, key.lower())) != value):
+						found = False
+						break
+				
+				logger.debug2(u"Deleting auditHardware '%s'" % (ident))
+				if found:
+					ini.remove_section(section)
+					logger.debug2(u"Removed section '%s'" % (section))
+		iniFile.generate(ini)
 		logger.notice(u"Deleted auditHardwares.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1682,24 +1764,81 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		#self._write(auditHardwareOnHost, mode = 'create')
-		self._setAudit(auditHardwareOnHost, mode = 'create')
+		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
+		iniFile = IniFile(filename = filename)
+		if not os.path.exists(filename):
+			iniFile.create(group = 'pcpatch', mode = 0660)
+		
+		ini = iniFile.parse()
+		
+		nums = []
+		for section in ini.sections():
+			nums.append(int(section.split('_')[-1]))
+		num = 0
+		while num in nums:
+			num += 1
+		
+		section = u'HARDWARE_%d' % num
+		ini.add_section(section)
+		for (key, value) in auditHardwareOnHost.toHash().items():
+			if value is None:
+				continue
+			ini.set(section, key.lower(), self.__escape(value))
+		iniFile.generate(ini)
 		logger.notice(u"Inserted auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
 		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		#self._write(auditHardwareOnHost, mode = 'update')
-		self._setAudit(auditHardwareOnHost, mode = 'update')
+		filename = self._getConfigFile('AuditSoftwareOnClient', {"hostId": auditHardwareOnHost.hostId }, 'hw')
+		iniFile = IniFile(filename = filename)
+		ini = iniFile.parse()
+		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
+		
+		for section in ini.sections():
+			found = True
+			for (key, value) in ident.items():
+				if (self.__unescape(ini.get(section, key.lower())) != value):
+					found = False
+					break
+			if found:
+				for (key, value) in auditSoftwareOnClient.toHash().items():
+					if value is None:
+						continue
+					ini.set(section, key.lower(), self.__escape(value))
+				iniFile.generate(ini)
+				return
+		raise Exception(u"auditHardwareOnHost %s not found" % auditHardwareOnHost)
 		logger.notice(u"Updated auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
 		logger.notice(u"Getting auditHardwareOnHosts ...")
-		#result = self._read('AuditHardwareOnHost', attributes, **filter)
-		result = self._getAudit('AuditHardwareOnHost', attributes, **filter)
+		filenames = {}
+		for ident in self._getIdents('AuditHardwareOnHost', **filter):
+			if not ident['hostId'] in filenames.keys():
+				filenames[ident['hostId']] = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
+		
+		result = []
+		for (hostId, filename) in filenames.items():
+			if not os.path.exists(filename):
+				continue
+			iniFile = IniFile(filename = filename)
+			ini = iniFile.parse()
+			for section in ini.sections():
+				objHash = {
+				u'hostId': hostId
+				}
+				for option in ini.options(section):
+					if option.lower() == u'hardwareclass':
+						objHash['hardwareClass'] = self.__unescape(ini.get(section, option))
+					else:
+						objHash[str(option)] = self.__unescape(ini.get(section, option))
+				
+				if self._objectHashMatches(objHash, **filter):
+					result.append(AuditHardwareOnHost.fromHash(objHash))
 		logger.notice(u"Got auditHardwareOnHosts.")
 		
 		return result
@@ -1708,230 +1847,30 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
 		logger.notice(u"Deleting auditHardwareOnHosts ...")
-		#self._delete(forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost))
-		self._setAudit(auditHardwareOnHosts, mode = 'delete')
+		filenames = {}
+		idents = {}
+		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			ident = auditHardwareOnHost.getIdent(returnType = 'dict')
+			if not idents.has_key(ident['hostId']):
+				idents[ident['hostId']] = []
+			idents[ident['hostId']].append(ident)
+			if not ident['hostId'] in filenames.keys():
+				filenames[ident['hostId']] = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
+		
+		for (clientId, filename) in filenames.items():
+			iniFile = IniFile(filename = filename)
+			ini = iniFile.parse()
+			for section in ini.sections():
+				for ident in idents[clientId]:
+					found = True
+					for (key, value) in ident.items():
+						if (self.__unescape(ini.get(section, key.lower())) != value):
+							found = False
+							break
+					if found:
+						ini.remove_section(section)
+			iniFile.generate(ini)
 		logger.notice(u"Deleted auditHardwareOnHosts.")
-	
-	
-	
-	
-	
-	
-	
-	def _setAudit(self, objList, mode):
-		if not mode in ('create', 'update', 'delete'):
-			raise Exception(u"Wrong parameter '%s' given!" % (mode))
-		
-		objList = forceList(objList)
-		filenames = []
-		
-		for obj in objList:
-			fileType = ''
-			if obj.getType() in ('AuditSoftware', 'AuditSoftwareOnClient'):
-				fileType = 'sw'
-			elif obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
-				fileType = 'hw'
-			else:
-				logger.error(u"Wrong type delivered: '%s' in object: %s" % (obj.getType()), obj.getIdent())
-				continue
-			
-			filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType)
-			if mode == 'create' or os.path.isfile(filename):
-				if not filename in filenames:
-					filenames.append(filename)
-			else:
-				logger.info(u"Could not %s %s: '%s' has no config file '%s'" \
-					% (mode, obj.getType(), obj.getIdent()), filename)
-		
-		for filename in filenames:
-			iniFile = IniFile(filename = filename, ignoreCase = False)
-			if (mode == 'create'):
-				iniFile.create(group = 'pcpatch', mode = 0660)
-			cp = iniFile.parse()
-			
-			remainingObjs = objList
-			unprocessedObjs = []
-			
-			while len(remainingObjs) > 0:
-				for obj in remainingObjs:
-					ident = obj.getIdent(returnType = 'dict')
-					fileType = 'sw'
-					if obj.getType() in ('AuditHardware', 'AuditHardwareOnHost'):
-						fileType = 'hw'
-					
-					if filename != self._getConfigFile(obj.getType(), obj.getIdent(returnType = 'dict'), fileType):
-						unprocessedObjs.append(obj)
-					else:
-						section = u''
-						
-						if fileType == 'hw':
-							section = u'%s_' % (self.__escape(obj.getHardwareClass()))
-							sectionNr = 0
-							options = {}
-							
-							for oldSection in cp.sections():
-								oldSectionNrIndex = oldSection.rfind('_') + 1
-								if oldSection[:oldSectionNrIndex] != section:
-									continue
-								
-								matched = True
-								for (key, value) in obj.toHash().items():
-									if key in ('hardwareClass', 'hostId'):
-										continue
-									if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
-										matched = False
-								
-								try:
-									if matched:
-										sectionNr = forceInt(oldSection[oldSectionNrIndex:])
-										break
-									else:
-										oldSectionNr = forceInt(oldSection[oldSectionNrIndex:])
-										if sectionNr < oldSectionNr + 1:
-											sectionNr = oldSectionNr + 1
-								except:
-									logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
-							
-							section = u'%s%s' % (section, sectionNr)
-						else:
-							section = u'%s;%s;%s;%s;%s' % (
-								self.__escape(ident['name']),
-								self.__escape(ident['version']),
-								self.__escape(ident['subVersion']),
-								self.__escape(ident['language']),
-								self.__escape(ident['architecture'])
-								)
-						if mode in ('create', 'delete'):
-							if cp.has_section(section.encode('utf-8')):
-								cp.remove_section(section.encode('utf-8'))
-							if mode == 'create':
-								cp.add_section(section.encode('utf-8'))
-								logger.info(u"Emptied section '%s' in file '%s'" % (section, filename))
-							else:
-								logger.info(u"Deleted section '%s' in file '%s'" % (section, filename))
-						
-						if mode in ('create', 'update'):
-							for (key, value) in obj.toHash().items():
-								option = u'%s' % (key.lower())
-								if value is None:
-									logger.debug2(u"Ignoring key '%s' with None-value" % (key))
-									continue
-								if key in ('name', 'version', 'subVersion', 'language', 'architecture', 'clientId', 'hardwareClass', 'hostId', 'type'):
-									logger.debug2(u"Ignoring already processed key '%s'" % (key))
-									continue
-								
-								if ( isinstance(value, str) or isinstance(value, unicode) ):
-									value = u'%s' % self.__escape(value)
-								
-								logger.info(u"Adding option '%s' with value '%s'" % (option, value))
-								cp.set(section.encode('utf-8'), option, forceUnicode(value))
-						
-						iniFile.generate(cp)
-				
-				remainingObjs = unprocessedObjs
-				unprocessedObjs = []
-			
-			iniFile.generate(cp)
-	
-	
-	
-	def _getAudit(self, objType, attributes, **filter):
-		if filter.get('type') and objType not in forceList(filter.get('type')):
-			return []
-		
-		fileType = ''
-		if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
-			fileType = 'sw'
-		elif objType in ('AuditHardware', 'AuditHardwareOnHost'):
-			fileType = 'hw'
-		else:
-			logger.error(u"Wrong type delivered: '%s'" % (objType))
-			return []
-		
-		logger.debug(u"Filter: %s" % filter)
-		logger.debug(u"Attributes: %s" % attributes)
-		
-		objects = []
-		
-		for ident in self._getIdents(objType, **filter):
-			objHash = dict(ident)
-			
-			filename = self._getConfigFile(objType, ident, fileType)
-			iniFile = IniFile(filename = filename, ignoreCase = False)
-			cp = iniFile.parse()
-			
-			section = u''
-			
-			if fileType == 'hw':
-				section == u'%s_' % self.__escape(obj.getHardwareClass())
-				sectionNr = 0
-				options = {}
-				
-				for oldSection in cp.sections():
-					oldSectionNrIndex = oldSection.rfind('_') + 1
-					if oldSection[:sectionNrIndex] != section:
-						continue
-					
-					matched = True
-					for (key, value) in objHash.Items():
-						if key == 'hardwareClass':
-							continue
-						if not (cp.has_option(oldSection, key) and value == cp.get(oldSection, key)):
-							matched = False
-					
-					try:
-						if matched:
-							sectionNr = forceInt(oldSection[oldSectionNrIndex:])
-							break
-						else:
-							oldSectionNr = forceInt(oldSection[oldSectionNrIndex:])
-							if sectionNr < oldSectionNr + 1:
-								sectionNr = oldSectionNr + 1
-					except:
-						logger.error(u"Found bad section '%s' in file '%s'" % (oldSection, filename))
-				
-				section = u'%s%s' % (section, sectionNr)
-			else:
-				section = u'%s;%s;%s;%s;%s' % (
-					self.__escape(ident['name']),
-					self.__escape(ident['version']),
-					self.__escape(ident['subVersion']),
-					self.__escape(ident['language']),
-					self.__escape(ident['architecture'])
-					)
-			
-			searchKeys = []
-			if objType == 'AuditSoftware':
-				searchKeys = ['windowsSoftwareId', 'windowsDisplayName', 'windowsDisplayVersion', 'installSize']
-			elif objType == 'AuditSoftwareOnClient':
-				searchKeys = ['uninstallString', 'binaryName', 'firstseen', 'lastseen', 'state', 'usageFrequency', 'lastUsed']
-			elif objType == 'AuditHardware':
-				searchKeys = []
-			elif objType == 'AuditHardwareOnHost':
-				searchKeys = ['firstseen', 'lastseen', 'state']
-			
-			if len(searchKeys) > 0:
-				for option in cp.options(sec):
-					key = ''
-					value = ''
-					for searchKey in searchKeys:
-						if option == searchKey.lower():
-							key = searchKey
-							value = self.__unescape(cp.get(section.encode('utf-8'), option))
-							break
-					
-					if key != '':
-						objIdent[key] = value
-						objHash.append({key : value})
-			
-			Class = eval(objType)
-			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
-				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
-				objects.append(Class.fromHash(objHash))
-		
-		for obj in objects:
-			logger.debug2(u"Returning object: %s" % obj.getIdent())
-		return objects
 	
 	
 	

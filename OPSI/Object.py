@@ -2329,6 +2329,13 @@ class AuditHardware(Entity):
 	
 	def __init__(self, hardwareClass, **kwargs):
 		self.setHardwareClass(hardwareClass)
+		for attribute in self.hardwareAttributes.get(hardwareClass, {}).keys():
+			if not kwargs.has_key(attribute) and kwargs.has_key(attribute.lower()):
+				kwargs[attribute] = kwargs[attribute.lower()]
+				del kwargs[attribute.lower()]
+		for (attribute, value) in kwargs.items():
+			if type(value) is str:
+				kwargs[attribute] = forceUnicode(value)
 		self.__dict__.update(kwargs)
 	
 	@staticmethod
