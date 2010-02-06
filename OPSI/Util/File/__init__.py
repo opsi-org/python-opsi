@@ -199,9 +199,20 @@ class TextFile(LockableFile):
 	def readlines(self):
 		self._lines = []
 		if not self._fileHandle:
-			self.open()
-		self._lines = self._fileHandle.readlines()
-		self.close()
+			for encoding in ('utf-8', 'latin_1', 'cp1252', 'utf-16', 'replace'):
+				errors = 'strict'
+				if (encoding == 'replace'):
+					errors = 'replace'
+					encoding = 'utf-8'
+				
+				self.open(encoding = encoding, errors = errors)
+				try:
+					self._lines = self._fileHandle.readlines()
+					self.close()
+					break
+				except ValueError, e:
+					self.close()
+					continue
 		return self._lines
 	
 	def writelines(self, sequence=[]):
@@ -212,6 +223,108 @@ class TextFile(LockableFile):
 		for i in range(len(self._lines)):
 			self._lines[i] += self._lineSeperator
 		self._fileHandle.writelines(self._lines)
+
+class ChangelogFile(TextFile):
+	'''
+	package (version) distribution(s); urgency=urgency
+	    [optional blank line(s), stripped]
+	  * change details
+	     more change details
+	      [blank line(s), included]
+	  * even more change details
+	      [optional blank line(s), stripped]
+	[one space]-- maintainer name <email address>[two spaces]date
+
+	'''
+	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
+	
+	def __init__(self, filename, lockFailTimeout = 2000):
+		TextFile.__init__(self, filename, lockFailTimeout)
+		self._parsed = False
+		self._entries = []
+		
+	def parse(self):
+		self.readlines()
+		self._entries = []
+		for lineNum in range(len(self._lines)):
+			try:
+				line = self._lines[lineNum]
+				match = self.releaseLineRegex.search(line)
+				if match:
+					self._entries.append( {
+						'package':         match.group(1),
+						'version':         match.group(2),
+						'release':         match.group(3),
+						'urgency':         match.group(4),
+						'changelog':       [],
+						'maintainerName':  u'',
+						'maintainerEmail': u'',
+						'date':            None
+					})
+					continue
+				
+				if line.startswith(' --'):
+					if (line.find('  ') == -1):
+						raise Exception(u"maintainer must be separated from date using two spaces")
+					if (len(self._entries) == 0) or self._entries[-1]['date']:
+						raise Exception(u"found trailer out of release")
+					
+					(maintainer, date) = line[3:].strip().split('  ', 1)
+					email = u''
+					if (maintainer.find('<') != -1):
+						(maintainer, email) = maintainer.split('<', 1)
+						maintainer = maintainer.strip()
+						email = email.strip().replace('<', '').replace('>', '')
+					self._entries[-1]['maintainerName'] = maintainer
+					self._entries[-1]['maintainerEmail'] = email
+					if (date.find('+') != -1):
+						date = date.split('+')[0]
+					self._entries[-1]['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
+					changelog = []
+					buf = []
+					for l in self._entries[-1]['changelog']:
+						if not changelog and not l.strip():
+							continue
+						if not l.strip():
+							buf.append(l)
+						else:
+							changelog.extend(buf)
+							buf = []
+							changelog.append(l)
+					self._entries[-1]['changelog'] = changelog
+					
+				else:
+					if (len(self._entries) == 0) and line.strip():
+						raise Exception(u"text out of release")
+					self._entries[-1]['changelog'].append(line.rstrip())
+			except Exception, e:
+				self._entries = []
+				raise Exception(u"Parse error in line %d: %s" % (lineNum, e))
+		self._parsed = True
+	
+	def generate(self):
+		if not self._entries:
+			raise Exception(u"No entries to write")
+		self._lines = []
+		for entry in self._entries:
+			self._lines.append(u'%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
+			self._lines.append(u'')
+			for line in entry['changelog']:
+				self._lines.append(line)
+			self._lines.append(u' -- %s <%s>  %s' % (entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])))
+			self._lines.append(u'')
+		self.open('w')
+		self.writelines()
+		self.close()
+		
+	def getEntries(self):
+		if not self._parsed:
+			self.parse()
+		return self._entries
+	
+	def setEntries(self, entries):
+		self._entries = forceList(entries)
+	
 	
 class ConfigFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '/', '#']):
@@ -219,9 +332,9 @@ class ConfigFile(TextFile):
 		self._commentChars = forceList(commentChars)
 		self._parsed = False
 	
-	def setFilename(self, filename):
-		TextFile.setFilename(filename)
-		self._parsed = False
+	#def setFilename(self, filename):
+	#	TextFile.setFilename(filename)
+	#	self._parsed = False
 	
 	def parse(self):
 		self.readlines()

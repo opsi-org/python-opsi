@@ -290,25 +290,6 @@ class PackageControlFile(TextFile):
 		self._packageDependencies = []
 		self._incrementalPackage = False
 	
-	def readlines(self):
-		self._lines = []
-		if not self._fileHandle:
-			for encoding in ('utf-8', 'latin_1', 'cp1252', 'utf-16', 'replace'):
-				errors = 'strict'
-				if (encoding == 'replace'):
-					errors = 'replace'
-					encoding = 'utf-8'
-				
-				self.open(encoding = encoding, errors = errors)
-				try:
-					self._lines = self._fileHandle.readlines()
-					self.close()
-					break
-				except ValueError, e:
-					self.close()
-					continue
-		return self._lines
-	
 	def parse(self):
 		self.readlines()
 		
