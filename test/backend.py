@@ -1701,24 +1701,6 @@ class BackendTest(object):
 		
 	def testNonObjectMethods(self):
 		# Hosts
-		if not isinstance(self.backend, FileBackend):
-			self.backend.host_createOpsiConfigserver(
-					id = 'config100.uib.local',
-					opsiHostKey = '123456789012345678901234567890bb',
-					depotLocalUrl = 'file:///opt/pcbin/install',
-					depotRemoteUrl = 'smb://config1.uib.local/opt_pcbin/install',
-					repositoryLocalUrl = 'file:///var/lib/opsi/products',
-					repositoryRemoteUrl = 'webdavs://config1.uib.local:4447/products',
-					description = 'config server',
-					notes = 'config 100',
-					hardwareAddress = None,
-					ipAddress = None,
-					networkAddress = '192.168.100.0/24',
-					maxBandwidth = 200000)
-			
-			hosts = self.backend.host_getObjects(id = 'config100.uib.local')
-			assert len(hosts) == 1
-			
 		self.backend.host_createOpsiDepotserver(
 				id = 'depot100.uib.local',
 				opsiHostKey = '123456789012345678901234567890aa',
