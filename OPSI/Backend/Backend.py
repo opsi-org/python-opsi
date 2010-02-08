@@ -2802,14 +2802,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
 		for auditHardwareOnHost in auditHardwareOnHosts:
-			filter = { 'hardwareClass': auditHardwareOnHost.getHardwareClass() }
-			for attribute in self._auditHardwareConfig[auditHardwareOnHost.getHardwareClass()].keys():
-				if not hasattr(auditHardwareOnHost, attribute):
-					filter[attribute] = [ None ]
-					setattr(auditHardwareOnHost, attribute, None)
-				else:
-					filter[attribute] = getattr(auditHardwareOnHost, attribute)
-			
+			filter = auditHardwareOnHost.toHash()
+			# TODO: REMOVE state, lastseen from filter
 			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
 				logger.info(u"%s already exists, updating" % auditHardwareOnHost)
 				auditHardwareOnHost.setLastseen(timestamp())

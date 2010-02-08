@@ -1717,13 +1717,15 @@ class FileBackend(ConfigDataBackend):
 		for section in ini.sections():
 			objHash = {}
 			for option in ini.options(section):
-				if option.lower() == 'hardwareclass':
+				if (option.lower() == 'hardwareclass'):
 					objHash['hardwareClass'] = self.__unescape(ini.get(section, option))
 				else:
 					objHash[str(option)] = self.__unescape(ini.get(section, option))
 			
-			if self._objectHashMatches(objHash, **filter):
-				result.append(AuditHardware.fromHash(objHash))
+			auditHardware = AuditHardware.fromHash(objHash)
+			print "???????????????????????????????????????????", auditHardware.toHash()
+			if self._objectHashMatches(auditHardware.toHash(), **filter):
+				result.append(auditHardware)
 		logger.notice(u"Got auditHardwares.")
 		
 		return result
@@ -1796,10 +1798,15 @@ class FileBackend(ConfigDataBackend):
 		ini = iniFile.parse()
 		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
 		
+		updated = False
 		for section in ini.sections():
 			found = True
+			print "section:", section
 			for (key, value) in ident.items():
-				if (self.__unescape(ini.get(section, key.lower())) != value):
+				key = key.lower()
+				if value is None and not ini.has_option(section, key):
+					continue
+				if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
 					found = False
 					break
 			if found:
@@ -1839,8 +1846,10 @@ class FileBackend(ConfigDataBackend):
 					else:
 						objHash[str(option)] = self.__unescape(ini.get(section, option))
 				
-				if self._objectHashMatches(objHash, **filter):
-					result.append(AuditHardwareOnHost.fromHash(objHash))
+				auditHardwareOnHost = AuditHardwareOnHost.fromHash(objHash)
+				if self._objectHashMatches(auditHardwareOnHost.toHash(), **filter):
+					print "APPENDING: %s" % auditHardwareOnHost.toHash()
+					result.append(auditHardwareOnHost)
 		logger.notice(u"Got auditHardwareOnHosts.")
 		
 		return result
@@ -1862,16 +1871,23 @@ class FileBackend(ConfigDataBackend):
 		for (clientId, filename) in filenames.items():
 			iniFile = IniFile(filename = filename)
 			ini = iniFile.parse()
+			
 			for section in ini.sections():
 				for ident in idents[clientId]:
 					found = True
 					for (key, value) in ident.items():
-						if (self.__unescape(ini.get(section, key.lower())) != value):
+						key = key.lower()
+						if value is None and not ini.has_option(section, key):
+							continue
+						if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
 							found = False
 							break
 					if found:
 						ini.remove_section(section)
+						logger.debug2(u"Removed section '%s'" % (section))
+			
 			iniFile.generate(ini)
+		
 		logger.notice(u"Deleted auditHardwareOnHosts.")
 	
 	
