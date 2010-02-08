@@ -1454,7 +1454,6 @@ class ProductOnClient(Relationship):
 	def setActionSequence(self, actionSequence):
 		self.actionSequence = forceInt(actionSequence)
 		
-	self.actionSequence = -1
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'
