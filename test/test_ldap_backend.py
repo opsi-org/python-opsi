@@ -14,8 +14,14 @@ logger.setConsoleColor(True)
 logger.setLogFile("out.log")
 
 
-
-ldapBackend = LDAPBackend(username = 'cn=admin,dc=uib,dc=local', password = 'linux123', adress = 'localhost')
+baseDn = u'dc=uib,dc=local'
+ldapBackend = LDAPBackend(
+	username         = "cn=admin,%s" % baseDn,
+	password         = "linux123",
+	adress           = "localhost",
+	opsiBaseDn       = "cn=opsi-ldap-test,%s" % baseDn,
+	hostsContainerDn = u"cn=hosts,cn=opsi,%s" % baseDn
+)
 
 '''
 print ldapBackend._objectFilterToLDAPFilter( {"type": ['OpsiClient']})
