@@ -5,21 +5,8 @@ import sys, time, random, socket
 
 from OPSI.Logger import *
 from OPSI.Object import *
-from OPSI.Backend.File import FileBackend
 
 logger = Logger()
-
-someTypes = (
-	1,
-	None,
-	True,
-	time.localtime(),
-	u'unicode string',
-	u'utf-8 string: äöüß€®'.encode('utf-8'),
-	u'windows-1258 string: äöüß€'.encode('windows-1258'),
-	u'utf-16 string: äöüß€'.encode('utf-16'),
-	u'latin1 string: äöüß'.encode('latin-1')
-)
 
 class BackendTest(object):
 	def __init__(self, backend):
