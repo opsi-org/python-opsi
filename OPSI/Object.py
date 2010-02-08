@@ -119,7 +119,10 @@ class BaseObject(object):
 		identAttributes = self.getIdentAttributes()
 		identValues = []
 		for attr in identAttributes:
-			identValues.append(forceUnicode(getattr(self, attr)))
+			v = getattr(self, attr)
+			if v is None:
+				v = u''
+			identValues.append(forceUnicode(v))
 		if returnType in ('list'):
 			return identValues
 		elif returnType in ('tuple'):
@@ -139,7 +142,7 @@ class BaseObject(object):
 		return unicode(self.__class__.__name__)
 	
 	def __unicode__(self):
-		return u"<%s'>" % self.getType()
+		return u"<%s>" % self.getType()
 	
 	def toJson(self):
 		return toJson(self)
@@ -2361,6 +2364,12 @@ class AuditHardware(Entity):
 					hardwareAttributes[hwClass][value['Opsi']] = value["Type"]
 		AuditHardware.hardwareAttributes = hardwareAttributes
 	
+	def setDefaults(self):
+		Relationship.setDefaults(self)
+		for attribute in self.hardwareAttributes.get(hardwareClass, {}).keys():
+			if not hasattr(self, attribute) or getattr(self, attribute) is None:
+				setattr(self, attribute, u'')
+		
 	def setHardwareClass(self, hardwareClass):
 		self.hardwareClass = forceUnicode(hardwareClass)
 	
@@ -2433,6 +2442,9 @@ class AuditHardwareOnHost(Relationship):
 	
 	def setDefaults(self):
 		Relationship.setDefaults(self)
+		for attribute in self.hardwareAttributes.get(hardwareClass, {}).keys():
+			if not hasattr(self, attribute) or getattr(self, attribute) is None:
+				setattr(self, attribute, u'')
 		if self.firstseen is None:
 			self.setFirstseen(timestamp())
 		if self.lastseen is None:

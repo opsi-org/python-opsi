@@ -2959,35 +2959,11 @@ class DepotserverBackend(ExtendedBackend):
 		
 		if (username == 'pcpatch'):
 			try:
-				import pwd, grp
-				uid = pwd.getpwnam(username)[2]
-				if os.geteuid() in (0, uid):
-					gid = grp.getgrnam(username)[2]
-					sshDir = os.path.join(pwd.getpwnam(username)[5], u'.ssh')
-					idRsa = os.path.join(sshDir, u'id_rsa')
-					idRsaPub = os.path.join(sshDir, u'id_rsa.pub')
-					authorizedKeys = os.path.join(sshDir, u'authorized_keys')
-					if not os.path.exists(sshDir):
-						mkdir(sshDir, 0750)
-						os.chown(sshDir, uid, gid)
-					if not os.path.exists(idRsa):
-						logger.notice(u"Creating RSA private key for user %s in '%s'" % (username, idRsa))
-						execute(u"%s -N '' -t rsa -f %s" % ( which('ssh-keygen'), idRsa))
-						os.chmod(idRsa, 0640)
-						os.chown(idRsa, uid, gid)
-						os.chmod(idRsaPub, 0644)
-						os.chown(idRsaPub, uid, gid)
-					if not os.path.exists(authorizedKeys):
-						f = open(idRsaPub, 'r')
-						f2 = open(authorizedKeys, 'w')
-						f2.write(f.read())
-						f2.close()
-						f.close()
-						os.chmod(authorizedKeys, 0600)
-						os.chown(authorizedKeys, uid, gid)
-					f = open(idRsa, 'r')
-					result['rsaPrivateKey'] = f.read()
-					f.close()
+				import pwd
+				idRsa = os.path.join(pwd.getpwnam(username)[5], u'.ssh', u'id_rsa')
+				f = open(idRsa, 'r')
+				result['rsaPrivateKey'] = f.read()
+				f.close()
 			except Exception, e:
 				logger.debug(e)
 		if hostId:
