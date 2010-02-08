@@ -2010,7 +2010,6 @@ class BackendTest(object):
 					logger.notice(u"Thread %s done" % self)
 				except Exception, e:
 					logger.logException(e)
-		
 		mtts = []
 		for i in range(50):
 			mtt = MultiThreadTest(self)
@@ -2018,6 +2017,10 @@ class BackendTest(object):
 			mtt.start()
 		for mtt in mtts:
 			mtt.join()
+		try:
+			self.backend.host_createObjects(self.client1)
+		except Exception, e:
+			logger.logException(e)
 		logger.setConsoleLevel(consoleLevel)
 		
 class BackendManagerTest(BackendTest):

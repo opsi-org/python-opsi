@@ -1018,14 +1018,18 @@ class FileBackend(ConfigDataBackend):
 			cp = iniFile.parse()
 			
 			for obj in objList:
-				section = u'%s' % obj.getId()
+				section = None
+				if (obj.getType() == 'ObjectToGroup'):
+					section = obj.getGroupId()
+				else:
+					section = obj.getId()
 				
 				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
-				if obj.getType() == 'ObjectToGroup':
-					if cp.has_option(obj.getGroupId(), obj.getObjectId()):
-						cp.remove_option(obj.getGroupId(), obj.getObjectId())
+				if (obj.getType() == 'ObjectToGroup'):
+					if cp.has_option(section, obj.getObjectId()):
+						cp.remove_option(section, obj.getObjectId())
 						logger.debug2(u"Removed option '%s' in section '%s'" \
-							% (obj.getGroupId(), obj.getObjectId()))
+							% (obj.getObjectId(), section))
 				else:
 					if cp.has_section(section):
 						cp.remove_section(section)

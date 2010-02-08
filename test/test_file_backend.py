@@ -33,7 +33,8 @@ bt = BackendTest(ExtendedConfigDataBackend(fileBackend))
 bt.cleanupBackend()
 bt.testObjectMethods()
 bt.testInventoryObjectMethods()
-#bt.testNonObjectMethods()
+bt.testNonObjectMethods()
+bt.testMultithreading()
 #bt.testPerformance()
 
 
