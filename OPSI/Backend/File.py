@@ -59,6 +59,13 @@ class FileBackend(ConfigDataBackend):
 		self.__baseDir     = u'/var/lib/opsi/config'
 		self.__hostKeyFile = u'/etc/opsi/pckeys'
 		
+		self.__fileUser  = u'opsiconfd'
+		self.__fileGroup = u'opsiadmin'
+		self.__fileMode  = 0660
+		self.__dirUser   = u'opsiconfd'
+		self.__dirGroup  = u'opsiadmin'
+		self.__dirMode   = 0770
+		
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -66,7 +73,11 @@ class FileBackend(ConfigDataBackend):
 				self.__baseDir = forceFilename(value)
 			elif option in ('hostkeyfile'):
 				self.__hostKeyFile = forceFilename(value)
-			
+		
+		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
+		self.__fileGid = grp.getgrnam(self.__fileGroup)[2]
+		self.__dirUid  = pwd.getpwnam(self.__dirUser)[2]
+		self.__dirGid  = grp.getgrnam(self.__dirGroup)[2]
 		
 		self.__clientConfigDir   = os.path.join(self.__baseDir, u'clients')
 		self.__depotConfigDir    = os.path.join(self.__baseDir, u'depots')
@@ -203,27 +214,16 @@ class FileBackend(ConfigDataBackend):
 		pass
 	
 	def backend_createBase(self):
-		if not os.path.exists(self.__baseDir):
-			self._mkdir(self.__baseDir)
-		if not os.path.exists(self.__clientConfigDir):
-			self._mkdir(self.__clientConfigDir)
-		if not os.path.exists(self.__depotConfigDir):
-			self._mkdir(self.__depotConfigDir)
-		if not os.path.exists(self.__productDir):
-			self._mkdir(self.__productDir)
-		if not os.path.exists(self.__auditDir):
-			self._mkdir(self.__auditDir)
-		if not os.path.exists(self.__clientTemplateDir):
-			self._mkdir(self.__clientTemplateDir)
+		for dirname in (self.__baseDir, self.__clientConfigDir, self.__depotConfigDir, self.__productDir, self.__auditDir, self.__clientTemplateDir):
+			if not os.path.isdir(dirname):
+				self._mkdir(dirname)
+			self._setRights(dirname)
+		
 		defaultTemplate = os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini')
-		if not os.path.exists(defaultTemplate):
-			self._touch(defaultTemplate)
-		if not os.path.exists(self.__configFile):
-			self._touch(self.__configFile)
-		if not os.path.exists(self.__hostKeyFile):
-			self._touch(self.__hostKeyFile)
-		if not os.path.exists(self.__clientGroupsFile):
-			self._touch(self.__clientGroupsFile)
+		for filename in (defaultTemplate, self.__configFile, self.__hostKeyFile, self.__clientGroupsFile):
+			if not os.path.isfile(filename):
+				self._touch(filename)
+			self._setRights(filename)
 		
 	def backend_deleteBase(self):
 		logger.info(u"Deleting base path: '%s'" % self.__baseDir)
@@ -243,20 +243,35 @@ class FileBackend(ConfigDataBackend):
 			os.unlink(self.__hostKeyFile)
 		if os.path.exists(self.__clientGroupsFile):
 			os.unlink(self.__clientGroupsFile)
+	
+	def _setRights(self, path):
+		if os.path.isfile(path):
+			logger.debug(u"Setting rights on file '%s'" % path)
+			os.chmod(path, self.__fileMode)
+			if (os.geteuid() == 0):
+				os.chown(path, self.__fileUid, self.__fileGid)
+			else:
+				os.chown(path, -1, self.__fileGid)
+		elif os.path.isdir(path):
+			logger.debug(u"Setting rights on dir '%s'" % path)
+			os.chmod(path, self.__dirMode)
+			if (os.geteuid() == 0):
+				os.chown(path, self.__dirUid, self.__dirGid)
+			else:
+				os.chown(path, -1, self.__dirGid)
 		
 	def _mkdir(self, dirname):
 		logger.info(u"Creating path: '%s'" % dirname)
 		os.mkdir(dirname)
-		os.chmod(dirname, 0770)
-		os.chown(dirname, -1, grp.getgrnam('pcpatch')[2])
-	
+		self._setRights(dirname)
+		
 	def _touch(self, filename):
-		logger.info(u"Creating file: '%s'" % filename)
-		f = open(filename, 'w')
-		f.close()
-		os.chmod(filename, 0660)
-		os.chown(filename, -1, grp.getgrnam('pcpatch')[2])
-	
+		if not os.path.exists(filename):
+			logger.info(u"Creating file: '%s'" % filename)
+			f = open(filename, 'w')
+			f.close()
+		self._setRights(filename)
+		
 	def __escape(self, string):
 		string = forceUnicode(string)
 		string = string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
@@ -719,19 +734,20 @@ class FileBackend(ConfigDataBackend):
 			filename = self._getConfigFile(objType, obj.getIdent(returnType = 'dict'), fileType)
 			
 			if not os.path.exists(os.path.dirname(filename)):
-				logger.info(u"Creating path: '%s'" % os.path.dirname(filename))
 				self._mkdir(os.path.dirname(filename))
 			
 			if (fileType == 'key'):
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
+					if not os.path.exists(filename):
+						self._touch(filename)
 					hostKeys = HostKeyFile(filename = filename)
-					hostKeys.create(group = 'pcpatch', mode = 0660)
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename, ignoreCase = False)
-				iniFile.create(group = 'pcpatch', mode = 0660)
+				if not os.path.exists(filename):
+					self._touch(filename)
 				cp = iniFile.parse()
 				
 				if (mode == 'create'):
@@ -741,8 +757,8 @@ class FileBackend(ConfigDataBackend):
 						if objType in ('OpsiClient'):
 							shutil.copyfile(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini'), filename)
 						
+						self._touch(filename)
 						iniFile = IniFile(filename = filename, ignoreCase = False)
-						iniFile.create(group = 'pcpatch', mode = 0660)
 						cp = iniFile.parse()
 					else:
 						newSection = ''
@@ -809,8 +825,9 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(cp)
 			
 			elif (fileType == 'pro'):
+				if not os.path.exists(filename):
+					self._touch(filename)
 				packageControlFile = PackageControlFile(filename = filename)
-				packageControlFile.create(group = 'pcpatch', mode = 0660)
 				
 				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 					if (mode == 'create'):
@@ -1424,10 +1441,11 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
-		iniFile = IniFile(filename = filename)
-		if not os.path.exists(filename):
-			iniFile.create(group = 'pcpatch', mode = 0660)
 		
+		if not os.path.exists(filename):
+			self._touch(filename)
+		
+		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		
 		nums = []
@@ -1537,10 +1555,11 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
-		iniFile = IniFile(filename = filename)
-		if not os.path.exists(filename):
-			iniFile.create(group = 'pcpatch', mode = 0660)
 		
+		if not os.path.exists(filename):
+			self._touch(filename)
+		
+		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		
 		nums = []
@@ -1665,10 +1684,11 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
-		iniFile = IniFile(filename = filename)
-		if not os.path.exists(filename):
-			iniFile.create(group = 'pcpatch', mode = 0660)
 		
+		if not os.path.exists(filename):
+			self._touch(filename)
+		
+		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		
 		nums = []
@@ -1770,10 +1790,11 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
-		iniFile = IniFile(filename = filename)
-		if not os.path.exists(filename):
-			iniFile.create(group = 'pcpatch', mode = 0660)
 		
+		if not os.path.exists(filename):
+			self._touch(filename)
+		
+		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		
 		nums = []

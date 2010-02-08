@@ -562,14 +562,16 @@ def blowfishDecrypt(key, crypt):
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
 	
-def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True):
+def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True):
 	files = []
 	entries = os.listdir(directory)
 	for entry in entries:
 		if entry in ('.', '..'):
 			continue
-		
-		if os.path.isdir(os.path.join(directory, entry)):
+		if os.path.islink(os.path.join(directory, entry)):
+			if returnLinks:
+				files.append( os.path.join(prefix, entry) )
+		elif os.path.isdir(os.path.join(directory, entry)):
 			if excludeDir and re.search(excludeDir, entry):
 				logger.debug(u"Excluding dir '%s' and containing files" % entry)
 				continue
@@ -587,7 +589,8 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 					excludeFile = excludeFile,
 					includeDir  = includeDir,
 					includeFile = includeFile,
-					returnDirs  = returnDirs ) )
+					returnDirs  = returnDirs,
+					returnLinks = returnLinks ) )
 		else:
 			if excludeFile and re.search(excludeFile, entry):
 				logger.debug(u"Excluding file '%s'" % entry)
