@@ -5,6 +5,7 @@ import sys, time, random, socket
 
 from OPSI.Logger import *
 from OPSI.Object import *
+from OPSI.Backend.File import FileBackend
 
 logger = Logger()
 
