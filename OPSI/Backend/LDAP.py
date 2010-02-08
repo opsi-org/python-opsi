@@ -343,7 +343,8 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'actionProgress',     'ldapAttribute': 'opsiProductActionProgress' },
 						{ 'opsiAttribute': 'productVersion',     'ldapAttribute': 'opsiProductVersion' },
 						{ 'opsiAttribute': 'packageVersion',     'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'lastStateChange',    'ldapAttribute': 'lastStateChange' }
+						{ 'opsiAttribute': 'lastStateChange',    'ldapAttribute': 'lastStateChange' },
+						{ 'opsiAttribute': 'actionSequence',     'ldapAttribute': None }
 					]
 				},
 				{
@@ -632,6 +633,9 @@ class LDAPBackend(ConfigDataBackend):
 			if (attribute == 'productClassIds'):
 				value = []
 			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
+				if self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute] is None:
+					# Attribute which are mapped to None should not be writte to ldap
+					continue
 				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
 			else:
 				logger.error(u"No mapping found for opsi attribute '%s' of class '%s'" % (attribute, opsiObject.getType()))

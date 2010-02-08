@@ -1359,13 +1359,14 @@ class ProductOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnClient'
 	
-	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
+	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None, actionSequence=None):
 		self.installationStatus = None
 		self.actionRequest = None
 		self.actionProgress = None
 		self.productVersion = None
 		self.packageVersion = None
 		self.lastStateChange = None
+		self.actionSequence = -1
 		self.setProductId(productId)
 		self.setProductType(productType)
 		self.setClientId(clientId)
@@ -1381,7 +1382,9 @@ class ProductOnClient(Relationship):
 			self.setPackageVersion(packageVersion)
 		if not lastStateChange is None:
 			self.setLastStateChange(lastStateChange)
-	
+		if not actionSequence is None:
+			self.setActionSequence(actionSequence)
+		
 	def setDefaults(self):
 		Relationship.setDefaults(self)
 		if self.installationStatus is None:
@@ -1444,7 +1447,14 @@ class ProductOnClient(Relationship):
 	
 	def setLastStateChange(self, lastStateChange):
 		self.lastStateChange = forceOpsiTimestamp(lastStateChange)
+	
+	def getActionSequence(self):
+		return self.actionSequence
+	
+	def setActionSequence(self, actionSequence):
+		self.actionSequence = forceInt(actionSequence)
 		
+	self.actionSequence = -1
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'

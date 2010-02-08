@@ -2072,6 +2072,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 							for i in range(len(sequence)):
 								logger.debug(u"                 [%2.0f] %s" % (i, sequence[i]))
 				
+				actionSequence = -1
 				for productId in sequence:
 					if not pocByClientIdAndProductId[clientId].has_key(productId):
 						continue
@@ -2092,6 +2093,8 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 										% (	clientId, productId, \
 											pocByClientIdAndProductId[clientId][productId].installationStatus, \
 											pocByClientIdAndProductId[clientId][productId].actionRequest))
+					actionSequence += 1
+					pocByClientIdAndProductId[clientId][productId].setActionSequence(actionSequence)
 					adjustedProductOnClients.append(pocByClientIdAndProductId[clientId][productId])
 				
 				logger.debug(u"         * client %s processed" % clientId)

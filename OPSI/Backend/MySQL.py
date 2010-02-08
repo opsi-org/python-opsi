@@ -370,6 +370,10 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def _objectToDatabaseHash(self, object):
 		hash = object.toHash()
+		if (object.getType() == 'ProductOnClient'):
+			if hash.has_key('actionSequence'):
+				del hash['actionSequence']
+			
 		for (key, value) in hash.items():
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, key)
 			if (key != arg):
