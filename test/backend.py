@@ -1670,25 +1670,28 @@ class BackendTest(object):
 			serialNumber        = 'xxxx-asjdks-sll3kf03-828112'
 		)
 		
-		print "starts here"
 		self.backend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen = '0707-07-07 07:07:07')
 		assert len(auditHardwareOnHosts) == 1
 		
 		logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost4update.toHash())
-		self.backend.auditHardwareOnHost_deleteObjects(auditHardwareOnHost4update)
+		self.backend.auditHardwareOnHost_deleteObjects([auditHardwareOnHost4update, self.auditHardwareOnHost3])
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) - 1
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) - 2
 		
 		self.backend.auditHardwareOnHost_insertObject(self.auditHardwareOnHost4)
+		self.backend.auditHardwareOnHost_insertObject(self.auditHardwareOnHost3)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
 		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)
 		
 		
 		
 		
-		
-		
+		print "###########"
+		print self.auditHardwareOnHost4.toHash()
+		print "###########"
+		print auditHardwareOnHost4update.toHash()
+		print "###########"
 		
 		
 		

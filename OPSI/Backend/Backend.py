@@ -160,7 +160,6 @@ class Backend:
 		
 		for (attribute, value) in objHash.items():
 			if not filter.get(attribute):
-				print "did not test for attribute:", attribute, "value:", value
 				continue
 			matched = False
 			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
