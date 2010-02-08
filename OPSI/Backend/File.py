@@ -1797,10 +1797,6 @@ class FileBackend(ConfigDataBackend):
 		ini = iniFile.parse()
 		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
 		
-		print "----------------------------"
-		
-		print "----------------------------"
-		
 		updated = False
 		for section in ini.sections():
 			found = True
@@ -1810,7 +1806,7 @@ class FileBackend(ConfigDataBackend):
 				key = key.lower()
 				if key == 'hostid':
 					continue
-				if value in (None, u'None') and not ini.has_option(section, key):
+				if value is None and not ini.has_option(section, key):
 					continue
 				if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
 					found = False
@@ -1881,10 +1877,11 @@ class FileBackend(ConfigDataBackend):
 				for ident in idents:
 					found = True
 					for (key, value) in ident.items():
+						print key, value, type(value)
 						key = key.lower()
 						if key == 'hostid':
 							continue
-						if value in (None, u'None') and not ini.has_option(section, key):
+						if value is None and not ini.has_option(section, key):
 							continue
 						if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
 							found = False
