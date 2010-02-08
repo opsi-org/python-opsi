@@ -2365,7 +2365,7 @@ class AuditHardware(Entity):
 		AuditHardware.hardwareAttributes = hardwareAttributes
 	
 	def setDefaults(self):
-		Relationship.setDefaults(self)
+		Entity.setDefaults(self)
 		for attribute in self.hardwareAttributes.get(hardwareClass, {}).keys():
 			if not hasattr(self, attribute) or getattr(self, attribute) is None:
 				setattr(self, attribute, u'')
