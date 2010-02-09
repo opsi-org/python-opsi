@@ -1080,6 +1080,7 @@ class FileBackend(ConfigDataBackend):
 		logger.notice(u"Getting hosts ...")
 		result = self._read('OpsiDepotserver', attributes, **filter)
 		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
+		
 		if opsiConfigServers:
 			contained = False
 			for i in range(len(result)):
@@ -1089,7 +1090,7 @@ class FileBackend(ConfigDataBackend):
 					break
 			
 			if not contained:
-				result.append(opsiConfigServers)
+				result.append(opsiConfigServers[0])
 		result.extend(self._read('OpsiClient', attributes, **filter))
 		logger.notice(u"Got hosts.")
 		

@@ -58,7 +58,7 @@ def mandatoryConstructorArgs(Class):
 	if (last == 0):
 		last = len(args)
 	mandatory = args[1:][:last]
-	logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class, mandatory))
+	logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class.__class__, mandatory))
 	mandatoryConstructorArgsCache[cacheKey] = mandatory
 	return mandatory
 
