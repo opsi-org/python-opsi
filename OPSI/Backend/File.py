@@ -42,8 +42,8 @@ from OPSI.Types import *
 from OPSI.Util import toJson, fromJson
 from OPSI.Util.File import *
 from OPSI.Util.File.Opsi import *
-from Object import *
-from Backend import *
+from OPSI.Object import *
+from OPSI.Backend.Backend import *
 
 # Get logger instance
 logger = Logger()

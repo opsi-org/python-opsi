@@ -205,6 +205,7 @@ def forceIPAddress(var):
 	if not re.search(ipAddressRegex, var):
 		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
+forceIpAddress = forceIPAddress
 
 networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3][0-9]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
