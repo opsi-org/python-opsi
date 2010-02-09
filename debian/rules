@@ -39,11 +39,6 @@ binary: binary-arch binary-indep
 binary-arch: build-arch binary-stamp
 
 binary-stamp:
-	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI
-	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Backend
-	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/System
-	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Util/File/Archive
-	mkdir -p debian/python-opsi/usr/share/python-support/python-opsi/OPSI/Util/File/Opsi
 	
 	cp -R OPSI/web2 debian/python-opsi/usr/share/python-support/python-opsi/OPSI/
 	
@@ -58,10 +53,7 @@ binary-stamp:
 	#install -m 0644 gettext/opsi_system_fr.mo debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_system.mo
 	#install -m 0644 gettext/opsi_ui_fr.mo     debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_ui.mo
 	
-	mkdir -p debian/python-opsi/etc/opsi/backendManager/extend.d
 	for i in `(cd files/backendManager; find -name "*.conf")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
-	
-	mkdir -p debian/python-opsi/etc/opsi/backends
 	for i in `(cd files/backends; find -name "*.conf")`; do install -m 0660 files/backends/$$i debian/python-opsi/etc/opsi/backends/$$i; done
 	
 	#mkdir -p debian/python-opsi/etc/opsi/hwaudit/locales

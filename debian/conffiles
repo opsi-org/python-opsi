@@ -2,6 +2,7 @@ etc/opsi/backendManager/acl.conf
 etc/opsi/backendManager/dispatch.conf
 etc/opsi/backendManager/extend.d/10_opsi.conf
 etc/opsi/backendManager/extend.d/20_legacy.conf
+etc/opsi/backends/dhcpd.conf
 etc/opsi/backends/file.conf
 etc/opsi/backends/ldap.conf
 etc/opsi/backends/mysql.conf

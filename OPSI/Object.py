@@ -418,7 +418,7 @@ class OpsiDepotserver(Host):
 	def setDefaults(self):
 		Host.setDefaults(self)
 		if self.opsiHostKey is None:
-			self.setOpsiHostKey(Tools.generateOpsiHostKey())
+			self.setOpsiHostKey(generateOpsiHostKey())
 	
 	def getOpsiHostKey(self):
 		return self.opsiHostKey

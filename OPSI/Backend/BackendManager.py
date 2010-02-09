@@ -86,12 +86,12 @@ class BackendManager(ExtendedBackend):
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
 			elif option in ('depotbackend'):
-				depotBackend = True
+				depotBackend = forceBool(value)
 			elif option in ('extensionconfigdir') and value:
 				extensionConfigDir = value
 				extend = True
-			elif option in ('extend') and value:
-				extend = True
+			elif option in ('extend'):
+				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
 		

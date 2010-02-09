@@ -36,9 +36,8 @@ __version__ = '3.4.99'
 
 # Globals
 DEFAULT_TMP_DIR               = u'/tmp'
-DEFAULT_CLIENT_DATA_GROUP     = 'pcpatch'
-DEFAULT_CLIENT_DATA_FILE_MODE = 0660
-DEFAULT_CLIENT_DATA_DIR_MODE  = 0770
+DEFAULT_CLIENT_DATA_USER      = u'opsiconfd'
+DEFAULT_CLIENT_DATA_GROUP     = u'pcpatch'
 EXCLUDE_DIRS_ON_PACK          = u'^\.svn$'
 EXCLUDE_FILES_ON_PACK         = u'~$'
 
@@ -305,26 +304,29 @@ class ProductPackageFile(object):
 			if not self.clientDataDir:
 				raise Exception(u"Client data dir not set")
 			
-			user = pwd.getpwuid(os.getuid())[0]
 			productClientDataDir = self.getProductClientDataDir()
+			
+			uid = -1
+			if (os.geteuid() == 0):
+				uid = pwd.getpwnam(DEFAULT_CLIENT_DATA_USER)[2]
+			gid = grp.getgrnam(DEFAULT_CLIENT_DATA_GROUP)[2]
 			
 			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
 				
-				(mode, group) = (DEFAULT_CLIENT_DATA_FILE_MODE, DEFAULT_CLIENT_DATA_GROUP)
-				
-				if os.path.isdir(path):
-					mode = DEFAULT_CLIENT_DATA_DIR_MODE
-				
-				logger.info(u"Setting owner of '%s' to '%s:%s'" % (path, user, group))
+				logger.info(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
 				try:
-					os.chown(path, pwd.getpwnam(user)[2], grp.getgrnam(group)[2])
+					os.chown(path, uid, gid)
 				except Exception, e:
-					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, user, group, e))
+					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
 				
-				logger.info(u"Setting access rights of '%s' to '%o'" % (path, mode))
 				try:
-					os.chmod(path, mode)
+					if os.path.isdir(path):
+						logger.debug(u"Setting rights on directory '%s'" % path)
+						os.chmod(path, 02770)
+					elif os.path.isfile(path):
+						logger.debug(u"Setting rights on file '%s'" % path)
+						os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
 				except Exception, e:
 					raise Exception(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, e))
 		except Exception, e:

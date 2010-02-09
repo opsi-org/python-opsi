@@ -1,3 +1,8 @@
 usr/share/opsi
-usr/lib
-etc/opsi/backendManager/compose.d
+usr/share/python-support/python-opsi/OPSI
+usr/share/python-support/python-opsi/OPSI/Backend
+usr/share/python-support/python-opsi/OPSI/System
+usr/share/python-support/python-opsi/OPSI/Util/File/Archive
+usr/share/python-support/python-opsi/OPSI/Util/File/Opsi
+etc/opsi/backendManager/extend.d
+etc/opsi/backends
