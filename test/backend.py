@@ -1013,6 +1013,16 @@ class BackendTest(object):
 		self.backend.backend_deleteBase()
 	
 	def testObjectMethods(self):
+		self.backend.backend_setOptions({
+			'processProductPriorities':            False,
+			'processProductDependencies':          False,
+			'addProductOnClientDefaults':          False,
+			'addProductPropertyStateDefaults':     False,
+			'addConfigStateDefaults':              False,
+			'deleteConfigStateIfDefault':          False,
+			'returnObjectsOnUpdateAndCreate':      False
+		})
+		
 		logger.notice(u"Creating base")
 		self.backend.backend_createBase()
 		
@@ -1280,8 +1290,7 @@ class BackendTest(object):
 		
 		self.backend.productProperty_createObjects(self.productProperties)
 		productProperties = self.backend.productProperty_getObjects()
-		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
-		assert len(productProperties) == len(self.productProperties)
+		assert len(productProperties) == len(self.productProperties), u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties))
 		for productProperty in productProperties:
 			logger.debug(productProperty)
 			for p in self.productProperties:
@@ -1291,12 +1300,11 @@ class BackendTest(object):
 					p = p.toHash()
 					for (attribute, value) in p.items():
 						if not value is None:
-							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, productProperty[attribute]))
 							if type(value) is list:
 								for v in value:
-									assert v in productProperty[attribute]
+									assert v in productProperty[attribute], u"'%s' not in '%s'" % (v, productProperty[attribute])
 							else:
-								assert value == productProperty[attribute]
+								assert value == productProperty[attribute], u"got: '%s', expected: '%s'" % (value, productProperty[attribute])
 					break
 		
 		self.productProperty2.setDescription(u'updatedfortest')
@@ -1305,46 +1313,44 @@ class BackendTest(object):
 			description = u'updatedfortest')
 		
 		
-		assert len(productProperties) == 1
-		assert productProperties[0].getDescription() == u'updatedfortest'
+		assert len(productProperties) == 1, u"got: '%s', expected: '%s'" % (productProperties, 1)
+		assert productProperties[0].getDescription() == u'updatedfortest', u"got: '%s', expected: '%s'" % (productProperties[0].getDescription(), u'updatedfortest')
 		
 		self.backend.productProperty_deleteObjects(self.productProperty2)
 		productProperties = self.backend.productProperty_getObjects()
-		assert len(productProperties) == len(self.productProperties) - 1
+		assert len(productProperties) == len(self.productProperties) - 1, u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties) - 1)
 		
 		self.backend.productProperty_createObjects(self.productProperty2)
 		self.backend.productProperty_createObjects(self.productProperty1)
 		productProperties = self.backend.productProperty_getObjects()
-		logger.debug(u"expected(%s) == got(%s)" % (self.productProperties, productProperties))
-		assert len(productProperties) == len(self.productProperties)
+		assert len(productProperties) == len(self.productProperties), u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties))
 		
 		# ProductDependencies
 		logger.notice(u"Testing ProductDependency methods")
 		
 		self.backend.productDependency_createObjects(self.productDependencies)
 		productDependencies = self.backend.productDependency_getObjects()
-		assert len(productDependencies) == len(self.productDependencies)
+		assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (productDependencies, len(self.productDependencies))
 		
 		self.productDependency2.requiredProductVersion = "2.0"
 		self.productDependency2.requirementType = None
 		self.backend.productDependency_updateObject(self.productDependency2)
 		productDependencies = self.backend.productDependency_getObjects()
 		
-		assert len(productDependencies) == len(self.productDependencies)
+		assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (productDependencies, len(self.productDependencies))
 		for productDependency in productDependencies:
 			if productDependency.getIdent() == self.productDependency2.getIdent():
-				assert productDependency.getRequiredProductVersion() == "2.0"
-				assert productDependency.getRequirementType() == 'after'
+				assert productDependency.getRequiredProductVersion() == "2.0", u"got: '%s', expected: '%s'" % (productDependency.getRequiredProductVersion(), "2.0")
+				assert productDependency.getRequirementType() == 'after', u"got: '%s', expected: '%s'" % (productDependency.getRequirementType(), 'after')
 #				self.productDependency2.requirementType = 'after'
 		
 		self.backend.productDependency_deleteObjects(self.productDependency2)
 		productDependencies = self.backend.productDependency_getObjects()
-		
-		assert len(productDependencies) == len(self.productDependencies) - 1
+		assert len(productDependencies) == len(self.productDependencies) - 1, u"got: '%s', expected: '%s'" % (productDependencies, len(self.productDependencies) - 1)
 		
 		self.backend.productDependency_createObjects(self.productDependencies)
 		productDependencies = self.backend.productDependency_getObjects()
-		assert len(productDependencies) == len(self.productDependencies)
+		assert len(productDependencies) == len(self.productDependencies), u"got: '%s', expected: '%s'" % (productDependencies, len(self.productDependencies))
 		
 		# ProductOnDepots
 		logger.notice(u"Testing productOnDepot methods")
@@ -1352,20 +1358,22 @@ class BackendTest(object):
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['productId'] )
 		logger.debug(u"expected(%s) == got(%s)" % (self.productOnDepots, productOnDepots))
-		assert len(productOnDepots) == len(self.productOnDepots)
+		assert len(productOnDepots) == len(self.productOnDepots), u"got: '%s', expected: '%s'" % (productOnDepots, len(self.productOnDepots))
 		
 		self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
 		productOnDepots = self.backend.productOnDepot_getObjects()
-		
-		assert len(productOnDepots) == len(self.productOnDepots) - 1
+		assert len(productOnDepots) == len(self.productOnDepots) - 1, u"got: '%s', expected: '%s'" % (productOnDepots, len(self.productOnDepots) - 1)
 		
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
+		productOnDepots = self.backend.productOnDepot_getObjects()
+		assert len(productOnDepots) == len(self.productOnDepots), u"got: '%s', expected: '%s'" % (productOnDepots, len(self.productOnDepots))
 		
 		# ProductOnClients
 		logger.notice(u"Testing productOnClient methods")
 		
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		productOnClients = self.backend.productOnClient_getObjects()
+		assert len(productOnClients) == len(self.productOnClients), u"got: '%s', expected: '%s'" % (productOnClients, len(self.productOnClients))
 		
 		client1ProductOnClients = []
 		for productOnClient in self.productOnClients:
@@ -1373,22 +1381,22 @@ class BackendTest(object):
 				client1ProductOnClients.append(productOnClient)
 		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
 		for productOnClient in productOnClients:
-			assert productOnClient.getClientId() == self.client1.getId()
+			assert productOnClient.getClientId() == self.client1.getId(), u"got: '%s', expected: '%s'" % (productOnClient.getClientId(), self.client1.getId())
 		
 		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId(), productId = self.product2.getId())
-		assert len(productOnClients) == 1
-		assert productOnClients[0].getProductId() == self.product2.getId()
-		assert productOnClients[0].getClientId() == self.client1.getId()
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		assert productOnClients[0].getProductId() == self.product2.getId(), u"got: '%s', expected: '%s'" % (productOnClients[0].getProductId(), self.product2.getId())
+		assert productOnClients[0].getClientId() == self.client1.getId(), u"got: '%s', expected: '%s'" % (productOnClients[0].getClientId(), self.client1.getId())
 		
 		self.productOnClient2.setLastStateChange('2010-01-01 05:55:55')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects(lastStateChange = '2010-01-01 05:55:55')
-		assert len(productOnClients) == 1
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
 		
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		self.backend.productOnClient_deleteObjects(self.productOnClient3)
 		productOnClients = self.backend.productOnClient_getObjects()
-		assert len(productOnClients) == len(self.productOnClients) - 1
+		assert len(productOnClients) == len(self.productOnClients) - 1, u"got: '%s', expected: '%s'" % (productOnClients, len(self.productOnClients) - 1)
 		
 		self.backend.productOnClient_createObjects(self.productOnClients)
 		
@@ -1397,37 +1405,35 @@ class BackendTest(object):
 		
 		logger.notice(u"Testing productPropertyState methods")
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
-		productPropertyStates = self.backend.productPropertyState_getObjects()
 		
-		# -TODO: -------- Backend will return defaults too ....
-		#logger.debug(u"expected(%s) == got(%s)" % (self.productPropertyStates, productPropertyStates))
-		#assert len(productPropertyStates) == len(self.productPropertyStates)
+		productPropertyStates = self.backend.productPropertyState_getObjects()
+		assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (productPropertyStates, self.productPropertyStates)
 		
 		# Groups
 		logger.notice(u"Testing group methods")
 		self.backend.group_createObjects(self.groups)
 		
 		groups = self.backend.group_getObjects()
-		assert len(groups) == len((self.groups))
+		assert len(groups) == len(self.groups), u"got: '%s', expected: '%s'" % (groups, self.groups)
 		
 		groups = self.backend.group_getObjects(description = self.groups[0].description)
-		assert len(groups) == 1
-		assert groups[0].getId() == self.groups[0].id
+		assert len(groups) == 1, u"got: '%s', expected: '%s'" % (groups, 1)
+		assert groups[0].getId() == self.groups[0].id, u"got: '%s', expected: '%s'" % (groups[0].getId(), self.groups[0].id)
 		
 		self.group1.setDescription(u'new description')
 		self.backend.group_updateObject(self.group1)
 		
 		groups = self.backend.group_getObjects(description = self.group1.description)
-		assert len(groups) == 1
-		assert groups[0].getDescription() == 'new description'
+		assert len(groups) == 1, u"got: '%s', expected: '%s'" % (groups, 1)
+		assert groups[0].getDescription() == 'new description', u"got: '%s', expected: '%s'" % (groups[0].getDescription(), 'new description')
 		
 		self.backend.group_deleteObjects(self.group1)
 		groups = self.backend.group_getObjects()
-		assert len(groups) == len(self.groups)-1
+		assert len(groups) == len(self.groups)-1, u"got: '%s', expected: '%s'" % (groups, len(self.groups)-1)
 		
 		self.backend.group_createObjects(self.group1)
 		groups = self.backend.group_getObjects()
-		assert len(groups) == len(self.groups)
+		assert len(groups) == len(self.groups), u"got: '%s', expected: '%s'" % (groups, len(self.groups))
 		
 		
 		# ObjectToGroups
@@ -1446,13 +1452,14 @@ class BackendTest(object):
 			if (objectToGroup.objectId == self.client2.getId()):
 				client2ObjectToGroups.append(objectToGroup)
 		objectToGroups = self.backend.objectToGroup_getObjects(objectId = self.client1.getId())
-		assert len(objectToGroups) == len(client1ObjectToGroups)
+		assert len(objectToGroups) == len(client1ObjectToGroups), u"got: '%s', expected: '%s'" % (objectToGroups, client1ObjectToGroups)
 		for objectToGroup in objectToGroups:
-			assert objectToGroup.objectId == self.client1.id
+			assert objectToGroup.objectId == self.client1.id, u"got: '%s', expected: '%s'" % (objectToGroup.objectId, self.client1.id)
+		
 		objectToGroups = self.backend.objectToGroup_getObjects(objectId = self.client2.getId())
-		assert len(objectToGroups) == len(client2ObjectToGroups)
+		assert len(objectToGroups) == len(client2ObjectToGroups), u"got: '%s', expected: '%s'" % (objectToGroups, client2ObjectToGroups)
 		for objectToGroup in objectToGroups:
-			assert objectToGroup.objectId == self.client2.id
+			assert objectToGroup.objectId == self.client2.id, u"got: '%s', expected: '%s'" % (objectToGroup.objectId, self.client2.id)
 		
 		objectToGroup3update = ObjectToGroup(
 			groupId  = self.group2.getId(),
@@ -1467,11 +1474,11 @@ class BackendTest(object):
 		
 		self.backend.objectToGroup_deleteObjects(objectToGroup3update)
 		objectToGroups = self.backend.objectToGroup_getObjects()
-		assert len(objectToGroups) == len(self.objectToGroups) - 1
+		assert len(objectToGroups) == len(self.objectToGroups) - 1, u"got: '%s', expected: '%s'" % (objectToGroups, self.objectToGroups - 1)
 		
 		self.backend.objectToGroup_createObjects(objectToGroup3update)
 		objectToGroups = self.backend.objectToGroup_getObjects()
-		assert len(objectToGroups) == len(self.objectToGroups)
+		assert len(objectToGroups) == len(self.objectToGroups), u"got: '%s', expected: '%s'" % (objectToGroups, self.objectToGroups)
 		
 		
 		
@@ -1485,7 +1492,7 @@ class BackendTest(object):
 		self.backend.licenseContract_createObjects(self.licenseContracts)
 		
 		licenseContracts = self.backend.licenseContract_getObjects()
-		assert len(licenseContracts) == len(self.licenseContracts)
+		assert len(licenseContracts) == len(self.licenseContracts), u"got: '%s', expected: '%s'" % (licenseContracts, self.licenseContracts)
 		
 		# SoftwareLicenses
 		logger.notice(u"Testing softwareLicense methods")
@@ -1493,7 +1500,7 @@ class BackendTest(object):
 		self.backend.softwareLicense_createObjects(self.softwareLicenses)
 		
 		softwareLicenses = self.backend.softwareLicense_getObjects()
-		assert len(softwareLicenses) == len(self.softwareLicenses)
+		assert len(softwareLicenses) == len(self.softwareLicenses), u"got: '%s', expected: '%s'" % (softwareLicenses, self.softwareLicenses)
 		
 		# LicensePools
 		logger.notice(u"Testing licensePool methods")
@@ -1502,41 +1509,42 @@ class BackendTest(object):
 		
 		licensePools = self.backend.licensePool_getObjects()
 		assert len(licensePools) == len(self.licensePools)
+		assert len(licensePools) == len(self.licensePools), u"got: '%s', expected: '%s'" % (licensePools, self.licensePools)
 		for licensePool in licensePools:
 			if (licensePool.getId() == self.licensePool1.getId()):
 				for windowsSoftwareId in licensePool.getWindowsSoftwareIds():
-					assert windowsSoftwareId in self.licensePool1.getWindowsSoftwareIds()
+					assert windowsSoftwareId in self.licensePool1.getWindowsSoftwareIds(), u"'%s' not in '%s'" % (windowsSoftwareId, self.licensePool1.getWindowsSoftwareIds())
 				for productId in licensePool.getProductIds():
-					assert productId in self.licensePool1.getProductIds()
+					assert productId in self.licensePool1.getProductIds(), u"'%s' not in '%s'" % (productId, self.licensePool1.getProductIds())
 		
 		licensePools = self.backend.licensePool_getObjects(windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
-		assert len(licensePools) == 1
-		assert licensePools[0].getId() == self.licensePool1.getId()
+		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
+		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
 		
 		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds)
-		assert len(licensePools) == 1
-		assert licensePools[0].getId() == self.licensePool1.getId()
+		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
+		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
 		
 		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
-		assert len(licensePools) == 1
-		assert licensePools[0].getId() == self.licensePool1.getId()
+		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
+		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
 		
 		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds[0])
-		assert len(licensePools) == 1
-		assert licensePools[0].getId() == self.licensePool1.getId()
+		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
+		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
 		
 		licensePools = self.backend.licensePool_getObjects(id = self.licensePool1.id, productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
-		assert len(licensePools) == 1
-		assert licensePools[0].getId() == self.licensePool1.getId()
+		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
+		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
 		
 		licensePools = self.backend.licensePool_getObjects(id = self.licensePool2.id, productIds = self.licensePool1.productIds)
-		assert len(licensePools) == 0
+		assert len(licensePools) == 0, u"got: '%s', expected: '%s'" % (licensePools, 0)
 		
 		licensePools = self.backend.licensePool_getObjects(productIds = None, windowsSoftwareIds = [])
-		assert len(licensePools) == len(self.licensePools)
+		assert len(licensePools) == len(self.licensePools), u"got: '%s', expected: '%s'" % (licensePools, len(self.licensePools))
 		
 		licensePools = self.backend.licensePool_getObjects(productIds = ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'])
-		assert len(licensePools) == 0
+		assert len(licensePools) == 0, u"got: '%s', expected: '%s'" % (licensePools, 0)
 		
 		# SoftwareLicenseToLicensePools
 		logger.notice(u"Testing softwareLicenseToLicensePool methods")
@@ -1544,7 +1552,7 @@ class BackendTest(object):
 		self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
 		
 		softwareLicenseToLicensePools = self.backend.softwareLicenseToLicensePool_getObjects()
-		assert len(softwareLicenseToLicensePools) == len(self.softwareLicenseToLicensePools)
+		assert len(softwareLicenseToLicensePools) == len(self.softwareLicenseToLicensePools), u"got: '%s', expected: '%s'" % (softwareLicenseToLicensePools, len(self.softwareLicenseToLicensePools))
 		
 		# LicenseOnClients
 		logger.notice(u"Testing licenseOnClient methods")
@@ -1552,7 +1560,9 @@ class BackendTest(object):
 		self.backend.licenseOnClient_createObjects(self.licenseOnClients)
 		
 		licenseOnClients = self.backend.licenseOnClient_getObjects()
-		assert len(licenseOnClients) == len(self.licenseOnClients)
+		assert len(licenseOnClients) == len(self.licenseOnClients), u"got: '%s', expected: '%s'" % (licenseOnClients, len(self.licenseOnClients))
+	
+	
 	
 	def testInventoryObjectMethods(self):
 		# AuditSoftwares
