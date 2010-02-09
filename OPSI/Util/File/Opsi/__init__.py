@@ -62,7 +62,12 @@ class HostKeyFile(ConfigFile):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '/', '#'])
 		self._opsiHostKeys = {}
 		
-	def parse(self):
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		for line in ConfigFile.parse(self):
 			match = self.lineRegex.search(line)
 			if not match:
@@ -76,7 +81,9 @@ class HostKeyFile(ConfigFile):
 				self._opsiHostKeys[hostId] = opsiHostKey
 			except BackendBadValueError, e:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, e))
-	
+		self._parsed = True
+		return self._opsiHostKeys
+		
 	def generate(self):
 		self._lines = []
 		hostIds = self._opsiHostKeys.keys()
@@ -113,7 +120,12 @@ class BackendACLFile(ConfigFile):
 	
 	aclEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 	
-	def parse(self):
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		# acl example:
 		#    <method>: <aclType>[(aclTypeParam[(aclTypeParamValue,...)];...)]
 		#    xyz_.*:   opsi_depotserver;(attributes(id,name))
@@ -193,10 +205,16 @@ class BackendACLFile(ConfigFile):
 						
 						
 				acl[-1][1].append(entry)
+		self._parsed = True
 		return acl
 
 class BackendDispatchConfigFile(ConfigFile):
-	def parse(self):
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		dispatchEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 		dispatch = []
 		for line in self.readlines():
@@ -208,6 +226,7 @@ class BackendDispatchConfigFile(ConfigFile):
 			dispatch.append([match.group(1), []])
 			for entry in match.group(2).split(','):
 				dispatch[-1][1].append(entry.strip())
+		self._parsed = True
 		return dispatch
 
 class PackageContentFile(TextFile):
@@ -234,10 +253,14 @@ class PackageContentFile(TextFile):
 	def setProductClientDataDir(self, productClientDataDir):
 		self._productClientDataDir = forceFilename(productClientDataDir)
 		
-	def parse(self):
+	def parse(self, lines=None):
 		raise NotImplementedError("parse not implemented")
-		self.readlines()
-		
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
+	
 	def generate(self):
 		self._lines = []
 		for filename in self._clientDataFiles:
@@ -290,9 +313,12 @@ class PackageControlFile(TextFile):
 		self._packageDependencies = []
 		self._incrementalPackage = False
 	
-	def parse(self):
-		self.readlines()
-		
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		self._sections = {}
 		self._product = None
 		self._productDependencies = []

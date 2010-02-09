@@ -231,6 +231,18 @@ else:
 assert forceArchitecture('X86') == u'x86'
 assert forceArchitecture('X64') == u'x64'
 
+forceTime(time.time())
+forceTime(time.localtime())
+
+assert forceEmailAddress('info@uib.de') == u'info@uib.de'
+try:
+	forceEmailAddress('infouib.de')
+except ValueError:
+	pass
+else:
+	raise Exception(u"'infouib.de' was accepted as a-mail address")
+
+
 getPossibleClassAttributes(Host)
 
 

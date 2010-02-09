@@ -215,6 +215,9 @@ class TextFile(LockableFile):
 					continue
 		return self._lines
 	
+	def getLines(self):
+		return self._lines
+	
 	def writelines(self, sequence=[]):
 		if not self._fileHandle:
 			raise IOError("File not opened")
@@ -242,9 +245,13 @@ class ChangelogFile(TextFile):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
 		self._entries = []
-		
-	def parse(self):
-		self.readlines()
+	
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		self._entries = []
 		for lineNum in range(len(self._lines)):
 			try:
@@ -301,7 +308,8 @@ class ChangelogFile(TextFile):
 				self._entries = []
 				raise Exception(u"Parse error in line %d: %s" % (lineNum, e))
 		self._parsed = True
-	
+		return self._entries
+		
 	def generate(self):
 		if not self._entries:
 			raise Exception(u"No entries to write")
@@ -311,6 +319,8 @@ class ChangelogFile(TextFile):
 			self._lines.append(u'')
 			for line in entry['changelog']:
 				self._lines.append(line)
+			if self._lines[-1].strip():
+				self._lines.append(u'')
 			self._lines.append(u' -- %s <%s>  %s' % (entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])))
 			self._lines.append(u'')
 		self.open('w')
@@ -323,8 +333,21 @@ class ChangelogFile(TextFile):
 		return self._entries
 	
 	def setEntries(self, entries):
-		self._entries = forceList(entries)
-	
+		entries = forceList(entries)
+		for i in range(len(entries)):
+			entries[i] = forceDict(entries[i])
+			for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
+				if not entries[i].has_key(key):
+					raise Exception(u"Missing key '%s' in entry %s" % (key, entries[i]))
+			entries[i]['package']         = forceProductId(entries[i]['package'])
+			entries[i]['version']         = forceUnicode(entries[i]['version'])
+			entries[i]['release']         = forceUnicode(entries[i]['release'])
+			entries[i]['urgency']         = forceUnicode(entries[i]['urgency'])
+			entries[i]['changelog']       = forceUnicodeList(entries[i]['changelog'])
+			entries[i]['maintainerName']  = forceUnicode(entries[i]['maintainerName'])
+			entries[i]['maintainerEmail'] = forceEmailAddress(entries[i]['maintainerEmail'])
+			entries[i]['date']            = forceTime(entries[i]['date'])
+		self._entries = entries
 	
 class ConfigFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '/', '#']):
@@ -332,12 +355,12 @@ class ConfigFile(TextFile):
 		self._commentChars = forceList(commentChars)
 		self._parsed = False
 	
-	#def setFilename(self, filename):
-	#	TextFile.setFilename(filename)
-	#	self._parsed = False
-	
-	def parse(self):
-		self.readlines()
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		lines = []
 		for line in self._lines:
 			line = line.strip()
@@ -355,8 +378,14 @@ class IniFile(ConfigFile):
 		self._ignoreCase = forceBool(ignoreCase)
 		self._raw = forceBool(raw)
 		self._configParser = None
+		self._parsed = False
 		
-	def parse(self):
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
+		self._parsed = False
 		logger.debug(u"Parsing ini file '%s'" % self._filename)
 		start = time.time()
 		lines = ConfigFile.parse(self)
@@ -383,6 +412,7 @@ class IniFile(ConfigFile):
 		
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
 		
+		self._parsed = True
 		# Return ConfigParser
 		return self._configParser
 	
@@ -679,9 +709,12 @@ class DHCPDConfFile(TextFile):
 	def getGlobalBlock(self):
 		return self._globalBlock
 		
-	def parse(self):
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
 		self._parsed = False
-		self.readlines()
 		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._globalBlock.endLine = len(self._lines)
 		minIndex = 0

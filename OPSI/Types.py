@@ -35,7 +35,7 @@
 __version__ = '0.1'
 
 # Imports
-import re
+import types, re, time
 
 # OPSI imports
 from OPSI.Logger import *
@@ -44,21 +44,21 @@ from OPSI.Logger import *
 logger = Logger()
 
 def forceList(var):
-	if not type(var) is list:
+	if not type(var) is types.ListType:
 		var = [ var ]
 	return var
 
 def forceDict(var):
 	if var is None:
 		var = {}
-	if not type(var) is dict:
+	if not type(var) is types.DictType:
 		raise ValueError(u"Bad dict value '%s'" % var)
 	return var
 
 def forceUnicode(var):
-	if type(var) is unicode:
+	if type(var) is types.UnicodeType:
 		return var
-	if type(var) is str:
+	if type(var) is types.StringType:
 		return unicode(var, 'utf-8', 'replace')
 	return unicode(var)
 	
@@ -85,9 +85,9 @@ def forceUnicodeLowerList(var):
 	return var
 
 def forceBool(var):
-	if type(var) is bool:
+	if type(var) is types.BooleanType:
 		return var
-	if type(var) in (unicode, str):
+	if type(var) in (types.UnicodeType, types.StringType):
 		if var.lower() in ('true', 'yes', 'on', '1'):
 			return True
 		elif var.lower() in ('false', 'no', 'off', '0'):
@@ -101,7 +101,7 @@ def forceBoolList(var):
 	return var
 
 def forceInt(var):
-	if type(var) is int:
+	if type(var) is types.IntType:
 		return var
 	try:
 		return int(var)
@@ -121,7 +121,7 @@ def forceUnsignedInt(var):
 	return var
 
 def forceOct(var):
-	if type(var) is int:
+	if type(var) is types.IntType:
 		return var
 	try:
 		tmp = forceUnicode(var)
@@ -139,7 +139,7 @@ def forceOct(var):
 		raise ValueError(u"Bad oct value '%s': %s" % (var, e))
 
 def forceFloat(var):
-	if type(var) is float:
+	if type(var) is types.FloatType:
 		return var
 	try:
 		return float(var)
@@ -147,9 +147,17 @@ def forceFloat(var):
 		raise ValueError(u"Bad float value '%s': %s" % (var, e))
 
 def forceDict(var):
-	if type(var) is dict:
+	if type(var) is types.DictType:
 		return var
 	raise ValueError(u"Not a dict '%s'" % var)
+
+
+def forceTime(var):
+	if type(var) is time.struct_time:
+		return var
+	if type(var) in (types.IntType, types.FloatType):
+		return time.localtime(var)
+	raise ValueError(u"Not a time '%s'" % var)
 
 opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})$')
 opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
@@ -351,12 +359,12 @@ def forceRequirementType(var):
 	
 def forceObjectClass(var, objectClass):
 	import OPSI.Object
-	if type(var) in (unicode, str):
+	if type(var) in (types.UnicodeType, types.StringType):
 		try:
 			var = OPSI.Object.fromJson(var)
 		except Exception, e:
 			logger.debug(u"Failed to get object from json '%s': %s" % (var, e))
-	if type(var) is dict and var.has_key('type'):
+	if type(var) is types.DictType and var.has_key('type'):
 		try:
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
@@ -400,6 +408,14 @@ def forceObjectIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceObjectId(var[i])
+	return var
+
+emailRegex = re.compile('^[a-z0-9._%+-]+\@[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')
+def forceEmailAddress(var):
+	var = forceUnicodeLower(var)
+	match = re.search(emailRegex, var)
+	if not match:
+		raise ValueError(u"Bad email: '%s'" % var)
 	return var
 
 domainRegex = re.compile('^[a-z0-9][a-z0-9\-]*\.[a-z]{2,}$')

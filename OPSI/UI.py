@@ -106,7 +106,7 @@ class UI:
 	def getSelection(self, entries, radio=False, width=-1, height=-1, title=_(u'Please select'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
 		return []
 	
-	def getValues(self, entries, width=-1, title=_(u'Please fill in'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
+	def getValues(self, entries, width=-1, height=-1, title=_(u'Please fill in'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
 		return entries
 	
 	def yesno(self, text, title=_(u'Question'), okLabel=_(u'OK'), cancelLabel=_(u'Cancel'), width=-1, height=-1):
@@ -455,10 +455,11 @@ class SnackUI(UI):
 			logger.logException(e)
 			raise
 		
-	def getValues(self, entries, width=-1, title=_(u'Please fill in'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
+	def getValues(self, entries, width=-1, height=-1, title=_(u'Please fill in'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
 		try:
 			entries     = forceList(entries)
 			width       = forceInt(width)
+			height      = forceInt(height)
 			title       = forceUnicode(title)
 			text        = forceUnicode(text)
 			okLabel     = forceUnicode(okLabel)
@@ -467,10 +468,14 @@ class SnackUI(UI):
 			if (width <= 0):
 				width = self.getScreen().width - 15
 			
+			if (height <= 0):
+				height = self.getScreen().height - 15
+			
 			# create text grid
 			textGrid = Grid(1, 1)
+			
 			if text:
-				height = self.getScreen().height - 15 - len(entries)
+				height -= len(entries)
 				if (height < 2):
 					height = 2
 				textBox = Textbox(width = width, height = height, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
