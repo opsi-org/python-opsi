@@ -6,3 +6,5 @@ usr/share/python-support/python-opsi/OPSI/Util/File/Archive
 usr/share/python-support/python-opsi/OPSI/Util/File/Opsi
 etc/opsi/backendManager/extend.d
 etc/opsi/backends
+etc/opsi/hwaudit/locales
+etc/ldap/schema

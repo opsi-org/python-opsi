@@ -38,16 +38,17 @@ install:
 	for i in `(cd files/backendManager; find -name "*.conf")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
 	for i in `(cd files/backends; find -name "*.conf")`; do install -m 0660 files/backends/$$i debian/python-opsi/etc/opsi/backends/$$i; done
 	
-	#mkdir -p debian/python-opsi/etc/opsi/hwaudit/locales
-	#install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
-	#for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done
-	#mkdir -p debian/python-opsi/etc/ldap/schema
-	#install -m 0644 files/opsi.schema debian/python-opsi/etc/ldap/schema/opsi.schema
-	#install -m 0644 files/opsi-standalone.schema debian/python-opsi/etc/ldap/schema/opsi-standalone.schema
+	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
+	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done
+	
+	install -m 0644  files/opsi.schema             debian/python-opsi/etc/ldap/schema/opsi.schema
+	install -m 0644  files/opsi-standalone.schema  debian/python-opsi/etc/ldap/schema/opsi-standalone.schema
+	
 	#mkdir -p debian/python-opsi/usr/share/opsi
 	#install -m 0755 files/share/init-opsi-mysql-db.py debian/python-opsi/usr/share/opsi/
 	#install -m 0755 files/share/register-depot.py debian/python-opsi/usr/share/opsi/
 	#install -m 0755 files/share/opsi-fire-event.py debian/python-opsi/usr/share/opsi/
+	
 	echo $(OPSI_VERSION) > debian/python-opsi/etc/opsi/version
 	
 	dh_install
