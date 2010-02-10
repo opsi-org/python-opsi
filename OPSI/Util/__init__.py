@@ -35,10 +35,10 @@
 __version__ = '3.5'
 
 # Imports
-import ctypes, threading, os, random, base64, types, socket
+import ctypes, threading, os, random, base64, types, socket, httplib
 from sys import version_info
 if (version_info >= (2,6)):
-	import json
+	import json, ssl
 else:
 	import simplejson as json
 
@@ -117,11 +117,9 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	
 def non_blocking_connect_https(self, connectTimeout=0):
 	non_blocking_connect_http(self, connectTimeout)
-	try:
-		import ssl
+	if (version_info >= (2,6)):
 		self.sock = ssl.wrap_socket(self.sock, self.key_file, self.cert_file)
-	except ImportError, e:
-		# python < 2.6
+	else:
 		ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
 		self.sock = httplib.FakeSocket(self.sock, ssl)
 
