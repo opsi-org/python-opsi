@@ -34,7 +34,7 @@
 
 __version__ = '3.5'
 
-import os, new, inspect, re, types, socket, copy
+import os, sys, new, inspect, re, types, socket, copy
 
 if (os.name == 'posix'):
 	import PAM, pwd, grp
@@ -124,7 +124,7 @@ class BackendManager(ExtendedBackend):
 		if not os.path.exists(backendConfigFile):
 			raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
 		
-		l = {'module': '', 'config': {}}
+		l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 		execfile(backendConfigFile, l)
 		if not l['module']:
 			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
@@ -216,7 +216,7 @@ class BackendDispatcher(ConfigDataBackend):
 			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
 			if not os.path.exists(backendConfigFile):
 				raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
-			l = {'module': '', 'config': {}}
+			l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 			logger.info(u"Loading backend config '%s'" % backendConfigFile)
 			execfile(backendConfigFile, l)
 			if not l['module']:

@@ -364,128 +364,139 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': section})
 		
 		elif objType in ('OpsiClient', 'ProductOnClient'):
-			for entry in os.listdir(self.__clientConfigDir):
-				if not entry.lower().endswith('.ini'):
-					continue
-				try:
-					hostId = forceHostId(entry[:-4])
-					
-					if objType == 'ProductOnClient':
-						filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
-						iniFile = IniFile(filename = filename, ignoreCase = False)
-						cp = iniFile.parse()
-						for section in cp.sections():
-							if section.endswith('-state'):
-								objIdents.append(
-									{
-									'productId': section[:-6],
-									'productType': cp.get(section, 'productType'),
-									'clientId': hostId
-									}
-								)
-					else:
-						objIdents.append({'id': hostId})
-				except:
-					pass
-		
-		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
-			for entry in os.listdir(self.__depotConfigDir):
-				try:
-					hostId = forceHostId(entry)
-					if objType == 'OpsiConfigserver' and hostId != self.__serverId:
+			try:
+				for entry in os.listdir(self.__clientConfigDir):
+					if not entry.lower().endswith('.ini'):
 						continue
-					
-					if objType == 'ProductOnDepot':
-						filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
-						iniFile = IniFile(filename = filename, ignoreCase = False)
-						cp = iniFile.parse()
-						for section in cp.sections():
-							if section.endswith('-state'):
-								objIdents.append(
-									{
-									'productId': section[:-6],
-									'productType': cp.get(section, 'producttype'),
-									'productVersion': cp.get(section, 'productversion'),
-									'packageVersion': cp.get(section, 'packageversion'),
-									'depotId': hostId
-									}
-								)
-					else:
-						objIdents.append({'id': hostId})
-				except:
-					pass
-		
-		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-			for entry in os.listdir(self.__productDir):
-				entry = entry.lower()
-				# productId, productVersion, packageVersion, propertyId
-				if not ( entry.endswith('.localboot') and objType != 'NetbootProduct' ):
-					if not ( entry.endswith('.netboot') and objType != 'LocalbootProduct' ):
-						continue # doesn't fit: next file
+					try:
+						hostId = forceHostId(entry[:-4])
+						
+						if objType == 'ProductOnClient':
+							filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
+							iniFile = IniFile(filename = filename, ignoreCase = False)
+							cp = iniFile.parse()
+							for section in cp.sections():
+								if section.endswith('-state'):
+									objIdents.append(
+										{
+										'productId': section[:-6],
+										'productType': cp.get(section, 'productType'),
+										'clientId': hostId
+										}
+									)
+						else:
+							objIdents.append({'id': hostId})
+					except:
+						pass
+			except Exception, e:
+				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
 				
-				#example:            exampleexampleexa  _ 123.123 - 123.123  .localboot
-				match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
-				if not match:
-					continue
-				else:
-					logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
-						% (match.group(1), match.group(2), match.group(3)) )
-				
-				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-					objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
-				
-				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-					filename = os.path.join(self.__productDir, entry)
-					packageControlFile = PackageControlFile(filename = filename)
-					if objType == 'ProductDependency':
-						for productDependency in packageControlFile.getProductDependencies():
-							objIdents.append(productDependency.getIdent(returnType = 'dict'))
-					else:
-						for productProperty in packageControlFile.getProductProperties():
-							objIdents.append(productProperty.getIdent(returnType = 'dict'))
-		
-		elif objType in ('ConfigState', 'ProductPropertyState'):
-			objectIds = []
-			
-			for entry in os.listdir(self.__clientConfigDir):
-				if not entry.lower().endswith('.ini'):
-					continue
-				
-				try:
-					objectIds.append(forceHostId(entry[:-4]))
-				except:
-					pass
-			
-			for objectId in objectIds:
-				if not self._objectHashMatches({'objectId': objectId }, **filter):
-					continue
-				
-				filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
-				iniFile = IniFile(filename = filename, ignoreCase = False)
-				cp = iniFile.parse()
-				
-				if objType == 'ConfigState' and cp.has_section('generalconfig'):
-					for option in cp.options('generalconfig'):
-						objIdents.append(
-							{
-							'configId': option,
-							'objectId': objectId
-							}
-						)
-				elif objType == 'ProductPropertyState':
-					for section in cp.sections():
-						if not section.endswith('-install'):
+		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
+			try:
+				for entry in os.listdir(self.__depotConfigDir):
+					try:
+						hostId = forceHostId(entry)
+						if objType == 'OpsiConfigserver' and hostId != self.__serverId:
 							continue
 						
-						for option in cp.options(section):
+						if objType == 'ProductOnDepot':
+							filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
+							iniFile = IniFile(filename = filename, ignoreCase = False)
+							cp = iniFile.parse()
+							for section in cp.sections():
+								if section.endswith('-state'):
+									objIdents.append(
+										{
+										'productId': section[:-6],
+										'productType': cp.get(section, 'producttype'),
+										'productVersion': cp.get(section, 'productversion'),
+										'packageVersion': cp.get(section, 'packageversion'),
+										'depotId': hostId
+										}
+									)
+						else:
+							objIdents.append({'id': hostId})
+					except:
+						pass
+			except Exception, e:
+				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__depotConfigDir, e))
+			
+		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+			try:
+				for entry in os.listdir(self.__productDir):
+					entry = entry.lower()
+					# productId, productVersion, packageVersion, propertyId
+					if not ( entry.endswith('.localboot') and objType != 'NetbootProduct' ):
+						if not ( entry.endswith('.netboot') and objType != 'LocalbootProduct' ):
+							continue # doesn't fit: next file
+					
+					#example:            exampleexampleexa  _ 123.123 - 123.123  .localboot
+					match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
+					if not match:
+						continue
+					else:
+						logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
+							% (match.group(1), match.group(2), match.group(3)) )
+					
+					if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
+						objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
+					
+					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+						filename = os.path.join(self.__productDir, entry)
+						packageControlFile = PackageControlFile(filename = filename)
+						if objType == 'ProductDependency':
+							for productDependency in packageControlFile.getProductDependencies():
+								objIdents.append(productDependency.getIdent(returnType = 'dict'))
+						else:
+							for productProperty in packageControlFile.getProductProperties():
+								objIdents.append(productProperty.getIdent(returnType = 'dict'))
+			except Exception, e:
+				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__productDir, e))
+				
+		elif objType in ('ConfigState', 'ProductPropertyState'):
+			objectIds = []
+			try:
+				for entry in os.listdir(self.__clientConfigDir):
+					if not entry.lower().endswith('.ini'):
+						continue
+					
+					try:
+						objectIds.append(forceHostId(entry[:-4]))
+					except:
+						pass
+				
+				for objectId in objectIds:
+					if not self._objectHashMatches({'objectId': objectId }, **filter):
+						continue
+					
+					filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
+					iniFile = IniFile(filename = filename, ignoreCase = False)
+					cp = iniFile.parse()
+					
+					if objType == 'ConfigState' and cp.has_section('generalconfig'):
+						for option in cp.options('generalconfig'):
 							objIdents.append(
 								{
-								'productId': section[:-8],
-								'propertyId': option,
+								'configId': option,
 								'objectId': objectId
 								}
 							)
-		
+					elif objType == 'ProductPropertyState':
+						for section in cp.sections():
+							if not section.endswith('-install'):
+								continue
+							
+							for option in cp.options(section):
+								objIdents.append(
+									{
+									'productId': section[:-8],
+									'propertyId': option,
+									'objectId': objectId
+									}
+								)
+			except Exception, e:
+				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
+			
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			if os.path.isfile(filename):
@@ -610,8 +621,8 @@ class FileBackend(ConfigDataBackend):
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
 			
-		logger.debug(u"Filter: %s" % filter)
-		logger.debug(u"Attributes: %s" % attributes)
+		logger.debug2(u"Filter: %s" % filter)
+		logger.debug2(u"Attributes: %s" % attributes)
 		
 		mappings = {}
 		for mapping in self._mappings[objType]:
@@ -621,7 +632,7 @@ class FileBackend(ConfigDataBackend):
 				
 				mappings[mapping['fileType']].append(mapping)
 		
-		logger.debug(u"Using mappings %s" % mappings)
+		logger.debug2(u"Using mappings %s" % mappings)
 		
 		objects = []
 		for ident in self._getIdents(objType, **filter):
@@ -672,7 +683,7 @@ class FileBackend(ConfigDataBackend):
 									value = value.split(u':', 1)[1]
 							
 							objHash[m['attribute']] = value
-					logger.debug(u"Got object hash from ini file: %s" % objHash)
+					logger.debug2(u"Got object hash from ini file: %s" % objHash)
 					
 				elif (fileType == 'pro'):
 					packageControlFile = PackageControlFile(filename = filename)
@@ -887,7 +898,7 @@ class FileBackend(ConfigDataBackend):
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
 			hostKeyFile = HostKeyFile(self._getConfigFile('', {}, 'key'))
 			for obj in objList:
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				hostKeyFile.deleteOpsiHostKey(obj.getId())
 				#TODO: can delete configserver?
 				filename = self._getConfigFile(
@@ -905,7 +916,7 @@ class FileBackend(ConfigDataBackend):
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			for obj in objList:
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if cp.has_section(obj.getId()):
 					cp.remove_section(obj.getId())
 					logger.debug2(u"Removed section '%s'" % obj.getId())
@@ -918,7 +929,7 @@ class FileBackend(ConfigDataBackend):
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
 				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if cp.has_option('generalconfig', obj.getConfigId()):
 					cp.remove_option('generalconfig', obj.getConfigId())
 					logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
@@ -928,7 +939,7 @@ class FileBackend(ConfigDataBackend):
 			for obj in objList:
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'pro' )
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if os.path.isfile(filename):
 					os.unlink(filename)
 					logger.debug2(u"Removed file '%s'" % filename)
@@ -974,7 +985,7 @@ class FileBackend(ConfigDataBackend):
 					oldList = packageControlFile.getProductProperties()
 				
 				for obj in objList:
-					logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 					for oldItem in oldList:
 						if oldItem.getIdent() == obj.getIdent():
 							logger.debug2(u"Removed '%s'" % obj.getIdent())
@@ -1008,7 +1019,7 @@ class FileBackend(ConfigDataBackend):
 				cp = iniFile.parse()
 				
 				for obj in objList:
-					logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 					if cp.has_section(obj.getProductId() + '-state'):
 						cp.remove_section(obj.getProductId() + '-state')
 						logger.debug2(u"Removed section '%s'" % obj.getProductId() + '-state')
@@ -1017,7 +1028,7 @@ class FileBackend(ConfigDataBackend):
 		
 		elif objType in ('ProductPropertyState'):
 			for obj in objList:
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
 				iniFile = IniFile(filename = filename, ignoreCase = False)
@@ -1041,7 +1052,7 @@ class FileBackend(ConfigDataBackend):
 				else:
 					section = obj.getId()
 				
-				logger.info(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				if (obj.getType() == 'ObjectToGroup'):
 					if cp.has_option(section, obj.getObjectId()):
 						cp.remove_option(section, obj.getObjectId())
@@ -1063,21 +1074,19 @@ class FileBackend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		
-		logger.notice(u"Inserting host: '%s'" % host.getIdent())
+		logger.info(u"Inserting host: '%s'" % host.getIdent())
 		self._write(host, mode = 'create')
-		logger.notice(u"Inserted host.")
 	
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
-		logger.notice(u"Updating host: '%s'" % host.getIdent())
+		logger.info(u"Updating host: '%s'" % host.getIdent())
 		self._write(host, mode = 'update')
-		logger.notice(u"Updated host.")
 	
 	def host_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes, **filter)
 		
-		logger.notice(u"Getting hosts ...")
+		logger.info(u"Getting hosts ...")
 		result = self._read('OpsiDepotserver', attributes, **filter)
 		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
 		
@@ -1092,16 +1101,14 @@ class FileBackend(ConfigDataBackend):
 			if not contained:
 				result.append(opsiConfigServers[0])
 		result.extend(self._read('OpsiClient', attributes, **filter))
-		logger.notice(u"Got hosts.")
 		
 		return result
 	
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 		
-		logger.notice(u"Deleting hosts ...")
+		logger.info(u"Deleting hosts ...")
 		self._delete(forceObjectClassList(hosts, Host))
-		logger.notice(u"Deleted hosts.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -1109,32 +1116,28 @@ class FileBackend(ConfigDataBackend):
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		logger.notice(u"Inserting config: '%s'" % config.getIdent())
+		logger.info(u"Inserting config: '%s'" % config.getIdent())
 		self._write(config, mode = 'create')
-		logger.notice(u"Inserted config.")
 	
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
-		logger.notice(u"Updating config: '%s'" % config.getIdent())
+		logger.info(u"Updating config: '%s'" % config.getIdent())
 		self._write(config, mode = 'update')
-		logger.notice(u"Updated config.")
 	
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes, **filter)
 		
-		logger.notice(u"Getting configs ...")
+		logger.info(u"Getting configs ...")
 		result = self._read('Config', attributes, **filter)
-		logger.notice(u"Returning configs.")
 		
 		return result
 	
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		
-		logger.notice(u"Deleting configs ...")
+		logger.info(u"Deleting configs ...")
 		self._delete(forceObjectClassList(configs, Config))
-		logger.notice(u"Deleted configs.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -1142,32 +1145,28 @@ class FileBackend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
-		logger.notice(u"Inserting configState: '%s'" % configState.getIdent())
+		logger.info(u"Inserting configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'create')
-		logger.notice(u"Inserted configState.")
 	
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
-		logger.notice(u"Updating configState: '%s'" % configState.getIdent())
+		logger.info(u"Updating configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'update')
-		logger.notice(u"Updated configState.")
 	
 	def configState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
 		
-		logger.notice(u"Getting configStates ...")
+		logger.info(u"Getting configStates ...")
 		result = self._read('ConfigState', attributes, **filter)
-		logger.notice(u"Returning configStates.")
 		
 		return result
 	
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		
-		logger.notice(u"Deleting configStates ...")
+		logger.info(u"Deleting configStates ...")
 		self._delete(forceObjectClassList(configStates, ConfigState))
-		logger.notice(u"Deleted configStates.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
@@ -1175,33 +1174,29 @@ class FileBackend(ConfigDataBackend):
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
 		
-		logger.notice(u"Inserting product: '%s'" % product.getIdent())
+		logger.info(u"Inserting product: '%s'" % product.getIdent())
 		self._write(product, mode = 'create')
-		logger.notice(u"Inserted product.")
 	
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
 		
-		logger.notice(u"Updating product: '%s'" % product.getIdent())
+		logger.info(u"Updating product: '%s'" % product.getIdent())
 		self._write(product, mode = 'update')
-		logger.notice(u"Updated product.")
 	
 	def product_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.product_getObjects(self, attributes, **filter)
 		
-		logger.notice(u"Getting products ...")
+		logger.info(u"Getting products ...")
 		result = self._read('LocalbootProduct', attributes, **filter)
 		result.extend(self._read('NetbootProduct', attributes, **filter))
-		logger.notice(u"Got products.")
 		
 		return result
 	
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
 		
-		logger.notice(u"Deleting products ...")
+		logger.info(u"Deleting products ...")
 		self._delete(forceObjectClassList(products, Product))
-		logger.notice(u"Deleted products.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -1209,32 +1204,28 @@ class FileBackend(ConfigDataBackend):
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		
-		logger.notice(u"Inserting productProperty: '%s'" % productProperty.getIdent())
+		logger.info(u"Inserting productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'create')
-		logger.notice(u"Inserted productProperty.")
 	
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		
-		logger.notice(u"Updating productProperty: '%s'" % productProperty.getIdent())
+		logger.info(u"Updating productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'update')
-		logger.notice(u"Updated productProperty.")
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productProperty_getObjects(self, attributes, **filter)
 		
-		logger.notice(u"Getting productProperties ...")
+		logger.info(u"Getting productProperties ...")
 		result = self._read('ProductProperty', attributes, **filter)
-		logger.notice(u"Got productProperties.")
 		
 		return result
 	
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		
-		logger.notice(u"Deleting productProperties ...")
+		logger.info(u"Deleting productProperties ...")
 		self._delete(forceObjectClassList(productProperties, ProductProperty))
-		logger.notice(u"Deleted productProperties.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies                                                                         -
@@ -1242,32 +1233,28 @@ class FileBackend(ConfigDataBackend):
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
-		logger.notice(u"Inserting productDependency: '%s'" % productDependency.getIdent())
+		logger.info(u"Inserting productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'create')
-		logger.notice(u"Inserted productDependency.")
 	
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		
-		logger.notice(u"Updating productDependency: '%s'" % productDependency.getIdent())
+		logger.info(u"Updating productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'update')
-		logger.notice(u"Updated productDependency.")
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting productDependencies ...")
+		logger.info(u"Getting productDependencies ...")
 		result = self._read('ProductDependency', attributes, **filter)
-		logger.notice(u"Got productDependencies.")
 		
 		return result
 	
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		
-		logger.notice(u"Deleting productDependencies ...")
+		logger.info(u"Deleting productDependencies ...")
 		self._delete(forceObjectClassList(productDependencies, ProductDependency))
-		logger.notice(u"Deleted productDependencies.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
@@ -1275,32 +1262,28 @@ class FileBackend(ConfigDataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
-		logger.notice(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
+		logger.info(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'create')
-		logger.notice(u"Inserted productOnDepot.")
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		
-		logger.notice(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
+		logger.info(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'update')
-		logger.notice(u"Updated productOnDepot.")
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting productOnDepots ...")
+		logger.info(u"Getting productOnDepots ...")
 		result = self._read('ProductOnDepot', attributes, **filter)
-		logger.notice(u"Got productOnDepots.")
 		
 		return result
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
-		logger.notice(u"Deleting productOnDepots ...")
+		logger.info(u"Deleting productOnDepots ...")
 		self._delete(forceObjectClassList(productOnDepots, ProductOnDepot))
-		logger.notice(u"Deleted productOnDepots.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
@@ -1308,32 +1291,28 @@ class FileBackend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
-		logger.notice(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
+		logger.info(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'create')
-		logger.notice(u"Inserted productOnClient.")
 	
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		
-		logger.notice(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
+		logger.info(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'update')
-		logger.notice(u"Updated productOnClient.")
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting productOnClient ...")
+		logger.info(u"Getting productOnClient ...")
 		result = self._read('ProductOnClient', attributes, **filter)
-		logger.notice(u"Got productOnClient.")
 		
 		return result
 	
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		
-		logger.notice(u"Deleting productOnClients ...")
+		logger.info(u"Deleting productOnClients ...")
 		self._delete(forceObjectClassList(productOnClients, ProductOnClient))
-		logger.notice(u"Deleted productOnClients.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
@@ -1341,32 +1320,28 @@ class FileBackend(ConfigDataBackend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		
-		logger.notice(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
+		logger.info(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'create')
-		logger.notice(u"Inserted productPropertyState.")
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		
-		logger.notice(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
+		logger.info(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'update')
-		logger.notice(u"Updated productPropertyState.")
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting productPropertyStates ...")
+		logger.info(u"Getting productPropertyStates ...")
 		result = self._read('ProductPropertyState', attributes, **filter)
-		logger.notice(u"Got productPropertyStates.")
 		
 		return result
 	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		
-		logger.notice(u"Deleting productPropertyStates ...")
+		logger.info(u"Deleting productPropertyStates ...")
 		self._delete(forceObjectClassList(productPropertyStates, ProductPropertyState))
-		logger.notice(u"Deleted productPropertyStates.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
@@ -1374,32 +1349,28 @@ class FileBackend(ConfigDataBackend):
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
 		
-		logger.notice(u"Inserting group: '%s'" % group.getIdent())
+		logger.info(u"Inserting group: '%s'" % group.getIdent())
 		self._write(group, mode = 'create')
-		logger.notice(u"Inserted group.")
 	
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
 		
-		logger.notice(u"Updating group: '%s'" % group.getIdent())
+		logger.info(u"Updating group: '%s'" % group.getIdent())
 		self._write(group, mode = 'update')
-		logger.notice(u"Updated group.")
 	
 	def group_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting groups ...")
+		logger.info(u"Getting groups ...")
 		result = self._read('Group', attributes, **filter)
-		logger.notice(u"Got groups.")
 		
 		return result
 	
 	def group_deleteObjects(self, groups):
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		
-		logger.notice(u"Deleting groups ...")
+		logger.info(u"Deleting groups ...")
 		self._delete(forceObjectClassList(groups, Group))
-		logger.notice(u"Deleted groups.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -1407,32 +1378,28 @@ class FileBackend(ConfigDataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
-		logger.notice(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
+		logger.info(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'create')
-		logger.notice(u"Inserted objectToGroup.")
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
-		logger.notice(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
+		logger.info(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'update')
-		logger.notice(u"Updated objectToGroup.")
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting objectToGroups ...")
+		logger.info(u"Getting objectToGroups ...")
 		result = self._read('ObjectToGroup', attributes, **filter)
-		logger.notice(u"Got objectToGroups.")
 		
 		return result
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		
-		logger.notice(u"Deleting objectToGroups ...")
+		logger.info(u"Deleting objectToGroups ...")
 		self._delete(forceObjectClassList(objectToGroups, ObjectToGroup))
-		logger.notice(u"Deleted objectToGroups.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwares                                                                            -
@@ -1440,7 +1407,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_insertObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
-		logger.notice(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
+		logger.info(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		
 		if not os.path.exists(filename):
@@ -1463,12 +1430,11 @@ class FileBackend(ConfigDataBackend):
 				continue
 			ini.set(section, key, self.__escape(value))
 		iniFile.generate(ini)
-		logger.notice(u"Inserted auditSoftware.")
 		
 	def auditSoftware_updateObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
-		logger.notice(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
+		logger.info(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1488,12 +1454,11 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(ini)
 				return
 		raise Exception(u"AuditSoftware %s not found" % auditSoftware)
-		logger.notice(u"Updated auditSoftware.")
 		
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting objectToGroups ...")
+		logger.info(u"Getting objectToGroups ...")
 		result = []
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		if not os.path.exists(filename):
@@ -1521,14 +1486,13 @@ class FileBackend(ConfigDataBackend):
 			if self._objectHashMatches(objHash, **filter):
 				#TODO: adaptObjHash?
 				result.append(AuditSoftware.fromHash(objHash))
-		logger.notice(u"Got objectToGroups.")
 		
 		return result
 	
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		
-		logger.notice(u"Deleting auditSoftwares ...")
+		logger.info(u"Deleting auditSoftwares ...")
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1546,7 +1510,6 @@ class FileBackend(ConfigDataBackend):
 				if found:
 					ini.remove_section(section)
 		iniFile.generate(ini)
-		logger.notice(u"Deleted auditSoftwares.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
@@ -1554,7 +1517,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
-		logger.notice(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
+		logger.info(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
 		
 		if not os.path.exists(filename):
@@ -1577,12 +1540,11 @@ class FileBackend(ConfigDataBackend):
 				continue
 			ini.set(section, key, self.__escape(value))
 		iniFile.generate(ini)
-		logger.notice(u"Inserted auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
-		logger.notice(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
+		logger.info(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1602,12 +1564,11 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(ini)
 				return
 		raise Exception(u"auditSoftwareOnClient %s not found" % auditSoftwareOnClient)
-		logger.notice(u"Updated auditSoftwareOnClient.")
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting auditSoftwareOnClients ...")
+		logger.info(u"Getting auditSoftwareOnClients ...")
 		filenames = {}
 		for ident in self._getIdents('AuditSoftwareOnClient', **filter):
 			if not ident['clientId'] in filenames.keys():
@@ -1643,14 +1604,13 @@ class FileBackend(ConfigDataBackend):
 				
 				if self._objectHashMatches(objHash, **filter):
 					result.append(AuditSoftwareOnClient.fromHash(objHash))
-		logger.notice(u"Got auditSoftwareOnClients.")
 		
 		return result
 	
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		
-		logger.notice(u"Deleting auditSoftwareOnClients ...")
+		logger.info(u"Deleting auditSoftwareOnClients ...")
 		filenames = {}
 		idents = {}
 		for auditSoftwareOnClient in  forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
@@ -1674,7 +1634,6 @@ class FileBackend(ConfigDataBackend):
 					if found:
 						ini.remove_section(section)
 			iniFile.generate(ini)
-		logger.notice(u"Deleted auditSoftwareOnClients.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
@@ -1683,7 +1642,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_insertObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
-		logger.notice(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
+		logger.info(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		
 		if not os.path.exists(filename):
@@ -1706,12 +1665,11 @@ class FileBackend(ConfigDataBackend):
 				continue
 			ini.set(section, key.lower(), self.__escape(value))
 		iniFile.generate(ini)
-		logger.notice(u"Inserted auditHardware.")
 	
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
-		logger.notice(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
+		logger.info(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1727,12 +1685,11 @@ class FileBackend(ConfigDataBackend):
 					break
 			if not found:
 				raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
-		logger.notice(u"Updated auditHardware.")
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting auditHardwares ...")
+		logger.info(u"Getting auditHardwares ...")
 		result = []
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		if not os.path.exists(filename):
@@ -1750,14 +1707,13 @@ class FileBackend(ConfigDataBackend):
 			auditHardware = AuditHardware.fromHash(objHash)
 			if self._objectHashMatches(auditHardware.toHash(), **filter):
 				result.append(auditHardware)
-		logger.notice(u"Got auditHardwares.")
 		
 		return result
 	
 	def auditHardware_deleteObjects(self, auditHardwares):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		
-		logger.notice(u"Deleting auditHardwares ...")
+		logger.info(u"Deleting auditHardwares ...")
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1780,7 +1736,6 @@ class FileBackend(ConfigDataBackend):
 					ini.remove_section(section)
 					logger.debug2(u"Removed section '%s'" % (section))
 		iniFile.generate(ini)
-		logger.notice(u"Deleted auditHardwares.")
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
@@ -1789,7 +1744,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
-		logger.notice(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
+		logger.info(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
 		
 		if not os.path.exists(filename):
@@ -1812,12 +1767,11 @@ class FileBackend(ConfigDataBackend):
 				continue
 			ini.set(section, key.lower(), self.__escape(value))
 		iniFile.generate(ini)
-		logger.notice(u"Inserted auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
-		logger.notice(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
+		logger.info(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1845,12 +1799,11 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(ini)
 				return
 		raise Exception(u"auditHardwareOnHost %s not found" % auditHardwareOnHost)
-		logger.notice(u"Updated auditHardwareOnHost.")
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
-		logger.notice(u"Getting auditHardwareOnHosts ...")
+		logger.info(u"Getting auditHardwareOnHosts ...")
 		filenames = {}
 		for ident in self._getIdents('AuditHardwareOnHost', **filter):
 			if not ident['hostId'] in filenames.keys():
@@ -1875,14 +1828,13 @@ class FileBackend(ConfigDataBackend):
 				auditHardwareOnHost = AuditHardwareOnHost.fromHash(objHash)
 				if self._objectHashMatches(auditHardwareOnHost.toHash(), **filter):
 					result.append(auditHardwareOnHost)
-		logger.notice(u"Got auditHardwareOnHosts.")
 		
 		return result
 	
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
-		logger.notice(u"Deleting auditHardwareOnHosts ...")
+		logger.info(u"Deleting auditHardwareOnHosts ...")
 		items = {}
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			ident = auditHardwareOnHost.getIdent(returnType = 'dict')
@@ -1923,7 +1875,6 @@ class FileBackend(ConfigDataBackend):
 			if len(sections) > 0:
 				iniFile.generate(ini)
 		
-		logger.notice(u"Deleted auditHardwareOnHosts.")
 	
 	
 	

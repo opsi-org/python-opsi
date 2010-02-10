@@ -719,7 +719,6 @@ class DHCPDConfFile(TextFile):
 		self._globalBlock.endLine = len(self._lines)
 		minIndex = 0
 		while True:
-			logger.debug(u"parse ==>>> %s" % self._data)
 			self._currentToken = None
 			self._currentIndex = -1
 			if not self._data.strip():

@@ -1353,7 +1353,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 	def configState_getObjects(self, attributes=[], **filter):
 		# objectIds can only be client ids
 		
-		# Get product states from backend
+		# Get config states from backend
 		configStates = self._backend.configState_getObjects(attributes, **filter)
 		
 		if not self._options['addConfigStateDefaults']:

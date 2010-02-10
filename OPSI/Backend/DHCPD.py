@@ -118,6 +118,8 @@ class DHCPDBackend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		if not isinstance(host, OpsiClient):
 			return
+		
+		logger.debug(u"host_insertObject %s" % host)
 		if not host.hardwareAddress:
 			logger.warning(u"Cannot insert client %s: hardware address unkown" % host)
 			return
@@ -152,9 +154,11 @@ class DHCPDBackend(ConfigDataBackend):
 		if not isinstance(host, OpsiClient):
 			return
 		
+		logger.debug(u"host_updateObject %s" % host)
 		self._dhcpdConfFile.parse()
 		hostParams = self._dhcpdConfFile.getHost(host.id.split('.')[0])
 		if not hostParams:
+			logger.debug(u"host %s not found in dhcpd config, nothing to update" % host)
 			return
 		
 		hardwareAddress = host.hardwareAddress
@@ -197,6 +201,9 @@ class DHCPDBackend(ConfigDataBackend):
 		
 		
 	def host_deleteObjects(self, hosts):
+		
+		logger.debug(u"host_deleteObjects %s" % hosts)
+		
 		self._dhcpdConfFile.parse()
 		changed = False
 		for host in hosts:
