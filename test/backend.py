@@ -1555,7 +1555,7 @@ class BackendTest(object):
 		self.backend.auditSoftware_createObjects(self.auditSoftwares)
 		
 		auditSoftwares = self.backend.auditSoftware_getObjects()
-		assert len(auditSoftwares) == len(self.auditSoftwares)
+		assert len(auditSoftwares) == len(self.auditSoftwares), u"got: '%s', expected: '%s'" % (auditSoftwares, len(self.auditSoftwares))
 		
 		auditSoftware3update = AuditSoftware(
 			name                  = self.auditSoftware3.name,
@@ -1572,15 +1572,15 @@ class BackendTest(object):
 		self.backend.auditSoftware_updateObject(auditSoftware3update)
 		auditSoftwares = self.backend.auditSoftware_getObjects(windowsDisplayName = 'updatedDN')
 		logger.debug(u"Got auditSoftwares: %s" % auditSoftwares)
-		assert len(auditSoftwares) == 1
+		assert len(auditSoftwares) == 1, u"got: '%s', expected: '%s'" % (auditSoftwares, 1)
 		
 		self.backend.auditSoftware_deleteObjects(self.auditSoftware3)
 		auditSoftwares = self.backend.auditSoftware_getObjects()
-		assert len(auditSoftwares) == len(self.auditSoftwares) - 1
+		assert len(auditSoftwares) == len(self.auditSoftwares) - 1, u"got: '%s', expected: '%s'" % (auditSoftwares, len(self.auditSoftwares) - 1)
 		
 		self.backend.auditSoftware_insertObject(self.auditSoftware3)
 		auditSoftwares = self.backend.auditSoftware_getObjects()
-		assert len(auditSoftwares) == len(self.auditSoftwares)
+		assert len(auditSoftwares) == len(self.auditSoftwares), u"got: '%s', expected: '%s'" % (auditSoftwares, len(self.auditSoftwares))
 		
 		# AuditSoftwareOnClients
 		logger.notice(u"Testing auditSoftwareOnClient methods")
@@ -1588,7 +1588,7 @@ class BackendTest(object):
 		self.backend.auditSoftwareOnClient_createObjects(self.auditSoftwareOnClients)
 		
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients), u"Expected %s got %s" % (self.auditSoftwareOnClients, auditSoftwareOnClients)
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients), u"got: '%s', expected: '%s'" % (auditSoftwareOnClients, len(self.auditSoftwareOnClients))
 		
 		auditSoftwareOnClient1update = AuditSoftwareOnClient(
 			name            = self.auditSoftware1.getName(),
@@ -1608,16 +1608,16 @@ class BackendTest(object):
 		
 		self.backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects(binaryName = 'updatedBN')
-		assert len(auditSoftwareOnClients) == 1
+		assert len(auditSoftwareOnClients) == 1, u"got: '%s', expected: '%s'" % (auditSoftwareOnClients, 1)
 		
 		logger.info(u"Deleting auditSoftwareOnClient: %s" % auditSoftwareOnClient1update.toHash())
 		self.backend.auditSoftwareOnClient_deleteObjects(auditSoftwareOnClient1update)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients) - 1
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients) - 1, u"got: '%s', expected: '%s'" % (auditSoftwareOnClients, len(self.auditSoftwareOnClients) - 1)
 		
 		self.backend.auditSoftwareOnClient_insertObject(self.auditSoftwareOnClient1)
 		auditSoftwareOnClients = self.backend.auditSoftwareOnClient_getObjects()
-		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients)
+		assert len(auditSoftwareOnClients) == len(self.auditSoftwareOnClients), u"got: '%s', expected: '%s'" % (auditSoftwareOnClients, len(self.auditSoftwareOnClients))
 		
 		# AuditHardwares
 		logger.notice(u"Testing auditHardware methods")
@@ -1625,32 +1625,35 @@ class BackendTest(object):
 		self.backend.auditHardware_createObjects(self.auditHardwares)
 		
 		auditHardwares = self.backend.auditHardware_getObjects()
-		logger.debug(u"expected(%s) == got(%s)" % (self.auditHardwares, auditHardwares))
-		assert len(auditHardwares) == len(self.auditHardwares)
+		assert len(auditHardwares) == len(self.auditHardwares), u"got: '%s', expected: '%s'" % (auditHardwares, len(self.auditHardwares))
 		
 		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHASSIS', 'COMPUTER_SYSTEM'])
 		for auditHardware in auditHardwares:
-			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM']
+			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM'], u"'%s' not in '%s'" % (auditHardware.getHardwareClass(), ['CHASSIS', 'COMPUTER_SYSTEM'])
 		
 		auditHardwares = self.backend.auditHardware_getObjects(hardwareClass = ['CHA*IS', '*UTER_SYS*'])
 		for auditHardware in auditHardwares:
-			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM']
+			assert auditHardware.getHardwareClass() in ['CHASSIS', 'COMPUTER_SYSTEM'], u"'%s' not in '%s'" % (auditHardware.getHardwareClass(), ['CHASSIS', 'COMPUTER_SYSTEM'])
 		
 		self.backend.auditHardware_deleteObjects([ self.auditHardware1, self.auditHardware2 ])
 		auditHardwares = self.backend.auditHardware_getObjects()
-		assert len(auditHardwares) == len(self.auditHardwares) - 2
+		assert len(auditHardwares) == len(self.auditHardwares) - 2, u"got: '%s', expected: '%s'" % (auditHardwares, len(self.auditHardwares) - 2)
 		
+		noException = False
 		try:
 			self.backend.auditHardware_updateObjects([ self.auditHardware1, self.auditHardware2 ])
+			noException = True
 		except:
 			pass
+		if noException:
+			raise Exception(u"auditHardware_updateObjects(%s) didn't throw exception" % ([ self.auditHardware1, self.auditHardware2 ]))
 		
-		assert len(auditHardwares) == len(self.auditHardwares) - 2
+		assert len(auditHardwares) == len(self.auditHardwares) - 2, u"got: '%s', expected: '%s'" % (auditHardwares, len(self.auditHardwares) - 2)
 		
 		self.backend.auditHardware_createObjects([ self.auditHardware1, self.auditHardware2 ])
 		
 		auditHardwares = self.backend.auditHardware_getObjects()
-		assert len(auditHardwares) == len(self.auditHardwares)
+		assert len(auditHardwares) == len(self.auditHardwares), u"got: '%s', expected: '%s'" % (auditHardwares, len(self.auditHardwares))
 		
 		self.backend.auditHardware_createObjects(self.auditHardwares)
 		
@@ -1660,7 +1663,7 @@ class BackendTest(object):
 		self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHosts)
 		
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"Expected %s got %s" % (self.auditHardwareOnHosts, auditHardwareOnHosts)
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 		
 		auditHardwareOnHost4update = AuditHardwareOnHost(
 			hostId              = self.client1.getId(),
@@ -1677,29 +1680,17 @@ class BackendTest(object):
 		
 		self.backend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen = '0707-07-07 07:07:07')
-		assert len(auditHardwareOnHosts) == 1
+		assert len(auditHardwareOnHosts) == 1, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, 1)
 		
 		logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost4update.toHash())
 		self.backend.auditHardwareOnHost_deleteObjects([auditHardwareOnHost4update, self.auditHardwareOnHost3])
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) - 2
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) - 2, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts) - 2)
 		
 		self.backend.auditHardwareOnHost_insertObject(self.auditHardwareOnHost4)
 		self.backend.auditHardwareOnHost_insertObject(self.auditHardwareOnHost3)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)
-		
-		
-		
-		
-		print "###########"
-		print self.auditHardwareOnHost4.toHash()
-		print "###########"
-		print auditHardwareOnHost4update.toHash()
-		print "###########"
-		
-		
-		
+		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 		
 		
 		
