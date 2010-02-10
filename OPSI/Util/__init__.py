@@ -520,7 +520,7 @@ BLOWFISH_IV = 'OPSI1234'
 def blowfishEncrypt(key, cleartext):
 	''' Takes cleartext string, 
 	    returns hex-encoded, blowfish-encrypted string '''
-	cleartext = forceUnicode(cleartext)
+	cleartext = forceUnicode(cleartext).encode('utf-8')
 	key = forceUnicode(key)
 	
 	while ( len(cleartext) % 8 != 0 ):
@@ -532,7 +532,7 @@ def blowfishEncrypt(key, cleartext):
 		raise Exception(u"Failed to hex decode key '%s'" % key)
 	
 	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
-	crypt = blowfish.encrypt(cleartext.encode('utf-8'))
+	crypt = blowfish.encrypt(cleartext)
 	return unicode(crypt.encode("hex"))
 	
 def blowfishDecrypt(key, crypt):

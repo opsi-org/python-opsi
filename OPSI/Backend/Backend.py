@@ -2992,9 +2992,9 @@ class DepotserverBackend(ExtendedBackend):
 		lines = []
 		for line in cf.readlines():
 			match = lineRegex.search(line)
-			if not match and (match.group(1) != username):
-				lines.append(line)
-		lines.append(u'%s:%s\n' % (username, encodedPassword))
+			if not match or (match.group(1) != username):
+				lines.append(line.rstrip())
+		lines.append(u'%s:%s' % (username, encodedPassword))
 		cf.open('w')
 		cf.writelines(lines)
 		cf.close()

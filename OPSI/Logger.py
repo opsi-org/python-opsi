@@ -647,23 +647,24 @@ class LoggerImplementation:
 			elif (level == LOG_COMMENT):
 				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 		
-	def logException(self, e):
-		self.logTraceback(sys.exc_info()[2])
-		self.log(LOG_CRITICAL, u'     ==>>> %s' % e)
-	
-	def logTraceback(self, tb):
+	def logException(self, e, logLevel=LOG_CRITICAL):
+		self.logTraceback(sys.exc_info()[2], logLevel)
+		message = e.__repr__()
+		self.log(logLevel, u'     ==>>> %s' %message)
+		
+	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
 		''' Log an exception. '''
-		self.log(LOG_CRITICAL, u'Traceback:')
+		self.log(logLevel, u'Traceback:')
 		# Traceback
 		try:
 			while (tb != None):
 				f = tb.tb_frame
 				c = f.f_code
-				self.log(LOG_CRITICAL, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
+				self.log(logLevel, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
 				tb = tb.tb_next
 		except Exception, e:
 			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
-	
+
 	def confidential( self, message ):
 		''' Log a confidential message. '''
 		self.log(LOG_CONFIDENTIAL, message)
