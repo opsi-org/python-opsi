@@ -1492,7 +1492,6 @@ class BackendTest(object):
 		self.backend.licensePool_createObjects(self.licensePools)
 		
 		licensePools = self.backend.licensePool_getObjects()
-		assert len(licensePools) == len(self.licensePools)
 		assert len(licensePools) == len(self.licensePools), u"got: '%s', expected: '%s'" % (licensePools, self.licensePools)
 		for licensePool in licensePools:
 			if (licensePool.getId() == self.licensePool1.getId()):
@@ -1711,7 +1710,7 @@ class BackendTest(object):
 				maxBandwidth = 0)
 		
 		hosts = self.backend.host_getObjects(id = 'depot100.uib.local')
-		assert len(hosts) == 1
+		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
 		
 		self.backend.productOnDepot_create(
 			productId      = self.product4.getId(),
@@ -1735,43 +1734,112 @@ class BackendTest(object):
 		hosts = self.backend.host_getObjects(id = 'client100.uib.local')
 		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
 		
-		# TODO: assertions
+		selfIdents = []
+		for host in self.hosts:
+			selfIdents.append(host.getIdent(returnType = 'dict'))
+		
+		selfIdents.append({'id': 'depot100.uib.local'})
+		selfIdents.append({'id': 'client100.uib.local'})
+		
 		ids = self.backend.host_getIdents()
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		for ident in ids:
+			found = False
+			for selfIdent in selfIdents:
+				if (ident == selfIdent['id']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
 		ids = self.backend.host_getIdents(id = '*100*')
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == 2, u"got: '%s', expected: '%s'" % (ids, 2)
+		for ident in ids:
+			found = False
+			for selfIdent in selfIdents:
+				if (ident == selfIdent['id']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
 		ids = self.backend.host_getIdents(returnType = 'tuple')
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		for ident in ids:
+			found = False
+			for selfIdent in selfIdents:
+				if (ident[0] == selfIdent['id']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
 		ids = self.backend.host_getIdents(returnType = 'list')
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		for ident in ids:
+			found = False
+			for selfIdent in selfIdents:
+				if (ident[0] == selfIdent['id']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
 		ids = self.backend.host_getIdents(returnType = 'dict')
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		for ident in ids:
+			found = False
+			for selfIdent in selfIdents:
+				if (ident['id'] == selfIdent['id']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
+		
+		
+		selfIdents = []
+		for config in self.configs:
+			selfIdents.append(config.getIdent(returnType = 'dict'))
+		
 		ids = self.backend.config_getIdents()
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		for ident in ids:
+			found = False
+			for selfIdent in selfIdents:
+				if (ident == selfIdent['id']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
+		
+		# some deleted?
+		self.backend.configState_createObjects(self.configStates)
+		
+		selfIdents = []
+		for configState in self.configStates:
+			selfIdents.append(configState.getIdent(returnType = 'dict'))
+		
 		ids = self.backend.configState_getIdents()
-		logger.notice("Idents: %s" % ids)
+		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		for ident in ids:
+			i = ident.split(';')
+			found = False
+			for selfIdent in selfIdents:
+				if (i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId']):
+					found = True; break
+			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		ids = self.backend.product_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productProperty_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productOnDepot_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productOnDepot_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productPropertyState_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productPropertyState_getIdents(returnType = 'tuple')
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productPropertyState_getIdents(returnType = 'list')
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.productPropertyState_getIdents(returnType = 'dict')
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.group_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.objectToGroup_getIdents()
-		logger.notice("Idents: %s" % ids)
 		ids = self.backend.product_getIdents(id = '*product*')
-		logger.notice("Idents: %s" % ids)
 		
 		# TODO: assertions
 		result = self.backend.backend_searchObjects('(&(objectClass=Host)(type=OpsiDepotserver))')

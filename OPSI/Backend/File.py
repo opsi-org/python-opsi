@@ -1780,9 +1780,7 @@ class FileBackend(ConfigDataBackend):
 		updated = False
 		for section in ini.sections():
 			found = True
-			print "section:", section
 			for (key, value) in ident.items():
-				print "key:", key, "value:", value, "type:", type(value)
 				key = key.lower()
 				if key == 'hostid':
 					continue
@@ -1855,7 +1853,6 @@ class FileBackend(ConfigDataBackend):
 				for ident in idents:
 					found = True
 					for (key, value) in ident.items():
-						print key, value, type(value)
 						key = key.lower()
 						if key == 'hostid':
 							continue
