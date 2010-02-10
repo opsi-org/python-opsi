@@ -1733,7 +1733,7 @@ class BackendTest(object):
 				lastSeen = None)
 		
 		hosts = self.backend.host_getObjects(id = 'client100.uib.local')
-		assert len(hosts) == 1
+		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
 		
 		# TODO: assertions
 		ids = self.backend.host_getIdents()
@@ -1812,7 +1812,7 @@ class BackendTest(object):
 		})
 		
 		clientToDepots = self.backend.configState_getClientToDepotserver()
-		assert len(clientToDepots) == len(self.clients), "expected %d clientToDepots, got %d" % (len(clientToDepots), len(self.clients))
+		assert len(clientToDepots) == len(self.clients), u"got: '%s', expected: '%s'" % (clientToDepots, len(self.clients))
 		
 		for depotserver in self.depotservers:
 			productOnDepots = self.backend.productOnDepot_getObjects(depotId = depotserver.id)
@@ -1855,19 +1855,21 @@ class BackendTest(object):
 			logger.info(u"Got productOnClient: %s" % productOnClient)
 			if (productOnClient.actionRequest == 'setup'):
 				setup.append(productOnClient.productId)
-		assert 'product6' in setup
-		assert 'product7' in setup
-		assert 'product9' in setup
+		assert 'product6' in setup, u"'%s' not in '%s'" % ('product6', setup)
+		assert 'product7' in setup, u"'%s' not in '%s'" % ('product7', setup)
+		assert 'product9' in setup, u"'%s' not in '%s'" % ('product9', setup)
 		
 		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['product6', 'product7'])
 		for productOnClient in productOnClients:
 			logger.info(u"Got productOnClient: %s" % productOnClient)
-			assert productOnClient.productId in ('product6', 'product7'), u"Product id filter failed, got product id: %s" % productOnClient.productId
+			assert productOnClient.productId in ('product6', 'product7'), u"'%s' not in '%s'" % (productOnClient.productId, ('product6', 'product7'))
+#			, u"Product id filter failed, got product id: %s" % productOnClient.productId
 		
 		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['*6*'])
 		for productOnClient in productOnClients:
 			logger.info(u"Got productOnClient: %s" % productOnClient)
-			assert productOnClient.productId in ('product6'), u"Product id filter failed, got product id: %s" % productOnClient.productId
+			assert productOnClient.productId in ('product6'), u"'%s' not in '%s'" % (productOnClient.productId, ('product6'))
+#			, u"Product id filter failed, got product id: %s" % productOnClient.productId
 		
 		self.backend.productOnClient_create(
 			productId          = 'product6',
@@ -1890,9 +1892,10 @@ class BackendTest(object):
 			logger.info(u"Got productOnClient: %s" % productOnClient)
 			if (productOnClient.actionRequest == 'setup'):
 				setup.append(productOnClient.productId)
-		assert not 'product6' in setup
-		assert not 'product7' in setup
-		assert not 'product9' in setup
+		assert not 'product6' in setup, u"'%s' is in '%s'" % ('product6', setup)
+		assert not 'product7' in setup, u"'%s' is in '%s'" % ('product7', setup)
+		assert not 'product9' in setup, u"'%s' is in '%s'" % ('product9', setup)
+		
 		
 		
 	def testPerformance(self, clientCount=100, productCount=50):
