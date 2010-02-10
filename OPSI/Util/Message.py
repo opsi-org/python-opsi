@@ -40,6 +40,12 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor
 
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
+
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -436,11 +442,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		logger.info(u"received line %s" % line)
 		id = None
 		try:
-			if hasattr(json, 'loads'):
-				# python 2.6 json module
-				rpc = json.loads( line )
-			else:
-				rpc = json.read( line )
+			rpc = json.loads(line)
 			method = rpc['method']
 			id = rpc['id']
 			params = rpc['params']
@@ -516,13 +518,8 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			return
 		logger.info(u"sending notification '%s' to clients" % name)
 		for client in self.clients:
-			jsonString = ''
 			# json-rpc: notifications have id null
-			if hasattr(json, 'dumps'):
-				# python 2.6 json module
-				jsonString = json.dumps( {"id": None, "method": name, "params": params } )
-			else:
-				jsonString = json.write( {"id": None, "method": name, "params": params } )
+			jsonString = json.dumps( {"id": None, "method": name, "params": params } )
 			if type(jsonString) is unicode:
 				jsonString = jsonString.encode('utf-8')
 			client.sendLine(jsonString)
@@ -627,11 +624,7 @@ class NotificationClientFactory(ClientFactory):
 		logger.debug(u"received rpc '%s'" % rpc)
 		id = None
 		try:
-			if hasattr(json, 'loads'):
-				# python 2.6 json module
-				rpc = json.loads( rpc )
-			else:
-				rpc = json.read( rpc )
+			rpc = json.loads(rpc)
 			id = rpc['id']
 			if id:
 				# Received rpc answer
@@ -660,11 +653,7 @@ class NotificationClientFactory(ClientFactory):
 			raise Exception(u"execute timed out after %d seconds" % self._timeout)
 		
 		rpc = {'id': None, "method": method, "params": params }
-		if hasattr(json, 'dumps'):
-			# python 2.6 json module
-			self.sendLine( json.dumps( rpc ) )
-		else:
-			self.sendLine( json.write( rpc ) )
+		self.sendLine(json.dumps(rpc))
 
 class NotificationClient(threading.Thread):
 	def __init__(self, address, port, observer):

@@ -35,10 +35,16 @@
 __version__ = '3.5'
 
 # Imports
-import MySQLdb, warnings, time, json
+import MySQLdb, warnings, time
 from _mysql_exceptions import *
 from sqlalchemy import pool
 import threading
+
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
 
 # OPSI imports
 from OPSI.Logger import *

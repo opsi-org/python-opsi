@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # imports
-import json, re, copy, time, inspect, types
+import re, copy, time, inspect, types
 
 # OPSI imports
 from OPSI.Logger import *
@@ -1586,7 +1586,7 @@ class HostGroup(Group):
 	
 	@staticmethod
 	def fromJson(jsonString):
-		return HostGroup.fromHash(json.loads(jsonString))
+		return fromJson(jsonString, 'HostGroup')
 	
 Group.subClasses['HostGroup'] = HostGroup
 

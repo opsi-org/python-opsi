@@ -35,7 +35,13 @@
 __version__ = '3.5'
 
 # Imports
-import json, base64, urllib, httplib, new, stat, socket, time, threading
+import base64, urllib, httplib, new, stat, socket, time, threading
+
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
 
 # OPSI imports
 from OPSI.Logger import *
@@ -219,23 +225,14 @@ class JSONRPCBackend(Backend):
 			params = Object.serialize(params)
 			
 			# Create json-rpc object
-			jsonrpc = ''
-			if hasattr(json, 'dumps'):
-				# python 2.6 json module
-				jsonrpc = json.dumps( { "id": 1, "method": method, "params": params } )
-			else:
-				jsonrpc = json.write( { "id": 1, "method": method, "params": params } )
+			jsonrpc = json.dumps( { "id": 1, "method": method, "params": params } )
 			logger.debug2(u"jsonrpc string: %s" % jsonrpc)
 			
 			logger.debug2(u"requesting: '%s', query '%s'" % (self._address, jsonrpc))
 			response = self._request(self._baseUrl, jsonrpc)
 			
 			# Read response
-			if hasattr(json, 'loads'):
-				# python 2.6 json module
-				response = json.loads(response)
-			else:
-				response = json.read(response)
+			response = json.loads(response)
 			
 			if response.get('error'):
 				# Error occurred

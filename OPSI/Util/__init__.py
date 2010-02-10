@@ -35,7 +35,13 @@
 __version__ = '3.5'
 
 # Imports
-import ctypes, threading, json, os, random, base64, types, socket
+import ctypes, threading, os, random, base64, types, socket
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
+
 from duplicity import librsync
 try:
 	from hashlib import md5
@@ -162,22 +168,10 @@ def fromJson(obj, objectType=None):
 	if objectType and type(obj) is dict:
 		obj['type'] = objectType
 	
-	if hasattr(json, 'loads'):
-		# Python 2.6 json module
-		return deserialize(json.loads(obj))
-	else:
-		return deserialize(json.read(obj))
+	return deserialize(json.loads(obj))
 	
 def toJson(obj, ensureAscii=False):
-	if hasattr(json, 'loads'):
-		# Python 2.6 json module
-		return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
-	else:
-		return json.write(serialize(obj))
-
-
-
-
+	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
 
 def librsyncSignature(filename):
 	if (os.name != 'posix'):
