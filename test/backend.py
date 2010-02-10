@@ -1032,37 +1032,34 @@ class BackendTest(object):
 		self.backend.host_createObjects( self.hosts )
 		
 		hosts = self.backend.host_getObjects()
-		logger.debug(u"expected(%s) == got(%s)" % (self.hosts, hosts))
-		assert len(hosts) == len(self.hosts)
+		assert len(hosts) == len(self.hosts), u"got: '%s', expected: '%s'" % (hosts, len(self.hosts))
 		for host in hosts:
 			logger.debug(host)
-			logger.info(u"Host key for host '%s': %s" % (host.getId(), host.getOpsiHostKey()))
-			assert host.getOpsiHostKey()
+			assert host.getOpsiHostKey(), u"Host key for host '%s': %s" % (host.getId(), host.getOpsiHostKey())
 			for h in self.hosts:
 				if (host.id == h.id):
 					host = host.toHash()
 					h = h.toHash()
 					for (attribute, value) in h.items():
 						if not value is None:
-							logger.debug(u"%s: expected(%s) == got(%s) in host: '%s'" % (attribute, value, host[attribute], host['id']))
 							if type(value) is list:
 								for v in value:
-									assert v in host[attribute]
+									assert v in host[attribute], u"'%s' not in '%s'" % (v, config[attribute])
 							else:
-								assert value == host[attribute]
+								assert value == host[attribute], u"got: '%s', expected: '%s'" % (value, config[attribute])
 					break
 		
 		
 		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
-		assert len(hosts) == len(self.configservers)
+		assert len(hosts) == len(self.configservers), u"got: '%s', expected: '%s'" % (hosts, len(self.configservers))
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ] )
-		assert len(hosts) == 2
+		assert len(hosts) == 2, u"got: '%s', expected: '%s'" % (hosts, 2)
 		ids = []
 		for host in hosts:
 			ids.append(host.getId())
-		assert self.client1.getId() in ids
-		assert self.client2.getId() in ids
+		assert self.client1.getId() in ids, u"'%s' not in '%s'" % (self.client1.getId(), ids)
+		assert self.client2.getId() in ids, u"'%s' not in '%s'" % (self.client2.getId(), ids)
 		
 		hosts = self.backend.host_getObjects( attributes = ['description', 'notes'], ipAddress = [ None ] )
 		count = 0
@@ -1072,39 +1069,38 @@ class BackendTest(object):
 		
 		assert len(hosts) == count
 		for host in hosts:
-			assert host.getIpAddress() is None
-			assert host.getInventoryNumber() is None
-			assert not host.getNotes() is None
-			assert not host.getDescription() is None
+			assert host.getIpAddress() is None, u"got: '%s', expected: '%s'" % (host.getIpAddress(), None)
+			assert host.getInventoryNumber() is None, u"got: '%s', expected: '%s'" % (host.getInventoryNumber(), None)
+			assert not host.getNotes() is None, u"got: '%s', expected: '%s'" % (host.getNotes(), not None)
+			assert not host.getDescription() is None, u"got: '%s', expected: '%s'" % (host.getDescription(), not None)
 		
 		hosts = self.backend.host_getObjects( attributes = ['description', 'notes'], ipAddress = None )
-		logger.debug(u"expected(%s) == got(%s)" % (self.hosts, hosts))
-		assert len(hosts) == len(self.hosts)
+		assert len(hosts) == len(self.hosts), u"got: '%s', expected: '%s'" % (hosts, len(self.hosts))
 		for host in hosts:
-			assert host.getIpAddress() is None
-			assert host.getInventoryNumber() is None
+			assert host.getIpAddress() is None, u"got: '%s', expected: '%s'" % (host.getIpAddress(), None)
+			assert host.getInventoryNumber() is None, u"got: '%s', expected: '%s'" % (host.getInventoryNumber(), None)
 		
 		hosts = self.backend.host_getObjects( type = [ self.clients[0].getType() ] )
-		assert len(hosts) == len(self.clients)
+		assert len(hosts) == len(self.clients), u"got: '%s', expected: '%s'" % (hosts, len(self.clients))
 		ids = []
 		for host in hosts:
 			ids.append(host.getId())
 		for client in self.clients:
-			assert client.getId() in ids
+			assert client.getId() in ids, u"'%s' not in '%s'" % (client.getId(), ids)
 		
 		hosts = self.backend.host_getObjects( id = [ self.client1.getId(), self.client2.getId() ], description = self.client2.getDescription() )
-		assert len(hosts) == 1
-		assert hosts[0].description == self.client2.getDescription()
-		assert hosts[0].id == self.client2.getId()
+		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
+		assert hosts[0].description == self.client2.getDescription(), u"got: '%s', expected: '%s'" % (hosts[0].description, self.client2.getDescription())
+		assert hosts[0].id == self.client2.getId(), u"got: '%s', expected: '%s'" % (hosts[0].id, self.client2.getId())
 		
 		hosts = self.backend.host_getObjects(attributes=['id', 'description'], id = self.client1.getId())
-		assert len(hosts) == 1
-		assert hosts[0].getId() == self.client1.getId()
-		assert hosts[0].getDescription() == self.client1.getDescription()
+		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
+		assert hosts[0].getId() == self.client1.getId(), u"got: '%s', expected: '%s'" % (hosts[0].getId(), self.client1.getId())
+		assert hosts[0].getDescription() == self.client1.getDescription(), u"got: '%s', expected: '%s'" % (hosts[0].getDescription(), self.client1.getDescription())
 		
 		self.backend.host_deleteObjects(self.client2)
 		hosts = self.backend.host_getObjects( type = [ self.client1.getType() ] )
-		assert len(hosts) == len(self.clients)-1
+		assert len(hosts) == len(self.clients) - 1, u"got: '%s', expected: '%s'" % (hosts, len(self.clients) - 1)
 		ids = []
 		for host in hosts:
 			ids.append(host.getId())
@@ -1112,21 +1108,21 @@ class BackendTest(object):
 		for client in self.clients:
 			if (client.getId() == self.client2.getId()):
 				continue
-			assert client.getId() in ids
+			assert client.getId() in ids, u"'%s' not in '%s'" % (client.getId(), ids)
 		
 		self.backend.host_createObjects(self.client2)
 		self.client2.setDescription('Updated')
 		self.backend.host_updateObject(self.client2)
 		hosts = self.backend.host_getObjects( description = 'Updated' )
-		assert len(hosts) == 1
-		assert hosts[0].getId() == self.client2.getId()
+		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
+		assert hosts[0].getId() == self.client2.getId(), u"got: '%s', expected: '%s'" % (hosts[0].getId(), self.client2.getId())
 		
 		self.client2.setDescription(u'Test client 2')
 		self.backend.host_createObjects(self.client2)
 		hosts = self.backend.host_getObjects( attributes = ['id', 'description'], id = self.client2.getId() )
-		assert len(hosts) == 1
-		assert hosts[0].getId() == self.client2.getId()
-		assert hosts[0].getDescription() == 'Test client 2'
+		assert len(hosts) == 1, u"got: '%s', expected: '%s'" % (hosts, 1)
+		assert hosts[0].getId() == self.client2.getId(), u"got: '%s', expected: '%s'" % (hosts[0].getId(), self.client2.getId())
+		assert hosts[0].getDescription() == 'Test client 2', u"got: '%s', expected: '%s'" % (hosts[0].getDescription(), 'Test client 2')
 		
 		
 		# Configs
@@ -1135,7 +1131,7 @@ class BackendTest(object):
 		self.backend.config_createObjects( self.configs )
 		
 		configs = self.backend.config_getObjects()
-		assert len(configs) == len(self.configs)
+		assert len(configs) == len(self.configs), u"got: '%s', expected: '%s'" % (configs, len(self.configs))
 		ids = []
 		for config in configs:
 			ids.append(config.id)
@@ -1150,46 +1146,41 @@ class BackendTest(object):
 					c = c.toHash()
 					for (attribute, value) in c.items():
 						if not value is None:
-							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, config[attribute]))
 							if type(value) is list:
 								for v in value:
-									assert v in config[attribute]
+									assert v in config[attribute], u"'%s' not in '%s'" % (v, config[attribute])
 							else:
-								assert value == config[attribute]
+								assert value == config[attribute], u"got: '%s', expected: '%s'" % (value, config[attribute])
 					break
 		
 		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
-		logger.debug(u"expected(%s), got(%s)" % (self.config2, configs))
-		assert len(configs) == 1
-		assert configs[0].getId() == self.config2.getId()
+		assert len(configs) == 1, u"got: '%s', expected: '%s'" % (configs, 1)
+		assert configs[0].getId() == self.config2.getId(), u"got: '%s', expected: '%s'" % (configs[0].getId(), self.config2.getId())
 		
 		configs = self.backend.config_getObjects(possibleValues = [])
-		assert len(configs) == len(self.configs)
+		assert len(configs) == len(self.configs), u"got: '%s', expected: '%s'" % (configs, len(self.configs))
 		
 		configs = self.backend.config_getObjects(possibleValues = self.config1.possibleValues, defaultValues = self.config1.defaultValues)
-		logger.debug(u"expected(%s), got(%s)" % (self.config1, configs))
-		assert len(configs) == 1
-		assert configs[0].getId() == self.config1.getId()
+		assert len(configs) == 1, u"got: '%s', expected: '%s'" % (configs, 1)
+		assert configs[0].getId() == self.config1.getId(), u"got: '%s', expected: '%s'" % (configs[0].getId(), self.config1.getId())
 		
 		configs = self.backend.config_getObjects(possibleValues = self.config5.possibleValues, defaultValues = self.config5.defaultValues)
-		logger.debug(u"expected(%s), got(%s)" % (self.config5, configs))
-		assert len(configs) == 2
+		assert len(configs) == 2, u"got: '%s', expected: '%s'" % (configs, 2)
 		for config in configs:
-			assert config.getId() in (self.config3.id, self.config5.id)
+			assert config.getId() in (self.config3.id, self.config5.id), u"'%s' not in '%s'" % (config.getId(), (self.config3.id, self.config5.id))
 		
 		multiValueConfigNames = []
 		for config in self.configs:
 			if config.getMultiValue():
 				multiValueConfigNames.append(config.id)
 		configs = self.backend.config_getObjects( attributes = [], multiValue = True )
-		logger.debug(u"expected(%s), got(%s)" % (multiValueConfigNames, configs))
-		assert len(configs) == len(multiValueConfigNames)
+		assert len(configs) == len(multiValueConfigNames), u"got: '%s', expected: '%s'" % (configs, len(multiValueConfigNames))
 		for config in configs:
-			assert config.id in multiValueConfigNames
+			assert config.id in multiValueConfigNames, u"'%s' not in '%s'" % (config.id, multiValueConfigNames)
 		
 		self.backend.config_deleteObjects(self.config1)
 		configs = self.backend.config_getObjects()
-		assert len(configs) == len(self.configs)-1
+		assert len(configs) == len(self.configs) - 1, u"got: '%s', expected: '%s'" % (configs, len(self.configs) - 1)
 		
 		self.backend.config_createObjects(self.config1)
 		
@@ -1199,9 +1190,9 @@ class BackendTest(object):
 		self.backend.config_updateObject(self.config3)
 		
 		configs = self.backend.config_getObjects(description = u'Updated')
-		assert len(configs) == 1
-		assert configs[0].getPossibleValues() == ['1', '2', '3']
-		assert configs[0].getDefaultValues() == ['1', '2']
+		assert len(configs) == 1, u"got: '%s', expected: '%s'" % (configs, 1)
+		assert configs[0].getPossibleValues() == ['1', '2', '3'], u"got: '%s', expected: '%s'" % (configs[0].getPossibleValues(), ['1', '2', '3'])
+		assert configs[0].getDefaultValues() == ['1', '2'], u"got: '%s', expected: '%s'" % (configs[0].getDefaultValues(), ['1', '2'])
 		
 		
 		# ConfigStates
@@ -1210,16 +1201,16 @@ class BackendTest(object):
 		self.backend.configState_createObjects( self.configStates )
 		
 		configStates = self.backend.configState_getObjects()
-		#assert len(configStates) == len(self.configStates)
+		#assert len(configStates) == len(self.configStates), u"got: '%s', expected: '%s'" % (configStates, len(self.configStates))
 		
 		client1ConfigStates = []
 		for configState in self.configStates:
 			if configState.getObjectId() == self.client1.getId():
 				client1ConfigStates.append(configState)
 		configStates = self.backend.configState_getObjects( attributes = [], objectId = self.client1.getId() )
-		#assert len(configStates) == len(client1ConfigStates)
+		#assert len(configStates) == len(client1ConfigStates), u"got: '%s', expected: '%s'" % (configStates, len(client1ConfigStates))
 		for configState in configStates:
-			assert configState.objectId == self.client1.getId()
+			assert configState.objectId == self.client1.getId(), u"got: '%s', expected: '%s'" % (configState.objectId, self.client1.getId())
 		
 		self.backend.configState_deleteObjects(self.configState2)
 		configStates = self.backend.configState_getObjects()
@@ -1230,15 +1221,12 @@ class BackendTest(object):
 		self.configState3.setValues([True])
 		self.backend.configState_updateObject(self.configState3)
 		configStates = self.backend.configState_getObjects(objectId = self.configState3.getObjectId(), configId = self.configState3.getConfigId())
-		assert len(configStates) == 1
-		logger.debug(u"expected(%s), got(%s)" % ([True], configStates[0].getValues()))
-		assert configStates[0].getValues() == [True]
+		assert len(configStates) == 1, u"got: '%s', expected: '%s'" % (configStates, 1)
+		assert configStates[0].getValues() == [True], u"got: '%s', expected: '%s'" % (configStates[0].getValues(), [True])
 		
 		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
-		assert len(configStates) == 1
-		logger.debug(u"expected(%s), got(%s)" % (self.configState4.getValues()[0], configStates[0].getValues()[0]))
-		
-		assert configStates[0].getValues()[0] == self.configState4.getValues()[0]
+		assert len(configStates) == 1, u"got: '%s', expected: '%s'" % (configStates, 1)
+		assert configStates[0].getValues()[0] == self.configState4.getValues()[0], u"got: '%s', expected: '%s'" % (configStates[0].getValues()[0], self.configState4.getValues()[0])
 		
 		# Products
 		logger.notice(u"Testing product methods")
@@ -1246,17 +1234,15 @@ class BackendTest(object):
 		self.backend.product_createObjects( self.products )
 		
 		products = self.backend.product_getObjects()
-		logger.debug(u"expected(%s), got(%s)" % (self.products, products))
-		assert len(products) == len(self.products)
+		assert len(products) == len(self.products), u"got: '%s', expected: '%s'" % (products, len(self.products))
 		
 		products = self.backend.product_getObjects(type = self.localbootProducts[0].getType())
-		logger.debug(u"expected(%s), got(%s)" % (self.localbootProducts, products))
-		assert len(products) == len(self.localbootProducts)
+		assert len(products) == len(self.localbootProducts), u"got: '%s', expected: '%s'" % (products, len(self.localbootProducts))
 		ids = []
 		for product in products:
 			ids.append(product.getId())
 		for product in self.localbootProducts:
-			assert product.id in ids
+			assert product.id in ids, u"'%s' not in '%s'" % (product.id, ids)
 		
 		for product in products:
 			logger.debug(product)
@@ -1270,19 +1256,18 @@ class BackendTest(object):
 							continue
 						if not value is None:
 							
-							logger.debug(u"%s: expected(%s) == got(%s)" % (attribute, value, product[attribute]))
 							if type(value) is list:
 								for v in value:
-									assert v in product[attribute]
+									assert v in product[attribute], u"'%s' not in '%s'" % (v, product[attribute])
 							else:
-								assert value == product[attribute]
+								assert value == product[attribute], u"got: '%s', expected: '%s'" % (value, product[attribute])
 					break
 		
 		self.product2.setName(u'Product 2 updated')
 		products = self.backend.product_updateObject(self.product2)
 		products = self.backend.product_getObjects( attributes = ['name'], id = 'product2' )
-		assert len(products) == 1
-		assert products[0].getName() == u'Product 2 updated'
+		assert len(products) == 1, u"got: '%s', expected: '%s'" % (products, 1)
+		assert products[0].getName() == u'Product 2 updated', u"got: '%s', expected: '%s'" % (products[0].getName(), u'Product 2 updated')
 		
 		
 		# ProductProperties
@@ -1357,7 +1342,6 @@ class BackendTest(object):
 		
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['productId'] )
-		logger.debug(u"expected(%s) == got(%s)" % (self.productOnDepots, productOnDepots))
 		assert len(productOnDepots) == len(self.productOnDepots), u"got: '%s', expected: '%s'" % (productOnDepots, len(self.productOnDepots))
 		
 		self.backend.productOnDepot_deleteObjects(self.productOnDepot1)
