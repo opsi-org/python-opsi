@@ -1413,16 +1413,15 @@ class BackendTest(object):
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
 		
 		productPropertyStates = self.backend.productPropertyState_getObjects()
+		assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (productPropertyStates, len(self.productPropertyStates))
 		
-		print "#########################"
-		for p in productPropertyStates:
-			print p.toHash()
-		print "-------------------------"
-		for p in self.productPropertyStates:
-			print p.toHash()
-		print "#########################"
+		self.backend.productPropertyState_deleteObjects(self.productPropertyState2)
+		productPropertyStates = self.backend.productPropertyState_getObjects()
+		assert len(productPropertyStates) == len(self.productPropertyStates) - 1, u"got: '%s', expected: '%s'" % (productPropertyStates, len(self.productPropertyStates) - 1)
 		
-		assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (productPropertyStates, self.productPropertyStates)
+		self.backend.productPropertyState_insertObject(self.productPropertyState2)
+		productPropertyStates = self.backend.productPropertyState_getObjects()
+		assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (productPropertyStates, len(self.productPropertyStates))
 		
 		# Groups
 		logger.notice(u"Testing group methods")

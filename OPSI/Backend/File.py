@@ -1044,9 +1044,16 @@ class FileBackend(ConfigDataBackend):
 				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
 				
-				if cp.has_section(obj.getProductId() + '-install'):
-					cp.remove_section(obj.getProductId() + '-install')
-					logger.debug2(u"Removed section '%s'" % obj.getProductId() + '-install')
+				section = obj.getProductId() + '-install'
+				option = obj.getPropertyId()
+				
+				if cp.has_option(section, option):
+					cp.remove_option(section, option)
+					logger.debug2(u"Removed option '%s' in section '%s'" % (option, section))
+				
+				if (cp.has_section(section)) and (len(cp.options(section)) == 0):
+					cp.remove_section(section)
+					logger.debug2(u"Removed empty section '%s'" % section)
 				
 				iniFile.generate(cp)
 		
