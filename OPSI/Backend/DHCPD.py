@@ -173,6 +173,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self._dhcpdConfFile.deleteHost(host.id.split('.')[0])
 				changed = True
 		if changed:
+			self._dhcpdConfFile.generate()
 			self._triggerReload()
 	
 	

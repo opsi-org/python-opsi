@@ -483,6 +483,9 @@ class DHCPDConf_Component(object):
 	def asText(self):
 		return self.getShifting()
 	
+	def __repr__(self):
+		return '<%s line %d-%d>' % (self.__class__.__name__, self.startLine, self.endLine)
+		
 class DHCPDConf_Parameter(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -560,9 +563,9 @@ class DHCPDConf_Block(DHCPDConf_Component):
 	
 	def removeComponents(self):
 		logger.debug(u"Removing components: %s" % self.components)
-		for c in list(self.components):
+		for c in forceList(self.components):
 			self.removeComponent(c)
-			
+		
 	def addComponent(self, component):
 		self.components.append(component)
 		if not self.lineRefs.has_key(component.startLine):
@@ -668,14 +671,8 @@ class DHCPDConf_Block(DHCPDConf_Component):
 					compText = u' ' + compText.lstrip()
 				text += compText
 				# Mark component as written
-				index = -1
-				for j in range(len(notWritten)):
-					if (notWritten[j] == self.lineRefs[lineNumber][i]):
-						index = j
-						break
-				if (index > -1):
-					del notWritten[index]
-				
+				if self.lineRefs[lineNumber][i] in notWritten:
+					notWritten.remove(self.lineRefs[lineNumber][i])
 			text += u'\n'
 			lineNumber += 1
 		
@@ -685,6 +682,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		if not isinstance(self, DHCPDConf_GlobalBlock):
 			# Write '}' to close block
 			text += shifting + u'}'
+		
 		return text
 		
 class DHCPDConf_GlobalBlock(DHCPDConf_Block):
@@ -696,7 +694,7 @@ class DHCPDConfFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		TextFile.__init__(self, filename)
 		
-		self._currentLine = -1
+		self._currentLine = 0
 		self._currentToken = None
 		self._currentIndex = -1
 		self._data = u''
@@ -710,13 +708,19 @@ class DHCPDConfFile(TextFile):
 		return self._globalBlock
 		
 	def parse(self, lines=None):
+		self._currentLine = 0
+		self._currentToken = None
+		self._currentIndex = -1
+		self._data = u''
+		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
+		self._parsed = False
+		
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
-		self._parsed = False
-		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._globalBlock.endLine = len(self._lines)
+		
 		minIndex = 0
 		while True:
 			self._currentToken = None
@@ -783,7 +787,7 @@ class DHCPDConfFile(TextFile):
 					elif (key == 'hardware') and (value.lower() == 'ethernet %s' % hardwareAddress):
 						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
 		if existingHost:
-			logger.warning(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
+			logger.info(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
 			self.deleteHost(hostname)
 		
 		for (key, value) in parameters.items():
@@ -931,10 +935,10 @@ class DHCPDConfFile(TextFile):
 				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
 		
 	def _getNewData(self):
-		self._currentLine += 1
 		if (self._currentLine >= len(self._lines)):
 			return False
 		self._data += self._lines[self._currentLine]
+		self._currentLine += 1
 		return True
 	
 	def _parse_emptyline(self):
@@ -1052,8 +1056,6 @@ class DHCPDConfFile(TextFile):
 	
 	
 	
-	
-
 	
 	
 	
