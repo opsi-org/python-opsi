@@ -102,6 +102,8 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
 		if dispatch:
 			self._backend = BackendDispatcher(**kwargs)
+		if accessControl:
+			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		if extend or depotBackend:
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
 			self._backend = ExtendedConfigDataBackend(self._backend)
@@ -109,8 +111,6 @@ class BackendManager(ExtendedBackend):
 			self._backend = DepotserverBackend(self._backend)
 		if extensionConfigDir:
 			BackendExtender(self._backend, **kwargs)
-		if accessControl:
-			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		self._createInstanceMethods()
 	
 	def __loadBackend(self, name):
@@ -134,7 +134,6 @@ class BackendManager(ExtendedBackend):
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 	
 	
-#class BackendDispatcher(ConfigDataBackend, BackendIdentExtension):
 class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, **kwargs):
 		
@@ -415,7 +414,10 @@ class BackendAccessControl(object):
 	
 	def accessControl_authenticated(self):
 		return self._authenticated
-		
+	
+	def accessControl_userIsAdmin(self):
+		return self._isMemberOfGroup('opsiadmin')
+	
 	def __loadACLFile(self):
 		try:
 			if not self._aclFile:
@@ -544,19 +546,19 @@ class BackendAccessControl(object):
 		except Exception, e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 	
-	def isMemberOfGroup(self, ids):
+	def _isMemberOfGroup(self, ids):
 		for id in forceUnicodeList(ids):
 			if id in self._userGroups:
 				return True
 		return False
 		
-	def isUser(self, ids):
+	def _isUser(self, ids):
 		for id in forceUnicodeList(ids):
 			if (id == self._username):
 				return True
 		return False
 		
-	def isOpsiDepotserver(self, ids=[]):
+	def _isOpsiDepotserver(self, ids=[]):
 		if not self._host or not isinstance(self._host, OpsiDepotserver):
 			return False
 		if not ids:
@@ -566,7 +568,7 @@ class BackendAccessControl(object):
 				return True
 		return False
 		
-	def isOpsiClient(self, ids=[]):
+	def _isOpsiClient(self, ids=[]):
 		if not self._host or not isinstance(self._host, OpsiClient):
 			return False
 		if not ids:
@@ -576,7 +578,7 @@ class BackendAccessControl(object):
 				return True
 		return False
 	
-	def isSelf(self, **params):
+	def _isSelf(self, **params):
 		if not params:
 			return False
 		for (param, value) in params.items():
@@ -602,13 +604,13 @@ class BackendAccessControl(object):
 				if (aclType == 'all'):
 					newGranted = True
 				elif (aclType == 'opsi_depotserver'):
-					newGranted = self.isOpsiDepotserver(ids)
+					newGranted = self._isOpsiDepotserver(ids)
 				elif (aclType == 'opsi_client'):
-					newGranted = self.isOpsiClient(ids)
+					newGranted = self._isOpsiClient(ids)
 				elif (aclType == 'sys_group'):
-					newGranted = self.isMemberOfGroup(ids)
+					newGranted = self._isMemberOfGroup(ids)
 				elif (aclType == 'sys_user'):
-					newGranted = self.isUser(ids)
+					newGranted = self._isUser(ids)
 				elif (aclType == 'self'):
 					newGranted = 'partial'
 				else:
@@ -739,95 +741,3 @@ class BackendAccessControl(object):
 			return newObjects[0]
 		return newObjects
 	
-		
-				#if granted:
-				#	if (aclType == 'self'):
-				#		logger.error("SELF")
-				#		granted = 'partial'
-				#		for (param, value) in kwargs.items():
-				#			objects = forceList(value)
-				#			if (len(objects) > 0) and issubclass(objects[0].__class__, BaseObject):
-				#				newKwargs[param] = self._filterObjects(
-				#					value,
-				#					ids = [ self._username ])
-				#				if not newKwargs[param]:
-				#					granted = False
-				#				
-				#	#if (entry.get('denyAttributes') or entry.get('allowAttributes')):
-				#	#	granted = 'partial'
-				#	#	for (param, value) in kwargs.items():
-				#	#		objects = forceList(value)
-				#	#		if type(objects[0]) is types.ClassType and issubclass(objects[0], Object):
-				#	#			
-				#	#			newKwargs[param] = self._filterObjectAttributes(
-				#	#				value,
-				#	#				allowAttributes = entry.get('allowAttributes', []),
-				#	#				denyAttributes  = entry.get('denyAttributes', []))
-				#	
-				#if granted:
-				#	for (param, value) in kwargs.items():
-				#		if not newKwargs.has_key(param):
-				#			newKwargs[param] = kwargs[param]
-				#	if granted is True:
-				#		break
-				#if granted and entry.get('self'):
-				#	granted = self.isSelf(**kwargs)
-				#
-				#if granted and (entry.get('denyAttributes') or entry.get('allowAttributes')):
-				#	denyAttributes = entry.get('denyAttributes', [])
-				#	allowAttributes = entry.get('allowAttributes', [])
-				#	newKwargs = {}
-				#	for (param, value) in kwargs.items():
-				#		if (param == 'attributes'):
-				#			if (methodName.find('_get') == -1):
-				#				granted = False
-				#				break
-				#			Class = methodName.split('_get')[0]
-				#			if not Class:
-				#				granted = False
-				#				break
-				#			Class = Class[0].upper() + Class[1:]
-				#			try:
-				#				possibleAttributes = getPossibleClassAttributes(eval(Class))
-				#			except Exception, e:
-				#				logger.warning(e)
-				#				granted = False
-				#				break
-				#			newKwargs[param] = []
-				#			if not value:
-				#				value = possibleAttributes
-				#			
-				#			value = forceUnicodeList(value)
-				#			for v in value:
-				#				if denyAttributes and v in denyAttributes:
-				#					continue
-				#				if allowAttributes and not v in allowAttributes:
-				#					continue
-				#				newKwargs[param].append(v)
-				#			
-				#		else:
-				#			newObjects = self._filterObjectAttributes(value, allowAttributes = allowAttributes, denyAttributes = denyAttributes)
-				#			if newObjects:
-				#				newKwargs[param] = newObjects
-				#			else:
-				#				if denyAttributes and (param in denyAttributes):
-				#					continue
-				#				if allowAttributes and not (param in allowAttributes):
-				#					continue
-				#				newKwargs[param] = value
-				#	kwargs = newKwargs
-				#if granted:
-				#	break
-			
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
