@@ -465,6 +465,16 @@ class FileBackend(ConfigDataBackend):
 					except:
 						pass
 				
+				for entry in os.listdir(self.__depotConfigDir):
+					depotIniPath = os.path.join(self.__depotConfigDir, entry, 'depot.ini')
+					
+					if not os.path.isfile(depotIniPath):
+						continue
+					try:
+						objectIds.append(forceHostId(entry))
+					except:
+						pass
+				
 				for objectId in objectIds:
 					if not self._objectHashMatches({'objectId': objectId }, **filter):
 						continue

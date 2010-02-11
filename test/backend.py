@@ -1413,6 +1413,15 @@ class BackendTest(object):
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
 		
 		productPropertyStates = self.backend.productPropertyState_getObjects()
+		
+		print "#########################"
+		for p in productPropertyStates:
+			print p.toHash()
+		print "-------------------------"
+		for p in self.productPropertyStates:
+			print p.toHash()
+		print "#########################"
+		
 		assert len(productPropertyStates) == len(self.productPropertyStates), u"got: '%s', expected: '%s'" % (productPropertyStates, self.productPropertyStates)
 		
 		# Groups
