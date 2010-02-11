@@ -281,7 +281,7 @@ class BackendDispatcher(ConfigDataBackend):
 	
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
-		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend)
+		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend)):
 				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
 		
