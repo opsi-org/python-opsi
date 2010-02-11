@@ -1172,6 +1172,9 @@ class BoolProductProperty(ProductProperty):
 			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % defaultValues)
 		ProductProperty.setDefaultValues(self, defaultValues)
 	
+	def setEditable(self, editable):
+		self.editable = False
+	
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'BoolProductProperty'

@@ -242,130 +242,6 @@ class ExtendedBackend(Backend):
 		logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
 		self._backend.backend_exit()
 	
-
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                  CLASS BACKENDIDENTEXTENSION                                        =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class BackendIdentExtension(Backend):
-	def host_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for host in self.host_getObjects(attributes = ['id'], **filter):
-			result.append(host.getIdent(returnType))
-		return result
-	
-	def config_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for config in self.config_getObjects(attributes = ['id'], **filter):
-			result.append(config.getIdent(returnType))
-		return result
-	
-	def configState_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for configState in self.configState_getObjects(attributes = ['configId', 'objectId'], **filter):
-			result.append(configState.getIdent(returnType))
-		return result
-	
-	def product_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for product in self.product_getObjects(attributes = ['id'], **filter):
-			result.append(product.getIdent(returnType))
-		return result
-	
-	def productProperty_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productProperty in self.productProperty_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'propertyId'], **filter):
-			result.append(productProperty.getIdent(returnType))
-		return result
-	
-	def productDependency_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productDependency in self.productDependency_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'], **filter):
-			result.append(productDependency.getIdent(returnType))
-		return result
-	
-	def productOnDepot_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productOnDepot in self.productOnDepot_getObjects(attributes = ['productId', 'productType', 'depotId'], **filter):
-			result.append(productOnDepot.getIdent(returnType))
-		return result
-	
-	def productOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productOnClient in self.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
-			result.append(productOnClient.getIdent(returnType))
-		return result
-	
-	def productPropertyState_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productPropertyState in self.productPropertyState_getObjects(attributes = ['productId', 'propertyId', 'objectId'], **filter):
-			result.append(productPropertyState.getIdent(returnType))
-		return result
-	
-	def group_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for group in self.group_getObjects(attributes = ['id'], **filter):
-			result.append(group.getIdent(returnType))
-		return result
-	
-	def objectToGroup_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for objectToGroup in self.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
-			result.append(objectToGroup.getIdent(returnType))
-		return result
-	
-	def licenseContract_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for licenseContract in self.licenseContract_getObjects(attributes = ['id'], **filter):
-			result.append(licenseContract.getIdent(returnType))
-		return result
-	
-	def softwareLicense_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for softwareLicense in self.softwareLicense_getObjects(attributes = ['id', 'licenseContractId'], **filter):
-			result.append(softwareLicense.getIdent(returnType))
-		return result
-	
-	def licensePool_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for licensePool in self.licensePool_getObjects(attributes = ['id'], **filter):
-			result.append(licensePool.getIdent(returnType))
-		return result
-	
-	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for softwareLicenseToLicensePool in self.softwareLicenseToLicensePool_getObjects(attributes = ['softwareLicenseId', 'licensePoolId'], **filter):
-			result.append(softwareLicenseToLicensePool.getIdent(returnType))
-		return result
-	
-	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for licenseOnClient in self.licenseOnClient_getObjects(attributes = ['softwareLicenseId', 'licensePoolId', 'clientId'], **filter):
-			result.append(licenseOnClient.getIdent(returnType))
-		return result
-	
-	def auditSoftware_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditSoftware in self.auditSoftware_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture'], **filter):
-			result.append(auditSoftware.getIdent(returnType))
-		return result
-	
-	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditSoftwareOnClient in self.auditSoftwareOnClient_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'], **filter):
-			result.append(auditSoftwareOnClient.getIdent(returnType))
-		return result
-	
-	def auditHardware_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditHardware in self.auditHardware_getObjects(**filter):
-			result.append(auditHardware.getIdent(returnType))
-		return result
-	
-	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditHardwareOnHost in self.auditHardwareOnHost_getObjects(**filter):
-			result.append(auditHardwareOnHost.getIdent(returnType))
-		return result
 	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS CONFIGDATABACKEND                                          =
@@ -616,8 +492,6 @@ class ConfigDataBackend(Backend):
 	def productOnClient_insertObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		productOnClient.setDefaults()
-		
-		# TODO: honor version?
 		
 		#if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
 		#	products = self.product_getObjects(
@@ -1670,6 +1544,52 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def _adjustProductPropertyStates(self, productProperty):
+		'''
+		A productProperty was created or updated
+		check if the current productPropertyStates are valid
+		'''
+		if productProperty.editable or not productProperty.possibleValues:
+			return
+		
+		# Check if productPropertyStates are possible
+		depotIds = []
+		for productOnDepot in self.productOnDepot_getObjects(
+					productId      = productProperty.productId,
+					productVersion = productProperty.productVersion,
+					packageVersion = productProperty.packageVersion):
+			if not productOnDepot.depotId in depotIds:
+				depotIds.append(productOnDepot.depotId)
+		
+		if not depotIds:
+			return
+		
+		# Get depot to client assignment
+		clientIds = []
+		for clientToDepot in self.configState_getClientToDepotserver(depotIds = depotIds):
+			if not clientToDepot['clientId'] in clientIds:
+				clientIds.append(clientToDepot['clientId'])
+		deleteProductPropertyStates = []
+		objectIds = depotIds
+		objectIds.extend(clientIds)
+		
+		for productPropertyState in self.productPropertyState_getObjects(
+					objectId   = objectIds,
+					productId  = productProperty.productId,
+					propertyId = productProperty.propertyId):
+			changed = False
+			newValues = []
+			for v in productPropertyState.values:
+				if v in productProperty.possibleValues:
+					newValues.append(v)
+				else:
+					changed = True
+			if changed:
+				productPropertyState.setValues(newValues)
+				deleteProductPropertyStates.append(productPropertyState)
+		if deleteProductPropertyStates:
+			self.productPropertyState_deleteObjects(deleteProductPropertyStates)
+		
 	def productProperty_createObjects(self, productProperties):
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
@@ -1681,8 +1601,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					propertyId     = productProperty.propertyId):
 				logger.info(u"Product property '%s' already exists, updating" % productProperty)
 				self._backend.productProperty_updateObject(productProperty)
+				self._adjustProductPropertyStates(productProperty)
 			else:
 				self._backend.productProperty_insertObject(productProperty)
+				self._adjustProductPropertyStates(productProperty)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productProperty_getObjects(
@@ -1698,6 +1620,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			self._backend.productProperty_updateObject(productProperty)
+			self._adjustProductPropertyStates(productProperty)
+			
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productProperty_getObjects(
@@ -3277,6 +3201,19 @@ class DepotserverPackageManager(object):
 						del currentProductProperties[ident]
 					productProperties.append(productProperty)
 				self._depotBackend.productProperty_createObjects(productProperties)
+				
+				for productProperty in productProperties:
+					# Adjust property default values
+					if productProperty.editable or not productProperty.possibleValues:
+						continue
+					newValues = []
+					for v in propertyDefaultValues[productProperty.propertyId]:
+						if v in productProperty.possibleValues:
+							newValues.append(v)
+					if not newValues and productProperty.defaultValues:
+						newValues = productProperty.defaultValues
+					propertyDefaultValues[productProperty.propertyId] = newValues
+					
 				if currentProductProperties.values():
 					self._depotBackend.productProperty_deleteObjects(
 						currentProductProperties.values()
