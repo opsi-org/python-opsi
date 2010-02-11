@@ -370,7 +370,7 @@ class BackendIdentExtension(Backend):
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS CONFIGDATABACKEND                                          =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class ConfigDataBackend(BackendIdentExtension):
+class ConfigDataBackend(Backend):
 	
 	def __init__(self, **kwargs):
 		Backend.__init__(self, **kwargs)
@@ -526,7 +526,7 @@ class ConfigDataBackend(BackendIdentExtension):
 					packageVersion = product.packageVersion ))
 		
 		for productId in productIds:
-			if not self.product_getIdents(id = productId):
+			if not self.product_getObjects(attributes = ['id'], id = productId):
 				# No more products with this id found => delete productPropertyStates
 				self.productPropertyState_deleteObjects(
 					self.productPropertyState_getObjects(productId = productId))
@@ -538,7 +538,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		productProperty.setDefaults()
 		
-		if not self.product_getIdents(
+		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 				id             = productProperty.productId,
 				productVersion = productProperty.productVersion,
 				packageVersion = productProperty.packageVersion):
@@ -563,7 +563,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		productDependency.setDefaults()
 		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
 			raise BackendBadValueError(u"Either a required action or a required installation status must be given")
-		if not self.product_getIdents(
+		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 				id                = productDependency.productId,
 				productVersion    = productDependency.productVersion,
 				packageVersion    = productDependency.packageVersion):
@@ -586,7 +586,7 @@ class ConfigDataBackend(BackendIdentExtension):
 	def productOnDepot_insertObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		productOnDepot.setDefaults()
-		if not self.product_getIdents(
+		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 			id = productOnDepot.productId,
 			productVersion = productOnDepot.productVersion,
 			packageVersion = productOnDepot.packageVersion):
@@ -595,7 +595,7 @@ class ConfigDataBackend(BackendIdentExtension):
 				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 		
 	def productOnDepot_updateObject(self, productOnDepot):
-		if not self.product_getIdents(
+		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 			id = productOnDepot.productId,
 			productVersion = productOnDepot.productVersion,
 			packageVersion = productOnDepot.packageVersion):
@@ -662,7 +662,7 @@ class ConfigDataBackend(BackendIdentExtension):
 	def productPropertyState_insertObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		productPropertyState.setDefaults()
-		if not self.productProperty_getIdents(
+		if not self.productProperty_getObjects(attributes = ['productId', 'propertyId'],
 					productId  = productPropertyState.productId,
 					propertyId = productPropertyState.propertyId):
 			raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
@@ -740,7 +740,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		softwareLicense.setDefaults()
 		if not softwareLicense.licenseContractId:
 			raise BackendBadValueError(u"License contract missing")
-		if not self.licenseContract_getIdents(id = softwareLicense.licenseContractId):
+		if not self.licenseContract_getObjects(attributes = ['id'], id = softwareLicense.licenseContractId):
 			raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
 		
 	def softwareLicense_updateObject(self, softwareLicense):
@@ -776,7 +776,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		licensePoolIds = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			licensePoolIds.append(licensePool.id)
-		softwareLicenseToLicensePoolIdents = self.softwareLicenseToLicensePool_getIdents(licensePoolId = licensePoolIds, returnType = 'unicode')
+		softwareLicenseToLicensePoolIdents = self.softwareLicenseToLicensePool_getObjects(attributes = ['licensePoolId'], licensePoolId = licensePoolIds, returnType = 'unicode')
 		if softwareLicenseToLicensePoolIdents:
 			raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
 				(licensePoolIds, softwareLicenseToLicensePoolIdents))
@@ -787,9 +787,9 @@ class ConfigDataBackend(BackendIdentExtension):
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 		softwareLicenseToLicensePool.setDefaults()
-		if not self.softwareLicense_getIdents(id = softwareLicenseToLicensePool.softwareLicenseId):
+		if not self.softwareLicense_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.softwareLicenseId):
 			raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
-		if not self.licensePool_getIdents(id = softwareLicenseToLicensePool.licensePoolId):
+		if not self.licensePool_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.licensePoolId):
 			raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
 		
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
@@ -803,7 +803,7 @@ class ConfigDataBackend(BackendIdentExtension):
 		softwareLicenseIds = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
-		licenseOnClientIdents = self.licenseOnClient_getIdents(softwareLicenseId = softwareLicenseIds)
+		licenseOnClientIdents = self.licenseOnClient_getObjects(attributes = ['softwareLicenseId'], softwareLicenseId = softwareLicenseIds)
 		if licenseOnClientIdents:
 			raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
 				% licenseOnClientIdents)
@@ -987,7 +987,8 @@ class ConfigDataBackend(BackendIdentExtension):
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
+#class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
+class ExtendedConfigDataBackend(ExtendedBackend):
 	
 	def __init__(self, backend):
 		ExtendedBackend.__init__(self, backend)
@@ -1246,7 +1247,130 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 			result.append(v[0])
 		logger.info(u"=== Search done, result: %s" % result)
 		return result
-		
+	
+	
+	
+	#################################################################################################
+	def host_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for host in self._backend.host_getObjects(attributes = ['id'], **filter):
+			result.append(host.getIdent(returnType))
+		return result
+	
+	def config_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for config in self._backend.config_getObjects(attributes = ['id'], **filter):
+			result.append(config.getIdent(returnType))
+		return result
+	
+	def configState_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for configState in self._backend.configState_getObjects(attributes = ['configId', 'objectId'], **filter):
+			result.append(configState.getIdent(returnType))
+		return result
+	
+	def product_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for product in self._backend.product_getObjects(attributes = ['id'], **filter):
+			result.append(product.getIdent(returnType))
+		return result
+	
+	def productProperty_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productProperty in self._backend.productProperty_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'propertyId'], **filter):
+			result.append(productProperty.getIdent(returnType))
+		return result
+	
+	def productDependency_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productDependency in self._backend.productDependency_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'], **filter):
+			result.append(productDependency.getIdent(returnType))
+		return result
+	
+	def productOnDepot_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productOnDepot in self._backend.productOnDepot_getObjects(attributes = ['productId', 'productType', 'depotId'], **filter):
+			result.append(productOnDepot.getIdent(returnType))
+		return result
+	
+	def productOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productOnClient in self._backend.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
+			result.append(productOnClient.getIdent(returnType))
+		return result
+	
+	def productPropertyState_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for productPropertyState in self._backend.productPropertyState_getObjects(attributes = ['productId', 'propertyId', 'objectId'], **filter):
+			result.append(productPropertyState.getIdent(returnType))
+		return result
+	
+	def group_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for group in self._backend.group_getObjects(attributes = ['id'], **filter):
+			result.append(group.getIdent(returnType))
+		return result
+	
+	def objectToGroup_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for objectToGroup in self._backend.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
+			result.append(objectToGroup.getIdent(returnType))
+		return result
+	
+	def licenseContract_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for licenseContract in self._backend.licenseContract_getObjects(attributes = ['id'], **filter):
+			result.append(licenseContract.getIdent(returnType))
+		return result
+	
+	def softwareLicense_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for softwareLicense in self._backend.softwareLicense_getObjects(attributes = ['id', 'licenseContractId'], **filter):
+			result.append(softwareLicense.getIdent(returnType))
+		return result
+	
+	def licensePool_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for licensePool in self._backend.licensePool_getObjects(attributes = ['id'], **filter):
+			result.append(licensePool.getIdent(returnType))
+		return result
+	
+	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for softwareLicenseToLicensePool in self._backend.softwareLicenseToLicensePool_getObjects(attributes = ['softwareLicenseId', 'licensePoolId'], **filter):
+			result.append(softwareLicenseToLicensePool.getIdent(returnType))
+		return result
+	
+	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for licenseOnClient in self._backend.licenseOnClient_getObjects(attributes = ['softwareLicenseId', 'licensePoolId', 'clientId'], **filter):
+			result.append(licenseOnClient.getIdent(returnType))
+		return result
+	
+	def auditSoftware_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditSoftware in self._backend.auditSoftware_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture'], **filter):
+			result.append(auditSoftware.getIdent(returnType))
+		return result
+	
+	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditSoftwareOnClient in self._backend.auditSoftwareOnClient_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'], **filter):
+			result.append(auditSoftwareOnClient.getIdent(returnType))
+		return result
+	
+	def auditHardware_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditHardware in self._backend.auditHardware_getObjects(**filter):
+			result.append(auditHardware.getIdent(returnType))
+		return result
+	
+	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditHardwareOnHost in self._backend.auditHardwareOnHost_getObjects(**filter):
+			result.append(auditHardwareOnHost.getIdent(returnType))
+		return result
+	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1305,7 +1429,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Creating config %s" % config)
-			if self._backend.config_getIdents(id = config.id):
+			if self.config_getIdents(id = config.id):
 				logger.info(u"Config '%s' already exists, updating" % config)
 				self._backend.config_updateObject(config)
 			else:
@@ -1361,7 +1485,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		
 		# Create data structure for config states to find missing ones
 		css = {}
-		for cs in self._backend.configState_getIdents(
+		for cs in self.configState_getIdents(
 						objectId   = filter.get('objectId', []),
 						configId   = filter.get('configId', []),
 						returnType = 'dict'):
@@ -1369,7 +1493,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 				css[cs['objectId']] = []
 			css[cs['objectId']].append(cs['configId'])
 		
-		clientIds = self._backend.host_getIdents(type = 'OpsiClient', id = filter.get('objectId'), returnType = 'unicode')
+		clientIds = self.host_getIdents(type = 'OpsiClient', id = filter.get('objectId'), returnType = 'unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id = filter.get('configId')):
 			logger.debug(u"Default values for '%s': %s" % (config.id, config.defaultValues))
@@ -1417,7 +1541,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info(u"Creating configState %s" % configState)
-			if self._backend.configState_getIdents(
+			if self.configState_getIdents(
 					configId   = configState.configId,
 					objectId   = configState.objectId):
 				logger.info(u"ConfigState '%s' already exists, updating" % configState)
@@ -1490,7 +1614,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for product in forceObjectClassList(products, Product):
 			logger.info(u"Creating product %s" % product)
-			if self._backend.product_getIdents(
+			if self.product_getIdents(
 					id             = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion):
@@ -1550,7 +1674,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating product property %s" % productProperty)
-			if self._backend.productProperty_getIdents(
+			if self.productProperty_getIdents(
 					productId      = productProperty.productId,
 					productVersion = productProperty.productVersion,
 					packageVersion = productProperty.packageVersion,
@@ -1619,7 +1743,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info(u"Creating product dependency %s" % productDependency)
-			if self._backend.productDependency_getIdents(
+			if self.productDependency_getIdents(
 					productId         = productDependency.productId,
 					productVersion    = productDependency.productVersion,
 					packageVersion    = productDependency.packageVersion,
@@ -1684,7 +1808,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
 			logger.info(u"Creating productOnDepot '%s'" % productOnDepot)
-			if self._backend.productOnDepot_getIdents(
+			if self.productOnDepot_getIdents(
 					productId = productOnDepot.productId,
 					depotId   = productOnDepot.depotId):
 				logger.info(u"ProductOnDepot '%s' already exists, updating" % productOnDepot)
@@ -1800,7 +1924,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		logger.debug(u"Need to adjust productOnClients")
 		
 		# Get all client ids which match the filter
-		clientIds = self._backend.host_getIdents(id = pocFilter.get('clientId'), returnType = 'unicode')
+		clientIds = self.host_getIdents(id = pocFilter.get('clientId'), returnType = 'unicode')
 		logger.debug(u"   * got clientIds")
 		
 		# Get depot to client assignment
@@ -2158,7 +2282,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		productOnClients = self._productOnClient_correctData(productOnClients)
 		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient '%s'" % productOnClient)
-			if self._backend.productOnClient_getIdents(
+			if self.productOnClient_getIdents(
 					productId = productOnClient.productId,
 					clientId  = productOnClient.clientId):
 				logger.info(u"ProductOnClient '%s' already exists, updating" % productOnClient)
@@ -2211,7 +2335,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		
 		# Create data structure for product property states to find missing ones
 		ppss = {}
-		for pps in self._backend.productPropertyState_getIdents(
+		for pps in self.productPropertyState_getIdents(
 						objectId   = filter.get('objectId', []),
 						productId  = filter.get('productId', []),
 						propertyId = filter.get('propertyId', []),
@@ -2245,7 +2369,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
 			logger.info(u"Creating productPropertyState '%s'" % productPropertyState)
-			if self._backend.productPropertyState_getIdents(
+			if self.productPropertyState_getIdents(
 						productId  = productPropertyState.productId,
 						objectId   = productPropertyState.objectId,
 						propertyId = productPropertyState.propertyId):
@@ -2300,7 +2424,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
 			logger.info(u"Creating group '%s'" % group)
-			if self._backend.group_getIdents(id = group.id):
+			if self.group_getIdents(id = group.id):
 				logger.info(u"Group '%s' already exists, updating" % group)
 				self._backend.group_updateObject(group)
 			else:
@@ -2340,7 +2464,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
 			logger.info(u"Creating %s" % objectToGroup)
-			if self._backend.objectToGroup_getIdents(
+			if self.objectToGroup_getIdents(
 					groupId  = objectToGroup.groupId,
 					objectId = objectToGroup.objectId):
 				logger.info(u"%s already exists, updating" % objectToGroup)
@@ -2391,7 +2515,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
 			logger.info(u"Creating licenseContract '%s'" % licenseContract)
-			if self._backend.licenseContract_getIdents(id = licenseContract.id):
+			if self.licenseContract_getIdents(id = licenseContract.id):
 				logger.info(u"LicenseContract '%s' already exists, updating" % licenseContract)
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
@@ -2431,7 +2555,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
 			logger.info(u"Creating softwareLicense '%s'" % softwareLicense)
-			if self._backend.softwareLicense_getIdents(id = softwareLicense.id):
+			if self.softwareLicense_getIdents(id = softwareLicense.id):
 				logger.info(u"SoftwareLicense '%s' already exists, updating" % softwareLicense)
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
@@ -2486,7 +2610,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
 			logger.info(u"Creating licensePool '%s'" % licensePool)
-			if self._backend.licensePool_getIdents(id = licensePool.id):
+			if self.licensePool_getIdents(id = licensePool.id):
 				logger.info(u"LicensePool '%s' already exists, updating" % licensePool)
 				self._backend.licensePool_updateObject(licensePool)
 			else:
@@ -2526,7 +2650,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
 			logger.info(u"Creating %s" % softwareLicenseToLicensePool)
-			if self._backend.softwareLicenseToLicensePool_getIdents(
+			if self.softwareLicenseToLicensePool_getIdents(
 					softwareLicenseId = softwareLicenseToLicensePool.softwareLicenseId,
 					licensePoolId     = softwareLicenseToLicensePool.licensePoolId):
 				logger.info(u"%s already exists, updating" % softwareLicenseToLicensePool)
@@ -2576,7 +2700,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
 		for licenseOnClient in licenseOnClients:
 			logger.info(u"Creating %s" % licenseOnClient)
-			if self._backend.licenseOnClient_getIdents(
+			if self.licenseOnClient_getIdents(
 					softwareLicenseId = licenseOnClient.softwareLicenseId,
 					licensePoolId     = licenseOnClient.licensePoolId,
 					clientId          = licenseOnClient.clientId):
@@ -2631,7 +2755,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		auditSoftwares = forceObjectClassList(auditSoftwares, AuditSoftware)
 		for auditSoftware in auditSoftwares:
 			logger.info(u"Creating %s" % auditSoftware)
-			if self._backend.auditSoftware_getIdents(
+			if self.auditSoftware_getIdents(
 					name           = auditSoftware.name,
 					version        = auditSoftware.version,
 					subVersion     = auditSoftware.subVersion,
@@ -2696,7 +2820,7 @@ class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 		auditSoftwareOnClients = forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient)
 		for auditSoftwareOnClient in auditSoftwareOnClients:
 			logger.info(u"Creating %s" % auditSoftwareOnClient)
-			if self._backend.auditSoftwareOnClient_getIdents(
+			if self.auditSoftwareOnClient_getIdents(
 					name           = auditSoftwareOnClient.name,
 					version        = auditSoftwareOnClient.version,
 					subVersion     = auditSoftwareOnClient.subVersion,

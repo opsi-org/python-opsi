@@ -134,6 +134,7 @@ class BackendManager(ExtendedBackend):
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 	
 	
+#class BackendDispatcher(ConfigDataBackend, BackendIdentExtension):
 class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, **kwargs):
 		

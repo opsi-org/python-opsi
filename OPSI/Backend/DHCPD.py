@@ -115,13 +115,9 @@ class DHCPDBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def host_insertObject(self, host):
-		if not isinstance(host, OpsiClient):
-			return
-		
-		logger.debug(u"host_insertObject %s" % host)
+	def _updateHostConfig(self, host):
 		if not host.hardwareAddress:
-			logger.warning(u"Cannot insert client %s: hardware address unkown" % host)
+			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unkown" % host)
 			return
 		ipAddress = host.ipAddress
 		if not ipAddress:
@@ -130,7 +126,7 @@ class DHCPDBackend(ConfigDataBackend):
 				ipAddress = socket.gethostbyname(host.id)
 				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
 			except Exception, e:
-				raise BackendIOError(u"Failed to resolve %s" % host.id)
+				raise BackendIOError(u"Cannot update dhcpd configuration for client %s: ip address unkown and failed to get host by name" % host.id)
 		
 		fixedAddress = ipAddress
 		if (self._fixedAddressFormat == 'FQDN'):
@@ -150,55 +146,19 @@ class DHCPDBackend(ConfigDataBackend):
 			self._reloadLock.release()
 		self._triggerReload()
 		
+	def host_insertObject(self, host):
+		if not isinstance(host, OpsiClient):
+			return
+		
+		logger.debug(u"host_insertObject %s" % host)
+		self._updateHostConfig(host)
+		
 	def host_updateObject(self, host):
 		if not isinstance(host, OpsiClient):
 			return
 		
 		logger.debug(u"host_updateObject %s" % host)
-		self._dhcpdConfFile.parse()
-		hostParams = self._dhcpdConfFile.getHost(host.id.split('.')[0])
-		if not hostParams:
-			logger.debug(u"host %s not found in dhcpd config, nothing to update" % host)
-			return
-		
-		hardwareAddress = host.hardwareAddress
-		if not hardwareAddress and hostParams.get('hardware'):
-			hardwareAddress = forceHardwareAddress(hostParams['hardware'].split()[-1])
-			del hostParams['hardware']
-		if not hardwareAddress:
-			logger.warning(u"Cannot update client %s: hardware address unkown" % host)
-			return
-		ipAddress = host.ipAddress
-		if not ipAddress and hostParams.get('fixed-address'):
-			try:
-				ipAddress = forceIPAddress(hostParams['fixed-address'])
-			except:
-				try:
-					ipAddress = forceIPAddress(socket.gethostbyname(hostParams['fixed-address']))
-				except:
-					pass
-			del hostParams['fixed-address']
-		if not ipAddress:
-			logger.warning(u"Cannot update client %s: ip address unkown" % host)
-			return
-		
-		fixedAddress = ipAddress
-		if (self._fixedAddressFormat == 'FQDN'):
-			fixedAddress = host.id
-		
-		self._reloadLock.acquire()
-		try:
-			self._dhcpdConfFile.addHost(
-				hostname        = host.id.split('.')[0],
-				hardwareAddress = hardwareAddress,
-				ipAddress       = ipAddress,
-				fixedAddress    = fixedAddress,
-				parameters      = self._defaultClientParameters)
-			self._dhcpdConfFile.generate()
-		finally:
-			self._reloadLock.release()
-		self._triggerReload()
-		
+		self._updateHostConfig(host)
 		
 	def host_deleteObjects(self, hosts):
 		

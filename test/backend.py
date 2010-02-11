@@ -611,24 +611,46 @@ class BackendTest(object):
 		self.productPropertyState1 = ProductPropertyState(
 			productId  = self.productProperty1.getProductId(),
 			propertyId = self.productProperty1.getPropertyId(),
+			objectId   = self.depotserver1.getId(),
+			values     = 'unicode-depot-default'
+		)
+		
+		self.productPropertyState2 = ProductPropertyState(
+			productId  = self.productProperty2.getProductId(),
+			propertyId = self.productProperty2.getPropertyId(),
+			objectId   = self.depotserver1.getId(),
+			values     = [ True ]
+		)
+		
+		self.productPropertyState3 = ProductPropertyState(
+			productId  = self.productProperty2.getProductId(),
+			propertyId = self.productProperty2.getPropertyId(),
+			objectId   = self.depotserver2.getId(),
+			values     = False
+		)
+		
+		self.productPropertyState4 = ProductPropertyState(
+			productId  = self.productProperty1.getProductId(),
+			propertyId = self.productProperty1.getPropertyId(),
 			objectId   = self.client1.getId(),
 			values     = 'unicode1'
 		)
 		
-		self.productPropertyState2 = ProductPropertyState(
+		self.productPropertyState5 = ProductPropertyState(
 			productId  = self.productProperty2.getProductId(),
 			propertyId = self.productProperty2.getPropertyId(),
 			objectId   = self.client1.getId(),
 			values     = [ False ]
 		)
 		
-		self.productPropertyState3 = ProductPropertyState(
+		self.productPropertyState6 = ProductPropertyState(
 			productId  = self.productProperty2.getProductId(),
 			propertyId = self.productProperty2.getPropertyId(),
 			objectId   = self.client2.getId(),
 			values     = True
 		)
-		self.productPropertyStates = [ self.productPropertyState1, self.productPropertyState2, self.productPropertyState3 ]
+		
+		self.productPropertyStates = [ self.productPropertyState1, self.productPropertyState2, self.productPropertyState3, self.productPropertyState4, self.productPropertyState5, self.productPropertyState6 ]
 		
 		# Groups
 		self.group1 = HostGroup(

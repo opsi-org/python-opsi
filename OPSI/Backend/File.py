@@ -28,7 +28,7 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    
    @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>, Arne Kerz <a.kerz@uib.de>
+   @author: Arne Kerz <a.kerz@uib.de>
    @license: GNU General Public License version 2
 """
 
