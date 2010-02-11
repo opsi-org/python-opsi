@@ -109,16 +109,10 @@ class BackendManager(ExtendedBackend):
 		if depotBackend:
 			self._backend = DepotserverBackend(self._backend)
 		if accessControl:
-			self._backendAccessControl = BackendAccessControl(backend = self._backend, **kwargs)
+			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		if extensionConfigDir:
-			BackendExtender(self._backend, **kwargs)
+			self._backend = BackendExtender(self._backend, **kwargs)
 		self._createInstanceMethods()
-		
-	
-	def _executeMethod(self, methodName, **kwargs):
-		if self._backendAccessControl and hasattr(self._backendAccessControl, methodName):
-			return eval(u'self._backendAccessControl.%s(**kwargs)' % methodName)
-		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def __loadBackend(self, name):
 		if not self._backendConfigDir:
@@ -285,21 +279,18 @@ class BackendDispatcher(ConfigDataBackend):
 				result = res
 		return result
 	
-class BackendExtender(object):
+class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
-		#if isinstance(backend, BackendAccessControl):
-		#	# Extending protexted backend not BackendAccessControl
-		#	backend = backend._backend
-		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend):
-			raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
-		self._backend = backend
+		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend)
+			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend)):
+				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
+		
+		ExtendedBackend.__init__(self, backend)
 		
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			#if   (option == 'backend'):
-			#	self._backend = ExtendedConfigDataBackend(value)
 			if (option == 'extensionconfigdir'):
 				self._extensionConfigDir = value
 		
@@ -307,7 +298,9 @@ class BackendExtender(object):
 			raise BackendConfigurationError(u"No backend specified")
 		
 		self.__loadExtensionConf()
-	
+		
+		
+		
 	def __loadExtensionConf(self):
 		if not self._extensionConfigDir:
 			logger.info(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
@@ -330,8 +323,8 @@ class BackendExtender(object):
 				
 				for (key, val) in locals().items():
 					if ( type(val) == types.FunctionType ):
-						logger.debug2(u"Extending backend '%s' with instancemethod: '%s'" % (self._backend, key) )
-						setattr( self._backend, key, new.instancemethod(val, self._backend, self._backend.__class__) )
+						logger.debug2(u"Extending backend with instancemethod: '%s'" % key )
+						setattr( self, key, new.instancemethod(val, self, self.__class__) )
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 	
@@ -439,15 +432,14 @@ class BackendAccessControl(object):
 		except Exception, e:
 			logger.logException(e)
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
-		
-		
+	
 	def _createInstanceMethods(self):
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
+			logger.debug2(u"Found public method '%s'" % methodName)
 			
 			(argString, callString) = getArgAndCallString(member[1])
 			
