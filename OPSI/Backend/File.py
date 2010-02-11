@@ -379,9 +379,9 @@ class FileBackend(ConfigDataBackend):
 								if section.endswith('-state'):
 									objIdents.append(
 										{
-										'productId': section[:-6],
+										'productId':   section[:-6],
 										'productType': cp.get(section, 'productType'),
-										'clientId': hostId
+										'clientId':    hostId
 										}
 									)
 						else:
@@ -407,11 +407,11 @@ class FileBackend(ConfigDataBackend):
 								if section.endswith('-state'):
 									objIdents.append(
 										{
-										'productId': section[:-6],
-										'productType': cp.get(section, 'producttype'),
+										'productId':      section[:-6],
+										'productType':    cp.get(section, 'producttype'),
 										'productVersion': cp.get(section, 'productversion'),
 										'packageVersion': cp.get(section, 'packageversion'),
-										'depotId': hostId
+										'depotId':        hostId
 										}
 									)
 						else:
@@ -499,9 +499,9 @@ class FileBackend(ConfigDataBackend):
 							for option in cp.options(section):
 								objIdents.append(
 									{
-									'productId': section[:-8],
+									'productId':  section[:-8],
 									'propertyId': option,
-									'objectId': objectId
+									'objectId':   objectId
 									}
 								)
 			except Exception, e:
@@ -520,7 +520,7 @@ class FileBackend(ConfigDataBackend):
 								if not option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
 									objIdents.append(
 										{
-										'groupId': section,
+										'groupId':  section,
 										'objectId': forceHostId(option)
 										}
 									)
