@@ -58,6 +58,7 @@ logger = Logger()
 class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
 		self._backend = None
+		self._backendAccessControl = None
 		self._backendConfigDir = None
 		self._options = {}
 		
@@ -102,16 +103,22 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
 		if dispatch:
 			self._backend = BackendDispatcher(**kwargs)
-		if accessControl:
-			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		if extend or depotBackend:
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
 			self._backend = ExtendedConfigDataBackend(self._backend)
 		if depotBackend:
 			self._backend = DepotserverBackend(self._backend)
+		if accessControl:
+			self._backendAccessControl = BackendAccessControl(backend = self._backend, **kwargs)
 		if extensionConfigDir:
 			BackendExtender(self._backend, **kwargs)
 		self._createInstanceMethods()
+		
+	
+	def _executeMethod(self, methodName, **kwargs):
+		if self._backendAccessControl and hasattr(self._backendAccessControl, methodName):
+			return eval(u'self._backendAccessControl.%s(**kwargs)' % methodName)
+		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def __loadBackend(self, name):
 		if not self._backendConfigDir:
@@ -280,10 +287,12 @@ class BackendDispatcher(ConfigDataBackend):
 	
 class BackendExtender(object):
 	def __init__(self, backend, **kwargs):
+		#if isinstance(backend, BackendAccessControl):
+		#	# Extending protexted backend not BackendAccessControl
+		#	backend = backend._backend
 		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend):
 			raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
 		self._backend = backend
-		#ExtendedConfigDataBackend.__init__(self, backend)
 		
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
 		
@@ -298,7 +307,7 @@ class BackendExtender(object):
 			raise BackendConfigurationError(u"No backend specified")
 		
 		self.__loadExtensionConf()
-		
+	
 	def __loadExtensionConf(self):
 		if not self._extensionConfigDir:
 			logger.info(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
@@ -592,6 +601,7 @@ class BackendAccessControl(object):
 		granted = False
 		newKwargs = {}
 		acl = None
+		logger.debug(u"Access control for method '%s' params %s" % (methodName, kwargs))
 		for (regex, acl) in self._acl:
 			logger.debug2(u"Testing acl %s: %s for method '%s'" % (regex, acl, methodName))
 			if not re.search(regex, methodName):
@@ -631,15 +641,21 @@ class BackendAccessControl(object):
 			
 		logger.debug("acl: %s" % acl)
 		if granted:
-			logger.debug(u"Access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
+			if (str(granted) == 'partial'):
+				logger.debug(u"Partial access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
+			else:
+				logger.debug(u"Access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
 		else:
 			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
 		
-		if (str(granted) == 'partial'):
-			# Filter incoming params
-			newKwargs = self._filterParams(kwargs, [acl])
-		else:
-			newKwargs = kwargs
+		try:
+			if (str(granted) == 'partial'):
+				# Filter incoming params
+				newKwargs = self._filterParams(kwargs, [acl])
+			else:
+				newKwargs = kwargs
+		except Exception, e:
+			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
 		
 		logger.debug2("kwargs:    %s" % kwargs)
 		logger.debug2("newKwargs: %s" % newKwargs)
@@ -691,7 +707,7 @@ class BackendAccessControl(object):
 		for attribute in attributes:
 			for acl in acls:
 				if not (acl.get('denyAttributes', []) and not acl.get('allowAttributes', [])):
-					logger.debug2(u"Allwing all attributes %s" % attributes)
+					logger.debug2(u"Allowing all attributes: %s" % attributes)
 					# full access, do not check other acls
 					return attributes
 				if attribute in acl.get('denyAttributes', []):

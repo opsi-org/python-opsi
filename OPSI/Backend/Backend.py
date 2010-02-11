@@ -890,7 +890,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						'Type':  value["Type"],
 						'Scope': value["Scope"]
 					}
-		
+	
 	def backend_exit(self):
 		if self._backend:
 			self._backend.backend_exit()
@@ -2940,7 +2940,7 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
 		
 		if not os.path.exists( os.path.join(self._logDir, logType) ):
-			mkdir(os.path.join(self._logDir, logType), mode=0770)
+			os.mkdir(os.path.join(self._logDir, logType), 02770)
 		
 		logFile = os.path.join(self._logDir, logType, objectId + '.log')
 		
