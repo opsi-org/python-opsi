@@ -2206,8 +2206,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 										% (	clientId, productId, \
 											pocByClientIdAndProductId[clientId][productId].installationStatus, \
 											pocByClientIdAndProductId[clientId][productId].actionRequest))
-					actionSequence += 1
-					pocByClientIdAndProductId[clientId][productId].setActionSequence(actionSequence)
+					
+					if (pocByClientIdAndProductId[clientId][productId].actionRequest != 'none'):
+						actionSequence += 1
+						pocByClientIdAndProductId[clientId][productId].setActionSequence(actionSequence)
 					adjustedProductOnClients.append(pocByClientIdAndProductId[clientId][productId])
 				
 				logger.debug(u"         * client %s processed" % clientId)
