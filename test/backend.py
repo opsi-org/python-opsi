@@ -412,7 +412,20 @@ class BackendTest(object):
 			description    = u'Test product property 3 (bool)',
 			defaultValues  = False
 		)
-		self.productProperties = [ self.productProperty1, self.productProperty2, self.productProperty3 ]
+		
+		self.productProperty4 = UnicodeProductProperty(
+			productId      = self.product1.id,
+			productVersion = self.product1.productVersion,
+			packageVersion = self.product1.packageVersion,
+			propertyId     = u"i386_dir",
+			description    = u'i386 dir to use as installation source',
+			possibleValues = ["i386"],
+			defaultValues  = ["i386"],
+			editable       = True,
+			multiValue     = False
+		)
+		
+		self.productProperties = [ self.productProperty1, self.productProperty2, self.productProperty3, self.productProperty4 ]
 		
 		# ProductDependencies
 		self.productDependency1 = ProductDependency(
@@ -1316,6 +1329,11 @@ class BackendTest(object):
 								assert value == productProperty[attribute], u"got: '%s', expected: '%s'" % (productProperty[attribute], value)
 					break
 		
+		
+		self.backend.productProperty_createObjects(self.productProperties)
+		productProperties = self.backend.productProperty_getObjects()
+		assert len(productProperties) == len(self.productProperties), u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties))
+		
 		self.productProperty2.setDescription(u'updatedfortest')
 		self.backend.productProperty_updateObject(self.productProperty2)
 		productProperties = self.backend.productProperty_getObjects( attributes = [],\
@@ -1330,7 +1348,7 @@ class BackendTest(object):
 		assert len(productProperties) == len(self.productProperties) - 1, u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties) - 1)
 		
 		self.backend.productProperty_createObjects(self.productProperty2)
-		self.backend.productProperty_createObjects(self.productProperty1)
+		self.backend.productProperty_createObjects([self.productProperty4, self.productProperty1, self.productProperty4, self.productProperty4, self.productProperty4])
 		productProperties = self.backend.productProperty_getObjects()
 		assert len(productProperties) == len(self.productProperties), u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties))
 		
