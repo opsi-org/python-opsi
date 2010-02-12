@@ -283,44 +283,42 @@ class FileBackend(ConfigDataBackend):
 		return string
 	
 	def _getConfigFile(self, objType, ident, fileType):
+		filename = None
+		
 		if (fileType == 'key'):
-			return self.__hostKeyFile
+			filename = self.__hostKeyFile
 		
 		elif (fileType == 'ini'):
 			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-				return self.__configFile
+				filename = self.__configFile
 			elif objType in ('OpsiClient'):
-				return os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
+				filename = os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
 			elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
-				return os.path.join(self.__depotConfigDir, ident['id'], u'depot.ini')
+				filename = os.path.join(self.__depotConfigDir, ident['id'] + u'.ini')
 			elif objType in ('ConfigState'):
-				if ( ident['objectId'] == self.__serverId ):
-					#raise Exception(u"Can't handle configStates for ConfigServer")
-					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
-				elif os.path.isdir(os.path.join(self.__depotConfigDir, ident['objectId'])):
-					#raise Exception(u"Can't handle configStates for DepotServer")
-					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
+				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini'))):
+					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
-					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
+					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('ProductOnDepot'):
-				return os.path.join(self.__depotConfigDir, ident['depotId'], u'depot.ini')
+				filename = os.path.join(self.__depotConfigDir, ident['depotId'] + u'.ini')
 			elif objType in ('ProductOnClient'):
-				return os.path.join(self.__clientConfigDir, ident['clientId'] + u'.ini')
+				filename = os.path.join(self.__clientConfigDir, ident['clientId'] + u'.ini')
 			elif objType in ('ProductPropertyState'):
-				if os.path.isdir(os.path.join(self.__depotConfigDir, ident['objectId'])):
-					return os.path.join(self.__depotConfigDir, ident['objectId'], u'depot.ini')
+				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini'))):
+					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
-					return os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
+					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
-				return os.path.join(self.__clientGroupsFile)
+				filename = os.path.join(self.__clientGroupsFile)
 		
 		elif (fileType == 'pro'):
 			pVer = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
 			
 			if objType == 'LocalbootProduct':
-				return os.path.join(self.__productDir, ident['id'] + pVer + u'.localboot')
+				filename = os.path.join(self.__productDir, ident['id'] + pVer + u'.localboot')
 			elif objType == 'NetbootProduct':
-				return os.path.join(self.__productDir, ident['id'] + pVer + u'.netboot')
+				filename = os.path.join(self.__productDir, ident['id'] + pVer + u'.netboot')
 			elif objType in ('Product', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 				pId = u''
 				if objType == 'Product':
@@ -330,26 +328,32 @@ class FileBackend(ConfigDataBackend):
 				
 				# instead of searching the whole dir, let's check the only possible files
 				if os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.localboot')):
-					return os.path.join(self.__productDir, pId + pVer + u'.localboot')
+					filename = os.path.join(self.__productDir, pId + pVer + u'.localboot')
 				elif os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.netboot')):
-					return os.path.join(self.__productDir, pId + pVer + u'.netboot')
+					filename = os.path.join(self.__productDir, pId + pVer + u'.netboot')
 		
 		elif (fileType == 'sw'):
 			if objType == 'AuditSoftware':
-				return os.path.join(self.__auditDir, u'global.sw')
+				filename = os.path.join(self.__auditDir, u'global.sw')
 			elif objType == 'AuditSoftwareOnClient':
-				return os.path.join(self.__auditDir, ident['clientId'] + u'.sw')
+				filename = os.path.join(self.__auditDir, ident['clientId'] + u'.sw')
 		
 		elif (fileType == 'hw'):
 			if objType == 'AuditHardware':
-				return os.path.join(self.__auditDir, u'global.hw')
+				filename = os.path.join(self.__auditDir, u'global.hw')
 			elif objType == 'AuditHardwareOnHost':
-				return os.path.join(self.__auditDir, ident['hostId'] + u'.hw')
+				filename = os.path.join(self.__auditDir, ident['hostId'] + u'.hw')
 		
+		if filename is None:
+			raise Exception(u"No config-file returned! objType '%s', ident '%s', fileType '%s'" % (objType, ident, fileType))
 		
-		logger.error(u"No config-file returned! objType '%s', ident '%s', fileType '%s'" % (objType, ident, fileType))
-		
-		return
+		if objType in ('ConfigState', 'ProductOnDepot', 'ProductOnClient', 'ProductPropertyState'):
+			if os.path.isfile(filename):
+				return filename
+			else:
+				raise Exception(u"%s an existing file! ident '%s', fileType '%s'" % (objType, ident, fileType))
+		else:
+			return filename
 	
 	def _getIdents(self, objType, **filter):
 		logger.debug(u"Getting idents for '%s' with filter '%s'" % (objType, filter))
@@ -395,7 +399,7 @@ class FileBackend(ConfigDataBackend):
 			try:
 				for entry in os.listdir(self.__depotConfigDir):
 					try:
-						hostId = forceHostId(entry)
+						hostId = forceHostId(entry[:-4])
 						if objType == 'OpsiConfigserver' and hostId != self.__serverId:
 							continue
 						
@@ -455,58 +459,48 @@ class FileBackend(ConfigDataBackend):
 				
 		elif objType in ('ConfigState', 'ProductPropertyState'):
 			objectIds = []
-			try:
-				for entry in os.listdir(self.__clientConfigDir):
-					if not entry.lower().endswith('.ini'):
-						continue
-					
-					try:
-						objectIds.append(forceHostId(entry[:-4]))
-					except:
-						pass
+			
+			entries = os.listdir(self.__depotConfigDir)
+			entries.extend(os.listdir(self.__clientConfigDir))
+			
+			for entry in entries:
+				if not entry.lower().endswith('.ini'):
+					continue
+				try:
+					objectIds.append(forceHostId(entry[:-4]))
+				except:
+					pass
+			
+			for objectId in objectIds:
+				if not self._objectHashMatches({'objectId': objectId }, **filter):
+					continue
 				
-				for entry in os.listdir(self.__depotConfigDir):
-					depotIniPath = os.path.join(self.__depotConfigDir, entry, 'depot.ini')
-					
-					if not os.path.isfile(depotIniPath):
-						continue
-					try:
-						objectIds.append(forceHostId(entry))
-					except:
-						pass
+				filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
+				iniFile = IniFile(filename = filename, ignoreCase = False)
+				cp = iniFile.parse()
 				
-				for objectId in objectIds:
-					if not self._objectHashMatches({'objectId': objectId }, **filter):
-						continue
-					
-					filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
-					iniFile = IniFile(filename = filename, ignoreCase = False)
-					cp = iniFile.parse()
-					
-					if objType == 'ConfigState' and cp.has_section('generalconfig'):
-						for option in cp.options('generalconfig'):
+				if objType == 'ConfigState' and cp.has_section('generalconfig'):
+					for option in cp.options('generalconfig'):
+						objIdents.append(
+							{
+							'configId': option,
+							'objectId': objectId
+							}
+						)
+				elif objType == 'ProductPropertyState':
+					for section in cp.sections():
+						if not section.endswith('-install'):
+							continue
+						
+						for option in cp.options(section):
 							objIdents.append(
 								{
-								'configId': option,
-								'objectId': objectId
+								'productId':  section[:-8],
+								'propertyId': option,
+								'objectId':   objectId
 								}
 							)
-					elif objType == 'ProductPropertyState':
-						for section in cp.sections():
-							if not section.endswith('-install'):
-								continue
-							
-							for option in cp.options(section):
-								objIdents.append(
-									{
-									'productId':  section[:-8],
-									'propertyId': option,
-									'objectId':   objectId
-									}
-								)
-			except Exception, e:
-				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
-			
+		
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			if os.path.isfile(filename):
@@ -753,9 +747,6 @@ class FileBackend(ConfigDataBackend):
 		
 		for (fileType, mapping) in mappings.items():
 			filename = self._getConfigFile(objType, obj.getIdent(returnType = 'dict'), fileType)
-			
-			if not os.path.exists(os.path.dirname(filename)):
-				self._mkdir(os.path.dirname(filename))
 			
 			if (fileType == 'key'):
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):

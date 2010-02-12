@@ -1409,6 +1409,19 @@ class BackendTest(object):
 		
 		# ProductPropertyStates
 		
+		excepted = False
+		try:
+			pps0 = ProductPropertyState(
+				productId  = self.productProperty1.getProductId(),
+				propertyId = self.productProperty1.getPropertyId(),
+				objectId   = 'kaputtesdepot.dom.local'
+			)
+			self.backend.productPropertyState_insertObject(pps0)
+		except:
+			excepted = True
+		
+		assert excepted, u"faulty objectId accepted!"
+		
 		logger.notice(u"Testing productPropertyState methods")
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
 		
