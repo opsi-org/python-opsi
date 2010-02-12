@@ -85,6 +85,7 @@ class BackendTest(object):
 		self.client2 = OpsiClient(
 			id              = 'client2.uib.local',
 			description     = 'Test client 2',
+			notes           = ';;;;;;;;;;;;;;',
 			hardwareAddress = '00-ff0aa3:0b-B5',
 			opsiHostKey     = '59051234345678890121678901223467',
 			inventoryNumber = '00000000003'
@@ -93,6 +94,7 @@ class BackendTest(object):
 		self.client3 = OpsiClient(
 			id              = 'client3.uib.local',
 			description     = 'Test client 3',
+			notes           = '#############',
 			inventoryNumber = 'XYZABC_1200292'
 		)
 		
@@ -1066,9 +1068,9 @@ class BackendTest(object):
 						if not value is None:
 							if type(value) is list:
 								for v in value:
-									assert v in host[attribute], u"'%s' not in '%s'" % (v, config[attribute])
+									assert v in host[attribute], u"'%s' not in '%s'" % (v, host[attribute])
 							else:
-								assert value == host[attribute], u"got: '%s', expected: '%s'" % (value, config[attribute])
+								assert value == host[attribute], u"got: '%s', expected: '%s'" % (host[attribute], value)
 					break
 		
 		
@@ -1172,7 +1174,7 @@ class BackendTest(object):
 								for v in value:
 									assert v in config[attribute], u"'%s' not in '%s'" % (v, config[attribute])
 							else:
-								assert value == config[attribute], u"got: '%s', expected: '%s'" % (value, config[attribute])
+								assert value == config[attribute], u"got: '%s', expected: '%s'" % (config[attribute], value)
 					break
 		
 		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
@@ -1282,7 +1284,7 @@ class BackendTest(object):
 								for v in value:
 									assert v in product[attribute], u"'%s' not in '%s'" % (v, product[attribute])
 							else:
-								assert value == product[attribute], u"got: '%s', expected: '%s'" % (value, product[attribute])
+								assert value == product[attribute], u"got: '%s', expected: '%s'" % (product[attribute], value)
 					break
 		
 		self.product2.setName(u'Product 2 updated')
@@ -1311,7 +1313,7 @@ class BackendTest(object):
 								for v in value:
 									assert v in productProperty[attribute], u"'%s' not in '%s'" % (v, productProperty[attribute])
 							else:
-								assert value == productProperty[attribute], u"got: '%s', expected: '%s'" % (value, productProperty[attribute])
+								assert value == productProperty[attribute], u"got: '%s', expected: '%s'" % (productProperty[attribute], value)
 					break
 		
 		self.productProperty2.setDescription(u'updatedfortest')
