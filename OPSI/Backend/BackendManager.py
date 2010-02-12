@@ -627,9 +627,8 @@ class BackendAccessControl(object):
 					acls.append(entry)
 					granted = newGranted
 				if granted is True:
-					acls = [ acls[-1] ]
 					break
-			if granted is True:
+			if granted:
 				break
 			
 		logger.info("Method: %s, using acls: %s" % (methodName, acls))
@@ -663,6 +662,8 @@ class BackendAccessControl(object):
 		for (key, value) in params.items():
 			isList = type(value) is list
 			valueList = forceList(value)
+			if (len(valueList) == 0):
+				continue
 			if issubclass(valueList[0].__class__, BaseObject) or type(valueList[0]) is types.DictType:
 				valueList = self._filterObjects(valueList, acls, raiseOnTruncate = False)
 				if isList:
