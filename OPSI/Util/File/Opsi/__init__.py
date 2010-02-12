@@ -128,7 +128,7 @@ class BackendACLFile(ConfigFile):
 		self._parsed = False
 		# acl example:
 		#    <method>: <aclType>[(aclTypeParam[(aclTypeParamValue,...)];...)]
-		#    xyz_.*:   opsi_depotserver;(attributes(id,name))
+		#    xyz_.*:   opsi_depotserver(attributes(id,name))
 		#    abc:      self(attributes(!opsiHostKey));sys_group(admin, group 2, attributes(!opsiHostKey))
 		
 		acl = []
@@ -193,7 +193,7 @@ class BackendACLFile(ConfigFile):
 										if not v:
 											continue
 										if v.startswith('!'):
-											entry['denyAttributes'].append(v.strip())
+											entry['denyAttributes'].append(v[1:].strip())
 										else:
 											entry['allowAttributes'].append(v)
 								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):

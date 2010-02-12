@@ -37,8 +37,13 @@ __version__ = '3.5'
 # Imports
 from ldaptor.protocols import pureldap
 from ldaptor import ldapfilter
-import types, new, inspect, socket, types, shutil
+import types, new, inspect, socket, types, shutil, base64
 import copy as pycopy
+from twisted.conch.ssh import keys
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
 
 # OPSI imports
 from OPSI.Logger import *
@@ -50,6 +55,8 @@ from OPSI.Util.File import ConfigFile
 from OPSI.Util.Product import ProductPackageFile
 
 logger = Logger()
+OPSI_VERSION_FILE = u'/etc/opsi/version'
+OPSI_MODULES_FILE = u'/etc/opsi/modules'
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                                                                                    =
@@ -151,6 +158,65 @@ class Backend:
 			methodList.append(methods[methodName])
 		return methodList
 	
+	def backend_info(self):
+		opsiVersion = 'unknown'
+		try:
+			f = codecs.open(OPSI_VERSION_FILE, 'r', 'utf-8')
+			opsiVersion = f.readline().strip()
+			f.close()
+		except Exception, e:
+			logger.error(u"Failed to read version info from file '%s': %s" % (OPSI_VERSION_FILE, e))
+		
+		modules = {}
+		try:
+			modules['valid'] = False
+			f = codecs.open(OPSI_MODULES_FILE, 'r', 'utf-8')
+			for line in f.readlines():
+				line = line.strip()
+				if (line.find('=') == -1):
+					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, OPSI_MODULES_FILE))
+					continue
+				(module, state) = line.split('=', 1)
+				module = module.strip().lower()
+				state = state.strip()
+				if module in ('signature', 'customer', 'expires'):
+					modules[module] = state
+					continue
+				state = state.lower()
+				if not state in ('yes', 'no'):
+					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, OPSI_MODULES_FILE))
+					continue
+				modules[module] = (state == 'yes')
+			f.close()
+			if not modules.get('signature'):
+				modules = {'valid': False}
+				raise Exception(u"Signature not found")
+			if not modules.get('customer'):
+				modules = {'valid': False}
+				raise Exception(u"Customer not found")
+			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
+				modules = {'valid': False}
+				raise Exception(u"Signature expired")
+			publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			data = u''
+			mks = modules.keys()
+			mks.sort()
+			for module in mks:
+				if module in ('valid', 'signature'):
+					continue
+				val = modules[module]
+				if (val == False): val = 'no'
+				if (val == True):  val = 'yes'
+				data += u'%s = %s\r\n' % (module.lower().strip(), val)
+			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
+		except Exception, e:
+			logger.warning(u"Failed to read opsi modules file '%s': %s" % (OPSI_MODULES_FILE, e))
+		
+		return {
+			"opsiVersion": opsiVersion,
+			"modules":     modules
+		}
+		
 	def backend_exit(self):
 		pass
 	

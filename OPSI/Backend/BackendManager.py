@@ -58,7 +58,6 @@ logger = Logger()
 class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
 		self._backend = None
-		self._backendAccessControl = None
 		self._backendConfigDir = None
 		self._options = {}
 		
@@ -82,6 +81,7 @@ class BackendManager(ExtendedBackend):
 					loadBackend = value
 				else:
 					self._backend = value
+				del kwargs[option]
 			elif (option == 'backendconfigdir'):
 				self._backendConfigDir = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
@@ -319,6 +319,7 @@ class BackendExtender(ExtendedBackend):
 					logger.info(u"Reading config file '%s'" % confFile)
 					execfile(confFile)
 				except Exception, e:
+					logger.logException(e)
 					raise Exception(u"Error reading file '%s': %s" % (confFile, e))
 				
 				for (key, val) in locals().items():
@@ -592,13 +593,13 @@ class BackendAccessControl(object):
 	def _executeMethod(self, methodName, **kwargs):
 		granted = False
 		newKwargs = {}
-		acl = None
+		acls = []
 		logger.debug(u"Access control for method '%s' params %s" % (methodName, kwargs))
 		for (regex, acl) in self._acl:
 			logger.debug2(u"Testing acl %s: %s for method '%s'" % (regex, acl, methodName))
 			if not re.search(regex, methodName):
 				continue
-			logger.info(u"Found matching acl %s for method '%s'" % (acl, methodName))
+			logger.debug(u"Found matching acl %s for method '%s'" % (acl, methodName))
 			for entry in acl:
 				aclType = entry.get('type')
 				ids = entry.get('ids', [])
@@ -614,138 +615,132 @@ class BackendAccessControl(object):
 				elif (aclType == 'sys_user'):
 					newGranted = self._isUser(ids)
 				elif (aclType == 'self'):
-					newGranted = 'partial'
+					newGranted = 'partial_object'
 				else:
 					logger.error(u"Unhandled acl entry type: %s" % aclType)
 					continue
 				
 				if (entry.get('denyAttributes') or entry.get('allowAttributes')):
-					newGranted = 'partial'
+					newGranted = 'partial_attributes'
 				
 				if newGranted:
+					acls.append(entry)
 					granted = newGranted
 				if granted is True:
+					acls = [ acls[-1] ]
 					break
-			if granted:
-				acl = entry
-				if granted is True:
-					break
+			if granted is True:
+				break
 			
-		logger.debug("acl: %s" % acl)
-		if granted:
-			if (str(granted) == 'partial'):
-				logger.debug(u"Partial access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
-			else:
-				logger.debug(u"Access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acl))
-		else:
+		logger.info("Method: %s, using acls: %s" % (methodName, acls))
+		if   granted is True:
+			logger.debug(u"Full access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acls[0]))
+			newKwargs = kwargs
+		elif granted is False:
 			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s'" % (methodName, self._username))
-		
-		try:
-			if (str(granted) == 'partial'):
-				# Filter incoming params
-				newKwargs = self._filterParams(kwargs, [acl])
-			else:
-				newKwargs = kwargs
-		except Exception, e:
-			raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
-		
+		else:
+			logger.debug(u"Partial access to method '%s' granted to user '%s' by acls %s" % (methodName, self._username, acls))
+			try:
+				newKwargs = self._filterParams(kwargs, acls)
+			except Exception, e:
+				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
+			
 		logger.debug2("kwargs:    %s" % kwargs)
 		logger.debug2("newKwargs: %s" % newKwargs)
 		
 		result = eval(u'self._backend.%s(**newKwargs)' % methodName)
 		
-		if (str(granted) == 'partial'):
-			# Filter result
-			result = self._filterResult(result, [acl])
+		if granted is True:
+			return result
 		
-		return result
+		# Filter result
+		return self._filterResult(result, acls)
 		
 	
 	def _filterParams(self, params, acls):
-		newParams = {}
+		logger.critical(u"Filtering params: %s" % params)
 		for (key, value) in params.items():
-			if not value:
-				newParams[key] = value
-			elif (key == 'attributes'):
-				newParams[key] = self._filterAttributes(value, acls)
-			elif key in ('id', 'objectId', 'hostId', 'clientId', 'depotId', 'serverId'):
-				granted = False
-				for acl in acls:
-					if (acl.get('type') != 'self') or (value == self._username):
-						granted = True
-						break
-				if not granted:
-					raise BackendPermissionDeniedError(u"Access to %s '%s' denied" % (key, value))
-				newParams[key] = value
-			else:
-				valueList = forceList(value)
-				if issubclass(valueList[0].__class__, BaseObject):
-					newParams[key] = self._filterObjects(value, acls)
+			isList = type(value) is list
+			valueList = forceList(value)
+			if issubclass(valueList[0].__class__, BaseObject) or type(valueList[0]) is types.DictType:
+				valueList = self._filterObjects(result, acls, raiseOnTruncate = False)
+				if isList:
+					params[key] = valueList
 				else:
-					newParams[key] = value
-				if not newParams.get(key):
-					raise BackendPermissionDeniedError(u"Access to given object(s) denied")
-		return newParams
+					params[key] = valueList[0]
+		return params
 	
 	def _filterResult(self, result, acls):
 		if result:
+			isList = type(result) is list
 			resultList = forceList(result)
-			if issubclass(resultList[0].__class__, BaseObject):
-				return self._filterObjects(result, acls, raiseOnTruncate = False)
+			if issubclass(resultList[0].__class__, BaseObject) or type(resultList[0]) is types.DictType:
+				resultList = self._filterObjects(result, acls, raiseOnTruncate = False)
+				if isList:
+					return resultList
+				else:
+					return resultList[0]
 		return result
 	
-	def _filterAttributes(self, attributes, acls):
-		newAttributes = []
-		for attribute in attributes:
-			for acl in acls:
-				if not (acl.get('denyAttributes', []) and not acl.get('allowAttributes', [])):
-					logger.debug2(u"Allowing all attributes: %s" % attributes)
-					# full access, do not check other acls
-					return attributes
-				if attribute in acl.get('denyAttributes', []):
-					continue
-				if acl.get('allowAttributes', []) and not attribute in acl['allowAttributes']:
-					continue
-				newAttributes.append(attribute)
-		return newAttributes
-		
 	def _filterObjects(self, objects, acls, raiseOnTruncate=True):
+		logger.info(u"Filtering objects by acls")
 		newObjects = []
-		for entry in forceList(objects):
-			hash = entry.toHash()
+		for obj in forceList(objects):
+			isDict = type(obj) is types.DictType
+			if isDict:
+				objHash = isDict
+			else:
+				objHash = obj.toHash()
+			allowedAttributes = ['type']
+			allowedAttributes.extend(mandatoryConstructorArgs(obj.__class__))
 			for acl in acls:
 				if (acl.get('type') == 'self'):
-					if ( hash.get('id', hash.get('objectId', hash.get('hostId', hash.get('clientId', hash.get('depotId', hash.get('serverId')))))) == self._username ):
-						if not (acl.get('denyAttributes', []) and not acl.get('allowAttributes', [])):
-							newObjects.append(entry)
-							logger.debug2(u"Granting full access to %s" % entry)
-							# full access, do not check other acls
-							break
-					else:
-						# next acl
+					objectId = objHash.get('id', objHash.get('objectId', objHash.get('hostId', objHash.get('clientId', objHash.get('depotId', objHash.get('serverId'))))))
+					if not objectId or (objectId != self._username):
 						continue
 				
-				if (acl.get('denyAttributes', []) or acl.get('allowAttributes', [])):
-					newHash = { 'type': hash.get('type') }
-					for arg in mandatoryConstructorArgs(entry.__class__):
-						newHash[arg] = hash.get(arg)
-					for (key, value) in hash.items():
-						if key in newHash.keys():
-							continue
-						if key in acl.get('denyAttributes', []):
-							if not value is None and raiseOnTruncate:
-								raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
-							continue
-						if acl.get('allowAttributes', []) and not key in acl['allowAttributes']:
-							if not value is None and raiseOnTruncate:
-								raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
-							continue
-						newHash[key] = value
-					logger.debug2(u"Granting partial access to %s" % entry)
-					newObjects.append(entry.__class__.fromHash(newHash))
-		if not type(objects) in (list, tuple):
-			if not newObjects:
-				return None
-			return newObjects[0]
+				if   acl.get('allowAttributes', []):
+					for attribute in acl['allowAttributes']:
+						if not attribute in allowedAttributes:
+							allowedAttributes.append(attribute)
+				elif acl.get('denyAttributes', []):
+					for attribute in objHash.keys():
+						if not attribute in acl['denyAttributes'] and not attribute in allowedAttributes:
+							allowedAttributes.append(attribute)
+				else:
+					for attribute in objHash.keys():
+						if not attribute in allowedAttributes:
+							allowedAttributes.append(attribute)
+			
+			logger.debug(u"Allowed attributes: %s" % allowedAttributes)
+			for key in objHash.keys():
+				if not key in allowedAttributes:
+					if raiseOnTruncate:
+						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
+					del objHash[key]
+			if isDict:
+				newObjects.append(objHash)
+			else:
+				newObjects.append(obj.__class__.fromHash(objHash))
+			
 		return newObjects
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	

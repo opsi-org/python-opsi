@@ -157,8 +157,15 @@ class DHCPDBackend(ConfigDataBackend):
 		if not isinstance(host, OpsiClient):
 			return
 		
+		if not host.ipAddress and not host.hardwareAddress:
+			# Not of interest
+			return
+		
 		logger.debug(u"host_updateObject %s" % host)
-		self._updateHostConfig(host)
+		try:
+			self._updateHostConfig(host)
+		except Exception, e:
+			logger.info(e)
 		
 	def host_deleteObjects(self, hosts):
 		
