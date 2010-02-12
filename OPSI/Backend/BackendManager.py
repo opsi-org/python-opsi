@@ -643,6 +643,7 @@ class BackendAccessControl(object):
 			try:
 				newKwargs = self._filterParams(kwargs, acls)
 			except Exception, e:
+				logger.logException(e, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
 			
 		logger.debug2("kwargs:    %s" % kwargs)
@@ -658,16 +659,19 @@ class BackendAccessControl(object):
 		
 	
 	def _filterParams(self, params, acls):
-		logger.critical(u"Filtering params: %s" % params)
+		logger.debug(u"Filtering params: %s" % params)
 		for (key, value) in params.items():
 			isList = type(value) is list
 			valueList = forceList(value)
 			if issubclass(valueList[0].__class__, BaseObject) or type(valueList[0]) is types.DictType:
-				valueList = self._filterObjects(result, acls, raiseOnTruncate = False)
+				valueList = self._filterObjects(valueList, acls, raiseOnTruncate = False)
 				if isList:
 					params[key] = valueList
 				else:
-					params[key] = valueList[0]
+					if (len(valueList) > 0):
+						params[key] = valueList[0]
+					else:
+						del params[key]
 		return params
 	
 	def _filterResult(self, result, acls):
@@ -679,20 +683,22 @@ class BackendAccessControl(object):
 				if isList:
 					return resultList
 				else:
-					return resultList[0]
+					if (len(resultList) > 0):
+						return resultList[0]
+					else:
+						return None
 		return result
 	
 	def _filterObjects(self, objects, acls, raiseOnTruncate=True):
 		logger.info(u"Filtering objects by acls")
 		newObjects = []
 		for obj in forceList(objects):
+			allowedAttributes = []
 			isDict = type(obj) is types.DictType
 			if isDict:
-				objHash = isDict
+				objHash = obj
 			else:
 				objHash = obj.toHash()
-			allowedAttributes = ['type']
-			allowedAttributes.extend(mandatoryConstructorArgs(obj.__class__))
 			for acl in acls:
 				if (acl.get('type') == 'self'):
 					objectId = objHash.get('id', objHash.get('objectId', objHash.get('hostId', objHash.get('clientId', objHash.get('depotId', objHash.get('serverId'))))))
@@ -713,6 +719,16 @@ class BackendAccessControl(object):
 							allowedAttributes.append(attribute)
 			
 			logger.debug(u"Allowed attributes: %s" % allowedAttributes)
+			
+			if not allowedAttributes:
+				continue
+			
+			if not isDict:
+				if not 'type' in allowedAttributes:
+					allowedAttributes.append('type')
+				for attribute in mandatoryConstructorArgs(obj.__class__):
+					if not attribute in allowedAttributes:
+						allowedAttributes.append(attribute)
 			for key in objHash.keys():
 				if not key in allowedAttributes:
 					if raiseOnTruncate:
