@@ -318,6 +318,7 @@ class ConfigDataBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
+		self._options = {}
 		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
@@ -336,6 +337,20 @@ class ConfigDataBackend(Backend):
 	
 	def backend_deleteBase(self):
 		pass
+	
+	def backend_setOptions(self, options):
+		options = forceDict(options)
+		for (key, value) in options.items():
+			if not key in self._options.keys():
+				#raise ValueError(u"No such option '%s'" % key)
+				continue
+			if type(value) != type(self._options[key]):
+				#raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
+				continue
+			self._options[key] = value
+		
+	def backend_getOptions(self):
+		return self._options
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -927,7 +942,6 @@ class ConfigDataBackend(Backend):
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-#class ExtendedConfigDataBackend(ExtendedBackend, BackendIdentExtension):
 class ExtendedConfigDataBackend(ExtendedBackend):
 	
 	def __init__(self, backend):
@@ -960,18 +974,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def backend_exit(self):
 		if self._backend:
 			self._backend.backend_exit()
-	
-	def backend_setOptions(self, options):
-		options = forceDict(options)
-		for (key, value) in options.items():
-			if not key in self._options.keys():
-				raise ValueError(u"No such option '%s'" % key)
-			if type(value) != type(self._options[key]):
-				raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
-			self._options[key] = value
-		
-	def backend_getOptions(self):
-		return self._options
 	
 	def backend_searchObjects(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)

@@ -210,8 +210,10 @@ class JSONRPCBackend(Backend):
 			
 			if self._backendOptions:
 				self._rpcLock.release()
-				self.backend_setOptions(self._backendOptions)
-			
+				try:
+					self.backend_setOptions(self._backendOptions)
+				finally:
+					self._rpcLock.acquire()
 		except Exception, e:
 			logger.logException(e)
 			raise BackendIOError(u"Failed to connect to '%s': %s" % (self._address, e))

@@ -42,6 +42,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 
 # Get logger instance
 logger = Logger()
@@ -85,27 +86,35 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
-		self._depotId = forceHostId(socket.getfqdn())
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option in ('port'):
 				self._port = value
+		
+		self._depotId = forceHostId(socket.getfqdn())
+		self._opsiHostKey = None
+		self._depotConnections  = {}
+		
+	def _getDepotConnection(self, depotId):
+		depotId = forceHostId(depotId)
+		if (depotId == self._depotId):
+			return self
+		if not self._depotConnections.get(depotId):
+			if not self._opsiHostKey:
+				depots = self.host_getObjects(id = self._depotId)
+				if not depots or not depots[0].getOpsiHostKey():
+					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
+				self._opsiHostKey = depots[0].getOpsiHostKey()
 			
-	def _updateProductOnClient(self, productOnClient):
-		if (productOnClient.productType != 'NetbootProduct'):
-			logger.debug(u"Not a netboot product: '%s', nothing to do" % productOnClient.productId)
-			return
-		if not productOnClient.actionRequest:
-			logger.debug(u"No action request update for product '%s', client '%s', nothing to do" % (productOnClient.productId, productOnClient.clientId))
-			return
-		return self._updatePXEBootConfiguration(productOnClient.clientId)
-		
-	def _updateConfigState(self, configState):
-		return self._updatePXEBootConfiguration(configState.objectId)
-		
-	def _updatePXEBootConfiguration(self, clientId):
+			self._depotConnections[depotId] =JSONRPCBackend(
+								address  = u'https://%s:4447/rpc/backend/opsipxeconfd' % depotId,
+								username = self._depotId,
+								password = self._opsiHostKey)
+		return self._depotConnections[depotId]
+	
+	def _getResponsibleDepotId(self, clientId):
 		configStates = self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientId)
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
@@ -114,11 +123,18 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
+		return depotId
+	
+	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):
+		if (productOnClient.productType != 'NetbootProduct'):
+			logger.debug(u"Not a netboot product: '%s', nothing to do" % productOnClient.productId)
+			return False
+		if not productOnClient.actionRequest:
+			logger.debug(u"No action request update for product '%s', client '%s', nothing to do" % (productOnClient.productId, productOnClient.clientId))
+			return False
+		return True
 		
-		if not (depotId == self._depotId):
-			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (clientId, depotId))
-			raise NotImplementedError(u"Not responsible for client '%s', forwarding request to depot '%s': NOT IMPLEMENTED" % (clientId, depotId))
-		
+	def _updatePXEBootConfiguration(self, clientId):
 		logger.info(u"Updating pxe boot configuration for client '%s'" % clientId)
 		
 		command = u'update %s' % clientId
@@ -129,22 +145,49 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			logger.info(u"Got result '%s'" % result)
 		except Exception, e:
 			raise BackendIOError(u"Failed to update PXE boot configuration: %s" % e)
-		
+	
+	
 	def backend_exit(self):
-		pass
+		for connection in self._depotConnections.values():
+			try:
+				self._depotConnections.backend_exit()
+			except:
+				pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
-		self._updateProductOnClient(productOnClient)
+		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
+			return
+		depotId = self._getResponsibleDepotId(productOnClient.clientId)
+		if (depotId != self._depotId):
+			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
+			return self._getDepotConnection(depotId).productOnClient_insertObject(productOnClient)
+		self._updatePXEBootConfiguration(productOnClient.clientId)
 		
 	def productOnClient_updateObject(self, productOnClient):
-		self._updateProductOnClient(productOnClient)
+		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
+			return
+		depotId = self._getResponsibleDepotId(productOnClient.clientId)
+		if (depotId != self._depotId):
+			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
+			return self._getDepotConnection(depotId).productOnClient_updateObject(productOnClient)
+		self._updatePXEBootConfiguration(productOnClient.clientId)
 		
 	def productOnClient_deleteObjects(self, productOnClients):
+		depots = {}
 		for productOnClient in productOnClients:
-			self._updateProductOnClient(productOnClients)
+			depotId = self._getResponsibleDepotId(productOnClient.clientId)
+			if (depotId == self._depotId):
+				self._updatePXEBootConfiguration(productOnClient.clientId)
+			else:
+				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
+				if not depots.has_key(depotId):
+					depots[depotId] = []
+				depots[depotId].append(productOnClient)
+		for (depotId, productOnClients) in depots.items():
+			self._getDepotConnection(depotId).productOnClient_deleteObjects(productOnClients)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -152,18 +195,18 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		if (configState.configId != 'clientconfig.depot.id'):
 			return
-		self._updateConfigState(configState)
+		self._updatePXEBootConfiguration(configState.objectId)
 		
 	def configState_updateObject(self, configState):
 		if (configState.configId != 'clientconfig.depot.id'):
 			return
-		self._updateConfigState(configState)
+		self._updatePXEBootConfiguration(configState.objectId)
 		
 	def configState_deleteObjects(self, configStates):
 		for configState in configStates:
 			if (configState.configId != 'clientconfig.depot.id'):
 				continue
-			self._updateConfigState(configState)
+			self._updatePXEBootConfiguration(configState.objectId)
 	
 	
 	
