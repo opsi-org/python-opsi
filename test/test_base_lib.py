@@ -118,6 +118,7 @@ for i in ('abc', 'abc.def', '.uib.local', 'abc.uib.x'):
 		pass
 	else:
 		raise Exception(u"'%s' was accepted as hostId" % i)
+assert forceHostId(u'client.sub.uib.local') is u'client.sub.uib.local'
 
 for i in  ('12345678ABCD', '12-34-56-78-Ab-cD', '12:34:56:78:ab:cd', '12-34-56:78AB-CD'):
 	assert forceHardwareAddress(i) == u'12:34:56:78:ab:cd'
