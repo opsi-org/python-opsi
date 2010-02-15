@@ -384,7 +384,7 @@ class BackendAccessControl(object):
 				if not hasattr(self.self._hostBackend, 'host_getObjects'):
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authentidate host '%s'" % self._username)
 				
-				host = self.self._hostBackend.host_getObjects(id = self._username)
+				host = self._hostBackend.host_getObjects(id = self._username)
 				if not host:
 					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._hostBackend))
 				self._host = host[0]
