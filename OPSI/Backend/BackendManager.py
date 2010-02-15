@@ -138,6 +138,7 @@ class BackendManager(ExtendedBackend):
 	
 class BackendDispatcher(ConfigDataBackend):
 	def __init__(self, **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
@@ -218,9 +219,6 @@ class BackendDispatcher(ConfigDataBackend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
-			if hasattr(self.__class__, methodName):
-				logger.debug(u"Not overwriting method %s" % methodName)
-				continue
 			methodBackends = []
 			for i in range(len(self._dispatchConfig)):
 				(regex, backends) = self._dispatchConfig[i]
@@ -255,7 +253,7 @@ class BackendDispatcher(ConfigDataBackend):
 		objectIdents = []
 		for methodBackend in methodBackends:
 			res = eval(u'self._backends[methodBackend]["instance"].realcall_%s(**kwargs)' % methodName)
-			if type res is types.ListType:
+			if type(res) is types.ListType:
 				# Remove duplicates
 				newRes = []
 				for r in res:

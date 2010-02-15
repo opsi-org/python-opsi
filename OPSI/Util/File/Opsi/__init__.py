@@ -136,7 +136,7 @@ class BackendACLFile(ConfigFile):
 			match = re.search(self.aclEntryRegex, line)
 			if not match:
 				raise Exception(u"Found bad formatted line '%s' in acl file '%s'" % (line, self._filename))
-			method = match.group(1)
+			method = match.group(1).strip()
 			acl.append([method, []])
 			for entry in match.group(2).split(';'):
 				entry = entry.strip()
@@ -217,13 +217,13 @@ class BackendDispatchConfigFile(ConfigFile):
 		self._parsed = False
 		dispatchEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 		dispatch = []
-		for line in self.readlines():
+		for line in ConfigFile.parse(self):
 			match = re.search(dispatchEntryRegex, line)
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in dispatch config file '%s'" % (line, self._filename))
 				continue
-			method = match.group(1)
-			dispatch.append([match.group(1), []])
+			method = match.group(1).strip()
+			dispatch.append([method, []])
 			for entry in match.group(2).split(','):
 				dispatch[-1][1].append(entry.strip())
 		self._parsed = True
