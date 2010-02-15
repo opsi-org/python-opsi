@@ -275,7 +275,8 @@ class ProductPackageFile(object):
 			productClientDataDir = self.getProductClientDataDir()
 			if not os.path.exists(productClientDataDir):
 				os.mkdir(productClientDataDir)
-			
+				os.chmod(productClientDataDir, 02770)
+				
 			for clientDataArchive in clientDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, clientDataArchive)
 				logger.info(u"Extracting client-data archive '%s' to '%s'" % (archiveFile, productClientDataDir))
