@@ -332,6 +332,7 @@ class BackendAccessControl(object):
 	def __init__(self, backend, **kwargs):
 		
 		self._backend       = backend
+		self._hostBackend   = backend
 		self._username      = None
 		self._password      = None
 		self._acl           = None
@@ -353,6 +354,8 @@ class BackendAccessControl(object):
 				self._aclFile = value
 			elif option in ('pamservice'):
 				self._pamService = value
+			elif option in ('accesscontrolhostbackend'):
+				self._hostBackend = value
 			
 		if not self._acl:
 			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
@@ -378,12 +381,12 @@ class BackendAccessControl(object):
 				
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
 				
-				if not hasattr(self._backend, 'host_getObjects'):
+				if not hasattr(self.self._hostBackend, 'host_getObjects'):
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authentidate host '%s'" % self._username)
 				
-				host = self._backend.host_getObjects(id = self._username)
+				host = self.self._hostBackend.host_getObjects(id = self._username)
 				if not host:
-					raise Exception(u"Host '%s' not found" % self._username)
+					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._hostBackend))
 				self._host = host[0]
 				
 				if not self._host.opsiHostKey:
