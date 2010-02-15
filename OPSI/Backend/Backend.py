@@ -117,7 +117,73 @@ class Backend:
 				self._username = value
 			elif option in ('password'):
 				self._password = value
+	
+	matchCache = {}
+	def _objectHashMatches(self, objHash, **filter):
+		matchedAll = True
 		
+		for (attribute, value) in objHash.items():
+			if not filter.get(attribute):
+				continue
+			matched = False
+			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
+						% (filter[attribute], attribute, value))
+			filterValues = forceList(filter[attribute])
+			if value in filterValues:
+				matched = True
+			else:
+				for filterValue in filterValues:
+					if type(value) in (float, long, int):
+						match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
+						if match:
+							operator = match.group(1)
+							if operator == '=':
+								operator = '=='
+							try:
+								matched = eval('%s %s %s' % (value, operator, match.group(2)))
+								if matched:
+									break
+							except:
+								pass
+							continue
+					
+					if type(value) is list:
+						if filterValue in value:
+							matched = True
+							break
+						continue
+					
+					if type(filterValue) in (types.NoneType, types.BooleanType):
+						continue
+					if type(value) in (types.NoneType, types.BooleanType):
+						continue
+					
+					if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
+						matched = True
+						break
+				
+			if matched:
+				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
+							% (value, filter[attribute], attribute))
+			else:
+				matchedAll = False
+				break
+		return matchedAll
+	
+	def backend_setOptions(self, options):
+		options = forceDict(options)
+		for (key, value) in options.items():
+			if not key in self._options.keys():
+				#raise ValueError(u"No such option '%s'" % key)
+				continue
+			if type(value) != type(self._options[key]):
+				#raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
+				continue
+			self._options[key] = value
+		
+	def backend_getOptions(self):
+		return self._options
+	
 	def backend_getInterface(self):
 		methods = {}
 		for member in inspect.getmembers(self, inspect.ismethod):
@@ -220,57 +286,6 @@ class Backend:
 	def backend_exit(self):
 		pass
 	
-	matchCache = {}
-	def _objectHashMatches(self, objHash, **filter):
-		matchedAll = True
-		
-		for (attribute, value) in objHash.items():
-			if not filter.get(attribute):
-				continue
-			matched = False
-			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
-						% (filter[attribute], attribute, value))
-			filterValues = forceList(filter[attribute])
-			if value in filterValues:
-				matched = True
-			else:
-				for filterValue in filterValues:
-					if type(value) in (float, long, int):
-						match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
-						if match:
-							operator = match.group(1)
-							if operator == '=':
-								operator = '=='
-							try:
-								matched = eval('%s %s %s' % (value, operator, match.group(2)))
-								if matched:
-									break
-							except:
-								pass
-							continue
-					
-					if type(value) is list:
-						if filterValue in value:
-							matched = True
-							break
-						continue
-					
-					if type(filterValue) in (types.NoneType, types.BooleanType):
-						continue
-					if type(value) in (types.NoneType, types.BooleanType):
-						continue
-					
-					if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
-						matched = True
-						break
-				
-			if matched:
-				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
-							% (value, filter[attribute], attribute))
-			else:
-				matchedAll = False
-				break
-		return matchedAll
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                    CLASS EXTENDEDBACKEND                                           =
@@ -338,19 +353,6 @@ class ConfigDataBackend(Backend):
 	def backend_deleteBase(self):
 		pass
 	
-	def backend_setOptions(self, options):
-		options = forceDict(options)
-		for (key, value) in options.items():
-			if not key in self._options.keys():
-				#raise ValueError(u"No such option '%s'" % key)
-				continue
-			if type(value) != type(self._options[key]):
-				#raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
-				continue
-			self._options[key] = value
-		
-	def backend_getOptions(self):
-		return self._options
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -

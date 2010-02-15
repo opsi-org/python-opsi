@@ -44,6 +44,7 @@ elif (os.name == 'nt'):
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Object import BaseObject
 from Backend import *
 from OPSI.Util import objectToBeautifiedText
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
@@ -163,27 +164,6 @@ class BackendDispatcher(ConfigDataBackend):
 		self.__loadBackends()
 		self._createInstanceMethods()
 	
-	def dispatcher_getConfig(self):
-		return self._dispatchConfig
-	
-	def dispatcher_getBackendNames(self):
-		return self._backends.keys()
-	
-	def backend_setOptions(self, options):
-		options = forceDict(options)
-		for be in self._backends.keys():
-			beOptions = self._backends[be]['instance'].backend_getOptions()
-			for (key, value) in options.items():
-				if key in beOptions.keys():
-					beOptions[key] = value
-			self._backends[be]['instance'].backend_setOptions(beOptions)
-		
-	def backend_getOptions(self):
-		options = {}
-		for be in self._backends.keys():
-			options.update(self._backends[be]['instance'].backend_getOptions())
-		return options
-		
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
 			raise BackendConfigurationError(u"No dispatch config file defined")
@@ -238,6 +218,9 @@ class BackendDispatcher(ConfigDataBackend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
+			if hasattr(self.__class__, methodName):
+				logger.debug(u"Not overwriting method %s" % methodName)
+				continue
 			methodBackends = []
 			for i in range(len(self._dispatchConfig)):
 				(regex, backends) = self._dispatchConfig[i]
@@ -269,15 +252,33 @@ class BackendDispatcher(ConfigDataBackend):
 	def _executeMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Executing method '%s' on backends: %s" % (methodName, methodBackends))
 		result = None
+		objectIdents = []
 		for methodBackend in methodBackends:
 			res = eval(u'self._backends[methodBackend]["instance"].realcall_%s(**kwargs)' % methodName)
-			if type(result) is list and type(res) is list:
+			if type res is types.ListType:
+				# Remove duplicates
+				newRes = []
+				for r in res:
+					if isinstance(r, BaseObject):
+						ident = r.getIdent()
+						if ident in objectIdents:
+							continue
+						objectIdents.append(ident)
+					newRes.append(r)
+				res = newRes
+			if type(result) is types.ListType and type(res) is types.ListType:
 				result.extend(res)
-			elif type(result) is dict and type(res) is dict:
+			elif type(result) is types.DictType and type(res) is types.DictType:
 				result.update(res)
 			elif not res is None:
 				result = res
 		return result
+	
+	def dispatcher_getConfig(self):
+		return self._dispatchConfig
+	
+	def dispatcher_getBackendNames(self):
+		return self._backends.keys()
 	
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
@@ -298,9 +299,7 @@ class BackendExtender(ExtendedBackend):
 			raise BackendConfigurationError(u"No backend specified")
 		
 		self.__loadExtensionConf()
-		
-		
-		
+	
 	def __loadExtensionConf(self):
 		if not self._extensionConfigDir:
 			logger.info(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
