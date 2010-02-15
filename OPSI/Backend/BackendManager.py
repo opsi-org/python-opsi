@@ -381,7 +381,7 @@ class BackendAccessControl(object):
 				
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
 				
-				if not hasattr(self.self._hostBackend, 'host_getObjects'):
+				if not hasattr(self._hostBackend, 'host_getObjects'):
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authentidate host '%s'" % self._username)
 				
 				host = self._hostBackend.host_getObjects(id = self._username)
