@@ -861,14 +861,21 @@ class FileBackend(ConfigDataBackend):
 					else:
 						oldList = packageControlFile.getProductProperties()
 					
-					objInOldList = False
+					handledObj = False
 					for oldItem in oldList:
-						if oldItem.getIdent() == obj.getIdent():
-							objInOldList = True
+						if (oldItem.getIdent() == obj.getIdent()):
+							if handledObj:
+								# TODO: error? exception?
+								print "duplicate:", oldItem.getIdent()
+								continue
+							
+							print oldItem.getIdent(),"==", obj.getIdent()
 							
 							if mode == 'create':
+								print "creating obj"
 								newList.append(obj)
 							else:
+								print "updating obj"
 								newHash = oldItem.toHash()
 								for (attribute, value) in obj.toHash().items():
 									if value is not None:
@@ -876,10 +883,13 @@ class FileBackend(ConfigDataBackend):
 								
 								Class = eval(objType)
 								newList.append(Class.fromHash(newHash))
+							
+							handledObj = True
 						else:
+							print oldItem.getIdent(),"!=", obj.getIdent()
 							newList.append(oldItem)
 					
-					if not objInOldList:
+					if not handledObj:
 						newList.append(obj)
 					
 					if objType == 'ProductDependency':
@@ -955,7 +965,8 @@ class FileBackend(ConfigDataBackend):
 				if (not entry.endswith('.localboot')) and (not entry.endswith('.netboot')):
 					continue
 				
-				#example:            exampleexampleexa  _ 123.123 - 123.123  .localboot
+				#example (+spaces):  exampleexampleexa  _ 123.123 - 123.123  . local     boot
+				################### (group 1          )  (group 2) (group 3)  (group 4  )
 				match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
 				if not match:
 					continue
@@ -969,6 +980,7 @@ class FileBackend(ConfigDataBackend):
 						if (match.group(2) == item.getProductVersion()):
 							if (match.group(3) == item.getPackageVersion()):
 								matched = True
+								break
 				
 				if not matched:
 					continue

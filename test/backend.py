@@ -1352,6 +1352,12 @@ class BackendTest(object):
 		self.backend.productProperty_createObjects(self.productProperty2)
 		self.backend.productProperty_createObjects([self.productProperty4, self.productProperty1, self.productProperty4, self.productProperty4, self.productProperty4])
 		productProperties = self.backend.productProperty_getObjects()
+		
+		print "####################"
+		for p in productProperties:
+			print p.toHash()
+			print "####################"
+		
 		assert len(productProperties) == len(self.productProperties), u"got: '%s', expected: '%s'" % (productProperties, len(self.productProperties))
 		
 		# ProductDependencies
