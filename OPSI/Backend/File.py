@@ -866,16 +866,12 @@ class FileBackend(ConfigDataBackend):
 						if (oldItem.getIdent() == obj.getIdent()):
 							if handledObj:
 								# TODO: error? exception?
-								print "duplicate:", oldItem.getIdent()
+								raise Exception("duplicate:", oldItem.getIdent())
 								continue
 							
-							print oldItem.getIdent(),"==", obj.getIdent()
-							
 							if mode == 'create':
-								print "creating obj"
 								newList.append(obj)
 							else:
-								print "updating obj"
 								newHash = oldItem.toHash()
 								for (attribute, value) in obj.toHash().items():
 									if value is not None:
@@ -886,7 +882,6 @@ class FileBackend(ConfigDataBackend):
 							
 							handledObj = True
 						else:
-							print oldItem.getIdent(),"!=", obj.getIdent()
 							newList.append(oldItem)
 					
 					if not handledObj:
@@ -1002,8 +997,8 @@ class FileBackend(ConfigDataBackend):
 					for oldItem in oldList:
 						if oldItem.getIdent() == obj.getIdent():
 							logger.debug2(u"Removed '%s'" % obj.getIdent())
-							continue
-						newList.append(item)
+						else:
+							newList.append(oldItem)
 				
 				if objType == 'ProductDependency':
 					packageControlFile.setProductDependencies(newList)
