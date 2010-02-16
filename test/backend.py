@@ -1180,8 +1180,10 @@ class BackendTest(object):
 			for c in self.configs:
 				if (config.id == c.id):
 					config = config.toHash()
+					print "config:", config
 					c = c.toHash()
 					for (attribute, value) in c.items():
+						print "attribute", attribute
 						if not value is None:
 							if type(value) is list:
 								for v in value:

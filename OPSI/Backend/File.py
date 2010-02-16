@@ -351,7 +351,7 @@ class FileBackend(ConfigDataBackend):
 			if os.path.isfile(filename):
 				return filename
 			else:
-				raise Exception(u"%s an existing file! ident '%s', fileType '%s'" % (objType, ident, fileType))
+				raise Exception(u"%s needs existing file! ident '%s', fileType '%s'" % (objType, ident, fileType))
 		else:
 			return filename
 	
@@ -394,7 +394,7 @@ class FileBackend(ConfigDataBackend):
 						pass
 			except Exception, e:
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
-				
+		
 		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
 			try:
 				for entry in os.listdir(self.__depotConfigDir):
@@ -424,7 +424,7 @@ class FileBackend(ConfigDataBackend):
 						pass
 			except Exception, e:
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__depotConfigDir, e))
-			
+		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 			try:
 				for entry in os.listdir(self.__productDir):
@@ -456,7 +456,7 @@ class FileBackend(ConfigDataBackend):
 								objIdents.append(productProperty.getIdent(returnType = 'dict'))
 			except Exception, e:
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__productDir, e))
-				
+		
 		elif objType in ('ConfigState', 'ProductPropertyState'):
 			objectIds = []
 			
@@ -674,19 +674,20 @@ class FileBackend(ConfigDataBackend):
 							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 						
 						if cp.has_option(section, option):
-							value = cp.get(section, option).replace('%%', '%')
+							value = cp.get(section, option)
 							if m.get('json'):
 								value = fromJson(value)
-							else:
-								value = value.replace(u'\\n', u'\n')
+							elif ( isinstance(value, str) or isinstance(value, unicode) ):
+								value = self.__unescape(value)
 							
+							# TODO: what to return, if more than one ':'?
 							if objType in ('ProductOnClient') and value.find(':') != -1:
 								if attribute == 'installationStatus':
 									value = value.split(u':', 1)[0]
 								elif attribute == 'actionRequest':
 									value = value.split(u':', 1)[1]
 							
-							objHash[m['attribute']] = value
+							objHash[attribute] = value
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
 					
 				elif (fileType == 'pro'):
@@ -826,13 +827,12 @@ class FileBackend(ConfigDataBackend):
 							if attributeMapping.get('json'):
 								value = toJson(value)
 							elif ( isinstance(value, str) or isinstance(value, unicode) ):
-								value = forceUnicode(value)
-								value = value.replace(u"\n", u"\\n")
+								value = self.__escape(value)
 							
 							if not cp.has_section(section):
 								cp.add_section(section)
 							
-							cp.set(section, option, forceUnicode(value).replace('%', '%%'))
+							cp.set(section, option, value)
 				
 				iniFile.generate(cp)
 			
