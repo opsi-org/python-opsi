@@ -271,28 +271,16 @@ class BackendDispatcher(Backend):
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 				
-				#for be in self._backends.keys():
-				#	# Rename original method to _realcall_<methodName>
-				#	# Create new method <methodName> which will be called if <methodName> will be called on this object
-				#	# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
-				#	#if hasattr(self._backends[be]['instance'], methodName):
-				#	#	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-				#	#else:
-				#	#	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]["extendedInstance"], methodName))
-				#	if hasattr(self._backends[be]["extendedInstance"].__class__, methodName):
-				#		setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]["extendedInstance"], methodName))
-				#	else:
-				#		setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-				#	setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
-				#	if hasattr(self._backends[be]['instance'], '_backend') and hasattr(self._backends[be]['instance']._backend, methodName):
-				#		setattr(self._backends[be]['instance']._backend, '_realcall_' + methodName, getattr(self._backends[be]['instance']._backend, methodName))
+				for be in self._backends.keys():
+					setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
 				
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
 		objectIdents = []
 		for methodBackend in methodBackends:
-			res = eval(u'self._backends[methodBackend]["instance"].%s(**kwargs)' % methodName)
+			res = eval(u'self._backends[methodBackend]["instance"]._realcall_%s(**kwargs)' % methodName)
 			if type(res) is types.ListType:
 				# Remove duplicates
 				newRes = []
