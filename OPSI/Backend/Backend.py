@@ -946,8 +946,8 @@ class ConfigDataBackend(Backend):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ExtendedConfigDataBackend(ExtendedBackend):
 	
-	def __init__(self, backend):
-		ExtendedBackend.__init__(self, backend)
+	def __init__(self, configDataBackend):
+		ExtendedBackend.__init__(self, configDataBackend)
 		self._options = {
 			'processProductPriorities':            False,
 			'processProductDependencies':          False,
@@ -972,10 +972,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						'Type':  value["Type"],
 						'Scope': value["Scope"]
 					}
-	
-	def backend_exit(self):
-		if self._backend:
-			self._backend.backend_exit()
 	
 	def backend_searchObjects(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
@@ -2991,10 +2987,6 @@ class DepotserverBackend(ExtendedBackend):
 		if not self.host_getIdents(id = self._depotId):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)
-	
-	def backend_exit(self):
-		if self._backend:
-			self._backend.backend_exit()
 	
 	def log_write(self, logType, data, objectId=None, append=True):
 		logType = forceUnicode(logType)
