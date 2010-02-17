@@ -301,7 +301,7 @@ class PackageControlFile(TextFile):
 	
 	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
 	valueContinuationRegex = re.compile('^\s(.*)$')
-	optionRegex = re.compile('^(\S+)\s*\:\s*(.*)$')
+	optionRegex = re.compile('^([^\:]+)\s*\:\s*(.*)$')
 	
 	def __init__(self, filename, lockFailTimeout = 2000):
 		TextFile.__init__(self, filename, lockFailTimeout)

@@ -36,6 +36,7 @@ __version__ = '3.5'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
+LOG_DEBUG3       = 8
 LOG_DEBUG2       = 7
 LOG_DEBUG        = 6
 LOG_INFO         = 5
@@ -668,6 +669,10 @@ class LoggerImplementation:
 	def confidential( self, message ):
 		''' Log a confidential message. '''
 		self.log(LOG_CONFIDENTIAL, message)
+	
+	def debug3( self, message ):
+		''' Log a debug message. '''
+		self.log(LOG_DEBUG3, message)
 	
 	def debug2( self, message ):
 		''' Log a debug message. '''

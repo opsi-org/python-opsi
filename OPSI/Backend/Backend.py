@@ -100,8 +100,8 @@ def getArgAndCallString(method):
 			callString += u', '
 		argString += u'**%s' % varkwargs
 		callString += u'**%s' % varkwargs
-	logger.debug2(u"Arg string is: %s" % argString)
-	logger.debug2(u"Call string is: %s" % callString)
+	logger.debug3(u"Arg string is: %s" % argString)
+	logger.debug3(u"Call string is: %s" % callString)
 	return (argString, callString)
 
 
@@ -117,7 +117,8 @@ class Backend:
 				self._username = value
 			elif option in ('password'):
 				self._password = value
-	
+		self._options = {}
+		
 	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
 		matchedAll = True
@@ -214,7 +215,7 @@ class Backend:
 				for arg in forceList(keywords):
 					params.append('**' + arg)
 			
-			logger.debug2(u"Interface method name '%s' params %s" % (methodName, params))
+			logger.debug2(u"%s interface method: name '%s', params %s" % (self.__class__.__name__, methodName, params))
 			methods[methodName] = { 'name': methodName, 'params': params, 'args': args, 'varargs': varargs, 'keywords': keywords, 'defaults': defaults}
 		
 		methodList = []
@@ -291,20 +292,26 @@ class Backend:
 =                                    CLASS EXTENDEDBACKEND                                           =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ExtendedBackend(Backend):
-	def __init__(self, backend):
+	def __init__(self, backend, overwrite = True):
+		Backend.__init__(self)
 		self._backend = backend
+		self._overwrite = forceBool(overwrite)
 		self._createInstanceMethods()
-	
+		
 	def _createInstanceMethods(self):
+		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			logger.debug2(u"Found public method '%s'" % methodName)
+			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
 			if hasattr(self.__class__, methodName):
-				logger.debug(u"Not overwriting method %s" % methodName)
-				continue
+				if self._overwrite:
+					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+					continue
+				else:
+					logger.debug(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
@@ -314,14 +321,20 @@ class ExtendedBackend(Backend):
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def backend_setOptions(self, options):
-		return self._backend.backend_setOptions(options)
+		Backend.backend_setOptions(self, options)
+		if self._backend:
+			self._backend.backend_setOptions(options)
 		
 	def backend_getOptions(self):
-		return self._backend.backend_getOptions()
-	
+		options = Backend.backend_getOptions(self)
+		if self._backend:
+			options.update(self._backend.backend_getOptions())
+		return options
+		
 	def backend_exit(self):
-		logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
-		self._backend.backend_exit()
+		if self._backend:
+			logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
+			self._backend.backend_exit()
 	
 	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -333,7 +346,6 @@ class ConfigDataBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
-		self._options = {}
 		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
@@ -947,7 +959,9 @@ class ConfigDataBackend(Backend):
 class ExtendedConfigDataBackend(ExtendedBackend):
 	
 	def __init__(self, configDataBackend):
-		ExtendedBackend.__init__(self, configDataBackend)
+		if not isinstance(configDataBackend, ConfigDataBackend):
+			raise Exception(u"ExtendedConfigDataBackend needs instance of ConfigDataBackend as backend, got %s" % configDataBackend.__class__.__name__)
+		ExtendedBackend.__init__(self, configDataBackend, overwrite = True)
 		self._options = {
 			'processProductPriorities':            False,
 			'processProductDependencies':          False,
@@ -3158,6 +3172,8 @@ class DepotserverBackend(ExtendedBackend):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DepotserverPackageManager(object):
 	def __init__(self, depotBackend):
+		if not isinstance(depotBackend, DepotserverBackend):
+			raise Exception(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
 		self._depotBackend = depotBackend
 		logger.setLogFile(self._depotBackend._packageLog, object = self)
 		

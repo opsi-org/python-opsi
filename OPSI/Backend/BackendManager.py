@@ -45,7 +45,8 @@ elif (os.name == 'nt'):
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import BaseObject
-from Backend import *
+from OPSI.Backend.Backend import *
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import objectToBeautifiedText
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
 
@@ -61,6 +62,7 @@ class BackendManager(ExtendedBackend):
 		self._backend = None
 		self._backendConfigDir = None
 		self._options = {}
+		self._overwrite = True
 		
 		username = None
 		password = None
@@ -98,23 +100,34 @@ class BackendManager(ExtendedBackend):
 				accessControl = True
 		
 		if loadBackend:
+			logger.info(u"* BackendManager is loading backend '%s'" % loadBackend)
 			self._backend = self.__loadBackend(loadBackend)
+			# self._backend is now a ConfigDataBackend
 		
 		if not dispatch and not self._backend:
 			raise BackendConfigurationError(u"Neither backend nor dispatch config given")
+		
 		if dispatch:
+			logger.info(u"* BackendManager is creating BackendDispatcher")
 			self._backend = BackendDispatcher(**kwargs)
-		if extend or depotBackend:
+			# self._backend is now a BackendDispatcher which is an ExtendedConfigDataBackend
+		elif extend or depotBackend:
+			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
 			self._backend = ExtendedConfigDataBackend(self._backend)
+			# self._backend is now an ExtendedConfigDataBackend
 		if depotBackend:
+			logger.info(u"* BackendManager is creating DepotserverBackend")
 			self._backend = DepotserverBackend(self._backend)
 		if accessControl:
+			logger.info(u"* BackendManager is creating BackendAccessControl")
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
 		if extensionConfigDir:
+			logger.info(u"* BackendManager is creating BackendExtender")
 			self._backend = BackendExtender(self._backend, **kwargs)
+		
 		self._createInstanceMethods()
-	
+		
 	def __loadBackend(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
@@ -136,15 +149,16 @@ class BackendManager(ExtendedBackend):
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 	
 	
-class BackendDispatcher(ConfigDataBackend):
+class BackendDispatcher(ExtendedConfigDataBackend):
 	def __init__(self, **kwargs):
-		ConfigDataBackend.__init__(self, **kwargs)
+		#ExtendedConfigDataBackend.__init__(self, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
 		self._dispatchIgnoreModules = []
 		self._backendConfigDir = None
 		self._backends = {}
+		self._options = {}
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -209,50 +223,66 @@ class BackendDispatcher(ConfigDataBackend):
 				continue
 			if not type(l['config']) is dict:
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
+			backendInstance = None
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
-			exec(u'self._backends[backend]["instance"] = %sBackend(**l["config"])' % l['module'])
-	
+			exec(u'backendInstance = %sBackend(**l["config"])' % l['module'])
+			if not isinstance(backendInstance, JSONRPCBackend):
+				# Assuming that JSONRPC is already extended
+				# Not extending JSONRPCBackend will increase performance because ExtendedConfigDataBackend methods
+				# like host_createObjects will be directly passed to JSONRPCBackend instead of being executed in
+				# ExtendedConfigDataBackend which then would call host_insertObject on JSONRPCBackend
+				logger.info(u"* BackendDispatcher is creating ExtendedConfigDataBackend on %s" % backendInstance)
+				backendInstance = ExtendedConfigDataBackend(backendInstance)
+			self._backends[backend]["instance"] = backendInstance
+			
 	def _createInstanceMethods(self):
-		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
-			methodName = member[0]
-			if methodName.startswith('_'):
-				# Not a public method
-				continue
-			logger.debug2(u"Found public ConfigDataBackend method '%s'" % methodName)
-			methodBackends = []
-			for i in range(len(self._dispatchConfig)):
-				(regex, backends) = self._dispatchConfig[i]
-				if not re.search(regex, methodName):
+		logger.debug(u"BackendDispatcher is creating instance methods")
+		for Class in (ConfigDataBackend, ExtendedConfigDataBackend):
+			for member in inspect.getmembers(Class, inspect.ismethod):
+				methodName = member[0]
+				if methodName.startswith('_'):
+					# Not a public method
+					continue
+				logger.debug2(u"Found public %s method '%s'" % (Class.__name__, methodName))
+				
+				if hasattr(BackendDispatcher.__class__, methodName):
+					logger.debug(u"%s: overwriting method %s" % (self.__class__.__name__, methodName))
 					continue
 				
-				for backend in forceList(backends):
-					if not backend in self._backends.keys():
-						logger.debug(u"Ignoring backend '%s': backend not available" % backend)
+				methodBackends = []
+				for i in range(len(self._dispatchConfig)):
+					(regex, backends) = self._dispatchConfig[i]
+					if not re.search(regex, methodName):
 						continue
-					logger.debug(u"Matched '%s' for method '%s', using backend '%s'" % (regex, methodName, backend))
-					methodBackends.append(backend)
-				break
-			if not methodBackends:
-				continue
-			
-			(argString, callString) = getArgAndCallString(member[1])
-			
-			exec(u'def %s(self, %s): return self._executeMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-			
-			for be in self._backends.keys():
-				# Rename original method to realcall_<methodName>
-				setattr(self._backends[be]['instance'], 'realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-				# Create new method <methodName> which will be called if <methodName> will be called on this object
-				# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
-				setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
+					
+					for backend in forceList(backends):
+						if not backend in self._backends.keys():
+							logger.debug(u"Ignoring backend '%s': backend not available" % backend)
+							continue
+						methodBackends.append(backend)
+					logger.debug(u"'%s' matches method '%s', dispatching to backends: %s" % (regex, methodName, u', '.join(methodBackends)))
+					break
+				if not methodBackends:
+					continue
+				
+				(argString, callString) = getArgAndCallString(member[1])
+				
+				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
+				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				
+				for be in self._backends.keys():
+					# Rename original method to _realcall_<methodName>
+					setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+					# Create new method <methodName> which will be called if <methodName> will be called on this object
+					# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
+					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
-	def _executeMethod(self, methodBackends, methodName, **kwargs):
-		logger.debug(u"Executing method '%s' on backends: %s" % (methodName, methodBackends))
+	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
+		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
 		objectIdents = []
 		for methodBackend in methodBackends:
-			res = eval(u'self._backends[methodBackend]["instance"].realcall_%s(**kwargs)' % methodName)
+			res = eval(u'self._backends[methodBackend]["instance"]._realcall_%s(**kwargs)' % methodName)
 			if type(res) is types.ListType:
 				# Remove duplicates
 				newRes = []
@@ -272,6 +302,21 @@ class BackendDispatcher(ConfigDataBackend):
 				result = res
 		return result
 	
+	def backend_setOptions(self, options):
+		Backend.backend_setOptions(self, options)
+		for be in self._backends.values():
+			be['instance'].backend_setOptions(options)
+		
+	def backend_getOptions(self):
+		options = Backend.backend_getOptions(self, options)
+		for be in self._backends.values():
+			options.update(be['instance'].backend_getOptions())
+		return options
+	
+	def backend_exit(self):
+		for be in self._backends.values():
+			options.update(be['instance'].backend_exit())
+	
 	def dispatcher_getConfig(self):
 		return self._dispatchConfig
 	
@@ -284,7 +329,7 @@ class BackendExtender(ExtendedBackend):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend)):
 				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
 		
-		ExtendedBackend.__init__(self, backend)
+		ExtendedBackend.__init__(self, backend, overwrite = False)
 		
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
 		
@@ -292,9 +337,6 @@ class BackendExtender(ExtendedBackend):
 			option = option.lower()
 			if (option == 'extensionconfigdir'):
 				self._extensionConfigDir = value
-		
-		if not self._backend:
-			raise BackendConfigurationError(u"No backend specified")
 		
 		self.__loadExtensionConf()
 	
@@ -321,7 +363,7 @@ class BackendExtender(ExtendedBackend):
 				
 				for (key, val) in locals().items():
 					if ( type(val) == types.FunctionType ):
-						logger.debug2(u"Extending backend with instancemethod: '%s'" % key )
+						logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 						setattr( self, key, new.instancemethod(val, self, self.__class__) )
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
