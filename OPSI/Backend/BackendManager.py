@@ -232,7 +232,7 @@ class BackendDispatcher(Backend):
 				# like host_createObjects will be directly passed to JSONRPCBackend instead of being executed in
 				# ExtendedConfigDataBackend which then would call host_insertObject on JSONRPCBackend
 				logger.info(u"* BackendDispatcher is creating ExtendedConfigDataBackend on %s" % backendInstance)
-				backendInstance = ExtendedConfigDataBackend(backendInstance)
+				self._backends[backend]["extendedInstance"] = ExtendedConfigDataBackend(backendInstance)
 			self._backends[backend]["instance"] = backendInstance
 			
 	def _createInstanceMethods(self):
@@ -272,11 +272,16 @@ class BackendDispatcher(Backend):
 				
 				for be in self._backends.keys():
 					# Rename original method to _realcall_<methodName>
-					setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
 					# Create new method <methodName> which will be called if <methodName> will be called on this object
 					# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
+					if hasattr(self._backends[be]['instance'], methodName):
+						setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+					else:
+						setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]["extendedInstance"], methodName))
 					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
+					if hasattr(self._backends[be]['instance'], '_backend') and hasattr(self._backends[be]['instance']._backend, methodName):
+						setattr(self._backends[be]['instance']._backend, '_realcall_' + methodName, getattr(self._backends[be]['instance']._backend, methodName))
+				
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
