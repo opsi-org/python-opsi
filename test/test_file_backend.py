@@ -6,7 +6,6 @@ import sys, types
 from OPSI.Logger import *
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from OPSI.Backend.Object import *
 from backend import *
 
 logger = Logger()
