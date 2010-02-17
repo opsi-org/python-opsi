@@ -318,6 +318,7 @@ class ExtendedBackend(Backend):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 		
 	def _executeMethod(self, methodName, **kwargs):
+		logger.debug(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
 	def backend_setOptions(self, options):

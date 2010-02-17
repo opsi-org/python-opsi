@@ -315,7 +315,7 @@ class BackendDispatcher(Backend):
 	
 	def backend_exit(self):
 		for be in self._backends.values():
-			options.update(be['instance'].backend_exit())
+			be['instance'].backend_exit()
 	
 	def dispatcher_getConfig(self):
 		return self._dispatchConfig
