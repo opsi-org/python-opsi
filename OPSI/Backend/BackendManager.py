@@ -149,7 +149,7 @@ class BackendManager(ExtendedBackend):
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 	
 	
-class BackendDispatcher(ExtendedConfigDataBackend):
+class BackendDispatcher(Backend):
 	def __init__(self, **kwargs):
 		#ExtendedConfigDataBackend.__init__(self, **kwargs)
 		
@@ -245,7 +245,7 @@ class BackendDispatcher(ExtendedConfigDataBackend):
 					continue
 				logger.debug2(u"Found public %s method '%s'" % (Class.__name__, methodName))
 				
-				if hasattr(BackendDispatcher.__class__, methodName):
+				if hasattr(self, methodName):
 					logger.debug(u"%s: overwriting method %s" % (self.__class__.__name__, methodName))
 					continue
 				
@@ -325,9 +325,9 @@ class BackendDispatcher(ExtendedConfigDataBackend):
 	
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
-		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend):
-			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend)):
-				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend or DepotserverBackend as backend, got %s" % backend.__class__.__name__)
+		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend) and not isinstance(backend, BackendDispatcher):
+			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend) and not isinstance(backend._backend, BackendDispatcher)):
+				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend, DepotserverBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 		
 		ExtendedBackend.__init__(self, backend, overwrite = False)
 		
@@ -477,16 +477,29 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
 	
 	def _createInstanceMethods(self):
+		protectedMethods = []
+		for Class in (ConfigDataBackend, DepotserverBackend):
+			for member in inspect.getmembers(Class, inspect.ismethod):
+				methodName = member[0]
+				if methodName.startswith('_'):
+					if not methodName in protectedMethods:
+						protectedMethods.append(methodName)
+		
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			logger.debug2(u"Found public method '%s'" % methodName)
 			
 			(argString, callString) = getArgAndCallString(member[1])
 			
-			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+			if methodName in protectedMethods:
+				logger.debug2(u"Protecting %s method '%s'" % (Class.__name__, methodName))
+				exec(u'def %s(self, %s): return self._executeMethodProtected("%s", %s)' % (methodName, argString, methodName, callString))
+			else:
+				logger.debug2(u"Not protecting %s method '%s'" % (Class.__name__, methodName))
+				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+			
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
 	def _authenticateUser(self):
@@ -633,6 +646,9 @@ class BackendAccessControl(object):
 		return False
 	
 	def _executeMethod(self, methodName, **kwargs):
+		return eval(u'self._backend.%s(**kwargs)' % methodName)
+	
+	def _executeMethodProtected(self, methodName, **kwargs):
 		granted = False
 		newKwargs = {}
 		acls = []

@@ -2988,8 +2988,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend):
-		if not isinstance(backend, ExtendedConfigDataBackend):
-			raise Exception(u"DepotserverBackend needs instance of ExtendedConfigDataBackend as backend, got %s" % backend.__class__.__name__)
+		if not isinstance(backend, ExtendedConfigDataBackend) and not (backend.__class__.__name__ == 'BackendDispatcher'):
+			raise Exception(u"DepotserverBackend needs instance of ExtendedConfigDataBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 		ExtendedBackend.__init__(self, backend)
 		
 		self._logDir               = u'/var/log/opsi'
