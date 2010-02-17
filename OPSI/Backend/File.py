@@ -511,13 +511,20 @@ class FileBackend(ConfigDataBackend):
 					if objType == 'ObjectToGroup':
 						for option in cp.options(section):
 							try:
-								if not option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
-									objIdents.append(
-										{
-										'groupId':  section,
-										'objectId': forceHostId(option)
-										}
-									)
+								if option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
+									continue
+								
+								value = cp.get(section, option)
+								if not forceBool(value):
+									logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" % (option, section, value))
+									continue
+								
+								objIdents.append(
+									{
+									'groupId':  section,
+									'objectId': forceHostId(option)
+									}
+								)
 							except:
 								logger.error(u"_getIdents(): Found bad option '%s' in section '%s' in file '%s'" \
 									% (option, section, filename))
@@ -687,15 +694,6 @@ class FileBackend(ConfigDataBackend):
 									value = value.split(u':', 1)[0]
 								elif attribute == 'actionRequest':
 									value = value.split(u':', 1)[1]
-							elif objType in ('ObjectToGroup',):
-								try:
-									value = forceBool(value)
-									if not value:
-										ignoreHash = True
-										break
-								except:
-									ignoreHash = True
-									break
 							
 							objHash[attribute] = value
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
@@ -723,9 +721,6 @@ class FileBackend(ConfigDataBackend):
 							if matches:
 								objHash = obj.toHash()
 								break
-			
-			if ignoreHash:
-				continue
 			
 			Class = eval(objType)
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
