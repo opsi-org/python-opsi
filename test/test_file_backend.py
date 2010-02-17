@@ -29,10 +29,10 @@ logger.setConsoleColor(True)
 fileBackend = FileBackend(baseDir = u'/tmp/opsi-file-backend-test', hostKeyFile = u'/tmp/opsi-file-backend-test/pckeys')
 
 bt = BackendTest(ExtendedConfigDataBackend(fileBackend))
-bt.cleanupBackend()
+#bt.cleanupBackend()
 bt.testObjectMethods()
-bt.testInventoryObjectMethods()
-bt.testNonObjectMethods()
+#bt.testInventoryObjectMethods()
+#bt.testNonObjectMethods()
 #bt.testMultithreading()
 #bt.testPerformance()
 

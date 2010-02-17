@@ -69,9 +69,9 @@ class FileBackend(ConfigDataBackend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('basedir'):
+			if   option in ('basedir',):
 				self.__baseDir = forceFilename(value)
-			elif option in ('hostkeyfile'):
+			elif option in ('hostkeyfile',):
 				self.__hostKeyFile = forceFilename(value)
 		
 		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
@@ -291,20 +291,20 @@ class FileBackend(ConfigDataBackend):
 		elif (fileType == 'ini'):
 			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 				filename = self.__configFile
-			elif objType in ('OpsiClient'):
+			elif objType in ('OpsiClient',):
 				filename = os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
 			elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
 				filename = os.path.join(self.__depotConfigDir, ident['id'] + u'.ini')
-			elif objType in ('ConfigState'):
+			elif objType in ('ConfigState',):
 				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini'))):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
-			elif objType in ('ProductOnDepot'):
+			elif objType in ('ProductOnDepot',):
 				filename = os.path.join(self.__depotConfigDir, ident['depotId'] + u'.ini')
-			elif objType in ('ProductOnClient'):
+			elif objType in ('ProductOnClient',):
 				filename = os.path.join(self.__clientConfigDir, ident['clientId'] + u'.ini')
-			elif objType in ('ProductPropertyState'):
+			elif objType in ('ProductPropertyState',):
 				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini'))):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
@@ -640,6 +640,7 @@ class FileBackend(ConfigDataBackend):
 		
 		objects = []
 		for ident in self._getIdents(objType, **filter):
+			ignoreHash = False
 			objHash = dict(ident)
 			
 			for (fileType, mapping) in mappings.items():
@@ -681,11 +682,20 @@ class FileBackend(ConfigDataBackend):
 								value = self.__unescape(value)
 							
 							# TODO: what to return, if more than one ':'?
-							if objType in ('ProductOnClient') and value.find(':') != -1:
+							if objType in ('ProductOnClient',) and value.find(':') != -1:
 								if attribute == 'installationStatus':
 									value = value.split(u':', 1)[0]
 								elif attribute == 'actionRequest':
 									value = value.split(u':', 1)[1]
+							elif objType in ('ObjectToGroup',):
+								try:
+									value = forceBool(value)
+									if not value:
+										ignoreHash = True
+										break
+								except:
+									ignoreHash = True
+									break
 							
 							objHash[attribute] = value
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
@@ -698,7 +708,7 @@ class FileBackend(ConfigDataBackend):
 					
 					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 						knownObjects = []
-						if objType in ('ProductDependency'):
+						if objType in ('ProductDependency',):
 							knownObjects = packageControlFile.getProductDependencies()
 						else:
 							knownObjects = packageControlFile.getProductProperties()
@@ -713,6 +723,9 @@ class FileBackend(ConfigDataBackend):
 							if matches:
 								objHash = obj.toHash()
 								break
+			
+			if ignoreHash:
+				continue
 			
 			Class = eval(objType)
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
@@ -767,7 +780,7 @@ class FileBackend(ConfigDataBackend):
 					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
 						iniFile.delete()
 						
-						if objType in ('OpsiClient'):
+						if objType in ('OpsiClient',):
 							shutil.copyfile(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini'), filename)
 						
 						self._touch(filename)
@@ -780,7 +793,7 @@ class FileBackend(ConfigDataBackend):
 							newSection = obj.getId()
 						elif objType in ('ProductOnDepot', 'ProductOnClient'):
 							newSection = obj.getProductId() + u'-state'
-						elif objType in ('ProductPropertyState'):
+						elif objType in ('ProductPropertyState',):
 							newSection = obj.getPropertyId() + u'-install'
 						
 						if newSection != '' and cp.has_section(newSection):
@@ -801,7 +814,7 @@ class FileBackend(ConfigDataBackend):
 						match = self._placeholderRegex.search(section)
 						if match:
 							replaceValue = objHash[match.group(1)]
-							if objType in ('ProductOnClient'):
+							if objType in ('ProductOnClient',):
 								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 							section = section.replace(u'<%s>' % match.group(1), replaceValue)
 						
@@ -809,7 +822,7 @@ class FileBackend(ConfigDataBackend):
 						if match:
 							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
 						
-						if objType in ('ProductOnClient'):
+						if objType in ('ProductOnClient',):
 							if attribute in ('installationStatus', 'actionRequest'):
 								(installationStatus, actionRequest) = (u'', u'')
 								if cp.has_option(section, option):
@@ -822,12 +835,15 @@ class FileBackend(ConfigDataBackend):
 									elif (attribute == 'actionRequest'):
 										actionRequest = value
 								value = installationStatus + u':' + actionRequest
+						elif objType in ('ObjectToGroup',):
+							value = 1
 						
 						if not value is None:
 							if attributeMapping.get('json'):
 								value = toJson(value)
 							elif ( isinstance(value, str) or isinstance(value, unicode) ):
 								value = self.__escape(value)
+							
 							
 							if not cp.has_section(section):
 								cp.add_section(section)
@@ -912,7 +928,7 @@ class FileBackend(ConfigDataBackend):
 				if obj.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
 					if os.path.isdir(os.path.dirname(filename)):
 						shutil.rmtree(os.path.dirname(filename))
-				elif obj.getType() in ('OpsiClient'):
+				elif obj.getType() in ('OpsiClient',):
 					if os.path.isfile(filename):
 						os.unlink(filename)
 			hostKeyFile.generate()
@@ -928,7 +944,7 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Removed section '%s'" % obj.getId())
 			iniFile.generate(cp)
 		
-		elif objType in ('ConfigState'):
+		elif objType in ('ConfigState',):
 			#TODO: opens every file anew
 			for obj in objList:
 				filename = self._getConfigFile(
@@ -1034,7 +1050,7 @@ class FileBackend(ConfigDataBackend):
 				
 				iniFile.generate(cp)
 		
-		elif objType in ('ProductPropertyState'):
+		elif objType in ('ProductPropertyState',):
 			for obj in objList:
 				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				filename = self._getConfigFile(
@@ -1473,7 +1489,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting objectToGroups ...")
+		logger.info(u"Getting auditSoftwares ...")
 		result = []
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		if not os.path.exists(filename):
