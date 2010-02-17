@@ -224,6 +224,7 @@ class BackendDispatcher(Backend):
 			if not type(l['config']) is dict:
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
+			l["config"]["backendInstance"] = self
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
 			exec(u'backendInstance = %sBackend(**l["config"])' % l['module'])
 			if not isinstance(backendInstance, JSONRPCBackend):
@@ -232,7 +233,7 @@ class BackendDispatcher(Backend):
 				# like host_createObjects will be directly passed to JSONRPCBackend instead of being executed in
 				# ExtendedConfigDataBackend which then would call host_insertObject on JSONRPCBackend
 				logger.info(u"* BackendDispatcher is creating ExtendedConfigDataBackend on %s" % backendInstance)
-				self._backends[backend]["extendedInstance"] = ExtendedConfigDataBackend(backendInstance)
+				backendInstance = ExtendedConfigDataBackend(backendInstance)
 			self._backends[backend]["instance"] = backendInstance
 			
 	def _createInstanceMethods(self):
@@ -270,24 +271,28 @@ class BackendDispatcher(Backend):
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 				
-				for be in self._backends.keys():
-					# Rename original method to _realcall_<methodName>
-					# Create new method <methodName> which will be called if <methodName> will be called on this object
-					# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
-					if hasattr(self._backends[be]['instance'], methodName):
-						setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-					else:
-						setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]["extendedInstance"], methodName))
-					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
-					if hasattr(self._backends[be]['instance'], '_backend') and hasattr(self._backends[be]['instance']._backend, methodName):
-						setattr(self._backends[be]['instance']._backend, '_realcall_' + methodName, getattr(self._backends[be]['instance']._backend, methodName))
+				#for be in self._backends.keys():
+				#	# Rename original method to _realcall_<methodName>
+				#	# Create new method <methodName> which will be called if <methodName> will be called on this object
+				#	# If the method <methodName> is called from backend object (self.<methodName>) the method will be called on this instance
+				#	#if hasattr(self._backends[be]['instance'], methodName):
+				#	#	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+				#	#else:
+				#	#	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]["extendedInstance"], methodName))
+				#	if hasattr(self._backends[be]["extendedInstance"].__class__, methodName):
+				#		setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]["extendedInstance"], methodName))
+				#	else:
+				#		setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+				#	setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				#	if hasattr(self._backends[be]['instance'], '_backend') and hasattr(self._backends[be]['instance']._backend, methodName):
+				#		setattr(self._backends[be]['instance']._backend, '_realcall_' + methodName, getattr(self._backends[be]['instance']._backend, methodName))
 				
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
 		objectIdents = []
 		for methodBackend in methodBackends:
-			res = eval(u'self._backends[methodBackend]["instance"]._realcall_%s(**kwargs)' % methodName)
+			res = eval(u'self._backends[methodBackend]["instance"].%s(**kwargs)' % methodName)
 			if type(res) is types.ListType:
 				# Remove duplicates
 				newRes = []
@@ -334,7 +339,7 @@ class BackendExtender(ExtendedBackend):
 			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend) and not isinstance(backend._backend, BackendDispatcher)):
 				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend, DepotserverBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 		
-		ExtendedBackend.__init__(self, backend, overwrite = False)
+		ExtendedBackend.__init__(self, backend, overwrite = True)
 		
 		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
 		
@@ -372,7 +377,6 @@ class BackendExtender(ExtendedBackend):
 						setattr( self, key, new.instancemethod(val, self, self.__class__) )
 		except Exception, e:
 			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
-	
 
 class BackendAccessControl(object):
 	

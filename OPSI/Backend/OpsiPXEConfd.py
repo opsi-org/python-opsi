@@ -115,11 +115,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		return self._depotConnections[depotId]
 	
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientId)
+		configStates = self._getBackendInstance().configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientId)
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
-			configs = self.config_getObjects(id = u'clientconfig.depot.id')
+			configs = self._getBackendInstance().config_getObjects(id = u'clientconfig.depot.id')
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]

@@ -111,14 +111,23 @@ def getArgAndCallString(method):
 class Backend:
 	def __init__(self, **kwargs):
 		# Parse arguments
+		self._backendInstance = self
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('username'):
 				self._username = value
 			elif option in ('password'):
 				self._password = value
+			elif option in ('backendinstance'):
+				self._backendInstance = value
 		self._options = {}
-		
+	
+	def _setBackendInstance(self, backendInstance):
+		self._backendInstance = backendInstance
+	
+	def _getBackendInstance(self):
+		return self._backendInstance
+	
 	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
 		matchedAll = True
@@ -306,7 +315,8 @@ class ExtendedBackend(Backend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
-			if hasattr(self.__class__, methodName):
+			#if hasattr(self.__class__, methodName):
+			if hasattr(self, methodName):
 				if self._overwrite:
 					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
 					continue
@@ -1203,9 +1213,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		logger.info(u"=== Search done, result: %s" % result)
 		return result
 	
-	
-	
-	#################################################################################################
 	def host_getIdents(self, returnType='unicode', **filter):
 		result = []
 		for host in self._backend.host_getObjects(attributes = ['id'], **filter):

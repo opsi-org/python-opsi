@@ -23,7 +23,7 @@ class BackendTest(object):
 			opsiHostKey         = '71234545689056789012123678901234',
 			depotLocalUrl       = 'file:///opt/pcbin/install',
 			depotRemoteUrl      = u'smb://%s/opt_pcbin/install' % serverId.split('.')[0],
-			repositoryLocalUrl  = 'file:///var/lib/opsi/products',
+			repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
 			repositoryRemoteUrl = u'webdavs://%s:4447/repository' % serverId,
 			description         = 'The configserver',
 			notes               = 'Config 1',
@@ -41,7 +41,7 @@ class BackendTest(object):
 			opsiHostKey         = '19012334567845645678901232789012',
 			depotLocalUrl       = 'file:///opt/pcbin/install',
 			depotRemoteUrl      = 'smb://depotserver1.uib.local/opt_pcbin/install',
-			repositoryLocalUrl  = 'file:///var/lib/opsi/products',
+			repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
 			repositoryRemoteUrl = 'webdavs://depotserver1.uib.local:4447/repository',
 			description         = 'A depot',
 			notes               = 'D€pot 1',
@@ -57,7 +57,7 @@ class BackendTest(object):
 			opsiHostKey         = '93aa22f38a678c64ef678a012d2e82f2',
 			depotLocalUrl       = 'file:///opt/pcbin/install',
 			depotRemoteUrl      = 'smb://depotserver2.uib.local/opt_pcbin',
-			repositoryLocalUrl  = 'file:///var/lib/opsi/products',
+			repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
 			repositoryRemoteUrl = 'webdavs://depotserver2.uib.local:4447/repository',
 			description         = 'Second depot',
 			notes               = 'no notes here',
@@ -1730,7 +1730,7 @@ class BackendTest(object):
 		auditHardwareOnHost4update = AuditHardwareOnHost(
 			hostId              = self.client1.getId(),
 			hardwareClass       = 'BASE_BOARD',
-			lastseen            = '0707-07-07 07:07:07',
+			lastseen            = '2000-01-01 01:01:01',
 			name                = self.auditHardware3.name,
 			description         = self.auditHardware3.description,
 			vendor              = self.auditHardware3.vendor,
@@ -1741,7 +1741,7 @@ class BackendTest(object):
 		)
 		
 		self.backend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
-		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen = '0707-07-07 07:07:07')
+		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen = '2000-01-01 01:01:01')
 		assert len(auditHardwareOnHosts) == 1, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, 1)
 		
 		logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost4update.toHash())

@@ -1310,6 +1310,8 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
+		if not self._mysql.getSet(self._createQuery('HOST', ['hostId'], {"hostId": productPropertyState.objectId})):
+			raise BackendReferentialItegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
 		data = self._objectToDatabaseHash(productPropertyState)
 		data['values'] = json.dumps(data['values'])
 		self._mysql.insert('PRODUCT_PROPERTY_STATE', data)
@@ -2067,7 +2069,7 @@ class MySQLBackend(ConfigDataBackend):
 					elif attribute in ('audit_state'):
 						v = forceAuditState(v)
 					elif attribute in ('audit_firstseen', 'audit_lastseen'):
-						v = forceTimestamp(v)
+						v = forceOpsiTimestamp(v)
 					else:
 						type = valueInfo.get('Type', '')
 						if type.startswith('varchar'):
