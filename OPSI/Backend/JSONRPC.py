@@ -281,8 +281,9 @@ class JSONRPCBackend(Backend):
 				self._connection.putheader('Cookie', self._sessionId)
 			
 			# Add basic authorization header
-			auth = urllib.unquote(self._username + ':' + self._password)
-			self._connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth).strip() )
+			#auth = urllib.unquote(self._username + ':' + self._password)
+			auth = u'%s:%s' % (self._username, self._password)
+			self._connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip())
 			
 			self._connection.endheaders()
 			if (self._method == METHOD_POST):
