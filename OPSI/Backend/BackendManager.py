@@ -135,6 +135,7 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 		if not re.search('^[a-zA-Z0-9-_]+$', name):
 			raise ValueError(u"Bad backend config name '%s'" % name)
+		name = name.lower()
 		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
 		if not os.path.exists(backendConfigFile):
 			raise BackendConfigurationError(u"Backend config file '%s' not found" % backendConfigFile)
@@ -145,6 +146,7 @@ class BackendManager(ExtendedBackend):
 			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
 		if not type(l['config']) is dict:
 			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
+		l['config']['name'] = name
 		exec(u'from %s import %sBackend' % (l['module'], l['module']))
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 	
@@ -372,7 +374,7 @@ class BackendAccessControl(object):
 	def __init__(self, backend, **kwargs):
 		
 		self._backend       = backend
-		self._hostBackend   = backend
+		self._context       = backend
 		self._username      = None
 		self._password      = None
 		self._acl           = None
@@ -426,7 +428,7 @@ class BackendAccessControl(object):
 				
 				host = self._context.host_getObjects(id = self._username)
 				if not host:
-					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._hostBackend))
+					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._context))
 				self._host = host[0]
 				
 				if not self._host.opsiHostKey:

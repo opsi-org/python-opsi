@@ -270,6 +270,8 @@ class MySQL:
 class MySQLBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
+		self._name = 'mysql'
+		
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._mysql = MySQL(**kwargs)

@@ -83,6 +83,8 @@ class ServerConnection:
 class OpsiPXEConfdBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
+		self._name = 'opsipxeconfd'
+		
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
@@ -103,13 +105,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			return self
 		if not self._depotConnections.get(depotId):
 			if not self._opsiHostKey:
-				depots = self.host_getObjects(id = self._depotId)
+				depots = self._context.host_getObjects(id = self._depotId)
 				if not depots or not depots[0].getOpsiHostKey():
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 			
-			self._depotConnections[depotId] =JSONRPCBackend(
-								address  = u'https://%s:4447/rpc/backend/opsipxeconfd' % depotId,
+			self._depotConnections[depotId] = JSONRPCBackend(
+								address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
 								username = self._depotId,
 								password = self._opsiHostKey)
 		return self._depotConnections[depotId]
@@ -163,6 +165,19 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Hosts                                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def host_updateObject(self, host):
+		if not isinstance(host, OpsiClient):
+			return
+		
+		if not host.ipAddress and not host.hardwareAddress:
+			# Not of interest
+			return
+		
+		self.opsipxeconfd_updatePXEBootConfiguration(host.id)
+		
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
@@ -172,7 +187,6 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self._updateByProductOnClient(productOnClient)
 		
 	def productOnClient_deleteObjects(self, productOnClients):
-		depots = {}
 		for productOnClient in productOnClients:
 			self._updateByProductOnClient(productOnClient)
 		

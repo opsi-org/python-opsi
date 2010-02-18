@@ -74,6 +74,9 @@ class LDAPBackend(ConfigDataBackend):
 			chown openldap:openldap -R /var/lib/ldap
 			/etc/init.d/slapd start
 		'''
+		
+		self._name = 'ldap'
+		
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._address          = u'localhost'

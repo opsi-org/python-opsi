@@ -54,6 +54,8 @@ logger = Logger()
 class FileBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
+		self._name = 'file'
+		
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self.__baseDir     = u'/var/lib/opsi/config'

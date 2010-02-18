@@ -63,6 +63,8 @@ METHOD_GET = 2
 class JSONRPCBackend(Backend):
 	
 	def __init__(self, **kwargs):
+		self._name = 'jsonrpc'
+		
 		Backend.__init__(self, **kwargs)
 		
 		self._application = 'opsi jsonrpc module version %s' % __version__

@@ -111,11 +111,16 @@ def getArgAndCallString(method):
 class Backend:
 	def __init__(self, **kwargs):
 		# Parse arguments
+		self._name = None
+		self._username = None
+		self._password = None
 		self._context = self
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('username',):
+			if   option in ('name',):
+				self._name = value
+			elif option in ('username',):
 				self._username = value
 			elif option in ('password',):
 				self._password = value
@@ -2511,7 +2516,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def objectToGroup_create(self, groupId, objectId):
 		hash = locals()
 		del hash['self']
-		return self.group_createObjects(ObjectToGroup.fromHash(hash))
+		return self.objectToGroup_createObjects(ObjectToGroup.fromHash(hash))
 	
 	def objectToGroup_delete(self, groupId, objectId):
 		if not groupId:  groupId  = []
