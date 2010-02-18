@@ -99,41 +99,41 @@ class LDAPBackend(ConfigDataBackend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('address'):
+			if   option in ('address',):
 				self._address = forceUnicode(value)
-			elif option in ('username'):
+			elif option in ('username',):
 				self._username = forceUnicode(value)
-			elif option in ('password'):
+			elif option in ('password',):
 				self._password = forceUnicode(value)
-			elif option in ('opsibasedn'):
+			elif option in ('opsibasedn',):
 				self._opsiBaseDn = forceUnicode(value)
-			elif option in ('hostscontainerdn'):
+			elif option in ('hostscontainerdn',):
 				self._hostsContainerDn = forceUnicode(value)
-			elif option in ('hostattributedescription'):
+			elif option in ('hostattributedescription',):
 				self._hostAttributeDescription = forceUnicode(value)
-			elif option in ('hostattributenotes'):
+			elif option in ('hostattributenotes',):
 				self._hostAttributeNotes = forceUnicode(value)
-			elif option in ('hostattributehardwareaddress'):
+			elif option in ('hostattributehardwareaddress',):
 				self._hostAttributeHardwareAddress = forceUnicode(value)
-			elif option in ('hostattributeipaddress'):
+			elif option in ('hostattributeipaddress',):
 				self._hostAttributeIpAddress = forceUnicode(value)
-			elif option in ('hostattributeinventorynumber'):
+			elif option in ('hostattributeinventorynumber',):
 				self._hostAttributeInventoryNumber = forceUnicode(value)
-			elif option in ('clientobjectsearchfilter'):
+			elif option in ('clientobjectsearchfilter',):
 				self._clientObjectSearchFilter = forceUnicode(value)
-			elif option in ('createclientcommand'):
+			elif option in ('createclientcommand',):
 				self._createClientCommand = forceUnicode(value)
-			elif option in ('deleteclient'):
+			elif option in ('deleteclient',):
 				self._deleteClient = forceBool(value)
-			elif option in ('deleteclientcommand'):
+			elif option in ('deleteclientcommand',):
 				self._deleteClientCommand = forceUnicode(value)
-			elif option in ('serverobjectsearchfilter'):
+			elif option in ('serverobjectsearchfilter',):
 				self._serverObjectSearchFilter = forceUnicode(value)
-			elif option in ('createservercommand'):
+			elif option in ('createservercommand',):
 				self._createServerCommand = forceUnicode(value)
-			elif option in ('deleteserver'):
+			elif option in ('deleteserver',):
 				self._deleteServer = forceBool(value)
-			elif option in ('deleteservercommand'):
+			elif option in ('deleteservercommand',):
 				self._deleteServerCommand = forceUnicode(value)
 			
 		self._configContainerDn                = u'cn=configs,%s'               % self._opsiBaseDn
@@ -601,7 +601,7 @@ class LDAPBackend(ConfigDataBackend):
 			else:
 				logger.error(u"No mapping found for ldap attribute '%s' of class '%s'" % (attribute, opsiClassName))
 			
-			if attribute in ('cn'):
+			if attribute in ('cn',):
 				continue
 			
 			if not attributes or attribute in attributes:
@@ -1560,13 +1560,13 @@ class LDAPSession:
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('address'):
+			if   option in ('address',):
 				self._address = forceUnicode(value)
-			elif option in ('username'):
+			elif option in ('username',):
 				self._username = forceUnicode(value)
-			elif option in ('password'):
+			elif option in ('password',):
 				self._password = forceUnicode(value)
-			elif option in ('referrals'):
+			elif option in ('referrals',):
 				self._referrals = forceBool(value)
 		
 		self._commandCount = 0

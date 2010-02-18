@@ -70,11 +70,11 @@ class JSONRPCBackend(Backend):
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('address'):
+			if option in ('address',):
 				self._address = value
-			if option in ('application'):
+			if option in ('application',):
 				self._application = str(value)
-			if option in ('sessionid'):
+			if option in ('sessionid',):
 				self._sessionId = str(value)
 		
 		# Default values

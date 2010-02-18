@@ -123,9 +123,9 @@ class BaseObject(object):
 			if v is None:
 				v = u''
 			identValues.append(forceUnicode(v))
-		if returnType in ('list'):
+		if returnType in ('list',):
 			return identValues
-		elif returnType in ('tuple'):
+		elif returnType in ('tuple',):
 			return tuple(identValues)
 		elif returnType in ('dict', 'hash'):
 			ret = {}

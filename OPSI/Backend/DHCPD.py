@@ -65,20 +65,20 @@ class DHCPDBackend(ConfigDataBackend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('dhcpdconfigfile'):
+			if   option in ('dhcpdconfigfile',):
 				self._reloadConfigCommand = value
-			elif option in ('reloadconfigcommand'):
+			elif option in ('reloadconfigcommand',):
 				self._reloadConfigCommand = value
-			elif option in ('defaultclientparameters'):
+			elif option in ('defaultclientparameters',):
 				self._defaultClientParameters = value
-			elif option in ('fixedaddressformat'):
+			elif option in ('fixedaddressformat',):
 				if value not in (u'IP', u'FQDN'):
 					raise BackendBadValueError(u"Bad value '%s' for fixedAddressFormat, possible values are %s" \
 									% (value, u', '.join(['IP', 'FQDN'])) )
 				self._fixedAddressFormat = value
 		
-		if self._defaultClientParameters.get('next-server') and self._defaultClientParameters['next-server'].startswith(u'172'):
-			raise BackendBadValueError(u"Refusing to use ip address '%s' as defualt next-server" % self._defaultClientParameters['next-server'])
+		if self._defaultClientParameters.get('next-server') and self._defaultClientParameters['next-server'].startswith(u'127'):
+			raise BackendBadValueError(u"Refusing to use ip address '%s' as default next-server" % self._defaultClientParameters['next-server'])
 		
 		self._dhcpdConfFile = DHCPDConfFile(self._dhcpdConfigFile)
 		self._reloadEvent = threading.Event()

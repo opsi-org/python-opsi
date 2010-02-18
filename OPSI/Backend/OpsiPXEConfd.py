@@ -90,7 +90,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('port'):
+			if option in ('port',):
 				self._port = value
 		
 		self._depotId = forceHostId(socket.getfqdn())

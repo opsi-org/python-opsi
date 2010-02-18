@@ -75,26 +75,26 @@ class BackendManager(ExtendedBackend):
 		loadBackend = None
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('username'):
+			if   option in ('username',):
 				username = value
-			elif option in ('password'):
+			elif option in ('password',):
 				password = value
-			elif option in ('backend'):
+			elif option in ('backend',):
 				if type(value) in (str, unicode):
 					loadBackend = value
 				else:
 					self._backend = value
 				del kwargs[option]
-			elif (option == 'backendconfigdir'):
+			elif option in ('backendconfigdir',):
 				self._backendConfigDir = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
-			elif option in ('depotbackend'):
+			elif option in ('depotbackend',):
 				depotBackend = forceBool(value)
-			elif option in ('extensionconfigdir') and value:
+			elif option in ('extensionconfigdir',) and value:
 				extensionConfigDir = value
 				extend = True
-			elif option in ('extend'):
+			elif option in ('extend',):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
@@ -162,13 +162,13 @@ class BackendDispatcher(Backend):
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   (option == 'dispatchconfig'):
+			if   option in ('dispatchconfig',):
 				self._dispatchConfig = value
-			elif (option == 'dispatchconfigfile'):
+			elif option in ('dispatchconfigfile',):
 				self._dispatchConfigFile = value
-			elif option in ('dispatchignoremodules') and value:
+			elif option in ('dispatchignoremodules',) and value:
 				self._dispatchIgnoreModules = forceList(value)
-			elif (option == 'backendconfigdir'):
+			elif option in ('backendconfigdir',):
 				self._backendConfigDir = value
 		
 		if self._dispatchConfigFile:
@@ -224,7 +224,7 @@ class BackendDispatcher(Backend):
 			if not type(l['config']) is dict:
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
-			l["config"]["backendInstance"] = self
+			l["config"]["context"] = self
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
 			exec(u'backendInstance = %sBackend(**l["config"])' % l['module'])
 			if not isinstance(backendInstance, JSONRPCBackend):
@@ -271,16 +271,17 @@ class BackendDispatcher(Backend):
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 				
-				for be in self._backends.keys():
-					setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-					setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				#for be in self._backends.keys():
+				#	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+				#	setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
 				
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
 		objectIdents = []
 		for methodBackend in methodBackends:
-			res = eval(u'self._backends[methodBackend]["instance"]._realcall_%s(**kwargs)' % methodName)
+			#res = eval(u'self._backends[methodBackend]["instance"]._realcall_%s(**kwargs)' % methodName)
+			res = eval(u'self._backends[methodBackend]["instance"].%s(**kwargs)' % methodName)
 			if type(res) is types.ListType:
 				# Remove duplicates
 				newRes = []
@@ -329,7 +330,7 @@ class BackendExtender(ExtendedBackend):
 		
 		ExtendedBackend.__init__(self, backend, overwrite = True)
 		
-		self._extensionConfigDir = '/etc/opsi/backendManager/compose.d'
+		self._extensionConfigDir = u'/etc/opsi/backendManager/compose.d'
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -383,18 +384,18 @@ class BackendAccessControl(object):
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('username'):
+			if   option in ('username',):
 				self._username = value
-			elif option in ('password'):
+			elif option in ('password',):
 				self._password = value
-			elif option in ('acl'):
+			elif option in ('acl',):
 				self._acl = value
-			elif option in ('aclfile'):
+			elif option in ('aclfile',):
 				self._aclFile = value
-			elif option in ('pamservice'):
+			elif option in ('pamservice',):
 				self._pamService = value
-			elif option in ('accesscontrolhostbackend'):
-				self._hostBackend = value
+			elif option in ('context', 'accesscontrolcontext'):
+				self._context = value
 			
 		if not self._acl:
 			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
@@ -420,10 +421,10 @@ class BackendAccessControl(object):
 				
 				logger.debug(u"Trying to authenticate by opsiHostKey...")
 				
-				if not hasattr(self._hostBackend, 'host_getObjects'):
+				if not hasattr(self._context, 'host_getObjects'):
 					raise Exception(u"Passed backend has no method 'host_getObjects', cannot authenticate host '%s'" % self._username)
 				
-				host = self._hostBackend.host_getObjects(id = self._username)
+				host = self._context.host_getObjects(id = self._username)
 				if not host:
 					raise Exception(u"Host '%s' not found in backend %s" % (self._username, self._hostBackend))
 				self._host = host[0]

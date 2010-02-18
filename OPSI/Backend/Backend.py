@@ -111,23 +111,23 @@ def getArgAndCallString(method):
 class Backend:
 	def __init__(self, **kwargs):
 		# Parse arguments
-		self._backendInstance = self
+		self._context = self
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('username'):
+			if   option in ('username',):
 				self._username = value
-			elif option in ('password'):
+			elif option in ('password',):
 				self._password = value
-			elif option in ('backendinstance'):
-				self._backendInstance = value
+			elif option in ('context',):
+				self._context = value
 		self._options = {}
 	
-	def _setBackendInstance(self, backendInstance):
-		self._backendInstance = backendInstance
+	def _setContext(self, context):
+		self._context = context
 	
-	def _getBackendInstance(self):
-		return self._backendInstance
+	def _getContext(self):
+		return self._context
 	
 	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
@@ -395,28 +395,28 @@ class ConfigDataBackend(Backend):
 	def host_deleteObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			# Remove from groups
-			self.objectToGroup_deleteObjects(
-				self.objectToGroup_getObjects(
+			self._context.objectToGroup_deleteObjects(
+				self._context.objectToGroup_getObjects(
 					groupId = [],
 					objectId = host.id ))
 			if isinstance(host, OpsiClient):
 				# Remove product states
-				self.productOnClient_deleteObjects(
-					self.productOnClient_getObjects(
+				self._context.productOnClient_deleteObjects(
+					self._context.productOnClient_getObjects(
 						productId = [],
 						clientId = host.id ))
 			elif isinstance(host, OpsiDepotserver):
 				# This is also true for OpsiConfigservers
 				# Remove products
-				self.productOnDepot_deleteObjects(
-					self.productOnDepot_getObjects(
+				self._context.productOnDepot_deleteObjects(
+					self._context.productOnDepot_getObjects(
 						productId = [],
 						productVersion = [],
 						packageVersion = [],
 						depotId = host.id ))
 			# Remove product property states
-			self.productPropertyState_deleteObjects(
-				self.productPropertyState_getObjects(
+			self._context.productPropertyState_deleteObjects(
+				self._context.productPropertyState_getObjects(
 					productId  = [],
 					propertyId = [],
 					objectId   = host.id ))
@@ -440,8 +440,8 @@ class ConfigDataBackend(Backend):
 		for config in forceObjectClassList(configs, Config):
 			ids.append(config.id)
 		if ids:
-			self.configState_deleteObjects(
-				self.configState_getObjects(
+			self._context.configState_deleteObjects(
+				self._context.configState_getObjects(
 					configId = ids,
 					objectId = []))
 	
@@ -453,7 +453,7 @@ class ConfigDataBackend(Backend):
 		configState.setDefaults()
 		
 		configIds = []
-		for config in self.config_getObjects(attributes = ['id']):
+		for config in self._context.config_getObjects(attributes = ['id']):
 			configIds.append(config.id)
 		if configState.configId not in configIds:
 			raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
@@ -487,32 +487,32 @@ class ConfigDataBackend(Backend):
 		for product in forceObjectClassList(products, Product):
 			if not product.id in productIds:
 				productIds.append(product.id)
-			self.productProperty_deleteObjects(
-				self.productProperty_getObjects(
+			self._context.productProperty_deleteObjects(
+				self._context.productProperty_getObjects(
 					productId = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
-			self.productDependency_deleteObjects(
-				self.productDependency_getObjects(
+			self._context.productDependency_deleteObjects(
+				self._context.productDependency_getObjects(
 					productId = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
-			self.productOnDepot_deleteObjects(
-				self.productOnDepot_getObjects(
+			self._context.productOnDepot_deleteObjects(
+				self._context.productOnDepot_getObjects(
 					productId = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
-			self.productOnClient_deleteObjects(
-				self.productOnClient_getObjects(
+			self._context.productOnClient_deleteObjects(
+				self._context.productOnClient_getObjects(
 					productId = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
 		
 		for productId in productIds:
-			if not self.product_getObjects(attributes = ['id'], id = productId):
+			if not self._context.product_getObjects(attributes = ['id'], id = productId):
 				# No more products with this id found => delete productPropertyStates
-				self.productPropertyState_deleteObjects(
-					self.productPropertyState_getObjects(productId = productId))
+				self._context.productPropertyState_deleteObjects(
+					self._context.productPropertyState_getObjects(productId = productId))
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -521,7 +521,7 @@ class ConfigDataBackend(Backend):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		productProperty.setDefaults()
 		
-		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 				id             = productProperty.productId,
 				productVersion = productProperty.productVersion,
 				packageVersion = productProperty.packageVersion):
@@ -546,7 +546,7 @@ class ConfigDataBackend(Backend):
 		productDependency.setDefaults()
 		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
 			raise BackendBadValueError(u"Either a required action or a required installation status must be given")
-		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 				id                = productDependency.productId,
 				productVersion    = productDependency.productVersion,
 				packageVersion    = productDependency.packageVersion):
@@ -569,7 +569,7 @@ class ConfigDataBackend(Backend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		productOnDepot.setDefaults()
-		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 			id = productOnDepot.productId,
 			productVersion = productOnDepot.productVersion,
 			packageVersion = productOnDepot.packageVersion):
@@ -578,7 +578,7 @@ class ConfigDataBackend(Backend):
 				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 		
 	def productOnDepot_updateObject(self, productOnDepot):
-		if not self.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 			id = productOnDepot.productId,
 			productVersion = productOnDepot.productVersion,
 			packageVersion = productOnDepot.packageVersion):
@@ -601,7 +601,7 @@ class ConfigDataBackend(Backend):
 		productOnClient.setDefaults()
 		
 		#if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
-		#	products = self.product_getObjects(
+		#	products = self._context.product_getObjects(
 		#		id = productOnClient.productId,
 		#		productVersion = productOnClient.productVersion,
 		#		packageVersion = productOnClient.packageVersion)
@@ -643,7 +643,7 @@ class ConfigDataBackend(Backend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		productPropertyState.setDefaults()
-		if not self.productProperty_getObjects(attributes = ['productId', 'propertyId'],
+		if not self._context.productProperty_getObjects(attributes = ['productId', 'propertyId'],
 					productId  = productPropertyState.productId,
 					propertyId = productPropertyState.propertyId):
 			raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
@@ -675,8 +675,8 @@ class ConfigDataBackend(Backend):
 		
 	def group_deleteObjects(self, groups):
 		for group in forceObjectClassList(groups, Group):
-			self.objectToGroup_deleteObjects(
-				self.objectToGroup_getObjects(
+			self._context.objectToGroup_deleteObjects(
+				self._context.objectToGroup_getObjects(
 					groupId = group.id ))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -721,7 +721,7 @@ class ConfigDataBackend(Backend):
 		softwareLicense.setDefaults()
 		if not softwareLicense.licenseContractId:
 			raise BackendBadValueError(u"License contract missing")
-		if not self.licenseContract_getObjects(attributes = ['id'], id = softwareLicense.licenseContractId):
+		if not self._context.licenseContract_getObjects(attributes = ['id'], id = softwareLicense.licenseContractId):
 			raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
 		
 	def softwareLicense_updateObject(self, softwareLicense):
@@ -735,8 +735,8 @@ class ConfigDataBackend(Backend):
 		softwareLicenseIds = []
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 			softwareLicenseIds.append(softwareLicense.id)
-		self.softwareLicenseToLicensePool_deleteObjects(
-			self.softwareLicenseToLicensePool_getObjects(
+		self._context.softwareLicenseToLicensePool_deleteObjects(
+			self._context.softwareLicenseToLicensePool_getObjects(
 				softwareLicenseId = softwareLicenseIds ))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -757,7 +757,7 @@ class ConfigDataBackend(Backend):
 		licensePoolIds = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			licensePoolIds.append(licensePool.id)
-		softwareLicenseToLicensePoolIdents = self.softwareLicenseToLicensePool_getObjects(attributes = ['licensePoolId'], licensePoolId = licensePoolIds, returnType = 'unicode')
+		softwareLicenseToLicensePoolIdents = self._context.softwareLicenseToLicensePool_getObjects(attributes = ['licensePoolId'], licensePoolId = licensePoolIds, returnType = 'unicode')
 		if softwareLicenseToLicensePoolIdents:
 			raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
 				(licensePoolIds, softwareLicenseToLicensePoolIdents))
@@ -768,9 +768,9 @@ class ConfigDataBackend(Backend):
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 		softwareLicenseToLicensePool.setDefaults()
-		if not self.softwareLicense_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.softwareLicenseId):
+		if not self._context.softwareLicense_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.softwareLicenseId):
 			raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
-		if not self.licensePool_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.licensePoolId):
+		if not self._context.licensePool_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.licensePoolId):
 			raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
 		
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
@@ -784,7 +784,7 @@ class ConfigDataBackend(Backend):
 		softwareLicenseIds = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
-		licenseOnClientIdents = self.licenseOnClient_getObjects(attributes = ['softwareLicenseId'], softwareLicenseId = softwareLicenseIds)
+		licenseOnClientIdents = self._context.licenseOnClient_getObjects(attributes = ['softwareLicenseId'], softwareLicenseId = softwareLicenseIds)
 		if licenseOnClientIdents:
 			raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
 				% licenseOnClientIdents)
@@ -2023,7 +2023,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		# Process priorities/dependencies depot by depot
 		currentFilter = {}
 		for (key, value) in filter.items():
-			if key in ('clientId'):
+			if key in ('clientId',):
 				continue
 			currentFilter[key] = value
 		
@@ -3007,7 +3007,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._sshRSAPublicKeyFile  = u'/etc/ssh/ssh_host_rsa_key.pub'
 		
 		self._depotId = forceHostId(socket.getfqdn())
-		if not self.host_getIdents(id = self._depotId):
+		if not self._context.host_getIdents(id = self._depotId):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)
 	
@@ -3086,7 +3086,7 @@ class DepotserverBackend(ExtendedBackend):
 		if not result['password']:
 			raise BackendMissingDataError(u"Username '%s' not found")
 		
-		depot = self.host_getObjects(id = self._depotId)
+		depot = self._context.host_getObjects(id = self._depotId)
 		if not depot:
 			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
 		depot = depot[0]
@@ -3102,7 +3102,7 @@ class DepotserverBackend(ExtendedBackend):
 			except Exception, e:
 				logger.debug(e)
 		if hostId:
-			host  = self.host_getObjects(id = hostId)
+			host  = self._context.host_getObjects(id = hostId)
 			if not host:
 				raise Exception(u"Host '%s' not found in backend" % hostId)
 			host = host[0]
@@ -3115,7 +3115,7 @@ class DepotserverBackend(ExtendedBackend):
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
 		
-		depot = self.host_getObjects(id = self._depotId)
+		depot = self._context.host_getObjects(id = self._depotId)
 		if not depot:
 			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
 		depot = depot[0]
@@ -3202,7 +3202,7 @@ class DepotserverPackageManager(object):
 			if not os.path.isfile(filename):
 				raise BackendIOError(u"Package file '%s' not found" % filename)
 			
-			depots = self._depotBackend.host_getObjects(id = depotId)
+			depots = self._depotBackend._context.host_getObjects(id = depotId)
 			if not depots:
 				raise BackendMissingDataError(u"Depot '%s' not found in backend" % depotId)
 			depot = depots[0]
@@ -3220,7 +3220,7 @@ class DepotserverPackageManager(object):
 				product = ppf.packageControlFile.getProduct()
 				
 				logger.notice(u"Creating product in backend")
-				self._depotBackend.product_createObjects(product)
+				self._depotBackend._context.product_createObjects(product)
 				
 				logger.notice(u"Locking product '%s' on depot '%s'" % (product.getId(), depotId))
 				productOnDepot = ProductOnDepot(
@@ -3231,13 +3231,13 @@ class DepotserverPackageManager(object):
 					depotId        = depotId,
 					locked         = True
 				)
-				productOnDepots = self._depotBackend.productOnDepot_getObjects(depotId = depotId, productId = product.getId())
+				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = depotId, productId = product.getId())
 				if productOnDepots and productOnDepots[0].getLocked():
 						logger.notice(u"Product currently locked on depot '%s'" % depotId)
 						if not force:
 							raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 						logger.warning(u"Installation of locked product forced")
-				self._depotBackend.productOnDepot_createObjects(productOnDepot)
+				self._depotBackend._context.productOnDepot_createObjects(productOnDepot)
 				
 				logger.notice(u"Checking package dependencies")
 				self.checkDependencies(ppf)
@@ -3258,7 +3258,7 @@ class DepotserverPackageManager(object):
 				logger.info(u"Updating product dependencies of product %s" % product)
 				currentProductDependencies = {}
 				productDependencies = []
-				for productDependency in self._depotBackend.productDependency_getObjects(
+				for productDependency in self._depotBackend._context.productDependency_getObjects(
 							productId      = product.getId(),
 							productVersion = product.getProductVersion(),
 							packageVersion = product.getPackageVersion() ):
@@ -3269,16 +3269,16 @@ class DepotserverPackageManager(object):
 					if currentProductDependencies.has_key(ident):
 						del currentProductDependencies[ident]
 					productDependencies.append(productDependency)
-				self._depotBackend.productDependency_createObjects(productDependencies)
+				self._depotBackend._context.productDependency_createObjects(productDependencies)
 				if currentProductDependencies.values():
-					self._depotBackend.productDependency_deleteObjects(
+					self._depotBackend._context.productDependency_deleteObjects(
 						currentProductDependencies.values()
 					)
 				
 				logger.info(u"Updating product properties of product %s" % product)
 				currentProductProperties = {}
 				productProperties = []
-				for productProperty in self._depotBackend.productProperty_getObjects(
+				for productProperty in self._depotBackend._context.productProperty_getObjects(
 							productId      = product.getId(),
 							productVersion = product.getProductVersion(),
 							packageVersion = product.getPackageVersion() ):
@@ -3289,7 +3289,7 @@ class DepotserverPackageManager(object):
 					if currentProductProperties.has_key(ident):
 						del currentProductProperties[ident]
 					productProperties.append(productProperty)
-				self._depotBackend.productProperty_createObjects(productProperties)
+				self._depotBackend._context.productProperty_createObjects(productProperties)
 				
 				for productProperty in productProperties:
 					# Adjust property default values
@@ -3304,13 +3304,13 @@ class DepotserverPackageManager(object):
 					propertyDefaultValues[productProperty.propertyId] = newValues
 					
 				if currentProductProperties.values():
-					self._depotBackend.productProperty_deleteObjects(
+					self._depotBackend._context.productProperty_deleteObjects(
 						currentProductProperties.values()
 					)
 				
 				logger.info(u"Deleting product property states of product %s on depot '%s'" % (product.getId(), depotId))
-				self._depotBackend.productPropertyState_deleteObjects(
-					self._depotBackend.productPropertyState_getObjects(
+				self._depotBackend._context.productPropertyState_deleteObjects(
+					self._depotBackend._context.productPropertyState_getObjects(
 						productId = product.getId(),
 						objectId  = depotId ) )
 				
@@ -3330,7 +3330,7 @@ class DepotserverPackageManager(object):
 						except Exception, e:
 							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
 									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, e) )
-				self._depotBackend.productPropertyState_createObjects(productPropertyStates)
+				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 				
 				logger.notice(u"Running postinst script")
 				for line in ppf.runPostinst():
@@ -3342,7 +3342,7 @@ class DepotserverPackageManager(object):
 				
 				logger.notice(u"Unlocking product '%s' on depot '%s'" % (productOnDepot.getProductId(), depotId))
 				productOnDepot.setLocked(False)
-				self._depotBackend.productOnDepot_updateObject(productOnDepot)
+				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 				
 			except Exception, e:
 				try:
@@ -3365,8 +3365,8 @@ class DepotserverPackageManager(object):
 			force = forceBool(force)
 			deleteFiles = forceBool(deleteFiles)
 			
-			depot = self._depotBackend.host_getObjects(type = 'OpsiDepotserver', id = depotId)[0]
-			productOnDepots = self._depotBackend.productOnDepot_getObjects(depotId = depotId, productId = productId)
+			depot = self._depotBackend._context.host_getObjects(type = 'OpsiDepotserver', id = depotId)[0]
+			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = depotId, productId = productId)
 			if not productOnDepots:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 			
@@ -3379,7 +3379,7 @@ class DepotserverPackageManager(object):
 					raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 				logger.warning(u"Uninstallation of locked product forced")
 			productOnDepot.setLocked(True)
-			self._depotBackend.productOnDepot_updateObject(productOnDepot)
+			self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 			
 			logger.debug("Deleting product '%s'" % productId)
 			
@@ -3397,7 +3397,7 @@ class DepotserverPackageManager(object):
 						logger.info("Deleting client data dir '%s'" % clientDataDir)
 						shutil.rmtree(clientDataDir)
 				
-			self._depotBackend.productOnDepot_deleteObjects(productOnDepot)
+			self._depotBackend._context.productOnDepot_deleteObjects(productOnDepot)
 			
 		except Exception, e:
 			logger.logException(e)
@@ -3405,7 +3405,7 @@ class DepotserverPackageManager(object):
 		
 	def checkDependencies(self, productPackageFile):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
-			productOnDepots = self._depotBackend.productOnDepot_getObjects(depotId = self._depotBackend._depotId, productId = dependency['package'])
+			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = self._depotBackend._depotId, productId = dependency['package'])
 			if not productOnDepots:
 				raise Exception(u"Dependent package '%s' not installed" % dependency['package'])
 			

@@ -106,21 +106,21 @@ class MySQL:
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('address'):
+			if   option in ('address',):
 				self._address = forceUnicode(value)
-			elif option in ('username'):
+			elif option in ('username',):
 				self._username = forceUnicode(value)
 			elif option in ('password'):
 				self._password = forceUnicode(value)
-			elif option in ('database'):
+			elif option in ('database',):
 				self._database = forceUnicode(value)
-			elif option in ('databasecharset'):
+			elif option in ('databasecharset',):
 				self._databaseCharset = str(value)
-			elif option in ('connectionpoolsize'):
+			elif option in ('connectionpoolsize',):
 				self._connectionPoolSize = forceInt(value)
-			elif option in ('connectionpoolmaxoverflow'):
+			elif option in ('connectionpoolmaxoverflow',):
 				self._connectionPoolMaxOverflow = forceInt(value)
-			elif option in ('connectionpooltimeout'):
+			elif option in ('connectionpooltimeout',):
 				self._connectionPoolTimeout = forceInt(value)
 		
 		self._transactionLock = threading.Lock()
@@ -1930,7 +1930,7 @@ class MySQLBackend(ConfigDataBackend):
 			if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
 				auditHardwareOnHostNew[attribute] = value
 				continue
-			if attribute in ('hardwareClass'):
+			if attribute in ('hardwareClass',):
 				auditHardware[attribute] = value
 				auditHardwareOnHostNew[attribute] = value
 				continue
@@ -2064,9 +2064,9 @@ class MySQLBackend(ConfigDataBackend):
 				for v in forceList(value):
 					if v is None:
 						pass
-					elif attribute in ('hostId'):
+					elif attribute in ('hostId',):
 						v = forceUnicode(v)
-					elif attribute in ('audit_state'):
+					elif attribute in ('audit_state',):
 						v = forceAuditState(v)
 					elif attribute in ('audit_firstseen', 'audit_lastseen'):
 						v = forceOpsiTimestamp(v)
