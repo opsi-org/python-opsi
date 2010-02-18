@@ -628,6 +628,7 @@ class FileBackend(ConfigDataBackend):
 	
 	def _read(self, objType, attributes, **filter):
 		if filter.get('type') and objType not in forceList(filter.get('type')):
+			logger.debug2(u"Returned nothing with %s not in '%s'" % (objType, filter))
 			return []
 		
 		if not self._mappings.has_key(objType):
