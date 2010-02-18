@@ -627,10 +627,23 @@ class FileBackend(ConfigDataBackend):
 		return objHash
 	
 	def _read(self, objType, attributes, **filter):
-		if filter.get('type') and objType not in forceList(filter.get('type')):
-			logger.debug2(u"Returned nothing with %s not in '%s'" % (objType, filter))
-			return []
-		
+		if filter.get('type'):
+			match = False
+			for objectType in forceList(filter['type']):
+				if (objectType == objType):
+					match = True
+					break
+				Class = eval(objectType)
+				for subClass in Class.subClasses:
+					if (subClass == objType):
+						match = True
+						break
+				if match:
+					break
+			
+			if not match:
+				logger.debug2(u"Object type '%s' does not match filter %s" % (objType, filter))
+				return []
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
 			

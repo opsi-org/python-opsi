@@ -149,6 +149,15 @@ class Backend:
 				matched = True
 			else:
 				for filterValue in filterValues:
+					if (attribute == 'type'):
+						match = False
+						Class = eval(filterValue)
+						for subClass in Class.subClasses:
+							if (subClass == value):
+								matched = True
+								break
+						continue
+					
 					if type(value) in (float, long, int):
 						match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
 						if match:
