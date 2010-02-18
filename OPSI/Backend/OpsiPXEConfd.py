@@ -110,10 +110,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 			
-			self._depotConnections[depotId] = JSONRPCBackend(
-								address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
-								username = self._depotId,
-								password = self._opsiHostKey)
+			try:
+				self._depotConnections[depotId] = JSONRPCBackend(
+									address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
+									username = self._depotId,
+									password = self._opsiHostKey)
+			except Exception, e:
+				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, e))
+			
 		return self._depotConnections[depotId]
 	
 	def _getResponsibleDepotId(self, clientId):
@@ -187,8 +191,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self._updateByProductOnClient(productOnClient)
 		
 	def productOnClient_deleteObjects(self, productOnClients):
+		errors = []
 		for productOnClient in productOnClients:
-			self._updateByProductOnClient(productOnClient)
+			try:
+				self._updateByProductOnClient(productOnClient)
+			except Exception, e:
+				errors.append(forceUnicode(e))
+		if errors:
+			raise Exception(u', '.join(errors))
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -204,12 +214,17 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 		
 	def configState_deleteObjects(self, configStates):
+		errors = []
 		for configState in configStates:
 			if (configState.configId != 'clientconfig.depot.id'):
 				continue
-			self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
-			
-	
+			try:
+				self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
+			except Exception, e:
+				errors.append(forceUnicode(e))
+		if errors:
+			raise Exception(u', '.join(errors))
+		
 	
 	
 	

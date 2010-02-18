@@ -1273,6 +1273,9 @@ class BackendTest(object):
 		products = self.backend.product_getObjects()
 		assert len(products) == len(self.products), u"got: '%s', expected: '%s'" % (products, len(self.products))
 		
+		products = self.backend.product_getObjects(type = 'Product')
+		assert len(products) == len(self.products), u"got: '%s', expected: '%s'" % (products, len(self.products))
+		
 		products = self.backend.product_getObjects(type = self.localbootProducts[0].getType())
 		assert len(products) == len(self.localbootProducts), u"got: '%s', expected: '%s'" % (products, len(self.localbootProducts))
 		ids = []

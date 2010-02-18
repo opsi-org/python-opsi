@@ -43,6 +43,7 @@ from OPSI.Types import *
 from OPSI.Object import *
 from OPSI import System
 from OPSI.Backend.Backend import *
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.File import DHCPDConfFile
 
 # Get logger instance
@@ -130,11 +131,14 @@ class DHCPDBackend(ConfigDataBackend):
 				if not depots or not depots[0].getOpsiHostKey():
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
 				self._opsiHostKey = depots[0].getOpsiHostKey()
+			try:
+				self._depotConnections[depotId] = JSONRPCBackend(
+									address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
+									username = self._depotId,
+									password = self._opsiHostKey)
+			except Exception, e:
+				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, e))
 			
-			self._depotConnections[depotId] = JSONRPCBackend(
-								address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
-								username = self._depotId,
-								password = self._opsiHostKey)
 		return self._depotConnections[depotId]
 	
 	def _getResponsibleDepotId(self, clientId):
@@ -167,6 +171,7 @@ class DHCPDBackend(ConfigDataBackend):
 		
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)
+			
 			if (depotId != self._depotId):
 				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (host.id, depotId))
 				return self._getDepotConnection(depotId).dhcpd_updateHost(host.id)
@@ -234,11 +239,16 @@ class DHCPDBackend(ConfigDataBackend):
 		logger.debug(u"host_deleteObjects %s" % hosts)
 		
 		self._dhcpdConfFile.parse()
-		changed = False
+		errors = []
 		for host in hosts:
 			if not isinstance(host, OpsiClient):
 				continue
-			self.dhcpd_deleteHost(self, host)
+			try:
+				self.dhcpd_deleteHost(self, host)
+			except Exception, e:
+				errors.append(forceUnicode(e))
+		if errors:
+			raise Exception(u', '.join(errors))
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
