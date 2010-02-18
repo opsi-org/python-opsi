@@ -326,14 +326,14 @@ class LoggerImplementation:
 		''' Set the filename of logfile. '''
 		if currentThread:
 			self._setThreadConfig('logFile', logFile)
-			self.info(u"Now using log-file '%s' for thread %s" \
+			self.debug(u"Now using log-file '%s' for thread %s" \
 				% (logFile, thread.get_ident()))
 		elif object:
 			self._setObjectConfig(id(object), 'logFile', logFile)
-			self.info(u"Now using log-file '%s' for object 0x%x" % (logFile, id(object)))
+			self.debug(u"Now using log-file '%s' for object 0x%x" % (logFile, id(object)))
 		else:
 			self.__logFile = logFile
-			self.info(u"Now using log-file '%s'" % self.__logFile)
+			self.debug(u"Now using log-file '%s'" % self.__logFile)
 	
 	def linkLogFile(self, linkFile, currentThread=False, object=None):
 		''' Set the filename of logfile. '''
