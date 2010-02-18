@@ -94,7 +94,7 @@ class FileBackend(ConfigDataBackend):
 		self._placeholderRegex  = re.compile('<([^>]+)>')
 		
 		self._mappings = {
-			'Config': [                                                # TODO: placeholders
+			'Config': [                                                #TODO: placeholders
 				{ 'fileType': 'ini', 'attribute': 'type'           , 'section': '<id>', 'option': 'type',           'json': False     },
 				{ 'fileType': 'ini', 'attribute': 'description'    , 'section': '<id>', 'option': 'description',    'json': False     },
 				{ 'fileType': 'ini', 'attribute': 'editable'       , 'section': '<id>', 'option': 'editable' ,      'json': True      },
@@ -891,7 +891,7 @@ class FileBackend(ConfigDataBackend):
 					for oldItem in oldList:
 						if (oldItem.getIdent() == obj.getIdent()):
 							if handledObj:
-								# TODO: error? exception?
+								#TODO: error or exception?
 								raise Exception("duplicate:", oldItem.getIdent())
 								continue
 							
@@ -1736,7 +1736,7 @@ class FileBackend(ConfigDataBackend):
 			
 			auditHardware = AuditHardware.fromHash(objHash)
 			if self._objectHashMatches(auditHardware.toHash(), **filter):
-				# TODO: adaptObjHash?
+				#TODO: adaptObjHash?
 				result.append(auditHardware)
 		
 		return result
