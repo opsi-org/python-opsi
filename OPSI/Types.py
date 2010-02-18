@@ -242,7 +242,7 @@ def forceProductVersionList(var):
 		var[i] = forceProductVersion(var[i])
 	return var
 
-packageVersionRegex = re.compile('^[\w\.]+$')
+packageVersionRegex = re.compile('^[\w\.]{1,16}$')
 def forcePackageVersion(var):
 	var = forceUnicode(var)
 	match = re.search(packageVersionRegex, var)
@@ -256,7 +256,7 @@ def forcePackageVersionList(var):
 		var[i] = forcePackageVersion(var[i])
 	return var
 
-productIdRegex = re.compile('^[a-zA-Z0-9\_\.-]+$')
+productIdRegex = re.compile('^[a-zA-Z0-9\_\.-]{1,32}$')
 def forceProductId(var):
 	var = forceObjectId(var)
 	match = re.search(productIdRegex, var)

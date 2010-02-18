@@ -531,7 +531,7 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT')
 			table = u'''CREATE TABLE `PRODUCT` (
 					`productId` varchar(50) NOT NULL,
-					`productVersion` varchar(16) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					PRIMARY KEY( `productId`, `productVersion`, `packageVersion` ),
 					`type` varchar(32) NOT NULL,
@@ -571,7 +571,7 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
 			table = u'''CREATE TABLE `PRODUCT_ON_DEPOT` (
 					`productId` varchar(50) NOT NULL,
-					`productVersion` varchar(16) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
 					`depotId` varchar(50) NOT NULL,
@@ -589,7 +589,7 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT_PROPERTY')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY` (
 					`productId` varchar(50) NOT NULL,
-					`productVersion` varchar(16) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`propertyId` varchar(200) NOT NULL,
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
@@ -610,7 +610,7 @@ class MySQLBackend(ConfigDataBackend):
 					`product_property_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `product_property_id` ),
 					`productId` varchar(50) NOT NULL,
-					`productVersion` varchar(16) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`propertyId` varchar(200) NOT NULL,
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `propertyId` ) REFERENCES `PRODUCT_PROPERTY` ( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
@@ -625,13 +625,13 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT_DEPENDENCY')
 			table = u'''CREATE TABLE `PRODUCT_DEPENDENCY` (
 					`productId` varchar(50) NOT NULL,
-					`productVersion` varchar(16) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
 					`productAction` varchar(16) NOT NULL,
 					`requiredProductId` varchar(50) NOT NULL,
 					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `productAction`, `requiredProductId` ),
-					`requiredProductVersion` varchar(16),
+					`requiredProductVersion` varchar(32),
 					`requiredPackageVersion` varchar(16),
 					`requiredAction` varchar(16),
 					`requiredInstallationStatus` varchar(16),
@@ -653,7 +653,7 @@ class MySQLBackend(ConfigDataBackend):
 					`installationStatus` varchar(16),
 					`actionRequest` varchar(16),
 					`actionProgress` varchar(255),
-					`productVersion` varchar(16),
+					`productVersion` varchar(32),
 					`packageVersion` varchar(16),
 					`lastStateChange` TIMESTAMP
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
