@@ -69,7 +69,7 @@ class DHCPDBackend(ConfigDataBackend):
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('dhcpdconfigfile',):
-				self._reloadConfigCommand = value
+				self._dhcpdConfigFile = value
 			elif option in ('reloadconfigcommand',):
 				self._reloadConfigCommand = value
 			elif option in ('defaultclientparameters',):
