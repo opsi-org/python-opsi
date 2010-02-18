@@ -912,8 +912,6 @@ class FileBackend(ConfigDataBackend):
 			#objType is not always correct, but _getConfigFile() is
 			#within ifs obj.getType() from obj in objList should be used
 			objType = objList[0].getType()
-		else:
-			objType = objList.getType()
 		
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
 			hostKeyFile = HostKeyFile(self._getConfigFile('', {}, 'key'))
