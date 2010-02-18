@@ -327,7 +327,6 @@ class FileBackend(ConfigDataBackend):
 					pId = ident['id']
 				else:
 					pId = ident['productId']
-				
 				# instead of searching the whole dir, let's check the only possible files
 				if os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.localboot')):
 					filename = os.path.join(self.__productDir, pId + pVer + u'.localboot')
@@ -690,7 +689,7 @@ class FileBackend(ConfigDataBackend):
 							elif ( isinstance(value, str) or isinstance(value, unicode) ):
 								value = self.__unescape(value)
 							
-							# TODO: what to return, if more than one ':'?
+							# invalid values will throw exception
 							if objType in ('ProductOnClient',) and value.find(':') != -1:
 								if attribute == 'installationStatus':
 									value = value.split(u':', 1)[0]
@@ -913,13 +912,19 @@ class FileBackend(ConfigDataBackend):
 			#objType is not always correct, but _getConfigFile() is
 			#within ifs obj.getType() from obj in objList should be used
 			objType = objList[0].getType()
+		else:
+			objType = objList.getType()
 		
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
 			hostKeyFile = HostKeyFile(self._getConfigFile('', {}, 'key'))
 			for obj in objList:
+				if (obj.getId() == self.__serverId):
+					logger.warning(u"Cannot delete %s '%s', ignored." % (obj.getType(), obj.getId()))
+					continue
+				
 				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				hostKeyFile.deleteOpsiHostKey(obj.getId())
-				#TODO: can delete configserver?
+				
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
 				if obj.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
@@ -942,16 +947,25 @@ class FileBackend(ConfigDataBackend):
 			iniFile.generate(cp)
 		
 		elif objType in ('ConfigState',):
-			#TODO: opens every file anew
+			filenames = []
 			for obj in objList:
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
+				if not filename in filenames:
+					filenames.append(filename)
+				
+			for filename in filenames:
 				iniFile = IniFile(filename = filename, ignoreCase = False)
 				cp = iniFile.parse()
-				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
-				if cp.has_option('generalconfig', obj.getConfigId()):
-					cp.remove_option('generalconfig', obj.getConfigId())
-					logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
+				for obj in objList:
+					if not (obj.getObjectId() == os.path.basename(filename)[:-4]):
+						continue
+					
+					logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					if cp.has_option('generalconfig', obj.getConfigId()):
+						cp.remove_option('generalconfig', obj.getConfigId())
+						logger.debug2(u"Removed option in generalconfig '%s'" % obj.getConfigId())
+				
 				iniFile.generate(cp)
 		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
@@ -965,35 +979,11 @@ class FileBackend(ConfigDataBackend):
 		
 		elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 			filenames = []
-			
-			# TODO: files werden nur einmal eingelesen, aber umstaendlich
-			for entry in os.listdir(self.__productDir):
-				entry = entry.lower()
-				# productId, productVersion, packageVersion, propertyId
-				if (not entry.endswith('.localboot')) and (not entry.endswith('.netboot')):
-					continue
-				
-				#example (+spaces):  exampleexampleexa  _ 123.123 - 123.123  . local     boot
-				################### (group 1          )  (group 2) (group 3)  (group 4  )
-				match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
-				if not match:
-					continue
-				
-				logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
-					% (match.group(1), match.group(2), match.group(3)) )
-				
-				matched = False
-				for item in objList:
-					if (match.group(1) == item.getProductId()):
-						if (match.group(2) == item.getProductVersion()):
-							if (match.group(3) == item.getPackageVersion()):
-								matched = True
-								break
-				
-				if not matched:
-					continue
-				
-				filenames.append(os.path.join(self.__productDir, entry))
+			for obj in objList:
+				filename = self._getConfigFile(
+					obj.getType(), obj.getIdent(returnType = 'dict'), 'pro')
+				if not filename in filenames:
+					filenames.append(filename)
 			
 			for filename in filenames:
 				packageControlFile = PackageControlFile(filename = filename)
@@ -1102,19 +1092,19 @@ class FileBackend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		
-		logger.info(u"Inserting host: '%s'" % host.getIdent())
+		logger.debug(u"Inserting host: '%s'" % host.getIdent())
 		self._write(host, mode = 'create')
 	
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		
-		logger.info(u"Updating host: '%s'" % host.getIdent())
+		logger.debug(u"Updating host: '%s'" % host.getIdent())
 		self._write(host, mode = 'update')
 	
 	def host_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.host_getObjects(self, attributes, **filter)
 		
-		logger.info(u"Getting hosts ...")
+		logger.debug(u"Getting hosts ...")
 		result = self._read('OpsiDepotserver', attributes, **filter)
 		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
 		
@@ -1135,7 +1125,7 @@ class FileBackend(ConfigDataBackend):
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 		
-		logger.info(u"Deleting hosts ...")
+		logger.debug(u"Deleting hosts ...")
 		self._delete(forceObjectClassList(hosts, Host))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1144,19 +1134,19 @@ class FileBackend(ConfigDataBackend):
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 		
-		logger.info(u"Inserting config: '%s'" % config.getIdent())
+		logger.debug(u"Inserting config: '%s'" % config.getIdent())
 		self._write(config, mode = 'create')
 	
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
 		
-		logger.info(u"Updating config: '%s'" % config.getIdent())
+		logger.debug(u"Updating config: '%s'" % config.getIdent())
 		self._write(config, mode = 'update')
 	
 	def config_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.config_getObjects(self, attributes, **filter)
 		
-		logger.info(u"Getting configs ...")
+		logger.debug(u"Getting configs ...")
 		result = self._read('Config', attributes, **filter)
 		
 		return result
@@ -1164,7 +1154,7 @@ class FileBackend(ConfigDataBackend):
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		
-		logger.info(u"Deleting configs ...")
+		logger.debug(u"Deleting configs ...")
 		self._delete(forceObjectClassList(configs, Config))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1173,19 +1163,19 @@ class FileBackend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
-		logger.info(u"Inserting configState: '%s'" % configState.getIdent())
+		logger.debug(u"Inserting configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'create')
 	
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
-		logger.info(u"Updating configState: '%s'" % configState.getIdent())
+		logger.debug(u"Updating configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'update')
 	
 	def configState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
 		
-		logger.info(u"Getting configStates ...")
+		logger.debug(u"Getting configStates ...")
 		result = self._read('ConfigState', attributes, **filter)
 		
 		return result
@@ -1193,7 +1183,7 @@ class FileBackend(ConfigDataBackend):
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		
-		logger.info(u"Deleting configStates ...")
+		logger.debug(u"Deleting configStates ...")
 		self._delete(forceObjectClassList(configStates, ConfigState))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1202,19 +1192,19 @@ class FileBackend(ConfigDataBackend):
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
 		
-		logger.info(u"Inserting product: '%s'" % product.getIdent())
+		logger.debug(u"Inserting product: '%s'" % product.getIdent())
 		self._write(product, mode = 'create')
 	
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
 		
-		logger.info(u"Updating product: '%s'" % product.getIdent())
+		logger.debug(u"Updating product: '%s'" % product.getIdent())
 		self._write(product, mode = 'update')
 	
 	def product_getObjects(self, attributes = [], **filter):
 		ConfigDataBackend.product_getObjects(self, attributes, **filter)
 		
-		logger.info(u"Getting products ...")
+		logger.debug(u"Getting products ...")
 		result = self._read('LocalbootProduct', attributes, **filter)
 		result.extend(self._read('NetbootProduct', attributes, **filter))
 		
@@ -1223,7 +1213,7 @@ class FileBackend(ConfigDataBackend):
 	def product_deleteObjects(self, products):
 		ConfigDataBackend.product_deleteObjects(self, products)
 		
-		logger.info(u"Deleting products ...")
+		logger.debug(u"Deleting products ...")
 		self._delete(forceObjectClassList(products, Product))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1232,19 +1222,19 @@ class FileBackend(ConfigDataBackend):
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		
-		logger.info(u"Inserting productProperty: '%s'" % productProperty.getIdent())
+		logger.debug(u"Inserting productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'create')
 	
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		
-		logger.info(u"Updating productProperty: '%s'" % productProperty.getIdent())
+		logger.debug(u"Updating productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'update')
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productProperty_getObjects(self, attributes, **filter)
 		
-		logger.info(u"Getting productProperties ...")
+		logger.debug(u"Getting productProperties ...")
 		result = self._read('ProductProperty', attributes, **filter)
 		
 		return result
@@ -1252,7 +1242,7 @@ class FileBackend(ConfigDataBackend):
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		
-		logger.info(u"Deleting productProperties ...")
+		logger.debug(u"Deleting productProperties ...")
 		self._delete(forceObjectClassList(productProperties, ProductProperty))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1261,19 +1251,19 @@ class FileBackend(ConfigDataBackend):
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
-		logger.info(u"Inserting productDependency: '%s'" % productDependency.getIdent())
+		logger.debug(u"Inserting productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'create')
 	
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		
-		logger.info(u"Updating productDependency: '%s'" % productDependency.getIdent())
+		logger.debug(u"Updating productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'update')
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting productDependencies ...")
+		logger.debug(u"Getting productDependencies ...")
 		result = self._read('ProductDependency', attributes, **filter)
 		
 		return result
@@ -1281,7 +1271,7 @@ class FileBackend(ConfigDataBackend):
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		
-		logger.info(u"Deleting productDependencies ...")
+		logger.debug(u"Deleting productDependencies ...")
 		self._delete(forceObjectClassList(productDependencies, ProductDependency))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1290,19 +1280,19 @@ class FileBackend(ConfigDataBackend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
-		logger.info(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
+		logger.debug(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'create')
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		
-		logger.info(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
+		logger.debug(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'update')
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting productOnDepots ...")
+		logger.debug(u"Getting productOnDepots ...")
 		result = self._read('ProductOnDepot', attributes, **filter)
 		
 		return result
@@ -1310,7 +1300,7 @@ class FileBackend(ConfigDataBackend):
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		
-		logger.info(u"Deleting productOnDepots ...")
+		logger.debug(u"Deleting productOnDepots ...")
 		self._delete(forceObjectClassList(productOnDepots, ProductOnDepot))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1319,19 +1309,19 @@ class FileBackend(ConfigDataBackend):
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
-		logger.info(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
+		logger.debug(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'create')
 	
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		
-		logger.info(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
+		logger.debug(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'update')
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting productOnClient ...")
+		logger.debug(u"Getting productOnClient ...")
 		result = self._read('ProductOnClient', attributes, **filter)
 		
 		return result
@@ -1339,7 +1329,7 @@ class FileBackend(ConfigDataBackend):
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		
-		logger.info(u"Deleting productOnClients ...")
+		logger.debug(u"Deleting productOnClients ...")
 		self._delete(forceObjectClassList(productOnClients, ProductOnClient))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1348,19 +1338,19 @@ class FileBackend(ConfigDataBackend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		
-		logger.info(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
+		logger.debug(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'create')
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		
-		logger.info(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
+		logger.debug(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'update')
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting productPropertyStates ...")
+		logger.debug(u"Getting productPropertyStates ...")
 		result = self._read('ProductPropertyState', attributes, **filter)
 		
 		return result
@@ -1368,7 +1358,7 @@ class FileBackend(ConfigDataBackend):
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		
-		logger.info(u"Deleting productPropertyStates ...")
+		logger.debug(u"Deleting productPropertyStates ...")
 		self._delete(forceObjectClassList(productPropertyStates, ProductPropertyState))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1377,19 +1367,19 @@ class FileBackend(ConfigDataBackend):
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
 		
-		logger.info(u"Inserting group: '%s'" % group.getIdent())
+		logger.debug(u"Inserting group: '%s'" % group.getIdent())
 		self._write(group, mode = 'create')
 	
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
 		
-		logger.info(u"Updating group: '%s'" % group.getIdent())
+		logger.debug(u"Updating group: '%s'" % group.getIdent())
 		self._write(group, mode = 'update')
 	
 	def group_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting groups ...")
+		logger.debug(u"Getting groups ...")
 		result = self._read('Group', attributes, **filter)
 		
 		return result
@@ -1397,7 +1387,7 @@ class FileBackend(ConfigDataBackend):
 	def group_deleteObjects(self, groups):
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		
-		logger.info(u"Deleting groups ...")
+		logger.debug(u"Deleting groups ...")
 		self._delete(forceObjectClassList(groups, Group))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1406,19 +1396,19 @@ class FileBackend(ConfigDataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
-		logger.info(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
+		logger.debug(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'create')
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
-		logger.info(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
+		logger.debug(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'update')
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting objectToGroups ...")
+		logger.debug(u"Getting objectToGroups ...")
 		result = self._read('ObjectToGroup', attributes, **filter)
 		
 		return result
@@ -1426,7 +1416,7 @@ class FileBackend(ConfigDataBackend):
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		
-		logger.info(u"Deleting objectToGroups ...")
+		logger.debug(u"Deleting objectToGroups ...")
 		self._delete(forceObjectClassList(objectToGroups, ObjectToGroup))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1435,7 +1425,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_insertObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
-		logger.info(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
+		logger.debug(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		
 		if not os.path.exists(filename):
@@ -1462,7 +1452,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_updateObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
-		logger.info(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
+		logger.debug(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1486,7 +1476,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting auditSoftwares ...")
+		logger.debug(u"Getting auditSoftwares ...")
 		result = []
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		if not os.path.exists(filename):
@@ -1520,7 +1510,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		
-		logger.info(u"Deleting auditSoftwares ...")
+		logger.debug(u"Deleting auditSoftwares ...")
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1545,7 +1535,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
-		logger.info(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
+		logger.debug(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
 		
 		if not os.path.exists(filename):
@@ -1572,7 +1562,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
-		logger.info(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
+		logger.debug(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
 		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1596,7 +1586,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting auditSoftwareOnClients ...")
+		logger.debug(u"Getting auditSoftwareOnClients ...")
 		filenames = {}
 		for ident in self._getIdents('AuditSoftwareOnClient', **filter):
 			if not ident['clientId'] in filenames.keys():
@@ -1638,7 +1628,7 @@ class FileBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		
-		logger.info(u"Deleting auditSoftwareOnClients ...")
+		logger.debug(u"Deleting auditSoftwareOnClients ...")
 		filenames = {}
 		idents = {}
 		for auditSoftwareOnClient in  forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
@@ -1670,7 +1660,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_insertObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
-		logger.info(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
+		logger.debug(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		
 		if not os.path.exists(filename):
@@ -1697,7 +1687,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
-		logger.info(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
+		logger.debug(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1717,7 +1707,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting auditHardwares ...")
+		logger.debug(u"Getting auditHardwares ...")
 		result = []
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		if not os.path.exists(filename):
@@ -1734,6 +1724,7 @@ class FileBackend(ConfigDataBackend):
 			
 			auditHardware = AuditHardware.fromHash(objHash)
 			if self._objectHashMatches(auditHardware.toHash(), **filter):
+				# TODO: adaptObjHash?
 				result.append(auditHardware)
 		
 		return result
@@ -1741,7 +1732,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardware_deleteObjects(self, auditHardwares):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		
-		logger.info(u"Deleting auditHardwares ...")
+		logger.debug(u"Deleting auditHardwares ...")
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1772,7 +1763,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
-		logger.info(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
+		logger.debug(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
 		
 		if not os.path.exists(filename):
@@ -1799,7 +1790,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
-		logger.info(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
+		logger.debug(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
 		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
@@ -1829,7 +1820,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
-		logger.info(u"Getting auditHardwareOnHosts ...")
+		logger.debug(u"Getting auditHardwareOnHosts ...")
 		filenames = {}
 		for ident in self._getIdents('AuditHardwareOnHost', **filter):
 			if not ident['hostId'] in filenames.keys():
@@ -1860,7 +1851,7 @@ class FileBackend(ConfigDataBackend):
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
-		logger.info(u"Deleting auditHardwareOnHosts ...")
+		logger.debug(u"Deleting auditHardwareOnHosts ...")
 		items = {}
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			ident = auditHardwareOnHost.getIdent(returnType = 'dict')
