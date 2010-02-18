@@ -112,6 +112,7 @@ class Backend:
 	def __init__(self, **kwargs):
 		# Parse arguments
 		self._backendInstance = self
+		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('username'):
