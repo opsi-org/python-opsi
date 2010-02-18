@@ -2281,9 +2281,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					productOnDepots[depotId][productOnDepot.productId] = productOnDepot
 			
 			for productOnClient in insertVersions:
-				product = productOnDepots[clientIdToDepotId[productOnClient.clientId]].get(productOnClient.productId)
+				product = productOnDepots.get(clientIdToDepotId.get(productOnClient.clientId), {}).get(productOnClient.productId)
 				if not product:
-					logger.debug(u"Product '%s' not found on depot '%s'" % (productOnClient.productId, clientIdToDepotId[productOnClient.clientId]))
+					logger.debug(u"Product '%s' not found on depot '%s'" % (productOnClient.productId, clientIdToDepotId.get(productOnClient.clientId)))
 				else:
 					productOnClient.setProductVersion(product.productVersion )
 					productOnClient.setPackageVersion(product.packageVersion )

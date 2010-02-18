@@ -307,7 +307,7 @@ class BackendDispatcher(Backend):
 			be['instance'].backend_setOptions(options)
 		
 	def backend_getOptions(self):
-		options = Backend.backend_getOptions(self, options)
+		options = Backend.backend_getOptions(self)
 		for be in self._backends.values():
 			options.update(be['instance'].backend_getOptions())
 		return options
