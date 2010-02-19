@@ -3047,8 +3047,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
 		for auditHardware in auditHardwares:
-			data = auditHardware.toHash()
-			if self.auditHardware_getObjects(attributes = [], **data):
+			filter = auditHardware.toHash()
+			for (attribute, value) in filter.items():
+				if value is None:
+					filter[attribute] = [ None ]
+			if self.auditHardware_getObjects(attributes = [], **filter):
+				# You can't update auditHardwares, because the ident contains all attributes
 				logger.info(u"%s already exists, nothing to do" % auditHardware)
 			else:
 				self._backend.auditHardware_insertObject(auditHardware)
@@ -3082,11 +3086,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
 		for auditHardwareOnHost in auditHardwareOnHosts:
-			filter = auditHardwareOnHost.toHash()
-			for attribute in ('firstseen', 'lastseen', 'state'):
-				if filter.has_key(attribute):
-					del filter[attribute]
-			
+			filter = {}
+			for (attribute, value) in auditHardwareOnHost.toHash().items():
+				if attribute in ('firstseen', 'lastseen', 'state'):
+					continue
+				if value is None:
+					filter[attribute] = [ None ]
+				else:
+					filter[attribute] = value
 			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
 				logger.info(u"%s already exists, updating" % auditHardwareOnHost)
 				auditHardwareOnHost.setLastseen(timestamp())

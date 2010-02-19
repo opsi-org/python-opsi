@@ -2351,8 +2351,11 @@ class AuditHardware(Entity):
 					del kwargs[attribute.lower()]
 				else:
 					kwargs[attribute] = None
+		
 		for (attribute, value) in kwargs.items():
-			if type(value) is str:
+			if self.hardwareAttributes.get(hardwareClass) and not self.hardwareAttributes[hardwareClass].get(attribute):
+				del kwargs[attribute]
+			elif type(value) is str:
 				kwargs[attribute] = forceUnicode(value)
 		self.__dict__.update(kwargs)
 	
@@ -2369,9 +2372,6 @@ class AuditHardware(Entity):
 	
 	def setDefaults(self):
 		Entity.setDefaults(self)
-		for attribute in self.hardwareAttributes.get(self.hardwareClass, {}).keys():
-			if not hasattr(self, attribute) or getattr(self, attribute) is None:
-				setattr(self, attribute, u'')
 		
 	def setHardwareClass(self, hardwareClass):
 		self.hardwareClass = forceUnicode(hardwareClass)
@@ -2423,8 +2423,11 @@ class AuditHardwareOnHost(Relationship):
 				else:
 					kwargs[attribute] = None
 		for (attribute, value) in kwargs.items():
-			if type(value) is str:
+			if self.hardwareAttributes.get(hardwareClass) and not self.hardwareAttributes[hardwareClass].get(attribute):
+				del kwargs[attribute]
+			elif type(value) is str:
 				kwargs[attribute] = forceUnicode(value)
+		
 		self.__dict__.update(kwargs)
 		if not firstseen is None:
 			self.setFirstseen(firstseen)
@@ -2432,7 +2435,7 @@ class AuditHardwareOnHost(Relationship):
 			self.setLastseen(lastseen)
 		if not state is None:
 			self.setState(state)
-	
+		
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
 		hardwareAttributes = {}
@@ -2445,9 +2448,6 @@ class AuditHardwareOnHost(Relationship):
 	
 	def setDefaults(self):
 		Relationship.setDefaults(self)
-		for attribute in self.hardwareAttributes.get(self.hardwareClass, {}).keys():
-			if not hasattr(self, attribute) or getattr(self, attribute) is None:
-				setattr(self, attribute, u'')
 		if self.firstseen is None:
 			self.setFirstseen(timestamp())
 		if self.lastseen is None:
