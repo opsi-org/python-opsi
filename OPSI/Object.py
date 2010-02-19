@@ -2352,11 +2352,30 @@ class AuditHardware(Entity):
 				else:
 					kwargs[attribute] = None
 		
-		for (attribute, value) in kwargs.items():
-			if self.hardwareAttributes.get(hardwareClass) and not self.hardwareAttributes[hardwareClass].get(attribute):
-				del kwargs[attribute]
-			elif type(value) is str:
-				kwargs[attribute] = forceUnicode(value)
+		if self.hardwareAttributes.get(hardwareClass):
+			for (attribute, value) in kwargs.items():
+				type = self.hardwareAttributes[hardwareClass].get(attribute)
+				if not type:
+					del kwargs[attribute]
+					continue
+				if value is None:
+					continue
+				if type.startswith('varchar'):
+					kwargs[attribute] = forceUnicode(value)
+				elif (type.find('int') != -1):
+					try:
+						kwargs[attribute] = forceInt(value)
+					except Exception, e:
+						logger.debug2(e)
+						kwargs[attribute] = None
+				elif (type == 'double'):
+					try:
+						kwargs[attribute] = forceFloat(value)
+					except Exception, e:
+						logger.debug2(e)
+						kwargs[attribute] = None
+				else:
+					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
 		self.__dict__.update(kwargs)
 	
 	@staticmethod
@@ -2422,12 +2441,31 @@ class AuditHardwareOnHost(Relationship):
 					del kwargs[attribute.lower()]
 				else:
 					kwargs[attribute] = None
-		for (attribute, value) in kwargs.items():
-			if self.hardwareAttributes.get(hardwareClass) and not self.hardwareAttributes[hardwareClass].get(attribute):
-				del kwargs[attribute]
-			elif type(value) is str:
-				kwargs[attribute] = forceUnicode(value)
 		
+		if self.hardwareAttributes.get(hardwareClass):
+			for (attribute, value) in kwargs.items():
+				type = self.hardwareAttributes[hardwareClass].get(attribute)
+				if not type:
+					del kwargs[attribute]
+					continue
+				if value is None:
+					continue
+				if type.startswith('varchar'):
+					kwargs[attribute] = forceUnicode(value)
+				elif (type.find('int') != -1):
+					try:
+						kwargs[attribute] = forceInt(value)
+					except Exception, e:
+						logger.debug2(e)
+						kwargs[attribute] = None
+				elif (type == 'double'):
+					try:
+						kwargs[attribute] = forceFloat(value)
+					except Exception, e:
+						logger.debug2(e)
+						kwargs[attribute] = None
+				else:
+					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
 		self.__dict__.update(kwargs)
 		if not firstseen is None:
 			self.setFirstseen(firstseen)
