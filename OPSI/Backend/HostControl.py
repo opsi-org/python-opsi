@@ -69,7 +69,7 @@ class RpcThread(KillableThread):
 	def run(self):
 		try:
 			self.started = time.time()
-			timeout = self._hostRpcTimeout - 5
+			timeout = self.hostControlBackend._hostRpcTimeout - 5
 			if (timeout < 0):
 				timeout = 0
 			
@@ -137,7 +137,17 @@ class HostControlBackend(ExtendedBackend):
 				address = host.ipAddress
 				if self._resolveHostAddress:
 					address = socket.gethostbyname(host.id)
-				rpcts.append(RpcThread(self, hostId = host.id, username = host.id, password = host.opsiHostKey, method = method, params = params))
+				if not address:
+					raise Exception(u"Failed to get ip address for host '%s'" % host.id)
+				rpcts.append(
+					RpcThread(
+						hostControlBackend = self,
+						hostId   = host.id,
+						address  = address,
+						username = host.id,
+						password = host.opsiHostKey,
+						method   = method,
+						params   = params))
 			except Exception, e:
 				errors.append(forceUnicode(e))
 		
@@ -150,12 +160,12 @@ class HostControlBackend(ExtendedBackend):
 						logger.error(u"Rpc to host %s failed, error: %s" % (rpct.hostId, rpct.error))
 						errors.append(u"%s: %s" % (rpct.hostId, rpct.error))
 					else:
-						logger.debug(u"Rpc to host %s successful, result: %s" % (rpct.hostId, rpct.result))
+						logger.info(u"Rpc to host %s successful, result: %s" % (rpct.hostId, rpct.result))
 					runningThreads -= 1
 					continue
 				if not rpct.started:
 					if (runningThreads < self._maxConnections):
-						logger.debug(u"Starting rpc to host %s" % (rpct.hostId, rpct.result, rpct.error))
+						logger.debug(u"Starting rpc to host %s" % rpct.hostId)
 						rpct.start()
 						runningThreads += 1
 				else:
@@ -190,7 +200,7 @@ class HostControlBackend(ExtendedBackend):
 				
 				# Pad the synchronization stream.
 				data = ''.join(['FFFFFFFFFFFF', mac * 16])
-				send_data = '' 
+				send_data = ''
 				
 				# Split up the hex values and pack.
 				for i in range(0, len(data), 2):
