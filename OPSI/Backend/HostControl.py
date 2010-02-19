@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-import socket, threading, httplib, base64, time
+import socket, threading, httplib, base64, time, struct
 
 # OPSI imports
 from OPSI.Logger import *
@@ -179,14 +179,14 @@ class HostControlBackend(ExtendedBackend):
 	def hostControl_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
 		hostIds = forceHostIdList(hostIds)
-		hosts = self._context.host_getObjects(attributes = ['hardwareAdddress'], id = hostIds)
+		hosts = self._context.host_getObjects(attributes = ['hardwareAddress'], id = hostIds)
 		errors = []
 		for host in hosts:
 			try:
-				if not host.hardwareAdddress:
+				if not host.hardwareAddress:
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
 				
-				mac = host.hardwareAdddress.replace(':', '')
+				mac = host.hardwareAddress.replace(':', '')
 				
 				# Pad the synchronization stream.
 				data = ''.join(['FFFFFFFFFFFF', mac * 16])

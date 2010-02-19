@@ -348,26 +348,28 @@ class MySQLBackend(ConfigDataBackend):
 	def _adjustAttributes(self, objectClass, attributes, filter):
 		if not attributes:
 			attributes = []
-		attributes = forceUnicodeList(attributes)
+		# Work on copies of attributes and filter!
+		newAttributes = list(forceUnicodeList(attributes))
+		newFilter = dict(forceDict(filter))
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
-		if filter.has_key('id'):
-			filter[id] = filter['id']
-			del filter['id']
-		if 'id' in attributes:
-			attributes.remove('id')
-			attributes.append(id)
-		if attributes:
-			if issubclass(objectClass, Entity) and not 'type' in attributes:
-				attributes.append('type')
+		if newFilter.has_key('id'):
+			newFilter[id] = newFilter['id']
+			del newFilter['id']
+		if 'id' in newAttributes:
+			newAttributes.remove('id')
+			newAttributes.append(id)
+		if newAttributes:
+			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
+				newAttributes.append('type')
 			objectClasses = [ objectClass ]
 			objectClasses.extend(objectClass.subClasses.values())
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
 					if (arg == 'id'):
 						arg = id
-					if not arg in attributes:
-						attributes.append(arg)
-		return (attributes, filter)
+					if not arg in newAttributes:
+						newAttributes.append(arg)
+		return (newAttributes, newFilter)
 		
 	def _adjustResult(self, objectClass, result):
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')

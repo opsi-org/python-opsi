@@ -348,12 +348,15 @@ class Backend:
 			objectId = forceObjectId(objectId)
 		maxSize = forceInt(maxSize)
 		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
-			raise BackendBadValueError(u'Unknown log type %s' % type)
+			raise BackendBadValueError(u'Unknown log type %s' % logType)
 		
-		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
-			raise BackendBadValueError(u"Log type '%s' requires objectId" % type)
+		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog'):
+			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
 		
-		logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
+		if not objectId:
+			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
+		else:
+			logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
 		data = u''
 		if not os.path.exists(logFile):
 			return data
@@ -371,6 +374,7 @@ class Backend:
 		username = forceUnicodeLower(username)
 		if hostId:
 			hostId = forceHostId(hostId)
+		depotId = forceHostId(socket.getfqdn())
 		
 		result = { 'password': u'', 'rsaPrivateKey': u'' }
 		
@@ -386,9 +390,9 @@ class Backend:
 		if not result['password']:
 			raise BackendMissingDataError(u"Username '%s' not found")
 		
-		depot = self._context.host_getObjects(id = self._depotId)
+		depot = self._context.host_getObjects(id = depotId)
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
+			raise Exception(u"Depot '%s' not found in backend" % depotId)
 		depot = depot[0]
 		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
 		
@@ -414,10 +418,11 @@ class Backend:
 	def user_setCredentials(self, username, password):
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
+		depotId = forceHostId(socket.getfqdn())
 		
-		depot = self._context.host_getObjects(id = self._depotId)
+		depot = self._context.host_getObjects(id = depotId)
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
+			raise Exception(u"Depot '%s' not found in backend" % depotId)
 		depot = depot[0]
 		
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)

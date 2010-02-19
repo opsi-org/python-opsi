@@ -65,6 +65,7 @@ class BackendManager(ExtendedBackend):
 		self._backendConfigDir = None
 		self._options = {}
 		self._overwrite = True
+		self._context = self
 		
 		username = None
 		password = None
@@ -334,9 +335,9 @@ class BackendDispatcher(Backend):
 	
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
-		if not isinstance(backend, ExtendedConfigDataBackend) and not isinstance(backend, DepotserverBackend) and not isinstance(backend, BackendDispatcher):
-			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedConfigDataBackend) and not isinstance(backend._backend, DepotserverBackend) and not isinstance(backend._backend, BackendDispatcher)):
-				raise Exception("BackendExtender needs instance of ExtendedConfigDataBackend, DepotserverBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
+		if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
+			if not isinstance(backend, BackendAccessControl) or (not isinstance(backend._backend, ExtendedBackend) and not isinstance(backend._backend, BackendDispatcher)):
+				raise Exception("BackendExtender needs instance of ExtendedBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 		
 		ExtendedBackend.__init__(self, backend, overwrite = True)
 		
