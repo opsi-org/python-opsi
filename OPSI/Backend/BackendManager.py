@@ -47,6 +47,8 @@ from OPSI.Types import *
 from OPSI.Object import BaseObject
 from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Backend.Depotserver import DepotserverBackend
+from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Util import objectToBeautifiedText
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
 
@@ -71,6 +73,7 @@ class BackendManager(ExtendedBackend):
 		extensionConfigDir = None
 		accessControl = False
 		depotBackend = False
+		hostControlBackend = False
 		
 		loadBackend = None
 		for (option, value) in kwargs.items():
@@ -91,6 +94,8 @@ class BackendManager(ExtendedBackend):
 				dispatch = True
 			elif option in ('depotbackend',):
 				depotBackend = forceBool(value)
+			elif option in ('hostcontrolbackend',):
+				hostControlBackend = forceBool(value)
 			elif option in ('extensionconfigdir',) and value:
 				extensionConfigDir = value
 				extend = True
@@ -119,6 +124,9 @@ class BackendManager(ExtendedBackend):
 		if depotBackend:
 			logger.info(u"* BackendManager is creating DepotserverBackend")
 			self._backend = DepotserverBackend(self._backend)
+		if hostControlBackend:
+			logger.info(u"* BackendManager is creating HostControlBackend")
+			self._backend = HostControlBackend(self._backend)
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)

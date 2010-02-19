@@ -98,12 +98,12 @@ class RpcThread(KillableThread):
 # ======================================================================================================
 # =                                  CLASS HOSTCONTROLBACKEND                                          =
 # ======================================================================================================
-class HostControlBackend(Backend):
+class HostControlBackend(ExtendedBackend):
 	
-	def __init__(self, **kwargs):
+	def __init__(self, backend, **kwargs):
 		self._name = 'hostcontrol'
 		
-		Backend.__init__(self, **kwargs)
+		ExtendedBackend.__init__(self, backend, **kwargs)
 		
 		self._opsiclientdPort = 4441
 		self._hostRpcTimeout  = 15
@@ -113,14 +113,20 @@ class HostControlBackend(Backend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			#if option in ('port',):
-			#	self._port = value
-		
+			if   option in ('opsiclientdport',):
+				self._opsiclientdPort = forceInt(value)
+			elif option in ('hostrpctimeout',):
+				self._hostRpcTimeout = forceInt(value)
+			elif option in ('resolvehostaddress',):
+				self._resolveHostAddress = forceBool(value)
+			elif option in ('maxconnections',):
+				self._maxConnections = forceInt(value)
+			
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
 		
 	def _opsiclientdRpc(self, hostIds, method, params=[]):
-		hostIds = forceHostIdsList(hostIds)
+		hostIds = forceHostIdList(hostIds)
 		method  = forceUnicode(method)
 		params  = forceList(params)
 		
@@ -172,6 +178,7 @@ class HostControlBackend(Backend):
 		
 	def hostControl_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
+		hostIds = forceHostIdList(hostIds)
 		hosts = self._context.host_getObjects(attributes = ['hardwareAdddress'], id = hostIds)
 		errors = []
 		for host in hosts:
@@ -203,6 +210,7 @@ class HostControlBackend(Backend):
 			raise Exception(u', '.join(errors))
 	
 	def hostControl_shutdown(self, hostIds=[]):
+		hostIds = forceHostIdList(hostIds)
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
 	
