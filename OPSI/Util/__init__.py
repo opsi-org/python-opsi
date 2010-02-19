@@ -559,6 +559,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	files = []
 	entries = os.listdir(directory)
 	for entry in entries:
+		#TODO: . + .. won't be returned from listdir
 		if entry in ('.', '..'):
 			continue
 		if os.path.islink(os.path.join(directory, entry)):
