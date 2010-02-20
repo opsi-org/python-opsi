@@ -223,7 +223,11 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = forceHostIdList(hostIds)
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
-	
+	def hostControl_fireEvent(self, event, hostIds=[]):
+		event = forceUnicode(event)
+		hostIds = forceHostIdList(hostIds)
+		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
+		
 	
 	
 	
