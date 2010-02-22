@@ -42,12 +42,14 @@ if (version_info >= (2,6)):
 else:
 	import simplejson as json
 
-from duplicity import librsync
 try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
 from Crypto.Cipher import Blowfish
+
+if (os.name == 'posix'):
+	from duplicity import librsync
 
 # OPSI imports
 from OPSI.Logger import *

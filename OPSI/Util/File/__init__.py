@@ -34,10 +34,10 @@
 
 __version__ = "3.5"
 
-import os, codecs, re, grp, pwd, ConfigParser, StringIO, cStringIO
+import os, codecs, re, ConfigParser, StringIO, cStringIO
 
 if (os.name == 'posix'):
-	import fcntl
+	import fcntl, grp, pwd
 
 elif (os.name == 'nt'):
 	import win32con
@@ -67,6 +67,9 @@ class File(object):
 			os.unlink(self._filename)
 	
 	def chown(self, user, group):
+		if (os.name == 'nt'):
+			logger.warning(u"Not implemented on windows")
+			return
 		uid = -1
 		if type(user) is int:
 			if (user > -1):

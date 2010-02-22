@@ -35,15 +35,17 @@
 __version__ = '3.5'
 
 # Imports
-from ldaptor.protocols import pureldap
-from ldaptor import ldapfilter
-import types, new, inspect, socket, base64
+import types, new, inspect, socket, base64, os
 import copy as pycopy
 from twisted.conch.ssh import keys
 try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
+
+if (os.name == 'posix'):
+	from ldaptor.protocols import pureldap
+	from ldaptor import ldapfilter
 
 # OPSI imports
 from OPSI.Logger import *
