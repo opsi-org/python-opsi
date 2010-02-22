@@ -402,7 +402,6 @@ def createDesktop(name, cmd):
 	return hdesk
 
 def addUserToDesktop(desktop, userSid):
-	desktop = forceUnicode(desktop)
 	'''
 	Adds the given PySID representing a user to the given desktop's
 	discretionary access-control list. The old security descriptor for

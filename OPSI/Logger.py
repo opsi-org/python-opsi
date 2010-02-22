@@ -425,10 +425,6 @@ class LoggerImplementation:
 			else:
 				message = unicode(message, 'utf-8', 'replace')
 		
-		if (level < LOG_CONFIDENTIAL):
-			for string in self.__confidentialStrings:
-				message = message.replace(string, u'*** confidential ***')
-		
 		levelname  = u''
 		color      = COLOR_NORMAL
 		filename   = u''
@@ -485,6 +481,9 @@ class LoggerImplementation:
 			if specialConfig:
 				m = specialConfig.get('messageSubjectFormat', m)
 			m = unicode(m)
+			if (self.__messageSubjectLevel < LOG_CONFIDENTIAL):
+				for string in self.__confidentialStrings:
+					m = m.replace(string, u'*** confidential ***')
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', unicode(level))
@@ -492,6 +491,7 @@ class LoggerImplementation:
 			m = m.replace('%M', message)
 			m = m.replace('%F', filename)
 			m = m.replace('%N', linenumber)
+			
 			self.__loggerSubject.setMessage(m, level)
 		
 		if (level <= self.__consoleLevel):
@@ -500,6 +500,9 @@ class LoggerImplementation:
 			if specialConfig:
 				m = specialConfig.get('consoleFormat', m)
 			m = unicode(m)
+			if (self.__consoleLevel < LOG_CONFIDENTIAL):
+				for string in self.__confidentialStrings:
+					m = m.replace(string, u'*** confidential ***')
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', unicode(level))
@@ -507,6 +510,7 @@ class LoggerImplementation:
 			m = m.replace('%M', message)
 			m = m.replace('%F', filename)
 			m = m.replace('%N', linenumber)
+			
 			fh = sys.stderr
 			if (self.__consoleStdout):
 				fh = sys.stdout
@@ -531,6 +535,9 @@ class LoggerImplementation:
 				if specialConfig:
 					m = specialConfig.get('fileFormat', m)
 				m = unicode(m)
+				if (self.__fileLevel < LOG_CONFIDENTIAL):
+					for string in self.__confidentialStrings:
+						m = m.replace(string, u'*** confidential ***')
 				m = m.replace('%D', datetime)
 				m = m.replace('%T', threadId)
 				m = m.replace('%l', unicode(level))
@@ -584,6 +591,9 @@ class LoggerImplementation:
 			if specialConfig:
 				m = specialConfig.get('syslogFormat', m)
 			m = unicode(m)
+			if (self.__syslogLevel < LOG_CONFIDENTIAL):
+				for string in self.__confidentialStrings:
+					m = m.replace(string, u'*** confidential ***')
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', unicode(level))
@@ -621,6 +631,8 @@ class LoggerImplementation:
 			if specialConfig:
 				m = specialConfig.get('univentionFormat', m)
 			m = unicode(m)
+			for string in self.__confidentialStrings:
+				m = m.replace(string, u'*** confidential ***')
 			m = m.replace('%D', datetime)
 			m = m.replace('%T', threadId)
 			m = m.replace('%l', unicode(level))
@@ -628,7 +640,7 @@ class LoggerImplementation:
 			m = m.replace('%M', message)
 			m = m.replace('%F', filename)
 			m = m.replace('%N', linenumber)
-			
+				
 			if (level == LOG_CONFIDENTIAL):
 				pass
 			elif (level == LOG_DEBUG2):
