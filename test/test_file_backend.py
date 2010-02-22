@@ -34,8 +34,8 @@ bt.cleanupBackend()
 bt.testObjectMethods()
 bt.testInventoryObjectMethods()
 bt.testNonObjectMethods()
-bt.testMultithreading()
-bt.testPerformance()
+#bt.testMultithreading()
+#bt.testPerformance()
 
 
 

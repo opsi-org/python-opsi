@@ -48,6 +48,22 @@ from OPSI.Backend.Backend import *
 # Get logger instance
 logger = Logger()
 
+loglevel = LOG_NONE
+loglevel = LOG_COMMENT
+loglevel = LOG_CRITICAL
+loglevel = LOG_ERROR
+loglevel = LOG_WARNING
+loglevel = LOG_NOTICE
+loglevel = LOG_INFO
+loglevel = LOG_DEBUG
+loglevel = LOG_DEBUG2
+#loglevel = LOG_CONFIDENTIAL
+
+
+logger.setConsoleLevel(loglevel)
+logger.setConsoleColor(True)
+
+
 # ======================================================================================================
 # =                                   CLASS FILEBACKEND                                                =
 # ======================================================================================================
@@ -1689,8 +1705,10 @@ class FileBackend(ConfigDataBackend):
 		section = u'HARDWARE_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditHardware.toHash().items():
-			if (value is None) or (key == 'type'):
+			if (key == 'type'):
 				continue
+			if (value is None):
+				value = u''
 			ini.set(section, key.lower(), self.__escape(value))
 		iniFile.generate(ini)
 	
@@ -1706,9 +1724,8 @@ class FileBackend(ConfigDataBackend):
 		for section in ini.sections():
 			found = True
 			for (key, value) in ident.items():
-				if not ini.has_option(section, key.lower()):
-					continue
-				if (self.__unescape(ini.get(section, key.lower())) != value):
+				key = key.lower()
+				if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
 					found = False
 					break
 			if not found:
@@ -1750,21 +1767,33 @@ class FileBackend(ConfigDataBackend):
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
 			idents.append(auditHardware.getIdent(returnType = 'dict'))
 		
-		for section in ini.sections():
-			for ident in idents:
+		sections = []
+		
+		for ident in idents:
+			for section in ini.sections():
+				if (section in sections):
+					continue
+				if (len(ini.options(section)) != len(ident.keys())):
+					continue
+				
 				found = True
-				for (key, value) in ident.items():
-					if not ini.has_option(section, key.lower()):
-						continue
-					if (self.__unescape(ini.get(section, key.lower())) != value):
+				for option in ini.options(section):
+					if (option.lower() == u'hardwareclass'):
+						option = u'hardwareClass'
+					if (not option in ident.keys()):
 						found = False
 						break
 				
-				logger.debug2(u"Deleting auditHardware '%s'" % (ident))
 				if found:
-					ini.remove_section(section)
-					logger.debug2(u"Removed section '%s'" % (section))
-		iniFile.generate(ini)
+					sections.append(section)
+					break
+		
+		for section in sections:
+			ini.remove_section(section)
+			logger.debug2(u"Removed section '%s'" % (section))
+		
+		if len(sections) > 0:
+			iniFile.generate(ini)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
@@ -1792,7 +1821,11 @@ class FileBackend(ConfigDataBackend):
 		section = u'HARDWARE_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditHardwareOnHost.toHash().items():
-			if (value is None) or (key == 'hostId'):
+			if (value is None):
+				if (key in ('firstseen', 'lastseen', 'state')):
+					continue
+				value = u''
+			if (key in ('hostId', 'type')):
 				continue
 			ini.set(section, key.lower(), self.__escape(value))
 		iniFile.generate(ini)
@@ -1806,26 +1839,28 @@ class FileBackend(ConfigDataBackend):
 		ini = iniFile.parse()
 		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
 		
-		updated = False
+		found = True
 		for section in ini.sections():
-			found = True
-			for (key, value) in ident.items():
-				key = key.lower()
-				if key == 'hostid':
-					continue
-				if value is None and not ini.has_option(section, key):
-					continue
-				if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
+			if (len(ini.options(section)) != len(ident.keys()) - 1): #not hostid
+				continue
+			
+			for option in ini.options(section):
+				if (option.lower() == u'hardwareclass'):
+					option = u'hardwareClass'
+				if (not option in ident.keys()):
 					found = False
 					break
-			if found:
-				for (key, value) in auditHardwareOnHost.toHash().items():
-					if value is None:
-						continue
-					ini.set(section, key.lower(), self.__escape(value))
-				iniFile.generate(ini)
-				return
-		raise Exception(u"auditHardwareOnHost %s not found" % auditHardwareOnHost)
+			
+		if found:
+			for (key, value) in auditHardwareOnHost.toHash().items():
+				if (key == 'hostId') or (not key in ('firstseen', 'lastseen', 'state')):
+					continue
+				if value is None:
+					continue
+				ini.set(section, key.lower(), self.__escape(value))
+			iniFile.generate(ini)
+		else:
+			raise Exception(u"auditHardwareOnHost %s not found" % auditHardwareOnHost)
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
@@ -1869,7 +1904,7 @@ class FileBackend(ConfigDataBackend):
 			if filename in items.keys():
 				items[filename].append(ident)
 			else:
-				items[filename] = ident
+				items[filename] = [ident]
 		
 		for filename in items.keys():
 			idents = forceList(items[filename])
@@ -1878,18 +1913,28 @@ class FileBackend(ConfigDataBackend):
 			
 			sections = []
 			
-			for section in ini.sections():
-				for ident in idents:
+			for ident in idents:
+				print "in idents"
+				for section in ini.sections():
+					print "in sections"
+					if (section in sections):
+						print "%s has %s" % (sections, section)
+						continue
+					if (len(ini.options(section)) != len(ident.keys()) - 1): #not hostid
+						print ":::", len(ini.options(section)), ":::", ini.options(section), "!=", ident.keys(), ":::", len(ident.keys()), ":::"
+						continue
+					
 					found = True
-					for (key, value) in ident.items():
-						key = key.lower()
-						if key == 'hostid':
-							continue
-						if value is None and not ini.has_option(section, key):
-							continue
-						if (not ini.has_option(section, key)) or (not self.__unescape(ini.get(section, key) == value)):
+					for option in ini.options(section):
+						print "in options"
+						if (option.lower() == u'hardwareclass'):
+							option = u'hardwareClass'
+						if (not option in ident.keys()):
+							print "####################################################"
+							print "%s has not %s" % (iden.keys(), option)
 							found = False
 							break
+					
 					if found:
 						sections.append(section)
 						break
@@ -1900,7 +1945,7 @@ class FileBackend(ConfigDataBackend):
 			
 			if len(sections) > 0:
 				iniFile.generate(ini)
-		
+	
 	
 	
 	
