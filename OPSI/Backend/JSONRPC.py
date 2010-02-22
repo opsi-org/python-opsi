@@ -92,6 +92,7 @@ class JSONRPCBackend(Backend):
 		self._retry = True
 		self._rpcLock = threading.Lock()
 		self._backendOptions = {}
+		self._legacyOpsi = False
 		
 		if ( self._address.find('/') == -1 and self._address.find('=') == -1 ):
 			if (self._protocol == 'https'):
@@ -108,7 +109,10 @@ class JSONRPCBackend(Backend):
 		
 	def backend_exit(self):
 		if self._connected:
-			self._jsonRPC('backend_exit')
+			if self._legacyOpsi:
+				self._jsonRPC('exit')
+			else:
+				self._jsonRPC('backend_exit')
 			self._disconnect()
 	
 	def backend_setOptions(self, options):
@@ -116,6 +120,33 @@ class JSONRPCBackend(Backend):
 		if self._connected:
 			self._jsonRPC('backend_setOptions', [ self._backendOptions ])
 	
+	def _createInstanceMethods34(self):
+		for method in self._interface:
+			# Create instance method
+			params = ['self']
+			params.extend( method.get('params', []) )
+			paramsWithDefaults = list(params)
+			for i in range(len(params)):
+				if params[i].startswith('*'):
+					params[i] = params[i][1:]
+					paramsWithDefaults[i] = params[i] + '="__UNDEF__"'
+			
+			logger.debug2("Creating instance method '%s'" % method['name'])
+			
+			
+			if (len(params) == 2):
+				logger.debug2('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
+					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])) )
+				exec 'def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
+					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:]))
+			else:
+				logger.debug2('def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'\
+					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:])) )
+				exec 'def %s(%s): return self._jsonRPC(method = "%s", params = [%s])'\
+					% (method['name'], ', '.join(paramsWithDefaults), method['name'], ', '.join(params[1:]))
+			
+			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
+		
 	def _createInstanceMethods(self):
 		for method in self._interface:
 			try:
@@ -202,10 +233,20 @@ class JSONRPCBackend(Backend):
 			if not self._interface:
 				self._retry = False
 				try:
-					self._interface = self._jsonRPC(u'backend_getInterface')
+					try:
+						self._interface = self._jsonRPC(u'backend_getInterface')
+					except Exception, e:
+						logger.debug("backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
+						self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
+						logger.info(u"Legacy opsi")
+						self._legacyOpsi = True
 				finally:
 					self._retry = True
-			self._createInstanceMethods()
+			
+			if self._legacyOpsi:
+				self._createInstanceMethods34()
+			else:
+				self._createInstanceMethods()
 			
 			logger.info(u"Successfully connected to '%s:%s'" % (host, port))
 			self._connected = True

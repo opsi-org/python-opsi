@@ -42,8 +42,11 @@ EXCLUDE_DIRS_ON_PACK          = u'^\.svn$'
 EXCLUDE_FILES_ON_PACK         = u'~$'
 
 # Imports
-import os, pwd, grp, shutil
+import os, shutil
 
+if (os.name == 'posix'):
+	import pwd, grp
+	
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
@@ -298,6 +301,8 @@ class ProductPackageFile(object):
 		
 	def setAccessRights(self):
 		logger.notice(u"Setting access rights of client-data files")
+		if (os.name == 'posix'):
+			raise NotImplementedError(u"setAccessRights not implemented on windows")
 		try:
 			if not self.packageControlFile:
 				raise Exception(u"Metadata not present")

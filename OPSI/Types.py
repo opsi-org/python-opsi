@@ -328,7 +328,7 @@ def forceInstallationStatus(var):
 	if var:
 		if (var == 'undefined'):
 			var = None
-		elif var not in ('installed', 'not_installed', 'failed'):
+		elif var not in ('installed', 'not_installed'):
 			raise ValueError(u"Bad installation status: '%s'" % var)
 	return var
 

@@ -197,7 +197,7 @@ class ChoiceSubject(MessageSubject):
 	
 	def _notifySelectedIndexesChanged(self):
 		for o in self._observers:
-			o.selectedIndexesChanged(self, self._selectedIndex)
+			o.selectedIndexesChanged(self, self._selectedIndexes)
 	
 	def _notifyChoicesChanged(self):
 		for o in self._observers:
@@ -634,7 +634,8 @@ class NotificationClientFactory(ClientFactory):
 				method = rpc['method']
 				params = rpc['params']
 				logger.info( u"eval self._observer.%s(%s)" % (method, unicode(params)[1:-1]) )
-				eval( "self._observer.%s(**params)" % method )
+				logger.debug( "self._observer.%s(*params)" % method )
+				eval( "self._observer.%s(*params)" % method )
 		except Exception, e:
 			logger.error(e)
 	

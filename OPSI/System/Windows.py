@@ -64,8 +64,17 @@ class PROCESSENTRY32(Structure):
                  ("pcPriClassBase", c_ulong),
                  ("dwFlags", c_ulong),
                  ("szExeFile", c_char * 260)]
-                 
-                 
+
+
+def which(cmd):
+	raise NotImplementedError(u"which() not implemented on windows")
+
+def execute(cmd, nowait=False, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=False, capturestderr=True):
+	raise NotImplementedError(u"execute() not implemented on windows")
+
+def getDiskSpaceUsage(path):
+	raise NotImplementedError(u"getDiskSpaceUsage() not implemented on windows")
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

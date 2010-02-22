@@ -35,8 +35,11 @@
 __version__ = "3.4.99"
 
 # Imports
-import os, magic, subprocess, fcntl, locale
+import os, subprocess, locale
 
+if (os.name == 'posix'):
+	import magic, fcntl
+	
 # OPSI imports
 from OPSI.Logger import *
 from OPSI import System
@@ -45,6 +48,9 @@ from OPSI.Types import *
 logger = Logger()
 
 def getFileTye(filename):
+	if (os.name == 'nt'):
+		raise NotImplementedError(u"getFileTye() not implemented on windows")
+	
 	filename = forceFilename(filename)
 	ms = magic.open(magic.MAGIC_NONE)
 	ms.load()
