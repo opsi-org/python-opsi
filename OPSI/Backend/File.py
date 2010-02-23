@@ -1751,7 +1751,6 @@ class FileBackend(ConfigDataBackend):
 			
 			auditHardware = AuditHardware.fromHash(objHash)
 			if self._objectHashMatches(auditHardware.toHash(), **filter):
-				#TODO: adaptObjHash?
 				result.append(auditHardware)
 		
 		return result
@@ -1771,16 +1770,36 @@ class FileBackend(ConfigDataBackend):
 		
 		for ident in idents:
 			for section in ini.sections():
-				if (section in sections):
+				if section in sections:
 					continue
-				if (len(ini.options(section)) != len(ident.keys())):
+				found = True
+				
+				for option in ini.options(section):
+					option = option.lower()
+					if option == 'hardwareclass':
+						option = 'hardwareClass'
+					try:
+						if (not option in ident.keys()):
+							raise Exception
+						if (not ident[option] == ini.get(section, option.lower())):
+							raise Exception
+					except:
+						found = False
+						break
+				
+				if not found:
 					continue
 				
-				found = True
-				for option in ini.options(section):
-					if (option.lower() == u'hardwareclass'):
-						option = u'hardwareClass'
-					if (not option in ident.keys()):
+				for key in ident.keys():
+					key = key.lower()
+					if key == 'hardwareclass':
+						key = 'hardwareClass'
+					try:
+						if (not key.lower() in ini.options(section)):
+							raise Exception
+						if (not ident[key] == ini.get(section, key.lower())):
+							raise Exception
+					except:
 						found = False
 						break
 				
@@ -1788,11 +1807,10 @@ class FileBackend(ConfigDataBackend):
 					sections.append(section)
 					break
 		
-		for section in sections:
-			ini.remove_section(section)
-			logger.debug2(u"Removed section '%s'" % (section))
-		
 		if len(sections) > 0:
+			for section in sections:
+				ini.remove_section(section)
+				logger.debug2(u"Removed section '%s'" % (section))
 			iniFile.generate(ini)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1897,41 +1915,58 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		
 		logger.debug(u"Deleting auditHardwareOnHosts ...")
-		items = {}
+		identsInFile = {}
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			ident = auditHardwareOnHost.getIdent(returnType = 'dict')
 			filename = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
-			if filename in items.keys():
-				items[filename].append(ident)
+			if filename in identsInFile.keys():
+				identsInFile[filename].append(ident)
 			else:
-				items[filename] = [ident]
+				identsInFile[filename] = [ident]
 		
-		for filename in items.keys():
-			idents = forceList(items[filename])
+		for filename in identsInFile.keys():
+			idents = forceList(identsInFile[filename])
 			iniFile = IniFile(filename = filename)
 			ini = iniFile.parse()
 			
 			sections = []
 			
 			for ident in idents:
-				print "in idents"
 				for section in ini.sections():
-					print "in sections"
-					if (section in sections):
-						print "%s has %s" % (sections, section)
+					if section in sections:
 						continue
-					if (len(ini.options(section)) != len(ident.keys()) - 1): #not hostid
-						print ":::", len(ini.options(section)), ":::", ini.options(section), "!=", ident.keys(), ":::", len(ident.keys()), ":::"
+					found = True
+					
+					for option in ini.options(section):
+						option = option.lower()
+						if option in ('firstseen', 'lastseen', 'state'):
+							continue
+						if option == 'hardwareclass':
+							option = 'hardwareClass'
+						try:
+							if (not option in ident.keys()):
+								raise Exception
+							if (not ident[option] == ini.get(section, option.lower())):
+								raise Exception
+						except:
+							found = False
+							break
+					
+					if not found:
 						continue
 					
-					found = True
-					for option in ini.options(section):
-						print "in options"
-						if (option.lower() == u'hardwareclass'):
-							option = u'hardwareClass'
-						if (not option in ident.keys()):
-							print "####################################################"
-							print "%s has not %s" % (iden.keys(), option)
+					for key in ident.keys():
+						key = key.lower()
+						if key == 'hostid':
+							continue
+						if key == 'hardwareclass':
+							key = 'hardwareClass'
+						try:
+							if (not key.lower() in ini.options(section)):
+								raise Exception
+							if (not ident[key] == ini.get(section, key.lower())):
+								raise Exception
+						except:
 							found = False
 							break
 					
@@ -1939,20 +1974,11 @@ class FileBackend(ConfigDataBackend):
 						sections.append(section)
 						break
 			
-			for section in sections:
-				ini.remove_section(section)
-				logger.debug2(u"Removed section '%s'" % (section))
-			
 			if len(sections) > 0:
+				for section in sections:
+					ini.remove_section(section)
+					logger.debug2(u"Removed section '%s'" % (section))
 				iniFile.generate(ini)
-	
-	
-	
-	
-
-
-
-
 
 
 
