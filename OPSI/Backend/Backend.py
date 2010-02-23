@@ -1966,11 +1966,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for productOnDepot in productOnDepots:
 			logger.info(u"Creating productOnDepot '%s'" % productOnDepot)
 			if self.productOnDepot_getIdents(
-					productId = productOnDepot.productId,
-					depotId   = productOnDepot.depotId):
+					productId      = productOnDepot.productId,
+					productType    = productOnDepot.productType,
+					productVersion = productOnDepot.productVersion,
+					packageVersion = productOnDepot.packageVersion,
+					depotId        = productOnDepot.depotId):
 				logger.info(u"ProductOnDepot '%s' already exists, updating" % productOnDepot)
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
+				currentProductOnDepots = self._backend.productOnDepot_getObjects(
+								productId = productOnDepot.productId,
+								depotId   = productOnDepot.depotId)
+				if currentProductOnDepots:
+					updatedProductOnDepot = currentProductOnDepots[0].toHash()
+					updatedProductOnDepot.update(productOnDepot.toHash())
+					self._backend.productOnDepot_deleteObjects( [ currentProductOnDepots[0] ] )
+					productOnDepot = ProductOnDepot.fromHash(updatedProductOnDepot)
 				self._backend.productOnDepot_insertObject(productOnDepot)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
@@ -2442,11 +2453,20 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient '%s'" % productOnClient)
 			if self.productOnClient_getIdents(
-					productId = productOnClient.productId,
-					clientId  = productOnClient.clientId):
+					productId   = productOnClient.productId,
+					productType = productOnClient.productType,
+					clientId    = productOnClient.clientId):
 				logger.info(u"ProductOnClient '%s' already exists, updating" % productOnClient)
 				self._backend.productOnClient_updateObject(productOnClient)
 			else:
+				currentProductOnClients = self._backend.productOnClient_getObjects(
+								productId = productOnClient.productId,
+								clientId  = productOnClient.clientId)
+				if currentProductOnClients:
+					updatedProductOnClient = currentProductOnClients[0].toHash()
+					updatedProductOnClient.update(productOnClient.toHash())
+					self._backend.productOnClient_deleteObjects( [ currentProductOnClients[0] ] )
+					productOnClient = ProductOnClient.fromHash(updatedProductOnClient)
 				self._backend.productOnClient_insertObject(productOnClient)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(

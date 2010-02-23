@@ -181,6 +181,7 @@ class DepotserverPackageManager(object):
 						if not force:
 							raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
 						logger.warning(u"Installation of locked product forced")
+				logger.info(u"Creating product on depot %s" % productOnDepot)
 				self._depotBackend._context.productOnDepot_createObjects(productOnDepot)
 				
 				logger.notice(u"Checking package dependencies")
@@ -284,7 +285,8 @@ class DepotserverPackageManager(object):
 				ppf.setAccessRights()
 				ppf.cleanup()
 				
-				logger.notice(u"Unlocking product '%s' on depot '%s'" % (productOnDepot.getProductId(), depotId))
+				logger.notice(u"Unlocking product '%s_%s-%s' on depot '%s'" \
+							% (productOnDepot.getProductId(), productOnDepot.getProductVersion(), productOnDepot.getPackageVersion(), depotId))
 				productOnDepot.setLocked(False)
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 				
