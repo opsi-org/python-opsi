@@ -1938,8 +1938,9 @@ class BackendTest(object):
 			'returnObjectsOnUpdateAndCreate':      False
 		})
 		
+		clients = self.backend.host_getObjects(type = 'OpsiClient')
 		clientToDepots = self.backend.configState_getClientToDepotserver()
-		assert len(clientToDepots) == len(self.clients), u"got: '%s', expected: '%s'" % (clientToDepots, len(self.clients))
+		assert len(clientToDepots) == len(clients), u"got: '%s', expected: '%s'" % (clientToDepots, len(clients))
 		
 		for depotserver in self.depotservers:
 			productOnDepots = self.backend.productOnDepot_getObjects(depotId = depotserver.id)
@@ -2025,7 +2026,7 @@ class BackendTest(object):
 		
 		
 		
-	def testPerformance(self, clientCount=100, productCount=50):
+	def testPerformance(self, clientCount=500, productCount=50):
 		consoleLevel = logger.getConsoleLevel()
 		if (consoleLevel > LOG_NOTICE):
 			logger.setConsoleLevel(LOG_NOTICE)
@@ -2104,17 +2105,18 @@ class BackendTest(object):
 			if product.alwaysScript:    actions.append('always')
 			if product.updateScript:    actions.append('update')
 			for clientId in self.backend.host_getIdents(type = 'OpsiClient'):
-				self.backend.productOnClient_create(
-					productId = product.id,
-					productType = product.getType(),
-					clientId = clientId,
-					installationStatus = random.choice(('installed', 'not_installed', None)),
-					actionRequest = random.choice(actions),
-					actionProgress = random.choice(('installing 100%', 'uninstalling 56%', 'something', None)),
-					productVersion = product.productVersion,
-					packageVersion = product.packageVersion,
-					lastStateChange = None
-				)
+				if random.choice((True, False, False, False)):
+					self.backend.productOnClient_create(
+						productId = product.id,
+						productType = product.getType(),
+						clientId = clientId,
+						installationStatus = random.choice(('installed', 'not_installed')),
+						actionRequest = random.choice(actions),
+						actionProgress = random.choice(('installing 30%', 'uninstalling 30%', 'syncing 60%', None, '', 'failed')),
+						productVersion = product.productVersion,
+						packageVersion = product.packageVersion,
+						lastStateChange = None
+					)
 		
 		logger.setConsoleLevel(consoleLevel)
 	

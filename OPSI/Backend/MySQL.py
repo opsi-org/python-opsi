@@ -358,6 +358,10 @@ class MySQLBackend(ConfigDataBackend):
 		if 'id' in newAttributes:
 			newAttributes.remove('id')
 			newAttributes.append(id)
+		if 'type' in filter.keys():
+			for oc in forceList(filter['type']):
+				if (objectClass.__name__ == oc):
+					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
 		if newAttributes:
 			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
 				newAttributes.append('type')
@@ -1705,8 +1709,9 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
 		data = auditHardware.toHash()
-		table = u'HARDWARE_DEVICE_' + auditHardware['hardwareClass']
+		table = u'HARDWARE_DEVICE_' + data['hardwareClass']
 		del data['hardwareClass']
+		del data['type']
 		
 		self._mysql.insert(table, data)
 		
@@ -1726,7 +1731,7 @@ class MySQLBackend(ConfigDataBackend):
 		
 		logger.info(u"Getting auditHardwares, filter: %s" % filter)
 		auditHardwares = []
-		for res in self._auditHardware_search(returnHardwareId = False, attributes = attributes, **filter):
+		for res in self._auditHardware_search(returnHardwareIds = False, attributes = attributes, **filter):
 			auditHardwares.append( AuditHardware.fromHash(res) )
 		return auditHardwares
 		
@@ -1859,6 +1864,8 @@ class MySQLBackend(ConfigDataBackend):
 		
 		where = u''
 		for (attribute, value) in auditHardwareOnHost.items():
+			if value is None:
+				continue
 			if (attribute == 'state'):
 				if where: where += u' and '
 				where += u"`audit_%s` = %s" % (attribute, forceAuditState(value))
