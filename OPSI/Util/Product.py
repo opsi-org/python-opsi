@@ -301,7 +301,7 @@ class ProductPackageFile(object):
 		
 	def setAccessRights(self):
 		logger.notice(u"Setting access rights of client-data files")
-		if (os.name == 'posix'):
+		if (os.name != 'posix'):
 			raise NotImplementedError(u"setAccessRights not implemented on windows")
 		try:
 			if not self.packageControlFile:

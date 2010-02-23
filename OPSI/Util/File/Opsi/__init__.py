@@ -370,8 +370,8 @@ class PackageControlFile(TextFile):
 				match = self.optionRegex.search(line)
 				if match:
 					key = match.group(1).lower()
-					value = match.group(2).lstrip()
-			
+					#value = match.group(2).lstrip()
+					value = match.group(2).strip()
 			
 				
 			if (sectionType == 'package' and key in \
