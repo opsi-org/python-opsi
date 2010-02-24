@@ -558,11 +558,32 @@ def blowfishDecrypt(key, crypt):
 		raise Exception(u"Failed to decrypt")
 	
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True):
+	directory = forceFilename(directory)
+	prefix = forceUnicode(prefix)
+	if excludeDir:
+		excludeDir = forceUnicode(excludeDir)
+	else:
+		excludeDir = None
+	if excludeFile:
+		excludeFile = forceUnicode(excludeFile)
+	else:
+		excludeFile = None
+	if includeDir:
+		includeDir = forceUnicode(includeDir)
+	else:
+		includeDir = None
+	if includeFile:
+		includeFile = forceUnicode(includeFile)
+	else:
+		includeFile = None
+	returnDirs = forceBool(returnDirs)
+	returnLinks = forceBool(returnLinks)
+	
 	files = []
 	entries = os.listdir(directory)
 	for entry in entries:
 		#TODO: . + .. won't be returned from listdir
-		if entry in ('.', '..'):
+		if entry in (u'.', u'..'):
 			continue
 		if os.path.islink(os.path.join(directory, entry)):
 			if returnLinks:
