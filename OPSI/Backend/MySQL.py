@@ -1702,8 +1702,10 @@ class MySQLBackend(ConfigDataBackend):
 	def _getHardwareIds(self, auditHardware):
 		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
-		return self._auditHardware_search(returnHardwareIds = True, attributes=[], **auditHardware)
-		
+		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
+		hardwareIds = self._auditHardware_search(returnHardwareIds = True, attributes=[], **auditHardware)
+		logger.debug(u"Found hardware ids: %s" % hardwareIds)
+		return hardwareIds
 	
 	def auditHardware_insertObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
@@ -1927,6 +1929,9 @@ class MySQLBackend(ConfigDataBackend):
 				continue
 			data[attribute] = value
 		
+		for (key, value) in auditHardware.items():
+			if value is None:
+				auditHardware[key] = [ None ]
 		hardwareIds = self._getHardwareIds(auditHardware)
 		if not hardwareIds:
 			raise BackendReferentialIntegrityError(u"Hardware device %s not found" % auditHardware)
