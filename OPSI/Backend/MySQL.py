@@ -754,7 +754,7 @@ class MySQLBackend(ConfigDataBackend):
 					PRIMARY KEY( `licensePoolId` ),
 					`type` varchar(30) NOT NULL,
 					INDEX(`type`),
-					`description` varchar(100)
+					`description` varchar(200)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
