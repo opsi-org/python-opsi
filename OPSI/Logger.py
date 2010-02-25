@@ -515,7 +515,11 @@ class LoggerImplementation:
 			if (self.__consoleStdout):
 				fh = sys.stdout
 			
-			fhEncoding = fh.encoding
+			fhEncoding = None
+			try:
+				fhEncoding = fh.encoding
+			except:
+				pass
 			if fhEncoding is None:
 				fhEncoding = locale.getpreferredencoding()
 			
@@ -758,6 +762,7 @@ class VirtFile:
 	def __init__(self, logger, level):
 		self.logger = logger
 		self.level = level
+		self.encoding = 'utf-8'
 		
 	def write(self, s):
 		self.logger.log(self.level, s)

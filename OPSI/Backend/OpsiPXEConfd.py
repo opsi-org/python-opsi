@@ -52,13 +52,14 @@ logger = Logger()
 # =                                   CLASS SERVERCONNECTION                                           =
 # ======================================================================================================
 class ServerConnection:
-	def __init__(self, port):
+	def __init__(self, port, timeout = 10):
 		self.port = port
-	
+		self.timeout = forceInt(timeout)
+		
 	def createUnixSocket(self):
 		logger.notice(u"Creating unix socket '%s'" % self.port)
 		self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		self._socket.settimeout(5.0)
+		self._socket.settimeout(self.timeout)
 		try:
 			self._socket.connect(self.port)
 		except Exception, e:
@@ -88,12 +89,15 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+		self._timeout = 10
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option in ('port',):
 				self._port = value
+			if option in ('timeout',):
+				self._timeout = forceInt(value)
 		
 		self._depotId = forceHostId(socket.getfqdn())
 		self._opsiHostKey = None
@@ -154,7 +158,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		
 		command = u'update %s' % clientId
 		try:
-			sc = ServerConnection(self._port)
+			sc = ServerConnection(self._port, self._timeout)
 			logger.info(u"Sending command '%s'" % command)
 			result = sc.sendCommand(command)
 			logger.info(u"Got result '%s'" % result)

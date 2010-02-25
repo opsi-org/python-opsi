@@ -184,7 +184,7 @@ class ChoiceSubject(MessageSubject):
 		return self._choices
 	
 	def selectChoice(self):
-		logger.info(u"ChoiceSubject.selectChoice()")
+		logger.debug(u"ChoiceSubject.selectChoice()")
 		for selectedIndex in self._selectedIndexes:
 			if (selectedIndex >= 0) and (selectedIndex < len(self._callbacks)):
 				# Exceute callback
@@ -447,17 +447,17 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			id = rpc['id']
 			params = rpc['params']
 			
-			if (method == 'setSelectedIndex'):
+			if (method == 'setSelectedIndexes'):
 				subjectId = params[0]
-				selectedIndex = params[1]
+				selectedIndexes = params[1]
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
 						continue
-					result = subject.setSelectedIndex(selectedIndex)
+					result = subject.setSelectedIndexes(selectedIndexes)
 					break
 			
 			elif (method == 'selectChoice'):
-				logger.info(u"selectChoice(%s)" % unicode(params)[1:-1])
+				logger.debug(u"selectChoice(%s)" % unicode(params)[1:-1])
 				subjectId = params[0]
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
@@ -684,8 +684,8 @@ class NotificationClient(threading.Thread):
 		if stopReactor and reactor and reactor.running:
 			reactor.stop()
 	
-	def setSelectedIndex(self, subjectId, choiceIndex):
-		self._factory.execute(method = 'setSelectedIndex', params = [ subjectId, choiceIndex ])
+	def setSelectedIndexes(self, subjectId, selectedIndexes):
+		self._factory.execute(method = 'setSelectedIndexes', params = [ subjectId, selectedIndexes ])
 	
 	def selectChoice(self, subjectId):
 		self._factory.execute(method = 'selectChoice', params = [ subjectId ])
