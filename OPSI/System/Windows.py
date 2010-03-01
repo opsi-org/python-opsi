@@ -373,6 +373,21 @@ def shutdown(wait=10):
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, u"Opsi shutdown", wait, True, False)
 
+def abortShutdown():
+	logger.notice(u"Aborting system shutdown")
+	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
+	win32api.AbortSystemShutdown(None)
+
+#def blockShutdown():
+#	logger.notice(u"Blocking system shutdown")
+#	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
+#	win32api.ShutdownBlockReasonCreate()
+#
+#def unblockShutdown():
+#	logger.notice(u"Unblocking system shutdown")
+#	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
+#	win32api.ShutdownBlockReasonDestroy()
+
 def createWindowStation(name):
 	name = forceUnicode(name)
 	sa = pywintypes.SECURITY_ATTRIBUTES()
