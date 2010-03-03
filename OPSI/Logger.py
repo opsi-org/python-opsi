@@ -429,7 +429,7 @@ class LoggerImplementation:
 		color      = COLOR_NORMAL
 		filename   = u''
 		linenumber = u''
-		datetime   = time.strftime(u"%b %d %H:%M:%S", time.localtime() )
+		datetime   = time.strftime(u"%b %d %H:%M:%S", time.localtime()).decode("utf-8")
 		threadId   = unicode(thread.get_ident())
 		
 		if (level == LOG_CONFIDENTIAL):

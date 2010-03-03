@@ -526,7 +526,7 @@ class FileBackend(ConfigDataBackend):
 					if objType == 'ObjectToGroup':
 						for option in cp.options(section):
 							try:
-								if option in ('description', 'parentGroupId', 'notes', 'parentgroupid'):
+								if option in ('description', 'notes', 'parentgroupid'):
 									continue
 								
 								value = cp.get(section, option)
