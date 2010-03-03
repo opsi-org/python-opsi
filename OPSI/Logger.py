@@ -429,7 +429,7 @@ class LoggerImplementation:
 		color      = COLOR_NORMAL
 		filename   = u''
 		linenumber = u''
-		datetime   = time.strftime(u"%b %d %H:%M:%S", time.localtime()).decode("utf-8")
+		datetime   = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
 		threadId   = unicode(thread.get_ident())
 		
 		if (level == LOG_CONFIDENTIAL):
@@ -484,13 +484,13 @@ class LoggerImplementation:
 			if (self.__messageSubjectLevel < LOG_CONFIDENTIAL):
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
-			m = m.replace('%D', datetime)
-			m = m.replace('%T', threadId)
-			m = m.replace('%l', unicode(level))
-			m = m.replace('%L', levelname)
-			m = m.replace('%M', message)
-			m = m.replace('%F', filename)
-			m = m.replace('%N', linenumber)
+			m = m.replace(u'%D', datetime)
+			m = m.replace(u'%T', threadId)
+			m = m.replace(u'%l', unicode(level))
+			m = m.replace(u'%L', levelname)
+			m = m.replace(u'%M', message)
+			m = m.replace(u'%F', filename)
+			m = m.replace(u'%N', linenumber)
 			
 			self.__loggerSubject.setMessage(m, level)
 		
@@ -503,13 +503,13 @@ class LoggerImplementation:
 			if (self.__consoleLevel < LOG_CONFIDENTIAL):
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
-			m = m.replace('%D', datetime)
-			m = m.replace('%T', threadId)
-			m = m.replace('%l', unicode(level))
-			m = m.replace('%L', levelname)
-			m = m.replace('%M', message)
-			m = m.replace('%F', filename)
-			m = m.replace('%N', linenumber)
+			m = m.replace(u'%D', datetime)
+			m = m.replace(u'%T', threadId)
+			m = m.replace(u'%l', unicode(level))
+			m = m.replace(u'%L', levelname)
+			m = m.replace(u'%M', message)
+			m = m.replace(u'%F', filename)
+			m = m.replace(u'%N', linenumber)
 			
 			fh = sys.stderr
 			if (self.__consoleStdout):
@@ -542,13 +542,13 @@ class LoggerImplementation:
 				if (self.__fileLevel < LOG_CONFIDENTIAL):
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
-				m = m.replace('%D', datetime)
-				m = m.replace('%T', threadId)
-				m = m.replace('%l', unicode(level))
-				m = m.replace('%L', levelname)
-				m = m.replace('%M', message)
-				m = m.replace('%F', filename)
-				m = m.replace('%N', linenumber)
+				m = m.replace(u'%D', datetime)
+				m = m.replace(u'%T', threadId)
+				m = m.replace(u'%l', unicode(level))
+				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%M', message)
+				m = m.replace(u'%F', filename)
+				m = m.replace(u'%N', linenumber)
 				
 				# Open the file
 				lf = None
@@ -598,13 +598,13 @@ class LoggerImplementation:
 			if (self.__syslogLevel < LOG_CONFIDENTIAL):
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
-			m = m.replace('%D', datetime)
-			m = m.replace('%T', threadId)
-			m = m.replace('%l', unicode(level))
-			m = m.replace('%L', levelname)
-			m = m.replace('%M', message)
-			m = m.replace('%F', filename)
-			m = m.replace('%N', linenumber)
+			m = m.replace(u'%D', datetime)
+			m = m.replace(u'%T', threadId)
+			m = m.replace(u'%l', unicode(level))
+			m = m.replace(u'%L', levelname)
+			m = m.replace(u'%M', message)
+			m = m.replace(u'%F', filename)
+			m = m.replace(u'%N', linenumber)
 			
 			if (os.name == 'posix'):
 				if (level == LOG_CONFIDENTIAL):
@@ -637,13 +637,13 @@ class LoggerImplementation:
 			m = unicode(m)
 			for string in self.__confidentialStrings:
 				m = m.replace(string, u'*** confidential ***')
-			m = m.replace('%D', datetime)
-			m = m.replace('%T', threadId)
-			m = m.replace('%l', unicode(level))
-			m = m.replace('%L', levelname)
-			m = m.replace('%M', message)
-			m = m.replace('%F', filename)
-			m = m.replace('%N', linenumber)
+			m = m.replace(u'%D', datetime)
+			m = m.replace(u'%T', threadId)
+			m = m.replace(u'%l', unicode(level))
+			m = m.replace(u'%L', levelname)
+			m = m.replace(u'%M', message)
+			m = m.replace(u'%F', filename)
+			m = m.replace(u'%N', linenumber)
 				
 			if (level == LOG_CONFIDENTIAL):
 				pass
