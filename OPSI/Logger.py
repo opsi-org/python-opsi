@@ -411,135 +411,77 @@ class LoggerImplementation:
 	
 	def log(self, level, message):
 		''' Log a message '''
-		
-		if (level > self.__messageSubjectLevel and
-		    level > self.__consoleLevel and 
-		    level > self.__fileLevel and 
-		    level > self.__syslogLevel and
-		    not self.univentionLogger_priv):
-			    return
-		
-		if not type(message) is unicode:
-			if not type(message) is str:
-				message = unicode(message)
-			else:
-				message = unicode(message, 'utf-8', 'replace')
-		
-		levelname  = u''
-		color      = COLOR_NORMAL
-		filename   = u''
-		linenumber = u''
-		datetime   = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
-		threadId   = unicode(thread.get_ident())
-		
-		if (level == LOG_CONFIDENTIAL):
-			levelname = u'confidential'
-			color     = CONFIDENTIAL_COLOR
-		elif (level == LOG_DEBUG2): 
-			levelname = u'debug2'
-			color     = DEBUG_COLOR
-		elif (level == LOG_DEBUG): 
-			levelname = u'debug'
-			color     = DEBUG_COLOR
-		elif (level == LOG_INFO):
-			levelname = u'info'
-			color     = INFO_COLOR
-		elif (level == LOG_NOTICE):
-			levelname = u'notice'
-			color     = NOTICE_COLOR
-		elif (level == LOG_WARNING):
-			levelname = u'warning'
-			color     = WARNING_COLOR
-		elif (level == LOG_ERROR):
-			levelname = u'error'
-			color     = ERROR_COLOR
-		elif (level == LOG_CRITICAL):
-			levelname = u'critical'
-			color     = CRITICAL_COLOR
-		elif (level == LOG_COMMENT):
-			levelname = u'comment'
-			color     = COMMENT_COLOR
-		
-		filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
-		linenumber = unicode( sys._getframe(2).f_lineno )
-		
-		specialConfig = self._getThreadConfig()
-		if not specialConfig and self.__objectConfig:
-			# Ouch, this hurts...
-			f = sys._getframe(2)
-			while (f != None):
-				obj = f.f_locals.get('self')
-				if obj:
-					c = self._getObjectConfig(id(obj))
-					if c:
-						specialConfig = c
-						break
-				f = f.f_back
-		
-		if (level <= self.__messageSubjectLevel):
-			m = self.__messageSubjectFormat
-			if specialConfig:
-				m = specialConfig.get('messageSubjectFormat', m)
-			m = unicode(m)
-			if (self.__messageSubjectLevel < LOG_CONFIDENTIAL):
-				for string in self.__confidentialStrings:
-					m = m.replace(string, u'*** confidential ***')
-			m = m.replace(u'%D', datetime)
-			m = m.replace(u'%T', threadId)
-			m = m.replace(u'%l', unicode(level))
-			m = m.replace(u'%L', levelname)
-			m = m.replace(u'%M', message)
-			m = m.replace(u'%F', filename)
-			m = m.replace(u'%N', linenumber)
+		try:
+			if (level > self.__messageSubjectLevel and
+			    level > self.__consoleLevel and 
+			    level > self.__fileLevel and 
+			    level > self.__syslogLevel and
+			    not self.univentionLogger_priv):
+				    return
 			
-			self.__loggerSubject.setMessage(m, level)
-		
-		if (level <= self.__consoleLevel):
-			# Log to terminal
-			m = self.__consoleFormat
-			if specialConfig:
-				m = specialConfig.get('consoleFormat', m)
-			m = unicode(m)
-			if (self.__consoleLevel < LOG_CONFIDENTIAL):
-				for string in self.__confidentialStrings:
-					m = m.replace(string, u'*** confidential ***')
-			m = m.replace(u'%D', datetime)
-			m = m.replace(u'%T', threadId)
-			m = m.replace(u'%l', unicode(level))
-			m = m.replace(u'%L', levelname)
-			m = m.replace(u'%M', message)
-			m = m.replace(u'%F', filename)
-			m = m.replace(u'%N', linenumber)
+			if not type(message) is unicode:
+				if not type(message) is str:
+					message = unicode(message)
+				else:
+					message = unicode(message, 'utf-8', 'replace')
 			
-			fh = sys.stderr
-			if (self.__consoleStdout):
-				fh = sys.stdout
+			levelname  = u''
+			color      = COLOR_NORMAL
+			filename   = u''
+			linenumber = u''
+			datetime   = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
+			threadId   = unicode(thread.get_ident())
 			
-			fhEncoding = None
-			try:
-				fhEncoding = fh.encoding
-			except:
-				pass
-			if fhEncoding is None:
-				fhEncoding = locale.getpreferredencoding()
+			if (level == LOG_CONFIDENTIAL):
+				levelname = u'confidential'
+				color     = CONFIDENTIAL_COLOR
+			elif (level == LOG_DEBUG2):
+				levelname = u'debug2'
+				color     = DEBUG_COLOR
+			elif (level == LOG_DEBUG):
+				levelname = u'debug'
+				color     = DEBUG_COLOR
+			elif (level == LOG_INFO):
+				levelname = u'info'
+				color     = INFO_COLOR
+			elif (level == LOG_NOTICE):
+				levelname = u'notice'
+				color     = NOTICE_COLOR
+			elif (level == LOG_WARNING):
+				levelname = u'warning'
+				color     = WARNING_COLOR
+			elif (level == LOG_ERROR):
+				levelname = u'error'
+				color     = ERROR_COLOR
+			elif (level == LOG_CRITICAL):
+				levelname = u'critical'
+				color     = CRITICAL_COLOR
+			elif (level == LOG_COMMENT):
+				levelname = u'comment'
+				color     = COMMENT_COLOR
 			
-			if self.__consoleColor:
-				m = u"%s%s%s\n" % (color, m, COLOR_NORMAL)
-			else:
-				m = u"%s\n" % m
-			fh.write(m.encode(fhEncoding, 'backslashreplace'))
+			filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
+			linenumber = unicode( sys._getframe(2).f_lineno )
 			
-		if (level <= self.__fileLevel):
-			# Log to file
-			logFile = self.__logFile
-			if specialConfig:
-				logFile = specialConfig.get('logFile', logFile)
-			if logFile:
-				m = self.__fileFormat
+			specialConfig = self._getThreadConfig()
+			if not specialConfig and self.__objectConfig:
+				# Ouch, this hurts...
+				f = sys._getframe(2)
+				while (f != None):
+					obj = f.f_locals.get('self')
+					if obj:
+						c = self._getObjectConfig(id(obj))
+						if c:
+							specialConfig = c
+							break
+					f = f.f_back
+			
+			if (level <= self.__messageSubjectLevel):
+				m = self.__messageSubjectFormat
 				if specialConfig:
-					m = specialConfig.get('fileFormat', m)
+					m = specialConfig.get('messageSubjectFormat', m)
 				m = unicode(m)
-				if (self.__fileLevel < LOG_CONFIDENTIAL):
+				if (self.__messageSubjectLevel < LOG_CONFIDENTIAL):
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 				m = m.replace(u'%D', datetime)
@@ -550,119 +492,179 @@ class LoggerImplementation:
 				m = m.replace(u'%F', filename)
 				m = m.replace(u'%N', linenumber)
 				
-				# Open the file
-				lf = None
-				try:
-					lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
-				except Exception, e:
-					pass
+				self.__loggerSubject.setMessage(m, level)
+			
+			if (level <= self.__consoleLevel):
+				# Log to terminal
+				m = self.__consoleFormat
+				if specialConfig:
+					m = specialConfig.get('consoleFormat', m)
+				m = unicode(m)
+				if (self.__consoleLevel < LOG_CONFIDENTIAL):
+					for string in self.__confidentialStrings:
+						m = m.replace(string, u'*** confidential ***')
+				m = m.replace(u'%D', datetime)
+				m = m.replace(u'%T', threadId)
+				m = m.replace(u'%l', unicode(level))
+				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%M', message)
+				m = m.replace(u'%F', filename)
+				m = m.replace(u'%N', linenumber)
 				
-				if lf:
-					timeout = 0
-					locked = False
-					while (not locked and timeout < 2000):
-						# While not timed out and not locked
-						try:
-							# Try to lock file
-							if (os.name == 'nt'):
-								hfile = win32file._get_osfhandle(lf.fileno())
-								win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0, -0x7fff0000, pywintypes.OVERLAPPED())
-								#win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
-							elif (os.name == 'posix'):
-								# Flags for exclusive, non-blocking lock
-								fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-						except IOError, e:
-							# Locking failed
-							# increase timeout counter, sleep 100 millis
-							timeout += 100
-							time.sleep(0.1)
-						else:
-							# File successfully locked
-							locked = True
+				fh = sys.stderr
+				if (self.__consoleStdout):
+					fh = sys.stdout
+				
+				fhEncoding = None
+				try:
+					fhEncoding = fh.encoding
+				except:
+					pass
+				if fhEncoding is None:
+					fhEncoding = locale.getpreferredencoding()
+				
+				if self.__consoleColor:
+					m = u"%s%s%s\n" % (color, m, COLOR_NORMAL)
+				else:
+					m = u"%s\n" % m
+				fh.write(m.encode(fhEncoding, 'backslashreplace'))
+				
+			if (level <= self.__fileLevel):
+				# Log to file
+				logFile = self.__logFile
+				if specialConfig:
+					logFile = specialConfig.get('logFile', logFile)
+				if logFile:
+					m = self.__fileFormat
+					if specialConfig:
+						m = specialConfig.get('fileFormat', m)
+					m = unicode(m)
+					if (self.__fileLevel < LOG_CONFIDENTIAL):
+						for string in self.__confidentialStrings:
+							m = m.replace(string, u'*** confidential ***')
+					m = m.replace(u'%D', datetime)
+					m = m.replace(u'%T', threadId)
+					m = m.replace(u'%l', unicode(level))
+					m = m.replace(u'%L', levelname)
+					m = m.replace(u'%M', message)
+					m = m.replace(u'%F', filename)
+					m = m.replace(u'%N', linenumber)
 					
-					if locked:
-						if self.__fileColor:
-							m = u"%s%s%s" % (color, m, COLOR_NORMAL)
-						m += u'\n'
-						if (os.name == 'nt'):
-							m = m.replace(u'\n', u'\r\n')
-						lf.write(m)
-						lf.close()
-		
-		if (level <= self.__syslogLevel):
-			# Log to syslog
-			m = self.__syslogFormat
-			if specialConfig:
-				m = specialConfig.get('syslogFormat', m)
-			m = unicode(m)
-			if (self.__syslogLevel < LOG_CONFIDENTIAL):
+					# Open the file
+					lf = None
+					try:
+						lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
+					except Exception, e:
+						pass
+					
+					if lf:
+						timeout = 0
+						locked = False
+						while (not locked and timeout < 2000):
+							# While not timed out and not locked
+							try:
+								# Try to lock file
+								if (os.name == 'nt'):
+									hfile = win32file._get_osfhandle(lf.fileno())
+									win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0, -0x7fff0000, pywintypes.OVERLAPPED())
+									#win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
+								elif (os.name == 'posix'):
+									# Flags for exclusive, non-blocking lock
+									fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+							except IOError, e:
+								# Locking failed
+								# increase timeout counter, sleep 100 millis
+								timeout += 100
+								time.sleep(0.1)
+							else:
+								# File successfully locked
+								locked = True
+						
+						if locked:
+							if self.__fileColor:
+								m = u"%s%s%s" % (color, m, COLOR_NORMAL)
+							m += u'\n'
+							if (os.name == 'nt'):
+								m = m.replace(u'\n', u'\r\n')
+							lf.write(m)
+							lf.close()
+			
+			if (level <= self.__syslogLevel):
+				# Log to syslog
+				m = self.__syslogFormat
+				if specialConfig:
+					m = specialConfig.get('syslogFormat', m)
+				m = unicode(m)
+				if (self.__syslogLevel < LOG_CONFIDENTIAL):
+					for string in self.__confidentialStrings:
+						m = m.replace(string, u'*** confidential ***')
+				m = m.replace(u'%D', datetime)
+				m = m.replace(u'%T', threadId)
+				m = m.replace(u'%l', unicode(level))
+				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%M', message)
+				m = m.replace(u'%F', filename)
+				m = m.replace(u'%N', linenumber)
+				
+				if (os.name == 'posix'):
+					if (level == LOG_CONFIDENTIAL):
+						syslog.syslog(syslog.LOG_DEBUG, m)
+					elif (level == LOG_DEBUG2): 
+						syslog.syslog(syslog.LOG_DEBUG, m)
+					elif (level == LOG_DEBUG):
+						syslog.syslog(syslog.LOG_DEBUG, m)
+					elif (level == LOG_INFO):
+						syslog.syslog(syslog.LOG_INFO, m)
+					elif (level == LOG_NOTICE):
+						syslog.syslog(syslog.LOG_NOTICE, m)
+					elif (level == LOG_WARNING):
+						syslog.syslog(syslog.LOG_WARNING, m)
+					elif (level == LOG_ERROR):
+						syslog.syslog(syslog.LOG_ERR, m)
+					elif (level == LOG_CRITICAL):
+						syslog.syslog(syslog.LOG_CRIT, m)
+					elif (level == LOG_COMMENT):
+						syslog.syslog(syslog.LOG_CRIT, m)
+				else:
+					#not yet implemented
+					pass
+			
+			if (self.univentionLogger_priv):
+				# univention log
+				m = self.__univentionFormat
+				if specialConfig:
+					m = specialConfig.get('univentionFormat', m)
+				m = unicode(m)
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
-			m = m.replace(u'%D', datetime)
-			m = m.replace(u'%T', threadId)
-			m = m.replace(u'%l', unicode(level))
-			m = m.replace(u'%L', levelname)
-			m = m.replace(u'%M', message)
-			m = m.replace(u'%F', filename)
-			m = m.replace(u'%N', linenumber)
-			
-			if (os.name == 'posix'):
+				m = m.replace(u'%D', datetime)
+				m = m.replace(u'%T', threadId)
+				m = m.replace(u'%l', unicode(level))
+				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%M', message)
+				m = m.replace(u'%F', filename)
+				m = m.replace(u'%N', linenumber)
+					
 				if (level == LOG_CONFIDENTIAL):
-					syslog.syslog(syslog.LOG_DEBUG, m)
-				elif (level == LOG_DEBUG2): 
-					syslog.syslog(syslog.LOG_DEBUG, m)
+					pass
+				elif (level == LOG_DEBUG2):
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
 				elif (level == LOG_DEBUG):
-					syslog.syslog(syslog.LOG_DEBUG, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
 				elif (level == LOG_INFO):
-					syslog.syslog(syslog.LOG_INFO, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
 				elif (level == LOG_NOTICE):
-					syslog.syslog(syslog.LOG_NOTICE, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.INFO, m)
 				elif (level == LOG_WARNING):
-					syslog.syslog(syslog.LOG_WARNING, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.WARN, m)
 				elif (level == LOG_ERROR):
-					syslog.syslog(syslog.LOG_ERR, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 				elif (level == LOG_CRITICAL):
-					syslog.syslog(syslog.LOG_CRIT, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 				elif (level == LOG_COMMENT):
-					syslog.syslog(syslog.LOG_CRIT, m)
-			else:
-				#not yet implemented
-				pass
-		
-		if (self.univentionLogger_priv):
-			# univention log
-			m = self.__univentionFormat
-			if specialConfig:
-				m = specialConfig.get('univentionFormat', m)
-			m = unicode(m)
-			for string in self.__confidentialStrings:
-				m = m.replace(string, u'*** confidential ***')
-			m = m.replace(u'%D', datetime)
-			m = m.replace(u'%T', threadId)
-			m = m.replace(u'%l', unicode(level))
-			m = m.replace(u'%L', levelname)
-			m = m.replace(u'%M', message)
-			m = m.replace(u'%F', filename)
-			m = m.replace(u'%N', linenumber)
-				
-			if (level == LOG_CONFIDENTIAL):
-				pass
-			elif (level == LOG_DEBUG2):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-			elif (level == LOG_DEBUG):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-			elif (level == LOG_INFO):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-			elif (level == LOG_NOTICE):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.INFO, m)
-			elif (level == LOG_WARNING):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.WARN, m)
-			elif (level == LOG_ERROR):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-			elif (level == LOG_CRITICAL):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-			elif (level == LOG_COMMENT):
-				self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
+					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
+		except Exception, e:
+			pass
 		
 	def logException(self, e, logLevel=LOG_CRITICAL):
 		self.logTraceback(sys.exc_info()[2], logLevel)

@@ -256,9 +256,12 @@ def forcePackageVersionList(var):
 		var[i] = forcePackageVersion(var[i])
 	return var
 
-productIdRegex = re.compile('^[a-zA-Z0-9\_\.-]{1,32}$')
+productIdRegex = re.compile('^[a-zA-Z0-9\.-]{1,32}$')
 def forceProductId(var):
 	var = forceObjectId(var)
+	if (var.find('_') != -1):
+		logger.warning(u"Replacing '_' with '-' in product id '%s'" % var)
+		var = var.replace('_', '-')
 	match = re.search(productIdRegex, var)
 	if not match:
 		raise ValueError(u"Bad product id: '%s'" % var)

@@ -225,6 +225,30 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		if of: of.close()
 		raise Exception(u"Failed to patch file: %s" % e)
 
+def librsyncDeltaFile(filename, signature, deltafile):
+	if (os.name != 'posix'):
+		raise NotImplementedError(u"Not implemented for non-posix os")
+	
+	(f, df, ldf) = (None, None, None)
+	bufsize = 1024*1024
+	try:
+		f = open(filename, "rb")
+		df = open(deltafile, "wb")
+		ldf = librsync.DeltaFile(signature, f)
+		
+		data = True
+		while(data):
+			data = ldf.read(bufsize)
+			df.write(data)
+		df.close()
+		f.close()
+		ldf.close()
+	except Exception, e:
+		if df:  df.close()
+		if f:   f.close()
+		if ldf: ldf.close()
+		raise Exception(u"Failed to write delta file: %s" % e)
+	
 def md5sum(filename):
 	f = open(filename, 'rb')
 	m = md5()

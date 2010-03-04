@@ -44,7 +44,7 @@ from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.System import getDiskSpaceUsage, execute, which
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile
+from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDeltaFile
 
 # Get logger instance
 logger = Logger()
@@ -104,6 +104,12 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception, e:
 			raise BackendIOError(u"Failed to patch file: %s" % e)
 	
+	def depot_librsyncDeltaFile(self, filename, signature, deltafile):
+		try:
+			librsyncDeltaFile(filename, signature, deltafile)
+		except Exception, e:
+			raise BackendIOError(u"Failed to create librsync delta file: %s" % e)
+		
 	def depot_getDiskSpaceUsage(self, path):
 		if (os.name != 'posix'):
 			raise NotImplementedError(u"Not implemented for non-posix os")
