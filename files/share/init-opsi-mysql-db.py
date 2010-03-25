@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.2'
+__version__ = '1.0.4'
 
 import MySQLdb, sys, os, getpass
 from _mysql_exceptions import *
@@ -180,16 +180,20 @@ try:
 		# HARDWARE_INFO
 		mysql.db_query("alter table HARDWARE_INFO add `hostId` varchar(50) NOT NULL;")
 		for res in mysql.db_getSet("SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
-			mysql.db_query("update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" % (key, res['hostId'], res['host_id']))
+			mysql.db_query("update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" % (res['hostId'], res['host_id']))
 		mysql.db_query("alter table HARDWARE_INFO drop `host_id`;")
 		mysql.db_query("alter table HARDWARE_INFO DEFAULT CHARACTER set utf8;")
 		mysql.db_query("alter table HARDWARE_INFO ENGINE = InnoDB;")
 		
 		# SOFTWARE
+		# remove duplicates
+		mysql.db_query("delete S1 from SOFTWARE S1, SOFTWARE S2 where S1.softwareId=S2.softwareId and S1.software_id > S2.software_id")
 		mysql.db_query("alter table SOFTWARE drop `software_id`;")
 		mysql.db_query("alter table SOFTWARE add primary key (`softwareId`);")
 		
 		# HOST
+		# remove duplicates
+		mysql.db_query("delete H1 from HOST H1, HOST H2 where H1.hostId=H2.hostId and H1.host_id > H2.host_id")
 		mysql.db_query("alter table HOST drop `host_id`;")
 		mysql.db_query("alter table HOST add primary key (`hostId`);")
 		mysql.db_query("alter table HOST add `type` varchar(20);")

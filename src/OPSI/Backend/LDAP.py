@@ -817,6 +817,9 @@ class LDAPBackend(DataBackend):
 				hostDns = filteredHostDns
 			except BackendMissingDataError, e:
 				logger.warning("Group '%s' is empty" % groupId)
+			
+			if not filteredHostDns:
+				return []
 		
 		# Filter by product state
 		if installationStatus or actionRequest or productVersion or packageVersion:
