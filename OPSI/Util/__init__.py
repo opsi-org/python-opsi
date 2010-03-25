@@ -93,7 +93,7 @@ class KillableThread(threading.Thread):
 
 
 
-def non_blocking_connect_http(self, connectTimeout=0):
+def non_blocking_connect_http_OLD(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	sock.setblocking(0)
@@ -115,6 +115,25 @@ def non_blocking_connect_http(self, connectTimeout=0):
 				raise
 			time.sleep(0.5)
 	sock.setblocking(1)
+	self.sock = sock
+
+def non_blocking_connect_http(self, connectTimeout=0):
+	''' Non blocking connect, needed for KillableThread '''
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.settimeout(3.0)
+	started = time.time()
+	lastError = None
+	while True:
+		try:
+			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
+				raise Exception(u"Timed out after %d seconds (%s)" % (connectTimeout, e))
+			sock.connect((self.host, self.port))
+			break
+		except socket.error, e:
+			logger.debug(e)
+			lastError = e
+			time.sleep(0.5)
+	sock.settimeout(None)
 	self.sock = sock
 	
 def non_blocking_connect_https(self, connectTimeout=0):
