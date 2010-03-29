@@ -1365,7 +1365,8 @@ class ProductOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnClient'
 	
-	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None, actionSequence=None):
+	def __init__(self, productId, productType, clientId, targetState=None, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None, actionSequence=None):
+		self.targetState = None
 		self.installationStatus = None
 		self.actionRequest = None
 		self.lastAction = None
@@ -1378,6 +1379,8 @@ class ProductOnClient(Relationship):
 		self.setProductId(productId)
 		self.setProductType(productType)
 		self.setClientId(clientId)
+		if not targetState is None:
+			self.setTargetState(targetState)
 		if not installationStatus is None:
 			self.setInstallationStatus(installationStatus)
 		if not actionRequest is None:
@@ -1403,8 +1406,8 @@ class ProductOnClient(Relationship):
 			self.setInstallationStatus('not_installed')
 		if self.actionRequest is None:
 			self.setActionRequest('none')
-		if self.lastStateChange is None:
-			self.setLastStateChange(timestamp())
+		if self.modificationTime is None:
+			self.setModificationTime(timestamp())
 		
 	def getProductId(self):
 		return self.productId
@@ -1423,6 +1426,12 @@ class ProductOnClient(Relationship):
 	
 	def setClientId(self, clientId):
 		self.clientId = forceHostId(clientId)
+	
+	def getTargetState(self):
+		return self.targetState
+	
+	def setTargetState(self, targetState):
+		self.targetState = forceProductTargetState(targetState)
 	
 	def getInstallationStatus(self):
 		return self.installationStatus
