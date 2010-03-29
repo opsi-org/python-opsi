@@ -1928,17 +1928,14 @@ class LicensePool(Entity):
 	foreignIdAttributes = Entity.foreignIdAttributes + ['licensePoolId']
 	backendMethodPrefix = 'licensePool'
 	
-	def __init__(self, id, description=None, productIds=None, windowsSoftwareIds=None):
+	def __init__(self, id, description=None, productIds=None):
 		self.description = None
 		self.productIds = None
-		self.windowsSoftwareIds = None
 		self.setId(id)
 		if not description is None:
 			self.setDescription(description)
 		if not productIds is None:
 			self.setProductIds(productIds)
-		if not windowsSoftwareIds is None:
-			self.setWindowsSoftwareIds(windowsSoftwareIds)
 		
 	def setDefaults(self):
 		Entity.setDefaults(self)
@@ -1946,8 +1943,6 @@ class LicensePool(Entity):
 			self.setDescription(u"")
 		if self.productIds is None:
 			self.setProductIds([])
-		if self.windowsSoftwareIds is None:
-			self.setWindowsSoftwareIds([])
 		
 	def getId(self):
 		return self.id
@@ -1967,12 +1962,6 @@ class LicensePool(Entity):
 	def setProductIds(self, productIds):
 		self.productIds = forceProductIdList(productIds)
 	
-	def getWindowsSoftwareIds(self):
-		return self.windowsSoftwareIds
-	
-	def setWindowsSoftwareIds(self, windowsSoftwareIds):
-		self.windowsSoftwareIds = forceUnicodeList(windowsSoftwareIds)
-	
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'LicensePool'
@@ -1987,6 +1976,80 @@ class LicensePool(Entity):
 			% (self.getType(), self.id, self.description)
 	
 Entity.subClasses['LicensePool'] = LicensePool
+
+class AuditSoftwareToLicensePool(Relationship):
+	subClasses = {}
+	
+	def __init__(self, name, version, subVersion, language, architecture, licensePoolId):
+		self.setName(name)
+		self.setVersion(version)
+		self.setSubVersion(subVersion)
+		self.setLanguage(language)
+		self.setArchitecture(architecture)
+		self.setLicensePoolId(licensePoolId)
+	
+	def getLicensePoolId(self):
+		return self.licensePoolId
+	
+	def setLicensePoolId(self, licensePoolId):
+		self.licensePoolId = forceLicensePoolId(licensePoolId)
+	
+	def setName(self, name):
+		self.name = forceUnicode(name)
+	
+	def getName(self):
+		return self.name
+	
+	def setVersion(self, version):
+		if not version:
+			self.version = u''
+		else:
+			self.version = forceUnicodeLower(version)
+	
+	def getVersion(self):
+		return self.version
+	
+	def setSubVersion(self, subVersion):
+		if not subVersion:
+			self.subVersion = u''
+		else:
+			self.subVersion = forceUnicodeLower(subVersion)
+	
+	def getSubVersion(self):
+		return self.subVersion
+	
+	def setLanguage(self, language):
+		if not language:
+			self.language = u''
+		else:
+			self.language = forceLanguageCode(language)
+	
+	def getLanguage(self):
+		return self.language
+	
+	def setArchitecture(self, architecture):
+		if not architecture:
+			self.architecture = u''
+		else:
+			self.architecture = forceArchitecture(architecture)
+	
+	def getArchitecture(self):
+		return self.architecture
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'AuditSoftwareToLicensePool'
+		return Relationship.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return fromJson(jsonString, 'AuditSoftwareToLicensePool')
+	
+	def __unicode__(self):
+		return u"<%s licensePoolId '%s', name '%s'>" \
+			% (self.getType(), self.licensePoolId, self.name)
+	
+Relationship.subClasses['AuditSoftwareToLicensePool'] = AuditSoftwareToLicensePool
 
 class SoftwareLicenseToLicensePool(Relationship):
 	subClasses = {}
@@ -2142,13 +2205,19 @@ class AuditSoftware(Entity):
 		return self.name
 	
 	def setVersion(self, version):
-		self.version = forceUnicodeLower(version)
+		if not version:
+			self.version = u''
+		else:
+			self.version = forceUnicodeLower(version)
 	
 	def getVersion(self):
 		return self.version
 	
 	def setSubVersion(self, subVersion):
-		self.subVersion = forceUnicodeLower(subVersion)
+		if not subVersion:
+			self.subVersion = u''
+		else:
+			self.subVersion = forceUnicodeLower(subVersion)
 	
 	def getSubVersion(self):
 		return self.subVersion

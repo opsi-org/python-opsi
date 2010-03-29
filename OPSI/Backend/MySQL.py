@@ -763,13 +763,17 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
-		if not 'WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL' in tables.keys():
-			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL')
-			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL` (
+		if not 'AUDIT_SOFTWARE_TO_LICENSE_POOL' in tables.keys():
+			logger.debug(u'Creating table AUDIT_SOFTWARE_TO_LICENSE_POOL')
+			table = u'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
 					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
-					`windowsSoftwareId` VARCHAR(100) NOT NULL,
-					PRIMARY KEY( `licensePoolId`, `windowsSoftwareId` )
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(5) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -1481,13 +1485,9 @@ class MySQLBackend(ConfigDataBackend):
 	def licensePool_insertObject(self, licensePool):
 		ConfigDataBackend.licensePool_insertObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
-		windowsSoftwareIds = data['windowsSoftwareIds']
 		productIds = data['productIds']
-		del data['windowsSoftwareIds']
 		del data['productIds']
 		self._mysql.insert('LICENSE_POOL', data)
-		for windowsSoftwareId in windowsSoftwareIds:
-			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', {'windowsSoftwareId': windowsSoftwareId, 'licensePoolId': data['licensePoolId']})
 		for productId in productIds:
 			self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
 		
@@ -1495,16 +1495,10 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		where = self._uniqueCondition(licensePool)
-		windowsSoftwareIds = data['windowsSoftwareIds']
 		productIds = data['productIds']
-		del data['windowsSoftwareIds']
 		del data['productIds']
 		self._mysql.update('LICENSE_POOL', where, data)
-		self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
 		self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
-		if windowsSoftwareIds:
-			for windowsSoftwareId in windowsSoftwareIds:
-				self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', {'windowsSoftwareId': windowsSoftwareId, 'licensePoolId': data['licensePoolId']})
 		if productIds:
 			for productId in productIds:
 				self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
@@ -1515,15 +1509,6 @@ class MySQLBackend(ConfigDataBackend):
 		licensePools = []
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
 		
-		if filter.has_key('windowsSoftwareIds'):
-			if filter['windowsSoftwareIds']:
-				licensePoolIds = filter.get('licensePoolId')
-				filter['licensePoolId'] = []
-				for res in self._mysql.getSet(self._createQuery('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', ['licensePoolId'], {'licensePoolId': licensePoolIds, 'windowsSoftwareId': filter['windowsSoftwareIds']})):
-					filter['licensePoolId'].append(res['licensePoolId'])
-				if not filter['licensePoolId']:
-					return []
-			del filter['windowsSoftwareIds']
 		if filter.has_key('productIds'):
 			if filter['productIds']:
 				licensePoolIds = filter.get('licensePoolId')
@@ -1535,14 +1520,10 @@ class MySQLBackend(ConfigDataBackend):
 			del filter['productIds']
 		attrs = []
 		for attr in attributes:
-			if not attr in ('windowsSoftwareIds', 'productIds'):
+			if not attr in ('productIds',):
 				attrs.append(attr)
 		for res in self._mysql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
-			res['windowsSoftwareIds'] = []
 			res['productIds'] = []
-			if not attributes or 'windowsSoftwareIds' in attributes:
-				for res2 in self._mysql.getSet(u"select * from WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL where `licensePoolId` = '%s'" % res['licensePoolId']):
-					res['windowsSoftwareIds'].append(res2['windowsSoftwareId'])
 			if not attributes or 'productIds' in attributes:
 				for res2 in self._mysql.getSet(u"select * from PRODUCT_ID_TO_LICENSE_POOL where `licensePoolId` = '%s'" % res['licensePoolId']):
 					res['productIds'].append(res2['productId'])
@@ -1555,7 +1536,6 @@ class MySQLBackend(ConfigDataBackend):
 		for licensePools in forceObjectClassList(licensePools, LicensePool):
 			logger.info(u"Deleting licensePools %s" % licensePools)
 			where = self._uniqueCondition(licensePools)
-			self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
 			self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
 			self._mysql.delete('LICENSE_POOL', where)
 	
@@ -1648,6 +1628,36 @@ class MySQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting auditSoftware %s" % auditSoftware)
 			where = self._uniqueCondition(auditSoftware)
 			self._mysql.delete('SOFTWARE', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareToLicensePools                                                               -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
+		ConfigDataBackend.auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool)
+		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
+		self._mysql.insert('AUDIT_SOFTWARE_TO_LICENSE_POOL', data)
+	
+	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
+		ConfigDataBackend.auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool)
+		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
+		where = self._uniqueCondition(auditSoftwareToLicensePool)
+		self._mysql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data)
+	
+	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditSoftwareToLicensePool, filter: %s" % filter)
+		auditSoftwareToLicensePools = []
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('AUDIT_SOFTWARE_TO_LICENSE_POOL', attributes, filter)):
+			auditSoftwareToLicensePools.append(AuditSoftwareToLicensePool.fromHash(res))
+		return auditSoftwareToLicensePools
+	
+	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
+		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
+		for auditSoftware in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
+			logger.info(u"Deleting auditSoftware %s" % auditSoftwareToLicensePool)
+			where = self._uniqueCondition(auditSoftwareToLicensePool)
+			self._mysql.delete('AUDIT_SOFTWARE_TO_LICENSE_POOL', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -

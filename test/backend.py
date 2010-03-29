@@ -782,15 +782,13 @@ class BackendTest(object):
 		self.licensePool1 = LicensePool(
 			id                 = u'license_pool_1',
 			description        = u'licenses for product1',
-			productIds         = self.product1.getId(),
-			windowsSoftwareIds = self.product1.windowsSoftwareIds
+			productIds         = self.product1.getId()
 		)
 		
 		self.licensePool2 = LicensePool(
 			id                 = u'license_pool_2',
 			description        = u'licenses for product2',
-			productIds         = self.product2.getId(),
-			windowsSoftwareIds = None
+			productIds         = self.product2.getId()
 		)
 		self.licensePools = [ self.licensePool1, self.licensePool2 ]
 		
@@ -888,6 +886,27 @@ class BackendTest(object):
 		)
 		
 		self.auditSoftwares = [self.auditSoftware1, self.auditSoftware2, self.auditSoftware3, self.auditSoftware4]
+		
+		# AuditSoftwareToLicensePools
+		self.auditSoftwareToLicensePool1 = AuditSoftwareToLicensePool(
+			name          = self.auditSoftware1.name,
+			version       = self.auditSoftware1.version,
+			subVersion    = self.auditSoftware1.subVersion,
+			language      = self.auditSoftware1.language,
+			architecture  = self.auditSoftware1.architecture,
+			licensePoolId = self.licensePool1
+		)
+		
+		self.auditSoftwareToLicensePool2 = AuditSoftwareToLicensePool(
+			name          = self.auditSoftware2.name,
+			version       = self.auditSoftware2.version,
+			subVersion    = self.auditSoftware2.subVersion,
+			language      = self.auditSoftware2.language,
+			architecture  = self.auditSoftware2.architecture,
+			licensePoolId = self.licensePool2
+		)
+		
+		self.auditSoftwareToLicensePools = [self.auditSoftwareToLicensePool1, self.auditSoftwareToLicensePool2]
 		
 		# AuditSoftwareOnClients
 		self.auditSoftwareOnClient1 = AuditSoftwareOnClient(
@@ -1576,35 +1595,17 @@ class BackendTest(object):
 		assert len(licensePools) == len(self.licensePools), u"got: '%s', expected: '%s'" % (licensePools, self.licensePools)
 		for licensePool in licensePools:
 			if (licensePool.getId() == self.licensePool1.getId()):
-				for windowsSoftwareId in licensePool.getWindowsSoftwareIds():
-					assert windowsSoftwareId in self.licensePool1.getWindowsSoftwareIds(), u"'%s' not in '%s'" % (windowsSoftwareId, self.licensePool1.getWindowsSoftwareIds())
 				for productId in licensePool.getProductIds():
 					assert productId in self.licensePool1.getProductIds(), u"'%s' not in '%s'" % (productId, self.licensePool1.getProductIds())
 		
-		licensePools = self.backend.licensePool_getObjects(windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
-		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
-		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
-		
 		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds)
-		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
-		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
-		
-		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
-		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
-		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
-		
-		licensePools = self.backend.licensePool_getObjects(productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds[0])
-		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
-		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
-		
-		licensePools = self.backend.licensePool_getObjects(id = self.licensePool1.id, productIds = self.licensePool1.productIds, windowsSoftwareIds = self.licensePool1.windowsSoftwareIds)
 		assert len(licensePools) == 1, u"got: '%s', expected: '%s'" % (licensePools, 1)
 		assert licensePools[0].getId() == self.licensePool1.getId(), u"got: '%s', expected: '%s'" % (licensePools[0].getId(), self.licensePool1.getId())
 		
 		licensePools = self.backend.licensePool_getObjects(id = self.licensePool2.id, productIds = self.licensePool1.productIds)
 		assert len(licensePools) == 0, u"got: '%s', expected: '%s'" % (licensePools, 0)
 		
-		licensePools = self.backend.licensePool_getObjects(productIds = None, windowsSoftwareIds = [])
+		licensePools = self.backend.licensePool_getObjects(productIds = None)
 		assert len(licensePools) == len(self.licensePools), u"got: '%s', expected: '%s'" % (licensePools, len(self.licensePools))
 		
 		licensePools = self.backend.licensePool_getObjects(productIds = ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'])
@@ -1661,6 +1662,13 @@ class BackendTest(object):
 		self.backend.auditSoftware_insertObject(self.auditSoftware3)
 		auditSoftwares = self.backend.auditSoftware_getObjects()
 		assert len(auditSoftwares) == len(self.auditSoftwares), u"got: '%s', expected: '%s'" % (auditSoftwares, len(self.auditSoftwares))
+		
+		# AuditSoftwareToLicensePools
+		logger.notice(u"Testing AuditSoftwareToLicensePool methods")
+		self.backend.auditSoftwareToLicensePool_createObjects(self.auditSoftwareToLicensePools)
+		
+		auditSoftwareToLicensePools = self.backend.auditSoftwareToLicensePool_getObjects()
+		assert len(auditSoftwareToLicensePools) == len(self.auditSoftwareToLicensePools), u"got: '%s', expected: '%s'" % (auditSoftwareToLicensePools, len(self.auditSoftwareToLicensePools))
 		
 		# AuditSoftwareOnClients
 		logger.notice(u"Testing auditSoftwareOnClient methods")

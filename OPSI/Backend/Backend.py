@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+   Copyright (C) 2006, 2007, 2008, 2009, 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -968,6 +968,23 @@ class ConfigDataBackend(Backend):
 		pass
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareToLicensePools                                                               -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
+		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
+		auditSoftwareToLicensePool.setDefaults()
+	
+	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
+		pass
+	
+	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
+		self._testFilterAndAttributes(AuditSoftwareToLicensePool, attributes, **filter)
+		return []
+	
+	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
+		pass
+
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
@@ -1458,6 +1475,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		for auditSoftware in self._backend.auditSoftware_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture'], **filter):
 			result.append(auditSoftware.getIdent(returnType))
+		return result
+	
+	def auditSoftwareToLicensePool_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for auditSoftwareToLicensePool in self._backend.auditSoftwareToLicensePool_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture', 'licensePoolId'], **filter):
+			result.append(auditSoftwareToLicensePool.getIdent(returnType))
 		return result
 	
 	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
@@ -2826,7 +2849,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		return result
 	
-	def licensePool_create(self, id, description=None, productIds=None, windowsSoftwareIds=None):
+	def licensePool_create(self, id, description=None, productIds=None):
 		hash = locals()
 		del hash['self']
 		return self.licensePool_createObjects(LicensePool.fromHash(hash))
@@ -3006,6 +3029,74 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					subVersion     = forceUnicodeLowerList(subVersion),
 					language       = forceLanguageCodeList(language),
 					architecture   = forceArchitectureList(architecture)))
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareToLicensePools                                                               -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareToLicensePool_createObjects(self, auditSoftwareToLicensePools):
+		result = []
+		auditSoftwareToLicensePools = forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool)
+		for auditSoftwareToLicensePool in auditSoftwareToLicensePools:
+			logger.info(u"Creating %s" % auditSoftwareToLicensePool)
+			if self.auditSoftwareToLicensePool_getIdents(
+					name           = auditSoftwareToLicensePool.name,
+					version        = auditSoftwareToLicensePool.version,
+					subVersion     = auditSoftwareToLicensePool.subVersion,
+					language       = auditSoftwareToLicensePool.language,
+					architecture   = auditSoftware.architecture):
+				logger.info(u"%s already exists, updating" % auditSoftwareToLicensePool)
+				self._backend.auditSoftwareToLicensePool_updateObject(auditSoftwareToLicensePool)
+			else:
+				self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
+			if self._options['returnObjectsOnUpdateAndCreate']:
+				result.extend(
+					self._backend.auditSoftwareToLicensePool_getObjects(
+						name           = auditSoftwareToLicensePool.name,
+						version        = auditSoftwareToLicensePool.version,
+						subVersion     = auditSoftwareToLicensePool.subVersion,
+						language       = auditSoftwareToLicensePool.language,
+						architecture   = auditSoftwareToLicensePool.architecture
+					)
+				)
+		return result
+	
+	def auditSoftwareToLicensePool_updateObjects(self, auditSoftwareToLicensePools):
+		result = []
+		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
+			self._backend.auditSoftwareToLicensePool_updateObject(auditSoftwareToLicensePool)
+			if self._options['returnObjectsOnUpdateAndCreate']:
+				result.extend(
+					self._backend.auditSoftwareToLicensePool_getObjects(
+						name           = auditSoftwareToLicensePool.name,
+						version        = auditSoftwareToLicensePool.version,
+						subVersion     = auditSoftwareToLicensePool.subVersion,
+						language       = auditSoftwareToLicensePool.language,
+						architecture   = auditSoftwareToLicensePool.architecture
+					)
+				)
+		return result
+	
+	def auditSoftwareToLicensePool_create(self, name, version, subVersion, language, architecture, licensePoolId):
+		hash = locals()
+		del hash['self']
+		return self.auditSoftwareToLicensePool_createObjects(AuditSoftwareToLicensePool.fromHash(hash))
+	
+	def auditSoftwareToLicensePool_delete(self, name, version, subVersion, language, architecture, licensePoolId):
+		if name is None:          name  = []
+		if version is None:       version = []
+		if subVersion is None:    subVersion = []
+		if language is None:      language = []
+		if architecture is None:  architecture = []
+		if licensePoolId is None: licensePoolId  = []
+		return self._backend.auditSoftwareToLicensePool_deleteObjects(
+				self._backend.auditSoftwareToLicensePool_getObjects(
+					name           = forceUnicodeList(name),
+					version        = forceUnicodeLowerList(version),
+					subVersion     = forceUnicodeLowerList(subVersion),
+					language       = forceLanguageCodeList(language),
+					architecture   = forceArchitectureList(architecture),
+					licensePoolId  = forceLicensePoolIdList(licensePoolId)))
+		
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
