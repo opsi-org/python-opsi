@@ -596,7 +596,7 @@ class BackendTest(object):
 			actionProgress     = '',
 			productVersion     = self.product1.getProductVersion(),
 			packageVersion     = self.product1.getPackageVersion(),
-			lastStateChange    = '2009-07-01 12:00:00'
+			modificationTime   = '2009-07-01 12:00:00'
 		)
 		
 		self.productOnClient2 = ProductOnClient(
@@ -620,7 +620,22 @@ class BackendTest(object):
 			productVersion     = self.product2.getProductVersion(),
 			packageVersion     = self.product2.getPackageVersion()
 		)
-		self.productOnClients = [ self.productOnClient1, self.productOnClient2, self.productOnClient3 ]
+		
+		self.productOnClient4 = ProductOnClient(
+			productId          = self.product2.getId(),
+			productType        = self.product2.getType(),
+			clientId           = self.client1.getId(),
+			targetState        = 'installed',
+			installationStatus = 'installed',
+			actionRequest      = 'none',
+			lastAction         = 'setup',
+			actionProgress     = '',
+			actionResult       = 'success',
+			productVersion     = self.product2.getProductVersion(),
+			packageVersion     = self.product2.getPackageVersion()
+		)
+		
+		self.productOnClients = [ self.productOnClient1, self.productOnClient2, self.productOnClient3, self.productOnClient4 ]
 		
 		# ProductPropertyStates
 		self.productPropertyState1 = ProductPropertyState(
@@ -1417,9 +1432,9 @@ class BackendTest(object):
 		assert productOnClients[0].getProductId() == self.product2.getId(), u"got: '%s', expected: '%s'" % (productOnClients[0].getProductId(), self.product2.getId())
 		assert productOnClients[0].getClientId() == self.client1.getId(), u"got: '%s', expected: '%s'" % (productOnClients[0].getClientId(), self.client1.getId())
 		
-		self.productOnClient2.setLastStateChange('2010-01-01 05:55:55')
+		self.productOnClient2.setModificationTime('2010-01-01 05:55:55')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(lastStateChange = '2010-01-01 05:55:55')
+		productOnClients = self.backend.productOnClient_getObjects(modificationTime = '2010-01-01 05:55:55')
 		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
 		
 		self.backend.productOnClient_createObjects(self.productOnClients)
@@ -2115,7 +2130,7 @@ class BackendTest(object):
 						actionProgress = random.choice(('installing 30%', 'uninstalling 30%', 'syncing 60%', None, '', 'failed')),
 						productVersion = product.productVersion,
 						packageVersion = product.packageVersion,
-						lastStateChange = None
+						modificationTime = None
 					)
 		
 		logger.setConsoleLevel(consoleLevel)

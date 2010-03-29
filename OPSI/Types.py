@@ -228,7 +228,7 @@ def forceOpsiHostKey(var):
 		raise ValueError(u"Bad opsi host key: '%s'" % var)
 	return var
 
-productVersionRegex = re.compile('^[\w\.]+$')
+productVersionRegex = re.compile('^[a-z0-9\.]{1,32}$')
 def forceProductVersion(var):
 	var = forceUnicode(var)
 	match = re.search(productVersionRegex, var)
@@ -242,7 +242,7 @@ def forceProductVersionList(var):
 		var[i] = forceProductVersion(var[i])
 	return var
 
-packageVersionRegex = re.compile('^[\w\.]{1,16}$')
+packageVersionRegex = re.compile('^[a-z0-9\.]{1,16}$')
 def forcePackageVersion(var):
 	var = forceUnicode(var)
 	match = re.search(packageVersionRegex, var)
@@ -256,12 +256,12 @@ def forcePackageVersionList(var):
 		var[i] = forcePackageVersion(var[i])
 	return var
 
-productIdRegex = re.compile('^[a-zA-Z0-9\.-]{1,32}$')
+productIdRegex = re.compile('^[a-z0-9-_]{1,32}$')
 def forceProductId(var):
 	var = forceObjectId(var)
-	if (var.find('_') != -1):
-		logger.warning(u"Replacing '_' with '-' in product id '%s'" % var)
-		var = var.replace('_', '-')
+	#if (var.find('_') != -1):
+	#	logger.warning(u"Replacing '_' with '-' in product id '%s'" % var)
+	#	var = var.replace('_', '-')
 	match = re.search(productIdRegex, var)
 	if not match:
 		raise ValueError(u"Bad product id: '%s'" % var)
@@ -326,13 +326,16 @@ def forceProductPriority(var):
 def forceFilename(var):
 	return forceUnicode(var)
 
+def forceProductTargetState(var):
+	var = forceUnicodeLower(var)
+	if var and var not in ('installed', 'always', 'forbidden', 'undefined'):
+		raise ValueError(u"Bad product target state: '%s'" % var)
+	return var
+
 def forceInstallationStatus(var):
 	var = forceUnicodeLower(var)
-	if var:
-		if (var == 'undefined'):
-			var = None
-		elif var not in ('installed', 'not_installed'):
-			raise ValueError(u"Bad installation status: '%s'" % var)
+	if var and var not in ('installed', 'not_installed', 'unkown'):
+		raise ValueError(u"Bad installation status: '%s'" % var)
 	return var
 
 def forceActionRequest(var):
@@ -353,6 +356,12 @@ def forceActionRequestList(var):
 def forceActionProgress(var):
 	return forceUnicode(var)
 
+def forceActionResult(var):
+	var = forceUnicodeLower(var)
+	if var and var not in ('failed', 'successful'):
+		raise ValueError(u"Bad action result: '%s'" % var)
+	return var
+
 def forceRequirementType(var):
 	var = forceUnicodeLower(var)
 	if not var:
@@ -360,7 +369,7 @@ def forceRequirementType(var):
 	if not var in ('before', 'after'):
 		raise ValueError(u"Bad requirement type: '%s'" % var)
 	return var
-	
+
 def forceObjectClass(var, objectClass):
 	import OPSI.Object
 	if type(var) in (types.UnicodeType, types.StringType):

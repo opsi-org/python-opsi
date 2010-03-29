@@ -646,7 +646,7 @@ class MySQLBackend(ConfigDataBackend):
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
-			
+		
 		if not 'PRODUCT_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
 			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
@@ -656,12 +656,15 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `clientId` ) REFERENCES `HOST` ( `hostId` ),
 					PRIMARY KEY( `productId`, `clientId` ),
 					`productType` varchar(16) NOT NULL,
+					`targetState` varchar(16),
 					`installationStatus` varchar(16),
 					`actionRequest` varchar(16),
 					`actionProgress` varchar(255),
+					`actionResult` varchar(16),
+					`lastAction` varchar(16),
 					`productVersion` varchar(32),
 					`packageVersion` varchar(16),
-					`lastStateChange` TIMESTAMP
+					`modificationTime` TIMESTAMP
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)

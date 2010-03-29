@@ -2034,19 +2034,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			productId
 			productType
 			clientId
+			targetState
 			installationStatus
 			actionRequest
+			lastAction
 			actionProgress
+			actionResult
 			productVersion
 			packageVersion
-			lastStateChange
+			modificationTime
 		
 		missing ProductOnClients will be created with the following defaults:
 			installationStatus = u'not_installed'
 			actionRequest      = u'none'
 			productVersion     = None
 			packageVersion     = None
-			lastStateChange    = None
+			modificationTime   = None
+			targetState        = None
+			lastAction         = None
+			actionProgress     = None
+			actionResult       = None
 		'''
 		
 		pocAttributes = attributes
@@ -2055,9 +2062,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		defaultMatchesFilter = \
 				    (not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
 				and (not filter.get('actionRequest')      or 'none'          in forceList(filter['actionRequest'])) \
-				and (not filter.get('productVersion')     or [ None ] == filter['productVersion']) \
-				and (not filter.get('packageVersion')     or [ None ] == filter['packageVersion']) \
-				and (not filter.get('lastStateChange')    or [ None ] == filter['lastStateChange'])
+				and (not filter.get('productVersion')     or None            in forceList(filter['productVersion'])) \
+				and (not filter.get('packageVersion')     or None            in forceList(filter['packageVersion'])) \
+				and (not filter.get('modificationTime')   or None            in forceList(filter['modificationTime'])) \
+				and (not filter.get('targetState')        or None            in forceList(filter['targetState'])) \
+				and (not filter.get('lastAction')         or None            in forceList(filter['lastAction'])) \
+				and (not filter.get('actionProgress')     or None            in forceList(filter['actionProgress'])) \
+				and (not filter.get('actionResult')       or None            in forceList(filter['actionResult']))
 		
 		if (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) or self._options['processProductDependencies']:
 			# Do not filter out ProductOnClients on the basis of these attributes in this case
@@ -2065,7 +2076,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# We also need to know installationStatus and actionRequest of every product to test if dependencies are fulfilled
 			pocFilter = {}
 			for (key, value) in filter.items():
-				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'lastStateChange'):
+				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'modificationTime', 'targetState', 'lastAction', 'actionProgress', 'actionResult'):
 					continue
 				pocFilter[key] = value
 				
@@ -2372,11 +2383,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							'productId':          productId,
 							'productType':        pocByClientIdAndProductId[clientId][productId].productType,
 							'installationStatus': pocByClientIdAndProductId[clientId][productId].installationStatus,
+							'targetState':        pocByClientIdAndProductId[clientId][productId].targetState,
 							'actionRequest':      pocByClientIdAndProductId[clientId][productId].actionRequest,
+							'lastAction':         pocByClientIdAndProductId[clientId][productId].lastAction,
 							'actionProgress':     pocByClientIdAndProductId[clientId][productId].actionProgress,
+							'actionResult':       pocByClientIdAndProductId[clientId][productId].actionResult,
 							'productVersion':     pocByClientIdAndProductId[clientId][productId].productVersion,
 							'packageVersion':     pocByClientIdAndProductId[clientId][productId].packageVersion,
-							'lastStateChange':    pocByClientIdAndProductId[clientId][productId].lastStateChange },
+							'modificationTime':   pocByClientIdAndProductId[clientId][productId].modificationTime },
 							**currentFilter):
 						logger.debug2(u"              filtered productOnClient %s" % pocByClientIdAndProductId[clientId][productId])
 						continue
@@ -2402,12 +2416,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		clientIds = []
 		productIds = []
 		for productOnClient in productOnClients:
-			if not productOnClient.lastStateChange:
-				productOnClient.setLastStateChange(timestamp())
+			if not productOnClient.modificationTime:
+				productOnClient.setModificationTime(timestamp())
 			if not productOnClient.clientId in clientIds:
 				clientIds.append(productOnClient.clientId)
 			if not productOnClient.productId in productIds:
 				productIds.append(productOnClient.productId)
+			if productOnClient.lastAction is None and not productOnClient.actionRequest in ('none', None):
+				productOnClient.lastAction = productOnClient.actionRequest
 			if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
 				# Should have version info
 				if not productOnClient.productVersion or not productOnClient.packageVersion:
@@ -2480,7 +2496,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def productOnClient_updateObjects(self, productOnClients):
 		return self.productOnClient_createObjects(productOnClients)
 	
-	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None):
+	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None):
 		hash = locals()
 		del hash['self']
 		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))

@@ -1365,13 +1365,15 @@ class ProductOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnClient'
 	
-	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, actionProgress=None, productVersion=None, packageVersion=None, lastStateChange=None, actionSequence=None):
+	def __init__(self, productId, productType, clientId, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None, actionSequence=None):
 		self.installationStatus = None
 		self.actionRequest = None
+		self.lastAction = None
 		self.actionProgress = None
+		self.actionResult = None
 		self.productVersion = None
 		self.packageVersion = None
-		self.lastStateChange = None
+		self.modificationTime = None
 		self.actionSequence = -1
 		self.setProductId(productId)
 		self.setProductType(productType)
@@ -1380,14 +1382,18 @@ class ProductOnClient(Relationship):
 			self.setInstallationStatus(installationStatus)
 		if not actionRequest is None:
 			self.setActionRequest(actionRequest)
+		if not lastAction is None:
+			self.setLastAction(lastAction)
 		if not actionProgress is None:
 			self.setActionProgress(actionProgress)
+		if not actionResult is None:
+			self.setActionResult(actionResult)
 		if not productVersion is None:
 			self.setProductVersion(productVersion)
 		if not packageVersion is None:
 			self.setPackageVersion(packageVersion)
-		if not lastStateChange is None:
-			self.setLastStateChange(lastStateChange)
+		if not modificationTime is None:
+			self.setModificationTime(modificationTime)
 		if not actionSequence is None:
 			self.setActionSequence(actionSequence)
 		
@@ -1436,6 +1442,18 @@ class ProductOnClient(Relationship):
 	def setActionProgress(self, actionProgress):
 		self.actionProgress = forceActionProgress(actionProgress)
 	
+	def getLastAction(self):
+		return self.lastAction
+	
+	def setLastAction(self, lastAction):
+		self.lastAction = forceActionRequest(lastAction)
+	
+	def getActionResult(self):
+		return self.actionResult
+	
+	def setActionResult(self, actionResult):
+		self.actionResult = forceActionResult(actionResult)
+		
 	def getProductVersion(self):
 		return self.productVersion
 	
@@ -1448,11 +1466,11 @@ class ProductOnClient(Relationship):
 	def setPackageVersion(self, packageVersion):
 		self.packageVersion = forcePackageVersion(packageVersion)
 	
-	def getLastStateChange(self):
-		return self.lastStateChange
+	def getModificationTime(self):
+		return self.modificationTime
 	
-	def setLastStateChange(self, lastStateChange):
-		self.lastStateChange = forceOpsiTimestamp(lastStateChange)
+	def setModificationTime(self, modificationTime):
+		self.modificationTime = forceOpsiTimestamp(modificationTime)
 	
 	def getActionSequence(self):
 		return self.actionSequence

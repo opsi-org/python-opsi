@@ -93,29 +93,29 @@ class KillableThread(threading.Thread):
 
 
 
-def non_blocking_connect_http_OLD(self, connectTimeout=0):
-	''' Non blocking connect, needed for KillableThread '''
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.setblocking(0)
-	started = time.time()
-	while True:
-		try:
-			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
-				raise socket.timeout(u"Timed out after %d seconds" % connectTimeout)
-			sock.connect((self.host, self.port))
-		except socket.error, e:
-			if e[0] in (106, 10056):
-				# Transport endpoint is already connected
-				break
-			if e[0] not in (111, 114, 115, 10022, 10035):
-				# 111   = posix: Connection refused
-				# 10022 = nt: Invalid argument
-				if sock:
-					sock.close()
-				raise
-			time.sleep(0.5)
-	sock.setblocking(1)
-	self.sock = sock
+#def non_blocking_connect_http_OLD(self, connectTimeout=0):
+#	''' Non blocking connect, needed for KillableThread '''
+#	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#	sock.setblocking(0)
+#	started = time.time()
+#	while True:
+#		try:
+#			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
+#				raise socket.timeout(u"Timed out after %d seconds" % connectTimeout)
+#			sock.connect((self.host, self.port))
+#		except socket.error, e:
+#			if e[0] in (106, 10056):
+#				# Transport endpoint is already connected
+#				break
+#			if e[0] not in (111, 114, 115, 10022, 10035):
+#				# 111   = posix: Connection refused
+#				# 10022 = nt: Invalid argument
+#				if sock:
+#					sock.close()
+#				raise
+#			time.sleep(0.5)
+#	sock.setblocking(1)
+#	self.sock = sock
 
 def non_blocking_connect_http(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
@@ -131,6 +131,9 @@ def non_blocking_connect_http(self, connectTimeout=0):
 			break
 		except socket.error, e:
 			logger.debug(e)
+			if e[0] in (106, 10056):
+				# Transport endpoint is already connected
+				break
 			lastError = e
 			time.sleep(0.5)
 	sock.settimeout(None)
