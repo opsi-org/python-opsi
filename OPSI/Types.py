@@ -447,7 +447,7 @@ def forceHostname(var):
 		raise ValueError(u"Bad hostname: '%s'" % var)
 	return var
 
-licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
+licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicenseContractId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(licenseContractIdRegex, var)
@@ -461,7 +461,7 @@ def forceLicenseContractIdList(var):
 		var[i] = forceLicenseContractId(var[i])
 	return var
 
-softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
+softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceSoftwareLicenseId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(softwareLicenseIdRegex, var)
@@ -475,7 +475,7 @@ def forceSoftwareLicenseIdList(var):
 		var[i] = forceSoftwareLicenseId(var[i])
 	return var
 
-licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_. :]*$')
+licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicensePoolId(var):
 	var = forceUnicodeLower(var)
 	match = re.search(licensePoolIdRegex, var)

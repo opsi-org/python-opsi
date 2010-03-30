@@ -894,7 +894,7 @@ class BackendTest(object):
 			subVersion    = self.auditSoftware1.subVersion,
 			language      = self.auditSoftware1.language,
 			architecture  = self.auditSoftware1.architecture,
-			licensePoolId = self.licensePool1
+			licensePoolId = self.licensePool1.id
 		)
 		
 		self.auditSoftwareToLicensePool2 = AuditSoftwareToLicensePool(
@@ -903,7 +903,7 @@ class BackendTest(object):
 			subVersion    = self.auditSoftware2.subVersion,
 			language      = self.auditSoftware2.language,
 			architecture  = self.auditSoftware2.architecture,
-			licensePoolId = self.licensePool2
+			licensePoolId = self.licensePool2.id
 		)
 		
 		self.auditSoftwareToLicensePools = [self.auditSoftwareToLicensePool1, self.auditSoftwareToLicensePool2]

@@ -172,12 +172,26 @@ class FileBackend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>-state', 'option': 'productversion', 'json': False },
 				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False }
 			],
+#			'ProductOnClient': [
+#				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>-state', 'option': 'producttype',        'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>-state', 'option': 'actionprogress',     'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>-state', 'option': 'productversion',     'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>-state', 'option': 'packageversion',     'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'lastStateChange',    'section': '<productId>-state', 'option': 'laststatechange',    'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
+#			],
 			'ProductOnClient': [
-				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>-state', 'option': 'producttype',        'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>-state', 'option': 'actionprogress',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>-state', 'option': 'productversion',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>-state', 'option': 'packageversion',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'lastStateChange',    'section': '<productId>-state', 'option': 'laststatechange',    'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>-state', 'option': 'producttype',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>-state', 'option': 'actionprogress',   'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>-state', 'option': 'productversion',   'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>-state', 'option': 'packageversion',   'json': False },
+				{ 'fileType': 'ini', 'attribute': 'modificationTime',   'section': '<productId>-state', 'option': 'modificationtime', 'json': False },
+				
+				{ 'fileType': 'ini', 'attribute': 'lastAction',         'section': '<productId>-state', 'option': 'lastaction',       'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionResult',       'section': '<productId>-state', 'option': 'actionresult',     'json': False },
+				{ 'fileType': 'ini', 'attribute': 'targetState',        'section': '<productId>-state', 'option': 'targetstate',      'json': False },
+				
 				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
 				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
 			],
@@ -702,7 +716,7 @@ class FileBackend(ConfigDataBackend):
 						match = self._placeholderRegex.search(section)
 						if match:
 							replaceValue = objHash[match.group(1)]
-							if objType == 'ProductOnClient':
+							if objType == 'ProductOnClient': #<productType>_product_states
 								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 							section = section.replace(u'<%s>' % match.group(1), replaceValue)
 						
@@ -718,11 +732,16 @@ class FileBackend(ConfigDataBackend):
 								value = self.__unescape(value)
 							
 							# invalid values will throw exception
-							if objType in ('ProductOnClient',) and value.find(':') != -1:
+							if (objType == 'ProductOnClient') and (section.endswith('_product_states')):
+								index = value.find(':')
+								if (index == -1):
+									raise Exception(u"No ':' found in section '%s' in option '%s' in '%s'" % (section, option, filename))
 								if attribute == 'installationStatus':
-									value = value.split(u':', 1)[0]
+									#value = value.split(u':', 1)[0]
+									value = value[:index]
 								elif attribute == 'actionRequest':
-									value = value.split(u':', 1)[1]
+									#value = value.split(u':', 1)[1]
+									value = value[index + 1:]
 							
 							objHash[attribute] = value
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)

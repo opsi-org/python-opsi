@@ -3043,7 +3043,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					version        = auditSoftwareToLicensePool.version,
 					subVersion     = auditSoftwareToLicensePool.subVersion,
 					language       = auditSoftwareToLicensePool.language,
-					architecture   = auditSoftware.architecture):
+					architecture   = auditSoftwareToLicensePool.architecture):
 				logger.info(u"%s already exists, updating" % auditSoftwareToLicensePool)
 				self._backend.auditSoftwareToLicensePool_updateObject(auditSoftwareToLicensePool)
 			else:
