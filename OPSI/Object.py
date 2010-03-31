@@ -1365,8 +1365,8 @@ class ProductOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnClient'
 	
-	def __init__(self, productId, productType, clientId, targetState=None, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None, actionSequence=None):
-		self.targetState = None
+	def __init__(self, productId, productType, clientId, targetConfiguration=None, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None, actionSequence=None):
+		self.targetConfiguration = None
 		self.installationStatus = None
 		self.actionRequest = None
 		self.lastAction = None
@@ -1379,8 +1379,8 @@ class ProductOnClient(Relationship):
 		self.setProductId(productId)
 		self.setProductType(productType)
 		self.setClientId(clientId)
-		if not targetState is None:
-			self.setTargetState(targetState)
+		if not targetConfiguration is None:
+			self.setTargetConfiguration(targetConfiguration)
 		if not installationStatus is None:
 			self.setInstallationStatus(installationStatus)
 		if not actionRequest is None:
@@ -1427,11 +1427,11 @@ class ProductOnClient(Relationship):
 	def setClientId(self, clientId):
 		self.clientId = forceHostId(clientId)
 	
-	def getTargetState(self):
-		return self.targetState
+	def getTargetConfiguration(self):
+		return self.targetConfiguration
 	
-	def setTargetState(self, targetState):
-		self.targetState = forceProductTargetState(targetState)
+	def setTargetConfiguration(self, targetState):
+		self.targetConfiguration = forceProductTargetConfiguration(targetConfiguration)
 	
 	def getInstallationStatus(self):
 		return self.installationStatus

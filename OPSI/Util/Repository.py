@@ -63,12 +63,60 @@ def getRepository(url, username=u'', password=u'', maxBandwidth=0, application='
 	if re.search('^webdavs*://', url):
 		return WebDAVRepository(url, username, password, maxBandwidth, application)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
+
+class NetPerformanceSample:
+	def __init__(self, time, bytesPerSecond):
+		self.time = time
+		self.bytesPerSecond = bytesPerSecond
 	
+class NetPerformanceRRD:
+	def __init__(self):
+		self._maxSamples = 100
+		self._samples = []
+		self._averages = []
+		#self._lastSecondAverageSpeed = 0.0
+		self._lastThreeSecondsAverageSpeed = 0.0
+		
+	def addSample(self, sample):
+		while (len(self._samples) >= self._maxSamples):
+			self._samples.pop()
+		self._samples.insert(0, sample)
+		#self._lastSecondAverageSpeed = self._calculateBytesPerSecond(1.0)
+		# TODO: optimize
+		self._lastThreeSecondsAverageSpeed = self._calculateBytesPerSecond(3.0)
+		
+	def printData(self):
+		for sample in self._samples:
+			print "%-15s : %f" % (sample.time, sample.bytesPerSecond)
+		print
+	
+	#def lastSecondAverageSpeed(self):
+	#	return self._lastSecondAverageSpeed
+	
+	def lastThreeSecondsAverageSpeed(self):
+		return self._lastThreeSecondsAverageSpeed
+	
+	def _calculateBytesPerSecond(self, interval = 1.0):
+		if not self._samples:
+			return 0.0
+		startTime = self._samples[0].time
+		total = 0.0
+		numSamples = 0
+		for i in range(len(self._samples)):
+			total += self._samples[i].bytesPerSecond
+			numSamples += 1
+			if ((startTime - self._samples[i].time) >= interval):
+				break
+		if (total <= 0):
+			return total
+		return total/numSamples
+		
 class Repository:
 	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
 		'''
 		maxBandwith must be in byte/s
 		'''
+		self._bufferSize   = 4092
 		self._url          = forceUnicode(url)
 		self._username     = forceUnicode(username)
 		self._password     = forceUnicode(password)
@@ -80,7 +128,19 @@ class Repository:
 		
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
-	
+		
+		self._dynamicBandwidth = True
+		self._networkPerformanceCounter = None
+		if (os.name == 'nt') and self._dynamicBandwidth:
+			from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
+			self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
+		
+		self.lastWriteTime = None
+		self.totalWritten = 0.0
+		
+		self._bandwidthSleepTime = 0.0
+		self._bytesTransfered = 0
+		
 	def __unicode__(self):
 		return u'<%s %s>' % (self.__class__.__name__, self._url)
 	
@@ -89,50 +149,72 @@ class Repository:
 	
 	__repr__ = __unicode__
 	
+	def _sleepForBandwidth(self):
+		bwlimit = 10000000
+		
+		if (bwlimit == 0):
+			return
+		
+		averageSpeed = self._netPerfRRD.lastThreeSecondsAverageSpeed()
+		if (averageSpeed == 0):
+			return
+		
+		if (averageSpeed > bwlimit):
+			# to fast
+			factor = float(averageSpeed)/float(bwlimit)
+			#print averageSpeed, "Byte/s, factor", factor, "to fast"
+			if (factor == 0):
+				return
+			self._bandwidthSleepTime = (self._bandwidthSleepTime*2 + factor)/3
+			if (self._bandwidthSleepTime > 0.3):
+				self._bandwidthSleepTime = 0.3
+		else:
+			if (self._bandwidthSleepTime <= 0):
+				self._bandwidthSleepTime = 0
+				return
+			# to slow
+			factor = float(bwlimit)/float(averageSpeed)
+			#print averageSpeed, "Byte/s, factor", factor, "to slow"
+			if (factor == 0):
+				return
+			
+			self._bandwidthSleepTime = (self._bandwidthSleepTime*2 - factor)/3
+			if (self._bandwidthSleepTime < 0):
+				self._bandwidthSleepTime = 0
+				return
+		
+		logger.debug2(u"Sleeping %f seconds to correct bandwidth" % self._bandwidthSleepTime)
+		time.sleep(self._bandwidthSleepTime)
+		
 	def _transfer(self, src, dst, progressSubject=None):
 		buf = True
-		waitTime = 0.0
-		bufferSize = 64*1024
-		if self._maxBandwidth:
-			if (self._maxBandwidth < bufferSize*2):
-				bufferSize = int(self._maxBandwidth/2)
-			if (bufferSize < 512):
-				bufferSize = 512
-		
-		speed = 0
+		self._bytesTransfered = 0
+		startTime = time.time()
+		lastTime = time.time()
+		lastBytes = 0
+		self._netPerfRRD = NetPerformanceRRD()
 		while(buf):
-			buf = src.read(bufferSize)
+			now = time.time()
+			buf = src.read(self._bufferSize)
 			read = len(buf)
 			if (read > 0):
-				t1 = time.time()
+				lastBytes += read
+				self._bytesTransfered += read
 				if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
 					dst.send(buf)
 				else:
 					dst.write(buf)
-				time.sleep(waitTime)
-				t2 = time.time()
-				dt = t2-t1
-				if self._maxBandwidth and (self._maxBandwidth > 0) and (dt > 0):
-					speed = int((speed + (read/dt))/2)
-					wt = 0
-					if (speed > 0) and (speed > self._maxBandwidth):
-						wt = ( (float(speed)/float(self._maxBandwidth)) ** (0.1) )
-					elif (speed > 0) and (speed < self._maxBandwidth):
-						wt = ( (float(self._maxBandwidth)/float(speed)) ** (0.1) )
-					if wt:
-						while (wt > 1):
-							wt -= 1
-						if (wt > 0.2):
-							wt = 0.2
-						if (speed > self._maxBandwidth):
-							waitTime += wt
-						else:
-							waitTime -= wt
-						if (waitTime < 0):
-							waitTime = 0.00001
+				
 				if progressSubject:
 					progressSubject.addToState(read)
-					
+				
+				self._sleepForBandwidth()
+				if ((now - lastTime) > 0.05):
+					bytesPerSecond = float(lastBytes)/(now - lastTime)
+					self._netPerfRRD.addSample(NetPerformanceSample(now, bytesPerSecond))
+					lastTime = now
+					lastBytes = 0
+	
 	def setMaxBandwidth(self, maxBandwidth):
 		''' maxBandwidth in byte/s'''
 		self._maxBandwidth = forceInt(maxBandwidth)
@@ -160,6 +242,7 @@ class Repository:
 class FileRepository(Repository):
 	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
 		Repository.__init__(self, url, username, password, maxBandwidth, application)
+		self._bufferSize = 16384
 		
 		match = re.search('^file://(/[^/]+.*)$', self._url)
 		if not match:
@@ -248,6 +331,7 @@ class FileRepository(Repository):
 class WebDAVRepository(Repository):
 	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
 		Repository.__init__(self, url, username, password, maxBandwidth, application)
+		self._bufferSize = 4096
 		
 		match = re.search('^(webdavs*)://([^:]+:*[^:]+):(\d+)(/.*)$', self._url)
 		if not match:
@@ -281,11 +365,11 @@ class WebDAVRepository(Repository):
 		if self._protocol.endswith('s'):
 			logger.info(u"Opening https connection to %s:%s" % (self._host, self._port))
 			self._connection = httplib.HTTPSConnection(self._host, self._port)
-			non_blocking_connect_http(self._connection, self._connectTimeout)
+			non_blocking_connect_https(self._connection, self._connectTimeout)
 		else:
 			logger.info(u"Opening http connection to %s:%s" % (self._host, self._port))
 			self._connection = httplib.HTTPConnection(self._host, self._port)
-			non_blocking_connect_https(self._connection, self._connectTimeout)
+			non_blocking_connect_http(self._connection, self._connectTimeout)
 		
 		self._connection.connect()
 		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
@@ -382,6 +466,7 @@ class WebDAVRepository(Repository):
 					return info
 			raise Exception(u'File not found')
 		except Exception, e:
+			#logger.logException(e)
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
 	
 	def download(self, source, destination, progressSubject=None):
@@ -609,6 +694,32 @@ class DepotToLocalDirectorySychronizer(object):
 			if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
 		
 		if overallProgressObserver: overallProgressSubject.detachObserver(overallProgressObserver)
+
+
+
+if (__name__ == "__main__"):
+	logger.setConsoleLevel(LOG_DEBUG2)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/products', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#rep.download(u'preloginloader_3.4-48.opsi', '/tmp/preloginloader_3.4-48.opsi', progressSubject=None)
+	rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4')
+	rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

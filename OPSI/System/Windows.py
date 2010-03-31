@@ -41,6 +41,7 @@ import re, os, time, socket, sys
 from ctypes import *
 import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process
 import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
+import win32pdhutil, win32pdh
 
 # OPSI imports
 from OPSI.Logger import *
@@ -115,6 +116,101 @@ def getSystemDrive():
 	return forceUnicode(os.getenv('SystemDrive', u'c:'))
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                            HELPERS                                                -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+def getNetworkInterfaces():
+	try:
+		# This code is from Michael Amrhein
+		# http://www.mailinglistarchive.com/python-dev@python.org/msg07330.html
+		MAX_ADAPTER_DESCRIPTION_LENGTH = 128
+		MAX_ADAPTER_NAME_LENGTH = 256
+		MAX_ADAPTER_ADDRESS_LENGTH = 8
+		class IP_ADDR_STRING(Structure):
+			pass
+		LP_IP_ADDR_STRING = POINTER(IP_ADDR_STRING)
+		IP_ADDR_STRING._fields_ = [
+			("next",      LP_IP_ADDR_STRING),
+			("ipAddress", c_char * 16),
+			("ipMask",    c_char * 16),
+			("context",   c_ulong)]
+		class IP_ADAPTER_INFO(Structure):
+			pass
+		LP_IP_ADAPTER_INFO = POINTER(IP_ADAPTER_INFO)
+		IP_ADAPTER_INFO._fields_ = [
+			("next",                LP_IP_ADAPTER_INFO),
+			("comboIndex",          c_ulong),
+			("adapterName",         c_char * (MAX_ADAPTER_NAME_LENGTH + 4)),
+			("description",         c_char * (MAX_ADAPTER_DESCRIPTION_LENGTH + 4)),
+			("addressLength",       c_uint),
+			("address",             c_ubyte * MAX_ADAPTER_ADDRESS_LENGTH),
+			("index",               c_ulong),
+			("type",                c_uint),
+			("dhcpEnabled",         c_uint),
+			("currentIpAddress",    LP_IP_ADDR_STRING),
+			("ipAddressList",       IP_ADDR_STRING),
+			("gatewayList",         IP_ADDR_STRING),
+			("dhcpServer",          IP_ADDR_STRING),
+			("haveWins",            c_uint),
+			("primaryWinsServer",   IP_ADDR_STRING),
+			("secondaryWinsServer", IP_ADDR_STRING),
+			("leaseObtained",       c_ulong),
+			("leaseExpires",        c_ulong)
+		]
+		GetAdaptersInfo = windll.iphlpapi.GetAdaptersInfo
+		GetAdaptersInfo.restype = c_ulong
+		GetAdaptersInfo.argtypes = [LP_IP_ADAPTER_INFO, POINTER(c_ulong)]
+		adapterList = (IP_ADAPTER_INFO * 10)()
+		buflen = c_ulong(sizeof(adapterList))
+		rc = GetAdaptersInfo(byref(adapterList[0]), byref(buflen))
+		return adapterList
+	except Exception, e:
+		logger.logException(e)
+		raise Exception(u"Failed to get network interfaces: %s" % e)
+
+
+def getDefaultNetworkInterfaceName():
+	for interface in getNetworkInterfaces():
+		if interface.gatewayList.ipAddress:
+			return interface.description
+	return None
+
+class NetworkPerformanceCounter(object):
+	def __init__(self, interface):
+		self.interface = None
+		(items, instances) = win32pdh.EnumObjectItems(
+						None,
+						None,
+						win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
+						win32pdh.PERF_DETAIL_WIZARD)
+		for instance in instances:
+			logger.debug(u"NetworkPerformanceCounter: searching for interface '%s', found interface '%s'" % (instance, instance))
+			if (instance == interface):
+				self.interface = instance
+				break
+			elif (instance.find(interface) != -1):
+				self.interface = instance
+		if not self.interface:
+			raise Exception(u"Interface '%s' not found" % interface)
+		logger.info(u"NetworkPerformanceCounter: using interface '%s'" % self.interface)
+		
+		# For correct translations (find_pdh_counter_localized_name) see:
+		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
+		self._queryHandle = win32pdh.OpenQuery()
+		self.bytesInPerSecondCounter = win32pdh.MakeCounterPath( (
+						None,
+						win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
+						self.interface,
+						None,
+						-1,
+						win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec') ) )
+		self._counterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
+	
+	def getBytesInPerSecond(self):
+		win32pdh.CollectQueryData (self._queryHandle)
+		(tp, val) = win32pdh.GetFormattedCounterValue(self._counterHandle, win32pdh.PDH_FMT_LONG)
+		return val
+	
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            HELPERS                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

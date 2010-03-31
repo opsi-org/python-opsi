@@ -326,10 +326,10 @@ def forceProductPriority(var):
 def forceFilename(var):
 	return forceUnicode(var)
 
-def forceProductTargetState(var):
+def forceProductTargetConfiguration(var):
 	var = forceUnicodeLower(var)
 	if var and var not in ('installed', 'always', 'forbidden', 'undefined'):
-		raise ValueError(u"Bad product target state: '%s'" % var)
+		raise ValueError(u"Bad product target configuration: '%s'" % var)
 	return var
 
 def forceInstallationStatus(var):
