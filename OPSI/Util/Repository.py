@@ -65,9 +65,10 @@ def getRepository(url, username=u'', password=u'', maxBandwidth=0, application='
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
 class NetPerformanceSample:
-	def __init__(self, time, bytesPerSecond):
+	def __init__(self, time, usedBytesPerSecond, connectionBytesPerSecond):
 		self.time = time
-		self.bytesPerSecond = bytesPerSecond
+		self.usedBytesPerSecond = usedBytesPerSecond
+		self.connectionBytesPerSecond = connectionBytesPerSecond
 	
 class NetPerformanceRRD:
 	def __init__(self):
@@ -75,7 +76,12 @@ class NetPerformanceRRD:
 		self._samples = []
 		self._averages = []
 		#self._lastSecondAverageSpeed = 0.0
+		self._lastThreeSecondsMinimumSpeed = 0.0
 		self._lastThreeSecondsAverageSpeed = 0.0
+		self._lastThreeSecondsMaximumSpeed = 0.0
+		self._lastTenSecondsMinimumSpeed = 0.0
+		self._lastTenSecondsAverageSpeed = 0.0
+		self._lastTenSecondsMaximumSpeed = 0.0
 		
 	def addSample(self, sample):
 		while (len(self._samples) >= self._maxSamples):
@@ -83,8 +89,10 @@ class NetPerformanceRRD:
 		self._samples.insert(0, sample)
 		#self._lastSecondAverageSpeed = self._calculateBytesPerSecond(1.0)
 		# TODO: optimize
-		self._lastThreeSecondsAverageSpeed = self._calculateBytesPerSecond(3.0)
-		
+		#(self._lastThreeSecondsMinSpeed, self._lastThreeSecondsAverageSpeed, self._lastThreeSecondsMaxSpeed) \
+		#									= self._calculateBytesPerSecond(3.0)
+		(self._lastTenSecondsMinSpeed, self._lastTenSecondsAverageSpeed, self._lastTenSecondsMaxSpeed) \
+											= self._calculateBytesPerSecond(10.0)
 	def printData(self):
 		for sample in self._samples:
 			print "%-15s : %f" % (sample.time, sample.bytesPerSecond)
@@ -93,23 +101,42 @@ class NetPerformanceRRD:
 	#def lastSecondAverageSpeed(self):
 	#	return self._lastSecondAverageSpeed
 	
+	def lastThreeSecondsMinimumSpeed(self):
+		return self._lastThreeSecondsMinimumSpeed
+	
 	def lastThreeSecondsAverageSpeed(self):
 		return self._lastThreeSecondsAverageSpeed
 	
+	def lastThreeSecondsMaximumSpeed(self):
+		return self._lastThreeSecondsMaximumSpeed
+	
+	def lastTenSecondsAverageSpeed(self):
+		return self._lastTenSecondsAverageSpeed
+	
 	def _calculateBytesPerSecond(self, interval = 1.0):
 		if not self._samples:
-			return 0.0
+			return (0.0, 0.0, 0.0)
 		startTime = self._samples[0].time
+		minimum = self._samples[0].usedBytesPerSecond
+		maximum = self._samples[0].usedBytesPerSecond
 		total = 0.0
 		numSamples = 0
 		for i in range(len(self._samples)):
-			total += self._samples[i].bytesPerSecond
+			total += self._samples[i].usedBytesPerSecond
+			#print "SAMPLE: %d, BANDWIDTH: %d" % (i, self._samples[i].usedBytesPerSecond)
+			#print self._samples[i].usedBytesPerSecond,
 			numSamples += 1
+			if (self._samples[i].usedBytesPerSecond < minimum):
+				minimum = self._samples[i].usedBytesPerSecond
+			if (self._samples[i].usedBytesPerSecond > maximum):
+				maximum = self._samples[i].usedBytesPerSecond
 			if ((startTime - self._samples[i].time) >= interval):
 				break
-		if (total <= 0):
-			return total
-		return total/numSamples
+		average = 0.0
+		if (total > 0):
+			average = total/numSamples
+			#print "=== TOTAL: %d, SAMPLES: %d, AVERAGE: %0.2f" % (total, numSamples, average)
+		return (minimum, average, maximum)
 		
 class Repository:
 	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
@@ -150,49 +177,57 @@ class Repository:
 	__repr__ = __unicode__
 	
 	def _sleepForBandwidth(self):
-		bwlimit = 10000000
+		bwlimit = float(self._maxBandwidth)
 		
 		if (bwlimit == 0):
 			return
 		
-		averageSpeed = self._netPerfRRD.lastThreeSecondsAverageSpeed()
+		averageSpeed = self._averageSpeed
+		
 		if (averageSpeed == 0):
 			return
 		
 		if (averageSpeed > bwlimit):
 			# to fast
 			factor = float(averageSpeed)/float(bwlimit)
-			#print averageSpeed, "Byte/s, factor", factor, "to fast"
-			if (factor == 0):
-				return
-			self._bandwidthSleepTime = (self._bandwidthSleepTime*2 + factor)/3
-			if (self._bandwidthSleepTime > 0.3):
-				self._bandwidthSleepTime = 0.3
+			logger.debug2(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
+				% ((averageSpeed/1024), (bwlimit/1024), factor))
+			self._bandwidthSleepTime += (0.003 * (factor*factor))
+			
+			if (self._bandwidthSleepTime <= 0.0):
+				self._bandwidthSleepTime = 0.0001
+			#elif (self._bandwidthSleepTime > 0.5):
+			#	self._bandwidthSleepTime = 0.5
+			elif (self._bandwidthSleepTime > 0.4):
+				self._bandwidthSleepTime = 0.4
 		else:
-			if (self._bandwidthSleepTime <= 0):
-				self._bandwidthSleepTime = 0
-				return
 			# to slow
 			factor = float(bwlimit)/float(averageSpeed)
-			#print averageSpeed, "Byte/s, factor", factor, "to slow"
-			if (factor == 0):
-				return
+			logger.debug2(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
+				% ((averageSpeed/1024), (bwlimit/1024), factor))
 			
-			self._bandwidthSleepTime = (self._bandwidthSleepTime*2 - factor)/3
-			if (self._bandwidthSleepTime < 0):
+			self._bandwidthSleepTime -= (0.001 * (factor*factor))
+			if (self._bandwidthSleepTime <= 0.0):
 				self._bandwidthSleepTime = 0
-				return
+			
+		if (self._bandwidthSleepTime > 0):
+			logger.debug2(u"Sleeping %f seconds to correct bandwidth" % self._bandwidthSleepTime)
+			time.sleep(self._bandwidthSleepTime)
+	
+	def _transferDown(self, src, dst, progressSubject=None):
+		self._transfer('in', src, dst, progressSubject)
 		
-		logger.debug2(u"Sleeping %f seconds to correct bandwidth" % self._bandwidthSleepTime)
-		time.sleep(self._bandwidthSleepTime)
-		
-	def _transfer(self, src, dst, progressSubject=None):
-		buf = True
+	def _transferUp(self, src, dst, progressSubject=None):
+		self._transfer('out', src, dst, progressSubject)
+	
+	
+	def _transfer(self, transferDirection, src, dst, progressSubject=None):
 		self._bytesTransfered = 0
-		startTime = time.time()
+		self._transferStartTime = time.time()
 		lastTime = time.time()
 		lastBytes = 0
-		self._netPerfRRD = NetPerformanceRRD()
+		#self._netPerfRRD = NetPerformanceRRD()
+		buf = True
 		while(buf):
 			now = time.time()
 			buf = src.read(self._bufferSize)
@@ -208,12 +243,30 @@ class Repository:
 				if progressSubject:
 					progressSubject.addToState(read)
 				
-				self._sleepForBandwidth()
-				if ((now - lastTime) > 0.05):
-					bytesPerSecond = float(lastBytes)/(now - lastTime)
-					self._netPerfRRD.addSample(NetPerformanceSample(now, bytesPerSecond))
-					lastTime = now
-					lastBytes = 0
+				delta = (now-lastTime)
+				self._averageSpeed = lastBytes/delta
+				if (delta > 2):
+					lastTime = time.time() - 1
+					lastBytes = self._averageSpeed
+				if (self._bytesTransfered > self._bufferSize) and (self._maxBandwidth or self._dynamicBandwidth):
+					self._sleepForBandwidth()
+				
+				#if ((now - lastTime) > 0.05):
+				#	usedBytesPerSecond = float(lastBytes)/(now - lastTime)
+				#	connectionBytesPerSecond = usedBytesPerSecond
+				#	if self._networkPerformanceCounter:
+				#		if (transferDirection == 'out'):
+				#			connectionBytesPerSecond = self._networkPerformanceCounter.getBytesOutPerSecond()
+				#		else:
+				#			connectionBytesPerSecond = self._networkPerformanceCounter.getBytesInPerSecond()
+				#	
+				#	self._netPerfRRD.addSample(NetPerformanceSample(now, usedBytesPerSecond, connectionBytesPerSecond))
+				#	
+				#	logger.debug2(u"Current stats: direction %s, transfered %0.f kByte, used bandwidth %0.2f kByte/s, connection bandwidth %0.2f kByte/s, total speed: %0.2f kByte/s" % \
+				#			(transferDirection, (self._bytesTransfered/1024), (usedBytesPerSecond/1024), (connectionBytesPerSecond/1024), ((self._bytesTransfered/(now-startTime))/1024)))
+				#	lastTime = now
+				#	lastBytes = 0
+				#	self._sleepForBandwidth()
 	
 	def setMaxBandwidth(self, maxBandwidth):
 		''' maxBandwidth in byte/s'''
@@ -286,7 +339,7 @@ class FileRepository(Repository):
 		try:
 			src = open(source, 'rb')
 			dst = open(destination, 'wb')
-			self._transfer(src, dst, progressSubject)
+			self._transferDown(src, dst, progressSubject)
 			src.close()
 			dst.close()
 		except Exception, e:
@@ -309,7 +362,7 @@ class FileRepository(Repository):
 		try:
 			src = open(source, 'rb')
 			dst = open(destination, 'wb')
-			self._transfer(src, dst, progressSubject)
+			self._transferUp(src, dst, progressSubject)
 			src.close()
 			dst.close()
 		except Exception, e:
@@ -373,6 +426,10 @@ class WebDAVRepository(Repository):
 		
 		self._connection.connect()
 		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
+		
+		###################
+		return
+		###################
 		
 		self._connection.putrequest('PROPFIND', urllib.quote(self._absolutePath('/')))
 		self._connection.putheader('user-agent', self._application)
@@ -471,7 +528,11 @@ class WebDAVRepository(Repository):
 	
 	def download(self, source, destination, progressSubject=None):
 		destination = forceUnicode(destination)
-		size = self.fileInfo(source)['size']
+		size = 0
+		try:
+			size = self.fileInfo(source)['size']
+		except:
+			pass
 		source = self._absolutePath(source)
 		
 		logger.debug(u"Length of binary data to download: %d" % size)
@@ -494,7 +555,7 @@ class WebDAVRepository(Repository):
 				raise Exception(response.status)
 			
 			dst = open(destination, 'wb')
-			self._transfer(response, dst, progressSubject)
+			self._transferDown(response, dst, progressSubject)
 			dst.close()
 			
 		except Exception, e:
@@ -528,7 +589,7 @@ class WebDAVRepository(Repository):
 			self._connection.endheaders()
 			
 			src = open(source, 'rb')
-			self._transfer(src, self._connection, progressSubject)
+			self._transferUp(src, self._connection, progressSubject)
 			src.close()
 			
 			response = self._connection.getresponse()
