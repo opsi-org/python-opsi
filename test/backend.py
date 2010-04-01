@@ -625,7 +625,7 @@ class BackendTest(object):
 			productId          = self.product1.getId(),
 			productType        = self.product1.getType(),
 			clientId           = self.client3.getId(),
-			targetState        = 'installed',
+			targetConfiguration = 'installed',
 			installationStatus = 'installed',
 			actionRequest      = 'none',
 			lastAction         = 'setup',
@@ -1451,13 +1451,57 @@ class BackendTest(object):
 		assert productOnClients[0].getProductId() == self.product2.getId(), u"got: '%s', expected: '%s'" % (productOnClients[0].getProductId(), self.product2.getId())
 		assert productOnClients[0].getClientId() == self.client1.getId(), u"got: '%s', expected: '%s'" % (productOnClients[0].getClientId(), self.client1.getId())
 		
+		
+		
+		self.productOnClient2.setTargetConfiguration('forbidden')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(targetConfiguration = 'forbidden')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setInstallationStatus('unkown')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(installationStatus = 'unkown')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setActionRequest('custom')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(actionRequest = 'custom')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setLastAction('once')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(lastAction = 'once')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setActionProgress('aUniqueProgress')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(actionProgress = 'aUniqueProgress')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setActionResult('failed')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(actionResult = 'failed')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setProductVersion('777777')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(productVersion = '777777')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
+		self.productOnClient2.setPackageVersion('999999')
+		self.backend.productOnClient_updateObject(self.productOnClient2)
+		productOnClients = self.backend.productOnClient_getObjects(packageVersion = '999999')
+		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		
 		self.productOnClient2.setModificationTime('2010-01-01 05:55:55')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects(modificationTime = '2010-01-01 05:55:55')
 		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
 		
+		
+		
 		self.backend.productOnClient_createObjects(self.productOnClients)
-		self.backend.productOnClient_deleteObjects(self.productOnClient3)
+		self.backend.productOnClient_deleteObjects(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects()
 		assert len(productOnClients) == len(self.productOnClients) - 1, u"got: '%s', expected: '%s'" % (productOnClients, len(self.productOnClients) - 1)
 		

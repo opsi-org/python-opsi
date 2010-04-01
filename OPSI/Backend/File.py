@@ -182,15 +182,15 @@ class FileBackend(ConfigDataBackend):
 #				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
 #			],
 			'ProductOnClient': [
-				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>-state', 'option': 'producttype',      'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>-state', 'option': 'actionprogress',   'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>-state', 'option': 'productversion',   'json': False },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>-state', 'option': 'packageversion',   'json': False },
-				{ 'fileType': 'ini', 'attribute': 'modificationTime',   'section': '<productId>-state', 'option': 'modificationtime', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productType',         'section': '<productId>-state', 'option': 'producttype',         'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionProgress',      'section': '<productId>-state', 'option': 'actionprogress',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion',      'section': '<productId>-state', 'option': 'productversion',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion',      'section': '<productId>-state', 'option': 'packageversion',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'modificationTime',    'section': '<productId>-state', 'option': 'modificationtime',    'json': False },
 				
-				{ 'fileType': 'ini', 'attribute': 'lastAction',         'section': '<productId>-state', 'option': 'lastaction',       'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionResult',       'section': '<productId>-state', 'option': 'actionresult',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'targetState',        'section': '<productId>-state', 'option': 'targetstate',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'lastAction',          'section': '<productId>-state', 'option': 'lastaction',          'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionResult',        'section': '<productId>-state', 'option': 'actionresult',        'json': False },
+				{ 'fileType': 'ini', 'attribute': 'targetConfiguration', 'section': '<productId>-state', 'option': 'targetconfiguration', 'json': False },
 				
 				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
 				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },

@@ -1430,7 +1430,7 @@ class ProductOnClient(Relationship):
 	def getTargetConfiguration(self):
 		return self.targetConfiguration
 	
-	def setTargetConfiguration(self, targetState):
+	def setTargetConfiguration(self, targetConfiguration):
 		self.targetConfiguration = forceProductTargetConfiguration(targetConfiguration)
 	
 	def getInstallationStatus(self):
