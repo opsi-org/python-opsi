@@ -35,7 +35,7 @@
 __version__ = '3.5'
 
 # Imports
-import os, sys, subprocess, locale
+import os, sys, subprocess, locale, threading, time
 
 # OPSI imports
 from OPSI.Logger import *
@@ -171,26 +171,36 @@ def getDiskSpaceUsage(path):
 def getEthernetDevices():
 	devices = []
 	f = open("/proc/net/dev")
-	for line in f.readlines():
-		line = line.strip()
-		if not line or (line.find(':') == -1):
-			continue
-		device = line.split(':')[0].strip()
-		if device.startswith('eth') or device.startswith('tr'):
-			logger.info(u"Found ethernet device: '%s'" % device)
-			devices.append(device)
-	f.close()
+	try:
+		for line in f.readlines():
+			line = line.strip()
+			if not line or (line.find(':') == -1):
+				continue
+			device = line.split(':')[0].strip()
+			if device.startswith('eth') or device.startswith('tr') or device.startswith('br'):
+				logger.info(u"Found ethernet device: '%s'" % device)
+				devices.append(device)
+	finally:
+		f.close()
 	return devices
 
+def getNetworkInterfaces():
+	interfaces = []
+	for device in getEthernetDevices():
+		interfaces.append(getNetworkDeviceConfig(device))
+	return interfaces
+	
 def getNetworkDeviceConfig(device):
 	if not device:
 		raise Exception(u"No device given")
 	
 	result = {
+		'device':          device,
 		'hardwareAddress': None,
 		'ipAddress':       None,
 		'broadcast':       None,
-		'netmask':         None
+		'netmask':         None,
+		'gateway':         None
 	}
 	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
 		line = line.lower().strip()
@@ -206,9 +216,83 @@ def getNetworkDeviceConfig(device):
 			result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
 			result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
 			result['netmask']   = forceIpAddress(parts[3].split()[0].strip())
+	
+	for line in execute(u"%s route" % which(u'ip')):
+		line = line.lower().strip()
+		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s', line)
+		if match and (match.group(2).lower() == device.lower()):
+			result['gateway'] = forceIpAddress(match.group(1))
 	return result
 
+def getDefaultNetworkInterfaceName():
+	for interface in getNetworkInterfaces():
+		if interface['gateway']:
+			return interface['device']
+	return None
 
+class NetworkPerformanceCounter(threading.Thread):
+	def __init__(self, interface):
+		threading.Thread.__init__(self)
+		if not interface:
+			raise ValueError(u"No interface given")
+		self.interface = interface
+		self._lastBytesIn = 0
+		self._lastBytesOut = 0
+		self._lastTime = None
+		self._bytesInPerSecond = 0
+		self._bytesOutPerSecond = 0
+		self._regex = re.compile('\s*(\S+)\:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)')
+		self._running = False
+		self._stopped = False
+		self.start()
+		
+	def __del__(self):
+		self.stop()
+	
+	def stop(self):
+		self._stopped = True
+		
+	def run(self):
+		self._running = True
+		while not self._stopped:
+			self._getStatistics()
+			time.sleep(1)
+		
+	def _getStatistics(self):
+		f = open('/proc/net/dev', 'r')
+		try:
+			for line in f.readlines():
+				line = line.strip()
+				match = self._regex.search(line)
+				if match and (match.group(1) == self.interface):
+					#       |   Receive                                                |  Transmit
+					# iface: bytes    packets errs drop fifo frame compressed multicast bytes    packets errs drop fifo colls carrier compressed
+					now = time.time()
+					bytesIn = int(match.group(2))
+					bytesOut = int(match.group(10))
+					timeDiff = 1
+					if self._lastTime:
+						timeDiff = now - self._lastTime
+					if self._lastBytesIn:
+						self._bytesInPerSecond = (bytesIn - self._lastBytesIn)/timeDiff
+						if (self._bytesInPerSecond < 0):
+							self._bytesInPerSecond = 0
+					if self._lastBytesOut:
+						self._bytesOutPerSecond = (bytesOut - self._lastBytesOut)/timeDiff
+						if (self._bytesOutPerSecond < 0):
+							self._bytesOutPerSecond = 0
+					self._lastBytesIn = bytesIn
+					self._lastBytesOut = bytesOut
+					self._lastTime = now
+					break
+		finally:
+			f.close()
+		
+	def getBytesInPerSecond(self):
+		return self._bytesInPerSecond
+	
+	def getBytesOutPerSecond(self):
+		return self._bytesOutPerSecond
 
 
 

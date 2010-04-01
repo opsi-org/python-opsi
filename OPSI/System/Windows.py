@@ -213,14 +213,22 @@ class NetworkPerformanceCounter(object):
 						win32pdhutil.find_pdh_counter_localized_name('Bytes Out/sec') ) )
 		self._inCounterHandle  = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
 		self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
+	
+	def __del__(self):
+		self.stop()
+	
+	def stop(self):
+		win32pdh.RemoveCounter(self._inCounterHandle)
+		win32pdh.RemoveCounter(self._outCounterHandle)
+		win32pdh.CloseQuery(self._queryHandle)
 		
 	def getBytesInPerSecond(self):
-		win32pdh.CollectQueryData (self._queryHandle)
+		win32pdh.CollectQueryData(self._queryHandle)
 		(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
 		return val
 	
 	def getBytesOutPerSecond(self):
-		win32pdh.CollectQueryData (self._queryHandle)
+		win32pdh.CollectQueryData(self._queryHandle)
 		(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
 		return val
 	

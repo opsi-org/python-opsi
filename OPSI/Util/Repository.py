@@ -53,102 +53,29 @@ logger = Logger()
 # =       Repositories                                                                =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-def getRepository(url, username=u'', password=u'', maxBandwidth=0, application=''):
+def getRepository(url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
 	url          = forceUnicode(url)
 	username     = forceUnicode(username)
 	password     = forceUnicode(password)
 	maxBandwidth = forceInt(maxBandwidth)
 	if re.search('^file://', url):
-		return FileRepository(url, username, password, maxBandwidth, application)
+		return FileRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
 	if re.search('^webdavs*://', url):
-		return WebDAVRepository(url, username, password, maxBandwidth, application)
+		return WebDAVRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
-class NetPerformanceSample:
-	def __init__(self, time, usedBytesPerSecond, connectionBytesPerSecond):
-		self.time = time
-		self.usedBytesPerSecond = usedBytesPerSecond
-		self.connectionBytesPerSecond = connectionBytesPerSecond
-	
-class NetPerformanceRRD:
-	def __init__(self):
-		self._maxSamples = 100
-		self._samples = []
-		self._averages = []
-		#self._lastSecondAverageSpeed = 0.0
-		self._lastThreeSecondsMinimumSpeed = 0.0
-		self._lastThreeSecondsAverageSpeed = 0.0
-		self._lastThreeSecondsMaximumSpeed = 0.0
-		self._lastTenSecondsMinimumSpeed = 0.0
-		self._lastTenSecondsAverageSpeed = 0.0
-		self._lastTenSecondsMaximumSpeed = 0.0
-		
-	def addSample(self, sample):
-		while (len(self._samples) >= self._maxSamples):
-			self._samples.pop()
-		self._samples.insert(0, sample)
-		#self._lastSecondAverageSpeed = self._calculateBytesPerSecond(1.0)
-		# TODO: optimize
-		#(self._lastThreeSecondsMinSpeed, self._lastThreeSecondsAverageSpeed, self._lastThreeSecondsMaxSpeed) \
-		#									= self._calculateBytesPerSecond(3.0)
-		(self._lastTenSecondsMinSpeed, self._lastTenSecondsAverageSpeed, self._lastTenSecondsMaxSpeed) \
-											= self._calculateBytesPerSecond(10.0)
-	def printData(self):
-		for sample in self._samples:
-			print "%-15s : %f" % (sample.time, sample.bytesPerSecond)
-		print
-	
-	#def lastSecondAverageSpeed(self):
-	#	return self._lastSecondAverageSpeed
-	
-	def lastThreeSecondsMinimumSpeed(self):
-		return self._lastThreeSecondsMinimumSpeed
-	
-	def lastThreeSecondsAverageSpeed(self):
-		return self._lastThreeSecondsAverageSpeed
-	
-	def lastThreeSecondsMaximumSpeed(self):
-		return self._lastThreeSecondsMaximumSpeed
-	
-	def lastTenSecondsAverageSpeed(self):
-		return self._lastTenSecondsAverageSpeed
-	
-	def _calculateBytesPerSecond(self, interval = 1.0):
-		if not self._samples:
-			return (0.0, 0.0, 0.0)
-		startTime = self._samples[0].time
-		minimum = self._samples[0].usedBytesPerSecond
-		maximum = self._samples[0].usedBytesPerSecond
-		total = 0.0
-		numSamples = 0
-		for i in range(len(self._samples)):
-			total += self._samples[i].usedBytesPerSecond
-			#print "SAMPLE: %d, BANDWIDTH: %d" % (i, self._samples[i].usedBytesPerSecond)
-			#print self._samples[i].usedBytesPerSecond,
-			numSamples += 1
-			if (self._samples[i].usedBytesPerSecond < minimum):
-				minimum = self._samples[i].usedBytesPerSecond
-			if (self._samples[i].usedBytesPerSecond > maximum):
-				maximum = self._samples[i].usedBytesPerSecond
-			if ((startTime - self._samples[i].time) >= interval):
-				break
-		average = 0.0
-		if (total > 0):
-			average = total/numSamples
-			#print "=== TOTAL: %d, SAMPLES: %d, AVERAGE: %0.2f" % (total, numSamples, average)
-		return (minimum, average, maximum)
-		
 class Repository:
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
 		'''
 		maxBandwith must be in byte/s
 		'''
-		self._bufferSize   = 4092
-		self._url          = forceUnicode(url)
-		self._username     = forceUnicode(username)
-		self._password     = forceUnicode(password)
-		self._path         = u''
-		self._maxBandwidth = forceInt(maxBandwidth)
+		self._bufferSize       = 4092
+		self._url              = forceUnicode(url)
+		self._username         = forceUnicode(username)
+		self._password         = forceUnicode(password)
+		self._path             = u''
+		self._maxBandwidth     = forceInt(maxBandwidth)
+		self._dynamicBandwidth = True#forceBool(dynamicBandwidth)
 		self._application  = 'opsi repository module version %s' % __version__
 		if application:
 			self._application = str(application)
@@ -156,17 +83,28 @@ class Repository:
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
 		
-		self._dynamicBandwidth = True
+		self._dynamicBandwidthLimit = 0.0
+		self._dynamicBandwidthLimitTime = None
+		self._dynamicBandwidthNoLimitTime = None
+		self._bandwidthSleepTime = 0.0
+		
 		self._networkPerformanceCounter = None
-		if (os.name == 'nt') and self._dynamicBandwidth:
+		if self._dynamicBandwidth:
 			from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
 			self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
 		
-		self.lastWriteTime = None
-		self.totalWritten = 0.0
 		
-		self._bandwidthSleepTime = 0.0
 		self._bytesTransfered = 0
+		
+		self._averageSpeed = 0.0
+		self._currentSpeed = 0.0
+	
+	def __del__(self):
+		if self._networkPerformanceCounter:
+			try:
+				self._networkPerformanceCounter.stop()
+			except:
+				pass
 		
 	def __unicode__(self):
 		return u'<%s %s>' % (self.__class__.__name__, self._url)
@@ -177,21 +115,69 @@ class Repository:
 	__repr__ = __unicode__
 	
 	def _sleepForBandwidth(self):
-		bwlimit = float(self._maxBandwidth)
+		bwlimit = 0.0
+		
+		if (self._averageSpeed == 0):
+			return
+		if not (self._dynamicBandwidth and self._networkPerformanceCounter) and not self._maxBandwidth:
+			return
+		
+		if self._dynamicBandwidth and self._networkPerformanceCounter:
+			now = time.time()
+			networkUsage = 0
+			if (self._transferDirection == 'out'):
+				networkUsage = self._networkPerformanceCounter.getBytesOutPerSecond()
+			else:
+				networkUsage = self._networkPerformanceCounter.getBytesInPerSecond()
+			
+			if (networkUsage > 0):
+				usage = float(self._currentSpeed)/float(networkUsage)
+				logger.debug2("Current %0.2f kByte/s, average %0.2f kByte/s, total network usage %0.2f kByte/s, using %0.2f%% of total bandwidth" \
+					% ((self._currentSpeed/1024), (self._averageSpeed/1024), (networkUsage/1024), usage*100))
+				
+				if self._dynamicBandwidthLimit:
+					bwlimit = self._dynamicBandwidthLimit
+					if (usage >= 0.90):
+						self._dynamicBandwidthLimitTime = None
+						if self._dynamicBandwidthNoLimitTime:
+							delta = (now - self._dynamicBandwidthNoLimitTime)
+							if (delta >= 3):
+								# Use 100%
+								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
+								bwlimit = self._dynamicBandwidthLimit = 0.0
+								self._bandwidthSleepTime = 0
+						else:
+							self._dynamicBandwidthNoLimitTime = now
+					else:
+						self._dynamicBandwidthNoLimitTime = None
+				else:
+					if (usage <= 0.90):
+						self._dynamicBandwidthNoLimitTime = None
+						if self._dynamicBandwidthLimitTime:
+							delta = (now - self._dynamicBandwidthLimitTime)
+							if (delta >= 0.5):
+								# Use 5% only
+								bwlimit = self._dynamicBandwidthLimit = self._averageSpeed*0.05
+								logger.info(u"Other traffic detected, dynamically limiting bandwidth to 5%% of last average to %0.2f kByte/s" \
+									% (bwlimit/1024))
+								# For faster limiting:
+								self._bandwidthSleepTime = 0.1
+						else:
+							self._dynamicBandwidthLimitTime = now
+					else:
+						self._dynamicBandwidthLimitTime = None
+		
+		if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
+			bwlimit = float(self._maxBandwidth)
 		
 		if (bwlimit == 0):
 			return
 		
-		averageSpeed = self._averageSpeed
-		
-		if (averageSpeed == 0):
-			return
-		
-		if (averageSpeed > bwlimit):
-			# to fast
-			factor = float(averageSpeed)/float(bwlimit)
+		if (self._averageSpeed > bwlimit):
+			# To fast
+			factor = float(self._averageSpeed)/float(bwlimit)
 			logger.debug2(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-				% ((averageSpeed/1024), (bwlimit/1024), factor))
+				% ((self._averageSpeed/1024), (bwlimit/1024), factor))
 			self._bandwidthSleepTime += (0.003 * (factor*factor))
 			
 			if (self._bandwidthSleepTime <= 0.0):
@@ -201,10 +187,10 @@ class Repository:
 			elif (self._bandwidthSleepTime > 0.4):
 				self._bandwidthSleepTime = 0.4
 		else:
-			# to slow
-			factor = float(bwlimit)/float(averageSpeed)
+			# To slow
+			factor = float(bwlimit)/float(self._averageSpeed)
 			logger.debug2(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-				% ((averageSpeed/1024), (bwlimit/1024), factor))
+				% ((self._averageSpeed/1024), (bwlimit/1024), factor))
 			
 			self._bandwidthSleepTime -= (0.001 * (factor*factor))
 			if (self._bandwidthSleepTime <= 0.0):
@@ -222,19 +208,19 @@ class Repository:
 	
 	
 	def _transfer(self, transferDirection, src, dst, progressSubject=None):
-		self._bytesTransfered = 0
-		self._transferStartTime = time.time()
-		lastTime = time.time()
+		self._transferDirection = transferDirection
+		bytesTransfered = 0
 		lastBytes = 0
-		#self._netPerfRRD = NetPerformanceRRD()
+		lastAverageBytes = 0
+		lastTime = lastAverageTime = transferStartTime = time.time()
 		buf = True
 		while(buf):
-			now = time.time()
 			buf = src.read(self._bufferSize)
 			read = len(buf)
 			if (read > 0):
+				lastAverageBytes += read
 				lastBytes += read
-				self._bytesTransfered += read
+				bytesTransfered += read
 				if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
 					dst.send(buf)
 				else:
@@ -243,30 +229,26 @@ class Repository:
 				if progressSubject:
 					progressSubject.addToState(read)
 				
-				delta = (now-lastTime)
-				self._averageSpeed = lastBytes/delta
-				if (delta > 2):
-					lastTime = time.time() - 1
-					lastBytes = self._averageSpeed
-				if (self._bytesTransfered > self._bufferSize) and (self._maxBandwidth or self._dynamicBandwidth):
-					self._sleepForBandwidth()
+				now = time.time()
 				
-				#if ((now - lastTime) > 0.05):
-				#	usedBytesPerSecond = float(lastBytes)/(now - lastTime)
-				#	connectionBytesPerSecond = usedBytesPerSecond
-				#	if self._networkPerformanceCounter:
-				#		if (transferDirection == 'out'):
-				#			connectionBytesPerSecond = self._networkPerformanceCounter.getBytesOutPerSecond()
-				#		else:
-				#			connectionBytesPerSecond = self._networkPerformanceCounter.getBytesInPerSecond()
-				#	
-				#	self._netPerfRRD.addSample(NetPerformanceSample(now, usedBytesPerSecond, connectionBytesPerSecond))
-				#	
-				#	logger.debug2(u"Current stats: direction %s, transfered %0.f kByte, used bandwidth %0.2f kByte/s, connection bandwidth %0.2f kByte/s, total speed: %0.2f kByte/s" % \
-				#			(transferDirection, (self._bytesTransfered/1024), (usedBytesPerSecond/1024), (connectionBytesPerSecond/1024), ((self._bytesTransfered/(now-startTime))/1024)))
-				#	lastTime = now
-				#	lastBytes = 0
-				#	self._sleepForBandwidth()
+				delta = (now-lastTime)
+				if (delta >= 1):
+					self._currentSpeed = lastBytes/delta
+					lastBytes = 0
+					lastTime = now
+				
+				delta = (now-lastAverageTime)
+				self._averageSpeed = lastAverageBytes/delta
+				if (delta > 2):
+					lastAverageTime = time.time() - 1
+					lastAverageBytes = self._averageSpeed
+				
+				if (bytesTransfered > self._bufferSize) and (self._maxBandwidth or self._dynamicBandwidth):
+					self._sleepForBandwidth()
+		
+		transferTime = time.time() - transferStartTime
+		logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
+			( (float(bytesTransfered)/1024), (float(transferTime)/60), (float(bytesTransfered)/transferTime)/1024) )
 	
 	def setMaxBandwidth(self, maxBandwidth):
 		''' maxBandwidth in byte/s'''
@@ -293,8 +275,8 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 	
 class FileRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
-		Repository.__init__(self, url, username, password, maxBandwidth, application)
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
+		Repository.__init__(self, url, username, password, maxBandwidth, False, application)
 		self._bufferSize = 16384
 		
 		match = re.search('^file://(/[^/]+.*)$', self._url)
@@ -382,8 +364,8 @@ class FileRepository(Repository):
 		
 	
 class WebDAVRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, application=''):
-		Repository.__init__(self, url, username, password, maxBandwidth, application)
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
+		Repository.__init__(self, url, username, password, maxBandwidth, dynamicBandwidth, application)
 		self._bufferSize = 4096
 		
 		match = re.search('^(webdavs*)://([^:]+:*[^:]+):(\d+)(/.*)$', self._url)
@@ -627,11 +609,12 @@ class WebDAVRepository(Repository):
 
 
 class DepotToLocalDirectorySychronizer(object):
-	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0):
-		self._sourceDepot = sourceDepot
+	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
+		self._sourceDepot          = sourceDepot
 		self._destinationDirectory = forceUnicode(destinationDirectory)
-		self._productIds = forceUnicodeList(productIds)
-		self._maxBandwidth = forceInt(maxBandwidth)
+		self._productIds           = forceUnicodeList(productIds)
+		self._maxBandwidth         = forceInt(maxBandwidth)
+		self._dynamicBandwidth     = forceBool(dynamicBandwidth)
 		if not os.path.isdir(self._destinationDirectory):
 			os.mkdir(self._destinationDirectory)
 	
