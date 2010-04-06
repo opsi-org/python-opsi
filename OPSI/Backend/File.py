@@ -364,7 +364,7 @@ class FileBackend(ConfigDataBackend):
 			if os.path.isfile(filename):
 				return filename
 			else:
-				raise Exception(u"%s needs existing file! ident '%s', fileType '%s'" % (objType, ident, fileType))
+				raise Exception(u"%s needs existing file '%s' ident '%s', fileType '%s'" % (objType, filename, ident, fileType))
 		else:
 			return filename
 	
@@ -672,6 +672,10 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.debug2(u"Using mappings %s" % mappings)
 		
+		packageControlFileCache = {}
+		iniFileCache = {}
+		hostKeys = None
+		
 		objects = []
 		for ident in self._getIdents(objType, **filter):
 			ignoreHash = False
@@ -684,13 +688,17 @@ class FileBackend(ConfigDataBackend):
 					raise BackendIOError(u"Directory '%s' not found" % os.path.dirname(filename))
 				
 				if (fileType == 'key'):
-					hostKeys = HostKeyFile(filename = filename)
+					if not hostKeys:
+						hostKeys = HostKeyFile(filename = filename)
+						hostKeys.parse()
 					for m in mapping:
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 				
 				elif (fileType == 'ini'):
-					iniFile = IniFile(filename = filename, ignoreCase = False)
-					cp = iniFile.parse()
+					if not iniFileCache.has_key(filename):
+						iniFile = IniFile(filename = filename, ignoreCase = False)
+						iniFileCache[filename] = iniFile.parse()
+					cp = iniFileCache[filename]
 					
 					for m in mapping:
 						attribute = m['attribute']
@@ -737,7 +745,10 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
 					
 				elif (fileType == 'pro'):
-					packageControlFile = PackageControlFile(filename = filename)
+					if not packageControlFileCache.has_key(filename):
+						packageControlFileCache[filename] = PackageControlFile(filename = filename)
+						packageControlFileCache[filename].parse()
+					packageControlFile = packageControlFileCache[filename]
 					
 					if   objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 						objHash = packageControlFile.getProduct().toHash()
@@ -902,53 +913,45 @@ class FileBackend(ConfigDataBackend):
 						packageControlFile.setProduct(Product.fromHash(productHash))
 				
 				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-					oldList = []
-					newList = []
-					
-					if objType == 'ProductDependency':
-						oldList = packageControlFile.getProductDependencies()
+					currentObjects = []
+					if (objType == 'ProductDependency'):
+						currentObjects = packageControlFile.getProductDependencies()
 					else:
-						oldList = packageControlFile.getProductProperties()
+						currentObjects = packageControlFile.getProductProperties()
 					
-					handledObj = False
-					for oldItem in oldList:
-						if (oldItem.getIdent() == obj.getIdent()):
-							if handledObj:
-								#TODO: error or exception?
-								raise Exception("duplicate:", oldItem.getIdent())
-								continue
-							
-							if mode == 'create':
-								newList.append(obj)
+					found = False
+					for i in range(len(currentObjects)):
+						if (currentObjects[i].getIdent(returnType = 'unicode') == obj.getIdent(returnType = 'unicode')):
+							if (mode == 'create'):
+								currentObjects[i] = obj
 							else:
-								newHash = oldItem.toHash()
+								newHash = currentObjects[i].toHash()
 								for (attribute, value) in obj.toHash().items():
 									if value is not None:
 										newHash[attribute] = value
 								
 								Class = eval(objType)
-								newList.append(Class.fromHash(newHash))
-							
-							handledObj = True
-						else:
-							newList.append(oldItem)
+								currentObjects[i] = Class.fromHash(newHash)
+							found = True
+							break
 					
-					if not handledObj:
-						newList.append(obj)
-					
-					if objType == 'ProductDependency':
-						packageControlFile.setProductDependencies(newList)
+					if not found:
+						currentObjects.append(obj)
+						
+					if (objType == 'ProductDependency'):
+						packageControlFile.setProductDependencies(currentObjects)
 					else:
-						packageControlFile.setProductProperties(newList)
-				
+						packageControlFile.setProductProperties(currentObjects)
+					
 				packageControlFile.generate()
 	
 	def _delete(self, objList):
-		objType = u''
-		if objList:
-			#objType is not always correct, but _getConfigFile() is
-			#within ifs obj.getType() from obj in objList should be used
-			objType = objList[0].getType()
+		if not objList:
+			return
+	
+		#objType is not always correct, but _getConfigFile() is
+		#within ifs obj.getType() from obj in objList should be used
+		objType = objList[0].getType()
 		
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
 			hostKeyFile = HostKeyFile(self._getConfigFile('', {}, 'key'))
@@ -962,12 +965,14 @@ class FileBackend(ConfigDataBackend):
 				
 				filename = self._getConfigFile(
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
-				if obj.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
-					if os.path.isdir(os.path.dirname(filename)):
-						shutil.rmtree(os.path.dirname(filename))
-				elif obj.getType() in ('OpsiClient',):
-					if os.path.isfile(filename):
-						os.unlink(filename)
+				if os.path.isfile(filename):
+					os.unlink(filename)
+				#if obj.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+				#	if os.path.isdir(os.path.dirname(filename)):
+				#		shutil.rmtree(os.path.dirname(filename))
+				#elif obj.getType() in ('OpsiClient',):
+				#	if os.path.isfile(filename):
+				#		os.unlink(filename)
 			hostKeyFile.generate()
 		
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
@@ -1030,13 +1035,16 @@ class FileBackend(ConfigDataBackend):
 				else:
 					oldList = packageControlFile.getProductProperties()
 				
-				for obj in objList:
-					logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
-					for oldItem in oldList:
-						if oldItem.getIdent() == obj.getIdent():
-							logger.debug2(u"Removed '%s'" % obj.getIdent())
-						else:
-							newList.append(oldItem)
+				for oldItem in oldList:
+					delete = False
+					for obj in objList:
+						if oldItem.getIdent(returnType = 'unicode') == obj.getIdent(returnType = 'unicode'):
+							delete = True
+							break
+					if delete:
+						logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					else:
+						newList.append(oldItem)
 				
 				if objType == 'ProductDependency':
 					packageControlFile.setProductDependencies(newList)
@@ -1119,7 +1127,7 @@ class FileBackend(ConfigDataBackend):
 			iniFile.generate(cp)
 		
 		else:
-			logger.warning(u"_delete(): unhandled objType: '%s'" % objType)
+			logger.warning(u"_delete(): unhandled objType: '%s' object: %s" % (objType, objList[0]))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -1476,7 +1484,7 @@ class FileBackend(ConfigDataBackend):
 		while num in nums:
 			num += 1
 		
-		section = u'SOFTWARE_%d' % num
+		section = u'software_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditSoftware.toHash().items():
 			if (value is None) or (key == 'type'):
@@ -1547,12 +1555,15 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.debug(u"Deleting auditSoftwares ...")
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
+		if not os.path.exists(filename):
+			return
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		idents = []
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
 			idents.append(auditSoftware.getIdent(returnType = 'dict'))
 		
+		removeSections = []
 		for section in ini.sections():
 			for ident in idents:
 				found = True
@@ -1560,9 +1571,12 @@ class FileBackend(ConfigDataBackend):
 					if (self.__unescape(ini.get(section, key.lower())) != value):
 						found = False
 						break
-				if found:
-					ini.remove_section(section)
-		iniFile.generate(ini)
+				if found and not section in removeSections:
+					removeSections.append(section)
+		if removeSections:
+			for section in removeSections:
+				ini.remove_section(section)
+			iniFile.generate(ini)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
@@ -1586,7 +1600,7 @@ class FileBackend(ConfigDataBackend):
 		while num in nums:
 			num += 1
 		
-		section = u'SOFTWARE_%d' % num
+		section = u'software_%d' % num
 		ini.add_section(section)
 		for (key, value) in auditSoftwareOnClient.toHash().items():
 			if (value is None):
@@ -1666,7 +1680,7 @@ class FileBackend(ConfigDataBackend):
 		logger.debug(u"Deleting auditSoftwareOnClients ...")
 		filenames = {}
 		idents = {}
-		for auditSoftwareOnClient in  forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
+		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
 			ident = auditSoftwareOnClient.getIdent(returnType = 'dict')
 			if not idents.has_key(ident['clientId']):
 				idents[ident['clientId']] = []
@@ -1677,6 +1691,7 @@ class FileBackend(ConfigDataBackend):
 		for (clientId, filename) in filenames.items():
 			iniFile = IniFile(filename = filename)
 			ini = iniFile.parse()
+			removeSections = []
 			for section in ini.sections():
 				for ident in idents[clientId]:
 					found = True
@@ -1684,9 +1699,12 @@ class FileBackend(ConfigDataBackend):
 						if (self.__unescape(ini.get(section, key.lower())) != value):
 							found = False
 							break
-					if found:
-						ini.remove_section(section)
-			iniFile.generate(ini)
+					if found and not section in removeSections:
+						removeSections.append(section)
+			if removeSections:
+				for section in removeSections:
+					ini.remove_section(section)
+				iniFile.generate(ini)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
@@ -2234,7 +2252,7 @@ class FileBackend(ConfigDataBackend):
 				num = 0
 				while num in nums:
 					num += 1
-				sectionFound = u'HARDWARE_%d' % num
+				sectionFound = u'hardware_%d' % num
 				ini.add_section(sectionFound)
 			
 			for (key, value) in auditHardwareObj.toHash().items():
@@ -2264,8 +2282,7 @@ class FileBackend(ConfigDataBackend):
 		
 		elif (mode == 'delete'):
 			if (sectionFound is None):
-				raise Exception()
-			
+				return
 			ini.remove_section(sectionFound)
 			logger.debug2(u"Removed section '%s'" % (sectionFound))
 		

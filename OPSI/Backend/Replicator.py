@@ -134,10 +134,8 @@ class BackendReplicator:
 				Class = eval(objClass)
 				self.__currentProgressSubject.addToState(1)
 				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (Class.backendMethodPrefix, Class.backendMethodPrefix))
-			
 			self.__overallProgressSubject.setMessage(u"Cleanup done!")
 			self.__overallProgressSubject.addToState(1)
-		
 		
 		for objClass in self.OBJECT_CLASSES:
 			subClasses = [ None ]
@@ -180,12 +178,28 @@ class BackendReplicator:
 					sortedObjs = []
 					groupIds = []
 					while True:
+						numAdded = 0
 						for obj in objs:
-							if not obj.getParentGroupId() or obj.getParentGroupId() in groupIds:
+							if not obj.getParentGroupId():
+								logger.debug(u"Adding group '%s' without parent group set" % obj)
 								sortedObjs.append(obj)
 								objs.remove(obj)
 								groupIds.append(obj.getId())
+								numAdded += 1
+							else:
+								if obj.getParentGroupId() in groupIds:
+									logger.debug(u"Adding group '%s' with parent group '%s' set" % (obj, obj.getParentGroupId()))
+									sortedObjs.append(obj)
+									objs.remove(obj)
+									groupIds.append(obj.getId())
+									numAdded += 1
+								else:
+									logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
 						if not objs:
+							break
+						if (numAdded == 0):
+							for obj in objs:
+								logger.error(u"Failed to add group: %s" % obj)
 							break
 					objs = sortedObjs
 				
@@ -204,7 +218,7 @@ class BackendReplicator:
 							else:
 								eval('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
 						except Exception, e:
-							#logger.logException(e)
+							logger.logException(e, LOG_DEBUG)
 							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
 						self.__currentProgressSubject.addToState(1)
 				self.__currentProgressSubject.setState(len(objs))

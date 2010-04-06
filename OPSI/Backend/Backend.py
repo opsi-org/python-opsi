@@ -139,62 +139,68 @@ class Backend:
 	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
 		matchedAll = True
-		
 		for (attribute, value) in objHash.items():
 			if not filter.get(attribute):
 				continue
 			matched = False
-			logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
-						% (filter[attribute], attribute, value))
-			filterValues = forceList(filter[attribute])
-			if value in filterValues:
-				matched = True
-			else:
-				for filterValue in filterValues:
-					if (attribute == 'type'):
-						match = False
-						Class = eval(filterValue)
-						for subClass in Class.subClasses:
-							if (subClass == value):
-								matched = True
-								break
-						continue
-					
-					if type(value) in (float, long, int):
-						match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
-						if match:
-							operator = match.group(1)
-							if operator == '=':
-								operator = '=='
+			try:
+				logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
+							% (filter[attribute], attribute, value))
+				filterValues = forceUnicodeList(filter[attribute])
+				if forceUnicode(value) in filterValues:
+					matched = True
+				else:
+					for filterValue in filterValues:
+						if (attribute == 'type'):
+							match = False
+							Class = eval(filterValue)
+							for subClass in Class.subClasses:
+								if (subClass == value):
+									matched = True
+									break
+							continue
+						
+						if type(value) in (float, long, int) or type(filterValue) in (float, long, int):
+							operator = '=='
+							v = filterValue
+							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
+							if match:
+								operator = match.group(1)
+								v = match.group(2)
+								if operator == '=':
+									operator = '=='
 							try:
-								matched = eval('%s %s %s' % (value, operator, match.group(2)))
+								matched = eval('%s %s %s' % (value, operator, v))
 								if matched:
 									break
 							except:
 								pass
 							continue
-					
-					if type(value) is list:
-						if filterValue in value:
+						
+						if type(value) is list:
+							if filterValue in value:
+								matched = True
+								break
+							continue
+						
+						if type(filterValue) in (types.NoneType, types.BooleanType):
+							continue
+						if type(value) in (types.NoneType, types.BooleanType):
+							continue
+						
+						if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
-						continue
 					
-					if type(filterValue) in (types.NoneType, types.BooleanType):
-						continue
-					if type(value) in (types.NoneType, types.BooleanType):
-						continue
-					
-					if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
-						matched = True
-						break
-				
-			if matched:
-				logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
-							% (value, filter[attribute], attribute))
-			else:
-				matchedAll = False
-				break
+				if matched:
+					logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
+								% (value, filter[attribute], attribute))
+				else:
+					matchedAll = False
+					break
+			except Exception, e:
+				raise Exception(u"Testing match of filter '%s' of attribute '%s' with value '%s' failed: %s" \
+							% (filter[attribute], attribute, value, e))
 		return matchedAll
 	
 	def backend_setOptions(self, options):
@@ -564,6 +570,12 @@ class ConfigDataBackend(Backend):
 					productId  = [],
 					propertyId = [],
 					objectId   = host.id ))
+			# Remove config states
+			self._context.configState_deleteObjects(
+				self._context.configState_getObjects(
+					configId = [],
+					objectId = host.id,
+					values   = [] ))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
