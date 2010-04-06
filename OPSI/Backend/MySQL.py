@@ -1532,11 +1532,11 @@ class MySQLBackend(ConfigDataBackend):
 		return licensePools
 	
 	def licensePool_deleteObjects(self, licensePools):
-		ConfigDataBackend.licensePools_deleteObjects(self, licensePools)
-		for licensePools in forceObjectClassList(licensePools, LicensePool):
-			logger.info(u"Deleting licensePools %s" % licensePools)
-			where = self._uniqueCondition(licensePools)
-			self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
+		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
+		for licensePool in forceObjectClassList(licensePools, LicensePool):
+			logger.info(u"Deleting licensePool %s" % licensePool)
+			where = self._uniqueCondition(licensePool)
+			self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % licensePool.id)
 			self._mysql.delete('LICENSE_POOL', where)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1654,7 +1654,7 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
 		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
-		for auditSoftware in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
+		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
 			logger.info(u"Deleting auditSoftware %s" % auditSoftwareToLicensePool)
 			where = self._uniqueCondition(auditSoftwareToLicensePool)
 			self._mysql.delete('AUDIT_SOFTWARE_TO_LICENSE_POOL', where)

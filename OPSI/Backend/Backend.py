@@ -901,10 +901,19 @@ class ConfigDataBackend(Backend):
 		licensePoolIds = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			licensePoolIds.append(licensePool.id)
-		softwareLicenseToLicensePoolIdents = self._context.softwareLicenseToLicensePool_getObjects(attributes = ['licensePoolId'], licensePoolId = licensePoolIds, returnType = 'unicode')
-		if softwareLicenseToLicensePoolIdents:
-			raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
-				(licensePoolIds, softwareLicenseToLicensePoolIdents))
+		if licensePoolIds:
+			softwareLicenseToLicensePoolIdents = self._context.softwareLicenseToLicensePool_getIdents(licensePoolId = licensePoolIds, returnType = 'unicode')
+			if softwareLicenseToLicensePoolIdents:
+				raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
+					(licensePoolIds, softwareLicenseToLicensePoolIdents))
+			self._context.auditSoftwareToLicensePool_deleteObjects(
+				self._context.auditSoftwareToLicensePool_getObjects(
+								name          = [],
+								version       = [],
+								subVersion    = [],
+								language      = [],
+								architecture  = [],
+								licensePoolId = licensePoolIds))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools                                                             -
@@ -927,12 +936,14 @@ class ConfigDataBackend(Backend):
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		softwareLicenseIds = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
+			print softwareLicenseToLicensePool
 			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
-		licenseOnClientIdents = self._context.licenseOnClient_getObjects(attributes = ['softwareLicenseId'], softwareLicenseId = softwareLicenseIds)
-		if licenseOnClientIdents:
-			raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
-				% licenseOnClientIdents)
-	
+		if softwareLicenseIds:
+			licenseOnClientIdents = self._context.licenseOnClient_getIdents(softwareLicenseId = softwareLicenseIds)
+			if licenseOnClientIdents:
+				raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
+					% licenseOnClientIdents)
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

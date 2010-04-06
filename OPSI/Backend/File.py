@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+   Copyright (C) 2006 - 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -728,6 +728,12 @@ class FileBackend(ConfigDataBackend):
 									value = value[index + 1:]
 							
 							objHash[attribute] = value
+						
+						elif (objType == 'ProductOnClient') and (attribute.lower() == 'installationstatus'):
+							objHash[attribute] = 'not_installed'
+						elif (objType == 'ProductOnClient') and (attribute.lower() == 'actionrequest'):
+							objHash[attribute] = 'none'
+							
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
 					
 				elif (fileType == 'pro'):
