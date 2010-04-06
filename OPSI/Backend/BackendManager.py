@@ -487,7 +487,7 @@ class BackendAccessControl(object):
 	
 	def _createInstanceMethods(self):
 		protectedMethods = []
-		for Class in (ConfigDataBackend, DepotserverBackend):
+		for Class in (ConfigDataBackend, DepotserverBackend, HostControlBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_'):
