@@ -36,16 +36,16 @@ __version__ = '3.5'
 
 # Loglevels
 LOG_CONFIDENTIAL = 9
-LOG_DEBUG3       = 8
-LOG_DEBUG2       = 7
-LOG_DEBUG        = 6
-LOG_INFO         = 5
-LOG_NOTICE       = 4
-LOG_WARNING      = 3
-LOG_ERROR        = 2
-LOG_CRITICAL     = 1
-LOG_COMMENT      = 0
-LOG_NONE         = -1
+LOG_DEBUG2       = 8
+LOG_DEBUG        = 7
+LOG_INFO         = 6
+LOG_NOTICE       = 5
+LOG_WARNING      = 4
+LOG_ERROR        = 3
+LOG_CRITICAL     = 2
+LOG_ESSENTIAL    = 1
+LOG_COMMENT      = LOG_ESSENTIAL
+LOG_NONE         = 0
 
 # Imports
 import sys, locale, time, os, thread, threading, codecs
@@ -108,7 +108,8 @@ WARNING_COLOR      = COLOR_YELLOW
 ERROR_COLOR        = COLOR_RED
 CRITICAL_COLOR     = COLOR_LIGHT_RED
 CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
-COMMENT_COLOR      = COLOR_LIGHT_CYAN
+ESSENTIAL_COLOR    = COLOR_LIGHT_CYAN
+COMMENT_COLOR      = ESSENTIAL_COLOR
 
 class LoggerSubject:
 	def __init__(self):
@@ -466,8 +467,8 @@ class LoggerImplementation:
 			elif (level == LOG_CRITICAL):
 				levelname = u'critical'
 				color     = CRITICAL_COLOR
-			elif (level == LOG_COMMENT):
-				levelname = u'comment'
+			elif (level == LOG_ESSENTIAL):
+				levelname = u'essential'
 				color     = COMMENT_COLOR
 			
 			filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
@@ -708,7 +709,7 @@ class LoggerImplementation:
 	
 	def debug3( self, message ):
 		''' Log a debug message. '''
-		self.log(LOG_DEBUG3, message)
+		self.debug2(message)
 	
 	def debug2( self, message ):
 		''' Log a debug message. '''
@@ -738,9 +739,13 @@ class LoggerImplementation:
 		''' Log a critical message. '''
 		self.log(LOG_CRITICAL, message)
 	
+	def essential( self, message ):
+		''' Log a essential message. '''
+		self.log(LOG_ESSENTIAL, message)
+	
 	def comment( self, message ):
 		''' Log a comment message. '''
-		self.log(LOG_COMMENT, message)
+		self.essential(message)
 	
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
