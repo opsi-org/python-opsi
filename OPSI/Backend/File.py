@@ -48,22 +48,6 @@ from OPSI.Backend.Backend import *
 # Get logger instance
 logger = Logger()
 
-loglevel = LOG_NONE
-loglevel = LOG_COMMENT
-loglevel = LOG_CRITICAL
-loglevel = LOG_ERROR
-loglevel = LOG_WARNING
-loglevel = LOG_NOTICE
-loglevel = LOG_INFO
-loglevel = LOG_DEBUG
-loglevel = LOG_DEBUG2
-#loglevel = LOG_CONFIDENTIAL
-
-
-logger.setConsoleLevel(loglevel)
-logger.setConsoleColor(True)
-
-
 # ======================================================================================================
 # =                                   CLASS FILEBACKEND                                                =
 # ======================================================================================================

@@ -168,15 +168,16 @@ class LoggerImplementation:
 		self.__fileColor = False
 		self.__consoleColor = False
 		self.__logFile = logFile
-		self.__syslogFormat = '%M'
-		self.__consoleFormat = '%M'
+		self.__syslogFormat = u'%M'
+		self.__consoleFormat = u'%M'
 		self.__consoleStdout = False
-		self.__fileFormat = '%D [%L] %M (%F|%N)'
-		self.__messageSubjectFormat = '%M'
+		self.__fileFormat = u'%D [%L] %M (%F|%N)'
+		self.__messageSubjectFormat = u'%M'
 		self.univentionLogger_priv = None
 		self.__univentionClass = None
-		self.__univentionFormat = 'opsi: %M'
+		self.__univentionFormat = u'opsi: %M'
 		self.__confidentialStrings = []
+		self.__componentName = u''
 		self.__threadConfig = {}
 		self.__objectConfig = {}
 		self.__stdout = VirtFile(self, LOG_NOTICE)
@@ -204,7 +205,7 @@ class LoggerImplementation:
 			else:
 				string = unicode(string, 'utf-8', 'replace')
 		if not string:
-			raise ValueError("Cannot use empty string as confidential string")
+			raise ValueError(u"Cannot use empty string as confidential string")
 		if string in self.__confidentialStrings:
 			return
 		self.__confidentialStrings.append(string)
@@ -221,6 +222,14 @@ class LoggerImplementation:
 			self._setObjectConfig(id(object), 'consoleFormat', format)
 		else:
 			self.__consoleFormat = format
+	
+	def setComponentName(self, componentName, currentThread=False, object=None):
+		if currentThread:
+			self._setThreadConfig('componentName', componentName)
+		elif object:
+			self._setObjectConfig(id(object), 'componentName', componentName)
+		else:
+			self.__componentName = componentName
 	
 	def logToStdout(self, stdout):
 		self.__consoleStdout = stdout
@@ -285,7 +294,7 @@ class LoggerImplementation:
 		if (level < LOG_NONE):  level = LOG_NONE
 		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
 		self.__syslogLevel = level
-		if os.name == 'posix':
+		if (os.name == 'posix'):
 			if (self.__syslogLevel != LOG_NONE):
 				# Import syslog module
 				global syslog
@@ -360,7 +369,7 @@ class LoggerImplementation:
 			os.symlink(logFile, linkFile)
 		except Exception, e:
 			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, e))
-		
+	
 	def setFileLevel(self, level = LOG_NONE):
 		''' Maximum level of messages to appear in logfile
 		    Set LOG_NONE to disable output to logfile (default) '''
@@ -425,12 +434,13 @@ class LoggerImplementation:
 				else:
 					message = unicode(message, 'utf-8', 'replace')
 			
-			levelname  = u''
-			color      = COLOR_NORMAL
-			filename   = u''
-			linenumber = u''
-			datetime   = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
-			threadId   = unicode(thread.get_ident())
+			levelname     = u''
+			componentname = self.__componentName
+			color         = COLOR_NORMAL
+			filename      = u''
+			linenumber    = u''
+			datetime      = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
+			threadId      = unicode(thread.get_ident())
 			
 			if (level == LOG_CONFIDENTIAL):
 				levelname = u'confidential'
@@ -476,6 +486,9 @@ class LoggerImplementation:
 							break
 					f = f.f_back
 			
+			if specialConfig:
+				componentname = specialConfig.get('componentName', componentname)
+			
 			if (level <= self.__messageSubjectLevel):
 				m = self.__messageSubjectFormat
 				if specialConfig:
@@ -488,6 +501,7 @@ class LoggerImplementation:
 				m = m.replace(u'%T', threadId)
 				m = m.replace(u'%l', unicode(level))
 				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%C', componentname)
 				m = m.replace(u'%M', message)
 				m = m.replace(u'%F', filename)
 				m = m.replace(u'%N', linenumber)
@@ -507,6 +521,7 @@ class LoggerImplementation:
 				m = m.replace(u'%T', threadId)
 				m = m.replace(u'%l', unicode(level))
 				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%C', componentname)
 				m = m.replace(u'%M', message)
 				m = m.replace(u'%F', filename)
 				m = m.replace(u'%N', linenumber)
@@ -546,6 +561,7 @@ class LoggerImplementation:
 					m = m.replace(u'%T', threadId)
 					m = m.replace(u'%l', unicode(level))
 					m = m.replace(u'%L', levelname)
+					m = m.replace(u'%C', componentname)
 					m = m.replace(u'%M', message)
 					m = m.replace(u'%F', filename)
 					m = m.replace(u'%N', linenumber)
@@ -602,6 +618,7 @@ class LoggerImplementation:
 				m = m.replace(u'%T', threadId)
 				m = m.replace(u'%l', unicode(level))
 				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%C', componentname)
 				m = m.replace(u'%M', message)
 				m = m.replace(u'%F', filename)
 				m = m.replace(u'%N', linenumber)
@@ -641,6 +658,7 @@ class LoggerImplementation:
 				m = m.replace(u'%T', threadId)
 				m = m.replace(u'%l', unicode(level))
 				m = m.replace(u'%L', levelname)
+				m = m.replace(u'%C', componentname)
 				m = m.replace(u'%M', message)
 				m = m.replace(u'%F', filename)
 				m = m.replace(u'%N', linenumber)
