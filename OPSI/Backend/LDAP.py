@@ -37,6 +37,7 @@ __version__ = '3.5'
 # Imports
 import ldap, ldap.modlist
 from ldaptor.protocols import pureldap
+from ldaptor import ldapfilter
 
 # OPSI imports
 from OPSI.Logger import *
@@ -338,16 +339,19 @@ class LDAPBackend(ConfigDataBackend):
 					'opsiSuperClass': None,
 					'objectClasses': [ 'opsiProductOnClient' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',          'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productType',        'ldapAttribute': 'opsiProductType' },
-						{ 'opsiAttribute': 'clientId',           'ldapAttribute': 'opsiClientId' },
-						{ 'opsiAttribute': 'installationStatus', 'ldapAttribute': 'opsiProductInstallationStatus' },
-						{ 'opsiAttribute': 'actionRequest',      'ldapAttribute': 'opsiProductActionRequest' },
-						{ 'opsiAttribute': 'actionProgress',     'ldapAttribute': 'opsiProductActionProgress' },
-						{ 'opsiAttribute': 'productVersion',     'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',     'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'lastStateChange',    'ldapAttribute': 'lastStateChange' },
-						{ 'opsiAttribute': 'actionSequence',     'ldapAttribute': None }
+						{ 'opsiAttribute': 'productId',          	'ldapAttribute': 'opsiProductId' },
+						{ 'opsiAttribute': 'productType',        	'ldapAttribute': 'opsiProductType' },
+						{ 'opsiAttribute': 'clientId',           	'ldapAttribute': 'opsiClientId' },
+						{ 'opsiAttribute': 'targetConfiguration',       'ldapAttribute': 'opsiTargetConfiguration' },
+						{ 'opsiAttribute': 'installationStatus', 	'ldapAttribute': 'opsiProductInstallationStatus' },
+						{ 'opsiAttribute': 'actionRequest',      	'ldapAttribute': 'opsiProductActionRequest' },
+						{ 'opsiAttribute': 'actionProgress',     	'ldapAttribute': 'opsiProductActionProgress' },
+						{ 'opsiAttribute': 'actionResult',     		'ldapAttribute': 'opsiActionResult' },
+						{ 'opsiAttribute': 'lastAction',     		'ldapAttribute': 'opsiLastAction' },
+						{ 'opsiAttribute': 'productVersion',     	'ldapAttribute': 'opsiProductVersion' },
+						{ 'opsiAttribute': 'packageVersion',     	'ldapAttribute': 'opsiPackageVersion' },
+						{ 'opsiAttribute': 'modificationTime',    	'ldapAttribute': 'opsiModificationTime' },
+						{ 'opsiAttribute': 'actionSequence',     	'ldapAttribute': None }
 					]
 				},
 				{
@@ -358,7 +362,7 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'productId',  'ldapAttribute': 'opsiProductId' },
 						{ 'opsiAttribute': 'propertyId', 'ldapAttribute': 'opsiPropertyId' },
 						{ 'opsiAttribute': 'objectId',   'ldapAttribute': 'opsiObjectId' },
-						{ 'opsiAttribute': 'values',     'ldapAttribute': 'opsiProductPropertyValues' }
+						{ 'opsiAttribute': 'values',     'ldapAttribute': 'opsiProductPropertyValue' }
 					]
 				},
 				{
@@ -485,12 +489,11 @@ class LDAPBackend(ConfigDataBackend):
 					if type(value) is bool:
 						if value: value = u'TRUE'
 						else: value = u'FALSE'
-					filters.append(
-						pureldap.LDAPFilter_equalityMatch(
-							attributeDesc  = pureldap.LDAPAttributeDescription(attribute),
-							assertionValue = pureldap.LDAPAssertionValue(value)
-						)
-					)
+					if type(value) is str:
+						value = forceUnicode(value)
+					
+					filters.append( ldapfilter.parseFilter("(%s=%s)" % (attribute, value)) )
+					
 			if filters:
 				if (len(filters) == 1):
 					andFilters.append(filters[0])
@@ -504,7 +507,11 @@ class LDAPBackend(ConfigDataBackend):
 				newFilter = pureldap.LDAPFilter_and(andFilters)
 			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
 		
-		return ldapFilter.asText()
+		textfilter = ldapFilter.asText()
+		if not type(textfilter) is unicode:
+			textfilter = unicode(textfilter, 'utf-8', 'replace')
+		print "==========================", textfilter
+		return textfilter
 		
 	
 		
@@ -662,7 +669,7 @@ class LDAPBackend(ConfigDataBackend):
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _getHostDn(self, host):
-		ldapFilter = self._objectFilterToLDAPFilter( { 'type': host.getType() } )
+		ldapFilter = self._objectFilterToLDAPFilter( { 'type': host.getType(),'id': host.id } )
 		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
 		dn = search.getDn()
 		if dn:
@@ -716,7 +723,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
-		dn = self._getHostDn()
+		dn = self._getHostDn(host)
 		logger.info(u"Creating host: %s" % dn)
 		ldapObject = self._opsiObjectToLdapObject(host, dn)
 		ldapObject.writeToDirectory(self._ldap)
@@ -1150,7 +1157,10 @@ class LDAPBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
-		
+		hosts = self.host_getObjects( id = productPropertyState.objectId )
+		if not hosts:
+			raise BackendReferentialItegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
+
 		containerDn = u'cn=%s,%s' % (productPropertyState.objectId, self._productPropertyStatesContainerDn)
 		self._createOrganizationalRole(containerDn)
 		containerDn = u'cn=%s,%s' % (productPropertyState.productId, containerDn)

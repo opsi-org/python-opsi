@@ -20,7 +20,7 @@ ldapBackend = LDAPBackend(
 	password         = "linux123",
 	adress           = "localhost",
 	opsiBaseDn       = "cn=opsi-ldap-test,%s" % baseDn,
-	hostsContainerDn = u"cn=hosts,cn=opsi,%s" % baseDn
+	hostsContainerDn = u"cn=hosts,cn=opsi-ldap-test,%s" % baseDn
 )
 
 '''
@@ -49,8 +49,8 @@ bt = BackendTest(ExtendedConfigDataBackend(ldapBackend))
 bt.cleanupBackend()
 ldapBackend.backend_createBase()
 bt.testObjectMethods()
-#bt.testPerformance(clientCount=100, productCount=50)
 bt.testNonObjectMethods()
+bt.testPerformance(clientCount=100, productCount=50)
 
 
 
