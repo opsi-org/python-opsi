@@ -237,15 +237,15 @@ class ProgressSubject(MessageSubject):
 		
 	def reset(self):
 		MessageSubject.reset(self)
-		self._end         = 0
-		self._percent     = 0
-		self._state       = 0
-		self._timeStarted = long(time.time())
-		self._timeSpend   = 0
-		self._timeLeft    = 0
-		self._timeFired   = 0
-		self._speed       = 0
-	
+		self._end          = 0
+		self._percent      = 0
+		self._state        = 0
+		self._timeStarted  = time.time()
+		self._timeSpend    = 0
+		self._timeLeft     = 0
+		self._timeFired    = 0
+		self._speed        = 0
+		
 	def setEnd(self, end):
 		self._end = forceInt(end)
 		if (self._end < 0):
@@ -262,7 +262,7 @@ class ProgressSubject(MessageSubject):
 			self._percent = 100
 		self._state = state
 		
-		now = long(time.time())
+		now = time.time()
 		if self._fireAlways or (self._timeFired != now) or (self._state == self._end):
 			if (self._end == 0):
 				self._percent = 100
@@ -271,9 +271,9 @@ class ProgressSubject(MessageSubject):
 			
 			self._timeSpend = now - self._timeStarted
 			if self._timeSpend:
-				self._speed = int(self._state/self._timeSpend)
+				self._speed = int(float(self._state)/float(self._timeSpend))
 				if (self._speed > 0):
-					self._timeLeft = ((self._end-self._state)/self._speed)
+					self._timeLeft = int((float(self._end)-float(self._state))/float(self._speed))
 			
 			self._timeFired = now
 			self._notifyProgressChanged()
@@ -298,19 +298,20 @@ class ProgressSubject(MessageSubject):
 		
 	def getSpeed(self):
 		return self._speed
-		
+	
 	def _notifyProgressChanged(self):
 		for o in self._observers:
 			o.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
 	
 	def serializable(self):
 		s = MessageSubject.serializable(self)
-		s['end']       = self.getEnd()
-		s['state']     = self.getState()
-		s['percent']   = self.getPercent()
-		s['timeSpend'] = self.getTimeSpend()
-		s['timeLeft']  = self.getTimeLeft()
-		s['speed']     = self.getSpeed()
+		s['end']          = self.getEnd()
+		s['state']        = self.getState()
+		s['percent']      = self.getPercent()
+		s['timeSpend']    = self.getTimeSpend()
+		s['timeLeft']     = self.getTimeLeft()
+		s['speed']        = self.getSpeed()
+		s['averageSpeed'] = self.getAverageSpeed()
 		return s
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
