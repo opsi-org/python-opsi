@@ -69,13 +69,12 @@ class Repository:
 		'''
 		maxBandwith must be in byte/s
 		'''
-		self._bufferSize       = 4092
 		self._url              = forceUnicode(url)
 		self._username         = forceUnicode(username)
 		self._password         = forceUnicode(password)
 		self._path             = u''
 		self._maxBandwidth     = forceInt(maxBandwidth)
-		self._dynamicBandwidth = True#forceBool(dynamicBandwidth)
+		self._dynamicBandwidth = forceBool(dynamicBandwidth)
 		self._application  = 'opsi repository module version %s' % __version__
 		if application:
 			self._application = str(application)
@@ -86,18 +85,13 @@ class Repository:
 		self._dynamicBandwidthLimit = 0.0
 		self._dynamicBandwidthLimitTime = None
 		self._dynamicBandwidthNoLimitTime = None
+		self._lastUnlimitedSpeed = 0.0
 		self._bandwidthSleepTime = 0.0
 		
 		self._networkPerformanceCounter = None
 		if self._dynamicBandwidth:
 			from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
 			self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
-		
-		
-		self._bytesTransfered = 0
-		
-		self._averageSpeed = 0.0
-		self._currentSpeed = 0.0
 	
 	def __del__(self):
 		if self._networkPerformanceCounter:
@@ -137,15 +131,16 @@ class Repository:
 				
 				if self._dynamicBandwidthLimit:
 					bwlimit = self._dynamicBandwidthLimit
-					if (usage >= 0.90):
+					if (usage >= 0.90) or ((usage >= 0.70) and (self._lastUnlimitedSpeed/networkUsage > 2)):
 						self._dynamicBandwidthLimitTime = None
 						if self._dynamicBandwidthNoLimitTime:
 							delta = (now - self._dynamicBandwidthNoLimitTime)
-							if (delta >= 3):
+							if (delta >= 5):
 								# Use 100%
 								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
 								bwlimit = self._dynamicBandwidthLimit = 0.0
 								self._bandwidthSleepTime = 0
+								self._lastUnlimitedSpeed = 0
 						else:
 							self._dynamicBandwidthNoLimitTime = now
 					else:
@@ -155,8 +150,9 @@ class Repository:
 						self._dynamicBandwidthNoLimitTime = None
 						if self._dynamicBandwidthLimitTime:
 							delta = (now - self._dynamicBandwidthLimitTime)
-							if (delta >= 0.5):
+							if (delta >= 1.0):
 								# Use 5% only
+								self._lastUnlimitedSpeed = self._averageSpeed
 								bwlimit = self._dynamicBandwidthLimit = self._averageSpeed*0.05
 								logger.info(u"Other traffic detected, dynamically limiting bandwidth to 5%% of last average to %0.2f kByte/s" \
 									% (bwlimit/1024))
@@ -214,6 +210,10 @@ class Repository:
 		lastAverageBytes = 0
 		lastTime = lastAverageTime = transferStartTime = time.time()
 		buf = True
+		self._bufferSize = 4092
+		self._averageSpeed = 0.0
+		self._currentSpeed = 0.0
+		
 		while(buf):
 			buf = src.read(self._bufferSize)
 			read = len(buf)
@@ -236,13 +236,14 @@ class Repository:
 					self._currentSpeed = lastBytes/delta
 					lastBytes = 0
 					lastTime = now
-				
 				delta = (now-lastAverageTime)
-				self._averageSpeed = lastAverageBytes/delta
 				if (delta > 2):
+					self._averageSpeed = lastAverageBytes/delta
 					lastAverageTime = time.time() - 1
 					lastAverageBytes = self._averageSpeed
-				
+					if (self._averageSpeed > 1000000):
+						self._bufferSize = 131072
+					
 				if (bytesTransfered > self._bufferSize) and (self._maxBandwidth or self._dynamicBandwidth):
 					self._sleepForBandwidth()
 		
@@ -745,7 +746,7 @@ if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/products', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#rep.download(u'preloginloader_3.4-48.opsi', '/tmp/preloginloader_3.4-48.opsi', progressSubject=None)
-	rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4')
+	rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
 	rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
 
 
