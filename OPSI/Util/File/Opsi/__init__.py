@@ -261,7 +261,7 @@ class PackageContentFile(TextFile):
 		
 		fileInfo = {}
 		for line in self._lines:
-			(type, tmp) = line.strip().split(u' ', 1)
+			(type, tmp) = line.strip().split(None, 1)
 			filename = u''
 			for i in range(len(tmp)):
 				if (tmp[i] == u"'"):
@@ -277,7 +277,11 @@ class PackageContentFile(TextFile):
 			(size, target, md5) = (0, u'', '')
 			tmp = tmp[i+2:]
 			if (tmp.find(u' ') != -1):
-				(size, tmp) = tmp.split(u' ', 1)
+				parts = tmp.split(None, 1)
+				tmp = u''
+				size = parts[0]
+				if (len(parts) > 1):
+					tmp = parts[1]
 			if (type == 'f'):
 				md5 = tmp
 			elif (type == 'l'):

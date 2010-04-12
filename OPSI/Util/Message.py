@@ -245,7 +245,8 @@ class ProgressSubject(MessageSubject):
 		self._timeLeft     = 0
 		self._timeFired    = 0
 		self._speed        = 0
-		
+		self._notifyProgressChanged()
+	
 	def setEnd(self, end):
 		self._end = forceInt(end)
 		if (self._end < 0):
@@ -263,8 +264,10 @@ class ProgressSubject(MessageSubject):
 		self._state = state
 		
 		now = time.time()
-		if self._fireAlways or (self._timeFired != now) or (self._state == self._end):
-			if (self._end == 0):
+		if self._fireAlways or (self._timeFired != now) or (self._state == self._end) or (self._state == 0):
+			if (self._state == 0):
+				self._percent = 0
+			elif (self._end == 0):
 				self._percent = 100
 			else:
 				self._percent = float(100)*(float(self._state) / float(self._end))

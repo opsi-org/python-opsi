@@ -252,6 +252,8 @@ class Repository:
 					self._sleepForBandwidth()
 		
 		transferTime = time.time() - transferStartTime
+		if (transferTime == 0):
+			transferTime = 0.0000001
 		logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 			( (float(bytesTransfered)/1024), (float(transferTime)/60), (float(bytesTransfered)/transferTime)/1024) )
 	
@@ -318,7 +320,7 @@ class FileRepository(Repository):
 		source = self._absolutePath(source)
 		destination = forceUnicode(destination)
 		
-		logger.debug(u"Length of binary data to download: %d" % size)
+		logger.debug(u"Length of binary data to download: %d bytes" % size)
 		
 		if progressSubject: progressSubject.setEnd(size)
 		
@@ -523,7 +525,7 @@ class WebDAVRepository(Repository):
 			pass
 		source = self._absolutePath(source)
 		
-		logger.debug(u"Length of binary data to download: %d" % size)
+		logger.debug(u"Length of binary data to download: %d bytes" % size)
 		
 		if progressSubject: progressSubject.setEnd(size)
 		
@@ -690,61 +692,79 @@ class DepotToLocalDirectorySychronizer(object):
 			productProgressSubject = ProgressSubject(id = 'sync_product_' + self._productId, type = 'product_sync', fireAlways = True)
 			productProgressSubject.setMessage( _(u"Synchronizing product %s") % self._productId )
 			if productProgressObserver: productProgressSubject.attachObserver(productProgressObserver)
+			packageContentFile = None
 			
-			self._linkFiles = {}
-			logger.notice(u"Syncing product %s of depot %s with local directory %s" \
-					% (self._productId, self._sourceDepot, self._destinationDirectory))
-			
-			productDestinationDirectory = os.path.join(self._destinationDirectory, self._productId)
-			if not os.path.isdir(productDestinationDirectory):
-				os.mkdir(productDestinationDirectory)
-			
-			logger.info(u"Downloading file info file")
-			fileInfoFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
-			self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), fileInfoFile)
-			self._fileInfo = PackageContentFile(fileInfoFile).parse()
-			
-			bytes = 0
-			for value in self._fileInfo.values():
-				if value.has_key('size'):
-					bytes += int(value['size'])
-			productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
-			productProgressSubject.setEnd(bytes)
-			
-			self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
-			
-			fs = self._linkFiles.keys()
-			fs.sort()
-			for f in fs:
-				t = self._linkFiles[f]
-				cwd = os.getcwd()
-				os.chdir(productDestinationDirectory)
-				try:
-					if os.path.exists(f):
-						if os.path.isdir(f) and not os.path.islink(f):
-							shutil.rmtree(f)
+			try:
+				self._linkFiles = {}
+				logger.notice(u"Syncing product %s of depot %s with local directory %s" \
+						% (self._productId, self._sourceDepot, self._destinationDirectory))
+				
+				productDestinationDirectory = os.path.join(self._destinationDirectory, self._productId)
+				if not os.path.isdir(productDestinationDirectory):
+					os.mkdir(productDestinationDirectory)
+				
+				logger.info(u"Downloading package content file")
+				packageContentFileMd5sum = None
+				packageContentFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
+				if os.path.exists(packageContentFile):
+					packageContentFileMd5sum = md5sum(packageContentFile)
+				self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
+				if packageContentFileMd5sum and (packageContentFileMd5sum == md5sum(packageContentFile)):
+					logger.info(u"Package content file unchanged, sync done")
+					productProgressSubject.setMessage( _(u"Product %s is up to date") % self._productId )
+					overallProgressSubject.addToState(1)
+					if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
+					continue
+				
+				self._fileInfo = PackageContentFile(packageContentFile).parse()
+				
+				bytes = 0
+				for value in self._fileInfo.values():
+					if value.has_key('size'):
+						bytes += int(value['size'])
+				productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
+				productProgressSubject.setEnd(bytes)
+				
+				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
+				
+				fs = self._linkFiles.keys()
+				fs.sort()
+				for f in fs:
+					t = self._linkFiles[f]
+					cwd = os.getcwd()
+					os.chdir(productDestinationDirectory)
+					try:
+						if os.path.exists(f):
+							if os.path.isdir(f) and not os.path.islink(f):
+								shutil.rmtree(f)
+							else:
+								os.remove(f)
+						if (os.name == 'posix'):
+							parts = len(f.split('/'))
+							parts -= len(t.split('/'))
+							for i in range(parts):
+								t = os.path.join('..', t)
+							logger.info(u"Symlink '%s' to '%s'" % (f, t))
+							os.symlink(t, f)
 						else:
-							os.remove(f)
-					if (os.name == 'posix'):
-						parts = len(f.split('/'))
-						parts -= len(t.split('/'))
-						for i in range(parts):
-							t = os.path.join('..', t)
-						logger.info(u"Symlink '%s' to '%s'" % (f, t))
-						os.symlink(t, f)
-					else:
-						t = os.path.join(productDestinationDirectory, t)
-						f = os.path.join(productDestinationDirectory, f)
-						logger.info(u"Copying '%s' to '%s'" % (t, f))
-						if os.path.isdir(t):
-							shutil.copytree(t, f)
-						else:
-							shutil.copyfile(t, f)
-				finally:
-					os.chdir(cwd)
+							t = os.path.join(productDestinationDirectory, t)
+							f = os.path.join(productDestinationDirectory, f)
+							logger.info(u"Copying '%s' to '%s'" % (t, f))
+							if os.path.isdir(t):
+								shutil.copytree(t, f)
+							else:
+								shutil.copyfile(t, f)
+					finally:
+						os.chdir(cwd)
+			except Exception, e:
+				productProgressSubject.setMessage( _(u"Failed to sync product %s: %s") % (self._productId, e) )
+				if packageContentFile and os.path.exists(packageContentFile):
+					os.unlink(packageContentFile)
+				raise
+				
 			overallProgressSubject.addToState(1)
 			if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
-		
+			
 		if overallProgressObserver: overallProgressSubject.detachObserver(overallProgressObserver)
 
 
@@ -755,9 +775,9 @@ if (__name__ == "__main__"):
 	#rep.download(u'preloginloader_3.4-48.opsi', '/tmp/preloginloader_3.4-48.opsi', progressSubject=None)
 	#rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
 	#rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
-	sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/opsi-depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = '/tmp/depot', productIds=['preloginloader', 'opsi-winst'], maxBandwidth=0, dynamicBandwidth=False)
-	dtlds.synchronize()
+	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/opsi-depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = '/tmp/depot', productIds=['preloginloader', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
+	#dtlds.synchronize()
 
 
 
