@@ -45,9 +45,13 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, non_blocking_connect_http, non_blocking_connect_https
+from OPSI.Util.File.Opsi import PackageContentFile
 
 # Get Logger instance
 logger = Logger()
+
+def _(string):
+	return string
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # =       Repositories                                                                =
@@ -442,7 +446,8 @@ class WebDAVRepository(Repository):
 		if not destination.endswith('/'):
 			destination += '/'
 		
-		self._connect()
+		if not self._connection:
+			self._connect()
 		
 		self._connection.putrequest('PROPFIND', urllib.quote(destination))
 		self._connection.putheader('depth', '1')
@@ -524,7 +529,8 @@ class WebDAVRepository(Repository):
 		
 		dst = None
 		try:
-			self._connect()
+			if not self._connection:
+				self._connect()
 			self._connection.putrequest('GET', urllib.quote(source))
 			self._connection.putheader('user-agent', self._application)
 			if self._cookie:
@@ -561,7 +567,8 @@ class WebDAVRepository(Repository):
 		
 		src = None
 		try:
-			self._connect()
+			if not self._connection:
+				self._connect()
 			self._connection.putrequest('PUT', urllib.quote(destination))
 			self._connection.putheader('user-agent', self._application)
 			if self._cookie:
@@ -589,7 +596,8 @@ class WebDAVRepository(Repository):
 		logger.debug2(u"WebDAV upload done")
 	
 	def delete(self, destination):
-		self._connect()
+		if not self._connection:
+			self._connect()
 		
 		destination = self._absolutePath(destination)
 		
@@ -627,7 +635,7 @@ class DepotToLocalDirectorySychronizer(object):
 			os.mkdir(destination)
 		
 		for f in os.listdir(destination):
-			relSource = (source + '/' + f).split('/', 1)[1]
+			relSource = (source + u'/' + f).split(u'/', 1)[1]
 			if (relSource == self._productId + u'.files'):
 				continue
 			if self._fileInfo.has_key(relSource):
@@ -692,10 +700,9 @@ class DepotToLocalDirectorySychronizer(object):
 				os.mkdir(productDestinationDirectory)
 			
 			logger.info(u"Downloading file info file")
-			from OPSI import Product
 			fileInfoFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
 			self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), fileInfoFile)
-			self._fileInfo = Product.readFileInfoFile(fileInfoFile)
+			self._fileInfo = PackageContentFile(fileInfoFile).parse()
 			
 			bytes = 0
 			for value in self._fileInfo.values():
@@ -746,10 +753,11 @@ if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/products', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#rep.download(u'preloginloader_3.4-48.opsi', '/tmp/preloginloader_3.4-48.opsi', progressSubject=None)
-	rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
-	rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
-
-
+	#rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
+	#rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
+	sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/opsi-depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = '/tmp/depot', productIds=['preloginloader', 'opsi-winst'], maxBandwidth=0, dynamicBandwidth=False)
+	dtlds.synchronize()
 
 
 

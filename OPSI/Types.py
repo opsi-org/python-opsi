@@ -334,7 +334,7 @@ def forceProductTargetConfiguration(var):
 
 def forceInstallationStatus(var):
 	var = forceUnicodeLower(var)
-	if var and var not in ('installed', 'not_installed', 'unkown'):
+	if var and var not in ('installed', 'not_installed', 'unknown'):
 		raise ValueError(u"Bad installation status: '%s'" % var)
 	return var
 

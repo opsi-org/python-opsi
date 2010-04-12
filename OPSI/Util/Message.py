@@ -311,7 +311,6 @@ class ProgressSubject(MessageSubject):
 		s['timeSpend']    = self.getTimeSpend()
 		s['timeLeft']     = self.getTimeLeft()
 		s['speed']        = self.getSpeed()
-		s['averageSpeed'] = self.getAverageSpeed()
 		return s
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

@@ -254,13 +254,38 @@ class PackageContentFile(TextFile):
 		self._productClientDataDir = forceFilename(productClientDataDir)
 		
 	def parse(self, lines=None):
-		raise NotImplementedError("parse not implemented")
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
-		self._parsed = False
-	
+		
+		fileInfo = {}
+		for line in self._lines:
+			(type, tmp) = line.strip().split(u' ', 1)
+			filename = u''
+			for i in range(len(tmp)):
+				if (tmp[i] == u"'"):
+					if (i > 0):
+						if (tmp[i-1] == u'\\'):
+							filename = filename[:-1] + u"'"
+							continue
+						else:
+							break
+					else:
+						continue
+				filename += tmp[i]
+			(size, target, md5) = (0, u'', '')
+			tmp = tmp[i+2:]
+			if (tmp.find(u' ') != -1):
+				(size, tmp) = tmp.split(u' ', 1)
+			if (type == 'f'):
+				md5 = tmp
+			elif (type == 'l'):
+				target = tmp[1:-1].replace(u'\\\'', u'\'')
+			fileInfo[filename] = { 'type': type, 'size': int(size), 'md5sum': md5, 'target': target }
+		self._parsed = True
+		return fileInfo
+		
 	def generate(self):
 		self._lines = []
 		for filename in self._clientDataFiles:
