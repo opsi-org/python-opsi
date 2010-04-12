@@ -1224,6 +1224,31 @@ class BackendTest(object):
 								assert value == config[attribute], u"got: '%s', expected: '%s'" % (config[attribute], value)
 					break
 		
+#		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+#		configs = self.backend.config_getObjects()
+#		print "#######################"
+#		for config in configs:
+#			if config.id == u'opsi-linux-bootimage.cmdline.bool': #config2
+#				print config
+#		print "#######################"
+#		print self.config2.getDefaultValues(), "getDefaultValues()" #[True]
+#		print self.config2.defaultValues, "defaultValues" #[True]
+#		print "#######################"
+#		
+#		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
+#		
+#		print "#######################"
+#		print self.config2.getDefaultValues(), "getDefaultValues()" #[u'True']
+#		print self.config2.defaultValues, "defaultValues" #[u'True']
+#		
+#		print "#######################"
+#		configs = self.backend.config_getObjects()
+#		for config in configs:
+#			if config.id == u'opsi-linux-bootimage.cmdline.bool': #config2
+#				print config
+#		print "#######################"
+#		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+		
 		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
 		assert len(configs) == 1, u"got: '%s', expected: '%s'" % (configs, 1)
 		assert configs[0].getId() == self.config2.getId(), u"got: '%s', expected: '%s'" % (configs[0].getId(), self.config2.getId())

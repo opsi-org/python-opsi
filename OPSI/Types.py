@@ -45,15 +45,15 @@ logger = Logger()
 
 def forceList(var):
 	if not type(var) is types.ListType:
-		var = [ var ]
-	return var
+		return [ var ]
+	return list(var)
 
 def forceDict(var):
 	if var is None:
 		var = {}
 	if not type(var) is types.DictType:
 		raise ValueError(u"Bad dict value '%s'" % var)
-	return var
+	return dict(var)
 
 def forceUnicode(var):
 	if type(var) is types.UnicodeType:
