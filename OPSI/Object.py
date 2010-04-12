@@ -2471,7 +2471,7 @@ class AuditHardware(Entity):
 						logger.debug2(e)
 						kwargs[attribute] = None
 				else:
-					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 		self.__dict__.update(kwargs)
 	
 	@staticmethod
@@ -2561,7 +2561,7 @@ class AuditHardwareOnHost(Relationship):
 						logger.debug2(e)
 						kwargs[attribute] = None
 				else:
-					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 		self.__dict__.update(kwargs)
 		if not firstseen is None:
 			self.setFirstseen(firstseen)

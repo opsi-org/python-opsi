@@ -1804,7 +1804,7 @@ class MySQLBackend(ConfigDataBackend):
 							except:
 								continue
 						else:
-							raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+							raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 					classFilter[attribute].append(v)
 			
 			if not classFilter and filter:
@@ -1917,7 +1917,7 @@ class MySQLBackend(ConfigDataBackend):
 				except:
 					addToWhere = u''
 			else:
-				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+				raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 			where += addToWhere
 			
 		hwIdswhere = u''
@@ -2046,7 +2046,7 @@ class MySQLBackend(ConfigDataBackend):
 							except:
 								continue
 						else:
-							raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unkown type '%s'" % (attribute, hardwareClass, type))
+							raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 					classFilter[attribute].append(v)
 			
 			hardwareIds = []

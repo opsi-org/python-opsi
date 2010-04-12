@@ -1458,9 +1458,9 @@ class BackendTest(object):
 		productOnClients = self.backend.productOnClient_getObjects(targetConfiguration = 'forbidden')
 		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
 		
-		self.productOnClient2.setInstallationStatus('unkown')
+		self.productOnClient2.setInstallationStatus('unknown')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(installationStatus = 'unkown')
+		productOnClients = self.backend.productOnClient_getObjects(installationStatus = 'unknown')
 		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
 		
 		self.productOnClient2.setActionRequest('custom')

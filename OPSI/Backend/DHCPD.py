@@ -158,7 +158,7 @@ class DHCPDBackend(ConfigDataBackend):
 	def dhcpd_updateHost(self, host):
 		host = forceObjectClass(host, Host)
 		if not host.hardwareAddress:
-			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unkown" % host)
+			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown" % host)
 			return
 		ipAddress = host.ipAddress
 		if not ipAddress:
@@ -167,7 +167,7 @@ class DHCPDBackend(ConfigDataBackend):
 				ipAddress = socket.gethostbyname(host.id)
 				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
 			except Exception, e:
-				raise BackendIOError(u"Cannot update dhcpd configuration for client %s: ip address unkown and failed to get host by name" % host.id)
+				raise BackendIOError(u"Cannot update dhcpd configuration for client %s: ip address unknown and failed to get host by name" % host.id)
 		
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)

@@ -367,7 +367,7 @@ class PackageControlFile(TextFile):
 			if match:
 				sectionType = match.group(1).strip().lower()
 				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty', 'changelog'):
-					raise Exception(u"Parse error in line %s: unkown section '%s'" % (lineNum, sectionType))
+					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 				if (sectionType == 'changelog'):
 					self._sections[sectionType] = u''
 				else:
@@ -554,7 +554,7 @@ class PackageControlFile(TextFile):
 		elif (product.get('type') == 'LocalbootProduct'):
 			Class = LocalbootProduct
 		else:
-			raise Exception(u"Error in control file '%s': unkown product type '%s'" % (self._filename, product.get('type')))
+			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 		
 		self._product = Class(
 			id                 = product.get('id'),
@@ -609,7 +609,7 @@ class PackageControlFile(TextFile):
 			elif (productProperty.get('type') == 'BoolProductProperty'):
 				Class = BoolProductProperty
 			else:
-				raise Exception(u"Error in control file '%s': unkown product property type '%s'" % (self._filename, productProperty.get('type')))
+				raise Exception(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
 			self._productProperties.append(
 				Class(
 					productId      = self._product.getId(),

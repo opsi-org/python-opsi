@@ -356,7 +356,7 @@ class LoggerImplementation:
 			logFile = self.__logFile
 		
 		if not logFile:
-			self.error(u"Cannot create symlink '%s': log-file unkown" % linkFile)
+			self.error(u"Cannot create symlink '%s': log-file unknown" % linkFile)
 			return
 		
 		if not os.path.isabs(linkFile):

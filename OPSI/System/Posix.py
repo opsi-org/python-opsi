@@ -480,7 +480,7 @@ def hardwareInventory(filename=None, config=None):
 				continue
 			
 			if not lsusb[busId+":"+devId].has_key(descriptor):
-				logger.error("Unkown descriptor '%s'" % descriptor)
+				logger.error("Unknown descriptor '%s'" % descriptor)
 				continue
 			
 			(key, value) = ('', '')
