@@ -47,7 +47,6 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 	
 	poc = productOnClientByProductId[productId]
-	if poc.
 	if (poc.actionRequest == 'none') or not productDependenciesByProductId.get(productId):
 		return
 	
@@ -107,7 +106,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			continue
 			#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
 			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
-		logger.debug(u"   need to add action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
+		logger.debug(u"   => adding action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
 		
 		#if addedInfo.has_key(dependency.requiredProductId):
 		#	logger.warning(u"   => Product dependency loop detected, skipping")
@@ -116,7 +115,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		if not productOnClientByProductId.has_key(dependency.requiredProductId):
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
 				productId          = dependency.requiredProductId,
-				productType        = availableProductsByProductId[dependency.requiredProductId].productType,
+				productType        = availableProductsByProductId[dependency.requiredProductId].getType(),
 				clientId           = poc.clientId,
 				installationStatus = u'not_installed',
 				actionRequest      = u'none',
@@ -129,21 +128,19 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		productOnClientByProductId[dependency.requiredProductId].setActionRequest(requiredAction)
 		
 		addActionRequest(productOnClientByProductId, dependency.requiredProductId, productDependenciesByProductId, availableProductsByProductId)
-		
 
 def addDependendProductOnClients(productOnClients, availableProducts, productDependencies):
-	productOnClientsByClientIdAndProductId = {}
-	productDependenciesByProductId = {}
 	availableProductsByProductId = {}
-	
 	for availableProduct in availableProducts:
 		availableProductsByProductId[availableProduct.id] = availableProduct
 	
+	productDependenciesByProductId = {}
 	for productDependency in productDependencies:
 		if not productDependenciesByProductId.has_key(productDependency.productId):
 			productDependenciesByProductId[productDependency.productId] = []
 		productDependenciesByProductId[productDependency.productId].append(productDependency)
 	
+	productOnClientsByClientIdAndProductId = {}
 	for productOnClient in productOnClients:
 		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
 			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
@@ -155,16 +152,216 @@ def addDependendProductOnClients(productOnClients, availableProducts, productDep
 		#addedInfo = {}
 		for productId in productOnClientByProductId.keys():
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId)
+	return productOnClientByProductId.values()
+	
+if (__name__ == "__main__"):
+	logger.setConsoleLevel(LOG_DEBUG)
 		
+	product2 = LocalbootProduct(
+		id                 = 'product2',
+		name               = u'Product 2',
+		productVersion     = '2.0',
+		packageVersion     = 'test',
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = u"uninstall.ins",
+		updateScript       = "update.ins",
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 0,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
+	)
 	
+	product3 = LocalbootProduct(
+		id                 = 'product3',
+		name               = u'Product 3',
+		productVersion     = 3,
+		packageVersion     = 1,
+		licenseRequired    = True,
+		setupScript        = "setup.ins",
+		uninstallScript    = None,
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 100,
+		description        = "---",
+		advice             = "---",
+		windowsSoftwareIds = []
+	)
 	
+	product4 = LocalbootProduct(
+		id                 = 'product4',
+		name               = u'Product 4',
+		productVersion     = "3.0",
+		packageVersion     = 24,
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = "uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 0,
+		description        = "",
+		advice             = "",
+		windowsSoftwareIds = []
+	)
 	
+	product6 = LocalbootProduct(
+		id                 = 'product6',
+		name               = u'Product 6',
+		productVersion     = "1.0",
+		packageVersion     = 1,
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = "uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 0,
+		description        = "",
+		advice             = "",
+		windowsSoftwareIds = []
+	)
 	
+	product7 = LocalbootProduct(
+		id                 = 'product7',
+		name               = u'Product 7',
+		productVersion     = "1.0",
+		packageVersion     = 1,
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = "uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 0,
+		description        = "",
+		advice             = "",
+		windowsSoftwareIds = []
+	)
 	
+	product9 = LocalbootProduct(
+		id                 = 'product9',
+		name               = u'Product 9',
+		productVersion     = "1.0",
+		packageVersion     = 2,
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = "uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		customScript       = "custom.ins",
+		priority           = 0,
+		description        = "",
+		advice             = "",
+		windowsSoftwareIds = []
+	)
 	
+	productDependency1 = ProductDependency(
+		productId                  = product2.id,
+		productVersion             = product2.productVersion,
+		packageVersion             = product2.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = product3.id,
+		requiredProductVersion     = product3.productVersion,
+		requiredPackageVersion     = product3.packageVersion,
+		requiredAction             = 'setup',
+		requiredInstallationStatus = None,
+		requirementType            = 'before'
+	)
 	
+	productDependency2 = ProductDependency(
+		productId                  = product2.id,
+		productVersion             = product2.productVersion,
+		packageVersion             = product2.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = product4.id,
+		requiredProductVersion     = None,
+		requiredPackageVersion     = None,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'after'
+	)
 	
+	productDependency3 = ProductDependency(
+		productId                  = product6.id,
+		productVersion             = product6.productVersion,
+		packageVersion             = product6.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = product7.id,
+		requiredProductVersion     = product7.productVersion,
+		requiredPackageVersion     = product7.packageVersion,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'after'
+	)
 	
+	productDependency4 = ProductDependency(
+		productId                  = product7.id,
+		productVersion             = product7.productVersion,
+		packageVersion             = product7.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = product9.id,
+		requiredProductVersion     = None,
+		requiredPackageVersion     = None,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'after'
+	)
 	
+	productOnClient1 = ProductOnClient(
+		productId          = product2.getId(),
+		productType        = product2.getType(),
+		clientId           = 'client1.uib.local',
+		installationStatus = 'installed',
+		actionRequest      = 'setup',
+		actionProgress     = '',
+		productVersion     = product2.getProductVersion(),
+		packageVersion     = product2.getPackageVersion(),
+		modificationTime   = '2009-07-01 12:00:00'
+	)
 	
+	productOnClients = addDependendProductOnClients(
+		[ productOnClient1 ],
+		[ product2, product3, product4, product6, product7, product9 ],
+		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
 	
+	for productOnClient in productOnClients:
+		print productOnClient
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
