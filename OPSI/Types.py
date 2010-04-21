@@ -173,7 +173,7 @@ def forceOpsiTimestamp(var):
 		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
-fqdnRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\.?$')
+fqdnRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
 def forceFqdn(var):
 	var = forceObjectId(var)
 	match = re.search(fqdnRegex, var)
@@ -444,7 +444,7 @@ def forceObjectIdList(var):
 		var[i] = forceObjectId(var[i])
 	return var
 
-emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\.?$')
+emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
 	match = re.search(emailRegex, var)
@@ -452,7 +452,7 @@ def forceEmailAddress(var):
 		raise ValueError(u"Bad email: '%s'" % var)
 	return var
 
-domainRegex = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\.?$')
+domainRegex = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
 def forceDomain(var):
 	var = forceUnicodeLower(var)
 	match = re.search(domainRegex, var)
