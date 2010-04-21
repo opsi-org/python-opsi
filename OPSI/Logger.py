@@ -51,7 +51,7 @@ LOG_NONE         = 0
 import sys, locale, time, os, thread, threading, codecs
 
 if (os.name == 'nt'):
-	# WIndows imports for file locking
+	# Windows imports for file locking
 	import win32con, win32file, pywintypes
 	
 	# Colors
@@ -419,7 +419,7 @@ class LoggerImplementation:
 			return self.__objectConfig[objectId]
 		return self.__objectConfig[objectId].get(key)
 	
-	def log(self, level, message):
+	def log(self, level, message, raiseException = False):
 		''' Log a message '''
 		try:
 			if (level > self.__messageSubjectLevel and
@@ -442,6 +442,7 @@ class LoggerImplementation:
 			linenumber    = u''
 			datetime      = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
 			threadId      = unicode(thread.get_ident())
+			specialConfig = None
 			
 			if (level == LOG_CONFIDENTIAL):
 				levelname = u'confidential'
@@ -471,21 +472,25 @@ class LoggerImplementation:
 				levelname = u'essential'
 				color     = COMMENT_COLOR
 			
-			filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
-			linenumber = unicode( sys._getframe(2).f_lineno )
-			
-			specialConfig = self._getThreadConfig()
-			if not specialConfig and self.__objectConfig:
-				# Ouch, this hurts...
-				f = sys._getframe(2)
-				while (f != None):
-					obj = f.f_locals.get('self')
-					if obj:
-						c = self._getObjectConfig(id(obj))
-						if c:
-							specialConfig = c
-							break
-					f = f.f_back
+			try:
+				filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
+				linenumber = unicode( sys._getframe(2).f_lineno )
+				
+				specialConfig = self._getThreadConfig()
+				if not specialConfig and self.__objectConfig:
+					# Ouch, this hurts...
+					f = sys._getframe(2)
+					while (f != None):
+						obj = f.f_locals.get('self')
+						if obj:
+							c = self._getObjectConfig(id(obj))
+							if c:
+								specialConfig = c
+								break
+						f = f.f_back
+			except:
+				# call stack not deep enough?
+				pass
 			
 			if specialConfig:
 				componentname = specialConfig.get('componentName', componentname)
@@ -683,7 +688,8 @@ class LoggerImplementation:
 				elif (level == LOG_COMMENT):
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 		except Exception, e:
-			pass
+			if raiseException:
+				raise
 		
 	def logException(self, e, logLevel=LOG_CRITICAL):
 		self.logTraceback(sys.exc_info()[2], logLevel)

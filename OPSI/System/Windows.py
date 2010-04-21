@@ -74,7 +74,32 @@ def execute(cmd, nowait=False, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=Fa
 	raise NotImplementedError(u"execute() not implemented on windows")
 
 def getDiskSpaceUsage(path):
-	raise NotImplementedError(u"getDiskSpaceUsage() not implemented on windows")
+	path = forceUnicode(path)
+	if (len(path) == 1):
+		path = path + ':'
+	info = {
+		'capacity':  0,
+		'available': 0,
+		'used':      0,
+		'usage':     0
+	}
+	#(items, instances) = win32pdh.EnumObjectItems(
+	#			None,
+	#			None,
+	#			win32pdhutil.find_pdh_counter_localized_name('LogicalDisk'),
+	#			win32pdh.PERF_DETAIL_WIZARD)
+	#
+	#for instance in instances:
+	#	if path.lower().startswith(instance.lower()):
+	(sectPerCluster, bytesPerSector, freeClusters, totalClusters) = win32file.GetDiskFreeSpace(path)
+	info['capacity'] = totalClusters * sectPerCluster * bytesPerSector
+	info['available'] = freeClusters * sectPerCluster * bytesPerSector
+	info['used'] = info['capacity'] - info['available']
+	info['usage'] = float(info['used']) / float(info['capacity'])
+	#break
+	
+	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
+	return info
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
@@ -407,22 +432,44 @@ def getActiveDesktopName():
 def getActiveSessionIds():
 	sessionIds = []
 	logger.debug(u"Getting active sessions")
-	for s in win32ts.WTSEnumerateSessions():
-		logger.debug(u"   Found session: %s" % s)
-		sessionIds.append(forceInt(s['SessionId']))
+	#for s in win32ts.WTSEnumerateSessions():
+	#	logger.debug(u"   Found session: %s" % s)
+	#	sessionIds.append(forceInt(s['SessionId']))
+	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
+		sessionData = win32security.LsaGetLogonSessionData(s)
+		logger.debug(u"   Found session: %s" % sessionData)
+		sessionIds.append(forceInt(sessionData['Session']))
 	return sessionIds
 	
 def getSessionInformation(sessionId):
-	info = {}
-	for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
-	                  'WTSOEMId', 'WTSUserName', 'WTSWinStationName', 'WTSWorkingDirectory', 'WTSClientProtocolType', 'WTSClientProductId',
-	                  'WTSClientBuildNumber', 'WTSClientHardwareId', 'WTSSessionId', 'WTSConnectState', 'WTSClientDisplay', 'WTSClientAddress'):
-		try:
-			info[infoClass] = win32ts.WTSQuerySessionInformation(None, sessionId, eval('win32ts.%s' % infoClass))
-		except Exception, e:
-			info[infoClass] = None
-			logger.debug(e)
-	return info
+	#info = {}
+	#for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
+	#                  'WTSOEMId', 'WTSUserName', 'WTSWinStationName', 'WTSWorkingDirectory', 'WTSClientProtocolType', 'WTSClientProductId',
+	#                  'WTSClientBuildNumber', 'WTSClientHardwareId', 'WTSSessionId', 'WTSConnectState', 'WTSClientDisplay', 'WTSClientAddress'):
+	#	try:
+	#		info[infoClass] = win32ts.WTSQuerySessionInformation(None, sessionId, eval('win32ts.%s' % infoClass))
+	#	except Exception, e:
+	#		info[infoClass] = None
+	#		logger.debug(e)
+	#return info
+	"""
+	'UserName': u'Administrator',
+	'AuthenticationPackage': u'NTLM',
+	'LogonServer': u'COMPUTERNAME',
+	'LogonId': 1753269L,
+	'Upn': u'',
+	'Session': 1,
+	'DnsDomainName': u'',
+	'Sid': <PySID object at 0x00CD7BA8>,
+	'LogonType': 10,
+	'LogonDomain': u'COMPUTERNAME',
+	'LogonTime': <PyTime:19.04.2010 16:33:07>}
+	"""
+	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
+		sessionData = win32security.LsaGetLogonSessionData(s)
+		if (forceInt(sessionData['Session']) == sessionId):
+			return sessionData
+	return {}
 
 def getActiveSessionInformation():
 	info = []
@@ -440,10 +487,14 @@ def getUserSessionIds(username):
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
 	for session in getActiveSessionInformation():
-		if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
-		     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
-			sessionIds.append(session.get('WTSSessionId'))
-			logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
+		#if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
+		#     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
+		#	sessionIds.append(session.get('WTSSessionId'))
+		#	logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
+		if ( session.get('UserName') and (session.get('UserName').lower() == username.lower()) and \
+		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
+			sessionIds.append(forceInt(session.get('Session')))
+			logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('Session')))
 	return sessionIds
 	
 def logoffCurrentUser():

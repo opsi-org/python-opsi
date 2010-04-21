@@ -104,8 +104,14 @@ class JSONRPCBackend(Backend):
 		if self._connectOnInit:
 			self._connect()
 	
-	def isOpsiGreater35(self):
+	def isOpsi35(self):
 		return not self._legacyOpsi
+	
+	def isOpsi4(self):
+		return not self._legacyOpsi
+	
+	def isLegacyOpsi(self):
+		return self._legacyOpsi
 	
 	def jsonrpc_getSessionId(self):
 		return self._sessionId

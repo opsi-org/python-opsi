@@ -50,7 +50,7 @@ WHICH_CACHE = {}
 
 def which(cmd):
 	if not WHICH_CACHE.has_key(cmd):
-		w = os.popen('%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
+		w = os.popen(u'%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
 		path = w.readline().strip()
 		w.close()
 		if not path:
@@ -157,6 +157,129 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 		else:
 			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)) )
 	return result
+
+def mount(dev, mountpoint, **options):
+	dev = forceUnicode(dev)
+	mountpoint = forceFilename(mountpoint)
+	if not os.path.isdir(mountpoint):
+		os.makedirs(mountpoint)
+	for (key, value) in options.items():
+		options[key] = forceUnicode(value)
+	
+	fs = u''
+	if dev.lower().startswith('smb://'):
+		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
+		if match:
+			fs = u'-t cifs'
+			parts = match.group(1).split('/')
+			dev = u'//%s/%s' % (parts[0], parts[1])
+			if not 'username' in options:
+				options['username'] = u'guest'
+			if not 'password' in options:
+				options['password'] = u''
+		else:
+			raise Exception(u"Bad smb uri '%s'" % dev)
+		
+	elif dev.lower().startswith('webdav://') or dev.lower().startswith('webdavs://') or \
+	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):
+		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		if match:
+			fs = '-t davfs'
+			dev = 'http' + match.group(2) + match.group(3)
+		else:
+			raise Exception(u"Bad webdav url '%s'" % dev)
+		
+		if not 'username' in options:
+			options['username'] = u''
+		if not 'password' in options:
+			options['password'] = u''
+		if not 'servercert' in options:
+			options['servercert'] = u''
+		
+		f = open("/etc/davfs2/certs/trusted.pem", "w")
+		f.write(options['servercert'])
+		f.close()
+		os.chmod("/etc/davfs2/certs/trusted.pem", 0644)
+		
+		f = open("/etc/davfs2/secrets", "r")
+		lines = f.readlines()
+		f.close()
+		f = open("/etc/davfs2/secrets", "w")
+		for line in lines:
+			if re.search("^%s\s+" % dev, line):
+				f.write("#")
+			f.write(line)
+		f.write('%s "%s" "%s"\n' % (dev, options['username'], options['password']))
+		f.close()
+		os.chmod("/etc/davfs2/secrets", 0600)
+		
+		f = open("/etc/davfs2/davfs2.conf", "r")
+		lines = f.readlines()
+		f.close()
+		f = open("/etc/davfs2/davfs2.conf", "w")
+		for line in lines:
+			if re.search("^servercert\s+", line):
+				f.write("#")
+			f.write(line)
+		f.write("servercert /etc/davfs2/certs/trusted.pem\n")
+		f.close()
+		
+		del options['username']
+		del options['password']
+		del options['servercert']
+		
+	elif dev.lower().startswith('/'):
+		pass
+	
+	elif dev.lower().startswith('file://'):
+		dev = dev[7:]
+	
+	else:
+		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
+	
+	optString = u''
+	for (key, value) in options.items():
+		key   = forceUnicode(key)
+		value = forceUnicode(value)
+		if value:
+			optString += u',%s=%s' % (key, value)
+		else:
+			optString += u',%s' % key
+	if optString:
+		optString = u'-o "%s"' % optString[1:].replace('"', '\\"')
+	
+	try:
+		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
+	except Exception, e:
+		logger.error(u"Failed to mount '%s': %s" % (dev, e))
+		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
+	
+def getKernelParams():
+	"""
+	Reads the kernel cmdline and returns a dict
+	containing all key=value pairs.
+	keys are converted to lower case
+	"""
+	params = {}
+	cmdline = None
+	f = None
+	try:
+		logger.debug(u'Reading /proc/cmdline')
+		f = codes.open("/proc/cmdline", "r", "utf-8")
+		cmdline = f.readline()
+		cmdline = cmdline.strip()
+		f.close()
+	except IOError, e:
+		if f: f.close()
+		raise Exception(u"Error reading '/proc/cmdline': %s" % e)
+	if cmdline:
+		for option in cmdline.split():
+			keyValue = option.split(u"=")
+			if ( len(keyValue) < 2 ):
+				params[keyValue[0].strip().lower()] = u''
+			else:
+				params[keyValue[0].strip().lower()] = keyValue[1].strip()
+	return params
 
 def getDiskSpaceUsage(path):
 	disk = os.statvfs(path)
@@ -294,7 +417,43 @@ class NetworkPerformanceCounter(threading.Thread):
 	def getBytesOutPerSecond(self):
 		return self._bytesOutPerSecond
 
-
+def getDHCPResult(device):
+	"""
+	Reads DHCP result from pump
+	returns possible key/values:
+	ip, netmask, bootserver, nextserver, gateway, bootfile, hostname, domain.
+	keys are converted to lower case
+	"""
+	if not device:
+		raise Exception(u"No device given")
+	
+	dhcpResult = {}
+	try:
+		for line in execute( u'%s -s -i %s' % (which('pump'), device) ):
+			line = line.strip()
+			keyValue = line.split(u":")
+			if ( len(keyValue) < 2 ):
+				# No ":" in pump output after "boot server" and "next server"
+				if line.lstrip().startswith(u'Boot server'):
+					keyValue[0] = u'Boot server'
+					keyValue.append(line.split()[2])
+				elif line.lstrip().startswith(u'Next server'):
+					keyValue[0] = u'Next server'
+					keyValue.append(line.split()[2])
+				else:
+					continue
+			# Some DHCP-Servers are returning multiple domain names seperated by whitespace,
+			# so we split all values at whitespace and take the first element
+			dhcpResult[keyValue[0].replace(u' ',u'').lower()] = keyValue[1].strip().split()[0]
+	except Exception, e:
+		logger.warning(e)
+	return dhcpResult
+	
+def ifconfig(device, address, netmask=None):
+	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
+	if netmask:
+		cmd += u' netmask %s' % forceNetmask(netmask)
+	execute(cmd)
 
 
 

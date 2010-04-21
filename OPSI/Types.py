@@ -173,15 +173,16 @@ def forceOpsiTimestamp(var):
 		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
-hostIdRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\.?$')
-def forceHostId(var):
+fqdnRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\.?$')
+def forceFqdn(var):
 	var = forceObjectId(var)
-	match = re.search(hostIdRegex, var)
+	match = re.search(fqdnRegex, var)
 	if not match:
-		raise ValueError(u"Bad host id: '%s'" % var)
+		raise ValueError(u"Bad fqdn: '%s'" % var)
 	if var.endswith('.'):
 		var = var[:-1]
 	return var
+forceHostId = forceFqdn
 
 def forceHostIdList(var):
 	var = forceList(var)
@@ -206,6 +207,26 @@ def forceIPAddress(var):
 		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
 forceIpAddress = forceIPAddress
+
+def forceNetworkAddress(var):
+	var = forceUnicodeLower(var)
+	try:
+		try:
+			try:
+				var = forceIpAddress(var)
+			except Exception, e:
+				var = forceFqdn(var)
+		except Exception, e:
+			var = forceHostname(var)
+	except Exception, e:
+		raise ValueError(u"Bad network address: '%s'" % var)
+	
+netmaskRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+def forceNetmask(var):
+	var = forceUnicodeLower(var)
+	if not re.search(netmaskRegex, var):
+		raise ValueError(u"Bad netmask: '%s'" % var)
+	return var
 
 networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3][0-9]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
@@ -358,7 +379,7 @@ def forceActionProgress(var):
 
 def forceActionResult(var):
 	var = forceUnicodeLower(var)
-	if var and var not in ('failed', 'successful'):
+	if var and var not in ('failed', 'successful', 'none'):
 		raise ValueError(u"Bad action result: '%s'" % var)
 	return var
 
@@ -622,6 +643,8 @@ class OpsiBadRpcError(OpsiError):
 class OpsiRpcError(OpsiError):
 	ExceptionShortDescription = u"Opsi rpc error"
 
+class CanceledException(Exception):
+	ExceptionShortDescription = u"CanceledException"
 
 
 

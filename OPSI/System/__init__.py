@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008, 2009 uib GmbH
+   Copyright (C) 2006 - 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -38,4 +38,17 @@ if (os.name == 'posix'):
 	from Posix import *
 if (os.name == 'nt'):
 	from Windows import *
+
+def getDirectorySize(path):
+	size = 0
+	path = os.path.abspath(forceFilename(path))
+	for r in os.listdir(path):
+		a = os.path.join(path, r)
+		if os.path.islink(a):
+			continue
+		if os.path.isfile(a):
+			size += os.path.getsize(a)
+		if os.path.isdir(a):
+			size += getDirectorySize(a)
+	return size
 

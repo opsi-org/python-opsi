@@ -704,18 +704,8 @@ class DepotToLocalDirectorySychronizer(object):
 					os.mkdir(productDestinationDirectory)
 				
 				logger.info(u"Downloading package content file")
-				packageContentFileMd5sum = None
 				packageContentFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
-				if os.path.exists(packageContentFile):
-					packageContentFileMd5sum = md5sum(packageContentFile)
 				self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
-				if packageContentFileMd5sum and (packageContentFileMd5sum == md5sum(packageContentFile)):
-					logger.info(u"Package content file unchanged, sync done")
-					productProgressSubject.setMessage( _(u"Product %s is up to date") % self._productId )
-					overallProgressSubject.addToState(1)
-					if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
-					continue
-				
 				self._fileInfo = PackageContentFile(packageContentFile).parse()
 				
 				bytes = 0

@@ -446,7 +446,7 @@ class ProductPackageSource(object):
 		
 		customName = u''
 		if self.customName:
-			customName = u'_%s' % self.customName
+			customName = u'~%s' % self.customName
 		self.packageFile = os.path.join(packageFileDestDir, u"%s_%s-%s%s.opsi" % (
 				self.packageControlFile.getProduct().id,
 				self.packageControlFile.getProduct().productVersion,

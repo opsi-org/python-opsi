@@ -948,7 +948,6 @@ class ConfigDataBackend(Backend):
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		softwareLicenseIds = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
-			print softwareLicenseToLicensePool
 			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
 		if softwareLicenseIds:
 			licenseOnClientIdents = self._context.licenseOnClient_getIdents(softwareLicenseId = softwareLicenseIds)
@@ -2988,6 +2987,111 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
 					licensePoolId     = forceLicensePoolIdList(licensePoolId),
 					clientId          = forceHostIdList(clientId)))
+	
+	def licenseOnClient_getOrCreateObject(self, clientId, licensePoolId = None, productId = None, windowsSoftwareId = None):
+		clientId = forceHostId(clientId)
+		if licensePoolId:
+			licensePoolId = forceLicensePoolId(licensePoolId)
+		elif productId or windowsSoftwareId:
+			if productId:
+				productId = forceProductId(productId)
+			else:
+				productId = None
+			if windowsSoftwareId:
+				windowsSoftwareId = forceUnicode(windowsSoftwareId)
+			else:
+				windowsSoftwareId = None
+			idents = self.licensePool_getIdents(productIds = productId, windowsSoftwareIds = windowsSoftwareId, returnType = 'unicode')
+			if (len(idents) < 1):
+				raise LicenseConfigurationError(u"No license pool for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
+			elif (len(idents) > 1):
+				raise LicenseConfigurationError(u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
+			licensePoolId = idents[0]
+		else:
+			raise ValueError(u"You have to specify one of: licensePoolId, productId, windowsSoftwareId")
+		
+		# Test if a license is already used by the host
+		licenseOnClient = None
+		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId = licensePoolId, clientId = clientId)
+		if licenseOnClients:
+			logger.info(u"Using already assigned license '%s' for client '%s', license pool '%s'" \
+					% (licenseOnClients[0].getSoftwareLicenseId(), clientId, licensePoolId))
+			licenseOnClient = licenseOnClients[0]
+		else:
+			(softwareLicenseId, licenseKey) = self._getUsableSoftwareLicense(clientId, licensePoolId)
+			if not licenseKey:
+				logger.info(u"License available but no license key found")
+			
+			logger.info(u"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'" \
+						% (softwareLicenseId, licenseKey, clientId, licensePoolId))
+			
+			licenseOnClient = LicenseOnClient(
+						softwareLicenseId = softwareLicenseId,
+						licensePoolId     = licensePoolId,
+						clientId          = clientId,
+						licenseKey        = licenseKey,
+						notes             = None)
+			self.licenseOnClient_createObjects(licenseOnClient)
+		return licenseOnClient
+	
+	def _getUsableSoftwareLicense(self, clientId, licensePoolId):
+		softwareLicenseId = u''
+		licenseKey = u''
+		
+		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId = licensePoolId, clientId = clientId)
+		if licenseOnClients:
+			# Already registered
+			return (licenseOnClients[0].getSoftwareLicenseId(), licenseOnClients[0].getLicenseKey())
+		
+		softwareLicenseToLicensePools = self._backend.softwareLicenseToLicensePool_getObjects(licensePoolId = licensePoolId)
+		if not softwareLicenseToLicensePools:
+			raise LicenseMissingError(u"No license available")
+		
+		softwareLicenseIds = []
+		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
+			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
+		
+		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id = softwareLicenseIds, boundToHost = clientId)
+		if softwareLicensesBoundToHost:
+			logger.info(u"Using license bound to host: %s" % softwareLicensesBoundToHost[0])
+			softwareLicenseId = softwareLicensesBoundToHost[0].getId()
+		else:
+			# Search an available license
+			for softwareLicense in self._backend.softwareLicense_getObjects(id = softwareLicenseIds, boundToHost = [ None, '' ]):
+				logger.debug(u"Checking license '%s', maxInstallations %d" \
+					% (softwareLicense.getId(), softwareLicense.getMaxInstallations()))
+				if (softwareLicense.getMaxInstallations() == 0):
+					# 0 = infinite
+					softwareLicenseId = softwareLicense.getId()
+					break
+				installations = len(self.licenseOnClient_getIdents(softwareLicenseId = softwareLicense.getId()))
+				logger.debug(u"Installations registered: %d" % installations)
+				if (installations < softwareLicense.getMaxInstallations()):
+					softwareLicenseId = res['softwareLicenseId']
+					break
+			
+			if softwareLicenseId:
+				logger.info(u"Found available license: %s" % softwareLicenseId)
+			
+		if not softwareLicenseId:
+			raise LicenseMissingError(u"No license available")
+		
+		licenseKeys = []
+		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
+			if softwareLicenseToLicensePool.getLicenseKey():
+				if (softwareLicenseToLicensePool.getSoftwareLicenseId() == softwareLicenseId):
+					licenseKey = softwareLicenseToLicensePool.getLicenseKey()
+					break
+				logger.debug(u"Found license key: %s" % licenseKey)
+				licenseKeys.append(softwareLicenseToLicensePool.getLicenseKey())
+		
+		if not licenseKey and licenseKeys:
+			import random
+			licenseKey = random.choice(licenseKeys)
+			logger.info(u"Randomly choosing license key")
+			
+		logger.debug(u"Using license '%s', license key: %s" % (softwareLicenseId, licenseKey))
+		return (softwareLicenseId, licenseKey)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwares                                                                            -
