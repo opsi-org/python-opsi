@@ -43,7 +43,7 @@ logger = Logger()
 
 
 
-def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId):
+def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo = {}):
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 	
 	poc = productOnClientByProductId[productId]
@@ -108,9 +108,9 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
 		logger.debug(u"   => adding action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
 		
-		#if addedInfo.has_key(dependency.requiredProductId):
-		#	logger.warning(u"   => Product dependency loop detected, skipping")
-		#	continue
+		if addedInfo.has_key(dependency.requiredProductId):
+			logger.warning(u"   => Product dependency loop detected, skipping")
+			continue
 		
 		if not productOnClientByProductId.has_key(dependency.requiredProductId):
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
@@ -120,14 +120,14 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				installationStatus = u'not_installed',
 				actionRequest      = u'none',
 			)
-		#addedInfo[dependency.requiredProductId] = {
-		#	'addedForProduct': requiredAction,
-		#	'requiredAction':  requiredAction,
-		#	'requirementType': dependency.requirementType
-		#}
+		addedInfo[dependency.requiredProductId] = {
+			'addedForProduct': productId,
+			'requiredAction':  requiredAction,
+			'requirementType': dependency.requirementType
+		}
 		productOnClientByProductId[dependency.requiredProductId].setActionRequest(requiredAction)
 		
-		addActionRequest(productOnClientByProductId, dependency.requiredProductId, productDependenciesByProductId, availableProductsByProductId)
+		addActionRequest(productOnClientByProductId, dependency.requiredProductId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 
 def addDependendProductOnClients(productOnClients, availableProducts, productDependencies):
 	availableProductsByProductId = {}
@@ -147,12 +147,95 @@ def addDependendProductOnClients(productOnClients, availableProducts, productDep
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 	
 	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
-		logger.debug(u"Adding dependend productOnClients for client %s" % clientId)
+		logger.debug(u"Adding dependend productOnClients for client '%s'" % clientId)
 		
-		#addedInfo = {}
+		addedInfo = {}
 		for productId in productOnClientByProductId.keys():
-			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId)
+			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
+		
 	return productOnClientByProductId.values()
+
+def generateProductOnClientSequence(productOnClients, availableProducts, productDependencies):
+	productDependenciesByProductId = {}
+	for productDependency in productDependencies:
+		if not productDependenciesByProductId.has_key(productDependency.productId):
+			productDependenciesByProductId[productDependency.productId] = []
+		productDependenciesByProductId[productDependency.productId].append(productDependency)
+	
+	productOnClientsByClientIdAndProductId = {}
+	for productOnClient in productOnClients:
+		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
+			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
+		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
+	
+	logger.debug(u"Sorting available products by priority")
+	priorityToProductIds = {}
+	availableProductsByProductId = {}
+	for availableProduct in availableProducts:
+		availableProductsByProductId[availableProduct.id] = availableProduct
+		if not priorityToProductIds.has_key(availableProduct.priority):
+			priorityToProductIds[availableProduct.priority] = []
+		priorityToProductIds[availableProduct.priority].append(availableProduct.id)
+		
+	priorities = priorityToProductIds.keys()
+	priorities.sort()
+	priorities.reverse()
+	
+	productSequence = []
+	for priority in priorities:
+		productSequence.extend(priorityToProductIds[priority])
+	
+	logger.debug(u"Sequence of available products after priority sorting:")
+	for i in range(len(productSequence)):
+		logger.debug(u"   [%2.0f] %s" % (i, productSequence[i]))
+	
+	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
+		logger.debug(u"Sorting available products by dependency for client '%s'" % clientId)
+		sequence = []
+		for productId in productSequence:
+			if productId in productOnClientByProductId.keys():
+				sequence.append(productId)
+		
+		#for run in (1, 2):
+		for productId in productOnClientByProductId.keys():
+			if (productOnClientByProductId[productId].actionRequest == 'none') or not productDependenciesByProductId.get(productId):
+				continue
+			
+			requiredProductId = None
+			requirementType = None
+			for dependency in productDependenciesByProductId[productId]:
+				if not productOnClientByProductId.get(dependency.requiredProductId):
+					continue
+				if (dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest):
+					continue
+				
+				requiredProductId = dependency.requiredProductId
+				requirementType = dependency.requirementType
+				break
+			
+			if not requirementType in ('before', 'after'):
+				continue
+			
+			ppos = sequence.index(productId)
+			dpos = sequence.index(requiredProductId)
+			if (requirementType == 'before') and (ppos < dpos):
+				logger.debug("#################### Before")
+				#if (run == 2):
+				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
+				#					% (info['addedForProduct'], requiredProductId))
+				sequence.remove(requiredProductId)
+				sequence.insert(ppos, requiredProductId)
+			elif (requirementType == 'after') and (dpos < ppos):
+				logger.debug("#################### After")
+				#if (run == 2):
+				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
+				#					% (info['addedForProduct'], requiredProductId))
+				sequence.remove(requiredProductId)
+				sequence.insert(ppos+1, requiredProductId)
+			
+		logger.debug(u"Sequence of available products after dependency sorting (client %s):" % clientId)
+		for i in range(len(sequence)):
+			logger.debug(u"   [%2.0f] %s" % (i, sequence[i]))
 	
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
@@ -261,13 +344,13 @@ if (__name__ == "__main__"):
 	)
 	
 	productDependency1 = ProductDependency(
-		productId                  = product2.id,
-		productVersion             = product2.productVersion,
-		packageVersion             = product2.packageVersion,
+		productId                  = product3.id,
+		productVersion             = product3.productVersion,
+		packageVersion             = product3.packageVersion,
 		productAction              = 'setup',
-		requiredProductId          = product3.id,
-		requiredProductVersion     = product3.productVersion,
-		requiredPackageVersion     = product3.packageVersion,
+		requiredProductId          = product2.id,
+		requiredProductVersion     = product2.productVersion,
+		requiredPackageVersion     = product2.packageVersion,
 		requiredAction             = 'setup',
 		requiredInstallationStatus = None,
 		requirementType            = 'before'
@@ -313,14 +396,14 @@ if (__name__ == "__main__"):
 	)
 	
 	productOnClient1 = ProductOnClient(
-		productId          = product2.getId(),
-		productType        = product2.getType(),
+		productId          = product3.getId(),
+		productType        = product3.getType(),
 		clientId           = 'client1.uib.local',
 		installationStatus = 'installed',
 		actionRequest      = 'setup',
 		actionProgress     = '',
-		productVersion     = product2.getProductVersion(),
-		packageVersion     = product2.getPackageVersion(),
+		productVersion     = product3.getProductVersion(),
+		packageVersion     = product3.getPackageVersion(),
 		modificationTime   = '2009-07-01 12:00:00'
 	)
 	
@@ -334,6 +417,11 @@ if (__name__ == "__main__"):
 	
 	assert len(productOnClients) == 3
 	
+	generateProductOnClientSequence(
+		productOnClients,
+		[ product2, product3, product4, product6, product7, product9 ],
+		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
+	
 	productOnClients = addDependendProductOnClients(
 		[ productOnClient1 ],
 		[ product2, product4, product6, product7, product9 ],
@@ -341,7 +429,8 @@ if (__name__ == "__main__"):
 	
 	for productOnClient in productOnClients:
 		print productOnClient
-
+	
+	
 
 
 
