@@ -93,7 +93,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			setActionRequestToNone = True
 		
 		if setActionRequestToNone:
-			logger.warning(u"   => setting action request for product '%s' on client '%s' to 'none'!" % (productId, clientId))
+			logger.warning(u"   => setting action request for product '%s' to 'none'!" % productId)
 			productOnClientByProductId[productId].actionRequest = 'none'
 			return
 		
@@ -331,9 +331,16 @@ if (__name__ == "__main__"):
 	
 	for productOnClient in productOnClients:
 		print productOnClient
-
-
-
+	
+	assert len(productOnClients) == 3
+	
+	productOnClients = addDependendProductOnClients(
+		[ productOnClient1 ],
+		[ product2, product4, product6, product7, product9 ],
+		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
+	
+	for productOnClient in productOnClients:
+		print productOnClient
 
 
 
