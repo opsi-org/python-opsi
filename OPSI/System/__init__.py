@@ -215,7 +215,9 @@ if (__name__ == "__main__"):
 			print u"state: %s, percent: %0.2f%%, timeSpend: %0.2fs, timeLeft: %0.2fs, speed: %0.2f" \
 				% (state, percent, timeSpend, timeLeft, speed)
 			
-	progressSubject.attachObserver(SimpleProgressObserver())
+	#progressSubject.attachObserver(SimpleProgressObserver())
+	progressBox = ui.createProgressBox(width = 120, height = 20, title = u'Progress', text = u'')
+	progressSubject.attachObserver(progressBox)
 	
 	testDir = '/tmp/opsi_system_copy_test'
 	if os.path.exists(testDir):
@@ -294,7 +296,7 @@ if (__name__ == "__main__"):
 		for filename in ('file1', 'file2', 'file3'):
 			a2 = os.path.join(a, filename)
 			f = open(a2, 'w')
-			f.write('x'*20*1024*1024)
+			f.write('x'*15*1024*1024)
 			f.close()
 	
 	os.remove(testDstDir)

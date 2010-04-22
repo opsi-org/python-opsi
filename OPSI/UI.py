@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.4.99'
+__version__ = '4.0'
 
 
 snackError = None
@@ -600,16 +600,20 @@ class SnackUI(UI):
 
 class SnackMessageBox(MessageBox, MessageObserver):
 	def __init__(self, ui, width=0, height=0, title=_(u'Title'), text=u''):
+		MessageObserver.__init__(self)
+		
 		try:
 			self._ui = ui
 			
-			width       = forceInt(width)
-			height      = forceInt(height)
-			title       = forceUnicode(title)
-			text        = forceUnicode(text)
+			width  = forceInt(width)
+			height = forceInt(height)
+			title  = forceUnicode(title)
+			text   = forceUnicode(text)
 			
 			self._visible = False
+			self._title = title
 			self._text = text
+			
 			if (width <= 0):
 				width = self._ui.getScreen().width - 7
 			if (height <= 0):
@@ -684,9 +688,13 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			logger.logException(e)
 			raise
 	
+	def messageChanged(self, subject, message):
+		self.addText(u"%s\n" % message)
 
 class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
+		ProgressObserver.__init__(self)
+		
 		self._ui = ui
 		width  = forceInt(width)
 		height = forceInt(height)
@@ -701,12 +709,14 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		
 		SnackMessageBox.__init__(self, ui, width, height-4, title, text)
 		
+		self._total = total
 		self._state = -1
+		self._factor = 1
 		self._width = width
 		self._height = height
 		
 		self._gridForm = GridForm(self._ui.getScreen(), title.encode(encoding, 'replace'), 1, 2)
-		self._scale = Scale(self._width, total)
+		self._scale = Scale(self._width, self._total)
 		self._gridForm.add(self._textbox, 0, 0)
 		self._gridForm.add(self._scale, 0, 1)
 		
@@ -714,12 +724,22 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		
 	def setState(self, state):
 		self._state = state
-		self._scale.set(self._state)
+		self._scale.set(int(self._state*self._factor))
 		self.show()
 	
 	def getState(self):
 		return self._state
-
+	
+	def endChanged(self, subject, end):
+		if (end <= 0) or (self._total <= 0):
+			self.setState(0)
+		else:
+			self._factor = float(self._total)/end
+			self.setState(self._state)
+	
+	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+		self.setState(state)
+	
 
 if (__name__ == "__main__"):
 	uiTest = UIFactory('snack')

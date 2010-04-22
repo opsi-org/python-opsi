@@ -245,13 +245,15 @@ class ProgressSubject(MessageSubject):
 		self._timeLeft     = 0
 		self._timeFired    = 0
 		self._speed        = 0
+		self._notifyEndChanged()
 		self._notifyProgressChanged()
-	
+		
 	def setEnd(self, end):
 		self._end = forceInt(end)
 		if (self._end < 0):
 			self._end = 0
 		self.setState(self._state)
+		self._notifyEndChanged()
 		
 	def setState(self, state):
 		state = forceInt(state)
@@ -306,6 +308,10 @@ class ProgressSubject(MessageSubject):
 		for o in self._observers:
 			o.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
 	
+	def _notifyEndChanged(self):
+		for o in self._observers:
+			o.endChanged(self, self._end)
+		
 	def serializable(self):
 		s = MessageSubject.serializable(self)
 		s['end']          = self.getEnd()
@@ -342,7 +348,10 @@ class ProgressObserver(MessageObserver):
 	
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
 		pass
-
+	
+	def endChanged(self, subject, end):
+		pass
+	
 class SubjectsObserver(ChoiceObserver, ProgressObserver):
 	def __init__(self):
 		self._subjects = []
@@ -395,9 +404,11 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 		self.setChoices(choices)
 	
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
-		self._end = subject.getEnd()
 		self.setState(state)
 	
+	def endChanged(self, subject, end):
+		self.setEnd(end)
+		
 class ChoiceSubjectProxy(MessageSubjectProxy):
 	def __init__(self, id, type=u'', title=u'', **args):
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
@@ -502,6 +513,14 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			% (subject.getId(), state, percent, timeSpend, timeLeft, speed))
 		self.notify( name = u"progressChanged", params = [ subject.serializable(), state, percent, timeSpend, timeLeft, speed ] )
 	
+	def endChanged(self, subject, end):
+		if not subject in self.getSubjects():
+			logger.info(u"Unknown subject %s passed to endChanged, automatically adding subject" % subject)
+			self.addSubject(subject)
+		logger.debug(u"endChanged: subject id '%s', end %s" \
+			% (subject.getId(), end))
+		self.notify( name = u"endChanged", params = [ subject.serializable(), end ] )
+		
 	def subjectsChanged(self, subjects):
 		logger.debug(u"subjectsChanged: subjects %s" % subjects)
 		param = []
