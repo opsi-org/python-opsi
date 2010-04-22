@@ -50,6 +50,7 @@ from OPSI.Types import *
 # Get Logger instance
 logger = Logger()
 
+# Constants
 HKEY_CURRENT_USER = _winreg.HKEY_CURRENT_USER
 HKEY_LOCAL_MACHINE = _winreg.HKEY_LOCAL_MACHINE
 
@@ -66,40 +67,6 @@ class PROCESSENTRY32(Structure):
                  ("dwFlags", c_ulong),
                  ("szExeFile", c_char * 260)]
 
-
-def which(cmd):
-	raise NotImplementedError(u"which() not implemented on windows")
-
-def execute(cmd, nowait=False, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=False, capturestderr=True):
-	raise NotImplementedError(u"execute() not implemented on windows")
-
-def getDiskSpaceUsage(path):
-	path = forceUnicode(path)
-	if (len(path) == 1):
-		path = path + ':'
-	info = {
-		'capacity':  0,
-		'available': 0,
-		'used':      0,
-		'usage':     0
-	}
-	#(items, instances) = win32pdh.EnumObjectItems(
-	#			None,
-	#			None,
-	#			win32pdhutil.find_pdh_counter_localized_name('LogicalDisk'),
-	#			win32pdh.PERF_DETAIL_WIZARD)
-	#
-	#for instance in instances:
-	#	if path.lower().startswith(instance.lower()):
-	(sectPerCluster, bytesPerSector, freeClusters, totalClusters) = win32file.GetDiskFreeSpace(path)
-	info['capacity'] = totalClusters * sectPerCluster * bytesPerSector
-	info['available'] = freeClusters * sectPerCluster * bytesPerSector
-	info['used'] = info['capacity'] - info['available']
-	info['usage'] = float(info['used']) / float(info['capacity'])
-	#break
-	
-	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
-	return info
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
@@ -140,9 +107,8 @@ def getProgramFilesDir():
 def getSystemDrive():
 	return forceUnicode(os.getenv('SystemDrive', u'c:'))
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# -                                            HELPERS                                                -
+# -                                            NETWORK                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getNetworkInterfaces():
 	try:
@@ -191,7 +157,7 @@ def getNetworkInterfaces():
 		return adapterList
 	except Exception, e:
 		logger.logException(e)
-		raise Exception(u"Failed to get network interfaces: %s" % e)
+		raise Exception(u"Failed to get network interfaces: %s" % forceUnicode(e))
 
 
 def getDefaultNetworkInterfaceName():
@@ -323,24 +289,34 @@ def createRegistryKey(key, subKey):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def mkdir(newDir):
-	"""
-	- already exists, silently complete
-	- regular file in the way, raise an exception
-	- parent directory(ies) does not exist, make them as well
-	"""
-	newDir = forceFilename(newDir)
-	if os.path.isdir(newDir):
-		pass
-	elif os.path.isfile(newDir):
-		raise OSError(u"A file with the same name as the desired dir, '%s', already exists." % newDir)
-	else:
-		(head, tail) = os.path.split(newDir)
-		if head and not os.path.isdir(head):
-			mkdir(head)
-		if tail:
-			os.mkdir(newDir)
+
+def getDiskSpaceUsage(path):
+	path = forceUnicode(path)
+	if (len(path) == 1):
+		path = path + ':'
+	info = {
+		'capacity':  0,
+		'available': 0,
+		'used':      0,
+		'usage':     0
+	}
+	#(items, instances) = win32pdh.EnumObjectItems(
+	#			None,
+	#			None,
+	#			win32pdhutil.find_pdh_counter_localized_name('LogicalDisk'),
+	#			win32pdh.PERF_DETAIL_WIZARD)
+	#
+	#for instance in instances:
+	#	if path.lower().startswith(instance.lower()):
+	(sectPerCluster, bytesPerSector, freeClusters, totalClusters) = win32file.GetDiskFreeSpace(path)
+	info['capacity'] = totalClusters * sectPerCluster * bytesPerSector
+	info['available'] = freeClusters * sectPerCluster * bytesPerSector
+	info['used'] = info['capacity'] - info['available']
+	info['usage'] = float(info['used']) / float(info['capacity'])
+	#break
 	
+	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
+	return info
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
@@ -396,8 +372,8 @@ def mount(dev, mountpoint, **options):
 			)
 		
 		except Exception, e:
-			logger.error(u"Failed to mount '%s': %s" % (dev, e))
-			raise Exception(u"Failed to mount '%s': %s" % (dev, e))
+			logger.error(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
+			raise Exception(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
 
 def umount(mountpoint):
 	try:
@@ -411,8 +387,8 @@ def umount(mountpoint):
 			raise
 	
 	except Exception, e:
-		logger.error(u"Failed to umount '%s': %s" % (mountpoint, e))
-		raise Exception (u"Failed to umount '%s': %s" % (mountpoint, e))
+		logger.error(u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(e)))
+		raise Exception (u"Failed to umount '%s': %s" % (mountpoint, forceUnicode(e)))
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -422,7 +398,7 @@ def getActiveConsoleSessionId():
 	try:
 		return forceInt(windll.kernel32.WTSGetActiveConsoleSessionId())
 	except Exception, e:
-		logger.warning(u"Failed to get WTSGetActiveConsoleSessionId: %s, returning 0" % e)
+		logger.warning(u"Failed to get WTSGetActiveConsoleSessionId: %s, returning 0" % forceUnicode(e))
 		return 0
 
 def getActiveDesktopName():
@@ -565,7 +541,7 @@ def createWindowStation(name):
 	try:
 		return win32service.CreateWindowStation(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error, e:
-		logger.error(u"Failed to create window station '%s': %s" % (name, e))
+		logger.error(u"Failed to create window station '%s': %s" % (name, forceUnicode(e)))
 
 def createDesktop(name, cmd):
 	name = forceUnicode(name)
@@ -577,7 +553,7 @@ def createDesktop(name, cmd):
 	try:
 		hdesk = win32service.CreateDesktop(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error, e:
-		logger.error(u"Failed to create desktop '%s': %s" % (name, e))
+		logger.error(u"Failed to create desktop '%s': %s" % (name, forceUnicode(e)))
 	
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = name
@@ -702,6 +678,12 @@ def addUserToWindowStation(winsta, userSid):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                        PROCESS HANDLING                                           -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def which(cmd):
+	raise NotImplementedError(u"which() not implemented on windows")
+
+def execute(cmd, nowait=False, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=False, capturestderr=True):
+	raise NotImplementedError(u"execute() not implemented on windows")
 
 def getPids(process, sessionId = None):
 	process = forceUnicode(process)

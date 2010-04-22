@@ -32,14 +32,15 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1'
+__version__ = '4.0'
 
 # Imports
-import types, re, time
+import types, re, time, sys
 
 # OPSI imports
 from OPSI.Logger import *
 
+encoding = sys.getfilesystemencoding()
 # Get logger instance
 logger = Logger()
 
@@ -60,9 +61,10 @@ def forceUnicode(var):
 		return var
 	if type(var) is types.StringType:
 		return unicode(var, 'utf-8', 'replace')
+	if type(var) is WindowsError:
+		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 	return unicode(var)
 	
-
 def forceUnicodeLower(var):
 	return forceUnicode(var).lower()
 

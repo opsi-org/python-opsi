@@ -693,8 +693,8 @@ class LoggerImplementation:
 		
 	def logException(self, e, logLevel=LOG_CRITICAL):
 		self.logTraceback(sys.exc_info()[2], logLevel)
-		message = e.__repr__()
-		self.log(logLevel, u'     ==>>> %s' %message)
+		message = forceUnicode(e)
+		self.log(logLevel, u'     ==>>> %s' % message)
 		
 	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
 		''' Log an exception. '''

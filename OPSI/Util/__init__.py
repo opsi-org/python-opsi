@@ -126,7 +126,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	while True:
 		try:
 			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
-				raise Exception(u"Timed out after %d seconds (%s)" % (connectTimeout, e))
+				raise Exception(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(e)))
 			sock.connect((self.host, self.port))
 			break
 		except socket.error, e:
@@ -157,7 +157,7 @@ def deserialize(obj):
 			c = eval('OPSI.Object.%s' % obj['type'])
 			newObj = c.fromHash(obj)
 		except Exception, e:
-			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, e))
+			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, forceUnicode(e)))
 			return obj
 	elif type(obj) is list:
 		newObj = []
@@ -211,7 +211,7 @@ def librsyncSignature(filename):
 	except Exception, e:
 		if f: f.close()
 		if sf: sf.close()
-		raise Exception(u"Failed to get librsync signature: %s" % e)
+		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
 	if (os.name != 'posix'):
@@ -245,7 +245,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		if pf: pf.close()
 		if df: df.close()
 		if of: of.close()
-		raise Exception(u"Failed to patch file: %s" % e)
+		raise Exception(u"Failed to patch file: %s" % forceUnicode(e))
 
 def librsyncDeltaFile(filename, signature, deltafile):
 	if (os.name != 'posix'):
@@ -269,7 +269,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 		if df:  df.close()
 		if f:   f.close()
 		if ldf: ldf.close()
-		raise Exception(u"Failed to write delta file: %s" % e)
+		raise Exception(u"Failed to write delta file: %s" % forceUnicode(e))
 	
 def md5sum(filename):
 	f = open(filename, 'rb')

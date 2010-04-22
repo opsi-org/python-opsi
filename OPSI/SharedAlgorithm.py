@@ -129,7 +129,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		
 		addActionRequest(productOnClientByProductId, dependency.requiredProductId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 
-def addDependendProductOnClients(productOnClients, availableProducts, productDependencies):
+def addDependentProductOnClients(productOnClients, availableProducts, productDependencies):
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
 		availableProductsByProductId[availableProduct.id] = availableProduct
@@ -189,6 +189,8 @@ def generateProductOnClientSequence(productOnClients, availableProducts, product
 	for i in range(len(productSequence)):
 		logger.debug(u"   [%2.0f] %s" % (i, productSequence[i]))
 	
+	sortedProductOnClients = []
+	
 	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
 		logger.debug(u"Sorting available products by dependency for client '%s'" % clientId)
 		sequence = []
@@ -219,23 +221,27 @@ def generateProductOnClientSequence(productOnClients, availableProducts, product
 			ppos = sequence.index(productId)
 			dpos = sequence.index(requiredProductId)
 			if (requirementType == 'before') and (ppos < dpos):
-				logger.debug("#################### Before")
+				logger.debug("Requirement type is 'before', moving product '%s' up in sequence." % requiredProductId)
 				#if (run == 2):
 				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-				#					% (info['addedForProduct'], requiredProductId))
+				#					% (productId, requiredProductId))
 				sequence.remove(requiredProductId)
 				sequence.insert(ppos, requiredProductId)
 			elif (requirementType == 'after') and (dpos < ppos):
-				logger.debug("#################### After")
+				logger.debug("Requirement type is 'after', moving product '%s' down in sequence." % requiredProductId)
 				#if (run == 2):
 				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-				#					% (info['addedForProduct'], requiredProductId))
+				#					% (productId, requiredProductId))
 				sequence.remove(requiredProductId)
 				sequence.insert(ppos+1, requiredProductId)
 			
 		logger.debug(u"Sequence of available products after dependency sorting (client %s):" % clientId)
 		for i in range(len(sequence)):
 			logger.debug(u"   [%2.0f] %s" % (i, sequence[i]))
+			productOnClient = productOnClientByProductId[sequence[i]]
+			productOnClient.setActionSequence(i+1)
+			sortedProductOnClients.append(productOnClient)
+	return sortedProductOnClients
 	
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
@@ -406,8 +412,19 @@ if (__name__ == "__main__"):
 		packageVersion     = product3.getPackageVersion(),
 		modificationTime   = '2009-07-01 12:00:00'
 	)
+	productOnClient2 = ProductOnClient(
+		productId          = product7.getId(),
+		productType        = product7.getType(),
+		clientId           = 'client1.uib.local',
+		installationStatus = 'not_installed',
+		actionRequest      = 'setup',
+		actionProgress     = '',
+		productVersion     = product7.getProductVersion(),
+		packageVersion     = product7.getPackageVersion(),
+		modificationTime   = '2009-07-01 12:00:00'
+	)
 	
-	productOnClients = addDependendProductOnClients(
+	productOnClients = addDependentProductOnClients(
 		[ productOnClient1 ],
 		[ product2, product3, product4, product6, product7, product9 ],
 		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
@@ -417,12 +434,14 @@ if (__name__ == "__main__"):
 	
 	assert len(productOnClients) == 3
 	
-	generateProductOnClientSequence(
+	productOnClients = generateProductOnClientSequence(
 		productOnClients,
 		[ product2, product3, product4, product6, product7, product9 ],
 		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
-	
-	productOnClients = addDependendProductOnClients(
+	for productOnClient in productOnClients:
+		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
+		
+	productOnClients = addDependentProductOnClients(
 		[ productOnClient1 ],
 		[ product2, product4, product6, product7, product9 ],
 		[ productDependency1, productDependency2, productDependency3, productDependency4 ])

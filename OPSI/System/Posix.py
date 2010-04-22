@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import os, sys, subprocess, locale, threading, time
@@ -48,212 +48,10 @@ logger = Logger()
 BIN_WHICH   = '/usr/bin/which'
 WHICH_CACHE = {}
 
-def which(cmd):
-	if not WHICH_CACHE.has_key(cmd):
-		w = os.popen(u'%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
-		path = w.readline().strip()
-		w.close()
-		if not path:
-			raise Exception(u"Command '%s' not found in PATH" % cmd)
-		WHICH_CACHE[cmd] = path
-		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
-	
-	return WHICH_CACHE[cmd]
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None):
-	"""
-	Executes a command and returns output lines as list
-	"""
-	
-	nowait          = forceBool(nowait)
-	getHandle       = forceBool(getHandle)
-	exitOnStderr    = forceBool(exitOnStderr)
-	captureStderr   = forceBool(captureStderr)
-	
-	exitCode = 0
-	result = []
-	
-	try:
-		logger.info(u"Executing: %s" % cmd)
-		
-		if nowait:
-			os.spawnv(os.P_NOWAIT, which('bash'), [which('bash'), '-c', cmd])
-			return []
-		
-		elif getHandle:
-			if captureStderr:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
-			else:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
-		
-		else:
-			data = ''
-			stderr = None
-			if captureStderr:
-				stderr	= subprocess.PIPE
-			proc = subprocess.Popen(
-				cmd,
-				shell	= True,
-				stdin	= subprocess.PIPE,
-				stdout	= subprocess.PIPE,
-				stderr	= stderr,
-			)
-			if not encoding:
-				encoding = proc.stdin.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
-			
-			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
-			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-			
-			if captureStderr:
-				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-			
-			ret = None
-			while ret is None:
-				ret = proc.poll()
-				try:
-					chunk = proc.stdout.read()
-					if (len(chunk) > 0):
-						data += chunk
-				except IOError, e:
-					if (e.errno != 11):
-						raise
-				
-				if captureStderr:
-					try:
-						chunk = proc.stderr.read()
-						if (len(chunk) > 0):
-							if exitOnStderr:
-								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk) )
-							data += chunk
-					except IOError, e:
-						if (e.errno != 11):
-							raise
-				
-				time.sleep(0.001)
-			
-			exitCode = ret
-			if data:
-				lines = data.split('\n')
-				for i in range(len(lines)):
-					line = lines[i].decode(encoding)
-					if (i == len(lines) - 1) and not line:
-						break
-					logger.debug(u'>>> %s' % line)
-					result.append(line)
-			
-	except (os.error, IOError), e:
-		# Some error occured during execution
-		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e) )
-	
-	logger.debug(u"Exit code: %s" % exitCode)
-	if exitCode:
-		if   type(ignoreExitCode) is bool and ignoreExitCode:
-			pass
-		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
-			pass
-		else:
-			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)) )
-	return result
-
-def mount(dev, mountpoint, **options):
-	dev = forceUnicode(dev)
-	mountpoint = forceFilename(mountpoint)
-	if not os.path.isdir(mountpoint):
-		os.makedirs(mountpoint)
-	for (key, value) in options.items():
-		options[key] = forceUnicode(value)
-	
-	fs = u''
-	if dev.lower().startswith('smb://'):
-		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
-		if match:
-			fs = u'-t cifs'
-			parts = match.group(1).split('/')
-			dev = u'//%s/%s' % (parts[0], parts[1])
-			if not 'username' in options:
-				options['username'] = u'guest'
-			if not 'password' in options:
-				options['password'] = u''
-		else:
-			raise Exception(u"Bad smb uri '%s'" % dev)
-		
-	elif dev.lower().startswith('webdav://') or dev.lower().startswith('webdavs://') or \
-	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):
-		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
-		if match:
-			fs = '-t davfs'
-			dev = 'http' + match.group(2) + match.group(3)
-		else:
-			raise Exception(u"Bad webdav url '%s'" % dev)
-		
-		if not 'username' in options:
-			options['username'] = u''
-		if not 'password' in options:
-			options['password'] = u''
-		if not 'servercert' in options:
-			options['servercert'] = u''
-		
-		f = open("/etc/davfs2/certs/trusted.pem", "w")
-		f.write(options['servercert'])
-		f.close()
-		os.chmod("/etc/davfs2/certs/trusted.pem", 0644)
-		
-		f = open("/etc/davfs2/secrets", "r")
-		lines = f.readlines()
-		f.close()
-		f = open("/etc/davfs2/secrets", "w")
-		for line in lines:
-			if re.search("^%s\s+" % dev, line):
-				f.write("#")
-			f.write(line)
-		f.write('%s "%s" "%s"\n' % (dev, options['username'], options['password']))
-		f.close()
-		os.chmod("/etc/davfs2/secrets", 0600)
-		
-		f = open("/etc/davfs2/davfs2.conf", "r")
-		lines = f.readlines()
-		f.close()
-		f = open("/etc/davfs2/davfs2.conf", "w")
-		for line in lines:
-			if re.search("^servercert\s+", line):
-				f.write("#")
-			f.write(line)
-		f.write("servercert /etc/davfs2/certs/trusted.pem\n")
-		f.close()
-		
-		del options['username']
-		del options['password']
-		del options['servercert']
-		
-	elif dev.lower().startswith('/'):
-		pass
-	
-	elif dev.lower().startswith('file://'):
-		dev = dev[7:]
-	
-	else:
-		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
-	
-	optString = u''
-	for (key, value) in options.items():
-		key   = forceUnicode(key)
-		value = forceUnicode(value)
-		if value:
-			optString += u',%s=%s' % (key, value)
-		else:
-			optString += u',%s' % key
-	if optString:
-		optString = u'-o "%s"' % optString[1:].replace('"', '\\"')
-	
-	try:
-		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
-	except Exception, e:
-		logger.error(u"Failed to mount '%s': %s" % (dev, e))
-		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
-	
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                               INFO                                                -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getKernelParams():
 	"""
 	Reads the kernel cmdline and returns a dict
@@ -265,7 +63,7 @@ def getKernelParams():
 	f = None
 	try:
 		logger.debug(u'Reading /proc/cmdline')
-		f = codes.open("/proc/cmdline", "r", "utf-8")
+		f = codecs.open("/proc/cmdline", "r", "utf-8")
 		cmdline = f.readline()
 		cmdline = cmdline.strip()
 		f.close()
@@ -281,16 +79,9 @@ def getKernelParams():
 				params[keyValue[0].strip().lower()] = keyValue[1].strip()
 	return params
 
-def getDiskSpaceUsage(path):
-	disk = os.statvfs(path)
-	info = {}
-	info['capacity'] = disk.f_bsize * disk.f_blocks
-	info['available'] = disk.f_bsize * disk.f_bavail
-	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
-	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
-	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
-	return info
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                            NETWORK                                                -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getEthernetDevices():
 	devices = []
 	f = open("/proc/net/dev")
@@ -456,11 +247,256 @@ def ifconfig(device, address, netmask=None):
 	execute(cmd)
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                            FILESYSTEMS                                            -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def getDiskSpaceUsage(path):
+	disk = os.statvfs(path)
+	info = {}
+	info['capacity'] = disk.f_bsize * disk.f_blocks
+	info['available'] = disk.f_bsize * disk.f_bavail
+	info['used'] = disk.f_bsize * (disk.f_blocks - disk.f_bavail)
+	info['usage'] = float(disk.f_blocks - disk.f_bavail) / float(disk.f_blocks)
+	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
+	return info
+
+def mount(dev, mountpoint, **options):
+	dev = forceUnicode(dev)
+	mountpoint = forceFilename(mountpoint)
+	if not os.path.isdir(mountpoint):
+		os.makedirs(mountpoint)
+	for (key, value) in options.items():
+		options[key] = forceUnicode(value)
+	
+	fs = u''
+	if dev.lower().startswith('smb://'):
+		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
+		if match:
+			fs = u'-t cifs'
+			parts = match.group(1).split('/')
+			dev = u'//%s/%s' % (parts[0], parts[1])
+			if not 'username' in options:
+				options['username'] = u'guest'
+			if not 'password' in options:
+				options['password'] = u''
+		else:
+			raise Exception(u"Bad smb uri '%s'" % dev)
+		
+	elif dev.lower().startswith('webdav://') or dev.lower().startswith('webdavs://') or \
+	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):
+		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		if match:
+			fs = '-t davfs'
+			dev = 'http' + match.group(2) + match.group(3)
+		else:
+			raise Exception(u"Bad webdav url '%s'" % dev)
+		
+		if not 'username' in options:
+			options['username'] = u''
+		if not 'password' in options:
+			options['password'] = u''
+		if not 'servercert' in options:
+			options['servercert'] = u''
+		
+		f = open("/etc/davfs2/certs/trusted.pem", "w")
+		f.write(options['servercert'])
+		f.close()
+		os.chmod("/etc/davfs2/certs/trusted.pem", 0644)
+		
+		f = open("/etc/davfs2/secrets", "r")
+		lines = f.readlines()
+		f.close()
+		f = open("/etc/davfs2/secrets", "w")
+		for line in lines:
+			if re.search("^%s\s+" % dev, line):
+				f.write("#")
+			f.write(line)
+		f.write('%s "%s" "%s"\n' % (dev, options['username'], options['password']))
+		f.close()
+		os.chmod("/etc/davfs2/secrets", 0600)
+		
+		f = open("/etc/davfs2/davfs2.conf", "r")
+		lines = f.readlines()
+		f.close()
+		f = open("/etc/davfs2/davfs2.conf", "w")
+		for line in lines:
+			if re.search("^servercert\s+", line):
+				f.write("#")
+			f.write(line)
+		f.write("servercert /etc/davfs2/certs/trusted.pem\n")
+		f.close()
+		
+		del options['username']
+		del options['password']
+		del options['servercert']
+		
+	elif dev.lower().startswith('/'):
+		pass
+	
+	elif dev.lower().startswith('file://'):
+		dev = dev[7:]
+	
+	else:
+		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
+	
+	optString = u''
+	for (key, value) in options.items():
+		key   = forceUnicode(key)
+		value = forceUnicode(value)
+		if value:
+			optString += u',%s=%s' % (key, value)
+		else:
+			optString += u',%s' % key
+	if optString:
+		optString = u'-o "%s"' % optString[1:].replace('"', '\\"')
+	
+	try:
+		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
+	except Exception, e:
+		logger.error(u"Failed to mount '%s': %s" % (dev, e))
+		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
+
+def umount(devOrMountpoint):
+	cmd = u"%s %s" % (which('umount'), devOrMountpoint)
+	try:
+		result = execute(cmd)
+	except Exception, e:
+		logger.error(u"Cannot umount: %s" % e)
+		raise Exception(u"Cannot umount: %s" % e)
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                   SESSION / DESKTOP HANDLING                                      -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def reboot(wait = 10):
+	execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
+
+def halt(wait = 10):
+	execute(u'%s %d; %s -h now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                        PROCESS HANDLING                                           -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def which(cmd):
+	if not WHICH_CACHE.has_key(cmd):
+		w = os.popen(u'%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
+		path = w.readline().strip()
+		w.close()
+		if not path:
+			raise Exception(u"Command '%s' not found in PATH" % cmd)
+		WHICH_CACHE[cmd] = path
+		logger.debug(u"Command '%s' found at: '%s'" % (cmd, WHICH_CACHE[cmd]))
+	
+	return WHICH_CACHE[cmd]
+
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None):
+	"""
+	Executes a command and returns output lines as list
+	"""
+	
+	nowait          = forceBool(nowait)
+	getHandle       = forceBool(getHandle)
+	exitOnStderr    = forceBool(exitOnStderr)
+	captureStderr   = forceBool(captureStderr)
+	
+	exitCode = 0
+	result = []
+	
+	try:
+		logger.info(u"Executing: %s" % cmd)
+		
+		if nowait:
+			os.spawnv(os.P_NOWAIT, which('bash'), [which('bash'), '-c', cmd])
+			return []
+		
+		elif getHandle:
+			if captureStderr:
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
+			else:
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
+		
+		else:
+			data = ''
+			stderr = None
+			if captureStderr:
+				stderr	= subprocess.PIPE
+			proc = subprocess.Popen(
+				cmd,
+				shell	= True,
+				stdin	= subprocess.PIPE,
+				stdout	= subprocess.PIPE,
+				stderr	= stderr,
+			)
+			if not encoding:
+				encoding = proc.stdin.encoding
+			if not encoding:
+				encoding = locale.getpreferredencoding()
+			
+			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+			
+			if captureStderr:
+				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+			
+			ret = None
+			while ret is None:
+				ret = proc.poll()
+				try:
+					chunk = proc.stdout.read()
+					if (len(chunk) > 0):
+						data += chunk
+				except IOError, e:
+					if (e.errno != 11):
+						raise
+				
+				if captureStderr:
+					try:
+						chunk = proc.stderr.read()
+						if (len(chunk) > 0):
+							if exitOnStderr:
+								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk) )
+							data += chunk
+					except IOError, e:
+						if (e.errno != 11):
+							raise
+				
+				time.sleep(0.001)
+			
+			exitCode = ret
+			if data:
+				lines = data.split('\n')
+				for i in range(len(lines)):
+					line = lines[i].decode(encoding)
+					if (i == len(lines) - 1) and not line:
+						break
+					logger.debug(u'>>> %s' % line)
+					result.append(line)
+			
+	except (os.error, IOError), e:
+		# Some error occured during execution
+		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e) )
+	
+	logger.debug(u"Exit code: %s" % exitCode)
+	if exitCode:
+		if   type(ignoreExitCode) is bool and ignoreExitCode:
+			pass
+		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
+			pass
+		else:
+			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)) )
+	return result
 
 
 
 
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -                                        PROCESS HANDLING                                           -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 
