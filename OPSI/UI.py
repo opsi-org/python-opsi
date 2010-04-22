@@ -44,6 +44,7 @@ from snack import *
 # OPSI imports
 from Logger import *
 from OPSI.Types import *
+from OPSI.Util.Message import MessageObserver, ProgressObserver
 
 # Get Logger instance
 logger = Logger()
@@ -597,7 +598,7 @@ class SnackUI(UI):
 			raise
 
 
-class SnackMessageBox(MessageBox):
+class SnackMessageBox(MessageBox, MessageObserver):
 	def __init__(self, ui, width=0, height=0, title=_(u'Title'), text=u''):
 		try:
 			self._ui = ui
@@ -684,7 +685,7 @@ class SnackMessageBox(MessageBox):
 			raise
 	
 
-class SnackProgressBox(SnackMessageBox, ProgressBox):
+class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
 		self._ui = ui
 		width  = forceInt(width)

@@ -202,6 +202,8 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 if (__name__ == "__main__"):
 	#logger.setConsoleLevel(LOG_DEBUG)
 	from OPSI.Util.Message import ProgressSubject, ProgressObserver
+	from OPSI.UI import UIFactory
+	ui = UIFactory()
 	
 	progressSubject = ProgressSubject(id = u'copy_test', title = u'Copy test')
 	
@@ -396,7 +398,7 @@ if (__name__ == "__main__"):
 			assert os.path.isfile(a2)
 	
 	
-	
+	if ui: ui.exit()
 	
 	
 	
