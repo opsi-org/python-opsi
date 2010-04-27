@@ -37,6 +37,7 @@ install:
 	
 	for i in `(cd files/backendManager; find -name "*.conf")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
 	for i in `(cd files/backends; find -name "*.conf")`; do install -m 0660 files/backends/$$i debian/python-opsi/etc/opsi/backends/$$i; done
+	dh_link etc/opsi/backendManager/extend.d/20_legacy.conf etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 	
 	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
 	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done

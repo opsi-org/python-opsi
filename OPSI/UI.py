@@ -74,6 +74,9 @@ class UI:
 	def getScreen(self):
 		pass
 	
+	def refresh(self):
+		pass
+	
 	def getWidth(self):
 		return 0
 	
@@ -94,6 +97,9 @@ class UI:
 	
 	def createProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
 		return ProgressBox(self)
+	
+	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
+		return CopyProgressBox(self)
 	
 	def createMessageBox(self, width=-1, height=-1, title=_(u'Text'), text=u''):
 		return MessageBox(self)
@@ -140,7 +146,8 @@ class ProgressBox(MessageBox):
 	def getState(self):
 		pass
 
-
+class CopyProgressBox(ProgressBox):
+	pass
 
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -163,6 +170,9 @@ class SnackUI(UI):
 	def getScreen(self):
 		return self._screen
 	
+	def refresh(self):
+		self._screen.refresh()
+		
 	def getWidth(self):
 		return self._screen.width
 	
@@ -175,7 +185,7 @@ class SnackUI(UI):
 	def drawRootText(self, x=1, y=1, text=u''):
 		try:
 			self._screen.drawRootText(x, y, text)
-			self._screen.refresh()
+			self.refresh()
 		except Exception, e:
 			self.exit()
 			logger.logException(e)
@@ -204,7 +214,7 @@ class SnackUI(UI):
 			gridForm.add(textBox, 0, 0)
 			if seconds:
 				gridForm.draw()
-				self._screen.refresh()
+				self.refresh()
 				time.sleep(seconds)
 				self._screen.popWindow()
 			else:
@@ -240,7 +250,7 @@ class SnackUI(UI):
 			gridForm.add(textBox, 0, 0)
 			if seconds:
 				gridForm.draw()
-				self._screen.refresh()
+				self.refresh()
 				time.sleep(seconds)
 				self._screen.popWindow()
 			else:
@@ -267,7 +277,22 @@ class SnackUI(UI):
 			self.exit()
 			logger.logException(e)
 			raise
-		
+	
+	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy Progress'), text=u''):
+		try:
+			width   = forceInt(width)
+			height  = forceInt(height)
+			total   = forceInt(total)
+			title   = forceUnicode(title)
+			text    = forceUnicode(text)
+			
+			progressBox = SnackCopyProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
+			return progressBox
+		except Exception, e:
+			self.exit()
+			logger.logException(e)
+			raise
+	
 	def createMessageBox(self, width=-1, height=-1, title=_(u'Text'), text=u''):
 		width   = forceInt(width)
 		height  = forceInt(height)
@@ -636,7 +661,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 	def show(self, seconds=0):
 		try:
 			self._gridForm.draw()
-			self._ui.getScreen().refresh()
+			self._ui.refresh()
 			self._visible = True
 			if seconds:
 				time.sleep(seconds)
@@ -739,8 +764,23 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 	
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
 		self.setState(state)
-	
 
+
+class SnackCopyProgressBox(SnackProgressBox):
+	def messageChanged(self, subject, message):
+		minLeft = 0
+		secLeft = subject.getTimeLeft()
+		if (secLeft >= 60):
+			minLeft = int(secLeft/60)
+			secLeft -= (minLeft*60)
+		if (minLeft < 10):
+			minLeft = '0%d' % minLeft
+		if (secLeft < 10):
+			secLeft = '0%d' % secLeft
+		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
+		self.addText(u"%s\n" % message)
+	
+	
 if (__name__ == "__main__"):
 	uiTest = UIFactory('snack')
 	uiTest.drawRootText(x = 1, y = 1, text = u'Test root text')

@@ -68,6 +68,10 @@ class PROCESSENTRY32(Structure):
                  ("szExeFile", c_char * 260)]
 
 
+class SystemSpecificHook():
+	def __init__(self):
+		pass
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -78,7 +82,7 @@ def getFQDN():
 	fqdn = socket.getfqdn().lower()
 	if ( len(fqdn.split(u'.')) < 2 ):
 		return getHostname()
-	return forceHostId(getHostname() + u'.' + u'.'.join(fqdn.split(u'.')[1:]))
+	return forceUnicodeLower(getHostname() + u'.' + u'.'.join(fqdn.split(u'.')[1:]))
 
 def getFileVersionInfo(filename):
 	filename = forceFilename(filename)

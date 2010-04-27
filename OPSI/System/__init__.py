@@ -41,58 +41,169 @@ if (os.name == 'nt'):
 
 from OPSI.Types import *
 
+
+class SystemHook(SystemSpecificHook):
+	def __init__(self):
+		pass
+	
+	def pre_getDirectorySize(self, path):
+		return path
+	
+	def post_getDirectorySize(self, path, result):
+		return result
+	
+	def error_getDirectorySize(self, path, result, exception):
+		raise exception
+	
+	
+	def pre_getSize(self, path):
+		return path
+	
+	def post_getSize(self, path, result):
+		return result
+	
+	def error_getSize(self, path, result, exception):
+		raise exception
+	
+	
+	def pre_countFiles(self, path):
+		return path
+	
+	def post_countFiles(self, path, result):
+		return result
+	
+	def error_countFiles(self, path, result, exception):
+		raise exception
+	
+	
+	def pre_getCountAndSize(self, path):
+		return path
+	
+	def post_getCountAndSize(self, path, result):
+		return result
+	
+	def error_getCountAndSize(self, path, result, exception):
+		raise exception
+	
+	
+	def pre_copy(self, src, dst, progressSubject):
+		return (src, dst, progressSubject)
+	
+	def post_copy(self, src, dst, progressSubject):
+		return None
+	
+	def error_copy(self, src, dst, progressSubject, exception):
+		raise exception
+	
+	
+hooks = []
+def addHook(hook):
+	global hooks
+	if not hook in hooks:
+		hooks.append(hook)
+
+def removeHook(hook):
+	global hooks
+	if hook in hooks:
+		hooks.remove(hook)
+
+
 def getDirectorySize(path):
-	size = 0
 	path = os.path.abspath(forceFilename(path))
-	for r in os.listdir(path):
-		a = os.path.join(path, r)
-		if os.path.islink(a):
-			continue
-		if os.path.isfile(a):
-			size += os.path.getsize(a)
-		if os.path.isdir(a):
-			size += getDirectorySize(a)
+	for hook in hooks:
+		path = hook.pre_getDirectorySize(path)
+	
+	size = 0
+	try:
+		for r in os.listdir(path):
+			a = os.path.join(path, r)
+			if os.path.islink(a):
+				continue
+			if os.path.isfile(a):
+				size += os.path.getsize(a)
+			if os.path.isdir(a):
+				size += getDirectorySize(a)
+	except Exception, e:
+		for hook in hooks:
+			hook.error_getDirectorySize(path, size, e)
+		
+	for hook in hooks:
+		size = hook.post_getDirectorySize(path, size)
+	
 	return size
 
 def getSize(path):
 	path = os.path.abspath(forceFilename(path))
-	if os.path.islink(path):
-		return 0
-	if os.path.isfile(path):
-		return os.path.getsize(path)
+	for hook in hooks:
+		path = hook.pre_getSize(path)
+	
 	size = 0
-	if os.path.isdir(path):
-		logger.debug(u"Getting size of files in dir '%s'" % path)
-		for r in os.listdir(path):
-			size += getSize(os.path.join(path, r))
+	try:
+		if os.path.islink(path):
+			pass
+		elif os.path.isfile(path):
+			size = os.path.getsize(path)
+		elif os.path.isdir(path):
+			logger.debug(u"Getting size of files in dir '%s'" % path)
+			for r in os.listdir(path):
+				size += getSize(os.path.join(path, r))
+	except Exception, e:
+		for hook in hooks:
+			hook.error_getSize(path, size, e)
+	
+	for hook in hooks:
+		size = hook.post_getSize(path, size)
+	
 	return size
 
 def countFiles(path):
 	path = os.path.abspath(forceFilename(path))
-	if os.path.islink(path):
-		return 0
-	if os.path.isfile(path):
-		return 1
+	for hook in hooks:
+		path = hook.pre_countFiles(path)
+	
 	count = 0
-	if os.path.isdir(path):
-		logger.debug(u"Counting files in dir '%s'" % path)
-		for r in os.listdir(path):
-			count += countFiles(os.path.join(path, r))
+	try:
+		if os.path.islink(path):
+			pass
+		elif os.path.isfile(path):
+			count = 1
+		elif os.path.isdir(path):
+			logger.debug(u"Counting files in dir '%s'" % path)
+			for r in os.listdir(path):
+				count += countFiles(os.path.join(path, r))
+	except Exception, e:
+		for hook in hooks:
+			hook.error_countFiles(path, count, e)
+	
+	for hook in hooks:
+		count = hook.post_countFiles(path, count)
+	
 	return count
 
 def getCountAndSize(path):
 	path = os.path.abspath(forceFilename(path))
-	if os.path.islink(path):
-		return (0, 0)
-	if os.path.isfile(path):
-		return (1, os.path.getsize(path))
+	for hook in hooks:
+		path = hook.pre_getCountAndSize(path)
+	
 	(count, size) = (0, 0)
-	if os.path.isdir(path):
-		logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
-		for r in os.listdir(path):
-			(c, s) = getCountAndSize(os.path.join(path, r))
-			count += c
-			size += s
+	try:
+		if os.path.islink(path):
+			pass
+		elif os.path.isfile(path):
+			(count, size) = (1, os.path.getsize(path))
+		elif os.path.isdir(path):
+			logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
+			for r in os.listdir(path):
+				(c, s) = getCountAndSize(os.path.join(path, r))
+				count += c
+				size += s
+	except Exception, e:
+		for hook in hooks:
+			hook.error_getCountAndSize(path, (count, size), e)
+	
+	for hook in hooks:
+		(count, size) = hook.post_getCountAndSize(path, (count, size))
+	
 	return (count, size)
 
 def mkdir(newDir):
@@ -102,6 +213,7 @@ def mkdir(newDir):
 	- parent directory(ies) does not exist, make them as well
 	"""
 	newDir = os.path.abspath(forceFilename(newDir))
+	
 	if os.path.isdir(newDir):
 		pass
 	elif os.path.isfile(newDir):
@@ -112,8 +224,11 @@ def mkdir(newDir):
 			mkdir(head)
 		if tail:
 			os.mkdir(newDir)
-
+	
 def copy(src, dst, progressSubject=None):
+	for hook in hooks:
+		(src, dst, progressSubject) = hook.pre_copy(src, dst, progressSubject)
+	
 	'''
 	src = file,  dst = file              => overwrite dst
 	src = file,  dst = dir               => copy into dst
@@ -148,11 +263,17 @@ def copy(src, dst, progressSubject=None):
 		(count, size) = getCountAndSize(src)
 		progressSubject.setEnd(size)
 	
-	_copy(src, dst, copySrcContent, 0, count, size, progressSubject)
+	try:
+		_copy(src, dst, copySrcContent, 0, count, size, progressSubject)
+		logger.info(u'Copy done')
+		if progressSubject:
+			progressSubject.setState(size)
+	except Exception, e:
+		for hook in hooks:
+			hook.error_copy(src, dst, progressSubject, e)
 	
-	logger.info(u'Copy done')
-	if progressSubject:
-		progressSubject.setState(size)
+	for hook in hooks:
+		hook.post_copy(src, dst, progressSubject)
 	
 	
 def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):
@@ -168,13 +289,16 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 				os.makedirs(parent)
 		
 		if progressSubject:
+			countLen = len(str(totalFiles))
+			countLenFormat = '%' + str(countLen) + 's'
 			size = os.path.getsize(src)
 			sizeString = "%d Byte" % size
 			if (size > 1024*1024):
 				sizeString = "%0.2f MByte" % ( float(size)/(1024*1024) )
 			elif (size > 1024):
 				sizeString = "%0.2f kByte" % ( float(size)/(1024) )
-			progressSubject.setMessage(u"[%d] %s (%s)" % (fileCount, os.path.basename(src), sizeString ) )
+			progressSubject.setMessage(u"[%s/%s] %s (%s)" \
+					% (countLenFormat % fileCount, totalFiles, os.path.basename(src), sizeString ) )
 		
 		try:
 			shutil.copy2(src, dst)
@@ -214,10 +338,28 @@ if (__name__ == "__main__"):
 		def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
 			print u"state: %s, percent: %0.2f%%, timeSpend: %0.2fs, timeLeft: %0.2fs, speed: %0.2f" \
 				% (state, percent, timeSpend, timeLeft, speed)
-			
+	
+	class TestHook(SystemHook):
+		def __init__(self):
+			self._copyBox = None
+		
+		def pre_copy(self, src, dst, progressSubject):
+			#progressSubject.attachObserver(SimpleProgressObserver())
+			self._copyBox = ui.createCopyProgressBox(width = 120, height = 20, title = u'Copy from %s to %s' % (src, dst), text = u'')
+			self._copyBox.show()
+			progressSubject.attachObserver(self._copyBox)
+			return (src, dst, progressSubject)
+		
+		def post_copy(self, src, dst, progressSubject):
+			time.sleep(1)
+			self._copyBox.hide()
+			return None
+		
+	hook = TestHook()
+	addHook(hook)
 	#progressSubject.attachObserver(SimpleProgressObserver())
-	progressBox = ui.createProgressBox(width = 120, height = 20, title = u'Progress', text = u'')
-	progressSubject.attachObserver(progressBox)
+	#progressBox = ui.createProgressBox(width = 120, height = 20, title = u'Progress', text = u'')
+	#progressSubject.attachObserver(progressBox)
 	
 	testDir = '/tmp/opsi_system_copy_test'
 	if os.path.exists(testDir):
@@ -296,7 +438,7 @@ if (__name__ == "__main__"):
 		for filename in ('file1', 'file2', 'file3'):
 			a2 = os.path.join(a, filename)
 			f = open(a2, 'w')
-			f.write('x'*15*1024*1024)
+			f.write('x'*20*1024*1024)
 			f.close()
 	
 	os.remove(testDstDir)

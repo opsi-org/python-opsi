@@ -32,13 +32,14 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import MySQLdb, warnings, time
 from _mysql_exceptions import *
 from sqlalchemy import pool
 import threading
+from twisted.conch.ssh import keys
 
 from sys import version_info
 if (version_info >= (2,6)):
@@ -50,6 +51,7 @@ else:
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
+from OPSI.Util import md5
 from OPSI.Backend.Backend import *
 
 # Get logger instance
@@ -85,7 +87,7 @@ class ConnectionPool(object):
 
 	def __setattr__(self, attr, value):
 		""" Delegate access to implementation """
-	 	return setattr(self.__instance, attr, value)
+		return setattr(self.__instance, attr, value)
 	
 # ======================================================================================================
 # =                                       CLASS MYSQL                                                  =
@@ -141,17 +143,68 @@ class MySQL:
 			raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
 		logger.debug(u'MySQL created: %s' % self)
 		
+		self._licenseManagementModule = False
+		self._mysqlBackendModule = False
+		
+		modules = self._context.backend_info()['modules']
+		
+		if not modules.get('customer'):
+			logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
+			
+		elif not modules.get('valid'):
+			logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
+		
+		elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
+			logger.notice(u"Disabling mysql backend and license management module: modules file expired")
+		
+		else:
+			logger.info(u"Verifying modules file signature")
+			publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			data = u''
+			mks = modules.keys()
+			mks.sort()
+			for module in mks:
+				if module in ('valid', 'signature'):
+					continue
+				val = modules[module]
+				if (val == False): val = 'no'
+				if (val == True):  val = 'yes'
+				data += u'%s = %s\r\n' % (module.lower().strip(), val)
+			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
+			else:
+				logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+				
+				if modules.get('license_management'):
+					self._licenseManagementModule = True
+				
+				if modules.get('mysql_backend'):
+					self._mysqlBackendModule = True
+			
 	def connect(self):
 		self._transactionLock.acquire()
 		logger.debug2(u"Connection pool status: %s" % self._pool.status())
-		conn = self._pool.connect()
+		try:
+			conn = self._pool.connect()
+		except Exception, e:
+			# 2006: MySQL server has gone away
+			if (e[0] != 2006):
+				raise
+			conn = self._pool.connect()
 		cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 		return (conn, cursor)
 		
 	def close(self, conn, cursor):
-		cursor.close()
-		conn.close()
-		self._transactionLock.release()
+		try:
+			try:
+				cursor.close()
+				conn.close()
+			except Exception, e:
+				# 2006: MySQL server has gone away
+				if (e[0] != 2006):
+					raise
+		finally:
+			self._transactionLock.release()
 	
 	def query(self, query):
 		(conn, cursor) = self.connect()
@@ -254,9 +307,16 @@ class MySQL:
 			(conn, cursor) = self.connect()
 			needClose = True
 		try:
-			if not type(query) is unicode:
-				query = unicode(query, 'utf-8', 'replace')
-			res = cursor.execute(query)
+			query = forceUnicode(query)
+			try:
+				res = cursor.execute(query)
+			except Exception, e:
+				# 2006: MySQL server has gone away
+				if (e[0] != 2006):
+					raise
+				(conn, cursor) = self.connect()
+				needClose = True
+				res = cursor.execute(query)
 			conn.commit()
 		finally:
 			if needClose:
@@ -990,6 +1050,10 @@ class MySQLBackend(ConfigDataBackend):
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.config_insertObject(self, config)
 		config = self._objectToDatabaseHash(config)
 		possibleValues = config['possibleValues']
@@ -1006,6 +1070,10 @@ class MySQLBackend(ConfigDataBackend):
 				})
 	
 	def config_updateObject(self, config):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
@@ -1024,6 +1092,10 @@ class MySQLBackend(ConfigDataBackend):
 				})
 	
 	def config_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configs, filter: %s" % filter)
 		configs = []
@@ -1064,6 +1136,10 @@ class MySQLBackend(ConfigDataBackend):
 		return configs
 	
 	def config_deleteObjects(self, configs):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Deleting config %s" % config)
@@ -1075,12 +1151,20 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		data['values'] = json.dumps(data['values'])
 		self._mysql.insert('CONFIG_STATE', data)
 	
 	def configState_updateObject(self, configState):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.configState_updateObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		where = self._uniqueCondition(configState)
@@ -1088,6 +1172,10 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql.update('CONFIG_STATE', where, data)
 	
 	def configState_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configStates, filter: %s" % filter)
 		configStates = []
@@ -1099,6 +1187,10 @@ class MySQLBackend(ConfigDataBackend):
 		return configStates
 	
 	def configState_deleteObjects(self, configStates):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info("Deleting configState %s" % configState)
@@ -1110,6 +1202,23 @@ class MySQLBackend(ConfigDataBackend):
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
+		modules = self._context.backend_info()['modules']
+		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''; mks = modules.keys(); mks.sort()
+		for module in mks:
+			if module in ('valid', 'signature'):
+				continue
+			val = modules[module]
+			if (val == False): val = 'no'
+			if (val == True):  val = 'yes'
+			data += u'%s = %s\r\n' % (module.lower().strip(), val)
+			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+				return
+		
 		ConfigDataBackend.product_insertObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		windowsSoftwareIds = data['windowsSoftwareIds']
@@ -1120,6 +1229,10 @@ class MySQLBackend(ConfigDataBackend):
 			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_updateObject(self, product):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.product_updateObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		where = self._uniqueCondition(product)
@@ -1133,6 +1246,10 @@ class MySQLBackend(ConfigDataBackend):
 				self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
 	
 	def product_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting products, filter: %s" % filter)
 		products = []
@@ -1150,6 +1267,10 @@ class MySQLBackend(ConfigDataBackend):
 		return products
 	
 	def product_deleteObjects(self, products):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.product_deleteObjects(self, products)
 		for product in forceObjectClassList(products, Product):
 			logger.info("Deleting product %s" % product)
@@ -1162,6 +1283,10 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		possibleValues = data['possibleValues']
@@ -1181,6 +1306,10 @@ class MySQLBackend(ConfigDataBackend):
 					})
 	
 	def productProperty_updateObject(self, productProperty):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		where = self._uniqueCondition(productProperty)
@@ -1204,6 +1333,10 @@ class MySQLBackend(ConfigDataBackend):
 					})
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product properties, filter: %s" % filter)
 		productProperties = []
@@ -1222,6 +1355,10 @@ class MySQLBackend(ConfigDataBackend):
 		return productProperties
 	
 	def productProperty_deleteObjects(self, productProperties):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info("Deleting product property %s" % productProperty)
@@ -1233,12 +1370,20 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ProductDependencies                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_insertObject(self, productDependency):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
 		
 		self._mysql.insert('PRODUCT_DEPENDENCY', data)
 	
 	def productDependency_updateObject(self, productDependency):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
 		where = self._uniqueCondition(productDependency)
@@ -1246,6 +1391,10 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql.update('PRODUCT_DEPENDENCY', where, data)
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product dependencies, filter: %s" % filter)
 		productDependencies = []
@@ -1255,6 +1404,10 @@ class MySQLBackend(ConfigDataBackend):
 		return productDependencies
 	
 	def productDependency_deleteObjects(self, productDependencies):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info("Deleting product dependency %s" % productDependency)
@@ -1265,17 +1418,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		self._mysql.insert('PRODUCT_ON_DEPOT', data)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		where = self._uniqueCondition(productOnDepot)
 		self._mysql.update('PRODUCT_ON_DEPOT', where, data)
 	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		productOnDepots = []
 		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
@@ -1284,6 +1449,10 @@ class MySQLBackend(ConfigDataBackend):
 		return productOnDepots
 	
 	def productOnDepot_deleteObjects(self, productOnDepots):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			logger.info(u"Deleting productOnDepot %s" % productOnDepot)
@@ -1294,17 +1463,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		self._mysql.insert('PRODUCT_ON_CLIENT', data)
 		
 	def productOnClient_updateObject(self, productOnClient):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		where = self._uniqueCondition(productOnClient)
 		self._mysql.update('PRODUCT_ON_CLIENT', where, data)
 	
 	def productOnClient_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productOnClients, filter: %s" % filter)
 		productOnClients = []
@@ -1314,6 +1495,10 @@ class MySQLBackend(ConfigDataBackend):
 		return productOnClients
 	
 	def productOnClient_deleteObjects(self, productOnClients):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
 			logger.info(u"Deleting productOnClient %s" % productOnClient)
@@ -1324,6 +1509,10 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		if not self._mysql.getSet(self._createQuery('HOST', ['hostId'], {"hostId": productPropertyState.objectId})):
 			raise BackendReferentialItegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
@@ -1332,6 +1521,10 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql.insert('PRODUCT_PROPERTY_STATE', data)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		where = self._uniqueCondition(productPropertyState)
@@ -1339,6 +1532,10 @@ class MySQLBackend(ConfigDataBackend):
 		self._mysql.update('PRODUCT_PROPERTY_STATE', where, data)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
 		productPropertyStates = []
@@ -1350,6 +1547,10 @@ class MySQLBackend(ConfigDataBackend):
 		return productPropertyStates
 	
 	def productPropertyState_deleteObjects(self, productPropertyStates):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			logger.info(u"Deleting productPropertyState %s" % productPropertyState)
@@ -1360,17 +1561,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		self._mysql.insert('GROUP', data)
 	
 	def group_updateObject(self, group):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.group_updateObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		where = self._uniqueCondition(group)
 		self._mysql.update('GROUP', where, data)
 	
 	def group_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting groups, filter: %s" % filter)
 		groups = []
@@ -1381,6 +1594,10 @@ class MySQLBackend(ConfigDataBackend):
 		return groups
 	
 	def group_deleteObjects(self, groups):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		for group in forceObjectClassList(groups, Group):
 			logger.info(u"Deleting group %s" % group)
@@ -1391,17 +1608,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 		self._mysql.insert('OBJECT_TO_GROUP', data)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 		where = self._uniqueCondition(objectToGroup)
 		self._mysql.update('OBJECT_TO_GROUP', where, data)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return []
+		
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting objectToGroups, filter: %s" % filter)
 		objectToGroups = []
@@ -1411,6 +1640,10 @@ class MySQLBackend(ConfigDataBackend):
 		return objectToGroups
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
+		if not self._mysqlBackendModule:
+			logger.warning(u"MySQL backend module disabled")
+			return
+		
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 			logger.info(u"Deleting objectToGroup %s" % objectToGroup)
@@ -1421,17 +1654,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   LicenseContracts                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseContract_insertObject(self, licenseContract):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 		self._mysql.insert('LICENSE_CONTRACT', data)
 		
 	def licenseContract_updateObject(self, licenseContract):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 		where = self._uniqueCondition(licenseContract)
 		self._mysql.update('LICENSE_CONTRACT', where, data)
 	
 	def licenseContract_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseContracts, filter: %s" % filter)
 		licenseContracts = []
@@ -1442,6 +1687,14 @@ class MySQLBackend(ConfigDataBackend):
 		return licenseContracts
 	
 	def licenseContract_deleteObjects(self, licenseContracts):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 			logger.info(u"Deleting licenseContract %s" % licenseContract)
@@ -1452,17 +1705,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   SoftwareLicenses                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicense_insertObject(self, softwareLicense):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 		self._mysql.insert('SOFTWARE_LICENSE', data)
 		
 	def softwareLicense_updateObject(self, softwareLicense):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 		where = self._uniqueCondition(softwareLicense)
 		self._mysql.update('SOFTWARE_LICENSE', where, data)
 	
 	def softwareLicense_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
 		softwareLicenses = []
@@ -1473,6 +1738,10 @@ class MySQLBackend(ConfigDataBackend):
 		return softwareLicenses
 	
 	def softwareLicense_deleteObjects(self, softwareLicenses):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 			logger.info(u"Deleting softwareLicense %s" % softwareLicense)
@@ -1483,6 +1752,23 @@ class MySQLBackend(ConfigDataBackend):
 	# -   LicensePools                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licensePool_insertObject(self, licensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		modules = self._context.backend_info()['modules']
+		data = u''; mks = modules.keys(); mks.sort()
+		for module in mks:
+			if module in ('valid', 'signature'):
+				continue
+			val = modules[module]
+			if (val == False): val = 'no'
+			if (val == True):  val = 'yes'
+			data += u'%s = %s\r\n' % (module.lower().strip(), val)
+			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+				return
+		
 		ConfigDataBackend.licensePool_insertObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		productIds = data['productIds']
@@ -1492,6 +1778,10 @@ class MySQLBackend(ConfigDataBackend):
 			self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
 		
 	def licensePool_updateObject(self, licensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		where = self._uniqueCondition(licensePool)
@@ -1504,6 +1794,10 @@ class MySQLBackend(ConfigDataBackend):
 				self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
 		
 	def licensePool_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licensePools, filter: %s" % filter)
 		licensePools = []
@@ -1532,6 +1826,10 @@ class MySQLBackend(ConfigDataBackend):
 		return licensePools
 	
 	def licensePool_deleteObjects(self, licensePools):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			logger.info(u"Deleting licensePool %s" % licensePool)
@@ -1543,17 +1841,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   SoftwareLicenseToLicensePools                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 		self._mysql.insert('SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
 	
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
 		self._mysql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data)
 	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
 		softwareLicenseToLicensePools = []
@@ -1563,6 +1873,10 @@ class MySQLBackend(ConfigDataBackend):
 		return softwareLicenseToLicensePools
 	
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			logger.info(u"Deleting softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
@@ -1573,17 +1887,29 @@ class MySQLBackend(ConfigDataBackend):
 	# -   LicenseOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseOnClient_insertObject(self, licenseOnClient):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 		self._mysql.insert('LICENSE_ON_CLIENT', data)
 	
 	def licenseOnClient_updateObject(self, licenseOnClient):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 		where = self._uniqueCondition(licenseOnClient)
 		self._mysql.update('LICENSE_ON_CLIENT', where, data)
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
 		licenseOnClients = []
@@ -1593,6 +1919,10 @@ class MySQLBackend(ConfigDataBackend):
 		return licenseOnClients
 	
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)

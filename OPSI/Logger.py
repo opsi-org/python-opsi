@@ -48,7 +48,7 @@ LOG_COMMENT      = LOG_ESSENTIAL
 LOG_NONE         = 0
 
 # Imports
-import sys, locale, time, os, thread, threading, codecs
+import sys, locale, time, os, thread, threading, codecs, types
 
 if (os.name == 'nt'):
 	# Windows imports for file locking
@@ -111,10 +111,19 @@ CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
 ESSENTIAL_COLOR    = COLOR_LIGHT_CYAN
 COMMENT_COLOR      = ESSENTIAL_COLOR
 
+def forceUnicode(var):
+	if type(var) is types.UnicodeType:
+		return var
+	if type(var) is types.StringType:
+		return unicode(var, 'utf-8', 'replace')
+	if (os.name == 'nt') and type(var) is WindowsError:
+		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
+	return unicode(var)
+
 class LoggerSubject:
 	def __init__(self):
 		self._observers = []
-		self._message = ""
+		self._message = u""
 		self._severity = 0
 	
 	def getId(self):
@@ -127,12 +136,7 @@ class LoggerSubject:
 		return u'MessageSubject'
 	
 	def setMessage(self, message, severity = 0):
-		if not type(message) is unicode:
-			if not type(message) is str:
-				message = unicode(message)
-			else:
-				message = unicode(message, 'utf-8', 'replace')
-		self._message = message
+		self._message = forceUnicode(message)
 		self._severity = severity
 		for o in self._observers:
 			o.messageChanged(self, message)

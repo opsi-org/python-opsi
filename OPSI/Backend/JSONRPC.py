@@ -36,6 +36,7 @@ __version__ = '3.5'
 
 # Imports
 import base64, urllib, httplib, new, stat, socket, time, threading
+from twisted.conch.ssh import keys
 
 from sys import version_info
 if (version_info >= (2,6)):
@@ -156,7 +157,43 @@ class JSONRPCBackend(Backend):
 			
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 		
-	def _createInstanceMethods(self):
+	def _createInstanceMethods(self, modules=None):
+		licenseManagementModule = True
+		if modules:
+			licenseManagementModule = False
+			if not modules.get('customer'):
+				logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
+				
+			elif not modules.get('valid'):
+				logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
+			
+			elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
+				logger.notice(u"Disabling mysql backend and license management module: modules file expired")
+			
+			else:
+				logger.info(u"Verifying modules file signature")
+				publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+				data = u''
+				mks = modules.keys()
+				mks.sort()
+				for module in mks:
+					if module in ('valid', 'signature'):
+						continue
+					val = modules[module]
+					if (val == False): val = 'no'
+					if (val == True):  val = 'yes'
+					data += u'%s = %s\r\n' % (module.lower().strip(), val)
+				if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
+				else:
+					logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+					
+					if modules.get('license_management'):
+						licenseManagementModule = True
+					
+					#if modules.get('mysql_backend'):
+					
+		
 		for method in self._interface:
 			try:
 				methodName = method['name']
@@ -199,7 +236,10 @@ class JSONRPCBackend(Backend):
 				logger.debug2(u"Arg string is: %s" % argString)
 				logger.debug2(u"Call string is: %s" % callString)
 				
-				exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
+				if not licenseManagementModule and methodName.find("license" != -1):
+					exec(u'def %s(self, %s): return' % (methodName, argString))
+				else:
+					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 			except Exception, e:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
@@ -239,13 +279,23 @@ class JSONRPCBackend(Backend):
 				
 			self._connection.connect()
 			
+			modules = None
+			mysqlBackend = False
 			if not self._interface:
 				self._retry = False
 				try:
 					try:
 						self._interface = self._jsonRPC(u'backend_getInterface')
+						try:
+							modules = self._jsonRPC(u'getOpsiInformation_hash()')['modules']
+							for entry in self._jsonRPC(u'dispatcher_getConfig()'):
+								for bn in entry(1):
+									if (bn.lower().find("sql") != -1) and (len(entry(0)) <= 4) and (entry(0).find['*'] != -1):
+										mysqlBackend = True
+						except Exception, e:
+							logger.info(e)
 					except Exception, e:
-						logger.debug("backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
+						logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
 						self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 						logger.info(u"Legacy opsi")
 						self._legacyOpsi = True
@@ -255,7 +305,7 @@ class JSONRPCBackend(Backend):
 			if self._legacyOpsi:
 				self._createInstanceMethods34()
 			else:
-				self._createInstanceMethods()
+				self._createInstanceMethods(modules, mysqlBackend)
 			
 			logger.info(u"Successfully connected to '%s:%s'" % (host, port))
 			self._connected = True
