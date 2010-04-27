@@ -42,11 +42,15 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI import System
 from OPSI.Util import findFiles
+from OPSI.Util.File import *
 
 # Get logger instance
 logger = Logger()
 
 def integrateDrivers(driverSourceDirectories, driverDestinationDirectory, messageSubject=None):
+	driverSourceDirectories = forceUnicodeList(driverSourceDirectories)
+	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
+	
 	logger.info(u"Integrating drivers")
 	
 	if messageSubject:
@@ -54,8 +58,7 @@ def integrateDrivers(driverSourceDirectories, driverDestinationDirectory, messag
 	
 	driverDestinationDirectories = []
 	driverNumber = 0
-	if not os.path.exists(driverDestinationDirectory):
-		os.mkdir(driverDestinationDirectory)
+	System.mkdir(driverDestinationDirectory)
 	
 	integratedFiles = []
 	for filename in os.listdir(driverDestinationDirectory):
@@ -101,7 +104,89 @@ def integrateDrivers(driverSourceDirectories, driverDestinationDirectory, messag
 		integratedFiles.append(files)
 	return driverDestinationDirectories
 
+def integrateTextmodeDriver(driverDirectory, destination, vendorId, deviceId, sifFile=None, messageSubject=None):
+	driverDirectory = forceFilename(driverDirectory)
+	destination = forceFilename(destination)
+	vendorId = forceHardwareVendorId(vendorId)
+	deviceId = forceHardwareDeviceId(deviceId)
+	if sifFile:
+		sifFile = forceFilename(sifFile)
+	
+	logger.info(u"Integrating textmode driver for device '%s:%s'" % (vendorId, deviceId))
+	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
+	txtSetupOems = findFiles(directory = driverDirectory, prefix = driverDirectory, includeFile = re.compile('^txtsetup\.oem$', re.IGNORECASE), returnDirs = False)
+	for txtSetupOem in txtSetupOems:
+		txtSetupOemFile = TxtSetupOemFile(txtSetupOem)
+		if not txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId):
+			continue
+		
+		logger.info(u"Found txtsetup.oem file '%s' for device '%s:%s'" % (txtSetupOem, vendorId, deviceId))
+		driverPath = os.path.dirname(txtSetupOem)
+		
+		oemBootFiles = []
+		oemBootFiles.append( os.path.basename(txtSetupOem) )
+		for textmodePath in ( 	os.path.join(destination, u'$', u'textmode'), \
+					os.path.join(destination, u'$win_nt$.~bt', u'$oem$') ):
+			System.mkdir(textmodePath)
+			System.copy(txtSetupOem, textmodePath)
+		
+		for fn in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = ['inf', 'driver', 'catalog']):
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
+			oemBootFiles.append(fn)
+		
+		# Patch winnt.sif
+		if sifFile:
+			logger.notice(u"Registering textmode drivers in sif file '%s'" % sifFile)
+			lines = []
+			massStorageDriverLines = []
+			oemBootFileLines = []
+			section = u''
+			sif = codes.open(sifFile, 'r', 'mbcs')
+			for line in sif.readlines():
+				if line.strip():
+					logger.debug2(u"Current sif file content: %s" % line.rstrip())
+				if line.strip().startswith(u'['):
+					section = line.strip().lower()[1:-1]
+					if section in (u'massstoragedrivers', u'oembootfiles'):
+						continue
+				if (section == u'massstoragedrivers'):
+					massStorageDriverLines.append(line)
+					continue
+				if (section == u'oembootfiles'):
+					oemBootFileLines.append(line)
+					continue
+				lines.append(line)
+			sif.close()
+			
+			logger.info(u"Patching sections for driver '%s'" % description)
+			
+			if not massStorageDriverLines:
+				massStorageDriverLines = [u'\r\n', u'[MassStorageDrivers]\r\n']
+			massStorageDriverLines.append(u'"%s" = OEM\r\n' % description)
+			
+			if not oemBootFileLines:
+				oemBootFileLines = [u'\r\n', u'[OEMBootFiles]\r\n']
+			for obf in oemBootFiles:
+				oemBootFileLines.append(u'%s\r\n' % obf)
+			
+			logger.debug(u"Patching [MassStorageDrivers] in file '%s':" % sifFile)
+			logger.debug(massStorageDriverLines)
+			lines.extend(massStorageDriverLines)
+			logger.debug(u"Patching [OEMBootFiles] in file '%s':" % sifFile)
+			logger.debug(oemBootFileLines)
+			lines.extend(oemBootFileLines)
+			
+			sif = open(sifFile, 'w')
+			sif.writelines(lines)
+			sif.close()
+		return
+	raise Exception(u"No txtsetup.oem file for device '%s:%s' found" % (vendorId, deviceId))
+	
 def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=None, messageSubject=None):
+	driverDirectory = forceFilename(driverDirectory)
+	destination = forceFilename(destination)
+	
 	logger.info(u"Integrating textmode drivers")
 	
 	if messageSubject:
@@ -123,61 +208,57 @@ def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=Non
 			messageSubject.setMessage(u"'%s' found, integrating textmode driver" % txtSetupOem)
 		driverPath = os.path.dirname(txtSetupOem)
 		
-		
-		# Copy files
 		oemBootFiles = []
 		oemBootFiles.append( os.path.basename(txtSetupOem) )
-		for textmodePath in ( 	os.path.join(destination, '$', 'textmode'), \
-					os.path.join(destination, '$win_nt$.~bt', '$oem$') ):
-			if not os.path.exists(textmodePath):
-				os.mkdir(textmodePath)
-			System.System.copy(txtSetupOem, textmodePath)
+		for textmodePath in ( 	os.path.join(destination, u'$', u'textmode'), \
+					os.path.join(destination, u'$win_nt$.~bt', u'$oem$') ):
+			System.mkdir(textmodePath)
+			System.copy(txtSetupOem, textmodePath)
 		
-		for one in inf, driver, catalog:
-			for fn in one:
-				System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
-				System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
-				oemBootFiles.append(fn)
+		for fn in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = ['inf', 'driver', 'catalog']):
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
+			oemBootFiles.append(fn)
 		
 		# Patch winnt.sif
 		if sifFile:
-			logger.notice("Registering textmode drivers in sif file '%s'" % sifFile)
+			logger.notice(u"Registering textmode drivers in sif file '%s'" % sifFile)
 			lines = []
 			massStorageDriverLines = []
 			oemBootFileLines = []
-			section = ''
-			sif = open(sifFile, 'r')
+			section = u''
+			sif = codes.open(sifFile, 'r', 'mbcs')
 			for line in sif.readlines():
 				if line.strip():
-					logger.debug2("Current sif file content: %s" % line.rstrip())
-				if line.strip().startswith('['):
+					logger.debug2(u"Current sif file content: %s" % line.rstrip())
+				if line.strip().startswith(u'['):
 					section = line.strip().lower()[1:-1]
-					if section in ('massstoragedrivers', 'oembootfiles'):
+					if section in (u'massstoragedrivers', u'oembootfiles'):
 						continue
-				if (section == 'massstoragedrivers'):
+				if (section == u'massstoragedrivers'):
 					massStorageDriverLines.append(line)
 					continue
-				if (section == 'oembootfiles'):
+				if (section == u'oembootfiles'):
 					oemBootFileLines.append(line)
 					continue
 				lines.append(line)
 			sif.close()
 			
-			logger.info("Patching sections for driver '%s'" % description)
+			logger.info(u"Patching sections for driver '%s'" % description)
 			
 			if not massStorageDriverLines:
-				massStorageDriverLines = ['\r\n', '[MassStorageDrivers]\r\n']
-			massStorageDriverLines.append('"%s" = OEM\r\n' % description)
+				massStorageDriverLines = [u'\r\n', u'[MassStorageDrivers]\r\n']
+			massStorageDriverLines.append(u'"%s" = OEM\r\n' % description)
 			
 			if not oemBootFileLines:
-				oemBootFileLines = ['\r\n', '[OEMBootFiles]\r\n']
+				oemBootFileLines = [u'\r\n', u'[OEMBootFiles]\r\n']
 			for obf in oemBootFiles:
-				oemBootFileLines.append('%s\r\n' % obf)
+				oemBootFileLines.append(u'%s\r\n' % obf)
 			
-			logger.debug("Patching [MassStorageDrivers] in file '%s':" % sifFile)
+			logger.debug(u"Patching [MassStorageDrivers] in file '%s':" % sifFile)
 			logger.debug(massStorageDriverLines)
 			lines.extend(massStorageDriverLines)
-			logger.debug("Patching [OEMBootFiles] in file '%s':" % sifFile)
+			logger.debug(u"Patching [OEMBootFiles] in file '%s':" % sifFile)
 			logger.debug(oemBootFileLines)
 			lines.extend(oemBootFileLines)
 			
@@ -185,42 +266,46 @@ def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=Non
 			sif.writelines(lines)
 			sif.close()
 		
-def integrateAdditionalDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageObserver=None, progressObserver=None):
-	logger.info("Adding additional drivers")
+def integrateAdditionalDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None):
+	driverSourceDirectory = forceFilename(driverSourceDirectory)
+	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
+	if not type(additionalDrivers) in (list, tuple):
+		additionalDrivers = [ additionalDriver.strip() for additionalDriver in forceUnicode(additionalDrivers.split(',')) ]
+	else:
+		additionalDrivers = forceUnicodeList(additionalDrivers)
 	
-	messageSubject = MessageSubject(id='integrateAdditionalDrivers')
-	if messageObserver:
-		messageSubject.attachObserver(messageObserver)
-	messageSubject.setMessage("Adding additional drivers")
+	logger.info(u"Adding additional drivers")
+	
+	if messageSubject:
+		messageSubject.setMessage("Adding additional drivers")
 	
 	driverDirectories = []
-	for additionalDriver in additionalDrivers.split(','):
-		additionalDriver = additionalDriver.strip()
+	for additionalDriver in additionalDrivers:
 		if not additionalDriver:
 			continue
 		additionalDriverDir = os.path.join(driverSourceDirectory, additionalDriver)
 		if not os.path.exists(additionalDriverDir):
-			logger.error("Additional drivers dir '%s' not found" % additionalDriverDir)
-			messageSubject.setMessage("Additional drivers dir '%s' not found" % additionalDriverDir, severity='ERROR')
+			logger.error(u"Additional drivers dir '%s' not found" % additionalDriverDir)
+			if messageSubject:
+				messageSubject.setMessage("Additional drivers dir '%s' not found" % additionalDriverDir)
 			continue
-		infFiles = findFiles(directory = additionalDriverDir, prefix = additionalDriverDir, includeFile = re.compile('\.inf$', re.IGNORECASE), returnDirs=False)
-		logger.info("Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
+		infFiles = findFiles(directory = additionalDriverDir, prefix = additionalDriverDir, includeFile = re.compile('\.inf$', re.IGNORECASE), returnDirs = False)
+		logger.info(u"Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
 		if not infFiles:
-			logger.error("No drivers found in dir '%s'" % additionalDriverDir)
-			messageSubject.setMessage("No drivers found in dir '%s'" % additionalDriverDir, severity='ERROR')
+			logger.error(u"No drivers found in dir '%s'" % additionalDriverDir)
+			if messageSubject:
+				messageSubject.setMessage("No drivers found in dir '%s'" % additionalDriverDir)
 			continue
 		for infFile in infFiles:
 			additionalDriverDir = os.path.dirname(infFile)
 			if additionalDriverDir in driverDirectories:
 				continue
-			logger.info("Adding additional driver dir '%s'" % additionalDriverDir)
-			messageSubject.setMessage("Adding additional driver dir '%s'" % additionalDriverDir, severity='INFO')
+			logger.info(u"Adding additional driver dir '%s'" % additionalDriverDir)
+			if messageSubject:
+				messageSubject.setMessage("Adding additional driver dir '%s'" % additionalDriverDir)
 			driverDirectories.append(additionalDriverDir)
 	
-	if messageObserver:
-		messageSubject.detachObserver(messageObserver)
-	
-	return integrateDrivers(driverDirectories, driverDestinationDirectory, messageObserver, progressObserver)
+	return integrateDrivers(driverDirectories, driverDestinationDirectory, messageSubject)
 
 def integrateHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, hardware, messageObserver=None, progressObserver=None):
 	logger.info("Adding drivers for detected hardware")

@@ -631,6 +631,15 @@ class TxtSetupOemFile(ConfigFile):
 			self.parse()
 		return self._devices
 	
+	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
+		vendorId = forceHardwareVendorId(vendorId)
+		deviceId = forceHardwareDeviceId(deviceId)
+		for d in self._devices:
+			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
+				continue
+			return True
+		return False
+	
 	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = []):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
@@ -814,7 +823,14 @@ class TxtSetupOemFile(ConfigFile):
 		logger.debug(u"Found files: %s" % self._files)
 		
 		self._parsed = True
-		
+
+
+
+
+
+
+
+
 
 
 class DHCPDConf_Component(object):

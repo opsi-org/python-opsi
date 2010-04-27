@@ -967,7 +967,14 @@ class Harddisk:
 		for hook in hooks:
 			hook.post_Harddisk_fill(partition, infile, progressSubject)
 		
-		
+	
+	def readMasterBootRecord(self):
+		self.device
+		f = open(self.device, 'rb')
+		mbr = f.read(512)
+		f.close()
+		return mbr
+	
 	def writeMasterBootRecord(self, system=u'auto'):
 		system = forceUnicodeLower(system)
 		mbrType = u'-w'
@@ -992,6 +999,12 @@ class Harddisk:
 		except Exception, e:
 			logger.error(u"Failed to write mbr: %s" % e)
 			raise Exception(u"Failed to write mbr: %s" % e)
+	
+	def readPartitionBootRecord(self, partition=1):
+		f = open(self.getPartition(partition)['device'], 'rb')
+		pbr = f.read(512)
+		f.close()
+		return pbr
 		
 	def writePartitionBootRecord(self, partition=1, fsType=u'auto'):
 		partition = forceInt(partition)
