@@ -802,8 +802,8 @@ class ConfigDataBackend(Backend):
 			if not productOnClient.actionProgress:
 				productOnClient.setActionProgress('')
 			if (productOnClient.installationStatus != 'installed'):
-				productOnClient.productVersion = None
-				productOnClient.packageVersion = None
+				productOnClient.productVersion = u''
+				productOnClient.packageVersion = u''
 			
 		if productOnClient.actionRequest:
 			if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
