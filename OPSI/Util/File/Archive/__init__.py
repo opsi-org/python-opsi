@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = "3.4.99"
+__version__ = "4.0"
 
 # Imports
 import os, subprocess, locale

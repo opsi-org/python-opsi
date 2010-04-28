@@ -787,6 +787,9 @@ if (__name__ == "__main__"):
 	uiTest.drawRootText(x = 1, y = 2, text = u'Test root text 2')
 	uiTest.drawRootText(x = 5, y = 5, text = u'Test root text 3')
 	time.sleep(1)
+	uiTest.createMessageBox(title = "TEST").show()
+	time.sleep(1)
+	
 	uiTest.showError(text = u'Test error', title = u'An error occured', okLabel = u'Read', width = -1, height = -1, seconds = 2)
 	uiTest.showError(text = u'Test error äöü', title = u'An €rror occured', okLabel = u'ÖK', width = 30, height = 10)
 	uiTest.showMessage(text = u'A message', title = u'Message', width = 5, height = 5, seconds = 2)

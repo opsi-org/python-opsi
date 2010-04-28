@@ -49,7 +49,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from Backend import *
 from OPSI import Object
-from OPSI.Util import non_blocking_connect_http, non_blocking_connect_https
+from OPSI.Util import non_blocking_connect_http, non_blocking_connect_https, serialize, deserialize
 
 # Get logger instance
 logger = Logger()
@@ -157,19 +157,24 @@ class JSONRPCBackend(Backend):
 			
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 		
-	def _createInstanceMethods(self, modules=None):
+	def _createInstanceMethods(self, modules=None, mysqlBackend=False):
 		licenseManagementModule = True
 		if modules:
 			licenseManagementModule = False
 			if not modules.get('customer'):
 				logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
+				if mysqlBackend:
+					raise Exception(u"MySQL backend in use but not licensed")
 				
 			elif not modules.get('valid'):
 				logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
-			
+				if mysqlBackend:
+					raise Exception(u"MySQL backend in use but not licensed")
+				
 			elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				logger.notice(u"Disabling mysql backend and license management module: modules file expired")
-			
+				if mysqlBackend:
+					raise Exception(u"MySQL backend in use but not licensed")
 			else:
 				logger.info(u"Verifying modules file signature")
 				publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
@@ -185,13 +190,16 @@ class JSONRPCBackend(Backend):
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
 				if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
+					if mysqlBackend:
+						raise Exception(u"MySQL backend in use but not licensed")
 				else:
 					logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 					
 					if modules.get('license_management'):
 						licenseManagementModule = True
 					
-					#if modules.get('mysql_backend'):
+					if mysqlBackend and not modules.get('mysql_backend'):
+						raise Exception(u"MySQL backend in use but not licensed")
 					
 		
 		for method in self._interface:
@@ -288,6 +296,9 @@ class JSONRPCBackend(Backend):
 						self._interface = self._jsonRPC(u'backend_getInterface')
 						try:
 							modules = self._jsonRPC(u'getOpsiInformation_hash()')['modules']
+							logger.confidential(u"Modules: %s" % modules)
+							if not modules:
+								modules = {'customer': None}
 							for entry in self._jsonRPC(u'dispatcher_getConfig()'):
 								for bn in entry(1):
 									if (bn.lower().find("sql") != -1) and (len(entry(0)) <= 4) and (entry(0).find['*'] != -1):
@@ -326,7 +337,7 @@ class JSONRPCBackend(Backend):
 		self._rpcLock.acquire()
 		try:
 			# Get params
-			params = Object.serialize(params)
+			params = serialize(params)
 			
 			# Create json-rpc object
 			jsonrpc = json.dumps( { "id": 1, "method": method, "params": params } )
@@ -342,8 +353,8 @@ class JSONRPCBackend(Backend):
 				# Error occurred
 				raise Exception(u'Error on server: %s' % response.get('error'))
 			
-			# Return result as json object
-			result = Object.deserialize(response.get('result'))
+			# Return result python object
+			result = deserialize(response.get('result'))
 			return result
 		finally:
 			self._rpcLock.release()

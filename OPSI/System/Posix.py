@@ -42,6 +42,7 @@ import copy as pycopy
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
 # Get Logger instance
@@ -1533,6 +1534,23 @@ class Harddisk:
 # -                                       HARDWARE INVENTORY                                          -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def auditHardware(config, hostId):
+	
+	AuditHardwareOnHost.setHardwareConfig(config)
+	auditHardwareOnHosts = []
+	
+	info = hardwareInventory(config)
+	for (hardwareClass, devices) in info.items():
+		if (hardwareClass == 'SCANPROPERTIES'):
+			continue
+		for device in devices:
+			data = { 'hardwareClass': hardwareClass }
+			for (attribute, value) in device.items():
+				data[str(attribute)] = value
+			data['hostId'] = hostId
+			auditHardwareOnHosts.append( AuditHardwareOnHost.fromHash(data) )
+	return auditHardwareOnHosts
+	
 def hardwareInventory(config):
 	if not config:
 		logger.error(u"hardwareInventory: no config given")

@@ -608,9 +608,9 @@ class PackageControlFile(TextFile):
 		# Create ProductProperty objects
 		for productProperty in self._sections.get('productproperty', []):
 			Class = UnicodeProductProperty
-			if   productProperty.get('type') in ('UnicodeProductProperty', '', None):
+			if   productProperty.get('type').lower() in ('unicodeproductproperty', 'unicode', '', None):
 				Class = UnicodeProductProperty
-			elif (productProperty.get('type') == 'BoolProductProperty'):
+			elif productProperty.get('type').lower() in ('boolproductproperty', 'bool'):
 				Class = BoolProductProperty
 			else:
 				raise Exception(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
@@ -766,7 +766,10 @@ class PackageControlFile(TextFile):
 		
 		for productProperty in self._productProperties:
 			self._lines.append( u'[ProductProperty]' )
-			self._lines.append( u'type: %s' % productProperty.getType() )
+			productPropertyType = 'unicode'
+			if isinstance(productProperty, BoolProductProperty):
+				productPropertyType = 'bool'
+			self._lines.append( u'type: %s' % productPropertyType )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
 			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 				self._lines.append( u'multivalue: %s' % productProperty.getMultiValue() )

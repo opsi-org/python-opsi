@@ -138,11 +138,27 @@ class BaseObject(object):
 	def setDefaults(self):
 		pass
 	
+	def emptyValues(self, keepAttributes = []):
+		keepAttributes = forceUnicodeList(keepAttributes)
+		for attribute in self.getIdentAttributes():
+			if not attribute in keepAttributes:
+				keepAttributes.append(attribute)
+		keepAttributes.append('type')
+		
+		for attribute in self.__dict__.keys():
+			if not attribute in keepAttributes:
+				self.__dict__[attribute] = None
+		
 	def getType(self):
 		return unicode(self.__class__.__name__)
 	
 	def __unicode__(self):
 		return u"<%s>" % self.getType()
+	
+	def toHash(self):
+		hash = copy.deepcopy(self.__dict__)
+		hash['type'] = self.getType()
+		return hash
 	
 	def toJson(self):
 		return toJson(self)
@@ -169,11 +185,6 @@ class Entity(BaseObject):
 			if hash.has_key(varname):
 				kwargs[varname] = hash[varname]
 		return Class(**kwargs)
-	
-	def toHash(self):
-		hash = copy.deepcopy(self.__dict__)
-		hash['type'] = self.getType()
-		return hash
 	
 	def serialize(self):
 		hash = self.toHash()
@@ -203,8 +214,8 @@ class Relationship(BaseObject):
 				kwargs[varname] = hash[varname]
 		return Class(**kwargs)
 	
-	def toHash(self):
-		return copy.deepcopy(self.__dict__)
+	#def toHash(self):
+	#	return copy.deepcopy(self.__dict__)
 	
 	def serialize(self):
 		hash = self.toHash()
@@ -2506,8 +2517,14 @@ class AuditHardware(Entity):
 	
 	@staticmethod
 	def fromHash(hash):
-		if hash.has_key('type'): del hash['type']
-		return AuditHardware(**hash)
+		initHash = {}
+		for (k, v) in hash.items():
+			if (k == 'type'):
+				continue
+			if type(k) is unicode:
+				k = str(k)
+			initHash[k] = v
+		return AuditHardware(**initHash)
 	
 	@staticmethod
 	def fromJson(jsonString):
@@ -2628,12 +2645,19 @@ class AuditHardwareOnHost(Relationship):
 	
 	def serialize(self):
 		hash = self.toHash()
+		#hash['ident'] = self.getIdent()
 		return hash
 	
 	@staticmethod
 	def fromHash(hash):
-		if hash.has_key('type'): del hash['type']
-		return AuditHardwareOnHost(**hash)
+		initHash = {}
+		for (k, v) in hash.items():
+			if (k == 'type'):
+				continue
+			if type(k) is unicode:
+				k = str(k)
+			initHash[k] = v
+		return AuditHardwareOnHost(**initHash)
 		
 	@staticmethod
 	def fromJson(jsonString):
@@ -2643,12 +2667,4 @@ class AuditHardwareOnHost(Relationship):
 		return u"<%s hardwareClass '%s', hostId '%s'>" % (self.getType(), self.hardwareClass, self.hostId)
 	
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
-
-
-
-
-
-
-
-
 

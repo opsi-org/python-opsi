@@ -355,7 +355,7 @@ class ChangelogFile(TextFile):
 		self._entries = entries
 	
 class ConfigFile(TextFile):
-	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '/', '#']):
+	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '#']):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
 		self._parsed = False
@@ -372,7 +372,25 @@ class ConfigFile(TextFile):
 			if not line or line[0] in self._commentChars:
 				continue
 			for cc in self._commentChars:
-				line = line.split(cc)[0]
+				index = line.find(cc)
+				if (index == -1):
+					continue
+				parts = line.split(cc)
+				quote = 0
+				doublequote = 0
+				cut = -1
+				for i in range(len(parts)):
+					quote += parts[i].count("'")
+					doublequote += parts[i].count('"')
+					if (i == len(parts)-1):
+						break
+					if not (quote % 2) and not (doublequote % 2):
+						cut = i
+						break
+				if (cut > -1):
+					line = cc.join(parts[:cut+1])
+			if not line:
+				continue
 			lines.append(line)
 		self._parsed = True
 		return lines

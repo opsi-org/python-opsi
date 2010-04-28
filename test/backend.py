@@ -1521,7 +1521,8 @@ class BackendTest(object):
 		self.productOnClient2.setModificationTime('2010-01-01 05:55:55')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects(modificationTime = '2010-01-01 05:55:55')
-		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
+		# You cant set modification time on update!
+		assert len(productOnClients) == 0, u"got: '%s', expected: '%s'" % (productOnClients, 0)
 		
 		
 		
