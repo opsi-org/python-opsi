@@ -147,7 +147,7 @@ class Backend:
 				logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
 							% (filter[attribute], attribute, value))
 				filterValues = forceUnicodeList(filter[attribute])
-				if forceUnicode(value) in filterValues:
+				if forceUnicode(value) in filterValues or (forceUnicodeList(value) == filterValues):
 					matched = True
 				else:
 					for filterValue in filterValues:
@@ -160,10 +160,10 @@ class Backend:
 									break
 							continue
 						
-						if type(value) in (float, long, int) or type(filterValue) in (float, long, int):
+						if type(value) in (float, long, int):# or type(filterValue) in (float, long, int):
 							operator = '=='
 							v = filterValue
-							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue))
+							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue) #forceUnicode(filterValue))
 							if match:
 								operator = match.group(1)
 								v = match.group(2)
@@ -183,14 +183,15 @@ class Backend:
 								break
 							continue
 						
-						if type(filterValue) in (types.NoneType, types.BooleanType):
-							continue
+						#if type(filterValue) in (types.NoneType, types.BooleanType):
+						#	continue
 						if type(value) in (types.NoneType, types.BooleanType):
 							continue
 						
 						if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
+					
 					
 				if matched:
 					logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
