@@ -1,0 +1,190 @@
+Wichtig beim Update von Objekten:
+Nur die Attribute setzen die geändert werden sollen!
+Sonst werden u.U. Backends unnötig aktiv!
+
+Bsp.:
+hosts = host_getObjects(['lastSeen'], id = 'myhost.uib.local')
+host = hosts[0]
+host.setLastSeen(timestamp())
+host_updateObjects(host)
+
+Oder:
+hosts = host_getObjects(id = 'myhost.uib.local')
+host = hosts[0]
+host.emptyValues()
+host.setLastSeen(timestamp())
+host_updateObjects(host)
+
+=============================================================================================================
+
+-------------------------------------------------------------------------------------------------------------
+Backend()
+   Backend-Basis-Klasse
+
+__init__(**kwargs)
+   Konstruktor
+   Mögliche Keyword-Arguments
+      name     : Name des Backends
+      username : 
+      password :
+      context  : Context-Backend (default: self)
+        Aufruf von Backend-Methoden aus Backend-Methoden erfolgt über Context-Backend
+
+_setContext(context):
+   Context-Backend setzen
+
+_getContext():
+   Context-Backend abfragen
+
+_objectHashMatches(objHash, **filter):
+   Rückgabe: bool
+   Prüft ob der Opsi-Objekt-Hash auf den Filter passt
+
+backend_setOptions(options)
+   Dient dem Setzen von Backend-Optionen (Verhalten des Backends)
+   options ist ein Hash/Dict, unbekannte Optionen (Keys) werden ignoriert
+
+backend_getOptions()
+   Gibt einen Hash der Backend-Optionen (Keys) und der zugehörigen Werte (Values) zurück.
+
+backend_getInterface()
+   Gibt das Interface (Methoden-Rümpfe) der Backend-Methoden zurück
+
+backend_info()
+   Gibt einen Hash mit allgemeinen Opsi-/Backend-Informationen zurück
+   Momentane Keys:
+      opsiVersion: Version von python-opsi
+      modules:     Informationen über freigeschaltete Opsi-Module
+
+backend_exit()
+   Backend aufräumen/deinitialisieren (Datenbank-/LDAP-Verbindungen beenden, ...)
+
+log_write(logType, data, objectId=None, append=True)
+   Log-Daten übertragen und in Datei sichern
+      logType:  Typ der Log-Daten, momentan: 'bootimage', 'clientconnect', 'instlog' oder 'opsiconfd'
+      data:     Log-Daten (unicode)
+      objectId: Spezialisierung des logType
+      append:   An Log-Datei anhängen oder überschreiben
+
+log_read(logType, objectId=None, maxSize=0)
+   Log-Daten aus Log-Datei auslesen (Rückgabe von Leerstring wenn Datei nicht existiert)
+      maxSize: maximale Anzahl an zurückgegebenen Zeichen
+
+user_getCredentials(username = u'pcpatch', hostId = None)
+   Credentials eines Opsi-Users abfragen (/etc/opsi/passwd), Rückgabe eines Hashes mit den Keys 'password', 'rsaPrivateKey'
+   Bei Angabe einer gültigen hostId, Verschlüsselung der Daten über den Opsi-Host-Key
+
+user_setCredentials(username, password)
+   Setzen des Passworts eines Opsi-Users (/etc/opsi/passwd)
+   Das Passwort wird verschlüsselt abgelegt, Schlüssel ist der Opsi-Host-Key des Opsi-Depots auf dem die Methode ausgeführt wird
+
+
+-------------------------------------------------------------------------------------------------------------
+ExtendedBackend(Backend)
+   Erweiterung eines Backends um zusätzliche Funktionalität (Methoden)
+
+__init__(backend, overwrite = True)
+   Konstruktor
+      backend:   Instanz eines zu erweiternden Backends
+      overwrite: Public-Methoden der Backend-Instanz überschreiben
+
+backend_setOptions(options):
+   Wird an erweitertes Backend durchgereicht
+
+backend_getOptions(self):
+   Wird an erweitertes Backend durchgereicht
+
+backend_exit(self):
+   Wird an erweitertes Backend durchgereicht
+
+
+-------------------------------------------------------------------------------------------------------------
+ConfigDataBackend(Backend):
+   Basis-Klasse für Daten-Backends
+   Aufgaben: Wahrung der referentiellen Integrität aber keine Änderungen an übergebenen Objekten
+
+__init__(**kwargs)
+   Konstruktor
+   Keyword-Arguments abhänging vom konkreten ConfigDataBackend
+
+_testFilterAndAttributes(Class, attributes, **filter)
+   Attribute (attributes, unicode-list) und filter (Hash) auf Zulässigkeit für die
+   Opsi-Objekt-Klasse Class prüfen
+
+backend_createBase()
+   Datenbasis für ConfigDataBackend erstellen (benötigte Verzeichnisse, Datenbank-Tabellen, Ldap-Objekte, ...)
+
+backend_deleteBase()
+   Datenbasis für ConfigDataBackend löschen, es gehen alle Daten verloren
+
+<oc>_insertObject(obj)
+   Objekt wird erzeugt oder überschrieben, beim Überschreiben wird auch der Wert None/null in das Backend übertragen
+
+<oc>_getObjects(attributes = [], **filter)
+   Objekte aus ConfigDataBackend auslesen
+   Bei Angabe einer Liste von Attributen, nur diese auslesen, andere Attribute sind dann None/null
+   Attribute die zum eindeutigen Identfizieren eines Objektes innerhalb seiner Objektklasse dienen (ident) werden
+   in jedem Fall ausgelesen
+   Mit Hilfe eines Filters kann die Menge der zurückgegebenen Objekte eingeschränkt werden.
+
+<oc>_updateObject(obj)
+   Objekt wird aktualisiert, Fehler wenn Objekt nicht existiert, Attribute mit dem Wert None/null werden nicht aktualisiert
+
+<oc>_deleteObjects(objs)
+   Die übergebenen Objekte (Liste) werden aus dem Backend gelöscht, nicht existierende Objekte werden ignoriert   
+
+
+-------------------------------------------------------------------------------------------------------------
+ExtendedConfigDataBackend(ExtendedBackend):
+   Erweiterung eines ConfigDataBackends um zusätzliche Funktionalität (Methoden)
+
+__init__(configDataBackend)
+   Konstruktor
+
+backend_searchObjects(filter)
+   Suche nach Objekten per LDAP-Filter
+
+<oc>_getIdents(returnType='unicode', **filter)
+   Siehe <oc>_getObjects, jedoch ausschliesslich Rückgabe von Objekt-Idents
+   Es wird immer eine Liste zurückgegeben
+   Über den returnType kann der Typ der Listen-Elemente definiert werden
+   Zulässige returnTypes sind:
+      unicode   : unicode-String, Werte der Ident-Attribute werden mit ';' zusammengefügt
+      list      : Liste der Ident-Attribut-Werte
+      tuple     : Tuple der Ident-Attribut-Werte
+      dict/hash : Hash der Ident-Attribute und zugehöriger Werte
+
+<oc>_createObjects(objs)
+   Anlegen der übergebenen Objekte (Liste) mit Hilfe von <oc>_insertObject
+
+<oc>_updateObjects(objs)
+   Aktualisieren der übergebenen Objekte (Liste) mit Hilfe von <oc>_updateObject
+   Sollte ein Objekt nicht existieren wird auf <oc>_insertObject ausgewichen!
+
+auditHardwareOnHost_insertObject(auditHardwareOnHost)
+   auditHardwareOnHost wird exakt wie angegeben erstellt
+
+auditHardwareOnHost_updateObject(auditHardwareOnHost)
+   firstSeen, lastSeen und state werden bei allen zutreffendend Objekten aktualisiert
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
