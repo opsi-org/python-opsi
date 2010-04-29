@@ -386,7 +386,7 @@ class ConfigFile(TextFile):
 						break
 					if (i > 0) and (parts[i-1][-1] == '\\'):
 						# escaped comment
-						parts[i][-1] = u''
+						parts[i-1][-1] = u''
 						continue
 					if not (quote % 2) and not (doublequote % 2):
 						cut = i
