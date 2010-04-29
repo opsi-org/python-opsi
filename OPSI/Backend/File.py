@@ -2194,6 +2194,7 @@ class FileBackend(ConfigDataBackend):
 			raise Exception(u"Unknown type: %s" % (objType))
 		
 		ident = auditHardwareObj.getIdent(returnType = 'dict')
+		print ident
 		filename = self._getConfigFile(objType, ident, 'hw')
 		
 		if (mode == 'insert') and (not os.path.exists(filename)):

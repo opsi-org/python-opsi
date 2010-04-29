@@ -1699,7 +1699,7 @@ class BackendTest(object):
 	
 	
 	
-	def testInventoryObjectMethods(self):
+	def testInventoryObjectMethods(self, licenseManagementBackend = False, inventoryHistory = False):
 		# AuditSoftwares
 		logger.notice(u"Testing auditSoftware methods")
 		
@@ -1733,13 +1733,14 @@ class BackendTest(object):
 		auditSoftwares = self.backend.auditSoftware_getObjects()
 		assert len(auditSoftwares) == len(self.auditSoftwares), u"got: '%s', expected: '%s'" % (auditSoftwares, len(self.auditSoftwares))
 		
-		# AuditSoftwareToLicensePools
-		logger.notice(u"Testing AuditSoftwareToLicensePool methods")
-		self.backend.auditSoftwareToLicensePool_createObjects(self.auditSoftwareToLicensePools)
+		if (licenseManagementBackend):
+			# AuditSoftwareToLicensePools
+			logger.notice(u"Testing AuditSoftwareToLicensePool methods")
+			self.backend.auditSoftwareToLicensePool_createObjects(self.auditSoftwareToLicensePools)
 		
-		auditSoftwareToLicensePools = self.backend.auditSoftwareToLicensePool_getObjects()
-		assert len(auditSoftwareToLicensePools) == len(self.auditSoftwareToLicensePools), u"got: '%s', expected: '%s'" % (auditSoftwareToLicensePools, len(self.auditSoftwareToLicensePools))
-		
+			auditSoftwareToLicensePools = self.backend.auditSoftwareToLicensePool_getObjects()
+			assert len(auditSoftwareToLicensePools) == len(self.auditSoftwareToLicensePools), u"got: '%s', expected: '%s'" % (auditSoftwareToLicensePools, len(self.auditSoftwareToLicensePools))
+			
 		# AuditSoftwareOnClients
 		logger.notice(u"Testing auditSoftwareOnClient methods")
 		
@@ -1817,7 +1818,10 @@ class BackendTest(object):
 		auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
 		self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+1, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+1)
+		if inventoryHistory:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+1, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+1)
+		else:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 		
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(lastseen = '2000-01-01 01:01:01')
 		assert len(auditHardwareOnHosts) == 1, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, 1)
@@ -1825,17 +1829,25 @@ class BackendTest(object):
 		auditHardwareOnHost4update.setState(0)
 		self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+2, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+2)
+		if inventoryHistory:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+2, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+2)
+		else:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 		
 		self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+2, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+2)
+		if inventoryHistory:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+2, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+2)
+		else:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 		
 		auditHardwareOnHost4update.setLastseen(None)
 		self.backend.auditHardwareOnHost_insertObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+3, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+3)
-		
+		if inventoryHistory:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts)+3, u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts)+3)
+		else:
+			assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 		
 		self.backend.auditHardwareOnHost_delete(hostId = [], hardwareClass = [], firstseen = [], lastseen = [], state = [])
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
