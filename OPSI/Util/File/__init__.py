@@ -384,7 +384,7 @@ class ConfigFile(TextFile):
 					doublequote += parts[i].count('"')
 					if (i == len(parts)-1):
 						break
-					if (i > 0) and (parts[i][-1] == '\\'):
+					if (i > 0) and (parts[i-1][-1] == '\\'):
 						# escaped comment
 						parts[i][-1] = u''
 						continue
