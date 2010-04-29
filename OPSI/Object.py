@@ -186,6 +186,18 @@ class Entity(BaseObject):
 				kwargs[varname] = hash[varname]
 		return Class(**kwargs)
 	
+	def clone(self, identOnly = False):
+		hash = {}
+		if identOnly:
+			identAttributes = self.getIdentAttributes()
+			for (attribute, value) in self.toHash().items():
+				if (attribute != 'type') and attribute not in self.getIdentAttributes():
+					continue
+				hash[attribute] = value
+		else:
+			hash = self.toHash()
+		return self.fromHash(hash)
+		
 	def serialize(self):
 		hash = self.toHash()
 		hash['ident'] = self.getIdent()
@@ -214,8 +226,17 @@ class Relationship(BaseObject):
 				kwargs[varname] = hash[varname]
 		return Class(**kwargs)
 	
-	#def toHash(self):
-	#	return copy.deepcopy(self.__dict__)
+	def clone(self, identOnly = False):
+		hash = {}
+		if identOnly:
+			identAttributes = self.getIdentAttributes()
+			for (attribute, value) in self.toHash().items():
+				if (attribute != 'type') and attribute not in self.getIdentAttributes():
+					continue
+				hash[attribute] = value
+		else:
+			hash = self.toHash()
+		return self.fromHash(hash)
 	
 	def serialize(self):
 		hash = self.toHash()

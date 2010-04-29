@@ -177,6 +177,7 @@ class MySQL:
 	
 	def query(self, query):
 		(conn, cursor) = self.connect()
+		result = 0
 		try:
 			logger.debug2(u"query: %s" % query)
 			try:
@@ -189,9 +190,10 @@ class MySQL:
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
+			result = cursor.rowcount
 		finally:
 			self.close(conn, cursor)
-		return cursor.rowcount
+		return result
 		
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
@@ -240,6 +242,7 @@ class MySQL:
 		
 	def insert(self, table, valueHash):
 		(conn, cursor) = self.connect()
+		result = -1
 		try:
 			colNames = values = u''
 			for (key, value) in valueHash.items():
@@ -270,17 +273,20 @@ class MySQL:
 			self.close(conn, cursor)
 		return result
 		
-	def update(self, table, where, valueHash):
+	def update(self, table, where, valueHash, updateWhereNone=False):
 		(conn, cursor) = self.connect()
+		result = 0
 		try:
 			if not valueHash:
 				raise BackendBadValueError(u"No values given")
 			query = u"UPDATE `%s` SET " % table
 			for (key, value) in valueHash.items():
-				if value is None:
+				if value is None and not updateWhereNone:
 					continue
 				query += u"`%s` = " % key
-				if type(value) in (float, long, int, bool):
+				if value is None:
+					query += u"NULL, "
+				elif type(value) in (float, long, int, bool):
 					query += u"%s, " % value
 				elif type(value) is str:
 					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
@@ -299,12 +305,14 @@ class MySQL:
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
+			result = cursor.rowcount
 		finally:
 			self.close(conn, cursor)
-		return cursor.lastrowid
+		return result
 	
 	def delete(self, table, where):
 		(conn, cursor) = self.connect()
+		result = 0
 		try:
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
 			logger.debug2(u"delete: %s" % query)
@@ -318,7 +326,7 @@ class MySQL:
 				self._createConnectionPool()
 				(conn, cursor) = self.connect()
 				self.execute(query, conn, cursor)
-			result = cursor.lastrowid
+			result = cursor.rowcount
 		finally:
 			self.close(conn, cursor)
 		return result
@@ -1073,12 +1081,13 @@ class MySQLBackend(ConfigDataBackend):
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
-		self._mysql.insert('HOST', data)
+		where = self._uniqueCondition(host)
+		if not self._mysql.update('HOST', where, data, updateWhereNone = True):
+			self._mysql.insert('HOST', data)
 	
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
-		#del data['type']
 		where = self._uniqueCondition(host)
 		self._mysql.update('HOST', where, data)
 	
