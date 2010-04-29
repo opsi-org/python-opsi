@@ -394,8 +394,8 @@ class ConfigFile(TextFile):
 					line = cc.join(parts[:cut+1])
 			if not line:
 				continue
-			for cc in self._commentChars:
-				line = line.replace(u'\\' + cc, cc)
+			#for cc in self._commentChars:
+			#	line = line.replace(u'\\' + cc, cc)
 			lines.append(line)
 		self._parsed = True
 		return lines
@@ -2495,6 +2495,8 @@ key = value ;comment ; comment2
 [section4]
 key = value \; no comment \# comment2 ;# comment3
 
+[section5]
+key = \;\;\;\;\;\;\;\;\;\;\;\;
 '''
 ]
 if (__name__ == "__main__"):
