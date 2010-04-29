@@ -2950,7 +2950,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			logger.info(u"Creating licensePool '%s'" % licensePool)
-			self._backend.softwareLicense_insertObject(licensePool)
+			self._backend.licensePool_insertObject(licensePool)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.licensePool_getObjects(id = licensePool.id)
@@ -3413,25 +3413,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
 		for auditHardware in auditHardwares:
 			logger.info(u"Creating auditHardware %s" % auditHardware)
-			self._backend.auditHardware_insertObject(auditHardware)
+			self.auditHardware_insertObject(auditHardware)
 		return result
 	
 	def auditHardware_updateObjects(self, auditHardwares):
 		result = []
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
 			logger.info(u"Updating auditHardware %s" % auditHardware)
-			#filter = auditHardware.toHash()
-			#for (attribute, value) in filter.items():
-			#	if value is None:
-			#		filter[attribute] = [ None ]
-			#if self.auditHardware_getObjects(attributes = [], **filter):
-			#	# You can't update auditHardwares, because the ident contains all attributes
-			#	logger.info(u"AuditHardware %s already exists, nothing to do" % auditHardware)
-			#else:
-			#	self._backend.auditHardware_insertObject(auditHardware)
-			
 			# You can't update auditHardwares, because the ident contains all attributes
-			self._backend.auditHardware_insertObject(auditHardware)
+			self.auditHardware_insertObject(auditHardware)
 		return result
 	
 	def auditHardware_create(self, hardwareClass, **kwargs):
@@ -3455,6 +3445,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		auditHardwareOnHost.setLastseen(timestamp())
 		auditHardwareOnHost.setState(1)
+		self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 		
 	def auditHardwareOnHost_createObjects(self, auditHardwareOnHosts):
 		result = []
@@ -3476,7 +3467,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					filter[attribute] = value
 			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
-				self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
+				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)

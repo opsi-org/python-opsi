@@ -554,6 +554,10 @@ class MySQLBackend(ConfigDataBackend):
 				condition += u"`%s` = '%s'" % (arg, value)
 		return condition
 	
+	def _objectExists(self, table, object):
+		query = 'select * from `%s` where %s' % (table, self._uniqueCondition(object))
+		return bool(self._mysql.getRow(query))
+		
 	def backend_exit(self):
 		pass
 	
@@ -1082,7 +1086,9 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
-		if not self._mysql.update('HOST', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `HOST` where %s' % where):
+			self._mysql.update('HOST', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('HOST', data)
 	
 	def host_updateObject(self, host):
@@ -1128,10 +1134,13 @@ class MySQLBackend(ConfigDataBackend):
 		del data['defaultValues']
 		
 		where = self._uniqueCondition(config)
-		if not self._mysql.update('CONFIG', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `CONFIG` where %s' % where):
+			self._mysql.update('CONFIG', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('CONFIG', data)
+		
+		self._mysql.delete('CONFIG_VALUE', where)
 		for value in possibleValues:
-			self._mysql.delete('CONFIG_VALUE', where)
 			self._mysql.insert('CONFIG_VALUE', {
 				'configId': data['configId'],
 				'value': value,
@@ -1223,8 +1232,11 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		data['values'] = json.dumps(data['values'])
+		
 		where = self._uniqueCondition(configState)
-		if not self._mysql.update('CONFIG_STATE', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `CONFIG_STATE` where %s' % where):
+			self._mysql.update('CONFIG_STATE', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('CONFIG_STATE', data)
 	
 	def configState_updateObject(self, configState):
@@ -1288,9 +1300,13 @@ class MySQLBackend(ConfigDataBackend):
 		windowsSoftwareIds = data['windowsSoftwareIds']
 		del data['windowsSoftwareIds']
 		del data['productClassIds']
+		
 		where = self._uniqueCondition(product)
-		if not self._mysql.update('PRODUCT', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `PRODUCT` where %s' % where):
+			self._mysql.update('PRODUCT', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('PRODUCT', data)
+		
 		self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
 		for windowsSoftwareId in windowsSoftwareIds:
 			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
@@ -1358,8 +1374,11 @@ class MySQLBackend(ConfigDataBackend):
 		del data['defaultValues']
 		
 		where = self._uniqueCondition(productProperty)
-		if not self._mysql.update('PRODUCT_PROPERTY', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
+			self._mysql.update('PRODUCT_PROPERTY', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('PRODUCT_PROPERTY', data)
+		
 		if not possibleValues is None:
 			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
 		for value in possibleValues:
@@ -1439,8 +1458,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
+		
 		where = self._uniqueCondition(productDependency)
-		if not self._mysql.update('PRODUCT_DEPENDENCY', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `PRODUCT_DEPENDENCY` where %s' % where):
+			self._mysql.update('PRODUCT_DEPENDENCY', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('PRODUCT_DEPENDENCY', data)
 	
 	def productDependency_updateObject(self, productDependency):
@@ -1484,8 +1506,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
+		
 		where = self._uniqueCondition(productOnDepot)
-		if not self._mysql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `PRODUCT_ON_DEPOT` where %s' % where):
+			self._mysql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('PRODUCT_ON_DEPOT', data)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
@@ -1527,8 +1552,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
+		
 		where = self._uniqueCondition(productOnClient)
-		if not self._mysql.update('PRODUCT_ON_CLIENT', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `PRODUCT_ON_CLIENT` where %s' % where):
+			self._mysql.update('PRODUCT_ON_CLIENT', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('PRODUCT_ON_CLIENT', data)
 		
 	def productOnClient_updateObject(self, productOnClient):
@@ -1574,8 +1602,11 @@ class MySQLBackend(ConfigDataBackend):
 			raise BackendReferentialItegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
 		data = self._objectToDatabaseHash(productPropertyState)
 		data['values'] = json.dumps(data['values'])
+		
 		where = self._uniqueCondition(productPropertyState)
-		if not self._mysql.update('PRODUCT_PROPERTY_STATE', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `PRODUCT_PROPERTY_STATE` where %s' % where):
+			self._mysql.update('PRODUCT_PROPERTY_STATE', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('PRODUCT_PROPERTY_STATE', data)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
@@ -1621,8 +1652,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
+		
 		where = self._uniqueCondition(group)
-		if not self._mysql.update('GROUP', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `GROUP` where %s' % where):
+			self._mysql.update('GROUP', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('GROUP', data)
 	
 	def group_updateObject(self, group):
@@ -1666,8 +1700,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
+		
 		where = self._uniqueCondition(objectToGroup)
-		if not self._mysql.update('OBJECT_TO_GROUP', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `OBJECT_TO_GROUP` where %s' % where):
+			self._mysql.update('OBJECT_TO_GROUP', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('OBJECT_TO_GROUP', data)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
@@ -1711,8 +1748,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
+		
 		where = self._uniqueCondition(licenseContract)
-		if not self._mysql.update('LICENSE_CONTRACT', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `LICENSE_CONTRACT` where %s' % where):
+			self._mysql.update('LICENSE_CONTRACT', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('LICENSE_CONTRACT', data)
 		
 	def licenseContract_updateObject(self, licenseContract):
@@ -1764,8 +1804,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
+		
 		where = self._uniqueCondition(softwareLicense)
-		if not self._mysql.update('SOFTWARE_LICENSE', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `SOFTWARE_LICENSE` where %s' % where):
+			self._mysql.update('SOFTWARE_LICENSE', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('SOFTWARE_LICENSE', data)
 		
 	def softwareLicense_updateObject(self, softwareLicense):
@@ -1829,9 +1872,13 @@ class MySQLBackend(ConfigDataBackend):
 		data = self._objectToDatabaseHash(licensePool)
 		productIds = data['productIds']
 		del data['productIds']
+		
 		where = self._uniqueCondition(licensePool)
-		if not self._mysql.update('LICENSE_POOL', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `LICENSE_POOL` where %s' % where):
+			self._mysql.update('LICENSE_POOL', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('LICENSE_POOL', data)
+		
 		self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
 		for productId in productIds:
 			self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
@@ -1905,8 +1952,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
+		
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
-		if not self._mysql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `SOFTWARE_LICENSE_TO_LICENSE_POOL` where %s' % where):
+			self._mysql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
 	
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
@@ -1953,8 +2003,11 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
+		
 		where = self._uniqueCondition(licenseOnClient)
-		if not self._mysql.update('LICENSE_ON_CLIENT', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `LICENSE_ON_CLIENT` where %s' % where):
+			self._mysql.update('LICENSE_ON_CLIENT', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('LICENSE_ON_CLIENT', data)
 	
 	def licenseOnClient_updateObject(self, licenseOnClient):
@@ -1997,8 +2050,11 @@ class MySQLBackend(ConfigDataBackend):
 	def auditSoftware_insertObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		data = self._objectToDatabaseHash(auditSoftware)
+		
 		where = self._uniqueCondition(auditSoftware)
-		if not self._mysql.update('SOFTWARE', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `SOFTWARE` where %s' % where):
+			self._mysql.update('SOFTWARE', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('SOFTWARE', data)
 	
 	def auditSoftware_updateObject(self, auditSoftware):
@@ -2029,8 +2085,11 @@ class MySQLBackend(ConfigDataBackend):
 	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
 		ConfigDataBackend.auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool)
 		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
+		
 		where = self._uniqueCondition(auditSoftwareToLicensePool)
-		if not self._mysql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `AUDIT_SOFTWARE_TO_LICENSE_POOL` where %s' % where):
+			self._mysql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('AUDIT_SOFTWARE_TO_LICENSE_POOL', data)
 	
 	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
@@ -2061,8 +2120,11 @@ class MySQLBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		data = self._objectToDatabaseHash(auditSoftwareOnClient)
+		
 		where = self._uniqueCondition(auditSoftwareOnClient)
-		if not self._mysql.update('SOFTWARE_CONFIG', where, data, updateWhereNone = True):
+		if self._mysql.getRow('select * from `SOFTWARE_CONFIG` where %s' % where):
+			self._mysql.update('SOFTWARE_CONFIG', where, data, updateWhereNone = True)
+		else:
 			self._mysql.insert('SOFTWARE_CONFIG', data)
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
@@ -2121,6 +2183,16 @@ class MySQLBackend(ConfigDataBackend):
 	def auditHardware_insertObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
+		logger.info(u"Inserting auditHardware: %s" % auditHardware)
+		filter = {}
+		for (attribute, value) in auditHardware.toHash().items():
+			filter[attribute] = value
+			if value is None:
+				filter[attribute] = [ None ]
+		res = self.auditHardware_getObjects(**filter)
+		if res:
+			return
+		
 		data = auditHardware.toHash()
 		table = u'HARDWARE_DEVICE_' + data['hardwareClass']
 		del data['hardwareClass']
@@ -2152,7 +2224,7 @@ class MySQLBackend(ConfigDataBackend):
 		results = []
 		hardwareClasses = []
 		hardwareClass = filter.get('hardwareClass')
-		if not hardwareClass is None:
+		if not hardwareClass in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
 				for key in self._auditHardwareConfig.keys():
@@ -2355,8 +2427,10 @@ class MySQLBackend(ConfigDataBackend):
 		hardwareClass = auditHardwareOnHost.getHardwareClass()
 		table = u'HARDWARE_CONFIG_' + hardwareClass
 		
-		data = self._auditHardwareOnHostObjectToDatabaseHash(auditHardwareOnHost)
-		self._mysql.insert(table, data)
+		where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
+		if not self._mysql.getRow('select * from `%s` where %s' % (table, where)):
+			data = self._auditHardwareOnHostObjectToDatabaseHash(auditHardwareOnHost)
+			self._mysql.insert(table, data)
 		
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
@@ -2368,7 +2442,6 @@ class MySQLBackend(ConfigDataBackend):
 			if attribute in ('state', 'lastseen', 'firstseen'):
 				if not value is None:
 					update['audit_%s' % attribute] = value
-				del data[attribute]
 			elif value is None:
 				data[attribute] = [ None ]
 		if update:
@@ -2383,7 +2456,7 @@ class MySQLBackend(ConfigDataBackend):
 		auditHardwareOnHosts = []
 		hardwareClasses = []
 		hardwareClass = filter.get('hardwareClass')
-		if not hardwareClass is None:
+		if not hardwareClass in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
 				for key in self._auditHardwareConfig.keys():
@@ -2391,7 +2464,7 @@ class MySQLBackend(ConfigDataBackend):
 						if not key in hardwareClasses:
 							hardwareClasses.append(key)
 			if not hardwareClasses:
-				return auditHardwares
+				return auditHardwareOnHosts
 		if not hardwareClasses:
 			for key in self._auditHardwareConfig.keys():
 				hardwareClasses.append(key)
