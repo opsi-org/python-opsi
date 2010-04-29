@@ -507,13 +507,9 @@ class LDAPBackend(ConfigDataBackend):
 				newFilter = pureldap.LDAPFilter_and(andFilters)
 			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
 		
-		textfilter = ldapFilter.asText()
-		if not type(textfilter) is unicode:
-			textfilter = unicode(textfilter, 'utf-8', 'replace')
-		print "==========================", textfilter
+		textfilter = forceUnicode(ldapFilter.asText())
+		logger.debug2(u"Filter is: %s" % textfilter)
 		return textfilter
-		
-	
 		
 	def _createOrganizationalRole(self, dn):
 		''' This method will add a oprganizational role object
@@ -652,16 +648,18 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj.setAttribute(attribute, value)
 		
 		return ldapObj
-
-		
-	def _updateLdapObject(self, ldapObject, opsiObject):
+	
+	def _updateLdapObject(self, ldapObject, opsiObject, updateWhereNone=False):
 		ldapObject.readFromDirectory(self._ldap)
 		newLdapObject = self._opsiObjectToLdapObject(opsiObject, ldapObject.getDn())
 		for (attribute, value) in newLdapObject.getAttributeDict(valuesAsList=True).items():
 			if attribute in ('cn', 'objectClass'):
 				continue
-			if not value:
-				continue
+			if value in (None, []):
+				if not updateWhereNone:
+					continue
+				value = []
+				
 			ldapObject.setAttribute(attribute, value)
 		ldapObject.writeToDirectory(self._ldap)
 	
@@ -723,10 +721,16 @@ class LDAPBackend(ConfigDataBackend):
 		
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
+		
 		dn = self._getHostDn(host)
 		logger.info(u"Creating host: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(host, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, host, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(host, dn)
+			ldapObject.writeToDirectory(self._ldap)
 		
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
@@ -818,8 +822,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s,%s' % (config.id, self._configContainerDn)
 		logger.info(u"Creating Config: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(config, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, config, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(config, dn)
+			ldapObject.writeToDirectory(self._ldap)
 		
 	
 	def config_updateObject(self, config):
@@ -864,11 +873,15 @@ class LDAPBackend(ConfigDataBackend):
 		
 		containerDn = u'cn=%s,%s' % (configState.objectId, self._configStateContainerDn)
 		self._createOrganizationalRole(containerDn)
-		
 		dn = u'cn=%s,%s' % (configState.configId, containerDn)
+		
 		logger.info(u"Creating ConfigState: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(configState, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, configState, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(configState, dn)
+			ldapObject.writeToDirectory(self._ldap)
 	
 	def configState_updateObject(self, configState):
 		ConfigDataBackend.configState_updateObject(self, configState)
@@ -912,8 +925,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s_%s-%s,%s' % (product.id, product.productVersion, product.packageVersion, self._productsContainerDn)
 		logger.info(u"Creating Product: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(product, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, product, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(product, dn)
+			ldapObject.writeToDirectory(self._ldap)
 	
 	def product_updateObject(self, product):
 		ConfigDataBackend.product_updateObject(self, product)
@@ -958,11 +976,16 @@ class LDAPBackend(ConfigDataBackend):
 		containerDn = u'cn=productProperties,cn=%s_%s-%s,%s' \
 			% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion, self._productsContainerDn)
 		self._createOrganizationalRole(containerDn)
-		
 		dn = u'cn=%s,%s' % (productProperty.propertyId, containerDn)
+		
 		logger.info(u"Creating ProductProperty: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(productProperty, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, productProperty, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(productProperty, dn)
+			ldapObject.writeToDirectory(self._ldap)
 		
 	
 	def productProperty_updateObject(self, productProperty):
@@ -1015,9 +1038,15 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(containerDn)
 		
 		dn = u'cn=%s,%s' % (productDependency.requiredProductId, containerDn)
+		
 		logger.info(u"Creating productDependency: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(productDependency, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, productDependency, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(productDependency, dn)
+			ldapObject.writeToDirectory(self._ldap)
 		
 	def productDependency_updateObject(self, productDependency):
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
@@ -1066,8 +1095,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s,%s' % (productOnDepot.productId, containerDn)
 		logger.info(u"Creating ProductOnDepot: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(productOnDepot, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, productOnDepot, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(productOnDepot, dn)
+			ldapObject.writeToDirectory(self._ldap)
 	
 	def productOnDepot_updateObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
@@ -1114,8 +1148,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s,%s' % (productOnClient.productId, containerDn)
 		logger.info(u"Creating ProductOnClient: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(productOnClient, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, productOnClient, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(productOnClient, dn)
+			ldapObject.writeToDirectory(self._ldap)
 		
 	def productOnClient_updateObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
@@ -1168,8 +1207,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s,%s' % (productPropertyState.propertyId, containerDn)
 		logger.info(u"Creating ProductPropertyState: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(productPropertyState, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, productPropertyState, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(productPropertyState, dn)
+			ldapObject.writeToDirectory(self._ldap)
 	
 	def productPropertyState_updateObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
@@ -1213,8 +1257,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 		logger.info(u"Creating group: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(group, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, group, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(group, dn)
+			ldapObject.writeToDirectory(self._ldap)
 	
 	def group_updateObject(self, group):
 		ConfigDataBackend.group_updateObject(self, group)
@@ -1261,8 +1310,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		dn = u'cn=%s,%s' % (objectToGroup.objectId, containerDn)
 		logger.info(u"Creating objectToGroup: %s" % dn)
-		ldapObject = self._opsiObjectToLdapObject(objectToGroup, dn)
-		ldapObject.writeToDirectory(self._ldap)
+		
+		ldapObject = LDAPObject(dn)
+		if ldapObject.exists(self._ldap):
+			self._updateLdapObject(ldapObject, objectToGroup, updateWhereNone = True)
+		else:
+			ldapObject = self._opsiObjectToLdapObject(objectToGroup, dn)
+			ldapObject.writeToDirectory(self._ldap)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)

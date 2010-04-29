@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import types, new, inspect, socket, base64, os
@@ -147,7 +147,7 @@ class Backend:
 				logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
 							% (filter[attribute], attribute, value))
 				filterValues = forceUnicodeList(filter[attribute])
-				if forceUnicode(value) in filterValues or (forceUnicodeList(value) == filterValues):
+				if (forceUnicodeList(value) == filterValues) or forceUnicode(value) in filterValues:
 					matched = True
 				else:
 					for filterValue in filterValues:
