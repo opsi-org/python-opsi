@@ -382,12 +382,11 @@ class ConfigFile(TextFile):
 				for i in range(len(parts)):
 					quote += parts[i].count("'")
 					doublequote += parts[i].count('"')
+					if (len(parts[i]) > 0) and (parts[i][-1] == '\\'):
+						# escaped comment
+						continue
 					if (i == len(parts)-1):
 						break
-					if (i > 0) and (parts[i-1][-1] == '\\'):
-						# escaped comment
-						parts[i-1][-1] = u''
-						continue
 					if not (quote % 2) and not (doublequote % 2):
 						cut = i
 						break
@@ -395,6 +394,8 @@ class ConfigFile(TextFile):
 					line = cc.join(parts[:cut+1])
 			if not line:
 				continue
+			for cc in self._commentChars:
+				line = line.replace(u'\\' + cc, cc)
 			lines.append(line)
 		self._parsed = True
 		return lines
@@ -410,14 +411,11 @@ class IniFile(ConfigFile):
 		self._parsed = False
 		
 	def parse(self, lines=None):
-		if lines:
-			self._lines = forceUnicodeList(lines)
-		else:
-			self.readlines()
 		self._parsed = False
 		logger.debug(u"Parsing ini file '%s'" % self._filename)
 		start = time.time()
-		lines = ConfigFile.parse(self)
+		lines = ConfigFile.parse(self, lines)
+		self._parsed = False
 		if self._ignoreCase:
 			for i in range(len(lines)):
 				lines[i] = lines[i].strip()
@@ -2483,6 +2481,22 @@ value = Parameters\PnpInterface,5,REG_DWORD,1
 '''
 ]
 
+iniTestData = [
+'''
+#[section1]
+# abc = def
+
+[section2]
+abc = def # comment
+
+[section3]
+key = value ;comment ; comment2
+
+[section4]
+key = value \; no comment \# comment2 ;# comment3
+
+'''
+]
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
@@ -2513,6 +2527,10 @@ if (__name__ == "__main__"):
 		#for dev in devices:
 		#	logger.notice(u"Found device: %s" % dev)
 	
+	for data in iniTestData:
+		iniFile = IniFile('/tmp/test.ini')
+		iniFile.parse(data.split('\n'))
+		
 	
 	
 	
