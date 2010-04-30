@@ -117,7 +117,7 @@ class BackendManager(ExtendedBackend):
 			logger.info(u"* BackendManager is creating BackendDispatcher")
 			self._backend = BackendDispatcher(**kwargs)
 			# self._backend is now a BackendDispatcher which is an ExtendedConfigDataBackend
-		elif extend or depotBackend:
+		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
 			self._backend = ExtendedConfigDataBackend(self._backend)
@@ -249,7 +249,7 @@ class BackendDispatcher(Backend):
 			
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
-		for Class in (ConfigDataBackend, ExtendedConfigDataBackend):
+		for Class in (ConfigDataBackend,):#, ExtendedConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_'):

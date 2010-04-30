@@ -128,6 +128,7 @@ class Backend:
 				self._password = value
 			elif option in ('context',):
 				self._context = value
+				logger.info(u"Backend context was set to %s" % self._context)
 		self._options = {}
 	
 	def _setContext(self, context):
@@ -456,6 +457,9 @@ class ExtendedBackend(Backend):
 	def __init__(self, backend, overwrite = True):
 		Backend.__init__(self)
 		self._backend = backend
+		if (self._context is self):
+			logger.info(u"Setting context to backend %s" % self._context)
+			self._context = self._backend
 		self._overwrite = forceBool(overwrite)
 		self._createInstanceMethods()
 		
@@ -794,7 +798,6 @@ class ConfigDataBackend(Backend):
 			
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
-		productOnClient.setModificationTime(timestamp())
 		
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
@@ -2035,13 +2038,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						productId = productOnDepot.productId,
 						depotId   = productOnDepot.depotId)
 		if currentProductOnDepots:
-			updatedProductOnDepot = currentProductOnDepots[0].toHash()
-			logger.info(u"Updating productOnDepot %s instead of creating a new one" % currentProductOnDepots[0])
-			updatedProductOnDepot.update(productOnDepot.toHash())
-			self._backend.productOnDepot_deleteObjects( [ currentProductOnDepots[0] ] )
-			productOnDepot = ProductOnDepot.fromHash(updatedProductOnDepot)
+			currentProductOnDepot = currentProductOnDepots[0]
+			logger.info(u"Updating productOnDepot %s instead of creating a new one" % currentProductOnDepot)
+			currentProductOnDepot.update(productOnDepot)
+			productOnDepot = currentProductOnDepot
 		self._backend.productOnDepot_insertObject(productOnDepot)
-		
+	
 	def productOnDepot_createObjects(self, productOnDepots):
 		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
@@ -2486,114 +2488,74 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		
 		return adjustedProductOnClients
 	
-	def _productOnClient_correctData(self, productOnClients):
-		newProductOnClients = []
-		insertVersions = []
-		clientIds = []
-		productIds = []
-		for productOnClient in productOnClients:
-			if not productOnClient.modificationTime:
-				productOnClient.setModificationTime(timestamp())
-			if not productOnClient.clientId in clientIds:
-				clientIds.append(productOnClient.clientId)
-			if not productOnClient.productId in productIds:
-				productIds.append(productOnClient.productId)
-			if productOnClient.lastAction is None and not productOnClient.actionRequest in ('none', None):
-				productOnClient.lastAction = productOnClient.actionRequest
-			if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
-				# Should have version info
-				if not productOnClient.productVersion or not productOnClient.packageVersion:
-					insertVersions.append(productOnClient)
-					continue
-			else:
-				productOnClient.productVersion = None
-				productOnClient.packageVersion = None
-			newProductOnClients.append(productOnClient)
-			
-		if insertVersions:
-			productOnDepots = {}
-			depotIds = []
-			clientIdToDepotId = {}
-			
-			for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
-				if not clientToDepot['depotId'] in depotIds:
-					depotIds.append(clientToDepot['depotId'])
-				clientIdToDepotId[clientToDepot['clientId']] = clientToDepot['depotId']
-			
-			for depotId in depotIds:
-				productOnDepots[depotId] = {}
-				for productOnDepot in self._backend.productOnDepot_getObjects(
-								depotId        = depotId,
-								productId      = productIds):
-					productOnDepots[depotId][productOnDepot.productId] = productOnDepot
-			
-			for productOnClient in insertVersions:
-				product = productOnDepots.get(clientIdToDepotId.get(productOnClient.clientId), {}).get(productOnClient.productId)
-				if not product:
-					logger.debug(u"Product '%s' not found on depot '%s'" % (productOnClient.productId, clientIdToDepotId.get(productOnClient.clientId)))
-				else:
-					productOnClient.setProductVersion(product.productVersion )
-					productOnClient.setPackageVersion(product.packageVersion )
-				newProductOnClients.append(productOnClient)
-				
-		return newProductOnClients
-		
-		#######################################################################################################################################
-		#if productOnClient.installationStatus and (productOnClient.installationStatus != 'installed'):
-		#	currentProductOnClients = self.productOnClient_getObjects(
-		#						productId   =,
-		#						productType =,
-		#						clientId    = )
-		#	if not currentProductOnClients:
-		#		raise BackendMissingDataError(u"Failed to update productOnClient '%s'")
-		#						productOnClient.productId,
-		#						productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest
-		#					)
-		#	
-		#	productOnClient_insertObject
-		#
-		#
-		#
-		#if productOnClient.installationStatus:
-		#	if not productOnClient.actionResult:
-		#		productOnClient.setActionResult('none')
-		#	if not productOnClient.actionProgress:
-		#		productOnClient.setActionProgress('')
-		#	if (productOnClient.installationStatus != 'installed'):
-		#		productOnClient.productVersion = None
-		#		productOnClient.packageVersion = None
-		#	
-		#if productOnClient.actionRequest:
-		#	if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
-		#		productOnClient.setLastAction(productOnClient.actionRequest)
-		#	if not productOnClient.targetConfiguration:
-		#		if   (productOnClient.actionRequest == 'setup'):
-		#			productOnClient.setTargetConfiguration('installed')
-		#		elif (productOnClient.actionRequest == 'always'):
-		#			productOnClient.setTargetConfiguration('always')
-		#		elif (productOnClient.actionRequest == 'uninstall'):
-		#			productOnClient.setTargetConfiguration('undefined')
-		#	if not productOnClient.actionResult:
-		#		productOnClient.setActionResult('none')
-		#	if not productOnClient.actionProgress:
-		#		productOnClient.setActionProgress('')
-		#######################################################################################################################################
-	
-	def productOnClient_insertObject(self, productOnClient):
-		'''
-		If productOnClient exits (same productId, same clientId, different productType)
-		then update existing productOnClient instead of creating a new one
-		'''
+	def _productOnClientUpdateOrCreate(self, productOnClient, update=False):
+		nextProductOnClient = None
 		currentProductOnClients = self._backend.productOnClient_getObjects(
 							productId = productOnClient.productId,
 							clientId  = productOnClient.clientId)
 		if currentProductOnClients:
-			updatedProductOnClient = currentProductOnClients[0].toHash()
-			logger.info(u"Updating productOnClient %s instead of creating a new one" % currentProductOnClients[0])
-			updatedProductOnClient.update(productOnClient.toHash())
-			self._backend.productOnClient_deleteObjects( [ currentProductOnClients[0] ] )
-			productOnClient = ProductOnClient.fromHash(updatedProductOnClient)
-		self._backend.productOnClient_insertObject(productOnClient)
+			'''
+			If productOnClient exits (same productId, same clientId, different version)
+			then update existing productOnClient instead of creating a new one
+			'''
+			nextProductOnClient = currentProductOnClients[0].clone()
+			if update:
+				nextProductOnClient.update(productOnClient, updateWithNoneValues = False)
+			else:
+				logger.info(u"Updating productOnClient %s instead of creating a new one" % nextProductOnClient)
+				nextProductOnClient.update(productOnClient, updateWithNoneValues = True)
+		else:
+			nextProductOnClient = productOnClient.clone()
+		
+		if nextProductOnClient.installationStatus:
+			if not nextProductOnClient.actionResult:
+				nextProductOnClient.setActionResult('none')
+			if not nextProductOnClient.actionProgress:
+				nextProductOnClient.setActionProgress(u'')
+			if (nextProductOnClient.installationStatus == 'installed'):
+				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
+					clientToDepots = self.configState_getClientToDepotserver(clientIds = [nextProductOnClient.clientId])
+					if not clientToDepots:
+						raise BackendError(u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and depot for client not found" \
+									% (productOnClient.productId, nextProductOnClient.clientId))
+					
+					productOnDepots = self._backend.productOnDepot_getObjects(
+										depotId   = clientToDepots[0]['depotId'],
+										productId = nextProductOnClient.productId)
+					if not productOnDepots:
+						raise BackendError(u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and product not found on depot '%s'" \
+									% (nextProductOnClient.productId, nextProductOnClient.clientId, clientToDepots[0]['depotId']))
+					nextProductOnClient.setProductVersion(productOnDepots[0].productVersion)
+					nextProductOnClient.setPackageVersion(productOnDepots[0].packageVersion)
+			else:
+				nextProductOnClient.productVersion = None
+				nextProductOnClient.packageVersion = None
+			
+		if productOnClient.actionRequest:
+			# An action request is about to change
+			if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
+				nextProductOnClient.setLastAction(productOnClient.actionRequest)
+			if not productOnClient.targetConfiguration:
+				if   (productOnClient.actionRequest == 'setup'):
+					nextProductOnClient.setTargetConfiguration('installed')
+				elif (productOnClient.actionRequest == 'always'):
+					nextProductOnClient.setTargetConfiguration('always')
+				elif (productOnClient.actionRequest == 'uninstall'):
+					nextProductOnClient.setTargetConfiguration('undefined')
+			if not productOnClient.actionResult:
+				nextProductOnClient.setActionResult('none')
+			if not productOnClient.actionProgress:
+				nextProductOnClient.setActionProgress('')
+		
+		nextProductOnClient.setModificationTime(timestamp())
+		
+		return self._backend.productOnClient_insertObject(nextProductOnClient)
+		
+	def productOnClient_insertObject(self, productOnClient):
+		return self._productOnClientUpdateOrCreate(productOnClient, update = False)
+	
+	def productOnClient_updateObject(self, productOnClient):
+		return self._productOnClientUpdateOrCreate(productOnClient, update = True)
 	
 	def productOnClient_createObjects(self, productOnClients):
 		result = []
@@ -2612,14 +2574,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def productOnClient_updateObjects(self, productOnClients):
 		result = []
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
-		############productOnClients = self._productOnClient_correctData(productOnClients)
 		for productOnClient in productOnClients:
 			logger.info(u"Updating productOnClient '%s'" % productOnClient)
 			if self.productOnClient_getIdents(
 					productId   = productOnClient.productId,
 					productType = productOnClient.productType,
 					clientId    = productOnClient.clientId):
-				self._backend.productOnClient_updateObject(productOnClient)
+				self.productOnClient_updateObject(productOnClient)
 			else:
 				logger.info(u"ProductOnClient %s does not exist, creating" % productOnClient)
 				self.productOnClient_insertObject(productOnClient)
