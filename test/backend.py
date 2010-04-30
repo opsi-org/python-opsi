@@ -616,7 +616,7 @@ class BackendTest(object):
 			clientId           = self.client3.getId(),
 			installationStatus = 'installed',
 			actionRequest      = 'setup',
-			actionProgress     = 'installing',
+			actionProgress     = '',
 			productVersion     = self.product2.getProductVersion(),
 			packageVersion     = self.product2.getPackageVersion()
 		)
@@ -1508,7 +1508,9 @@ class BackendTest(object):
 		productOnClients = self.backend.productOnClient_getObjects(actionResult = 'failed')
 		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
 		
+		self.productOnClient2.setInstallationStatus('installed')
 		self.productOnClient2.setProductVersion('777777')
+		self.productOnClient2.setPackageVersion('1')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects(productVersion = '777777')
 		assert len(productOnClients) == 1, u"got: '%s', expected: '%s'" % (productOnClients, 1)
