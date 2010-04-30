@@ -616,23 +616,23 @@ class BackendTest(object):
 			clientId           = self.client3.getId(),
 			installationStatus = 'installed',
 			actionRequest      = 'setup',
-			actionProgress     = '',
+			actionProgress     = 'installing',
 			productVersion     = self.product2.getProductVersion(),
 			packageVersion     = self.product2.getPackageVersion()
 		)
 		
 		self.productOnClient4 = ProductOnClient(
-			productId          = self.product1.getId(),
-			productType        = self.product1.getType(),
-			clientId           = self.client3.getId(),
+			productId           = self.product1.getId(),
+			productType         = self.product1.getType(),
+			clientId            = self.client3.getId(),
 			targetConfiguration = 'installed',
-			installationStatus = 'installed',
-			actionRequest      = 'none',
-			lastAction         = 'setup',
-			actionProgress     = '',
-			actionResult       = 'successful',
-			productVersion     = self.product1.getProductVersion(),
-			packageVersion     = self.product1.getPackageVersion()
+			installationStatus  = 'installed',
+			actionRequest       = 'none',
+			lastAction          = 'setup',
+			actionProgress      = '',
+			actionResult        = 'successful',
+			productVersion      = self.product1.getProductVersion(),
+			packageVersion      = self.product1.getPackageVersion()
 		)
 		
 		self.productOnClients = [ self.productOnClient1, self.productOnClient2, self.productOnClient3, self.productOnClient4 ]
