@@ -2029,7 +2029,6 @@ class FileBackend(ConfigDataBackend):
 #			identLowerKeys[key.lower()] = ident[key]
 #		
 #		for section in ini.sections():
-#			print "now in section", section
 #			found = True
 #			
 #			for option in ini.options(section):
@@ -2037,10 +2036,8 @@ class FileBackend(ConfigDataBackend):
 #					continue
 #				try:
 #					if (not option in identLowerKeys):
-#						print "option %s is not in identLowerKeys %s" % (option, identLowerKeys)
 #						raise Exception
 #					if (not identLowerKeys[option] == ini.get(section, option)):
-#						print "2"
 #						raise Exception
 #				except:
 #					
@@ -2055,10 +2052,8 @@ class FileBackend(ConfigDataBackend):
 #					continue
 #				try:
 #					if (not key in ini.options(section)):
-#						print "key %s is not in ini.options %s" % (key, ini.options(section))
 #						raise Exception
 #					if (not identLowerKeys[key] == ini.get(section, key)):
-#						print "2"
 #						raise Exception
 #				except:
 #					
@@ -2194,7 +2189,6 @@ class FileBackend(ConfigDataBackend):
 			raise Exception(u"Unknown type: %s" % (objType))
 		
 		ident = auditHardwareObj.getIdent(returnType = 'dict')
-		print ident
 		filename = self._getConfigFile(objType, ident, 'hw')
 		
 		if (mode == 'insert') and (not os.path.exists(filename)):
