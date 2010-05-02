@@ -1367,8 +1367,6 @@ class Harddisk:
 					buf[:-1] = []
 				
 				elif (timeout >= 100):
-					if progressSubject:
-						progressSubject.setMessage(u"Failed: %s" % lastMsg)
 					raise Exception(u"Failed: %s" % lastMsg)
 				else:
 					timeout += 1
