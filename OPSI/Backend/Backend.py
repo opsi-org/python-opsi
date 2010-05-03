@@ -3464,6 +3464,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		auditHardwareOnHosts = self.auditHardwareOnHost_getObjects(hostId = hostId, state = 1)
 		for i in range(len(auditHardwareOnHosts)):
 			auditHardwareOnHosts[i].setState(0)
-			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
+			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
+	
+	
+	
+	
+	
+	
 	
 

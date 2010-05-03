@@ -69,8 +69,22 @@ def UIFactory(type = u''):
 
 class UI:
 	def __init__(self):
-		pass
+		self.confidentialStrings = []
 	
+	def setConfidentialStrings(self, strings):
+		strings = forceUnicodeList(strings)
+		self.confidentialStrings = []
+		for string in strings:
+			self.addConfidentialString(string)
+		
+	def addConfidentialString(self, string):
+		string = forceUnicode(string)
+		if not string:
+			raise ValueError(u"Cannot use empty string as confidential string")
+		if string in self.confidentialStrings:
+			return
+		self.confidentialStrings.append(string)
+		
 	def getScreen(self):
 		pass
 	
@@ -156,6 +170,7 @@ class CopyProgressBox(ProgressBox):
 
 class SnackUI(UI):
 	def __init__(self):
+		UI.__init__(self)
 		
 		self._screen = SnackScreen()
 		if (self._screen.width < 40) or (self._screen.height < 24):
@@ -639,6 +654,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			self._title = title
 			self._text = text
 			
+			for string in self._ui.confidentialStrings:
+				self._text = self._text.replace(string, u'*** confidential ***')
+			
 			if (width <= 0):
 				width = self._ui.getScreen().width - 7
 			if (height <= 0):
@@ -684,6 +702,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 	def setText(self, text):
 		try:
 			self._text = forceUnicode(text)
+			for string in self._ui.confidentialStrings:
+				self._text = self._text.replace(string, u'*** confidential ***')
+			
 			lines = self._text.split(u"\n")
 			for i in range( len(lines) ):
 				pos = lines[i].find(u"\r")

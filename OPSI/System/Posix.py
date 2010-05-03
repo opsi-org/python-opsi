@@ -161,7 +161,10 @@ def getNetworkDeviceConfig(device):
 		'ipAddress':       None,
 		'broadcast':       None,
 		'netmask':         None,
-		'gateway':         None
+		'gateway':         None,
+		'vendorId':        None,
+		'deviceId':        None,
+		'description':     None
 	}
 	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
 		line = line.lower().strip()
@@ -183,8 +186,21 @@ def getNetworkDeviceConfig(device):
 		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s', line)
 		if match and (match.group(2).lower() == device.lower()):
 			result['gateway'] = forceIpAddress(match.group(1))
+	
+	for line in execute(u"%s -short -numeric" % which(u'lshw')):
+		parts = line.split(None, 3)
+		if (len(parts) < 4):
+			continue
+		if (parts[1] == result['device']):
+			description = forceUnicode(parts[3])
+			match = re.search('^(.*)\s+\[([a-fA-F0-9]{4})\:([a-fA-F0-9]{4})\]', description)
+			if match:
+				description = match.group(1)
+				result['vendorId'] = forceHardwareVendorId(match.group(2))
+				result['deviceId'] = forceHardwareDeviceId(match.group(3))
+			result['description'] = description
 	return result
-
+	
 def getDefaultNetworkInterfaceName():
 	for interface in getNetworkInterfaces():
 		if interface['gateway']:
@@ -368,6 +384,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 				encoding = proc.stdin.encoding
 			if not encoding:
 				encoding = locale.getpreferredencoding()
+			logger.info(u"Using encoding '%s'" % encoding)
 			
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -580,6 +597,44 @@ def getBlockDeviceBusType(device):
 		if devs and device in devs and type:
 			logger.info(u"Bus type of device '%s' is '%s'" % (device, type))
 			return type
+
+
+def getBlockDeviceContollerInfo(device):
+	device = forceFilename(device)
+	lines = execute(u'%s -short -numeric' % which('lshw'))
+	'''
+	example:
+	...
+	/0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
+	/0/100/1                    bridge     82371SB PIIX3 ISA [Natoma/Triton II] [8086:7000]
+	/0/100/1.1      scsi0       storage    82371SB PIIX3 IDE [Natoma/Triton II] [8086:7010]
+	/0/100/1.1/0    /dev/sda    disk       10GB QEMU HARDDISK
+	/0/100/1.1/0/1  /dev/sda1   volume     10236MiB Windows NTFS volume
+	/0/100/1.1/1    /dev/cdrom  disk       SCSI CD-ROM
+	...
+	'''
+	storageControllers = {}
+	
+	for line in lines:
+		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{4})\:([a-fA-F0-9]{4})\]$', line)
+		if match:
+			storageControllers[match.group(1)] = {
+				'hwPath':      forceUnicode(match.group(1)),
+				'device':      forceUnicode(match.group(2)),
+				'description': forceUnicode(match.group(3)),
+				'vendorId':    forceHardwareVendorId(match.group(4)),
+				'deviceId':    forceHardwareDeviceId(match.group(5))
+			}
+			continue
+		
+		parts = line.split(None, 3)
+		if (len(parts) < 4):
+			continue
+		if (parts[1].lower() == device):
+			for hwPath in storageControllers.keys():
+				if parts[0].startswith(hwPath + u'/'):
+					return storageControllers[hwPath]
+	return None
 	
 class Harddisk:
 	
@@ -596,7 +651,7 @@ class Harddisk:
 		self.heads         = 0
 		self.sectors       = 0
 		self.label         = None
-		self.size          = -1	# unit MB
+		self.size          = -1
 		self.partitions    = []
 		self.ldPreload     = None
 		
@@ -605,7 +660,10 @@ class Harddisk:
 	
 	def getBusType(self):
 		return getBlockDeviceBusType(self.device)
-		
+	
+	def getControllerInfo(self):
+		return getBlockDeviceContollerInfo(self.device)
+	
 	def useBIOSGeometry(self):
 		# Make sure your kernel supports edd (CONFIG_EDD=y/m) and module is loaded if not compiled in
 		
@@ -1572,7 +1630,7 @@ def hardwareInventory(config):
 	
 	# Read output from lshw
 	xmlOut = u'\n'.join(execute(u"%s -xml 2>/dev/null" % which("lshw"), captureStderr = False, encoding = None))
-	#xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
+	xmlOut = re.sub('[%c%c%c%c%c%c%c%c%c%c%c%c%c]' % (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xbd, 0xbf, 0xef, 0xdd), u'.', xmlOut)
 	dom = xml.dom.minidom.parseString( xmlOut.encode('utf-8') )
 	
 	# Read output from lspci
@@ -1947,7 +2005,7 @@ def hardwareInventory(config):
 									logger.debug(u"Eval: %s.%s" % (dev.get(aname, ''), method))
 									device[attribute['Opsi']] = eval("dev.get(aname, '').%s" % method)
 								except Exception, e:
-									device[attribute['Opsi']] = ''
+									device[attribute['Opsi']] = u''
 									logger.error(u"Failed to excecute '%s.%s': %s" % (dev.get(aname, ''), method, e))
 							else:
 								device[attribute['Opsi']] = dev.get(aname)
@@ -1967,7 +2025,7 @@ def hardwareInventory(config):
 						device[attribute['Opsi']] = dev[attribute['Linux']]
 					except Exception, e:
 						logger.warning(e)
-						device[attribute['Opsi']] = ''
+						device[attribute['Opsi']] = u''
 				opsiValues[opsiClass].append(device)
 		
 		# Get hw info from lsusb
@@ -1986,18 +2044,18 @@ def hardwareInventory(config):
 								(key, method) = key.split('.', 1)
 							if not type(value) is dict or not value.has_key(key):
 								logger.error(u"Key '%s' not found" % key)
-								value = ''
+								value = u''
 								break
 							value = value[key]
 							if type(value) is list:
-								value = ', '.join(value)
+								value = u', '.join(value)
 							if method:
 								value = eval("value.%s" % method)
 							
 						device[attribute['Opsi']] = value
 					except Exception, e:
 						logger.warning(e)
-						device[attribute['Opsi']] = ''
+						device[attribute['Opsi']] = u''
 				opsiValues[opsiClass].append(device)
 	
 	opsiValues['SCANPROPERTIES'] = [ { "scantime": time.strftime("%Y-%m-%d %H:%M:%S") } ]
@@ -2006,3 +2064,9 @@ def hardwareInventory(config):
 	
 	return opsiValues
 
+
+if (__name__ == "__main__"):
+	print getBlockDeviceContollerInfo('/dev/sda')
+	print getNetworkDeviceConfig(getDefaultNetworkInterfaceName())
+	print getNetworkDeviceConfig('eth0')
+	

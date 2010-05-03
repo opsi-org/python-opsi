@@ -198,17 +198,13 @@ class LoggerImplementation:
 	
 	def setConfidentialStrings(self, strings):
 		if not type(strings) in (list, tuple):
-			strings = [ unicode(strings) ]
+			strings = [ strings ]
 		self.__confidentialStrings = []
 		for string in strings:
 			self.addConfidentialString(string)
 	
 	def addConfidentialString(self, string):
-		if not type(string) is unicode:
-			if not type(string) is str:
-				string = unicode(string)
-			else:
-				string = unicode(string, 'utf-8', 'replace')
+		string = forceUnicode(string)
 		if not string:
 			raise ValueError(u"Cannot use empty string as confidential string")
 		if string in self.__confidentialStrings:

@@ -116,7 +116,7 @@ class BackendManager(ExtendedBackend):
 		if dispatch:
 			logger.info(u"* BackendManager is creating BackendDispatcher")
 			self._backend = BackendDispatcher(**kwargs)
-			# self._backend is now a BackendDispatcher which is an ExtendedConfigDataBackend
+			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
 		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
@@ -238,13 +238,13 @@ class BackendDispatcher(Backend):
 			l["config"]["context"] = self
 			exec(u'from %s import %sBackend' % (l['module'], l['module']))
 			exec(u'backendInstance = %sBackend(**l["config"])' % l['module'])
-			if not isinstance(backendInstance, JSONRPCBackend):
-				# Assuming that JSONRPC is already extended
-				# Not extending JSONRPCBackend will increase performance because ExtendedConfigDataBackend methods
-				# like host_createObjects will be directly passed to JSONRPCBackend instead of being executed in
-				# ExtendedConfigDataBackend which then would call host_insertObject on JSONRPCBackend
-				logger.info(u"* BackendDispatcher is creating ExtendedConfigDataBackend on %s" % backendInstance)
-				backendInstance = ExtendedConfigDataBackend(backendInstance)
+			#if not isinstance(backendInstance, JSONRPCBackend):
+			#	# Assuming that JSONRPC is already extended
+			#	# Not extending JSONRPCBackend will increase performance because ExtendedConfigDataBackend methods
+			#	# like host_createObjects will be directly passed to JSONRPCBackend instead of being executed in
+			#	# ExtendedConfigDataBackend which then would call host_insertObject on JSONRPCBackend
+			#	logger.info(u"* BackendDispatcher is creating ExtendedConfigDataBackend on %s" % backendInstance)
+			#	backendInstance = ExtendedConfigDataBackend(backendInstance)
 			self._backends[backend]["instance"] = backendInstance
 			
 	def _createInstanceMethods(self):

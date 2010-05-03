@@ -2564,7 +2564,13 @@ class AuditHardware(Entity):
 		return fromJson(jsonString, 'AuditHardware')
 	
 	def __unicode__(self):
-		return u"<%s>" % self.getType()
+		res = u"<%s" % self.getType()
+		hardwareClass = self.getHardwareClass()
+		if hardwareClass:
+			res += ", hardwareClass '%s'" % hardwareClass
+		if hasattr(self, 'name'):
+			res += ", name '%s'" % self.name
+		return res + u">"
 	
 Entity.subClasses['AuditHardware'] = AuditHardware
 
@@ -2669,6 +2675,21 @@ class AuditHardwareOnHost(Relationship):
 	def setState(self, state):
 		self.state = forceAuditState(state)
 	
+	def toAuditHardware(self):
+		auditHardwareHash = { 'type': 'AuditHardware' }
+		attributes = AuditHardware.hardwareAttributes.get(self.getHardwareClass(), {}).keys()
+		
+		for (attribute, value) in self.toHash():
+			if (attribute == 'type'):
+				continue
+			if attribute in ('hardwareClass',):
+				auditHardwareHash[attribute] = value
+				continue
+			if attribute in attributes:
+				auditHardwareHash[attribute] = value
+		
+		return AuditHardware.fromHash(auditHardwareHash)
+		
 	def getIdentAttributes(self):
 		attributes = self.hardwareAttributes.get(self.hardwareClass, {}).keys()
 		attributes.sort()
@@ -2697,7 +2718,27 @@ class AuditHardwareOnHost(Relationship):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 	
 	def __unicode__(self):
-		return u"<%s hardwareClass '%s', hostId '%s'>" % (self.getType(), self.hardwareClass, self.hostId)
+		res = u"<%s hostId '%s'" % (self.getType(), self.hostId)
+		hardwareClass = self.getHardwareClass()
+		if hardwareClass:
+			res += ", hardwareClass '%s'" % hardwareClass
+		if hasattr(self, 'name'):
+			res += ", name '%s'" % self.name
+		return res + u">"
+		
 	
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
+
+
+
+
+
+
+
+
+
+
+
+
+
 

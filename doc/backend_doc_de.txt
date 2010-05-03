@@ -166,7 +166,7 @@ auditHardwareOnHost_insertObject(auditHardwareOnHost)
 
 auditHardwareOnHost_updateObject(auditHardwareOnHost)
    firstSeen, lastSeen und state werden bei allen zutreffendend Objekten aktualisiert
-   
+   firstSeen, lastSeen und state werden beim Suchen von zutreffendend Objekten ignoriert
 
 
 

@@ -2442,10 +2442,11 @@ class MySQLBackend(ConfigDataBackend):
 			if attribute in ('state', 'lastseen', 'firstseen'):
 				if not value is None:
 					update['audit_%s' % attribute] = value
-			elif value is None:
-				data[attribute] = [ None ]
+				del data[attribute]
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
+			print "WHERE", where
+			print "UPDATE", update
 			self._mysql.update('HARDWARE_CONFIG_%s' % auditHardwareOnHost.hardwareClass, where, update)
 		
 		
