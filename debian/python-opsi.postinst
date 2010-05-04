@@ -21,5 +21,7 @@ esac
 
 if [ "$1" = "configure" ] && which update-python-modules >/dev/null 2>&1; then
 	update-python-modules -i /usr/share/python-support/python-opsi
+	[ -e "/etc/opsi/dispatch.conf" ] || ln -s /etc/opsi/default.dispatch.conf /etc/opsi/dispatch.conf
+	[ -e "/etc/opsi/dispatch.conf" ] || ln -s /etc/opsi/default.acl.conf /etc/opsi/acl.conf
 fi
 
