@@ -2545,7 +2545,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if not productOnClient.actionResult:
 				nextProductOnClient.setActionResult('none')
 			if not productOnClient.actionProgress:
-				nextProductOnClient.setActionProgress('')
+				nextProductOnClient.setActionProgress(u'')
 		
 		nextProductOnClient.setModificationTime(timestamp())
 		

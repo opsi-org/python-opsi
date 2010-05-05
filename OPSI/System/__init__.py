@@ -94,19 +94,6 @@ class SystemHook(SystemSpecificHook):
 	
 	def error_copy(self, src, dst, progressSubject, exception):
 		raise exception
-	
-	
-hooks = []
-def addHook(hook):
-	global hooks
-	if not hook in hooks:
-		hooks.append(hook)
-
-def removeHook(hook):
-	global hooks
-	if hook in hooks:
-		hooks.remove(hook)
-
 
 def getDirectorySize(path):
 	path = os.path.abspath(forceFilename(path))

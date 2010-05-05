@@ -24,7 +24,7 @@
 #
 
 backend_.*         : file, opsipxeconfd
-host.*             : file, opsipxeconfd
+host_.*            : file, opsipxeconfd
 productOnClient_.* : file, opsipxeconfd
 configState_.*     : file, opsipxeconfd
 .*                 : file

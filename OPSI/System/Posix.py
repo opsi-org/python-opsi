@@ -95,6 +95,27 @@ class SystemSpecificHook():
 	
 	def error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, exception):
 		raise exception
+	
+	
+	def pre_auditHardware(self, config, hostId, progressSubject):
+		return (config, hostId, progressSubject)
+		
+	def error_auditHardware(self, config, hostId, progressSubject, exception):
+		raise exception
+		
+	def post_auditHardware(self, config, hostId, result):
+		return result
+
+hooks = []
+def addSystemHook(hook):
+	global hooks
+	if not hook in hooks:
+		hooks.append(hook)
+
+def removeSystemHook(hook):
+	global hooks
+	if hook in hooks:
+		hooks.remove(hook)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
@@ -1590,24 +1611,36 @@ class Harddisk:
 # -                                       HARDWARE INVENTORY                                          -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def auditHardware(config, hostId):
+def auditHardware(config, hostId, progressSubject=None):
+	for hook in hooks:
+		(config, hostId, progressSubject) = hook.pre_auditHardware(config, hostId, progressSubject)
 	
-	AuditHardwareOnHost.setHardwareConfig(config)
-	auditHardwareOnHosts = []
+	hostId = forceHostId(hostId)
 	
-	info = hardwareInventory(config)
-	for (hardwareClass, devices) in info.items():
-		if (hardwareClass == 'SCANPROPERTIES'):
-			continue
-		for device in devices:
-			data = { 'hardwareClass': hardwareClass }
-			for (attribute, value) in device.items():
-				data[str(attribute)] = value
-			data['hostId'] = hostId
-			auditHardwareOnHosts.append( AuditHardwareOnHost.fromHash(data) )
+	try:
+		AuditHardwareOnHost.setHardwareConfig(config)
+		auditHardwareOnHosts = []
+		
+		info = hardwareInventory(config)
+		for (hardwareClass, devices) in info.items():
+			if (hardwareClass == 'SCANPROPERTIES'):
+				continue
+			for device in devices:
+				data = { 'hardwareClass': hardwareClass }
+				for (attribute, value) in device.items():
+					data[str(attribute)] = value
+				data['hostId'] = hostId
+				auditHardwareOnHosts.append( AuditHardwareOnHost.fromHash(data) )
+	except Exception, e:
+		for hook in hooks:
+			hook.error_auditHardware(config, hostId, progressSubject, e)
+		
+	for hook in hooks:
+		auditHardwareOnHosts = hook.post_auditHardware(config, hostId, auditHardwareOnHosts)
+	
 	return auditHardwareOnHosts
 	
-def hardwareInventory(config):
+def hardwareInventory(config, progressSubject=None):
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
 		return {}
