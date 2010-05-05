@@ -195,7 +195,8 @@ class SnackUI(UI):
 		return self._screen.height
 	
 	def exit(self):
-		self._screen.finish()
+		if self._screen:
+			self._screen.finish()
 	
 	def drawRootText(self, x=1, y=1, text=u''):
 		try:

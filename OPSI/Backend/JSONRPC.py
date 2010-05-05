@@ -244,7 +244,7 @@ class JSONRPCBackend(Backend):
 				logger.debug2(u"Arg string is: %s" % argString)
 				logger.debug2(u"Call string is: %s" % callString)
 				
-				if not licenseManagementModule and methodName.find("license" != -1):
+				if not licenseManagementModule and (methodName.find("license") != -1):
 					exec(u'def %s(self, %s): return' % (methodName, argString))
 				else:
 					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
@@ -300,8 +300,8 @@ class JSONRPCBackend(Backend):
 							if not modules:
 								modules = {'customer': None}
 							for entry in self._jsonRPC(u'dispatcher_getConfig'):
-								for bn in entry(1):
-									if (bn.lower().find("sql") != -1) and (len(entry(0)) <= 4) and (entry(0).find['*'] != -1):
+								for bn in entry[1]:
+									if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
 										mysqlBackend = True
 						except Exception, e:
 							logger.info(e)
