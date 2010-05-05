@@ -608,9 +608,10 @@ class PackageControlFile(TextFile):
 		# Create ProductProperty objects
 		for productProperty in self._sections.get('productproperty', []):
 			Class = UnicodeProductProperty
-			if   productProperty.get('type').lower() in ('unicodeproductproperty', 'unicode', '', None):
+			
+			if   productProperty.get('type', '').lower() in ('unicodeproductproperty', 'unicode', ''):
 				Class = UnicodeProductProperty
-			elif productProperty.get('type').lower() in ('boolproductproperty', 'bool'):
+			elif productProperty.get('type', '').lower() in ('boolproductproperty', 'bool'):
 				Class = BoolProductProperty
 			else:
 				raise Exception(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
