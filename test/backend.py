@@ -1121,6 +1121,10 @@ class BackendTest(object):
 					break
 		
 		
+		self.backend.host_createObjects( self.depotservers )
+		hosts = self.backend.host_getObjects()
+		assert len(hosts) == len(self.hosts), u"got: '%s', expected: '%s'" % (hosts, len(self.hosts))
+		
 		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
 		assert len(hosts) == len(self.configservers), u"got: '%s', expected: '%s'" % (hosts, len(self.configservers))
 		
