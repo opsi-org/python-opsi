@@ -816,32 +816,26 @@ class FileBackend(ConfigDataBackend):
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename, ignoreCase = False)
-				if not os.path.exists(filename):
-					self._touch(filename)
+				if objType in ('OpsiClient',) and not iniFile.exists() and (mode == 'create'):
+					shutil.copyfile(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini'), filename)
+				self._touch(filename)
+				
 				cp = iniFile.parse()
 				
 				if (mode == 'create'):
+					removeSections = []
 					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
-						iniFile.delete()
-						
-						if objType in ('OpsiClient',):
-							shutil.copyfile(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini'), filename)
-						
-						self._touch(filename)
-						iniFile = IniFile(filename = filename, ignoreCase = False)
-						cp = iniFile.parse()
-					else:
-						newSection = ''
-						
-						if   objType in ('Config', 'UnicodeConfig', 'BoolConfig', 'Group', 'HostGroup'):
-							newSection = obj.getId()
-						elif objType in ('ProductOnDepot', 'ProductOnClient'):
-							newSection = obj.getProductId() + u'-state'
-						elif objType in ('ProductPropertyState',):
-							newSection = obj.getPropertyId() + u'-install'
-						
-						if newSection != '' and cp.has_section(newSection):
-							cp.remove_section(newSection)
+						removeSections = ['info', 'depotshare', 'repository']
+					elif   objType in ('Config', 'UnicodeConfig', 'BoolConfig', 'Group', 'HostGroup'):
+						removeSections = [obj.getId()]
+					elif objType in ('ProductOnDepot', 'ProductOnClient'):
+						removeSections = [obj.getProductId() + u'-state']
+					elif objType in ('ProductPropertyState',):
+						removeSections = [obj.getPropertyId() + u'-install']
+					
+					for section in removeSections:
+						if cp.has_section(section):
+							cp.remove_section(section)
 				
 				objHash = obj.toHash()
 				

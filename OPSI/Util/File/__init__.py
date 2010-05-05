@@ -62,6 +62,9 @@ class File(object):
 	def setFilename(self, filename):
 		self._filename = forceFilename(filename)
 	
+	def exists(self):
+		return os.path.exists(self._filename)
+			
 	def delete(self):
 		if os.path.exists(self._filename):
 			os.unlink(self._filename)
