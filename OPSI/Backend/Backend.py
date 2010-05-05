@@ -2580,6 +2580,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					productId   = productOnClient.productId,
 					productType = productOnClient.productType,
 					clientId    = productOnClient.clientId):
+				logger.info(u"ProductOnClient %s exist, updating" % productOnClient)
 				self.productOnClient_updateObject(productOnClient)
 			else:
 				logger.info(u"ProductOnClient %s does not exist, creating" % productOnClient)

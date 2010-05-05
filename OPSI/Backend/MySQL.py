@@ -339,7 +339,7 @@ class MySQL:
 			needClose = True
 		try:
 			query = forceUnicode(query)
-			logger.debug2(u"Query: %s" % query)
+			logger.debug(u"SQL query: %s" % query)
 			res = cursor.execute(query)
 			conn.commit()
 		finally:
