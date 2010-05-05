@@ -8,6 +8,35 @@
 
 case "$1" in
 	configure)
+		if [ -z "`getent group pcpatch`" ]; then
+			groupadd -g 992 pcpatch
+		fi
+		
+		if [ -z "`getent passwd pcpatch`" ]; then
+			useradd -u 992 -g 992 -d /var/lib/opsi -s /bin/bash pcpatch
+		fi
+		
+		if [ -z "`getent group opsiadmin`" ]; then
+			groupadd opsiadmin
+		fi
+		
+		chown -R root:pcpatch /etc/opsi/backendManager
+		find /etc/opsi/backendManager -type d -exec chmod 770 {} \;
+		find /etc/opsi/backendManager -type f -exec chmod 660 {} \;
+		chown -R root:pcpatch /etc/opsi/backends
+		chmod 770 /etc/opsi/backends
+		chmod 660 /etc/opsi/backends/*.conf
+		
+		test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
+		chown root:pcpatch /etc/opsi/pckeys
+		chmod 660 /etc/opsi/pckeys
+		
+		test -e /etc/opsi/passwd || touch /etc/opsi/passwd
+		chown root:pcpatch /etc/opsi/passwd
+		chmod 660 /etc/opsi/passwd
+		
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 	;;
 	
 	abort-upgrade|abort-remove|abort-deconfigure)
@@ -21,7 +50,5 @@ esac
 
 if [ "$1" = "configure" ] && which update-python-modules >/dev/null 2>&1; then
 	update-python-modules -i /usr/share/python-support/python-opsi
-	[ -e "/etc/opsi/dispatch.conf" ] || ln -s /etc/opsi/default.dispatch.conf /etc/opsi/dispatch.conf
-	[ -e "/etc/opsi/dispatch.conf" ] || ln -s /etc/opsi/default.acl.conf /etc/opsi/acl.conf
 fi
 

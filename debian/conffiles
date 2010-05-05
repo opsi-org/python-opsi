@@ -1,5 +1,5 @@
-etc/opsi/backendManager/acl.conf
-etc/opsi/backendManager/dispatch.conf
+etc/opsi/backendManager/acl.conf.default
+etc/opsi/backendManager/dispatch.conf.default
 etc/opsi/backendManager/extend.d/10_opsi.conf
 etc/opsi/backendManager/extend.d/20_legacy.conf
 etc/opsi/backends/dhcpd.conf

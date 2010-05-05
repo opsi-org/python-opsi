@@ -36,6 +36,7 @@ install:
 	#install -m 0644 gettext/opsi_ui_fr.mo     debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_ui.mo
 	
 	for i in `(cd files/backendManager; find -name "*.conf")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
+	for i in `(cd files/backendManager; find -name "*.conf.default")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
 	for i in `(cd files/backends; find -name "*.conf")`; do install -m 0660 files/backends/$$i debian/python-opsi/etc/opsi/backends/$$i; done
 	dh_link etc/opsi/backendManager/extend.d/20_legacy.conf etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 	
