@@ -35,7 +35,8 @@
 __version__ = '3.5'
 
 # imports
-import re, copy, time, inspect, types
+import re, time, inspect, types
+import copy as pycopy
 
 # OPSI imports
 from OPSI.Logger import *
@@ -168,7 +169,7 @@ class BaseObject(object):
 		return u"<%s>" % self.getType()
 	
 	def toHash(self):
-		hash = copy.deepcopy(self.__dict__)
+		hash = pycopy.deepcopy(self.__dict__)
 		hash['type'] = self.getType()
 		return hash
 	
@@ -2501,6 +2502,14 @@ class AuditHardware(Entity):
 				if value is None:
 					continue
 				if type.startswith('varchar'):
+					try:
+						if   value and attribute in ('vendorId', 'subsystemVendorId'):
+							value = forceHardwareVendorId(value)
+						elif value and attribute in ('deviceId', 'subsystemDeviceId'):
+							value = forceHardwareDeviceId(value)
+					except Exception, e:
+						logger.debug(e)
+						value = u''
 					kwargs[attribute] = forceUnicode(value)
 				elif (type.find('int') != -1):
 					try:
@@ -2603,6 +2612,14 @@ class AuditHardwareOnHost(Relationship):
 				if value is None:
 					continue
 				if type.startswith('varchar'):
+					try:
+						if   value and attribute in ('vendorId', 'subsystemVendorId'):
+							value = forceHardwareVendorId(value)
+						elif value and attribute in ('deviceId', 'subsystemDeviceId'):
+							value = forceHardwareDeviceId(value)
+					except Exception, e:
+						logger.debug(e)
+						value = u''
 					kwargs[attribute] = forceUnicode(value)
 				elif (type.find('int') != -1):
 					try:

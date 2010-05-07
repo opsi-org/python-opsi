@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import os, sys, subprocess, locale, threading, time
+import os, sys, subprocess, locale, threading, time, codecs
 import xml.dom.minidom
 import copy as pycopy
 
@@ -56,6 +56,26 @@ WHICH_CACHE      = {}
 class SystemSpecificHook():
 	def __init__(self):
 		pass
+	
+	def pre_reboot(self, wait):
+		return wait
+	
+	def post_reboot(self, wait):
+		return None
+	
+	def error_reboot(self, wait):
+		raise exception
+	
+	
+	def pre_halt(self, wait):
+		return wait
+	
+	def post_halt(self, wait):
+		return None
+	
+	def error_halt(self, wait):
+		raise exception
+	
 	
 	def pre_Harddisk_shred(self, partition, iterations, progressSubject):
 		return (partition, iterations, progressSubject)
@@ -99,13 +119,13 @@ class SystemSpecificHook():
 	
 	def pre_auditHardware(self, config, hostId, progressSubject):
 		return (config, hostId, progressSubject)
-		
-	def error_auditHardware(self, config, hostId, progressSubject, exception):
-		raise exception
-		
+	
 	def post_auditHardware(self, config, hostId, result):
 		return result
-
+	
+	def error_auditHardware(self, config, hostId, progressSubject, exception):
+		raise exception
+	
 hooks = []
 def addSystemHook(hook):
 	global hooks
@@ -336,16 +356,37 @@ def ifconfig(device, address, netmask=None):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def reboot(wait = 10):
-	execute(u'%s -t %d -r now' % (which('shutdown'), int(wait)), nowait = True)
-	#execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
-	#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
-	#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
+	for hook in hooks:
+		wait = hook.pre_reboot(wait)
+	
+	try:
+		execute(u'%s -t %d -r now' % (which('shutdown'), forceInt(wait)), nowait = True)
+		#execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
+		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
+		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
+	except Exception, e:
+		for hook in hooks:
+			hook.error_reboot(wait)
+	
+	for hook in hooks:
+		hook.post_reboot(wait)
 	
 def halt(wait = 10):
-	execute(u'%s -t %d -h now' % (which('shutdown'), int(wait)), nowait = True)
-	#execute(u'%s %d; %s -h now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
-	#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
-	#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
+	for hook in hooks:
+		wait = hook.pre_halt(wait)
+	
+	try:
+		execute(u'%s -t %d -h now' % (which('shutdown'), forceInt(wait)), nowait = True)
+		#execute(u'%s %d; %s -h now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
+		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
+		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
+	except Exception, e:
+		for hook in hooks:
+			hook.error_halt(wait)
+	
+	for hook in hooks:
+		hook.post_halt(wait)
+	
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                        PROCESS HANDLING                                           -
@@ -469,6 +510,29 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def getHarddisks():
+	disks = []
+	
+	#_("Looking for harddisks.\n")
+	
+	# Get all available disks
+	result = execute(u'%s -s -uB' % which('sfdisk'))
+	for line in result:
+		if not line.lstrip().startswith(u'/dev'):
+			continue
+		(dev, size) = line.split(u':')
+		size = forceInt(size.strip())
+		logger.debug(u"Found disk =>>> dev: '%s', size: %0.2f GB" % (dev, size/(1024*1024)) )
+		
+		hd = Harddisk(dev)
+		#_("Hardisk '%s' found (%s MB).\n") % (hd.device, hd.size/(1024*1024)))
+		disks.append(hd)
+	
+	if ( len(disks) <= 0 ):
+		raise Exception(u'No harddisks found!')
+	
+	return disks
+
 def getDiskSpaceUsage(path):
 	disk = os.statvfs(path)
 	info = {}
@@ -489,6 +553,7 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 	
 	fs = u''
+	credentialsFiles = []
 	if dev.lower().startswith('smb://'):
 		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
@@ -499,6 +564,26 @@ def mount(dev, mountpoint, **options):
 				options['username'] = u'guest'
 			if not 'password' in options:
 				options['password'] = u''
+			if (options['username'].find('\\') != -1):
+				(options['domain'], options['username']) = options['username'].split('\\', 1)
+			
+			credentialsFile = u"/tmp/.cifs-credentials.%s" % parts[0]
+			if os.path.exists(credentialsFile):
+				os.remove(credentialsFile)
+			f = open(credentialsFile, "w")
+			f.close()
+			os.chmod(credentialsFile, 0600)
+			f = codecs.open(credentialsFile, "w", "iso-8859-15")
+			f.write(u"username=%s\n" % options['username'])
+			f.write(u"password=%s\n" % options['password'])
+			f.close()
+			options['credentials'] = credentialsFile
+			credentialsFiles.append(credentialsFile)
+			
+			if not options['domain']:
+				del options['domain']
+			del options['username']
+			del options['password']
 		else:
 			raise Exception(u"Bad smb uri '%s'" % dev)
 		
@@ -506,8 +591,8 @@ def mount(dev, mountpoint, **options):
 	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):
 		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
-			fs = '-t davfs'
-			dev = 'http' + match.group(2) + match.group(3)
+			fs  = u'-t davfs'
+			dev = u'http' + match.group(2) + match.group(3)
 		else:
 			raise Exception(u"Bad webdav url '%s'" % dev)
 		
@@ -518,42 +603,42 @@ def mount(dev, mountpoint, **options):
 		if not 'servercert' in options:
 			options['servercert'] = u''
 		
-		f = open("/etc/davfs2/certs/trusted.pem", "w")
+		f = open(u"/etc/davfs2/certs/trusted.pem", "w")
 		f.write(options['servercert'])
 		f.close()
-		os.chmod("/etc/davfs2/certs/trusted.pem", 0644)
+		os.chmod(u"/etc/davfs2/certs/trusted.pem", 0644)
 		
-		f = open("/etc/davfs2/secrets", "r")
+		f = codecs.open(u"/etc/davfs2/secrets", "r", "utf8")
 		lines = f.readlines()
 		f.close()
-		f = open("/etc/davfs2/secrets", "w")
+		f = codecs.open(u"/etc/davfs2/secrets", "w", "utf8")
 		for line in lines:
 			if re.search("^%s\s+" % dev, line):
-				f.write("#")
+				f.write(u"#")
 			f.write(line)
-		f.write('%s "%s" "%s"\n' % (dev, options['username'], options['password']))
+		f.write(u'%s "%s" "%s"\n' % (dev, options['username'], options['password']))
 		f.close()
-		os.chmod("/etc/davfs2/secrets", 0600)
+		os.chmod(u"/etc/davfs2/secrets", 0600)
 		
-		f = open("/etc/davfs2/davfs2.conf", "r")
+		f = open(u"/etc/davfs2/davfs2.conf", "r")
 		lines = f.readlines()
 		f.close()
-		f = open("/etc/davfs2/davfs2.conf", "w")
+		f = open(u"/etc/davfs2/davfs2.conf", "w")
 		for line in lines:
 			if re.search("^servercert\s+", line):
 				f.write("#")
 			f.write(line)
-		f.write("servercert /etc/davfs2/certs/trusted.pem\n")
+		f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
 		f.close()
 		
 		del options['username']
 		del options['password']
 		del options['servercert']
 		
-	elif dev.lower().startswith('/'):
+	elif dev.lower().startswith(u'/'):
 		pass
 	
-	elif dev.lower().startswith('file://'):
+	elif dev.lower().startswith(u'file://'):
 		dev = dev[7:]
 	
 	else:
@@ -573,9 +658,13 @@ def mount(dev, mountpoint, **options):
 	try:
 		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
 	except Exception, e:
+		for f in credentialsFiles:
+			os.remove(f)
 		logger.error(u"Failed to mount '%s': %s" % (dev, e))
 		raise Exception(u"Failed to mount '%s': %s" % (dev, e))
-
+	for f in credentialsFiles:
+		os.remove(f)
+	
 def umount(devOrMountpoint):
 	cmd = u"%s %s" % (which('umount'), devOrMountpoint)
 	try:
@@ -807,7 +896,7 @@ class Harddisk:
 					elif (match.group(8).lower() in [u"7"]):
 						fs = u'ntfs'
 					
-					self.partitions.append( { 'device':	forceFileName(match.group(1) + match.group(2)),
+					self.partitions.append( { 'device':	forceFilename(match.group(1) + match.group(2)),
 								  'number':	forceInt(match.group(2)),
 								  'cylStart':	forceInt(match.group(4)),
 								  'cylEnd':	forceInt(match.group(5)),
@@ -891,7 +980,6 @@ class Harddisk:
 		
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
-		execute(cmd)
 		
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
 		execute(u'%s --re-read %s' % (which('sfdisk'), self.device))

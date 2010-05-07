@@ -180,7 +180,10 @@ class SnackUI(UI):
 		self._screen.pushHelpLine(u"")
 		
 	def __del__(self):
-		self.exit()
+		try:
+			self.exit()
+		except:
+			pass
 	
 	def getScreen(self):
 		return self._screen
@@ -199,6 +202,9 @@ class SnackUI(UI):
 			self._screen.finish()
 	
 	def drawRootText(self, x=1, y=1, text=u''):
+		text = forceUnicode(text)
+		for string in self.confidentialStrings:
+			text = text.replace(string, u'*** confidential ***')
 		try:
 			self._screen.drawRootText(x, y, text)
 			self.refresh()
@@ -215,6 +221,9 @@ class SnackUI(UI):
 			width   = forceInt(width)
 			height  = forceInt(height)
 			seconds = forceInt(seconds)
+			
+			for string in self.confidentialStrings:
+				text = text.replace(string, u'*** confidential ***')
 			
 			if (width <= 0):
 				width = self.getScreen().width - 15
@@ -251,6 +260,9 @@ class SnackUI(UI):
 			width   = forceInt(width)
 			height  = forceInt(height)
 			seconds = forceInt(seconds)
+			
+			for string in self.confidentialStrings:
+				text = text.replace(string, u'*** confidential ***')
 			
 			if (width <= 0):
 				width = self.getScreen().width - 15
@@ -334,6 +346,9 @@ class SnackUI(UI):
 			okLabel     = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
 			
+			for string in self.confidentialStrings:
+				text = text.replace(string, u'*** confidential ***')
+			
 			if (width <= 0):
 				width = self.getScreen().width - 15
 			
@@ -406,6 +421,9 @@ class SnackUI(UI):
 			text        = forceUnicode(text)
 			okLabel     = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
+			
+			for string in self.confidentialStrings:
+				text = text.replace(string, u'*** confidential ***')
 			
 			if (width <= 0):
 				width = self.getScreen().width - 15
@@ -507,6 +525,9 @@ class SnackUI(UI):
 			okLabel     = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
 			
+			for string in self.confidentialStrings:
+				text = text.replace(string, u'*** confidential ***')
+			
 			if (width <= 0):
 				width = self.getScreen().width - 15
 			
@@ -597,6 +618,9 @@ class SnackUI(UI):
 			cancelLabel = forceUnicode(cancelLabel)
 			width       = forceInt(width)
 			height      = forceInt(height)
+			
+			for string in self.confidentialStrings:
+				text = text.replace(string, u'*** confidential ***')
 			
 			if (width <= 0):
 				width = self.getScreen().width - 15
