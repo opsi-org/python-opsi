@@ -332,6 +332,10 @@ class JSONRPCBackend(Backend):
 			raise BackendIOError(u"Failed to connect to '%s': %s" % (self._address, e))
 	
 	def _jsonRPC(self, method, params=[]):
+		if self._legacyOpsi:
+			for i in range(len(params)):
+				if (params[i] == '__UNDEF__'):
+					params[i] = None
 		
 		logger.debug(u"Executing jsonrpc method '%s'" % method)
 		self._rpcLock.acquire()
