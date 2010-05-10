@@ -41,8 +41,14 @@ from OPSI.Object import *
 # Get logger instance
 logger = Logger()
 
+def_echo = \
+u'''
+def echo(string):
+	return string
+'''
 
-
+def_addActionRequest = \
+u'''
 def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo = {}):
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 	
@@ -55,9 +61,14 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			continue
 		
 		logger.debug(u"   need to check dependency to product '%s'" % (dependency.requiredProductId))
-		logger.debug(u"   product '%s' requires product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
-					% (productId, dependency.requiredProductId, dependency.requiredProductVersion,
-					   dependency.requiredPackageVersion, dependency.productAction))
+		if dependency.requiredAction:
+			logger.debug(u"   product '%s' requires action '%s' of product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
+						% (productId, dependency.requiredAction, dependency.requiredProductId, dependency.requiredProductVersion,
+						   dependency.requiredPackageVersion, dependency.productAction))
+		elif dependency.requiredInstallationStatus:
+			logger.debug(u"   product '%s' requires status '%s' of product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
+						% (productId, dependency.requiredInstallationStatus, dependency.requiredProductId, dependency.requiredProductVersion,
+						   dependency.requiredPackageVersion, dependency.productAction))
 		
 		requiredAction     = dependency.requiredAction
 		installationStatus = 'not_installed'
@@ -106,7 +117,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			continue
 			#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
 			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
-		logger.debug(u"   => adding action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
+		logger.info(u"   => adding action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
 		
 		if addedInfo.has_key(dependency.requiredProductId):
 			logger.warning(u"   => Product dependency loop detected, skipping")
@@ -128,7 +139,10 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		productOnClientByProductId[dependency.requiredProductId].setActionRequest(requiredAction)
 		
 		addActionRequest(productOnClientByProductId, dependency.requiredProductId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
+'''
 
+def_addDependentProductOnClients = \
+u'''
 def addDependentProductOnClients(productOnClients, availableProducts, productDependencies):
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
@@ -154,7 +168,10 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 		
 	return productOnClientByProductId.values()
+'''
 
+def_generateProductOnClientSequence = \
+u'''
 def generateProductOnClientSequence(productOnClients, availableProducts, productDependencies):
 	productDependenciesByProductId = {}
 	for productDependency in productDependencies:
@@ -242,240 +259,204 @@ def generateProductOnClientSequence(productOnClients, availableProducts, product
 			productOnClient.setActionSequence(i+1)
 			sortedProductOnClients.append(productOnClient)
 	return sortedProductOnClients
-	
+'''
+
+exec(def_echo)
+exec(def_addActionRequest)
+exec(def_addDependentProductOnClients)
+exec(def_generateProductOnClientSequence)
+
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
-		
-	product2 = LocalbootProduct(
-		id                 = 'product2',
-		name               = u'Product 2',
-		productVersion     = '2.0',
-		packageVersion     = 'test',
+	logger.setConsoleColor(True)
+	
+	opsiAgent = LocalbootProduct(
+		id                 = 'opsi-agent',
+		name               = u'opsi client agent',
+		productVersion     = '4.0',
+		packageVersion     = '1',
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = u"uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 95,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = []
+	)
+	
+	ultravnc = LocalbootProduct(
+		id                 = 'ultravnc',
+		name               = u'Ult@VNC',
+		productVersion     = '1.0.8.2',
+		packageVersion     = '1',
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = u"uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 90,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = []
+	)
+	
+	firefox = LocalbootProduct(
+		id                 = 'firefox',
+		name               = u'Mozilla Firefox',
+		productVersion     = '3.6',
+		packageVersion     = '1',
 		licenseRequired    = False,
 		setupScript        = "setup.ins",
 		uninstallScript    = u"uninstall.ins",
 		updateScript       = "update.ins",
 		alwaysScript       = None,
 		onceScript         = None,
-		priority           = 0,
+		priority           = -70,
 		description        = None,
 		advice             = "",
-		windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
-	)
-	
-	product3 = LocalbootProduct(
-		id                 = 'product3',
-		name               = u'Product 3',
-		productVersion     = 3,
-		packageVersion     = 1,
-		licenseRequired    = True,
-		setupScript        = "setup.ins",
-		uninstallScript    = None,
-		updateScript       = None,
-		alwaysScript       = None,
-		onceScript         = None,
-		priority           = 100,
-		description        = "---",
-		advice             = "---",
 		windowsSoftwareIds = []
 	)
 	
-	product4 = LocalbootProduct(
-		id                 = 'product4',
-		name               = u'Product 4',
-		productVersion     = "3.0",
-		packageVersion     = 24,
+	flashplayer = LocalbootProduct(
+		id                 = 'flashplayer',
+		name               = u'Adobe Flashplayer',
+		productVersion     = '10.0.45.2',
+		packageVersion     = '2',
 		licenseRequired    = False,
 		setupScript        = "setup.ins",
-		uninstallScript    = "uninstall.ins",
+		uninstallScript    = u"uninstall.ins",
 		updateScript       = None,
 		alwaysScript       = None,
 		onceScript         = None,
-		priority           = 0,
-		description        = "",
+		priority           = -20,
+		description        = None,
 		advice             = "",
 		windowsSoftwareIds = []
 	)
 	
-	product6 = LocalbootProduct(
-		id                 = 'product6',
-		name               = u'Product 6',
-		productVersion     = "1.0",
-		packageVersion     = 1,
-		licenseRequired    = False,
-		setupScript        = "setup.ins",
-		uninstallScript    = "uninstall.ins",
-		updateScript       = None,
-		alwaysScript       = None,
-		onceScript         = None,
-		priority           = 0,
-		description        = "",
-		advice             = "",
-		windowsSoftwareIds = []
-	)
-	
-	product7 = LocalbootProduct(
-		id                 = 'product7',
-		name               = u'Product 7',
-		productVersion     = "1.0",
-		packageVersion     = 1,
-		licenseRequired    = False,
-		setupScript        = "setup.ins",
-		uninstallScript    = "uninstall.ins",
-		updateScript       = None,
-		alwaysScript       = None,
-		onceScript         = None,
-		priority           = 0,
-		description        = "",
-		advice             = "",
-		windowsSoftwareIds = []
-	)
-	
-	product9 = LocalbootProduct(
-		id                 = 'product9',
-		name               = u'Product 9',
-		productVersion     = "1.0",
+	javavm = LocalbootProduct(
+		id                 = 'javavm',
+		name               = u'Sun Java',
+		productVersion     = '1.6.20',
 		packageVersion     = 2,
 		licenseRequired    = False,
 		setupScript        = "setup.ins",
-		uninstallScript    = "uninstall.ins",
+		uninstallScript    = u"uninstall.ins",
 		updateScript       = None,
 		alwaysScript       = None,
 		onceScript         = None,
-		customScript       = "custom.ins",
 		priority           = 0,
-		description        = "",
+		description        = None,
 		advice             = "",
 		windowsSoftwareIds = []
 	)
 	
-	productDependency1 = ProductDependency(
-		productId                  = product3.id,
-		productVersion             = product3.productVersion,
-		packageVersion             = product3.packageVersion,
+	
+	
+	
+	flashplayerDependency1 = ProductDependency(
+		productId                  = flashplayer.id,
+		productVersion             = flashplayer.productVersion,
+		packageVersion             = flashplayer.packageVersion,
 		productAction              = 'setup',
-		requiredProductId          = product2.id,
-		requiredProductVersion     = product2.productVersion,
-		requiredPackageVersion     = product2.packageVersion,
-		requiredAction             = 'setup',
-		requiredInstallationStatus = None,
+		requiredProductId          = firefox.id,
+		requiredProductVersion     = firefox.productVersion,
+		requiredPackageVersion     = firefox.packageVersion,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
 		requirementType            = 'before'
 	)
 	
-	productDependency2 = ProductDependency(
-		productId                  = product2.id,
-		productVersion             = product2.productVersion,
-		packageVersion             = product2.packageVersion,
+	javavmDependency1 = ProductDependency(
+		productId                  = javavm.id,
+		productVersion             = javavm.productVersion,
+		packageVersion             = javavm.packageVersion,
 		productAction              = 'setup',
-		requiredProductId          = product4.id,
-		requiredProductVersion     = None,
-		requiredPackageVersion     = None,
+		requiredProductId          = firefox.id,
+		requiredProductVersion     = firefox.productVersion,
+		requiredPackageVersion     = firefox.packageVersion,
 		requiredAction             = None,
 		requiredInstallationStatus = 'installed',
-		requirementType            = 'after'
+		requirementType            = 'before'
 	)
 	
-	productDependency3 = ProductDependency(
-		productId                  = product6.id,
-		productVersion             = product6.productVersion,
-		packageVersion             = product6.packageVersion,
-		productAction              = 'setup',
-		requiredProductId          = product7.id,
-		requiredProductVersion     = product7.productVersion,
-		requiredPackageVersion     = product7.packageVersion,
-		requiredAction             = None,
-		requiredInstallationStatus = 'installed',
-		requirementType            = 'after'
-	)
 	
-	productDependency4 = ProductDependency(
-		productId                  = product7.id,
-		productVersion             = product7.productVersion,
-		packageVersion             = product7.packageVersion,
-		productAction              = 'setup',
-		requiredProductId          = product9.id,
-		requiredProductVersion     = None,
-		requiredPackageVersion     = None,
-		requiredAction             = None,
-		requiredInstallationStatus = 'installed',
-		requirementType            = 'after'
-	)
+	
 	
 	productOnClient1 = ProductOnClient(
-		productId          = product3.getId(),
-		productType        = product3.getType(),
+		productId          = flashplayer.getId(),
+		productType        = flashplayer.getType(),
 		clientId           = 'client1.uib.local',
 		installationStatus = 'installed',
 		actionRequest      = 'setup',
 		actionProgress     = '',
-		productVersion     = product3.getProductVersion(),
-		packageVersion     = product3.getPackageVersion(),
+		productVersion     = flashplayer.getProductVersion(),
+		packageVersion     = flashplayer.getPackageVersion(),
 		modificationTime   = '2009-07-01 12:00:00'
 	)
 	productOnClient2 = ProductOnClient(
-		productId          = product7.getId(),
-		productType        = product7.getType(),
+		productId          = opsiAgent.getId(),
+		productType        = opsiAgent.getType(),
 		clientId           = 'client1.uib.local',
 		installationStatus = 'not_installed',
 		actionRequest      = 'setup',
 		actionProgress     = '',
-		productVersion     = product7.getProductVersion(),
-		packageVersion     = product7.getPackageVersion(),
+		productVersion     = None,
+		packageVersion     = None,
+		modificationTime   = '2009-07-01 12:00:00'
+	)
+	productOnClient3 = ProductOnClient(
+		productId          = javavm.getId(),
+		productType        = javavm.getType(),
+		clientId           = 'client1.uib.local',
+		installationStatus = 'not_installed',
+		actionRequest      = 'setup',
+		actionProgress     = '',
+		productVersion     = None,
+		packageVersion     = None,
+		modificationTime   = '2009-07-01 12:00:00'
+	)
+	productOnClient4 = ProductOnClient(
+		productId          = ultravnc.getId(),
+		productType        = ultravnc.getType(),
+		clientId           = 'client1.uib.local',
+		installationStatus = 'not_installed',
+		actionRequest      = 'setup',
+		actionProgress     = '',
+		productVersion     = None,
+		packageVersion     = None,
 		modificationTime   = '2009-07-01 12:00:00'
 	)
 	
 	productOnClients = addDependentProductOnClients(
-		[ productOnClient1 ],
-		[ product2, product3, product4, product6, product7, product9 ],
-		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
+		[ productOnClient1, productOnClient2, productOnClient3, productOnClient4 ],
+		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
+		[ flashplayerDependency1, javavmDependency1 ])
 	
 	for productOnClient in productOnClients:
 		print productOnClient
 	
-	assert len(productOnClients) == 3
+	assert len(productOnClients) == 5
 	
 	productOnClients = generateProductOnClientSequence(
 		productOnClients,
-		[ product2, product3, product4, product6, product7, product9 ],
-		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
+		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
+		[ flashplayerDependency1, javavmDependency1 ])
 	for productOnClient in productOnClients:
 		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
 		
 	productOnClients = addDependentProductOnClients(
-		[ productOnClient1 ],
-		[ product2, product4, product6, product7, product9 ],
-		[ productDependency1, productDependency2, productDependency3, productDependency4 ])
+		[ productOnClient1, productOnClient2, productOnClient3, productOnClient4 ],
+		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
+		[ flashplayerDependency1, javavmDependency1 ])
 	
 	for productOnClient in productOnClients:
 		print productOnClient
 	
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

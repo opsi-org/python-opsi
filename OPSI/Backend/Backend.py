@@ -53,6 +53,7 @@ from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt
 from OPSI.Util.File import ConfigFile
+import OPSI.SharedAlgorithm
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
@@ -317,7 +318,12 @@ class Backend:
 			"opsiVersion": opsiVersion,
 			"modules":     modules
 		}
-		
+	
+	def backend_getSharedAlgorithm(self, function):
+		if not hasattr(OPSI.SharedAlgorithm, 'def_%s' % function):
+			raise ValueError(u"Not such function: %s" % function)
+		return getattr(OPSI.SharedAlgorithm, 'def_%s' % function)
+	
 	def backend_exit(self):
 		pass
 	
