@@ -106,12 +106,13 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		if setActionRequestToNone:
 			logger.warning(u"   => setting action request for product '%s' to 'none'!" % productId)
 			productOnClientByProductId[productId].actionRequest = 'none'
-			return
+			# return
+			continue
 		
 		if   (actionRequest == requiredAction):
 			logger.debug(u"   => required action '%s' is already set" % requiredAction)
 			continue
-		elif (actionRequest != 'none'):
+		elif actionRequest not in (None, 'none'):
 			logger.error(u"   => cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
 						% (productId, dependency.requiredProductId, requiredAction, actionRequest))
 			continue
@@ -128,7 +129,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				productId          = dependency.requiredProductId,
 				productType        = availableProductsByProductId[dependency.requiredProductId].getType(),
 				clientId           = poc.clientId,
-				installationStatus = u'not_installed',
+				installationStatus = None,
 				actionRequest      = u'none',
 			)
 		addedInfo[dependency.requiredProductId] = {

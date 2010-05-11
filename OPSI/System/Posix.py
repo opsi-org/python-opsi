@@ -970,14 +970,9 @@ class Harddisk:
 		execute(cmd)
 		if self.ldPreload:
 			os.unsetenv("LD_PRELOAD")
-		
+		self._forceReReadPartionTable()
 	
-	def deletePartitionTable(self):
-		logger.info(u"Deleting partition table on '%s'." % self.device)
-		f = open(self.device, 'rb+')
-		f.write(chr(0)*512)
-		f.close()
-		
+	def _forceReReadPartionTable(self):
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
 		
@@ -985,6 +980,14 @@ class Harddisk:
 		execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
 		if self.ldPreload:
 			os.unsetenv("LD_PRELOAD")
+		
+	def deletePartitionTable(self):
+		logger.info(u"Deleting partition table on '%s'." % self.device)
+		f = open(self.device, 'rb+')
+		f.write(chr(0)*512)
+		f.close()
+		
+		self._forceReReadPartionTable()
 		self.label = None
 		self.partitions = []
 		

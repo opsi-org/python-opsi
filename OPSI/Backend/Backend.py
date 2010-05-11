@@ -321,7 +321,7 @@ class Backend:
 	
 	def backend_getSharedAlgorithm(self, function):
 		if not hasattr(OPSI.SharedAlgorithm, 'def_%s' % function):
-			raise ValueError(u"Not such function: %s" % function)
+			raise ValueError(u"No such function: %s" % function)
 		return getattr(OPSI.SharedAlgorithm, 'def_%s' % function)
 	
 	def backend_exit(self):
@@ -1178,14 +1178,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		#	raise Exception(u"ExtendedConfigDataBackend needs instance of ConfigDataBackend as backend, got %s" % configDataBackend.__class__.__name__)
 		ExtendedBackend.__init__(self, configDataBackend, overwrite = True)
 		self._options = {
-			'processProductPriorities':            False,
-			'processProductDependencies':          False,
+			#'processProductPriorities':            False,
+			#'processProductDependencies':          False,
 			'addProductOnClientDefaults':          False,
 			'addProductPropertyStateDefaults':     False,
 			'addConfigStateDefaults':              False,
 			'deleteConfigStateIfDefault':          False,
 			#'deleteProductPropertyStateIfDefault': False,
-			'returnObjectsOnUpdateAndCreate':      False
+			'returnObjectsOnUpdateAndCreate':      False,
+			'addDependentProductOnClients':        False,
+			'processProductOnClientSequence':      False
 		}
 		self._auditHardwareConfig = {}
 		
@@ -2108,11 +2110,81 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	
+	def _productOnClient_processWithFunction(self, productOnClients, function):
+		# Get client ids
+		productOnClientsByClient = {}
+		for poc in productOnClients:
+			if not poc.getClientId() in productOnClientsByClient.keys():
+				productOnClientsByClient[poc.getClientId()] = []
+			productOnClientsByClient[poc.getClientId()].append(poc)
+		
+		# Get depot to client assignment
+		depotToClients = {}
+		for clientToDepot in self.configState_getClientToDepotserver(clientIds = productOnClientsByClient.keys()):
+			if not depotToClients.has_key(clientToDepot['depotId']):
+				depotToClients[clientToDepot['depotId']] = []
+			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+		
+		productOnClients = []
+		productCache = {}
+		dependencyCache = {}
+		for (depotId, clientIds) in depotToClients.items():
+			productOnDepots = self._backend.productOnDepot_getObjects(depotId = depotId)
+			products = []
+			productDependencies = []
+			for productOnDepot in productOnDepots:
+				if productCache.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion) is None:
+					if not productCache.has_key(productOnDepot.productId):
+						productCache[productOnDepot.productId] = {}
+					if not productCache[productOnDepot.productId].has_key(productOnDepot.productVersion):
+						productCache[productOnDepot.productId][productOnDepot.productVersion] = {}
+					objs = self._backend.product_getObjects(
+							id             = productOnDepot.productId,
+							productVersion = productOnDepot.productVersion,
+							packageVersion = productOnDepot.packageVersion
+						)
+					if not objs:
+						raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found" \
+							% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+					productCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion] = objs[0]
+				products.append(
+					productCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion]
+				)
+				
+				if dependencyCache.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion) is None:
+					if not dependencyCache.has_key(productOnDepot.productId):
+						dependencyCache[productOnDepot.productId] = {}
+					if not dependencyCache[productOnDepot.productId].has_key(productOnDepot.productVersion):
+						dependencyCache[productOnDepot.productId][productOnDepot.productVersion] = {}
+					dependencyCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion] = \
+						self._backend.productDependency_getObjects(
+							productId      = productOnDepot.productId,
+							productVersion = productOnDepot.productVersion,
+							packageVersion = productOnDepot.packageVersion
+						)
+				productDependencies.extend(
+					dependencyCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion]
+				)
+			
+			for clientId in clientIds:
+				productOnClients.extend(
+					function(
+						productOnClients    = productOnClientsByClient[clientId],
+						availableProducts   = products,
+						productDependencies = productDependencies
+					)
+				)
+		return productOnClients
+	
+	def productOnClient_generateSequence(self, productOnClients):
+		return self._productOnClient_processWithFunction(productOnClients, OPSI.SharedAlgorithm.generateProductOnClientSequence)
+		
+	def productOnClient_addDependencies(self, productOnClients):
+		return self._productOnClient_processWithFunction(productOnClients, OPSI.SharedAlgorithm.addDependentProductOnClients)
+	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		'''
-		# TODO: remove action if product locked on depot?
-			remove action if product/package version in productOnClient differs from version on depot?
-		
 		possible attributes/filter-keys of ProductOnClient are:
 			productId
 			productType
@@ -2153,17 +2225,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				and (not filter.get('actionProgress')     or None            in forceList(filter['actionProgress'])) \
 				and (not filter.get('actionResult')       or None            in forceList(filter['actionResult']))
 		
-		if (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) or self._options['processProductDependencies']:
+		if (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) or self._options['processProductOnClientSequence']:
 			# Do not filter out ProductOnClients on the basis of these attributes in this case
 			# If filter is kept unchanged we cannot distinguish between "missing" and "filtered" ProductOnClients
-			# We also need to know installationStatus and actionRequest of every product to test if dependencies are fulfilled
+			# We also need to know installationStatus and actionRequest of every product to create sequence
 			pocFilter = {}
 			for (key, value) in filter.items():
 				if key in ('installationStatus', 'actionRequest', 'productVersion', 'packageVersion', 'modificationTime', 'targetState', 'lastAction', 'actionProgress', 'actionResult'):
 					continue
 				pocFilter[key] = value
 				
-		if (self._options['addProductOnClientDefaults'] or self._options['processProductDependencies'] or self._options['processProductPriorities']) and attributes:
+		if (self._options['addProductOnClientDefaults'] or self._options['processProductOnClientSequence']) and attributes:
 			# In this case we definetly need to add the following attributes
 			if not 'installationStatus' in pocAttributes: pocAttributes.append('installationStatus')
 			if not 'actionRequest'      in pocAttributes: pocAttributes.append('actionRequest')
@@ -2174,36 +2246,28 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		productOnClients = self._backend.productOnClient_getObjects(pocAttributes, **pocFilter)
 		logger.debug(u"Got productOnClients")
 		
-		# We need to adjust ProductOnClients if:
-		#    * missing ProductOnClients should be generated (addProductOnClientDefaults) and the default matches the filter
-		#    * we should sort by priority (processProductPriorities)
-		#    * ProductOnClients should be created to achieve product dependencies (processProductDependencies)
-			
-		if not (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) and not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
+		if not (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) and not self._options['processProductOnClientSequence']:
 			# No adjustment needed => done!
 			return productOnClients
 		
 		logger.debug(u"Need to adjust productOnClients")
 		
-		# Get all client ids which match the filter
-		clientIds = self.host_getIdents(id = pocFilter.get('clientId'), returnType = 'unicode')
-		logger.debug(u"   * got clientIds")
-		
-		# Get depot to client assignment
-		depotToClients = {}
-		for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
-			if not depotToClients.has_key(clientToDepot['depotId']):
-				depotToClients[clientToDepot['depotId']] = []
-			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
-		logger.debug(u"   * got depotToClients")
-		
-		
-		productOnDepots = {}
-		if self._options['processProductDependencies']:
-			# Get ALL product on depots
-			for depotId in depotToClients.keys():
-				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(depotId = depotId)
-		else:
+		# Create missing product states if addProductOnClientDefaults is set
+		if self._options['addProductOnClientDefaults']:
+			# Get all client ids which match the filter
+			clientIds = self.host_getIdents(id = pocFilter.get('clientId'), returnType = 'unicode')
+			logger.debug(u"   * got clientIds")
+			
+			# Get depot to client assignment
+			depotToClients = {}
+			for clientToDepot in self.configState_getClientToDepotserver(clientIds = clientIds):
+				if not depotToClients.has_key(clientToDepot['depotId']):
+					depotToClients[clientToDepot['depotId']] = []
+				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+			logger.debug(u"   * got depotToClients")
+			
+			
+			productOnDepots = {}
 			# Get product on depots which match the filter
 			for depotId in depotToClients.keys():
 				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
@@ -2212,23 +2276,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 								productType    = pocFilter.get('productType'),
 								productVersion = pocFilter.get('productVersion'),
 								packageVersion = pocFilter.get('packageVersion'))
-		
-		logger.debug(u"   * got productOnDepots")
-		
-		# Create data structure for product states to find missing ones
-		pocByClientIdAndProductId = {}
-		for clientId in clientIds:
-			pocByClientIdAndProductId[clientId] = {}
-		for poc in productOnClients:
-			pocByClientIdAndProductId[poc.clientId][poc.productId] = poc
-		
-		logger.debug(u"   * created pocByClientIdAndProductId")
-		#for (clientId, pocs) in pocByClientIdAndProductId.items():
-		#	for (productId, poc) in pocs.items():
-		#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
-		
-		# Create missing product states if addProductOnClientDefaults is set
-		if self._options['addProductOnClientDefaults']:
+			
+			logger.debug(u"   * got productOnDepots")
+			
+			# Create data structure for product states to find missing ones
+			pocByClientIdAndProductId = {}
+			for clientId in clientIds:
+				pocByClientIdAndProductId[clientId] = {}
+			for poc in productOnClients:
+				pocByClientIdAndProductId[poc.clientId][poc.productId] = poc
+			
+			logger.debug(u"   * created pocByClientIdAndProductId")
+			#for (clientId, pocs) in pocByClientIdAndProductId.items():
+			#	for (productId, poc) in pocs.items():
+			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
+			
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
@@ -2242,257 +2304,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 									actionRequest      = u'none',
 							)
 							productOnClients.append(poc)
-							if self._options['processProductPriorities'] or self._options['processProductDependencies']:
-								pocByClientIdAndProductId[clientId][pod.productId] = poc
 			
 			logger.debug(u"   * created productOnClient defaults")
 			#for (clientId, pocs) in pocByClientIdAndProductId.items():
 			#	for (productId, poc) in pocs.items():
 			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 		
-		adjustedProductOnClients = []
-		if not self._options['processProductPriorities'] and not self._options['processProductDependencies']:
-			currentFilter = {}
-			for (key, value) in filter.items():
-				if key in ('productType', 'clientId'):
-					continue
-				currentFilter[key] = value
-				
-			if currentFilter:
-				for productOnClient in productOnClients:
-					if self._objectHashMatches(productOnClient.toHash(), **currentFilter):
-						adjustedProductOnClients.append(productOnClient)
-			else:
-				adjustedProductOnClients = productOnClients
-			# No more adjustments needed => done!
-			return adjustedProductOnClients
+		if not self._options['processProductOnClientSequence']:
+			return productOnClients
 		
-		logger.debug(u"   * processing product priorities/dependencies")
-		
-		# Process priorities/dependencies depot by depot
-		currentFilter = {}
-		for (key, value) in filter.items():
-			if key in ('clientId',):
-				continue
-			currentFilter[key] = value
-		
-		for (depotId, depotClientIds) in depotToClients.items():
-			# Get needed product informations (priority, dependencies)
-			logger.debug(u"   * depot %s" % depotId)
-			
-			depotProducts = {}
-			depotDependencies = {}
-			depotProductSequence = []
-			priorityToProductIds = {}
-			
-			for pod in productOnDepots[depotId]:
-				product = self.product_getObjects(
-					id             = pod.productId,
-					productVersion = pod.productVersion,
-					packageVersion = pod.packageVersion)
-				if not product:
-					logger.critical(u"Product '%s_%s-%s' not found" % (pod.productId, pod.productVersion, pod.packageVersion))
-					continue
-				
-				product = product[0]
-				if not depotProducts.has_key(product.id):
-					depotProducts[product.id] = product
-				
-				for pd in self.productDependency_getObjects(
-						productId      = product.id,
-						productVersion = product.productVersion,
-						packageVersion = product.packageVersion):
-					rp = self.product_getObjects(
-							id             = pd.requiredProductId,
-							productVersion = pd.requiredProductVersion,
-							packageVersion = pd.requiredPackageVersion)
-					if not rp:
-						rproductv = pd.requiredProductVersion
-						if rproductv is None: rproductv = 'xxxx'
-						rpackagev = pd.requiredPackageVersion
-						if rpackagev is None: rpackagev = 'xxxx'
-						logger.warning(u"Product '%s_%s-%s' defines dependency to product '%s_%s-%s', which is unknown => ignoring dependency!" \
-								% (product.id, product.productVersion, product.packageVersion, pd.requiredProductId, rproductv, rpackagev))
-						continue
-					rp = rp[0]
-					
-					if not depotDependencies.has_key(product.id):
-						depotDependencies[product.id] = []
-					depotDependencies[product.id].append(pd)
-			
-			logger.debug(u"      * got product informations for depot %s" % depotId)
-			
-			if self._options['processProductPriorities']:
-				logger.debug(u"      * Sorting products by priority for depot %s" % depotId)
-				for (productId, product) in depotProducts.items():
-					if not priorityToProductIds.has_key(product.getPriority()):
-						priorityToProductIds[product.getPriority()] = []
-					priorityToProductIds[product.getPriority()].append(productId)
-				priorities = priorityToProductIds.keys()
-				priorities.sort()
-				priorities.reverse()
-				for priority in priorities:
-					depotProductSequence.extend(priorityToProductIds[priority])
-				
-				logger.debug(u"      * sequence after priority sorting (depot: %s):" % depotId)
-				for i in range(len(depotProductSequence)):
-					logger.debug(u"        [%2.0f] %s" % (i, depotProductSequence[i]))
-			
-			for clientId in depotClientIds:
-				logger.debug(u"         * client %s" % clientId)
-				sequence = list(depotProductSequence)
-				
-				if self._options['processProductDependencies']:
-					logger.debug(u"            - processing dependencies")
-					# Add dependent product actions
-					def addActionRequest(pocByClientIdAndProductId, clientId, poc, addedInfo):
-						logger.debug(u"              checking dependencies for product '%s', action '%s'" % (poc, poc.actionRequest))
-						for dependency in depotDependencies.get(poc.productId, []):
-							if (dependency.productAction != poc.actionRequest):
-								continue
-							
-							logger.debug(u"              need to check dependency to product '%s'" % (dependency.requiredProductId))
-							logger.debug(u"              product '%s' requires product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
-										% (poc.productId, dependency.requiredProductId, dependency.requiredProductVersion, dependency.requiredPackageVersion, dependency.productAction))
-							
-							requiredAction     = dependency.requiredAction
-							installationStatus = 'not_installed'
-							actionRequest      = 'none'
-							if pocByClientIdAndProductId[clientId].has_key(dependency.requiredProductId):
-								installationStatus = pocByClientIdAndProductId[clientId][dependency.requiredProductId].installationStatus
-								actionRequest      = pocByClientIdAndProductId[clientId][dependency.requiredProductId].actionRequest
-							if not requiredAction:
-								if   (dependency.requiredInstallationStatus == installationStatus):
-									logger.debug(u"              required installation status '%s' is fulfilled" % dependency.requiredInstallationStatus)
-									continue
-								elif (dependency.requiredInstallationStatus == 'installed'):
-									requiredAction = 'setup'
-								elif (dependency.requiredInstallationStatus == 'not_installed'):
-									requiredAction = 'uninstall'
-							
-							# An action is required => check if possible
-							logger.debug(u"              need to set action '%s' for product '%s' to fulfill dependency" % (requiredAction, dependency.requiredProductId))
-							
-							setActionRequestToNone = False
-							if not depotProducts.has_key(dependency.requiredProductId):
-								logger.warning(u"              product '%s' defines dependency to product '%s', which does not exist on depot '%s'" \
-													% (poc.productId, dependency.requiredProductId, depotId))
-								setActionRequestToNone = True
-							
-							elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != depotProducts[dependency.requiredProductId].productVersion):
-								logger.warning(u"              product '%s' defines dependency to product '%s', but product version '%s' does not exist on depot '%s'" \
-													% (poc.productId, dependency.requiredProductId, dependency.requiredProductVersion, depotId))
-								setActionRequestToNone = True
-							elif (not dependency.requiredPackageVersion is None and dependency.requiredPackageVersion != depotProducts[dependency.requiredProductId].packageVersion):
-								logger.warning(u"              product '%s' defines dependency to product '%s', but package version '%s' does not exist on depot '%s'" \
-													% (poc.productId, dependency.requiredProductId, dependency.requiredPackageVersion, depotId))
-								setActionRequestToNone = True
-							
-							if setActionRequestToNone:
-								logger.warning(u"               => setting action request for product '%s' on client '%s' to 'none'!" % (poc.productId, clientId))
-								pocByClientIdAndProductId[clientId][poc.productId].actionRequest = 'none'
-								return
-							
-							if   (actionRequest == requiredAction):
-								logger.debug(u"              required action '%s' is already set" % requiredAction)
-								continue
-							elif (actionRequest != 'none'):
-								logger.error(u"              cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
-											% (poc.productId, dependency.requiredProductId, requiredAction, actionRequest))
-								continue
-								#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
-								#		% (poc.productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
-							logger.debug(u"              need to add action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
-							
-							if addedInfo.has_key(dependency.requiredProductId):
-								logger.warning(u"Product dependency loop detected, skipping")
-								continue
-							
-							if not pocByClientIdAndProductId[clientId].has_key(dependency.requiredProductId):
-								pocByClientIdAndProductId[clientId][dependency.requiredProductId] = ProductOnClient(
-									productId          = dependency.requiredProductId,
-									productType        = depotProducts[dependency.requiredProductId].productType,
-									clientId           = clientId,
-									installationStatus = u'not_installed',
-									actionRequest      = u'none',
-								)
-							addedInfo[dependency.requiredProductId] = {
-								'addedForProduct': requiredAction,
-								'requiredAction':  requiredAction,
-								'requirementType': dependency.requirementType
-							}
-							pocByClientIdAndProductId[clientId][dependency.requiredProductId].setActionRequest(requiredAction)
-							addActionRequest(pocByClientIdAndProductId, clientId, pocByClientIdAndProductId[clientId][dependency.requiredProductId], addedInfo)
-					
-					addedInfo = {}
-					for (productId, poc) in pocByClientIdAndProductId[clientId].items():
-						if (poc.actionRequest == 'none') or not depotDependencies.get(poc.productId):
-							continue
-						addActionRequest(pocByClientIdAndProductId, clientId, poc, addedInfo)
-					
-					if addedInfo:
-						for run in (1, 2):
-							for (requiredProductId, info) in addedInfo.items():
-								logger.debug(u"              correcting sequence for action '%s', product '%s'" % (info['requiredAction'], requiredProductId))
-								(ppos, dpos) = (0, 0)
-								for i in range(len(sequence)):
-									if   (sequence[i] == info['addedForProduct']):
-										ppos = i
-									elif (sequence[i] == requiredProductId):
-										dpos = i
-								if   (info['requirementType'] == 'before') and (ppos < dpos):
-									if (run == 2):
-										raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-														% (info['addedForProduct'], requiredProductId))
-									sequence.remove(requiredProductId)
-									sequence.insert(ppos, requiredProductId)
-								elif (info['requirementType'] == 'after') and (dpos < ppos):
-									if (run == 2):
-										raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-														% (info['addedForProduct'], requiredProductId))
-									sequence.remove(requiredProductId)
-									sequence.insert(ppos+1, requiredProductId)
-							
-							logger.debug(u"              sequence after dependency sorting run %d (client: %s):" % (run, clientId))
-							for i in range(len(sequence)):
-								logger.debug(u"                 [%2.0f] %s" % (i, sequence[i]))
-				
-				actionSequence = -1
-				for productId in sequence:
-					if not pocByClientIdAndProductId[clientId].has_key(productId):
-						continue
-					
-					if filter and not self._objectHashMatches({
-							'productId':          productId,
-							'productType':        pocByClientIdAndProductId[clientId][productId].productType,
-							'installationStatus': pocByClientIdAndProductId[clientId][productId].installationStatus,
-#							'targetState':        pocByClientIdAndProductId[clientId][productId].targetState,
-							'targetConfiguration': pocByClientIdAndProductId[clientId][productId].targetConfiguration,
-							'actionRequest':      pocByClientIdAndProductId[clientId][productId].actionRequest,
-							'lastAction':         pocByClientIdAndProductId[clientId][productId].lastAction,
-							'actionProgress':     pocByClientIdAndProductId[clientId][productId].actionProgress,
-							'actionResult':       pocByClientIdAndProductId[clientId][productId].actionResult,
-							'productVersion':     pocByClientIdAndProductId[clientId][productId].productVersion,
-							'packageVersion':     pocByClientIdAndProductId[clientId][productId].packageVersion,
-							'modificationTime':   pocByClientIdAndProductId[clientId][productId].modificationTime },
-							**currentFilter):
-						logger.debug2(u"              filtered productOnClient %s" % pocByClientIdAndProductId[clientId][productId])
-						continue
-					logger.debug(u"            - adding results (clientId: '%s', productId: '%s', installationStatus: '%s', actionRequest: '%s')" \
-										% (	clientId, productId, \
-											pocByClientIdAndProductId[clientId][productId].installationStatus, \
-											pocByClientIdAndProductId[clientId][productId].actionRequest))
-					
-					if (pocByClientIdAndProductId[clientId][productId].actionRequest != 'none'):
-						actionSequence += 1
-						pocByClientIdAndProductId[clientId][productId].setActionSequence(actionSequence)
-					adjustedProductOnClients.append(pocByClientIdAndProductId[clientId][productId])
-				
-				logger.debug(u"         * client %s processed" % clientId)
-			
-			logger.debug(u"   * depot %s processed" % depotId)
-		
-		return adjustedProductOnClients
+		logger.debug(u"   * generating productOnClient sequence")
+		return self.productOnClient_generateSequence(productOnClients)
 	
 	def _productOnClientUpdateOrCreate(self, productOnClient, update=False):
 		nextProductOnClient = None
@@ -2565,7 +2387,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	
 	def productOnClient_createObjects(self, productOnClients):
 		result = []
-		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
+		
+		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
+		if self._options['addDependentProductOnClients']:
+			productOnClients = self.productOnClient_addDependencies(productOnClients)
+		
+		for productOnClient in productOnClients:
 			logger.info(u"Creating productOnClient %s" % productOnClient)
 			self.productOnClient_insertObject(productOnClient)
 			if self._options['returnObjectsOnUpdateAndCreate']:
@@ -2579,7 +2406,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	
 	def productOnClient_updateObjects(self, productOnClients):
 		result = []
+		
 		productOnClients = forceObjectClassList(productOnClients, ProductOnClient)
+		if self._options['addDependentProductOnClients']:
+			productOnClients = self.productOnClient_addDependencies(productOnClients)
+		
 		for productOnClient in productOnClients:
 			logger.info(u"Updating productOnClient '%s'" % productOnClient)
 			if self.productOnClient_getIdents(

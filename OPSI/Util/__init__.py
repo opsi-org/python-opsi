@@ -608,19 +608,23 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
 	if excludeDir:
-		excludeDir = forceUnicode(excludeDir)
+		if (str(type(excludeDir)).find("SRE_Pattern") == -1):
+			excludeDir = re.compile(forceUnicode(excludeDir))
 	else:
 		excludeDir = None
 	if excludeFile:
-		excludeFile = forceUnicode(excludeFile)
+		if (str(type(excludeFile)).find("SRE_Pattern") == -1):
+			excludeFile = re.compile(forceUnicode(excludeFile))
 	else:
 		excludeFile = None
 	if includeDir:
-		includeDir = forceUnicode(includeDir)
+		if (str(type(includeDir)).find("SRE_Pattern") == -1):
+			includeDir = re.compile(forceUnicode(includeDir))
 	else:
 		includeDir = None
 	if includeFile:
-		includeFile = forceUnicode(includeFile)
+		if (str(type(includeFile)).find("SRE_Pattern") == -1):
+			includeFile = re.compile(forceUnicode(includeFile))
 	else:
 		includeFile = None
 	returnDirs = forceBool(returnDirs)
@@ -629,9 +633,6 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	files = []
 	entries = os.listdir(directory)
 	for entry in entries:
-		#TODO: . + .. won't be returned from listdir
-		if entry in (u'.', u'..'):
-			continue
 		if os.path.islink(os.path.join(directory, entry)):
 			if returnLinks:
 				files.append( os.path.join(prefix, entry) )

@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = "3.5"
+__version__ = "4.0"
 
 import os, codecs, re, ConfigParser, StringIO, cStringIO
 
@@ -207,7 +207,7 @@ class TextFile(LockableFile):
 	def readlines(self):
 		self._lines = []
 		if not self._fileHandle:
-			for encoding in ('utf-8', 'latin_1', 'cp1252', 'utf-16', 'replace'):
+			for encoding in ('utf-8', 'utf-16', 'latin_1', 'cp1252', 'replace'):
 				errors = 'strict'
 				if (encoding == 'replace'):
 					errors = 'replace'
@@ -358,9 +358,10 @@ class ChangelogFile(TextFile):
 		self._entries = entries
 	
 class ConfigFile(TextFile):
-	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '#']):
+	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '#'], lstrip = True):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
+		self._lstrip = forceBool(lstrip)
 		self._parsed = False
 	
 	def parse(self, lines=None):
@@ -371,9 +372,13 @@ class ConfigFile(TextFile):
 		self._parsed = False
 		lines = []
 		for line in self._lines:
-			line = line.strip()
-			if not line or line[0] in self._commentChars:
+			l = line.strip()
+			if not l or l[0] in self._commentChars:
 				continue
+			if self._lstrip:
+				line = line.strip()
+			else:
+				line = line.rstrip()
 			for cc in self._commentChars:
 				index = line.find(cc)
 				if (index == -1):
@@ -510,6 +515,8 @@ class InfFile(ConfigFile):
 		self._parsed = False
 		self._devices = []
 		
+		path = os.path.dirname(self._filename)
+		
 		deviceClass = u'???'
 		deviceSections = []
 		appendNext = False
@@ -578,59 +585,141 @@ class InfFile(ConfigFile):
 		def isDeviceSection(section):
 			if section in deviceSections:
 				return True
-			for section in section.split(u'.'):
-				if section in deviceSections:
-					return True
-			return False
+			for s in section.split(u'.', 1):
+				if not s in deviceSections:
+					return False
+			return True
 		
 		found = []
 		section = ''
 		sectionsParsed = []
 		for line in lines:
-			match = re.search(self.sectionRegex, line)
-			if match:
-				if section and isDeviceSection(section):
-					sectionsParsed.append(section)
-				section = match.group(1)
-				if isDeviceSection(section): logger.debug(u"   - Parsing device section: %s" % section)
-			else:
-				if isDeviceSection(section) and not section in sectionsParsed:
-					try:
-						devString = line.split(u'=')[1].split(u',')[1].strip()
-						logger.debug(u"      - Processing device string: %s" % devString)
-						type = ''
-						match = re.search(self.hdaudioDeviceRegex, devString)
-						if match:
-							type = u'HDAUDIO'
-						else:
-							match = re.search(self.pciDeviceRegex, devString)
+			try:
+				match = re.search(self.sectionRegex, line)
+				if match:
+					if section and isDeviceSection(section):
+						sectionsParsed.append(section)
+					section = match.group(1)
+					if isDeviceSection(section): logger.debug(u"   - Parsing device section: %s" % section)
+				else:
+					if isDeviceSection(section) and not section in sectionsParsed:
+						try:
+							if (line.find('=') == -1) or (line.find(',') == -1):
+								continue
+							devString = line.split(u'=')[1].split(u',')[1].strip()
+							logger.debug(u"      - Processing device string: %s" % devString)
+							type = ''
+							match = re.search(self.hdaudioDeviceRegex, devString)
 							if match:
-								type = u'PCI'
+								type = u'HDAUDIO'
 							else:
-								match = re.search(self.usbDeviceRegex, devString)
+								match = re.search(self.pciDeviceRegex, devString)
 								if match:
-									type = u'USB'
+									type = u'PCI'
 								else:
-									match = re.search(self.acpiDeviceRegex, devString)
+									match = re.search(self.usbDeviceRegex, devString)
 									if match:
-										type = u'ACPI'
-						if match:
-							logger.debug(u"         - Device type is %s" % type)
-							if (type == u'ACPI'):
-								vendor = match.group(1)
-								device = match.group(2)
-							else:
-								vendor = forceHardwareVendorId(match.group(1))
-								device = forceHardwareDeviceId(match.group(2))
-							if u"%s:%s" % (vendor, device) not in found:
-								logger.debug(u"         - Found %s device: %s:%s" % (type, vendor, device))
-								found.append(u"%s:%s:%s" % (type, vendor, device))
-								self._devices.append( { 'path': self._dirname, 'class': deviceClass, 'vendor': vendor, 'device': device, 'type': type } )
-					except IndexError:
-						logger.warning(u"Skipping bad line '%s' in file %s" % (line, self._filename))
+										type = u'USB'
+									else:
+										match = re.search(self.acpiDeviceRegex, devString)
+										if match:
+											type = u'ACPI'
+							if match:
+								logger.debug(u"         - Device type is %s" % type)
+								if (type == u'ACPI'):
+									vendor = match.group(1)
+									device = match.group(2)
+								else:
+									vendor = forceHardwareVendorId(match.group(1))
+									device = forceHardwareDeviceId(match.group(2))
+								if u"%s:%s" % (vendor, device) not in found:
+									logger.debug(u"         - Found %s device: %s:%s" % (type, vendor, device))
+									found.append(u"%s:%s:%s" % (type, vendor, device))
+									self._devices.append( { 'path': path, 'class': deviceClass, 'vendor': vendor, 'device': device, 'type': type } )
+						except IndexError:
+							logger.warning(u"Skipping bad line '%s' in file %s" % (line, self._filename))
+			except Exception, e:
+				logger.error(u"Parse error in inf file '%s' line '%s': %s" % (self._filename, line, e))
 		self._parsed = True
 
 
+class PciidsFile(ConfigFile):
+	
+	def __init__(self, filename, lockFailTimeout = 2000):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'], lstrip = False)
+		self._devices = {}
+		self._vendors = {}
+		self._subDevices = {}
+		
+	def getVendor(self, vendorId):
+		vendorId = forceHardwareVendorId(vendorId)
+		if not self._parsed:
+			self.parse()
+		return self._vendors.get(vendorId, None)
+	
+	def getDevice(self, vendorId, deviceId):
+		vendorId = forceHardwareVendorId(vendorId)
+		deviceId = forceHardwareDeviceId(deviceId)
+		if not self._parsed:
+			self.parse()
+		return self._devices.get(vendorId, {}).get(deviceId, None)
+	
+	def getSubDevice(self, vendorId, deviceId, subVendorId, subDeviceId):
+		vendorId = forceHardwareVendorId(vendorId)
+		deviceId = forceHardwareDeviceId(deviceId)
+		subVendorId = forceHardwareVendorId(subVendorId)
+		subDeviceId = forceHardwareDeviceId(subDeviceId)
+		if not self._parsed:
+			self.parse()
+		return self._subDevices.get(vendorId, {}).get(deviceId, {}).get(subVendorId + ':' + subDeviceId, None)
+	
+	def parse(self, lines=None):
+		logger.debug(u"Parsing ids file %s" % self._filename)
+		
+		lines = ConfigFile.parse(self, lines)
+		self._parsed = False
+		
+		self._devices = {}
+		self._vendors = {}
+		self._subDevices = {}
+		
+		currentVendorId = None
+		currentDeviceId = None
+		for line in lines:
+			try:
+				if line.startswith(u'C '):
+					# Start of list of known device classes, subclasses and programming interfaces
+					break
+				
+				if line.startswith(u'\t'):
+					if not currentVendorId or not self._devices.has_key(currentVendorId):
+						raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
+					if line.startswith(u'\t\t'):
+						if not currentDeviceId or not self._subDevices.has_key(currentVendorId) or not self._subDevices[currentVendorId].has_key(currentDeviceId):
+							raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
+						(subVendorId, subDeviceId, subName) = line.lstrip().split(None, 2)
+						subVendorId = forceHardwareVendorId(subVendorId)
+						subDeviceId = forceHardwareDeviceId(subDeviceId)
+						self._subDevices[currentVendorId][currentDeviceId][subVendorId + ':' + subDeviceId] = subName.strip()
+					else:
+						(deviceId, deviceName) = line.lstrip().split(None, 1)
+						currentDeviceId = deviceId = forceHardwareDeviceId(deviceId)
+						if not self._subDevices[vendorId].has_key(deviceId):
+							self._subDevices[vendorId][deviceId] = {}
+						self._devices[currentVendorId][deviceId] = deviceName.strip()
+				else:
+					(vendorId, vendorName) = line.split(None, 1)
+					currentVendorId = vendorId = forceHardwareVendorId(vendorId)
+					if not self._devices.has_key(vendorId):
+						self._devices[vendorId] = {}
+					if not self._subDevices.has_key(vendorId):
+						self._subDevices[vendorId] = {}
+					self._vendors[vendorId] = vendorName.strip()
+			except Exception, e:
+				logger.error(e)
+		self._parsed = True
+
+UsbidsFile = PciidsFile
 
 class TxtSetupOemFile(ConfigFile):
 	sectionRegex     = re.compile('\[\s*([^\]]+)\s*\]')
@@ -1448,6 +1537,117 @@ class DHCPDConfFile(TextFile):
 	
 	
 infTestData = [
+'''
+; SMBUSati.inf
+;
+; Installation file (.inf) for the ATI SMBus device.
+;
+; (c) Copyright 2002-2006 ATI Technologies Inc
+;
+
+[Version]
+Signature="$CHICAGO$"
+Provider=%ATI%
+ClassGUID={4d36e97d-e325-11ce-bfc1-08002be10318}
+Class=System
+CatalogFile=SMbusati.cat
+DriverVer=02/26/2007,5.10.1000.8
+
+[DestinationDirs]
+DefaultDestDir   = 12
+
+;
+; Driver information
+;
+
+[Manufacturer]
+%ATI%   = ATI.Mfg, NTamd64
+
+
+[ATI.Mfg]
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4353
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4363
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4372
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4385
+
+[ATI.Mfg.NTamd64]
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4353
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4363
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4372
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4385
+
+;
+; General installation section
+;
+
+[ATISMBus]
+AddReg=Install.AddReg
+
+[ATISMBus64]
+AddReg=Install.AddReg.NTamd64
+
+;
+; Service Installation
+;                     
+
+[ATISMBus.Services]
+AddService = , 0x00000002
+
+[ATISMBus64.Services]
+AddService = , 0x00000002
+
+[ATISMBus_Service_Inst]
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START 
+ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE
+LoadOrderGroup = Pointer Port
+
+[ATISMBus_EventLog_Inst]
+AddReg = ATISMBus_EventLog_AddReg
+
+[ATISMBus_EventLog_AddReg]
+
+[Install.AddReg]
+HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",DisplayName,,"ATI SMBus"
+HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",Version,,"5.10.1000.8"
+HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",Install,,"Success"
+
+[Install.AddReg.NTamd64]
+HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",DisplayName,,"ATI SMBus"
+HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",Version,,"5.10.1000.8"
+HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",Install,,"Success"
+
+;
+; Source file information
+;
+
+[SourceDisksNames]
+1 = %DiskId1%,,,
+
+[SourceDisksFiles]
+; Files for disk ATI Technologies Inc Installation Disk #1 (System)
+
+[Strings]
+
+;
+; Non-Localizable Strings
+;
+
+REG_SZ         = 0x00000000
+REG_MULTI_SZ   = 0x00010000
+REG_EXPAND_SZ  = 0x00020000
+REG_BINARY     = 0x00000001
+REG_DWORD      = 0x00010001
+SERVICEROOT    = "System\CurrentControlSet\Services"
+
+;
+; Localizable Strings
+;
+
+ATI.DeviceDesc0 = "ATI SMBus"
+DiskId1 = "ATI Technologies Inc Installation Disk #1 (System)"
+ATI = "ATI Technologies Inc"
+''',
 '''
 [Version]
 Signature="$WINDOWS NT$"
@@ -2505,6 +2705,8 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
+	
+	
 	for data in infTestData:
 		infFile = InfFile('/tmp/test.inf')
 		infFile.parse(data.split('\n'))
@@ -2535,7 +2737,6 @@ if (__name__ == "__main__"):
 	for data in iniTestData:
 		iniFile = IniFile('/tmp/test.ini')
 		iniFile.parse(data.split('\n'))
-		
 	
 	
 	

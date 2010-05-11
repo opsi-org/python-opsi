@@ -66,7 +66,7 @@ class ConnectionPool(object):
 		
 		# Check whether we already have an instance
 		if ConnectionPool.__instance is None:
-			logger.notice(u"Creating ConnectionPool instance")
+			logger.info(u"Creating ConnectionPool instance")
 			# Create and remember instance
 			poolArgs = {}
 			for key in ('pool_size', 'max_overflow', 'timeout'):
