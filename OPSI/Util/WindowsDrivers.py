@@ -59,7 +59,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None):
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
 	except:
-		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnClient)
+		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnHost)
 	
 	drivers = []
 	for auditHardware in auditHardwares:
@@ -227,7 +227,7 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
 	except:
-		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnClient)
+		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnHost)
 	
 	drivers = searchWindowsDrivers(driverDir = driverSourceDirectory, auditHardwares = auditHardwares, messageSubject = messageSubject )
 	
