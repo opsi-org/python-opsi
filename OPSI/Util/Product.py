@@ -389,13 +389,14 @@ class ProductPackageFile(object):
 			
 			return execute(script)
 		except Exception, e:
+			logger.logException(e, LOG_ERROR)
 			self.cleanup()
 			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, e))
 		
 	def runPreinst(self, env = {}):
 		return self._runPackageScript(u'preinst', env = env)
 	
-	def runPostinst(self):
+	def runPostinst(self, env = {}):
 		return self._runPackageScript(u'postinst', env = env)
 	
 	
