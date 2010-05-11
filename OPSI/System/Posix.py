@@ -1767,16 +1767,16 @@ def hardwareInventory(config, progressSubject=None):
 		match = re.search(devRegex, line)
 		if match:
 			busId = match.group(1)
-			lspci[busId] = { 	'vendorId':		match.group(3),
-						'deviceId':		match.group(4),
+			lspci[busId] = { 	'vendorId':		forceVendorId(match.group(3)),
+						'deviceId':		forceDeviceId(match.group(4)),
 						'subsystemVendorId':	'',
 						'subsystemDeviceId':	'',
 						'revision':		match.group(6) or '' }
 			continue
 		match = re.search(subRegex, line)
 		if match:
-			lspci[busId]['subsystemVendorId'] = match.group(1)
-			lspci[busId]['subsystemDeviceId'] = match.group(2)
+			lspci[busId]['subsystemVendorId'] = forceVendorId(match.group(1))
+			lspci[busId]['subsystemDeviceId'] = forceDeviceId(match.group(2))
 	logger.debug2(u"Parsed lspci info:")
 	logger.debug2(objectToBeautifiedText(lspci))
 	
@@ -1803,12 +1803,12 @@ def hardwareInventory(config, progressSubject=None):
 						hdaudio[hdaudioId]['address'] = line.split(':', 1)[1].strip()
 					elif line.startswith(u'Vendor Id:'):
 						vid = line.split('x', 1)[1].strip()
-						hdaudio[hdaudioId]['vendorId'] = vid[0:4]
-						hdaudio[hdaudioId]['deviceId'] = vid[4:8]
+						hdaudio[hdaudioId]['vendorId'] = forceVendorId(vid[0:4])
+						hdaudio[hdaudioId]['deviceId'] = forceDeviceId(vid[4:8])
 					elif line.startswith(u'Subsystem Id:'):
 						sid = line.split('x', 1)[1].strip()
-						hdaudio[hdaudioId]['subsystemVendorId'] = sid[0:4]
-						hdaudio[hdaudioId]['subsystemDeviceId'] = sid[4:8]
+						hdaudio[hdaudioId]['subsystemVendorId'] = forceVendorId(sid[0:4])
+						hdaudio[hdaudioId]['subsystemDeviceId'] = forceDeviceId(sid[4:8])
 					elif line.startswith(u'Revision Id:'):
 						hdaudio[hdaudioId]['revision'] = line.split('x', 1)[1].strip()
 				f.close()
