@@ -2502,14 +2502,6 @@ class AuditHardware(Entity):
 				if value is None:
 					continue
 				if type.startswith('varchar'):
-					try:
-						if   value and attribute in ('vendorId', 'subsystemVendorId'):
-							value = forceHardwareVendorId(value)
-						elif value and attribute in ('deviceId', 'subsystemDeviceId'):
-							value = forceHardwareDeviceId(value)
-					except Exception, e:
-						logger.debug(e)
-						value = u''
 					kwargs[attribute] = forceUnicode(value)
 				elif (type.find('int') != -1):
 					try:
@@ -2526,7 +2518,16 @@ class AuditHardware(Entity):
 				else:
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 		self.__dict__.update(kwargs)
-	
+		
+		if hasattr(self, 'vendorId') and self.vendorId:
+			self.vendorId = forceHardwareVendorId(self.vendorId)
+		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
+			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		if hasattr(self, 'deviceId') and self.deviceId:
+			self.deviceId = forceHardwareDeviceId(self.deviceId)
+		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
+			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+		
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
 		hardwareAttributes = {}
@@ -2612,14 +2613,6 @@ class AuditHardwareOnHost(Relationship):
 				if value is None:
 					continue
 				if type.startswith('varchar'):
-					try:
-						if   value and attribute in ('vendorId', 'subsystemVendorId'):
-							value = forceHardwareVendorId(value)
-						elif value and attribute in ('deviceId', 'subsystemDeviceId'):
-							value = forceHardwareDeviceId(value)
-					except Exception, e:
-						logger.debug(e)
-						value = u''
 					kwargs[attribute] = forceUnicode(value)
 				elif (type.find('int') != -1):
 					try:
@@ -2642,6 +2635,15 @@ class AuditHardwareOnHost(Relationship):
 			self.setLastseen(lastseen)
 		if not state is None:
 			self.setState(state)
+		
+		if hasattr(self, 'vendorId') and self.vendorId:
+			self.vendorId = forceHardwareVendorId(self.vendorId)
+		if hasattr(self, 'subsystemVendorId') and self.subsystemVendorId:
+			self.subsystemVendorId = forceHardwareVendorId(self.subsystemVendorId)
+		if hasattr(self, 'deviceId') and self.deviceId:
+			self.deviceId = forceHardwareDeviceId(self.deviceId)
+		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
+			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
 		
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
