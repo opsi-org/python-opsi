@@ -363,7 +363,7 @@ class ProductPackageFile(object):
 			self.cleanup()
 			raise Exception(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 		
-	def _runPackageScript(self, scriptName):
+	def _runPackageScript(self, scriptName, env = {}):
 		logger.notice(u"Running package script '%s'" % scriptName)
 		try:
 			if not self.packageControlFile:
@@ -379,22 +379,24 @@ class ProductPackageFile(object):
 			
 			os.chmod(script, 0700)
 			
-			productId = self.packageControlFile.getProduct().getId()
-			productClientDataDir = self.getProductClientDataDir()
-			
-			os.putenv('PRODUCT_ID',      productId)
-			os.putenv('CLIENT_DATA_DIR', productClientDataDir)
+			os.putenv('PRODUCT_ID',      self.packageControlFile.getProduct().getId())
+			os.putenv('PRODUCT_TYPE',    self.packageControlFile.getProduct().getType())
+			os.putenv('PRODUCT_VERSION', self.packageControlFile.getProduct().getProductVersion())
+			os.putenv('PACKAGE_VERSION', self.packageControlFile.getProduct().getPackageVersion())
+			os.putenv('CLIENT_DATA_DIR', self.getProductClientDataDir())
+			for (k, v) in env.items():
+				os.putenv(k, v)
 			
 			return execute(script)
 		except Exception, e:
 			self.cleanup()
 			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, e))
 		
-	def runPreinst(self):
-		return self._runPackageScript(u'preinst')
+	def runPreinst(self, env = {}):
+		return self._runPackageScript(u'preinst', env = env)
 	
 	def runPostinst(self):
-		return self._runPackageScript(u'postinst')
+		return self._runPackageScript(u'postinst', env = env)
 	
 	
 class ProductPackageSource(object):

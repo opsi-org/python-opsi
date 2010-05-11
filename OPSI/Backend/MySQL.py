@@ -544,12 +544,16 @@ class MySQLBackend(ConfigDataBackend):
 		condition = u''
 		args = mandatoryConstructorArgs(object.__class__)
 		for arg in args:
-			value = eval('object.%s' % arg)
+			value = getattr(object, arg)
+			if value is None:
+				continue
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
 			if condition:
 				condition += u' and '
 			if type(value) in (float, long, int, bool):
 				condition += u"`%s` = %s" % (arg, value)
+			#elif value is None:
+			#	where += u"`%s` is NULL" % key
 			else:
 				condition += u"`%s` = '%s'" % (arg, value)
 		return condition
@@ -1507,6 +1511,8 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		
+		productOnDepot.productVersion = None
+		productOnDepot.packageVersion = None
 		where = self._uniqueCondition(productOnDepot)
 		if self._mysql.getRow('select * from `PRODUCT_ON_DEPOT` where %s' % where):
 			self._mysql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone = True)
@@ -1553,7 +1559,10 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		
+		productOnClient.productVersion = None
+		productOnClient.packageVersion = None
 		where = self._uniqueCondition(productOnClient)
+		
 		if self._mysql.getRow('select * from `PRODUCT_ON_CLIENT` where %s' % where):
 			self._mysql.update('PRODUCT_ON_CLIENT', where, data, updateWhereNone = True)
 		else:

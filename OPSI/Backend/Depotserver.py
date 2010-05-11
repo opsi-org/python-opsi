@@ -183,10 +183,10 @@ class DepotserverPackageManager(object):
 				)
 				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = depotId, productId = product.getId())
 				if productOnDepots and productOnDepots[0].getLocked():
-						logger.notice(u"Product currently locked on depot '%s'" % depotId)
-						if not force:
-							raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
-						logger.warning(u"Installation of locked product forced")
+					logger.notice(u"Product currently locked on depot '%s'" % depotId)
+					if not force:
+						raise BackendTemporaryError(u"Product currently locked on depot '%s'" % depotId)
+					logger.warning(u"Installation of locked product forced")
 				logger.info(u"Creating product on depot %s" % productOnDepot)
 				self._depotBackend._context.productOnDepot_createObjects(productOnDepot)
 				
@@ -194,7 +194,7 @@ class DepotserverPackageManager(object):
 				self.checkDependencies(ppf)
 				
 				logger.notice(u"Running preinst script")
-				for line in ppf.runPreinst():
+				for line in ppf.runPreinst(({'DEPOT_ID': depotId})):
 					logger.info(u"[preinst] %s" % line)
 				
 				logger.notice(u"Unpacking package files")
@@ -284,7 +284,7 @@ class DepotserverPackageManager(object):
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
 				
 				logger.notice(u"Running postinst script")
-				for line in ppf.runPostinst():
+				for line in ppf.runPostinst({'DEPOT_ID': depotId}):
 					logger.info(u"[postinst] %s" % line)
 				
 				ppf.createPackageContentFile()
