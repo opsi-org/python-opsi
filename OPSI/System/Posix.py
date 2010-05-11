@@ -975,7 +975,6 @@ class Harddisk:
 	def _forceReReadPartionTable(self):
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
-		
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
 		execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
 		if self.ldPreload:
