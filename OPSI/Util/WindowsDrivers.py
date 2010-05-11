@@ -54,7 +54,7 @@ logger = Logger()
 #integrateTextmodeDrivers(dstDriversDir, target, hardware, target + '/$win_nt$.~bt/winnt.sif', messageObserver = scriptMessageObserver)
 #oemPnpDriversPath = getOemPnpDriversPath(dstDriversDir, target, ';')
 
-def searchWindowsDrivers(driverDir, auditHardwares):
+def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None):
 	driverDir = forceFilename(driverDir)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
@@ -65,11 +65,11 @@ def searchWindowsDrivers(driverDir, auditHardwares):
 	for auditHardware in auditHardwares:
 		hwClass = auditHardware.getHardwareClass()
 		baseDir = ''
-		if   (hwClass == 'PCI'):
+		if   (hwClass == 'PCI_DEVICE'):
 			baseDir = u'pciids'
-		elif (hwClass == 'USB'):
+		elif (hwClass == 'USB_DEVICE'):
 			baseDir = u'usbids'
-		elif (hwClass == 'HDAUDIO'):
+		elif (hwClass == 'HDAUDIO_DEVICE'):
 			baseDir = u'hdaudioids'
 		else:
 			logger.debug(u"Skipping unhandled hardware class '%s' (%s)" % (hwClass, auditHardware))
@@ -87,9 +87,9 @@ def searchWindowsDrivers(driverDir, auditHardwares):
 			name = auditHardware.name
 		name = name.replace(u'/', u'_')
 		
-		logger.info("Searching driver for %s device '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
+		logger.info(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
 		if messageSubject:
-			messageSubject.setMessage(u"Searching driver for %s device '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
+			messageSubject.setMessage(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
 		
 		driver = {
 			'directory':    None,
@@ -106,7 +106,7 @@ def searchWindowsDrivers(driverDir, auditHardwares):
 			#	messageSubject.setMessage("%s vendor directory '%s' not found" % (hwClass, srcDriverPath))
 			drivers.append(driver)
 			continue
-		srcDriverPath = os.path.join(srcDriverPath, deviceId)
+		srcDriverPath = os.path.join(srcDriverPath, auditHardware.deviceId)
 		if not os.path.exists(srcDriverPath):
 			logger.error(u"%s device directory '%s' not found" % (hwClass, srcDriverPath))
 			#if messageSubject:
@@ -204,60 +204,49 @@ def integrateHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, 
 	messageSubject = MessageSubject(id='integrateHardwareDrivers')
 	if messageObserver:
 		messageSubject.attachObserver(messageObserver)
-	integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, hardware, messageSubject = messageSubject)
+	
+	auditHardwares = []
+	for (hardwareClass, devices) in hardware.items():
+		if (hardwareClass == 'SCANPROPERTIES'):
+			continue
+		for device in devices:
+			data = { 'hardwareClass': hardwareClass }
+			for (attribute, value) in device.items():
+				data[str(attribute)] = value
+			auditHardwares.append( AuditHardware.fromHash(data) )
+	
+	integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, auditHardwares, messageSubject = messageSubject)
 	if messageObserver:
 		messageSubject.detachObserver(messageObserver)
 	
-def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, hardware, messageSubject=None):
+def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, auditHardwares, messageSubject=None):
 	logger.info(u"Adding drivers for detected hardware")
 	
-	driverDirectories = []
-	integratedFiles = []
-	for type in ('PCI', 'USB', 'HDAUDIO'):
-		devices = []
-		baseDir = ''
-		if (type == 'PCI'):
-			devices = hardware.get("PCI_DEVICE", [])
-			baseDir = u'pciids'
-		elif (type == 'USB'):
-			devices = hardware.get("USB_DEVICE", [])
-			baseDir = u'usbids'
-		elif (type == 'HDAUDIO'):
-			devices = hardware.get("HDAUDIO_DEVICE", [])
-			baseDir = u'hdaudioids'
-		for info in devices:
-			name = info.get('name', '???')
-			name = name.replace('/', '_')
-			vendorId = info.get('vendorId', '').upper()
-			deviceId = info.get('deviceId', '').upper()
-			if not vendorId or not deviceId:
-				continue
-			logger.info(u"Searching driver for %s device '%s', id '%s:%s'" % (type, name, vendorId, deviceId))
-			if messageSubject:
-				messageSubject.setMessage(u"Searching driver for %s device '%s', id '%s:%s'" % (type, name, vendorId, deviceId))
-			srcDriverPath = os.path.join(driverSourceDirectory, baseDir, vendorId)
-			if not os.path.exists(srcDriverPath):
-				logger.error(u"%s Vendor directory '%s' not found" % (type, srcDriverPath))
-				if messageSubject:
-					messageSubject.setMessage("%s Vendor directory '%s' not found" % (type, srcDriverPath))
-				continue
-			srcDriverPath = os.path.join(srcDriverPath, deviceId)
-			if not os.path.exists(srcDriverPath):
-				logger.error(u"%s Device directory '%s' not found" % (type, srcDriverPath))
-				if messageSubject:
-					messageSubject.setMessage("%s Device directory '%s' not found" % (type, srcDriverPath))
-				continue
-			if os.path.exists( os.path.join(srcDriverPath, 'WINDOWS_BUILDIN') ):
-				logger.notice(u"Using build-in windows driver")
-				if messageSubject:
-					messageSubject.setMessage(u"Using build-in windows driver")
-				continue
-			logger.notice(u"Found driver for %s device '%s', in dir '%s'" % (type, name, srcDriverPath))
-			logger.notice(u"Integrating driver for %s device '%s'" % (type, name))
-			if messageSubject:
-				messageSubject.setMessage(u"Integrating driver for %s device '%s'" % (type, name))
-			driverDirectories.append(srcDriverPath)
+	driverSourceDirectory = forceFilename(driverSourceDirectory)
+	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
+	try:
+		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
+	except:
+		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnClient)
 	
+	drivers = searchWindowsDrivers(driverDir = driverSourceDirectory, auditHardwares = auditHardwares, messageSubject = messageSubject )
+	
+	driverDirectories = []
+	for driver in drivers:
+		if driver['buildin']:
+			continue
+		if driver['directory'] and driver['directory'] not in driverDirectories:
+			driverDirectories.append(driver['directory'])
+		
+		name = u'[%s:%s]' % (driver['vendorId'], driver['deviceId'])
+		if hasattr(driver['hardwareInfo'], 'vendor'):
+			name += u' %s' % driver['hardwareInfo'].vendor
+		if hasattr(driver['hardwareInfo'], 'name'):
+			name += u' : %s' % driver['hardwareInfo'].name
+		logger.notice(u"Integrating driver for device %s" % name)
+		if messageSubject:
+			messageSubject.setMessage(u"Integrating driver for device %s" % name)
+		
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject)
 	
 def integrateWindowsTextmodeDriver(driverDirectory, destination, vendorId, deviceId, sifFile=None, messageSubject=None):
@@ -452,7 +441,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	if not type(additionalDrivers) is list:
-		additionalDrivers = [ additionalDriver.strip() for additionalDriver in forceUnicode(additionalDrivers.split(',')) ]
+		additionalDrivers = [ additionalDriver.strip() for additionalDriver in forceUnicodeList(additionalDrivers.split(',')) ]
 	else:
 		additionalDrivers = forceUnicodeList(additionalDrivers)
 	
