@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008, 2009 uib GmbH
+   Copyright (C) 2006, 2007, 2008, 2009, 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -976,7 +976,9 @@ class Harddisk:
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
+		time.sleep(1)
 		execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
+		time.sleep(1)
 		if self.ldPreload:
 			os.unsetenv("LD_PRELOAD")
 		
@@ -1767,16 +1769,16 @@ def hardwareInventory(config, progressSubject=None):
 		match = re.search(devRegex, line)
 		if match:
 			busId = match.group(1)
-			lspci[busId] = { 	'vendorId':		forceVendorId(match.group(3)),
-						'deviceId':		forceDeviceId(match.group(4)),
+			lspci[busId] = { 	'vendorId':		forceHardwareVendorId(match.group(3)),
+						'deviceId':		forceHardwareDeviceId(match.group(4)),
 						'subsystemVendorId':	'',
 						'subsystemDeviceId':	'',
 						'revision':		match.group(6) or '' }
 			continue
 		match = re.search(subRegex, line)
 		if match:
-			lspci[busId]['subsystemVendorId'] = forceVendorId(match.group(1))
-			lspci[busId]['subsystemDeviceId'] = forceDeviceId(match.group(2))
+			lspci[busId]['subsystemVendorId'] = forceHardwareVendorId(match.group(1))
+			lspci[busId]['subsystemDeviceId'] = forceHardwareDeviceId(match.group(2))
 	logger.debug2(u"Parsed lspci info:")
 	logger.debug2(objectToBeautifiedText(lspci))
 	
@@ -1803,12 +1805,12 @@ def hardwareInventory(config, progressSubject=None):
 						hdaudio[hdaudioId]['address'] = line.split(':', 1)[1].strip()
 					elif line.startswith(u'Vendor Id:'):
 						vid = line.split('x', 1)[1].strip()
-						hdaudio[hdaudioId]['vendorId'] = forceVendorId(vid[0:4])
-						hdaudio[hdaudioId]['deviceId'] = forceDeviceId(vid[4:8])
+						hdaudio[hdaudioId]['vendorId'] = forceHardwareVendorId(vid[0:4])
+						hdaudio[hdaudioId]['deviceId'] = forceHardwareDeviceId(vid[4:8])
 					elif line.startswith(u'Subsystem Id:'):
 						sid = line.split('x', 1)[1].strip()
-						hdaudio[hdaudioId]['subsystemVendorId'] = forceVendorId(sid[0:4])
-						hdaudio[hdaudioId]['subsystemDeviceId'] = forceDeviceId(sid[4:8])
+						hdaudio[hdaudioId]['subsystemVendorId'] = forceHardwareVendorId(sid[0:4])
+						hdaudio[hdaudioId]['subsystemDeviceId'] = forceHardwareDeviceId(sid[4:8])
 					elif line.startswith(u'Revision Id:'):
 						hdaudio[hdaudioId]['revision'] = line.split('x', 1)[1].strip()
 				f.close()
