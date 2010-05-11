@@ -444,8 +444,11 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 			)
 			if not encoding:
 				encoding = proc.stdin.encoding
+				if (encoding == 'ascii'): encoding = 'utf-8'
 			if not encoding:
 				encoding = locale.getpreferredencoding()
+				if (encoding == 'ascii'): encoding = 'utf-8'
+			
 			logger.info(u"Using encoding '%s'" % encoding)
 			
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
