@@ -176,14 +176,14 @@ def getCountAndSize(path):
 	(count, size) = (0, 0)
 	try:
 		#if os.path.islink(path):
-		#	logger.debug(u"Is link: %s" % path)
+		#	logger.debug2(u"Is link: %s" % path)
 		#	pass
 		#el
 		if os.path.isfile(path):
-			logger.debug(u"Is file: %s" % path)
+			logger.debug2(u"Is file: %s" % path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
-			logger.debug(u"Is dir: %s" % path)
+			logger.debug2(u"Is dir: %s" % path)
 			logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
 			for r in os.listdir(path):
 				(c, s) = getCountAndSize(os.path.join(path, r))

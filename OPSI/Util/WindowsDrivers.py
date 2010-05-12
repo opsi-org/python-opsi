@@ -274,7 +274,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 	destination = forceFilename(destination)
 	devices = forceList(devices)
 	
-	logger.info(u"Integrating textmode drivers")
+	logger.notice(u"Integrating textmode drivers")
 	
 	if messageSubject:
 		messageSubject.setMessage(u"Integrating textmode drivers")
