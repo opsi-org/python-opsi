@@ -555,7 +555,7 @@ class MySQLBackend(ConfigDataBackend):
 			#elif value is None:
 			#	where += u"`%s` is NULL" % key
 			else:
-				condition += u"`%s` = '%s'" % (arg, value)
+				condition += u"`%s` = '%s'" % (arg, value.replace("\\", "\\\\").replace("'", "\\\'"))
 		return condition
 	
 	def _objectExists(self, table, object):

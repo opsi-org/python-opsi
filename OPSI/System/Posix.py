@@ -224,7 +224,7 @@ def getNetworkDeviceConfig(device):
 	
 	for line in execute(u"%s route" % which(u'ip')):
 		line = line.lower().strip()
-		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s', line)
+		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s*', line)
 		if match and (match.group(2).lower() == device.lower()):
 			result['gateway'] = forceIpAddress(match.group(1))
 	
@@ -245,7 +245,9 @@ def getNetworkDeviceConfig(device):
 def getDefaultNetworkInterfaceName():
 	for interface in getNetworkInterfaces():
 		if interface['gateway']:
+			logger.info(u"Default network interface found: %s" % interface['device'])
 			return interface['device']
+	logger.info(u"Default network interface not found")
 	return None
 
 class NetworkPerformanceCounter(threading.Thread):
@@ -360,7 +362,11 @@ def reboot(wait = 10):
 		wait = hook.pre_reboot(wait)
 	
 	try:
-		execute(u'%s -t %d -r now' % (which('shutdown'), forceInt(wait)), nowait = True)
+		wait = forceInt(wait)
+		if (wait > 0):
+			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait = True)
+		else:
+			execute(u'%s -r now' % which('shutdown'), nowait = True)
 		#execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
 		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
 		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
@@ -376,8 +382,11 @@ def halt(wait = 10):
 		wait = hook.pre_halt(wait)
 	
 	try:
-		execute(u'%s -t %d -h now' % (which('shutdown'), forceInt(wait)), nowait = True)
-		#execute(u'%s %d; %s -h now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
+		wait = forceInt(wait)
+		if (wait > 0):
+			execute(u'%s %d; %s -h now' % (which('sleep'), wait, which('shutdown')), nowait = True)
+		else:
+			execute(u'%s -h now' % which('shutdown'), nowait = True)
 		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
 		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception, e:

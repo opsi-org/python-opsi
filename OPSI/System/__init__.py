@@ -169,16 +169,21 @@ def countFiles(path):
 
 def getCountAndSize(path):
 	path = os.path.abspath(forceFilename(path))
+	
 	for hook in hooks:
 		path = hook.pre_getCountAndSize(path)
 	
 	(count, size) = (0, 0)
 	try:
-		if os.path.islink(path):
-			pass
-		elif os.path.isfile(path):
+		#if os.path.islink(path):
+		#	logger.debug(u"Is link: %s" % path)
+		#	pass
+		#el
+		if os.path.isfile(path):
+			logger.debug(u"Is file: %s" % path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
+			logger.debug(u"Is dir: %s" % path)
 			logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
 			for r in os.listdir(path):
 				(c, s) = getCountAndSize(os.path.join(path, r))
@@ -241,7 +246,7 @@ def copy(src, dst, progressSubject=None):
 	if copySrcContent and not os.path.isdir(src):
 		raise Exception(u"Source directory '%s' not found" % src)
 	
-	logger.info(u'Copying from %s to %s' % (src, dst))
+	logger.info(u"Copying from '%s' to '%s'" % (src, dst))
 	(count, size) = (0, 0)
 	if progressSubject:
 		#progressSubject.setMessage(u'Preparing copy')

@@ -104,14 +104,12 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None):
 			logger.error(u"%s vendor directory '%s' not found" % (hwClass, srcDriverPath))
 			#if messageSubject:
 			#	messageSubject.setMessage("%s vendor directory '%s' not found" % (hwClass, srcDriverPath))
-			drivers.append(driver)
 			continue
 		srcDriverPath = os.path.join(srcDriverPath, auditHardware.deviceId)
 		if not os.path.exists(srcDriverPath):
 			logger.error(u"%s device directory '%s' not found" % (hwClass, srcDriverPath))
 			#if messageSubject:
 			#	messageSubject.setMessage(u"%s device directory '%s' not found" % (hwClass, srcDriverPath))
-			drivers.append(driver)
 			continue
 		if os.path.exists( os.path.join(srcDriverPath, 'WINDOWS_BUILDIN') ):
 			logger.notice(u"Found windows build-in driver")
@@ -133,6 +131,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None):
 					driver['directory'] = srcDriverPath
 					driver['textmode'] = True
 					break
+		drivers.append(driver)
 	return drivers
 	
 def integrateDrivers(driverSourceDirectories, driverDestinationDirectory, messageObserver=None, progressObserver=None):
@@ -147,7 +146,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	driverSourceDirectories = forceUnicodeList(driverSourceDirectories)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	
-	logger.info(u"Integrating drivers")
+	logger.info(u"Integrating drivers: %s" % driverSourceDirectories)
 	
 	if messageSubject:
 		messageSubject.setMessage(u"Integrating drivers")
@@ -233,9 +232,12 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 	
 	driverDirectories = []
 	for driver in drivers:
-		if driver['buildin']:
+		if driver['buildin'] or not driver['directory']:
 			continue
-		if driver['directory'] and driver['directory'] not in driverDirectories:
+		
+		logger.debug(u"Got windows driver: %s" % driver)
+		
+		if driver['directory'] not in driverDirectories:
 			driverDirectories.append(driver['directory'])
 		
 		name = u'[%s:%s]' % (driver['vendorId'], driver['deviceId'])
@@ -248,118 +250,58 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 			messageSubject.setMessage(u"Integrating driver for device %s" % name)
 		
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject)
-	
-def integrateWindowsTextmodeDriver(driverDirectory, destination, vendorId, deviceId, sifFile=None, messageSubject=None):
-	driverDirectory = forceFilename(driverDirectory)
-	destination = forceFilename(destination)
-	vendorId = forceHardwareVendorId(vendorId)
-	deviceId = forceHardwareDeviceId(deviceId)
-	if sifFile:
-		sifFile = forceFilename(sifFile)
-	
-	logger.info(u"Integrating textmode driver for device '%s:%s'" % (vendorId, deviceId))
-	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
-	txtSetupOems = findFiles(directory = driverDirectory, prefix = driverDirectory, includeFile = re.compile('^txtsetup\.oem$', re.IGNORECASE), returnDirs = False)
-	for txtSetupOem in txtSetupOems:
-		txtSetupOemFile = TxtSetupOemFile(txtSetupOem)
-		if not txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId):
-			continue
-		
-		logger.info(u"Found txtsetup.oem file '%s' for device '%s:%s'" % (txtSetupOem, vendorId, deviceId))
-		driverPath = os.path.dirname(txtSetupOem)
-		
-		oemBootFiles = []
-		oemBootFiles.append( os.path.basename(txtSetupOem) )
-		for textmodePath in ( 	os.path.join(destination, u'$', u'textmode'), \
-					os.path.join(destination, u'$win_nt$.~bt', u'$oem$') ):
-			System.mkdir(textmodePath)
-			System.copy(txtSetupOem, textmodePath)
-		
-		for fn in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = ['inf', 'driver', 'catalog']):
-			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
-			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
-			oemBootFiles.append(fn)
-		
-		# Patch winnt.sif
-		if sifFile:
-			logger.notice(u"Registering textmode drivers in sif file '%s'" % sifFile)
-			lines = []
-			massStorageDriverLines = []
-			oemBootFileLines = []
-			section = u''
-			sif = codes.open(sifFile, 'r', 'mbcs')
-			for line in sif.readlines():
-				if line.strip():
-					logger.debug2(u"Current sif file content: %s" % line.rstrip())
-				if line.strip().startswith(u'['):
-					section = line.strip().lower()[1:-1]
-					if section in (u'massstoragedrivers', u'oembootfiles'):
-						continue
-				if (section == u'massstoragedrivers'):
-					massStorageDriverLines.append(line)
-					continue
-				if (section == u'oembootfiles'):
-					oemBootFileLines.append(line)
-					continue
-				lines.append(line)
-			sif.close()
-			
-			logger.info(u"Patching sections for driver '%s'" % description)
-			
-			if not massStorageDriverLines:
-				massStorageDriverLines = [u'\r\n', u'[MassStorageDrivers]\r\n']
-			massStorageDriverLines.append(u'"%s" = OEM\r\n' % description)
-			
-			if not oemBootFileLines:
-				oemBootFileLines = [u'\r\n', u'[OEMBootFiles]\r\n']
-			for obf in oemBootFiles:
-				oemBootFileLines.append(u'%s\r\n' % obf)
-			
-			logger.debug(u"Patching [MassStorageDrivers] in file '%s':" % sifFile)
-			logger.debug(massStorageDriverLines)
-			lines.extend(massStorageDriverLines)
-			logger.debug(u"Patching [OEMBootFiles] in file '%s':" % sifFile)
-			logger.debug(oemBootFileLines)
-			lines.extend(oemBootFileLines)
-			
-			sif = open(sifFile, 'w')
-			sif.writelines(lines)
-			sif.close()
-		return
-	raise Exception(u"No txtsetup.oem file for device '%s:%s' found" % (vendorId, deviceId))
 
 def integrateTextmodeDrivers(driverDirectory, destination, hardware, sifFile=None, messageObserver=None, progressObserver=None):
 	messageSubject = MessageSubject(id='integrateTextmodeDrivers')
 	if messageObserver:
 		messageSubject.attachObserver(messageObserver)
-	integrateWindowsTextmodeDrivers(driverDirectory, destination, hardware, sifFile=None, messageSubject = messageSubject)
+	
+	devices = []
+	for info in hardware.get("PCI_DEVICE", []):
+		if not info.get('vendorId') or not info.get('deviceId'):
+			continue
+		vendorId = forceHardwareVendorId(info.get('vendorId'))
+		deviceId = forceHardwareVendorId(info.get('deviceId'))
+		
+		devices.append( {"vendorId": vendorId, "deviceId": deviceId} )
+	
+	integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile = sifFile, messageSubject = messageSubject)
 	if messageObserver:
 		messageSubject.detachObserver(messageObserver)
 	
-def integrateWindowsTextmodeDrivers(driverDirectory, destination, hardware, sifFile=None, messageSubject=None):
+def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):
 	driverDirectory = forceFilename(driverDirectory)
 	destination = forceFilename(destination)
+	devices = forceList(devices)
 	
 	logger.info(u"Integrating textmode drivers")
 	
 	if messageSubject:
 		messageSubject.setMessage(u"Integrating textmode drivers")
 	
-	hardwareIds = {}
-	for info in hardware.get("PCI_DEVICE", []):
-		vendorId = info.get('vendorId', '').upper()
-		deviceId = info.get('deviceId', '').upper()
-		if not hardwareIds.has_key(vendorId):
-			hardwareIds[vendorId] = []
-		hardwareIds[vendorId].append(deviceId)
-	
 	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
 	txtSetupOems = findFiles(directory = driverDirectory, prefix = driverDirectory, includeFile = re.compile('^txtsetup\.oem$', re.IGNORECASE), returnDirs = False)
 	for txtSetupOem in txtSetupOems:
-		logger.notice(u"'%s' found, integrating textmode driver" % txtSetupOem)
-		if messageSubject:
-			messageSubject.setMessage(u"'%s' found, integrating textmode driver" % txtSetupOem)
+		logger.info(u"File '%s' found")
+		txtSetupOemFile = TxtSetupOemFile(txtSetupOem)
 		driverPath = os.path.dirname(txtSetupOem)
+		supportedDevice = None
+		for device in devices:
+			logger.debug(u"Testing if textmode driver '%s' supports device %s" % (driverPath, device))
+			if txtSetupOemFile.isDeviceKnown(vendorId = device.get('vendorId'), deviceId = device.get('deviceId')):
+				logger.debug2(u"Textmode driver '%s' supports device %s" % (driverPath, device))
+				supportedDevice = device
+				break
+			else:
+				logger.debug2(u"Textmode driver '%s' does not support device %s" % (driverPath, device))
+				continue
+		if not supportedDevice:
+			logger.debug2(u"Textmode driver '%s' not needed" % driverPath)
+			continue
+		
+		logger.notice(u"Integrating textmode driver '%s'" % driverPath)
+		if messageSubject:
+			messageSubject.setMessage(u"Integrating textmode driver '%s'" % driverPath)
 		
 		oemBootFiles = []
 		oemBootFiles.append( os.path.basename(txtSetupOem) )
@@ -368,7 +310,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, hardware, sifF
 			System.mkdir(textmodePath)
 			System.copy(txtSetupOem, textmodePath)
 		
-		for fn in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = ['inf', 'driver', 'catalog']):
+		for fn in txtSetupOemFile.getFilesForDevice(vendorId = supportedDevice['vendorId'], deviceId = supportedDevice['deviceId'], fileTypes = ['inf', 'driver', 'catalog']):
 			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
 			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
 			oemBootFiles.append(fn)

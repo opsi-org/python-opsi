@@ -2328,7 +2328,6 @@ Entity.subClasses['AuditSoftware'] = AuditSoftware
 class AuditSoftwareOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditSoftwareOnClient'
-	
 	def __init__(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
 		self.uninstallString = None
 		self.binaryName = None
