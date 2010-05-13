@@ -77,43 +77,43 @@ class SystemSpecificHook():
 		raise exception
 	
 	
-	def pre_Harddisk_shred(self, partition, iterations, progressSubject):
+	def pre_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):
 		return (partition, iterations, progressSubject)
 	
-	def post_Harddisk_shred(self, partition, iterations, progressSubject):
+	def post_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):
 		return None
 	
-	def error_Harddisk_shred(self, partition, iterations, progressSubject, exception):
+	def error_Harddisk_shred(self, harddisk, partition, iterations, progressSubject, exception):
 		raise exception
 	
 	
-	def pre_Harddisk_fill(self, partition, infile, progressSubject):
+	def pre_Harddisk_fill(self, harddisk, partition, infile, progressSubject):
 		return (partition, infile, progressSubject)
 	
-	def post_Harddisk_fill(self, partition, infile, progressSubject):
+	def post_Harddisk_fill(self, harddisk, partition, infile, progressSubject):
 		return None
 	
-	def error_Harddisk_fill(self, partition, infile, progressSubject, exception):
+	def error_Harddisk_fill(self, harddisk, partition, infile, progressSubject, exception):
 		raise exception
 	
 	
-	def pre_Harddisk_saveImage(self, partition, imageFile, progressSubject):
+	def pre_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
 		return (partition, imageFile, progressSubject)
 	
-	def post_Harddisk_saveImage(self, partition, imageFile, progressSubject):
+	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
 		return None
 	
-	def error_Harddisk_saveImage(self, partition, imageFile, progressSubject, exception):
+	def error_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, exception):
 		raise exception
 	
 	
-	def pre_Harddisk_restoreImage(self, partition, imageFile, progressSubject):
+	def pre_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):
 		return (partition, imageFile, progressSubject)
 	
-	def post_Harddisk_restoreImage(self, partition, imageFile, progressSubject):
+	def post_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):
 		return None
 	
-	def error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, exception):
+	def error_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject, exception):
 		raise exception
 	
 	
@@ -1009,7 +1009,7 @@ class Harddisk:
 		iterations = forceInt(iterations)
 		
 		for hook in hooks:
-			(partition, iterations, progressSubject) = hook.pre_Harddisk_shred(partition, iterations, progressSubject)
+			(partition, iterations, progressSubject) = hook.pre_Harddisk_shred(self, partition, iterations, progressSubject)
 		
 		try:
 			dev = self.device
@@ -1059,10 +1059,10 @@ class Harddisk:
 			
 		except Exception, e:
 			for hook in hooks:
-				hook.error_Harddisk_shred(partition, iterations, progressSubject, e)
+				hook.error_Harddisk_shred(self, partition, iterations, progressSubject, e)
 			
 		for hook in hooks:
-			hook.post_Harddisk_shred(partition, iterations, progressSubject)
+			hook.post_Harddisk_shred(self, partition, iterations, progressSubject)
 		
 		
 	def zeroFill(self, partition=0, progressSubject=None):
@@ -1078,7 +1078,7 @@ class Harddisk:
 		infile = forceFilename(infile)
 		
 		for hook in hooks:
-			(partition, infile, progressSubject) = hook.pre_Harddisk_fill(partition, infile, progressSubject)
+			(partition, infile, progressSubject) = hook.pre_Harddisk_fill(self, partition, infile, progressSubject)
 		
 		try:
 			xfermax = 0
@@ -1146,10 +1146,10 @@ class Harddisk:
 			if handle: handle.close
 		except Exception, e:
 			for hook in hooks:
-				hook.error_Harddisk_fill(partition, infile, progressSubject, e)
+				hook.error_Harddisk_fill(self, partition, infile, progressSubject, e)
 		
 		for hook in hooks:
-			hook.post_Harddisk_fill(partition, infile, progressSubject)
+			hook.post_Harddisk_fill(self, partition, infile, progressSubject)
 		
 	
 	def readMasterBootRecord(self):
@@ -1467,7 +1467,7 @@ class Harddisk:
 		imageFile = forceUnicode(imageFile)
 		
 		for hook in hooks:
-			(partition, imageFile, progressSubject) = hook.pre_Harddisk_saveImage(partition, imageFile, progressSubject)
+			(partition, imageFile, progressSubject) = hook.pre_Harddisk_saveImage(self, partition, imageFile, progressSubject)
 		
 		try:
 			imageType = None
@@ -1562,17 +1562,17 @@ class Harddisk:
 				os.unsetenv("LD_PRELOAD")
 		except Exception, e:
 			for hook in hooks:
-				hook.error_Harddisk_saveImage(partition, imageFile, progressSubject, e)
+				hook.error_Harddisk_saveImage(self, partition, imageFile, progressSubject, e)
 			
 		for hook in hooks:
-			hook.post_Harddisk_saveImage(partition, imageFile, progressSubject)
+			hook.post_Harddisk_saveImage(self, partition, imageFile, progressSubject)
 		
 	def restoreImage(self, partition, imageFile, progressSubject=None):
 		partition = forceInt(partition)
 		imageFile = forceUnicode(imageFile)
 		
 		for hook in hooks:
-			(partition, imageFile, progressSubject) = hook.pre_Harddisk_restoreImage(partition, imageFile, progressSubject)
+			(partition, imageFile, progressSubject) = hook.pre_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 		
 		try:
 			imageType = None
@@ -1698,16 +1698,18 @@ class Harddisk:
 			
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
-		
+			
 			self.setNTFSPartitionStartSector(partition)
+			if progressSubject:
+				progressSubject.setMessage(u"Resizing filesystem to partition size")
 			self.resizeFilesystem(partition, fs = u'ntfs')
 			
 		except Exception, e:
 			for hook in hooks:
-				hook.error_Harddisk_restoreImage(partition, imageFile, progressSubject, e)
+				hook.error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, e)
 		
 		for hook in hooks:
-			hook.post_Harddisk_restoreImage(partition, imageFile, progressSubject)
+			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 		
 
 
