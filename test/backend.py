@@ -88,7 +88,8 @@ class BackendTest(object):
 			notes           = ';;;;;;;;;;;;;;',
 			hardwareAddress = '00-ff0aa3:0b-B5',
 			opsiHostKey     = '59051234345678890121678901223467',
-			inventoryNumber = '00000000003'
+			inventoryNumber = '00000000003',
+			oneTimePassword = 'logmein'
 		)
 		
 		self.client3 = OpsiClient(
@@ -106,6 +107,7 @@ class BackendTest(object):
 		self.client5 = OpsiClient(
 			id              = 'client5.uib.local',
 			description     = 'Test client 5',
+			oneTimePassword = 'abe8327kjdsfda'
 		)
 		
 		self.client6 = OpsiClient(
@@ -1435,7 +1437,7 @@ class BackendTest(object):
 			if productDependency.getIdent() == self.productDependency2.getIdent():
 				assert productDependency.getRequiredProductVersion() == "2.0", u"got: '%s', expected: '%s'" % (productDependency.getRequiredProductVersion(), "2.0")
 				assert productDependency.getRequirementType() == 'after', u"got: '%s', expected: '%s'" % (productDependency.getRequirementType(), 'after')
-#				self.productDependency2.requirementType = 'after'
+		#		self.productDependency2.requirementType = 'after'
 		
 		self.backend.productDependency_deleteObjects(self.productDependency2)
 		productDependencies = self.backend.productDependency_getObjects()

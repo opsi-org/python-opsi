@@ -374,7 +374,7 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'id',            'ldapAttribute': 'opsiGroupId' },
 						{ 'opsiAttribute': 'description',   'ldapAttribute': 'opsiDescription' },
 						{ 'opsiAttribute': 'notes',         'ldapAttribute': 'opsiNotes' },
-						{ 'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId' }.
+						{ 'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId' },
 						{ 'opsiAttribute': 'objectId',      'ldapAttribute': 'opsiMemberObjectId' } # members
 					]
 				},
@@ -1357,23 +1357,31 @@ class LDAPBackend(ConfigDataBackend):
 		logger.info(u"Getting objectToGroup, filter: %s" % filter)
 		objectToGroups = []
 		
-		if not filter.get('type'):
-			filter['type'] = [ 'Group', 'HostGroup' ]
+		groupFilter = dict(filter)
+		if not groupFilter.get('type'):
+			groupFilter['type'] = [ 'Group', 'HostGroup' ]
 		else:
-			filter['type'] = forceUnicodeList(filter['type']):
-			for i in range(len(filter['type'])):
-				if (filter['type'][i] == 'ObjectToGroup'):
-					filter['type'][i] = u'Group'
-					if not 'HostGroup' in filter['type']:
-						filter['type'].append('Group')
+			groupFilter['type'] = forceUnicodeList(filter['type'])
+			for i in range(len(groupFilter['type'])):
+				if (groupFilter['type'][i] == 'ObjectToGroup'):
+					groupFilter['type'][i] = u'Group'
+					if not 'HostGroup' in groupFilter['type']:
+						groupFilter['type'].append('Group')
 		
-		ldapFilter = self._objectFilterToLDAPFilter(filter)
+		if groupFilter.has_key('groupId'):
+			groupFilter['id'] = groupFilter['groupId']
+			del groupFilter['groupId']
+		
+		ldapFilter = self._objectFilterToLDAPFilter(groupFilter)
 		search = LDAPObjectSearch(self._ldap, self._groupsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
 			ldapObject.readFromDirectory(self._ldap, 'opsiGroupId', 'opsiMemberObjectId')
 			groupId = ldapObject.getAttribute('opsiGroupId')
 			for objectId in ldapObject.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
-				objectToGroups.append( ObjectToGroup(objectId = objectId, groupId = groupId) )
+				otg = ObjectToGroup(objectId = objectId, groupId = groupId)
+				if self._objectHashMatches(otg.toHash(), **filter):
+					objectToGroups.append( ObjectToGroup(objectId = objectId, groupId = groupId) )
+		return objectToGroups
 		
 		#if not filter.get('type'):
 		#	filter['type'] = [ 'ObjectToGroup' ]
@@ -1389,22 +1397,22 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		
 		byGroupId = {}
-		for objectToGroup in objectToGroups:
-			if byGroupId.has_key(objectToGroup.groupId):
+		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
+			if not byGroupId.has_key(objectToGroup.groupId):
 				byGroupId[objectToGroup.groupId] = []
 			byGroupId[objectToGroup.groupId].append(objectToGroup.objectId)
 		
-		for (groupId, objectIds) in byGroupId.values():
+		for (groupId, objectIds) in byGroupId.items():
 			dn = u'cn=%s,%s' % (groupId, self._groupsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
-				ldapObject.readFromDirectory(self._ldap)
+				ldapObj.readFromDirectory(self._ldap)
 				newMembers = []
-				for objectId in ldapObject.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
+				for objectId in ldapObj.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
 					if not objectId in objectIds:
 						newMembers.append(objectId)
-				ldapObject.setAttribute('opsiMemberObjectId', default = [], newMembers)
-				ldapObject.writeToDirectory(self._ldap)
+				ldapObj.setAttribute('opsiMemberObjectId', newMembers)
+				ldapObj.writeToDirectory(self._ldap)
 				
 		#for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 		#	dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)

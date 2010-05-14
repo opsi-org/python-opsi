@@ -2049,13 +2049,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			currentProductOnDepot = currentProductOnDepots[0]
 			logger.info(u"Updating productOnDepot %s instead of creating a new one" % currentProductOnDepot)
 			currentProductOnDepot.update(productOnDepot)
-			productOnDepot = currentProductOnDepot
-		self._backend.productOnDepot_insertObject(productOnDepot)
+			self._backend.productOnDepot_insertObject(currentProductOnDepot)
+		else:
+			self._backend.productOnDepot_insertObject(productOnDepot)
 	
 	def productOnDepot_createObjects(self, productOnDepots):
 		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			logger.info(u"Creating productOnDepot %s" % productOnDepot)
+			logger.info(u"Creating productOnDepot %s" % productOnDepot.toHash())
 			self.productOnDepot_insertObject(productOnDepot)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(

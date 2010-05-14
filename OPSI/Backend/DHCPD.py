@@ -195,7 +195,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._triggerReload()
 	
 	def dhcpd_deleteHost(self, host):
-		host = forceObjectClass(host, OpsiHost)
+		host = forceObjectClass(host, Host)
 		
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)
@@ -244,7 +244,7 @@ class DHCPDBackend(ConfigDataBackend):
 			if not isinstance(host, OpsiClient):
 				continue
 			try:
-				self.dhcpd_deleteHost(self, host)
+				self.dhcpd_deleteHost(host)
 			except Exception, e:
 				errors.append(forceUnicode(e))
 		if errors:

@@ -420,7 +420,7 @@ class OpsiClient(Host):
 		self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
 	
 	def getOneTimePassword(self):
-		return self.inventoryNumber
+		return self.oneTimePassword
 	
 	def setOneTimePassword(self, oneTimePassword):
 		self.oneTimePassword = forceUnicode(oneTimePassword)
