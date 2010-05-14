@@ -612,6 +612,7 @@ class MySQLBackend(ConfigDataBackend):
 					`created` TIMESTAMP,
 					`lastSeen` TIMESTAMP,
 					`opsiHostKey` varchar(32),
+					`oneTimePassword` varchar(32),
 					`maxBandwidth` int,
 					`depotLocalUrl` varchar(128),
 					`depotRemoteUrl` varchar(255),

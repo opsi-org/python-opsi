@@ -1574,7 +1574,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		return result
 	
-	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
+	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
 		hash = locals()
 		del hash['self']
 		return self.host_createObjects(OpsiClient.fromHash(hash))

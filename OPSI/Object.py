@@ -333,7 +333,7 @@ class Host(Object):
 			self.setIpAddress(ipAddress)
 		if not inventoryNumber is None:
 			self.setInventoryNumber(inventoryNumber)
-	
+		
 	def setDefaults(self):
 		Object.setDefaults(self)
 		if self.inventoryNumber is None:
@@ -379,18 +379,21 @@ class OpsiClient(Host):
 	subClasses = {}
 	foreignIdAttributes = Host.foreignIdAttributes + ['clientId']
 	
-	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, created=None, lastSeen=None):
+	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword = None, created=None, lastSeen=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
 		self.opsiHostKey = None
 		self.created = None
 		self.lastSeen = None
+		self.oneTimePassword = None
 		if not opsiHostKey is None:
 			self.setOpsiHostKey(opsiHostKey)
 		if not created is None:
 			self.setCreated(created)
 		if not lastSeen is None:
 			self.setLastSeen(lastSeen)
-	
+		if not oneTimePassword is None:
+			self.setOneTimePassword(oneTimePassword)
+		
 	def setDefaults(self):
 		Host.setDefaults(self)
 		if self.opsiHostKey is None:
@@ -415,6 +418,12 @@ class OpsiClient(Host):
 	
 	def setOpsiHostKey(self, opsiHostKey):
 		self.opsiHostKey = forceOpsiHostKey(opsiHostKey)
+	
+	def getOneTimePassword(self):
+		return self.inventoryNumber
+	
+	def setOneTimePassword(self, oneTimePassword):
+		self.oneTimePassword = forceUnicode(oneTimePassword)
 	
 	@staticmethod
 	def fromHash(hash):

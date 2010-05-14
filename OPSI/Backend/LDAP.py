@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import ldap, ldap.modlist
@@ -147,7 +147,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._productOnDepotsContainerDn       = u'cn=productOnDepots,%s'       % self._opsiBaseDn
 		self._productOnClientsContainerDn      = u'cn=productOnClients,%s'      % self._opsiBaseDn
 		self._productPropertyStatesContainerDn = u'cn=productPropertyStates,%s' % self._opsiBaseDn
-		self._objectToGroupsContainerDn        = u'cn=objectToGroups,%s'        % self._opsiBaseDn
+		#self._objectToGroupsContainerDn        = u'cn=objectToGroups,%s'        % self._opsiBaseDn
 		
 		self._mappings = [
 				{
@@ -170,7 +170,8 @@ class LDAPBackend(ConfigDataBackend):
 					'attributes': [
 						{ 'opsiAttribute': 'created',         'ldapAttribute': 'opsiCreatedTimestamp' },
 						{ 'opsiAttribute': 'lastSeen',        'ldapAttribute': 'opsiLastSeenTimestamp' },
-						{ 'opsiAttribute': 'opsiHostKey',     'ldapAttribute': 'opsiHostKey' }
+						{ 'opsiAttribute': 'opsiHostKey',     'ldapAttribute': 'opsiHostKey' },
+						{ 'opsiAttribute': 'oneTimePassword', 'ldapAttribute': 'opsiOneTimePassword' }
 					]
 				},
 				{
@@ -373,7 +374,8 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'id',            'ldapAttribute': 'opsiGroupId' },
 						{ 'opsiAttribute': 'description',   'ldapAttribute': 'opsiDescription' },
 						{ 'opsiAttribute': 'notes',         'ldapAttribute': 'opsiNotes' },
-						{ 'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId' }
+						{ 'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId' }.
+						{ 'opsiAttribute': 'objectId',      'ldapAttribute': 'opsiMemberObjectId' } # members
 					]
 				},
 				{
@@ -382,16 +384,17 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses': [ 'opsiHostGroup' ],
 					'attributes': [
 					]
-				},
-				{
-					'opsiClass':     'ObjectToGroup',
-					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiObjectToGroup' ],
-					'attributes': [
-						{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'opsiGroupId' },
-						{ 'opsiAttribute': 'objectId',                    'ldapAttribute': 'opsiObjectId' }
-					]
 				}
+				#,
+				#{
+				#	'opsiClass':     'ObjectToGroup',
+				#	'opsiSuperClass': None,
+				#	'objectClasses': [ 'opsiObjectToGroup' ],
+				#	'attributes': [
+				#		{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'opsiGroupId' },
+				#		{ 'opsiAttribute': 'objectId',                    'ldapAttribute': 'opsiObjectId' }
+				#	]
+				#}
 			]
 		
 		self._opsiAttributeToLdapAttribute = {}
@@ -543,13 +546,13 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productOnDepotsContainerDn)
 		self._createOrganizationalRole(self._productOnClientsContainerDn)
 		self._createOrganizationalRole(self._productPropertyStatesContainerDn)
-		self._createOrganizationalRole(self._objectToGroupsContainerDn)
+		#self._createOrganizationalRole(self._objectToGroupsContainerDn)
 	
 	
 	def backend_exit(self):
 		pass
 	
-	def _ldapObjectToOpsiObject(self, ldapObject, attributes=[]):
+	def _ldapObjectToOpsiObject(self, ldapObject, attributes=[], ignoreLdapAttributes=[]):
 		'''
 			Method to convert ldap-Object to opsi-Object
 		
@@ -599,7 +602,7 @@ class LDAPBackend(ConfigDataBackend):
 		opsiObjectHash = {}
 		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = False).items():
 			#logger.debug2(u"LDAP attribute is: %s" % attribute)
-			if attribute in ('objectClass', 'cn'):
+			if attribute in ('objectClass', 'cn') or attribute in ignoreLdapAttributes:
 				continue
 			
 			if self._ldapAttributeToOpsiAttribute[opsiClassName].has_key(attribute):
@@ -1286,7 +1289,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 		search = LDAPObjectSearch(self._ldap, self._groupsContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
-			groups.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			groups.append( self._ldapObjectToOpsiObject(ldapObject, attributes, ignoreLdapAttributes = ['opsiMemberObjectId']) )
 		return groups
 	
 	def group_deleteObjects(self, groups):
@@ -1305,26 +1308,48 @@ class LDAPBackend(ConfigDataBackend):
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
-		containerDn = u'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupsContainerDn)
-		self._createOrganizationalRole(containerDn)
-		
-		dn = u'cn=%s,%s' % (objectToGroup.objectId, containerDn)
-		logger.info(u"Creating objectToGroup: %s" % dn)
+		dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+		logger.info(u"Creating objectToGroup in group: %s" % dn)
 		
 		ldapObject = LDAPObject(dn)
-		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, objectToGroup, updateWhereNone = True)
-		else:
-			ldapObject = self._opsiObjectToLdapObject(objectToGroup, dn)
-			ldapObject.writeToDirectory(self._ldap)
+		if not ldapObject.exists(self._ldap):
+			raise BackendMissingDataError(u"Group '%s' not found" % dn)
+		
+		ldapObject.readFromDirectory(self._ldap)
+		ldapObject.addAttributeValue('opsiMemberObjectId', objectToGroup.objectId)
+		ldapObject.writeToDirectory(self._ldap)
+		
+		#containerDn = u'cn=%s,%s' % (objectToGroup.groupId, self._objectToGroupsContainerDn)
+		#self._createOrganizationalRole(containerDn)
+		#
+		#dn = u'cn=%s,%s' % (objectToGroup.objectId, containerDn)
+		#logger.info(u"Creating objectToGroup: %s" % dn)
+		#
+		#ldapObject = LDAPObject(dn)
+		#if ldapObject.exists(self._ldap):
+		#	self._updateLdapObject(ldapObject, objectToGroup, updateWhereNone = True)
+		#else:
+		#	ldapObject = self._opsiObjectToLdapObject(objectToGroup, dn)
+		#	ldapObject.writeToDirectory(self._ldap)
 	
 	def objectToGroup_updateObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
-		dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)
-		logger.info(u"Updating objectToGroup: %s" % dn)
+		dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+		logger.info(u"Updating objectToGroup in group: %s" % dn)
+		
 		ldapObject = LDAPObject(dn)
-		self._updateLdapObject(ldapObject, objectToGroup)
+		if not ldapObject.exists(self._ldap):
+			raise BackendMissingDataError(u"Group '%s' not found" % dn)
+		
+		ldapObject.readFromDirectory(self._ldap)
+		ldapObject.addAttributeValue('opsiMemberObjectId', objectToGroup.objectId)
+		ldapObject.writeToDirectory(self._ldap)
+		
+		#dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)
+		#logger.info(u"Updating objectToGroup: %s" % dn)
+		#ldapObject = LDAPObject(dn)
+		#self._updateLdapObject(ldapObject, objectToGroup)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
@@ -1333,24 +1358,60 @@ class LDAPBackend(ConfigDataBackend):
 		objectToGroups = []
 		
 		if not filter.get('type'):
-			filter['type'] = [ 'ObjectToGroup' ]
+			filter['type'] = [ 'Group', 'HostGroup' ]
+		else:
+			filter['type'] = forceUnicodeList(filter['type']):
+			for i in range(len(filter['type'])):
+				if (filter['type'][i] == 'ObjectToGroup'):
+					filter['type'][i] = u'Group'
+					if not 'HostGroup' in filter['type']:
+						filter['type'].append('Group')
 		
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
-		
-		search = LDAPObjectSearch(self._ldap, self._objectToGroupsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._groupsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			objectToGroups.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
-		return objectToGroups
+			ldapObject.readFromDirectory(self._ldap, 'opsiGroupId', 'opsiMemberObjectId')
+			groupId = ldapObject.getAttribute('opsiGroupId')
+			for objectId in ldapObject.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
+				objectToGroups.append( ObjectToGroup(objectId = objectId, groupId = groupId) )
+		
+		#if not filter.get('type'):
+		#	filter['type'] = [ 'ObjectToGroup' ]
+		#
+		#ldapFilter = self._objectFilterToLDAPFilter(filter)
+		#
+		#search = LDAPObjectSearch(self._ldap, self._objectToGroupsContainerDn, filter=ldapFilter )
+		#for ldapObject in search.getObjects():
+		#	objectToGroups.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+		#return objectToGroups
 	
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		
-		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)
+		byGroupId = {}
+		for objectToGroup in objectToGroups:
+			if byGroupId.has_key(objectToGroup.groupId):
+				byGroupId[objectToGroup.groupId] = []
+			byGroupId[objectToGroup.groupId].append(objectToGroup.objectId)
+		
+		for (groupId, objectIds) in byGroupId.values():
+			dn = u'cn=%s,%s' % (groupId, self._groupsContainerDn)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
-				logger.info(u"Deleting objectToGroup: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObject.readFromDirectory(self._ldap)
+				newMembers = []
+				for objectId in ldapObject.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
+					if not objectId in objectIds:
+						newMembers.append(objectId)
+				ldapObject.setAttribute('opsiMemberObjectId', default = [], newMembers)
+				ldapObject.writeToDirectory(self._ldap)
+				
+		#for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
+		#	dn = u'cn=%s,cn=%s,%s' % (objectToGroup.objectId, objectToGroup.groupId, self._objectToGroupsContainerDn)
+		#	ldapObj = LDAPObject(dn)
+		#	if ldapObj.exists(self._ldap):
+		#		logger.info(u"Deleting objectToGroup: %s" % dn)
+		#		ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
 
 
