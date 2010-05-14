@@ -445,6 +445,7 @@ class MySQLBackend(ConfigDataBackend):
 				elif value is None:
 					where += u"`%s` is NULL" % key
 				else:
+					value = value.replace("\\", "\\\\").replace("'", "\\\'")
 					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', value)
 					if match:
 						operator = match.group(1)
@@ -2387,7 +2388,7 @@ class MySQLBackend(ConfigDataBackend):
 			if value == [None]:
 				addToWhere += u"`%s` is NULL" % attribute
 			elif type.startswith('varchar'):
-				addToWhere += u"`%s` = '%s'" % (attribute, forceUnicode(value))
+				addToWhere += u"`%s` = '%s'" % (attribute, forceUnicode(value).replace("\\", "\\\\").replace("'", "\\\'"))
 			elif (type.find('int') != -1):
 				try:
 					addToWhere += u"`%s` = %s" % (attribute, forceInt(value))

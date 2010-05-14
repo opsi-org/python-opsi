@@ -164,17 +164,16 @@ def forceTime(var):
 		return time.localtime(var)
 	raise ValueError(u"Not a time '%s'" % var)
 
+hardwareIdRegex = re.compile('^[a-fA-F0-9]{4}$')
 def forceHardwareVendorId(var):
-	var = forceUnicodeUpper(var)
-	if (len(var) != 4):
+	if not re.search(hardwareIdRegex, var):
 		raise ValueError(u"Bad hardware vendor id '%s'" % var)
-	return var
+	return forceUnicodeUpper(var)
 
 def forceHardwareDeviceId(var):
-	var = forceUnicodeUpper(var)
-	if (len(var) != 4):
+	if not re.search(hardwareIdRegex, var):
 		raise ValueError(u"Bad hardware device id '%s'" % var)
-	return var
+	return forceUnicodeUpper(var)
 
 opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})$')
 opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')

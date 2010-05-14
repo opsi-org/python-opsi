@@ -341,6 +341,8 @@ def objectToBeautifiedText(obj, level=0):
 				text += u',\n'
 			i+=1
 		text += u'\n' + u' '*hspace + u'}'
+	elif type(obj) is str:
+		text += toJson(forceUnicode(obj))
 	else:
 		text += toJson(obj)
 	return text
