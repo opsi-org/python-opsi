@@ -104,6 +104,7 @@ class FileBackend(ConfigDataBackend):
 			],
 			'OpsiClient': [
 				{ 'fileType': 'key', 'attribute': 'opsiHostKey' },
+				{ 'fileType': 'ini', 'attribute': 'oneTimePassword', 'section': 'info', 'option': 'onetimepassword' },
 				{ 'fileType': 'ini', 'attribute': 'description',     'section': 'info', 'option': 'description'     },
 				{ 'fileType': 'ini', 'attribute': 'notes',           'section': 'info', 'option': 'notes'           },
 				{ 'fileType': 'ini', 'attribute': 'hardwareAddress', 'section': 'info', 'option': 'hardwareaddress' },
