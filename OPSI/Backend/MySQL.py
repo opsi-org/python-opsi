@@ -1513,9 +1513,10 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		
-		productOnDepotClone = productOnDepot.clone()
+		productOnDepotClone = productOnDepot.clone(identOnly = True)
 		productOnDepotClone.productVersion = None
 		productOnDepotClone.packageVersion = None
+		productOnDepotClone.productType = None
 		where = self._uniqueCondition(productOnDepotClone)
 		if self._mysql.getRow('select * from `PRODUCT_ON_DEPOT` where %s' % where):
 			self._mysql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone = True)
@@ -1562,9 +1563,10 @@ class MySQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		
-		productOnClientClone = productOnClient.clone()
+		productOnClientClone = productOnClient.clone(identOnly = True)
 		productOnClientClone.productVersion = None
 		productOnClientClone.packageVersion = None
+		productOnClientClone.productType = None
 		where = self._uniqueCondition(productOnClientClone)
 		
 		if self._mysql.getRow('select * from `PRODUCT_ON_CLIENT` where %s' % where):
