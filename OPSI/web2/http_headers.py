@@ -200,7 +200,10 @@ def parseDateTime(dateString):
         raise ValueError("Unknown datetime format %r" % dateString)
 
     day = int(day)
-    month = int(monthname_lower.index(month.lower()))
+    try:
+    	    month = int(monthname_lower.index(month.lower()))
+    except Exception, e:
+    	    raise ValueError("month %s not in %s" % (month.lower(), monthname_lower))
     year = int(year)
     hour, min, sec = map(int, time.split(':'))
     return int(timegm((year, month, day, hour, min, sec)))

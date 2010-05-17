@@ -615,10 +615,11 @@ def mount(dev, mountpoint, **options):
 		if not 'servercert' in options:
 			options['servercert'] = u''
 		
-		f = open(u"/etc/davfs2/certs/trusted.pem", "w")
-		f.write(options['servercert'])
-		f.close()
-		os.chmod(u"/etc/davfs2/certs/trusted.pem", 0644)
+		if options['servercert']:
+			f = open(u"/etc/davfs2/certs/trusted.pem", "w")
+			f.write(options['servercert'])
+			f.close()
+			os.chmod(u"/etc/davfs2/certs/trusted.pem", 0644)
 		
 		f = codecs.open(u"/etc/davfs2/secrets", "r", "utf8")
 		lines = f.readlines()
@@ -632,16 +633,17 @@ def mount(dev, mountpoint, **options):
 		f.close()
 		os.chmod(u"/etc/davfs2/secrets", 0600)
 		
-		f = open(u"/etc/davfs2/davfs2.conf", "r")
-		lines = f.readlines()
-		f.close()
-		f = open(u"/etc/davfs2/davfs2.conf", "w")
-		for line in lines:
-			if re.search("^servercert\s+", line):
-				f.write("#")
-			f.write(line)
-		f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
-		f.close()
+		if options['servercert']:
+			f = open(u"/etc/davfs2/davfs2.conf", "r")
+			lines = f.readlines()
+			f.close()
+			f = open(u"/etc/davfs2/davfs2.conf", "w")
+			for line in lines:
+				if re.search("^servercert\s+", line):
+					f.write("#")
+				f.write(line)
+			f.write(u"servercert /etc/davfs2/certs/trusted.pem\n")
+			f.close()
 		
 		del options['username']
 		del options['password']
