@@ -1084,6 +1084,9 @@ class BackendTest(object):
 	def cleanupBackend(self):
 		logger.notice(u"Deleting base")
 		self.backend.backend_deleteBase()
+		
+		#TODO: right place?
+		self.backend.backend_createBase()
 	
 	def testObjectMethods(self):
 		self.backend.backend_setOptions({
@@ -2234,7 +2237,6 @@ class BackendTest(object):
 					packageVersion = product.packageVersion,
 					depotId = depotId
 				)
-		
 		
 		for product in self.backend.product_getObjects():
 			actions = ['none', None]

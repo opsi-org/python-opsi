@@ -90,6 +90,7 @@ class FileBackend(ConfigDataBackend):
 		self.__clientTemplateDir = os.path.join(self.__baseDir, u'templates')
 		
 		self.__defaultClientTemplateName = 'pcproto'
+		
 		self.__serverId = forceHostId(socket.getfqdn())
 		self._placeholderRegex  = re.compile('<([^>]+)>')
 		
@@ -382,6 +383,12 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': section})
 		
 		elif objType in ('OpsiClient', 'ProductOnClient'):
+			hostIds = []
+			if objType in ('OpsiClient', ):
+				hostIds = forceHostIdList(filter.get('id', []))
+			else:
+				hostIds = forceHostIdList(filter.get('clientId', []))
+			
 			try:
 				for entry in os.listdir(self.__clientConfigDir):
 					if not entry.lower().endswith('.ini'):
@@ -389,10 +396,14 @@ class FileBackend(ConfigDataBackend):
 					try:
 						hostId = forceHostId(entry[:-4])
 						
+						if (len(hostIds) > 0) and not (hostId in hostIds):
+							continue
+						
 						if objType == 'ProductOnClient':
 							filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
 							iniFile = IniFile(filename = filename, ignoreCase = False)
 							cp = iniFile.parse()
+							
 							for section in cp.sections():
 								if section.endswith('-state'):
 									objIdents.append(
@@ -410,10 +421,19 @@ class FileBackend(ConfigDataBackend):
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
 		
 		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
+			hostIds = []
+			if objType in ('OpsiDepotserver', 'OpsiConfigserver'):
+				hostIds = forceHostIdList(filter.get('id', []))
+			else:
+				hostIds = forceHostIdList(filter.get('depotId', []))
+			
 			try:
 				for entry in os.listdir(self.__depotConfigDir):
 					try:
 						hostId = forceHostId(entry[:-4])
+						if (len(hostIds) > 0) and not (hostId in hostIds):
+							continue
+						
 						if objType == 'OpsiConfigserver' and hostId != self.__serverId:
 							continue
 						
@@ -779,6 +799,7 @@ class FileBackend(ConfigDataBackend):
 		
 		for obj in objects:
 			logger.debug2(u"Returning object: %s" % obj.getIdent())
+		
 		return objects
 	
 	def _write(self, obj, mode='create'):
