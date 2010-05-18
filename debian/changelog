@@ -1,7 +1,6 @@
 python-opsi (3.99.0.0-1) testing; urgency=low
 
   * opsi 4.0
-  * web2 from python-twisted-calendarserver_0.2.0.svn19773
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 18 May 2010 15:38:15 +0200
 
