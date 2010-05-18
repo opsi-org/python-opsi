@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_prop.PROP.test_PROPPATCH -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_prop.PROP.test_PROPPATCH -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -32,12 +32,12 @@ __all__ = ["http_PROPPATCH"]
 from twisted.python.failure import Failure
 from twisted.internet.defer import deferredGenerator, waitForDeferred
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError, StatusResponse
-from twext.web2.dav import davxml
-from twext.web2.dav.http import MultiStatusResponse, PropertyStatusResponseQueue
-from twext.web2.dav.util import davXMLFromStream
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import MultiStatusResponse, PropertyStatusResponseQueue
+from OPSI.web2.dav.util import davXMLFromStream
 
 log = Logger()
 

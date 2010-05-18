@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_lock -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_lock -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -31,12 +31,12 @@ __all__ = ["http_ACL"]
 
 from twisted.internet.defer import deferredGenerator, waitForDeferred
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.http import StatusResponse, HTTPError
-from twext.web2.dav import davxml
-from twext.web2.dav.http import ErrorResponse
-from twext.web2.dav.util import davXMLFromStream
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.http import StatusResponse, HTTPError
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import ErrorResponse
+from OPSI.web2.dav.util import davXMLFromStream
 
 log = Logger()
 

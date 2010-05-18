@@ -50,10 +50,10 @@ if getattr(xattr, 'xattr', None) is None:
 from twisted.python.util import untilConcludes
 from twisted.python.failure import Failure
 from twisted.python.log import err
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError, StatusResponse
-from twext.web2.dav import davxml
-from twext.web2.dav.http import statusForFailure
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import statusForFailure
 
 # RFC 2518 Section 12.13.1 says that removal of non-existing property
 # is not an error.  python-xattr on Linux fails with ENODATA in this

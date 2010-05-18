@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_http_headers -*-
+# -*- test-case-name: OPSI.web2.test.test_http_headers -*-
 ##
 # Copyright (c) 2008 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.

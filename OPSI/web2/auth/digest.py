@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_httpauth -*-
+# -*- test-case-name: OPSI.web2.test.test_httpauth -*-
 ##
 # Copyright (c) 2006-2009 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -37,8 +37,8 @@ from zope.interface import implements, Interface
 from twisted.python.hashlib import md5, sha1
 from twisted.cred import credentials, error
 from twisted.internet.defer import succeed
-from twext.web2.auth.interfaces import ICredentialFactory
-from twext.web2.http_headers import Token, tokenize, split, parseKeyValue
+from OPSI.web2.auth.interfaces import ICredentialFactory
+from OPSI.web2.http_headers import Token, tokenize, split, parseKeyValue
 
 
 # The digest math
@@ -351,7 +351,7 @@ class DigestCredentialFactory(object):
         @type response: C{str}
         @param response: A string of comma seperated key=value pairs
 
-        @type request: L{twext.web2.server.Request}
+        @type request: L{OPSI.web2.server.Request}
         @param request: the request being processed
 
         @return: L{DigestedCredentials}

@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_httpauth -*-
+# -*- test-case-name: OPSI.web2.test.test_httpauth -*-
 ##
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -30,10 +30,10 @@ from zope.interface import implements, directlyProvides
 from twisted.cred import error, credentials
 from twisted.internet.defer import gatherResults, succeed
 from twisted.python import failure
-from twext.web2 import responsecode
-from twext.web2 import http
-from twext.web2 import iweb
-from twext.web2.auth.interfaces import IAuthenticatedRequest
+from OPSI.web2 import responsecode
+from OPSI.web2 import http
+from OPSI.web2 import iweb
+from OPSI.web2.auth.interfaces import IAuthenticatedRequest
 
 class UnauthorizedResponse(http.StatusResponse):
     """A specialized response class for generating www-authenticate headers
@@ -92,7 +92,7 @@ class HTTPAuthResource(object):
     def __init__(self, wrappedResource, credentialFactories,
                  portal, interfaces):
         """
-        @param wrappedResource: A L{twext.web2.iweb.IResource} to be returned
+        @param wrappedResource: A L{OPSI.web2.iweb.IResource} to be returned
                                 from locateChild and render upon successful
                                 authentication.
 

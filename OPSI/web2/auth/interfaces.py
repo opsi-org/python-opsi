@@ -53,7 +53,7 @@ class ICredentialFactory(Interface):
         @type response: C{str}
         @param response: scheme specific response string
 
-        @type request: L{twext.web2.server.Request}
+        @type request: L{OPSI.web2.server.Request}
         @param request: the request being processed
 
         @return: Deferred returning ICredentials

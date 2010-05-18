@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_httpauth -*-
+# -*- test-case-name: OPSI.web2.test.test_httpauth -*-
 ##
 # Copyright (c) 2006-2009 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -25,7 +25,7 @@
 
 from twisted.cred import credentials, error
 from twisted.internet.defer import succeed, fail
-from twext.web2.auth.interfaces import ICredentialFactory
+from OPSI.web2.auth.interfaces import ICredentialFactory
 
 from zope.interface import implements
 

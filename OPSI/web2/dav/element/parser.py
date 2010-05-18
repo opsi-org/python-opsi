@@ -41,8 +41,8 @@ import cStringIO as StringIO
 import xml.dom.minidom
 import xml.sax
 
-from twext.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
-from twext.web2.dav.element.util import PrintXML
+from OPSI.web2.dav.element.base import WebDAVElement, WebDAVUnknownElement, PCDATAElement
+from OPSI.web2.dav.element.util import PrintXML
 
 ##
 # Parsing

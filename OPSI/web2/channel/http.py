@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_http -*-
+# -*- test-case-name: OPSI.web2.test.test_http -*-
 ##
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # Copyright (c) 2008-2010 Apple Computer, Inc. All rights reserved.
@@ -34,11 +34,11 @@ from zope.interface import implements
 from twisted.internet import interfaces, protocol, reactor
 from twisted.protocols import policies, basic
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2 import http_headers
-from twext.web2 import http
-from twext.web2.http import Request, RedirectResponse
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2 import http_headers
+from OPSI.web2 import http
+from OPSI.web2.http import Request, RedirectResponse
 
 from twistedcaldav.config import config
 from twistedcaldav import accounting

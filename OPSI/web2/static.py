@@ -32,11 +32,11 @@ import os, time
 import tempfile
 
 # Sibling Imports
-from twext.web2 import http_headers, resource
-from twext.web2 import http, iweb, stream, responsecode, server, dirlist
+from OPSI.web2 import http_headers, resource
+from OPSI.web2 import http, iweb, stream, responsecode, server, dirlist
 
 # Twisted Imports
-from twext.python.filepath import CachingFilePath as FilePath
+from OPSI.python.filepath import CachingFilePath as FilePath
 from twisted.internet.defer import maybeDeferred
 from zope.interface import implements
 

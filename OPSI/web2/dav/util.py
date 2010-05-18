@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_util -*-
+# -*- test-case-name: OPSI.web2.test.test_util -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -48,9 +48,9 @@ import posixpath # Careful; this module is not documented as public API
 from twisted.python.failure import Failure
 from twisted.internet.defer import succeed
 
-from twext.python.log import Logger
-from twext.web2.stream import readStream
-from twext.web2.dav import davxml
+from OPSI.Logger import Logger
+from OPSI.web2.stream import readStream
+from OPSI.web2.dav import davxml
 
 log = Logger()
 

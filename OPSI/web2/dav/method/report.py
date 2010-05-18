@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_report -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_report -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -37,13 +37,13 @@ import string
 
 from twisted.internet.defer import deferredGenerator, waitForDeferred
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError, StatusResponse
-from twext.web2.dav import davxml
-from twext.web2.dav.element.parser import lookupElement
-from twext.web2.dav.http import ErrorResponse
-from twext.web2.dav.util import davXMLFromStream
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.element.parser import lookupElement
+from OPSI.web2.dav.http import ErrorResponse
+from OPSI.web2.dav.util import davXMLFromStream
 
 log = Logger()
 

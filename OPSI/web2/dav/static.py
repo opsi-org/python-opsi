@@ -31,30 +31,30 @@ __all__ = ["DAVFile"]
 from twisted.python.filepath import InsecurePath
 from twisted.internet.defer import succeed, deferredGenerator, waitForDeferred
 
-from twext.python.log import Logger
-from twext.web2 import http_headers
-from twext.web2 import responsecode
-from twext.web2.dav.resource import DAVResource, davPrivilegeSet
-from twext.web2.dav.resource import TwistedGETContentMD5
-from twext.web2.dav.util import bindMethods
-from twext.web2.http import HTTPError, StatusResponse
-from twext.web2.static import File
+from OPSI.Logger import Logger
+from OPSI.web2 import http_headers
+from OPSI.web2 import responsecode
+from OPSI.web2.dav.resource import DAVResource, davPrivilegeSet
+from OPSI.web2.dav.resource import TwistedGETContentMD5
+from OPSI.web2.dav.util import bindMethods
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.static import File
 
 log = Logger()
 
 
 try:
-    from twext.web2.dav.xattrprops import xattrPropertyStore as DeadPropertyStore
+    from OPSI.web2.dav.xattrprops import xattrPropertyStore as DeadPropertyStore
 except ImportError:
     log.msg("No dead property store available; using nonePropertyStore.")
     log.msg("Setting of dead properties will not be allowed.")
-    from twext.web2.dav.noneprops import NonePropertyStore as DeadPropertyStore
+    from OPSI.web2.dav.noneprops import NonePropertyStore as DeadPropertyStore
 
 class DAVFile (DAVResource, File):
     """
     WebDAV-accessible File resource.
 
-    Extends twext.web2.static.File to handle WebDAV methods.
+    Extends OPSI.web2.static.File to handle WebDAV methods.
     """
     def __init__(
         self, path,
@@ -203,6 +203,6 @@ class DAVFile (DAVResource, File):
 # Attach method handlers to DAVFile
 #
 
-import twext.web2.dav.method
+import OPSI.web2.dav.method
 
-bindMethods(twext.web2.dav.method, DAVFile)
+bindMethods(OPSI.web2.dav.method, DAVFile)

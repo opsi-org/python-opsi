@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_resource -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_resource -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -55,23 +55,23 @@ from twisted.internet.defer import Deferred, maybeDeferred, succeed
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import reactor
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError, RedirectResponse, StatusResponse
-from twext.web2.http_headers import generateContentType
-from twext.web2.iweb import IResponse
-from twext.web2.resource import LeafResource
-from twext.web2.server import NoURLForResourceError
-from twext.web2.static import MetaDataMixin, StaticRenderMixin
-from twext.web2.auth.wrapper import UnauthorizedResponse
-from twext.web2.dav import davxml
-from twext.web2.dav.davxml import dav_namespace, lookupElement
-from twext.web2.dav.davxml import twisted_dav_namespace, twisted_private_namespace
-from twext.web2.dav.idav import IDAVResource, IDAVPrincipalResource, IDAVPrincipalCollectionResource
-from twext.web2.dav.http import NeedPrivilegesResponse
-from twext.web2.dav.noneprops import NonePropertyStore
-from twext.web2.dav.util import unimplemented, parentForURL, joinURL
-from twext.web2.dav.auth import PrincipalCredentials
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, RedirectResponse, StatusResponse
+from OPSI.web2.http_headers import generateContentType
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.resource import LeafResource
+from OPSI.web2.server import NoURLForResourceError
+from OPSI.web2.static import MetaDataMixin, StaticRenderMixin
+from OPSI.web2.auth.wrapper import UnauthorizedResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.davxml import dav_namespace, lookupElement
+from OPSI.web2.dav.davxml import twisted_dav_namespace, twisted_private_namespace
+from OPSI.web2.dav.idav import IDAVResource, IDAVPrincipalResource, IDAVPrincipalCollectionResource
+from OPSI.web2.dav.http import NeedPrivilegesResponse
+from OPSI.web2.dav.noneprops import NonePropertyStore
+from OPSI.web2.dav.util import unimplemented, parentForURL, joinURL
+from OPSI.web2.dav.auth import PrincipalCredentials
 
 log = Logger()
 
@@ -925,7 +925,7 @@ class DAVResource (DAVPropertyMixIn, StaticRenderMixin):
 
         In order to authenticate, the request must have been
         previously prepared by
-        L{twext.web2.dav.auth.AuthenticationWrapper.hook} to have the
+        L{OPSI.web2.dav.auth.AuthenticationWrapper.hook} to have the
         necessary authentication metadata.
 
         If the request was not thusly prepared, both C{authzUser} and
@@ -934,7 +934,7 @@ class DAVResource (DAVPropertyMixIn, StaticRenderMixin):
         @param request: the request which may contain authentication
             information and a reference to a portal to authenticate
             against.
-        @type request: L{twext.web2.iweb.IRequest}.
+        @type request: L{OPSI.web2.iweb.IRequest}.
         @return: a L{Deferred} which fires with a 2-tuple of
             C{(authnUser, authzUser)} if either the request is
             unauthenticated OR contains valid credentials to

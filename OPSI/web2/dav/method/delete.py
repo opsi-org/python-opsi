@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_delete -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_delete -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -31,12 +31,12 @@ __all__ = ["http_DELETE"]
 
 from twisted.internet.defer import waitForDeferred, deferredGenerator
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError
-from twext.web2.dav import davxml
-from twext.web2.dav.fileop import delete
-from twext.web2.dav.util import parentForURL
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.fileop import delete
+from OPSI.web2.dav.util import parentForURL
 
 log = Logger()
 

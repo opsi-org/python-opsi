@@ -28,7 +28,7 @@ web2.dav interfaces.
 
 __all__ = [ "IDAVResource", "IDAVPrincipalResource", "IDAVPrincipalCollectionResource", ]
 
-from twext.web2.iweb import IResource
+from OPSI.web2.iweb import IResource
 
 class IDAVResource(IResource):
     """

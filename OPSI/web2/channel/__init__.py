@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_cgi,twext.web2.test.test_http -*-
+# -*- test-case-name: OPSI.web2.test.test_cgi,OPSI.web2.test.test_http -*-
 ##
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -27,6 +27,6 @@
 Various backend channel implementations for web2.
 """
 
-from twext.web2.channel.http import HTTPFactory
+from OPSI.web2.channel.http import HTTPFactory
 
 __all__ = ['HTTPFactory']

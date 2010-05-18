@@ -26,18 +26,18 @@ __all__ = ["storeResource"]
 
 from twisted.internet.defer import deferredGenerator, maybeDeferred, waitForDeferred
 from twisted.python import failure, log
-from twext.python.filepath import CachingFilePath as FilePath
-from twext.web2 import responsecode
-from twext.web2.dav import davxml
-from twext.web2.dav.element.base import dav_namespace
-from twext.web2.dav.fileop import copy, delete, put
-from twext.web2.dav.http import ErrorResponse
-from twext.web2.dav.resource import TwistedGETContentMD5
-from twext.web2.dav.stream import MD5StreamWrapper
-from twext.web2.http import HTTPError
-from twext.web2.http_headers import generateContentType
-from twext.web2.iweb import IResponse
-from twext.web2.stream import MemoryStream
+from OPSI.python.filepath import CachingFilePath as FilePath
+from OPSI.web2 import responsecode
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.element.base import dav_namespace
+from OPSI.web2.dav.fileop import copy, delete, put
+from OPSI.web2.dav.http import ErrorResponse
+from OPSI.web2.dav.resource import TwistedGETContentMD5
+from OPSI.web2.dav.stream import MD5StreamWrapper
+from OPSI.web2.http import HTTPError
+from OPSI.web2.http_headers import generateContentType
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.stream import MemoryStream
 
 def storeResource(
     request,
@@ -49,7 +49,7 @@ def storeResource(
     """
     Function that does common PUT/COPY/MOVE behaviour.
     
-    @param request:           the L{twext.web2.server.Request} for the current HTTP request.
+    @param request:           the L{OPSI.web2.server.Request} for the current HTTP request.
     @param source:            the L{DAVFile} for the source resource to copy from, or None if source data
                               is to be read from the request.
     @param source_uri:        the URI for the source resource.

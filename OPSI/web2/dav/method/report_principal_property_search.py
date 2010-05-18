@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_report_expand -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_report_expand -*-
 ##
 # Copyright (c) 2006 Apple Computer, Inc. All rights reserved.
 #
@@ -31,16 +31,16 @@ __all__ = ["report_DAV__principal_property_search"]
 
 from twisted.internet.defer import deferredGenerator, waitForDeferred
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError, StatusResponse
-from twext.web2.dav import davxml
-from twext.web2.dav.davxml import dav_namespace
-from twext.web2.dav.http import ErrorResponse, MultiStatusResponse
-from twext.web2.dav.method import prop_common
-from twext.web2.dav.method.report import NumberOfMatchesWithinLimits
-from twext.web2.dav.method.report import max_number_of_matches
-from twext.web2.dav.resource import isPrincipalResource
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.davxml import dav_namespace
+from OPSI.web2.dav.http import ErrorResponse, MultiStatusResponse
+from OPSI.web2.dav.method import prop_common
+from OPSI.web2.dav.method.report import NumberOfMatchesWithinLimits
+from OPSI.web2.dav.method.report import max_number_of_matches
+from OPSI.web2.dav.resource import isPrincipalResource
 
 log = Logger()
 

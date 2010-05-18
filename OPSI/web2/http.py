@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_http -*-
+# -*- test-case-name: OPSI.web2.test.test_http -*-
 ##
 # Copyright (c) 2001-2004 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -39,12 +39,12 @@ from twisted.internet import interfaces, error
 from twisted.python import components
 from zope.interface import implements
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2 import http_headers
-from twext.web2 import iweb
-from twext.web2 import stream
-from twext.web2.stream import IByteStream, readAndDiscard
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2 import http_headers
+from OPSI.web2 import iweb
+from OPSI.web2 import stream
+from OPSI.web2.stream import IByteStream, readAndDiscard
 
 log = Logger()
 
@@ -109,11 +109,11 @@ class Response(object):
         @type code: C{int}
         
         @param headers: Headers to be sent to the client.
-        @type headers: C{dict}, L{twext.web2.http_headers.Headers}, or 
+        @type headers: C{dict}, L{OPSI.web2.http_headers.Headers}, or 
             C{None}
         
         @param stream: Content body to send to the HTTP client
-        @type stream: L{twext.web2.stream.IByteStream}
+        @type stream: L{OPSI.web2.stream.IByteStream}
         """
 
         if code is not None:

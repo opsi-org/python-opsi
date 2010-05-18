@@ -1,9 +1,9 @@
 from zope.interface import implements, Interface
 from twisted.internet import defer
 from twisted.cred import checkers, error, portal
-from twext.web2.resource import WrapperResource
-from twext.web2.dav import davxml
-from twext.web2.dav.davxml import twisted_private_namespace
+from OPSI.web2.resource import WrapperResource
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.davxml import twisted_private_namespace
 
 __all__ = [
     "IPrincipal",
@@ -20,7 +20,7 @@ class AuthenticationWrapper(WrapperResource):
         to allow anyone to challenge and handle authentication.
 
         @param resource: L{DAVResource} FIXME: This should get promoted to
-            twext.web2.auth
+            OPSI.web2.auth
         @param portal: The cred portal
         @param credentialFactories: Sequence of credentialFactories that can
             be used to authenticate by resources in this tree.

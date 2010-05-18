@@ -42,13 +42,13 @@ import errno
 from twisted.python.failure import Failure
 from twisted.python.filepath import InsecurePath
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.iweb import IResponse
-from twext.web2.http import Response, HTTPError, StatusResponse
-from twext.web2.http_headers import MimeType
-from twext.web2.dav import davxml
-from twext.web2.dav.util import joinURL
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.iweb import IResponse
+from OPSI.web2.http import Response, HTTPError, StatusResponse
+from OPSI.web2.http_headers import MimeType
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.util import joinURL
 
 log = Logger()
 

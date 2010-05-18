@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_client -*-
+# -*- test-case-name: OPSI.web2.test.test_client -*-
 ##
 # Copyright (c) 2001-2007 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -33,12 +33,12 @@ from twisted.internet.defer import Deferred
 from twisted.protocols.basic import LineReceiver
 from twisted.protocols.policies import TimeoutMixin
 
-from twext.web2.responsecode import BAD_REQUEST, HTTP_VERSION_NOT_SUPPORTED
-from twext.web2.http import parseVersion, Response
-from twext.web2.http_headers import Headers
-from twext.web2.stream import ProducerStream, StreamProducer, IByteStream
-from twext.web2.channel.http import HTTPParser, PERSIST_NO_PIPELINE, PERSIST_PIPELINE
-from twext.web2.client.interfaces import IHTTPClientManager
+from OPSI.web2.responsecode import BAD_REQUEST, HTTP_VERSION_NOT_SUPPORTED
+from OPSI.web2.http import parseVersion, Response
+from OPSI.web2.http_headers import Headers
+from OPSI.web2.stream import ProducerStream, StreamProducer, IByteStream
+from OPSI.web2.channel.http import HTTPParser, PERSIST_NO_PIPELINE, PERSIST_PIPELINE
+from OPSI.web2.client.interfaces import IHTTPClientManager
 
 
 
@@ -68,11 +68,11 @@ class ClientRequest(object):
         @param headers: Headers to be sent to the server.  It is important to
             note that this object does not create any implicit headers.  So it
             is up to the HTTP Client to add required headers such as 'Host'.
-        @type headers: C{dict}, L{twext.web2.http_headers.Headers}, or
+        @type headers: C{dict}, L{OPSI.web2.http_headers.Headers}, or
             C{None}
 
         @param stream: Content body to send to the remote HTTP server.
-        @type stream: L{twext.web2.stream.IByteStream}
+        @type stream: L{OPSI.web2.stream.IByteStream}
         """
 
         self.method = method
@@ -324,7 +324,7 @@ class HTTPClientProtocol(LineReceiver, TimeoutMixin, object):
 
         @rtype: L{twisted.internet.defer.Deferred}
         @return: A Deferred which will be called back with the
-            L{twext.web2.http.Response} from the server.
+            L{OPSI.web2.http.Response} from the server.
         """
 
         # Assert we're in a valid state to submit more

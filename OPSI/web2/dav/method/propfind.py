@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_prop.PROP.test_PROPFIND -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_prop.PROP.test_PROPFIND -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -35,13 +35,13 @@ __all__ = [
 from twisted.python.failure import Failure
 from twisted.internet.defer import deferredGenerator, waitForDeferred
 
-from twext.python.log import Logger
-from twext.web2.http import HTTPError
-from twext.web2 import responsecode
-from twext.web2.http import StatusResponse
-from twext.web2.dav import davxml
-from twext.web2.dav.http import MultiStatusResponse, statusForFailure
-from twext.web2.dav.util import normalizeURL, davXMLFromStream
+from OPSI.Logger import Logger
+from OPSI.web2.http import HTTPError
+from OPSI.web2 import responsecode
+from OPSI.web2.http import StatusResponse
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.http import MultiStatusResponse, statusForFailure
+from OPSI.web2.dav.util import normalizeURL, davXMLFromStream
 
 log = Logger()
 

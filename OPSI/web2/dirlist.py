@@ -31,7 +31,7 @@ import stat
 import time
 
 # twisted imports
-from twext.web2 import resource, http, http_headers
+from OPSI.web2 import resource, http, http_headers
 
 def formatFileSize(size):
     if size < 1024:
@@ -82,7 +82,7 @@ class DirectoryLister(resource.Resource):
                     'lastmod': time.strftime("%Y-%b-%d %H:%M", time.localtime(st.st_mtime))
                     })
             else:
-                from twext.web2.static import getTypeAndEncoding
+                from OPSI.web2.static import getTypeAndEncoding
                 mimetype, encoding = getTypeAndEncoding(
                     path,
                     self.contentTypes, self.contentEncodings, self.defaultType)

@@ -1,8 +1,8 @@
-# -*- test-case-name: twext.web2.test.test_stream -*-
+# -*- test-case-name: OPSI.web2.test.test_stream -*-
 
 import time, os
 
-from twext.web2 import http, http_headers, responsecode, stream
+from OPSI.web2 import http, http_headers, responsecode, stream
 
 # Some starts at writing a response filter to handle request ranges.
 

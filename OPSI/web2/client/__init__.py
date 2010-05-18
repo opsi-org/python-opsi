@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_client -*-
+# -*- test-case-name: OPSI.web2.test.test_client -*-
 ##
 # Copyright (c) 2004 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.

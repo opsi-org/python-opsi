@@ -29,9 +29,9 @@ import urllib
 import tempfile
 
 from twisted.internet import defer
-from twext.web2.stream import IStream, FileStream, BufferedStream, readStream
-from twext.web2.stream import generatorToStream, readAndDiscard
-from twext.web2 import http_headers
+from OPSI.web2.stream import IStream, FileStream, BufferedStream, readStream
+from OPSI.web2.stream import generatorToStream, readAndDiscard
+from OPSI.web2 import http_headers
 from cStringIO import StringIO
 
 ###################################
@@ -388,7 +388,7 @@ parse_urlencoded = defer.deferredGenerator(parse_urlencoded)
 if __name__ == '__main__':
     d = parseMultipartFormData(
         FileStream(open("upload.txt")), "----------0xKhTmLbOuNdArY")
-    from twext.python.log import Logger
+    from OPSI.Logger import Logger
     log = Logger()
     d.addErrback(log.err)
     def pr(s):

@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_copy,twext.web2.dav.test.test_move -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_copy,OPSI.web2.dav.test.test_move -*-
 ##
 # Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
 #
@@ -31,18 +31,18 @@ __all__ = ["http_COPY", "http_MOVE"]
 
 from twisted.internet.defer import waitForDeferred, deferredGenerator
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.dav.fileop import move
-from twext.web2.http import HTTPError, StatusResponse
-from twext.web2.filter.location import addLocation
-from twext.web2.dav import davxml
-from twext.web2.dav.idav import IDAVResource
-from twext.web2.dav.method import put_common
-from twext.web2.dav.util import parentForURL
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.dav.fileop import move
+from OPSI.web2.http import HTTPError, StatusResponse
+from OPSI.web2.filter.location import addLocation
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.idav import IDAVResource
+from OPSI.web2.dav.method import put_common
+from OPSI.web2.dav.util import parentForURL
 
 # FIXME: This is circular
-import twext.web2.dav.static
+import OPSI.web2.dav.static
 
 log = Logger()
 
@@ -235,7 +235,7 @@ def _prepareForCopy(destination, destination_uri, request, depth):
     # So far, we need: .exists(), .fp.parent()
     #
 
-    if not isinstance(destination, twext.web2.dav.static.DAVFile):
+    if not isinstance(destination, OPSI.web2.dav.static.DAVFile):
         log.err("DAV copy between non-DAVFile DAV resources isn't implemented")
         raise HTTPError(StatusResponse(
             responsecode.NOT_IMPLEMENTED,

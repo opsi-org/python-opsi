@@ -16,15 +16,15 @@
 ##
 
 from twisted.internet.tcp import Server
-from twext.internet.tcp import MaxAcceptTCPServer
+from OPSI.internet.tcp import MaxAcceptTCPServer
 
 from twisted.internet import reactor
 
 from twisted.application.service import MultiService, Service
 
-from twext.web2.channel.http import HTTPFactory
+from OPSI.web2.channel.http import HTTPFactory
 
-from twext.internet.sendfdport import (
+from OPSI.internet.sendfdport import (
     InheritedPort, InheritedSocketDispatcher, InheritingProtocolFactory)
 
 
@@ -43,7 +43,7 @@ class ReportingHTTPService(Service, object):
     Service which starts up an HTTP server that can report back to its parent
     process via L{InheritedPort}.
 
-    @ivar site: a twext.web2 'site' object, i.e. a request factory
+    @ivar site: a OPSI.web2 'site' object, i.e. a request factory
 
     @ivar fd: the file descriptor of a UNIX socket being used to receive
         connections from a master process calling accept()
@@ -110,7 +110,7 @@ class ReportingHTTPService(Service, object):
 class ReportingHTTPFactory(HTTPFactory):
     """
     An L{HTTPFactory} which reports its status to a
-    L{twext.internet.sendfdport.InheritedPort}.
+    L{OPSI.internet.sendfdport.InheritedPort}.
 
     @ivar inheritedPort: an L{InheritedPort} to report status (the current
         number of outstanding connections) to.  Since this - the

@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_server -*-
+# -*- test-case-name: OPSI.web2.test.test_server -*-
 ##
 # Copyright (c) 2001-2008 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -38,13 +38,13 @@ from zope.interface import implements
 from twisted.internet import defer
 from twisted.python import failure
 
-from twext.python.log import Logger
-from twext.web2 import http, iweb, fileupload, responsecode
-from twext.web2 import http_headers
-from twext.web2.filter.range import rangefilter
-from twext.web2 import error
+from OPSI.Logger import Logger
+from OPSI.web2 import http, iweb, fileupload, responsecode
+from OPSI.web2 import http_headers
+from OPSI.web2.filter.range import rangefilter
+from OPSI.web2 import error
 
-from twext.web2 import __version__ as web2_version
+from OPSI.web2 import __version__ as web2_version
 from twisted import __version__ as twisted_version
 
 VERSION = "Twisted/%s TwistedWeb/%s" % (twisted_version, web2_version)
@@ -89,7 +89,7 @@ def parsePOSTData(request, maxMem=100*1024, maxFields=1024,
     Parse data of a POST request.
 
     @param request: the request to parse.
-    @type request: L{twext.web2.http.Request}.
+    @type request: L{OPSI.web2.http.Request}.
     @param maxMem: maximum memory used during the parsing of the data.
     @type maxMem: C{int}
     @param maxFields: maximum number of form fields allowed.

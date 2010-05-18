@@ -31,8 +31,8 @@ change.
 
 __all__ = ["NonePropertyStore"]
 
-from twext.web2 import responsecode
-from twext.web2.http import HTTPError, StatusResponse
+from OPSI.web2 import responsecode
+from OPSI.web2.http import HTTPError, StatusResponse
 
 class NonePropertyStore (object):
     """

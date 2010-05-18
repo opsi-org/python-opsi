@@ -23,11 +23,11 @@
 ##
 
 """
-Default error output filter for twext.web2.
+Default error output filter for OPSI.web2.
 """
 
-from twext.web2 import stream, http_headers
-from twext.web2.responsecode import *
+from OPSI.web2 import stream, http_headers
+from OPSI.web2.responsecode import *
 
 # 300 - Should include entity with choices
 # 301 -

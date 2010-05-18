@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test -*-
+# -*- test-case-name: OPSI.web2.dav.test -*-
 
 ##
 # Copyright (c) 2009 Twisted Matrix Laboratories.
@@ -25,7 +25,7 @@
 ##
 
 """
-WebDAV support for Twext.Web2.
+WebDAV support for OPSI.Web2.
 
 See RFC 2616: http://www.ietf.org/rfc/rfc2616.txt (HTTP)
 See RFC 2518: http://www.ietf.org/rfc/rfc2518.txt (WebDAV)
@@ -52,5 +52,5 @@ __all__ = [
     "xattrprops",
 ]
 
-from twext.web2.dav import davxml
+from OPSI.web2.dav import davxml
 

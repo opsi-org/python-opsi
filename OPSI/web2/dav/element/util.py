@@ -39,7 +39,7 @@ def PrintXML(document, stream):
     try:
         import xml.dom.ext as ext
     except ImportError:
-        import twext.web2.dav.element.xmlext as ext
+        import OPSI.web2.dav.element.xmlext as ext
 
     document.normalize()
     ext.Print(document, stream)

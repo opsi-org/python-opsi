@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_stream -*-
+# -*- test-case-name: OPSI.web2.test.test_stream -*-
 ##
 # Copyright (c) 2001-2007 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -943,7 +943,7 @@ def generatorToStream(fun):
     takes care of ensuring that the input is not a deferred before
     you see it.
     
-    >>> from twext.web2 import stream
+    >>> from OPSI.web2 import stream
     >>> from string import maketrans
     >>> alphabet = 'abcdefghijklmnopqrstuvwxyz'
     >>>

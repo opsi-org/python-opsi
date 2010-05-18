@@ -22,7 +22,7 @@
 # DRI: Cyrus Daboo, cdaboo@apple.com
 ##
 
-from twext.web2.dav.element.base import WebDAVTextElement, WebDAVElement,\
+from OPSI.web2.dav.element.base import WebDAVTextElement, WebDAVElement,\
     dav_namespace
 
 """

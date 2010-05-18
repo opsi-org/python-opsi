@@ -36,8 +36,8 @@ __all__ = [
     "SyncToken",
 ]
 
-from twext.web2.dav.element.base import WebDAVElement, WebDAVTextElement
-from twext.web2.dav.element.base import dav_namespace, twisted_dav_namespace
+from OPSI.web2.dav.element.base import WebDAVElement, WebDAVTextElement
+from OPSI.web2.dav.element.base import dav_namespace, twisted_dav_namespace
 
 
 class CurrentUserPrincipal(WebDAVElement):

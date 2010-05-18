@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test -*-
+# -*- test-case-name: OPSI.web2.test -*-
 
 ##
 # Copyright (c) 2009 Twisted Matrix Laboratories.
@@ -25,7 +25,7 @@
 ##
 
 """
-twext.web2: a transitional package for Calendar Server to move from a
+OPSI.web2: a transitional package for Calendar Server to move from a
 dependence on twisted.web2 to twisted.web.
 
 This is a copy of (most of) twisted.web2, but the intention is for this package
@@ -37,5 +37,5 @@ is complete, this package will be removed.
 See U{http://twistedmatrix.com/trac/wiki/WebDevelopmentWithTwisted}.
 """
 
-from twext.web2._version import version
+from OPSI.web2._version import version
 __version__ = version.short()

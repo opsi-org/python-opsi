@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.test.test_server,twext.web2.test.test_resource -*-
+# -*- test-case-name: OPSI.web2.test.test_server,OPSI.web2.test.test_resource -*-
 ##
 # Copyright (c) 2001-2007 Twisted Matrix Laboratories.
 # Copyright (c) 2010 Apple Computer, Inc. All rights reserved.
@@ -30,7 +30,7 @@ I hold the lowest-level L{Resource} class and related mix-in classes.
 # System Imports
 from zope.interface import implements
 
-from twext.web2 import iweb, http, server, responsecode
+from OPSI.web2 import iweb, http, server, responsecode
 
 class RenderMixin(object):
     """

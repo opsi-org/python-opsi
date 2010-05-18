@@ -49,9 +49,9 @@ import datetime
 import string
 import cStringIO as StringIO
 
-from twext.python.log import Logger
-from twext.web2.http_headers import parseDateTime
-from twext.web2.dav.element.util import decodeXMLName
+from OPSI.Logger import Logger
+from OPSI.web2.http_headers import parseDateTime
+from OPSI.web2.dav.element.util import decodeXMLName
 
 log = Logger()
 

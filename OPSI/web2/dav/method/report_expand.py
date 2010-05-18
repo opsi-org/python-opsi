@@ -1,4 +1,4 @@
-# -*- test-case-name: twext.web2.dav.test.test_report_expand -*-
+# -*- test-case-name: OPSI.web2.dav.test.test_report_expand -*-
 ##
 # Copyright (c) 2005-2008 Apple Computer, Inc. All rights reserved.
 #
@@ -30,16 +30,16 @@ __all__ = ["report_DAV__expand_property"]
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python.failure import Failure
 
-from twext.python.log import Logger
-from twext.web2 import responsecode
-from twext.web2.dav import davxml
-from twext.web2.dav.davxml import dav_namespace
-from twext.web2.dav.http import statusForFailure, MultiStatusResponse
-from twext.web2.dav.method import prop_common
-from twext.web2.dav.method.propfind import propertyName
-from twext.web2.dav.resource import AccessDeniedError
-from twext.web2.dav.util import parentForURL
-from twext.web2.http import HTTPError, StatusResponse
+from OPSI.Logger import Logger
+from OPSI.web2 import responsecode
+from OPSI.web2.dav import davxml
+from OPSI.web2.dav.davxml import dav_namespace
+from OPSI.web2.dav.http import statusForFailure, MultiStatusResponse
+from OPSI.web2.dav.method import prop_common
+from OPSI.web2.dav.method.propfind import propertyName
+from OPSI.web2.dav.resource import AccessDeniedError
+from OPSI.web2.dav.util import parentForURL
+from OPSI.web2.http import HTTPError, StatusResponse
 
 log = Logger()
 

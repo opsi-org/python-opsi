@@ -1,4 +1,4 @@
-from twext.web2 import responsecode
+from OPSI.web2 import responsecode
 import urlparse
 
 __all__ = ['addLocation']

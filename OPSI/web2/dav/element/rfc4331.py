@@ -30,7 +30,7 @@ This module provides XML element definitions for use with WebDAV.
 See RFC 4331: http://www.ietf.org/rfc/rfc4331.txt
 """
 
-from twext.web2.dav.element.base import WebDAVTextElement
+from OPSI.web2.dav.element.base import WebDAVTextElement
 
 ##
 # Section 3 & 4 (Quota Properties)

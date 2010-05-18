@@ -33,7 +33,7 @@ __all__ = ["MD5StreamWrapper"]
 
 from twisted.python.hashlib import md5
 from twisted.internet.defer import Deferred
-from twext.web2.stream import SimpleStream
+from OPSI.web2.stream import SimpleStream
 
 
 class MD5StreamWrapper(SimpleStream):
