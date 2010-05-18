@@ -32,9 +32,9 @@ fileBackend = FileBackend(baseDir = u'/tmp/opsi-file-backend-test', hostKeyFile 
 # standardtests
 bt = BackendTest(ExtendedConfigDataBackend(fileBackend))
 bt.cleanupBackend()
-#bt.testObjectMethods()
+bt.testObjectMethods()
 #bt.testInventoryObjectMethods()
-#bt.testNonObjectMethods()
+bt.testNonObjectMethods()
 #bt.testMultithreading()
 bt.testPerformance()
 

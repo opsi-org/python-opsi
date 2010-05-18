@@ -82,7 +82,10 @@ class WebDAVElement (object):
 
     qname = classmethod(qname)
     sname = classmethod(sname)
-
+    
+    def __new__(clazz, *children):
+        pass
+    
     def __init__(self, *children, **attributes):
         super(WebDAVElement, self).__init__()
 

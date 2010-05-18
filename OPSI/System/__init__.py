@@ -294,7 +294,7 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 		
 		try:
 			shutil.copy2(src, dst)
-		except os.error, e:
+		except OSError, e:
 			if (e.errno != 1):
 				raise
 			# Operation not permitted

@@ -383,79 +383,82 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': section})
 		
 		elif objType in ('OpsiClient', 'ProductOnClient'):
-			hostIds = []
-			if objType in ('OpsiClient', ):
-				hostIds = forceHostIdList(filter.get('id', []))
-			else:
-				hostIds = forceHostIdList(filter.get('clientId', []))
-			
+			idFilter = {}
+			if   objType in ('OpsiClient', ) and filter.get('id'):
+				idFilter = { 'id': filter['id'] }
+			elif objType in ('ProductOnClient', ) and filter.get('clientId'):
+				idFilter = { 'id': filter['clientId'] }
 			try:
 				for entry in os.listdir(self.__clientConfigDir):
 					if not entry.lower().endswith('.ini'):
 						continue
 					try:
 						hostId = forceHostId(entry[:-4])
-						
-						if (len(hostIds) > 0) and not (hostId in hostIds):
-							continue
-						
-						if objType == 'ProductOnClient':
-							filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
-							iniFile = IniFile(filename = filename, ignoreCase = False)
-							cp = iniFile.parse()
-							
-							for section in cp.sections():
-								if section.endswith('-state'):
-									objIdents.append(
-										{
-										'productId':   section[:-6],
-										'productType': cp.get(section, 'productType'),
-										'clientId':    hostId
-										}
-									)
-						else:
-							objIdents.append({'id': hostId})
 					except:
-						pass
+						continue
+					
+					if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
+						continue
+					
+					if objType == 'ProductOnClient':
+						filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
+						iniFile = IniFile(filename = filename, ignoreCase = False)
+						cp = iniFile.parse()
+						
+						for section in cp.sections():
+							if section.endswith('-state'):
+								objIdents.append(
+									{
+									'productId':   section[:-6],
+									'productType': cp.get(section, 'productType'),
+									'clientId':    hostId
+									}
+								)
+					else:
+						objIdents.append({'id': hostId})
+				
 			except Exception, e:
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
 		
 		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
-			hostIds = []
-			if objType in ('OpsiDepotserver', 'OpsiConfigserver'):
-				hostIds = forceHostIdList(filter.get('id', []))
-			else:
-				hostIds = forceHostIdList(filter.get('depotId', []))
-			
+			idFilter = {}
+			if   objType in ('OpsiDepotserver', 'OpsiConfigserver') and filter.get('id'):
+				idFilter = { 'id': filter['id'] }
+			elif objType in ('ProductOnDepot',) and filter.get('depotId'):
+				idFilter = { 'id': filter['depotId'] }
 			try:
 				for entry in os.listdir(self.__depotConfigDir):
+					if not entry.lower().endswith('.ini'):
+						continue
 					try:
 						hostId = forceHostId(entry[:-4])
-						if (len(hostIds) > 0) and not (hostId in hostIds):
-							continue
-						
-						if objType == 'OpsiConfigserver' and hostId != self.__serverId:
-							continue
-						
-						if objType == 'ProductOnDepot':
-							filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
-							iniFile = IniFile(filename = filename, ignoreCase = False)
-							cp = iniFile.parse()
-							for section in cp.sections():
-								if section.endswith('-state'):
-									objIdents.append(
-										{
-										'productId':      section[:-6],
-										'productType':    cp.get(section, 'producttype'),
-										'productVersion': cp.get(section, 'productversion'),
-										'packageVersion': cp.get(section, 'packageversion'),
-										'depotId':        hostId
-										}
-									)
-						else:
-							objIdents.append({'id': hostId})
 					except:
-						pass
+						continue
+					
+					if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
+						continue
+					
+					if objType == 'OpsiConfigserver' and hostId != self.__serverId:
+						continue
+					
+					if objType == 'ProductOnDepot':
+						filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
+						iniFile = IniFile(filename = filename, ignoreCase = False)
+						cp = iniFile.parse()
+						for section in cp.sections():
+							if section.endswith('-state'):
+								objIdents.append(
+									{
+									'productId':      section[:-6],
+									'productType':    cp.get(section, 'producttype'),
+									'productVersion': cp.get(section, 'productversion'),
+									'packageVersion': cp.get(section, 'packageversion'),
+									'depotId':        hostId
+									}
+								)
+					else:
+						objIdents.append({'id': hostId})
+					
 			except Exception, e:
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__depotConfigDir, e))
 		

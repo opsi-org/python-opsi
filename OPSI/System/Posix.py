@@ -601,6 +601,8 @@ def mount(dev, mountpoint, **options):
 		
 	elif dev.lower().startswith('webdav://') or dev.lower().startswith('webdavs://') or \
 	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):
+	     	# We need enough free space in /var/cache/davfs2
+	     	# Maximum transfer file size <= free space in /var/cache/davfs2
 		match = re.search('^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs  = u'-t davfs'

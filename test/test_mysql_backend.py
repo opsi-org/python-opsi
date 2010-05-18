@@ -12,8 +12,8 @@ logger = Logger()
 logger.setConsoleLevel(LOG_DEBUG2)
 logger.setConsoleColor(True)
 
-#mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi-myqsl-test')
-mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi')
+mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi-myqsl-test')
+#mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi')
 
 bt = BackendTest(ExtendedConfigDataBackend(mysqlBackend))
 bt.cleanupBackend()
