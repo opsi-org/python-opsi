@@ -729,6 +729,10 @@ class LoggerImplementation:
 		''' Log a info message. '''
 		self.log(LOG_INFO, message)
 	
+	def msg( self, message ):
+		''' Log a info message. '''
+		self.info(message)
+	
 	def notice( self, message ):
 		''' Log a notice message. '''
 		self.log(LOG_NOTICE, message)
@@ -740,6 +744,10 @@ class LoggerImplementation:
 	def error( self, message ):
 		''' Log a error message. '''
 		self.log(LOG_ERROR, message)
+	
+	def err( self, message ):
+		''' Log a error message. '''
+		self.error(message)
 	
 	def critical( self, message ):
 		''' Log a critical message. '''
