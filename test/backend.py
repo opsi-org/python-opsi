@@ -2243,7 +2243,7 @@ class BackendTest(object):
 		logger.notice(u"Took %.2f seconds to create %d productsOnDepot" % ((time.time()-start), productCount*nrOfDepots))
 		
 		start = time.time()
-		nrOfClients
+		nrOfClients = 0
 		for product in self.backend.product_getObjects():
 			actions = ['none', None]
 			if product.setupScript:     actions.append('setup')
