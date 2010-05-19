@@ -2342,6 +2342,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if not nextProductOnClient.actionProgress:
 				nextProductOnClient.setActionProgress(u'')
 			if (nextProductOnClient.installationStatus == 'installed'):
+				# TODO: Check if product exists?
 				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
 					clientToDepots = self.configState_getClientToDepotserver(clientIds = [nextProductOnClient.clientId])
 					if not clientToDepots:
