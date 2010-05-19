@@ -2382,9 +2382,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self._backend.productOnClient_insertObject(nextProductOnClient)
 		
 	def productOnClient_insertObject(self, productOnClient):
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		return self._productOnClientUpdateOrCreate(productOnClient, update = False)
 	
 	def productOnClient_updateObject(self, productOnClient):
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		return self._productOnClientUpdateOrCreate(productOnClient, update = True)
 	
 	def productOnClient_createObjects(self, productOnClients):
