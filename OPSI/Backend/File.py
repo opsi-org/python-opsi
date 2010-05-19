@@ -52,6 +52,8 @@ logger = Logger()
 # =                                   CLASS FILEBACKEND                                                =
 # ======================================================================================================
 class FileBackend(ConfigDataBackend):
+	#example match (ignore spaces):      exampleexam_e.-ex  _ 1234.12 - 1234.12  . local     boot
+	productFilenameRegex = re.compile('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$')
 	
 	def __init__(self, **kwargs):
 		self._name = 'file'
@@ -388,6 +390,7 @@ class FileBackend(ConfigDataBackend):
 				idFilter = { 'id': filter['id'] }
 			elif objType in ('ProductOnClient', ) and filter.get('clientId'):
 				idFilter = { 'id': filter['clientId'] }
+			
 			try:
 				for entry in os.listdir(self.__clientConfigDir):
 					if not entry.lower().endswith('.ini'):
@@ -426,6 +429,7 @@ class FileBackend(ConfigDataBackend):
 				idFilter = { 'id': filter['id'] }
 			elif objType in ('ProductOnDepot',) and filter.get('depotId'):
 				idFilter = { 'id': filter['depotId'] }
+			
 			try:
 				for entry in os.listdir(self.__depotConfigDir):
 					if not entry.lower().endswith('.ini'):
@@ -463,21 +467,31 @@ class FileBackend(ConfigDataBackend):
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__depotConfigDir, e))
 		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+			idFilter = {}
+			if   objType in ('Product', 'LocalbootProduct', 'NetbootProduct') and filter.get('id'):
+				idFilter = { 'id': filter['id'] }
+			elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency') and filter.get('productId'):
+				idFilter = { 'id': filter['productId'] }
+			
 			try:
 				for entry in os.listdir(self.__productDir):
 					entry = entry.lower()
 					# productId, productVersion, packageVersion, propertyId
 					if not ( entry.endswith('.localboot') and objType != 'NetbootProduct' ):
 						if not ( entry.endswith('.netboot') and objType != 'LocalbootProduct' ):
+							logger.debug(u"Ignoring product file '%s'" % entry)
 							continue # doesn't fit: next file
 					
-					#example:            exampleexampleexa  _ 123.123 - 123.123  .localboot
-					match = re.search('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$', entry)
+					match = self.productFilenameRegex.search(entry)
 					if not match:
+						logger.warning(u"Ignoring product file '%s'" % entry)
 						continue
-					else:
-						logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
-							% (match.group(1), match.group(2), match.group(3)) )
+					
+					if idFilter and not self._objectHashMatches({'id': match.group(1)}, **idFilter):
+						continue
+					
+					logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
+						% (match.group(1), match.group(2), match.group(3)) )
 					
 					if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 						objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
@@ -495,48 +509,46 @@ class FileBackend(ConfigDataBackend):
 				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__productDir, e))
 		
 		elif objType in ('ConfigState', 'ProductPropertyState'):
-			objectIds = []
-			
-			entries = os.listdir(self.__depotConfigDir)
-			entries.extend(os.listdir(self.__clientConfigDir))
-			
-			for entry in entries:
-				if not entry.lower().endswith('.ini'):
-					continue
-				try:
-					objectIds.append(forceHostId(entry[:-4]))
-				except:
-					pass
-			
-			for objectId in objectIds:
-				if not self._objectHashMatches({'objectId': objectId }, **filter):
-					continue
-				
-				filename = self._getConfigFile(objType, {'objectId': objectId}, 'ini')
-				iniFile = IniFile(filename = filename, ignoreCase = False)
-				cp = iniFile.parse()
-				
-				if objType == 'ConfigState' and cp.has_section('generalconfig'):
-					for option in cp.options('generalconfig'):
-						objIdents.append(
-							{
-							'configId': option,
-							'objectId': objectId
-							}
-						)
-				elif objType == 'ProductPropertyState':
-					for section in cp.sections():
-						if not section.endswith('-install'):
-							continue
-						
-						for option in cp.options(section):
+			for path in (self.__depotConfigDir, self.__clientConfigDir):
+				for entry in os.listdir(path):
+					if not entry.lower().endswith('.ini'):
+						continue
+					
+					filename = os.path.join(path, entry)
+					objectId = None
+					try:
+						objectId = forceHostId(entry[:-4])
+					except Exception, e:
+						logger.warning(u"Ignoring file '%s': %s" % filename, e)
+						continue
+					
+					if not self._objectHashMatches({'objectId': objectId }, **filter):
+						continue
+					
+					iniFile = IniFile(filename = filename, ignoreCase = False)
+					cp = iniFile.parse()
+					
+					if objType == 'ConfigState' and cp.has_section('generalconfig'):
+						for option in cp.options('generalconfig'):
 							objIdents.append(
 								{
-								'productId':  section[:-8],
-								'propertyId': option,
-								'objectId':   objectId
+								'configId': option,
+								'objectId': objectId
 								}
 							)
+					elif objType == 'ProductPropertyState':
+						for section in cp.sections():
+							if not section.endswith('-install'):
+								continue
+							
+							for option in cp.options(section):
+								objIdents.append(
+									{
+									'productId':  section[:-8],
+									'propertyId': option,
+									'objectId':   objectId
+									}
+								)
 		
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
@@ -588,22 +600,22 @@ class FileBackend(ConfigDataBackend):
 					entry = entry.lower()
 					filename = ''
 					
-					if (entry == 'global.sw') or (entry == 'global.hw'):
+					if ((entry == 'global.sw') or (entry == 'global.hw') or (not entry.endswith('.%s' % fileType))):
 						continue
-					elif not entry.endswith('.%s' % fileType):
-						continue
+					
+					#TODO: filter
+					
 					try:
 						forceHostId(entry[:-3])
-					except:
-						logger.error(u"_getIdents(): Found bad file '%s'" % entry)
+					except Exception, e:
+						logger.warning(u"Ignoring file '%s': %s" % (entry, e))
 						continue
-					filenames.append(os.path.join(self.__auditDir, entry))
 					
+					filenames.append(os.path.join(self.__auditDir, entry))
+			
 			for filename in filenames:
 				iniFile = IniFile(filename = filename)
 				cp = iniFile.parse()
-				
-				filebase = os.path.basename(filename)[:-3]
 				
 				for section in cp.sections():
 					objIdent = {}
@@ -617,18 +629,18 @@ class FileBackend(ConfigDataBackend):
 							'architecture': None
 							}
 						for key in objIdent.keys():
-							try:
-								objIdent[str(key)] = self.__unescape(cp.get(section, key.lower()))
-							except:
-								pass
+							option = key.lower()
+							if cp.hasoption(section, option):
+								objIdent[key] = self.__unescape(cp.get(section, option))
+						
 						if (objType == 'AuditSoftwareOnClient'):
-							objIdent['clientId'] = forceHostId(filebase)
+							objIdent['clientId'] = os.path.basename(filename)[:-3]
 					else:
 						for (key, value) in cp.items(section):
 							objIdent[str(key)] = self.__unescape(value)
 						
 						if (objType == 'AuditHardwareOnHost'):
-							objIdent['hostId'] = forceHostId(filebase)
+							objIdent['hostId'] = os.path.basename(filename)[:-3]
 					
 					objIdents.append(objIdent)
 		
