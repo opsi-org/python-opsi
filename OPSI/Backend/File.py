@@ -97,7 +97,7 @@ class FileBackend(ConfigDataBackend):
 		self._placeholderRegex  = re.compile('<([^>]+)>')
 		
 		self._mappings = {
-			'Config': [                                                #TODO: placeholders
+			'Config': [
 				{ 'fileType': 'ini', 'attribute': 'type'           , 'section': '<id>', 'option': 'type',           'json': False     },
 				{ 'fileType': 'ini', 'attribute': 'description'    , 'section': '<id>', 'option': 'description',    'json': False     },
 				{ 'fileType': 'ini', 'attribute': 'editable'       , 'section': '<id>', 'option': 'editable' ,      'json': True      },
@@ -229,9 +229,11 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['HostGroup'] = self._mappings['Group']
 	
 	def backend_exit(self):
+		logger.notice(u"Exiting backend (not implemented yet!)" % ())
 		pass
 	
 	def backend_createBase(self):
+		logger.notice(u"Creating base path: '%s'" % (self.__baseDir))
 		for dirname in (self.__baseDir, self.__clientConfigDir, self.__depotConfigDir, self.__productDir, self.__auditDir, self.__clientTemplateDir):
 			if not os.path.isdir(dirname):
 				self._mkdir(dirname)
@@ -244,7 +246,7 @@ class FileBackend(ConfigDataBackend):
 			self._setRights(filename)
 		
 	def backend_deleteBase(self):
-		logger.info(u"Deleting base path: '%s'" % self.__baseDir)
+		logger.notice(u"Deleting base path: '%s'" % (self.__baseDir))
 		if os.path.exists(self.__baseDir):
 			shutil.rmtree(self.__baseDir)
 		if os.path.exists(self.__clientConfigDir):
@@ -263,44 +265,51 @@ class FileBackend(ConfigDataBackend):
 			os.unlink(self.__clientGroupsFile)
 	
 	def _setRights(self, path):
+		logger.debug(u"Setting rights for path '%s'" % (path))
 		if os.path.isfile(path):
-			logger.debug(u"Setting rights on file '%s'" % path)
+			logger.debug(u"Setting rights on file '%s'" % (path))
 			os.chmod(path, self.__fileMode)
 			if (os.geteuid() == 0):
 				os.chown(path, self.__fileUid, self.__fileGid)
 			else:
 				os.chown(path, -1, self.__fileGid)
 		elif os.path.isdir(path):
-			logger.debug(u"Setting rights on dir '%s'" % path)
+			logger.debug(u"Setting rights on directory '%s'" % (path))
 			os.chmod(path, self.__dirMode)
 			if (os.geteuid() == 0):
 				os.chown(path, self.__dirUid, self.__dirGid)
 			else:
 				os.chown(path, -1, self.__dirGid)
 		
-	def _mkdir(self, dirname):
-		logger.info(u"Creating path: '%s'" % dirname)
-		os.mkdir(dirname)
-		self._setRights(dirname)
+	def _mkdir(self, path):
+		logger.debug(u"Creating path: '%s'" % (path))
+		os.mkdir(path)
+		self._setRights(path)
 		
 	def _touch(self, filename):
+		logger.debug(u"Creating file: '%s'" % (filename))
 		if not os.path.exists(filename):
-			logger.info(u"Creating file: '%s'" % filename)
+			logger.debug(u"Creating file: '%s'" % (filename))
 			f = open(filename, 'w')
 			f.close()
+		else:
+			logger.debug(u"Cannot create existing file, setting rights alone instead ..." % ())
 		self._setRights(filename)
 		
 	def __escape(self, string):
+		logger.debug2(u"Escaping string: '%s'" % (string))
 		string = forceUnicode(string)
 		string = string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
 		return string
 	
 	def __unescape(self, string):
+		logger.debug2(u"Unescaping string: '%s'" % (string))
 		string = forceUnicode(string)
 		string = string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
 		return string
 	
 	def _getConfigFile(self, objType, ident, fileType):
+		logger.debug(u"Getting config file for '%s', '%s', '%s'" % (objType, ident, fileType))
 		filename = None
 		
 		if (fileType == 'key'):
@@ -338,7 +347,7 @@ class FileBackend(ConfigDataBackend):
 			elif objType == 'NetbootProduct':
 				filename = os.path.join(self.__productDir, ident['id'] + pVer + u'.netboot')
 			elif objType in ('Product', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-				pId = u''
+				pId = None
 				if objType == 'Product':
 					pId = ident['id']
 				else:
@@ -370,6 +379,7 @@ class FileBackend(ConfigDataBackend):
 			else:
 				raise Exception(u"%s needs existing file '%s' ident '%s', fileType '%s'" % (objType, filename, ident, fileType))
 		else:
+			logger.debug2(u"Returning config file '%s'" % (filename))
 			return filename
 	
 	def _getIdents(self, objType, **filter):
@@ -391,37 +401,36 @@ class FileBackend(ConfigDataBackend):
 			elif objType in ('ProductOnClient', ) and filter.get('clientId'):
 				idFilter = { 'id': filter['clientId'] }
 			
-			try:
-				for entry in os.listdir(self.__clientConfigDir):
-					if not entry.lower().endswith('.ini'):
-						continue
-					try:
-						hostId = forceHostId(entry[:-4])
-					except:
-						continue
-					
-					if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
-						continue
-					
-					if objType == 'ProductOnClient':
-						filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
-						iniFile = IniFile(filename = filename, ignoreCase = False)
-						cp = iniFile.parse()
-						
-						for section in cp.sections():
-							if section.endswith('-state'):
-								objIdents.append(
-									{
-									'productId':   section[:-6],
-									'productType': cp.get(section, 'productType'),
-									'clientId':    hostId
-									}
-								)
-					else:
-						objIdents.append({'id': hostId})
+			for entry in os.listdir(self.__clientConfigDir):
+				if not entry.lower().endswith('.ini'):
+					logger.debug2(u"Ignoring invalid client file '%s'" % (entry))
+					continue
 				
-			except Exception, e:
-				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__clientConfigDir, e))
+				try:
+					hostId = forceHostId(entry[:-4])
+				except:
+					logger.warning(u"Ignoring invalid client file '%s'" % (entry))
+					continue
+				
+				if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
+					continue
+				
+				if (objType == 'ProductOnClient'):
+					filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
+					iniFile = IniFile(filename = filename, ignoreCase = False)
+					cp = iniFile.parse()
+					
+					for section in cp.sections():
+						if section.endswith('-state'):
+							objIdents.append(
+								{
+								'productId':   section[:-6],
+								'productType': cp.get(section, 'productType'),
+								'clientId':    hostId
+								}
+							)
+				else:
+					objIdents.append({'id': hostId})
 		
 		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
 			idFilter = {}
@@ -430,41 +439,41 @@ class FileBackend(ConfigDataBackend):
 			elif objType in ('ProductOnDepot',) and filter.get('depotId'):
 				idFilter = { 'id': filter['depotId'] }
 			
-			try:
-				for entry in os.listdir(self.__depotConfigDir):
-					if not entry.lower().endswith('.ini'):
-						continue
-					try:
-						hostId = forceHostId(entry[:-4])
-					except:
-						continue
+			for entry in os.listdir(self.__depotConfigDir):
+				if not entry.lower().endswith('.ini'):
+					logger.debug2(u"Ignoring invalid depot file '%s'" % (entry))
+					continue
+				
+				try:
+					hostId = forceHostId(entry[:-4])
+				except:
+					logger.warning(u"Ignoring invalid depot file '%s'" % (entry))
+					continue
+				
+				if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
+					continue
+				
+				if (objType == 'OpsiConfigserver') and (hostId != self.__serverId):
+					continue
+				
+				if (objType == 'ProductOnDepot'):
+					filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
+					iniFile = IniFile(filename = filename, ignoreCase = False)
+					cp = iniFile.parse()
 					
-					if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
-						continue
-					
-					if objType == 'OpsiConfigserver' and hostId != self.__serverId:
-						continue
-					
-					if objType == 'ProductOnDepot':
-						filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
-						iniFile = IniFile(filename = filename, ignoreCase = False)
-						cp = iniFile.parse()
-						for section in cp.sections():
-							if section.endswith('-state'):
-								objIdents.append(
-									{
-									'productId':      section[:-6],
-									'productType':    cp.get(section, 'producttype'),
-									'productVersion': cp.get(section, 'productversion'),
-									'packageVersion': cp.get(section, 'packageversion'),
-									'depotId':        hostId
-									}
-								)
-					else:
-						objIdents.append({'id': hostId})
-					
-			except Exception, e:
-				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__depotConfigDir, e))
+					for section in cp.sections():
+						if section.endswith('-state'):
+							objIdents.append(
+								{
+								'productId':      section[:-6],
+								'productType':    cp.get(section, 'producttype'),
+								'productVersion': cp.get(section, 'productversion'),
+								'packageVersion': cp.get(section, 'packageversion'),
+								'depotId':        hostId
+								}
+							)
+				else:
+					objIdents.append({'id': hostId})
 		
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 			idFilter = {}
@@ -473,53 +482,58 @@ class FileBackend(ConfigDataBackend):
 			elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency') and filter.get('productId'):
 				idFilter = { 'id': filter['productId'] }
 			
-			try:
-				for entry in os.listdir(self.__productDir):
-					entry = entry.lower()
-					# productId, productVersion, packageVersion, propertyId
-					if not ( entry.endswith('.localboot') and objType != 'NetbootProduct' ):
-						if not ( entry.endswith('.netboot') and objType != 'LocalbootProduct' ):
-							logger.debug(u"Ignoring product file '%s'" % entry)
-							continue # doesn't fit: next file
-					
-					match = self.productFilenameRegex.search(entry)
-					if not match:
-						logger.warning(u"Ignoring product file '%s'" % entry)
+			for entry in os.listdir(self.__productDir):
+				match = None
+				
+				entry = entry.lower()
+				if (entry.endswith('.localboot')):
+					if (objType == 'NetbootProduct'):
 						continue
-					
-					if idFilter and not self._objectHashMatches({'id': match.group(1)}, **idFilter):
+				elif (entry.endswith('.netboot')):
+					if (objType == 'LocalbootProduct'):
 						continue
-					
-					logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
-						% (match.group(1), match.group(2), match.group(3)) )
-					
-					if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-						objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
-					
-					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-						filename = os.path.join(self.__productDir, entry)
-						packageControlFile = PackageControlFile(filename = filename)
-						if objType == 'ProductDependency':
-							for productDependency in packageControlFile.getProductDependencies():
-								objIdents.append(productDependency.getIdent(returnType = 'dict'))
-						else:
-							for productProperty in packageControlFile.getProductProperties():
-								objIdents.append(productProperty.getIdent(returnType = 'dict'))
-			except Exception, e:
-				raise BackendIOError(u"Failed to list dir '%s': %s" % (self.__productDir, e))
+				else:
+					logger.debug2(u"Ignoring invalid product file '%s'" % (entry))
+					continue
+				
+				match = self.productFilenameRegex.search(entry)
+				if not match:
+					logger.warning(u"Ignoring invalid product file '%s'" % (entry))
+					continue
+				
+				if idFilter and not self._objectHashMatches({'id': match.group(1)}, **idFilter):
+					continue
+				
+				logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
+					% (match.group(1), match.group(2), match.group(3)) )
+				
+				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
+					objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
+				
+				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+					filename = os.path.join(self.__productDir, entry)
+					packageControlFile = PackageControlFile(filename = filename)
+					if (objType == 'ProductDependency'):
+						for productDependency in packageControlFile.getProductDependencies():
+							objIdents.append(productDependency.getIdent(returnType = 'dict'))
+					else:
+						for productProperty in packageControlFile.getProductProperties():
+							objIdents.append(productProperty.getIdent(returnType = 'dict'))
 		
 		elif objType in ('ConfigState', 'ProductPropertyState'):
 			for path in (self.__depotConfigDir, self.__clientConfigDir):
 				for entry in os.listdir(path):
+					filename = os.path.join(path, entry)
+					
 					if not entry.lower().endswith('.ini'):
+						logger.debug2(u"Ignoring invalid file '%s'" % (filename))
 						continue
 					
-					filename = os.path.join(path, entry)
 					objectId = None
 					try:
 						objectId = forceHostId(entry[:-4])
 					except Exception, e:
-						logger.warning(u"Ignoring file '%s': %s" % filename, e)
+						logger.warning(u"Ignoring invalid file '%s': %s" % filename, e)
 						continue
 					
 					if not self._objectHashMatches({'objectId': objectId }, **filter):
@@ -552,37 +566,37 @@ class FileBackend(ConfigDataBackend):
 		
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
-			if os.path.isfile(filename):
-				iniFile = IniFile(filename = filename, ignoreCase = False)
-				cp = iniFile.parse()
-				
-				for section in cp.sections():
-					if objType == 'ObjectToGroup':
-						for option in cp.options(section):
-							try:
-								if option in ('description', 'notes', 'parentgroupid'):
-									continue
-								
-								value = cp.get(section, option)
-								if not forceBool(value):
-									logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" % (option, section, value))
-									continue
-								
-								objIdents.append(
-									{
-									'groupId':  section,
-									'objectId': forceHostId(option)
-									}
-								)
-							except:
-								logger.error(u"_getIdents(): Found bad option '%s' in section '%s' in file '%s'" \
-									% (option, section, filename))
-					else:
-						objIdents.append(
-							{
+			iniFile = IniFile(filename = filename, ignoreCase = False)
+			cp = iniFile.parse()
+			
+			for section in cp.sections():
+				if (objType == 'ObjectToGroup'):
+					for option in cp.options(section):
+						if option in ('description', 'notes', 'parentgroupid'):
+							continue
+						
+						try:
+							value = cp.get(section, option)
+							if not forceBool(value):
+								logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" \
+									% (option, section, value))
+								continue
+							
+							objIdents.append(
+								{
+								'groupId':  section,
+								'objectId': forceHostId(option)
+								}
+							)
+						except Exception, e:
+							logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
+								% (option, section, filename, e))
+				else:
+					objIdents.append(
+						{
 							'id': section
-							}
-						)
+						}
+					)
 		
 		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
 			filenames = []
@@ -596,19 +610,26 @@ class FileBackend(ConfigDataBackend):
 				if os.path.isfile(filename):
 					filenames.append(filename)
 			else:
+				idFilter = {}
+				if   objType in ('AuditSoftwareOnClient', ):
+					idFilter = { 'id': filter['clientId'] }
+				elif objType in ('AuditHardwareOnHost', ):
+					idFilter = { 'id': filter['hostId'] }
+				
 				for entry in os.listdir(self.__auditDir):
 					entry = entry.lower()
-					filename = ''
+					filename = None
 					
-					if ((entry == 'global.sw') or (entry == 'global.hw') or (not entry.endswith('.%s' % fileType))):
+					if (entry == 'global.sw') or (entry == 'global.hw'):
 						continue
-					
-					#TODO: filter
+					elif not entry.endswith('.%s' % fileType):
+						logger.debug2(u"Ignoring invalid file '%s'" % (entry))
 					
 					try:
-						forceHostId(entry[:-3])
-					except Exception, e:
-						logger.warning(u"Ignoring file '%s': %s" % (entry, e))
+						if idFilter and not self._objectHashMatches({'id': forceHostId(entry[:-3])}, **idFilter):
+							continue
+					except:
+						logger.warning(u"Ignoring invalid file '%s'" % (entry))
 						continue
 					
 					filenames.append(os.path.join(self.__auditDir, entry))
@@ -645,10 +666,11 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append(objIdent)
 		
 		else:
-			logger.warning(u"_getIdents(): Unhandled objType '%s'" % objType)
+			logger.warning(u"Unhandled objType '%s'" % objType)
 		
 		if not objIdents:
-			return objIdents
+			logger.debug2(u"Could not retrieve any idents, returning empty list." % ())
+			return []
 		
 		needFilter = False
 		for attribute in objIdents[0].keys():
@@ -657,6 +679,7 @@ class FileBackend(ConfigDataBackend):
 				break
 		
 		if not needFilter:
+			logger.debug2(u"Returning idents without filter." % ())
 			return objIdents
 		
 		filteredObjIdents = []
@@ -664,9 +687,11 @@ class FileBackend(ConfigDataBackend):
 			if self._objectHashMatches(ident, **filter):
 				filteredObjIdents.append(ident)
 		
+		logger.debug2(u"Returning filtered idents." % ())
 		return filteredObjIdents
 	
 	def _adaptObjectHashAttributes(self, objHash, ident, attributes):
+		logger.debug2(u"Adapting objectHash with '%s', '%s', '%s'" % (objHash, ident, attributes))
 		if not attributes:
 			return objHash
 		for attribute in objHash.keys():
@@ -694,9 +719,10 @@ class FileBackend(ConfigDataBackend):
 				return []
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
-			
-		logger.debug2(u"Filter: %s" % filter)
-		logger.debug2(u"Attributes: %s" % attributes)
+		
+		logger.debug2(u"Now reading '%s' with:" % (objType))
+		logger.debug2(u"   Attributes: '%s'" % (attributes))
+		logger.debug2(u"   Filter: '%s'" % (filter))
 		
 		mappings = {}
 		for mapping in self._mappings[objType]:
@@ -2054,7 +2080,6 @@ class FileBackend(ConfigDataBackend):
 #		ini = iniFile.parse()
 #		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
 #		
-#		#TODO: same for every option?
 #		identLowerKeys = {}
 #		for key in ident.keys():
 #			identLowerKeys[key.lower()] = ident[key]
