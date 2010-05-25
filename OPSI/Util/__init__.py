@@ -188,10 +188,10 @@ def serialize(obj):
 	return newObj
 
 def fromJson(obj, objectType=None):
+	obj = json.loads(obj)
 	if objectType and type(obj) is dict:
 		obj['type'] = objectType
-	
-	return deserialize(json.loads(obj))
+	return deserialize(obj)
 	
 def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
