@@ -1643,7 +1643,7 @@ class BackendTest(object):
 		
 		self.backend.objectToGroup_deleteObjects(objectToGroup3update)
 		objectToGroups = self.backend.objectToGroup_getObjects()
-		assert len(objectToGroups) == len(self.objectToGroups) - 1, u"got: '%s', expected: '%s'" % (objectToGroups, self.objectToGroups - 1)
+		assert len(objectToGroups) == len(self.objectToGroups) - 1, u"got: '%s', expected: '%s'" % (objectToGroups, len(self.objectToGroups) - 1)
 		
 		self.backend.objectToGroup_createObjects(objectToGroup3update)
 		objectToGroups = self.backend.objectToGroup_getObjects()
