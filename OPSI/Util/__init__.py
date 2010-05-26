@@ -173,7 +173,9 @@ def deserialize(obj):
 
 def serialize(obj):
 	newObj = None
-	if   hasattr(obj, 'serialize'):
+	if type(obj) in (unicode, str):
+		return obj
+	elif hasattr(obj, 'serialize'):
 		newObj = obj.serialize()
 	elif type(obj) is list:
 		newObj = []
@@ -395,6 +397,7 @@ def objectToBash(obj, bashVars = {}, level=0):
 	return bashVars
 
 def objectToHtml(obj, level=0):
+	# TODO: optimize for speed!
 	if (level == 0):
 		obj = serialize(obj)
 	

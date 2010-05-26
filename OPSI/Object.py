@@ -169,7 +169,9 @@ class BaseObject(object):
 		return u"<%s>" % self.getType()
 	
 	def toHash(self):
-		hash = pycopy.deepcopy(self.__dict__)
+		# FIXME: Do we need deepcopy here? slow!
+		#hash = pycopy.deepcopy(self.__dict__)
+		hash = dict(self.__dict__)
 		hash['type'] = self.getType()
 		return hash
 	
