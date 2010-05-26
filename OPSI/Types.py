@@ -449,6 +449,20 @@ def forceGroupId(var):
 		raise ValueError(u"Bad group id: '%s'" % var)
 	return var
 
+def forceGroupType(var):
+	v = forceUnicodeLower(var)
+	if (v == 'hostgroup'):
+		var = u'HostGroup'
+	else:
+		raise ValueError(u"Unknown group type: '%s'" % var)
+	return var
+
+def forceGroupTypeList(var):
+	var = forceList(var)
+	for i in range(len(var)):
+		var[i] = forceGroupType(var[i])
+	return var
+
 def forceGroupIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):

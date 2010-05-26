@@ -709,18 +709,21 @@ class BackendTest(object):
 		
 		# ObjectToGroups
 		self.objectToGroup1 = ObjectToGroup(
-			groupId  = self.group1.getId(),
-			objectId = self.client1.getId()
+			groupType = self.group1.getType(),
+			groupId   = self.group1.getId(),
+			objectId  = self.client1.getId()
 		)
 		
 		self.objectToGroup2 = ObjectToGroup(
-			groupId  = self.group1.getId(),
-			objectId = self.client2.getId()
+			groupType = self.group1.getType(),
+			groupId   = self.group1.getId(),
+			objectId  = self.client2.getId()
 		)
 		
 		self.objectToGroup3 = ObjectToGroup(
-			groupId  = self.group2.getId(),
-			objectId = self.client2.getId()
+			groupType = self.group2.getType(),
+			groupId   = self.group2.getId(),
+			objectId  = self.client2.getId()
 		)
 		self.objectToGroups = [ self.objectToGroup1, self.objectToGroup2, self.objectToGroup3 ]
 		
@@ -1627,8 +1630,9 @@ class BackendTest(object):
 			assert objectToGroup.objectId == self.client2.id, u"got: '%s', expected: '%s'" % (objectToGroup.objectId, self.client2.id)
 		
 		objectToGroup3update = ObjectToGroup(
-			groupId  = self.group2.getId(),
-			objectId = self.client2.getId()
+			groupType = self.group2.getType(),
+			groupId   = self.group2.getId(),
+			objectId  = self.client2.getId()
 		)
 		self.backend.objectToGroup_updateObject(objectToGroup3update)
 #		

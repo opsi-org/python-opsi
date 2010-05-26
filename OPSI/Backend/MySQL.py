@@ -841,10 +841,11 @@ class MySQLBackend(ConfigDataBackend):
 		if not 'OBJECT_TO_GROUP' in tables.keys():
 			logger.debug(u'Creating table OBJECT_TO_GROUP')
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
+					`groupType` varchar(30) NOT NULL,
 					`groupId` varchar(255) NOT NULL,
-					FOREIGN KEY ( `groupId` ) REFERENCES `GROUP` ( `groupId` ),
+					FOREIGN KEY ( `groupType`, `groupId`) REFERENCES `GROUP` ( `type`, `groupId` ),
 					`objectId` varchar(255) NOT NULL,
-					PRIMARY KEY( `groupId`, `objectId` )
+					PRIMARY KEY(`groupType`, `groupId`, `objectId` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)

@@ -1678,12 +1678,19 @@ class ObjectToGroup(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'objectToGroup'
 	
-	def __init__(self, groupId, objectId):
+	def __init__(self, groupType, groupId, objectId):
+		self.setGroupType(groupType)
 		self.setGroupId(groupId)
 		self.setObjectId(objectId)
 	
 	def setDefaults(self):
 		Relationship.setDefaults(self)
+	
+	def getGroupType(self):
+		return self.groupType
+	
+	def setGroupType(self, groupType):
+		self.groupType = forceGroupType(groupType)
 	
 	def getGroupId(self):
 		return self.groupId

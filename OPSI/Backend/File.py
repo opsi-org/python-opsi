@@ -1166,6 +1166,8 @@ class FileBackend(ConfigDataBackend):
 			for obj in objList:
 				section = None
 				if (obj.getType() == 'ObjectToGroup'):
+					if (obj.groupType != 'HostGroup'):
+						raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
 					section = obj.getGroupId()
 				else:
 					section = obj.getId()

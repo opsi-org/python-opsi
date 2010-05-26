@@ -558,8 +558,9 @@ class ConfigDataBackend(Backend):
 			# Remove from groups
 			self._context.objectToGroup_deleteObjects(
 				self._context.objectToGroup_getObjects(
-					groupId = [],
-					objectId = host.id ))
+					groupType = 'HostGroup',
+					groupId   = [],
+					objectId  = host.id ))
 			if isinstance(host, OpsiClient):
 				# Remove product states
 				self._context.productOnClient_deleteObjects(
@@ -852,7 +853,8 @@ class ConfigDataBackend(Backend):
 		for group in forceObjectClassList(groups, Group):
 			self._context.objectToGroup_deleteObjects(
 				self._context.objectToGroup_getObjects(
-					groupId = group.id ))
+					groupType = group.getType(),
+					groupId   = group.id ))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -1481,7 +1483,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	
 	def objectToGroup_getIdents(self, returnType='unicode', **filter):
 		result = []
-		for objectToGroup in self._backend.objectToGroup_getObjects(attributes = ['groupId', 'objectId'], **filter):
+		for objectToGroup in self._backend.objectToGroup_getObjects(attributes = ['groupType', 'groupId', 'objectId'], **filter):
 			result.append(objectToGroup.getIdent(returnType))
 		return result
 	
@@ -2608,8 +2610,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
-						groupId  = objectToGroup.groupId,
-						objectId = objectToGroup.objectId
+						groupType = objectToGroup.groupType,
+						groupId   = objectToGroup.groupId,
+						objectId  = objectToGroup.objectId
 					)
 				)
 		return result
@@ -2620,8 +2623,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for objectToGroup in objectToGroups:
 			logger.info(u"Updating objectToGroup %s" % objectToGroup)
 			if self.objectToGroup_getIdents(
-					groupId  = objectToGroup.groupId,
-					objectId = objectToGroup.objectId):
+					groupType = objectToGroup.groupType,
+					groupId   = objectToGroup.groupId,
+					objectId  = objectToGroup.objectId):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
 				logger.info(u"ObjectToGroup %s does not exist, creating" % objectToGroup)
@@ -2629,25 +2633,28 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
-						groupId  = objectToGroup.groupId,
-						objectId = objectToGroup.objectId
+						groupType = objectToGroup.groupType,
+						groupId   = objectToGroup.groupId,
+						objectId  = objectToGroup.objectId
 					)
 				)
 		return result
 		
 	
-	def objectToGroup_create(self, groupId, objectId):
+	def objectToGroup_create(self, groupType, groupId, objectId):
 		hash = locals()
 		del hash['self']
 		return self.objectToGroup_createObjects(ObjectToGroup.fromHash(hash))
 	
-	def objectToGroup_delete(self, groupId, objectId):
-		if not groupId:  groupId  = []
-		if not objectId: objectId = []
+	def objectToGroup_delete(self, groupType, groupId, objectId):
+		if not groupType: groupType  = []
+		if not groupId:   groupId  = []
+		if not objectId:  objectId = []
 		return self._backend.objectToGroup_deleteObjects(
 				self._backend.objectToGroup_getObjects(
-					groupId  = forceGroupIdList(groupId),
-					objectId = forceObjectIdList(objectId)))
+					groupType = forceGroupTypeList(groupType),
+					groupId   = forceGroupIdList(groupId),
+					objectId  = forceObjectIdList(objectId)))
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
