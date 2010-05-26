@@ -1714,8 +1714,8 @@ class ObjectToGroup(Relationship):
 		return fromJson(jsonString, 'ObjectToGroup')
 	
 	def __unicode__(self):
-		return u"<%s groupId '%s', objectId '%s'>" \
-			% (self.getType(), self.groupId, self.objectId)
+		return u"<%s groupType '%s', groupId '%s', objectId '%s'>" \
+			% (self.getType(), self.groupType, self.groupId, self.objectId)
 	
 Relationship.subClasses['ObjectToGroup'] = ObjectToGroup
 
