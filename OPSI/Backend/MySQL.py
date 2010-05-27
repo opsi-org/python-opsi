@@ -610,8 +610,8 @@ class MySQLBackend(ConfigDataBackend):
 					`hardwareAddress` varchar(17),
 					`ipAddress` varchar(15),
 					`inventoryNumber` varchar(30),
-					`created` TIMESTAMP,
-					`lastSeen` TIMESTAMP,
+					`created` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`lastSeen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`opsiHostKey` varchar(32),
 					`oneTimePassword` varchar(32),
 					`maxBandwidth` int,
@@ -862,9 +862,9 @@ class MySQLBackend(ConfigDataBackend):
 					`description` varchar(100),
 					`notes` varchar(1000),
 					`partner` varchar(100),
-					`conclusionDate` TIMESTAMP,
-					`notificationDate` TIMESTAMP,
-					`expirationDate` TIMESTAMP
+					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -879,10 +879,10 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `licenseContractId` ) REFERENCES LICENSE_CONTRACT( `licenseContractId` ),
 					`type` varchar(30) NOT NULL,
 					INDEX(`type`),
-					`boundToHost` varchar(50),
+					`boundToHost` varchar(255),
 					INDEX(`boundToHost`),
 					`maxInstallations` int,
-					`expirationDate` TIMESTAMP
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -943,7 +943,6 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
-		# LICENSE_USED_BY_HOST
 		if not 'LICENSE_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table LICENSE_ON_CLIENT')
 			table = u'''CREATE TABLE `LICENSE_ON_CLIENT` (
@@ -1024,9 +1023,9 @@ class MySQLBackend(ConfigDataBackend):
 						u'PRIMARY KEY( `config_id` ),\n' + \
 						u'`hostId` varchar(50) NOT NULL,\n' + \
 						u'`hardware_id` INT NOT NULL,\n' + \
-						u'`audit_firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
-						u'`audit_lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
-						u'`audit_state` TINYINT NOT NULL,\n'
+						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+						u'`state` TINYINT NOT NULL,\n'
 			
 			hardwareDeviceTableExists = hardwareDeviceTableName in tables.keys()
 			hardwareConfigTableExists = hardwareConfigTableName in tables.keys()
@@ -2372,7 +2371,7 @@ class MySQLBackend(ConfigDataBackend):
 				continue
 			if (attribute == 'state'):
 				if where: where += u' and '
-				where += u"`audit_%s` = %s" % (attribute, forceAuditState(value))
+				where += u"`%s` = %s" % (attribute, forceAuditState(value))
 				continue
 			elif (attribute == 'hostId'):
 				if where: where += u' and '
@@ -2380,7 +2379,7 @@ class MySQLBackend(ConfigDataBackend):
 				continue
 			elif attribute in ('firstseen', 'lastseen'):
 				if where: where += u' and '
-				where += u"`audit_%s` = '%s'" % (attribute, forceOpsiTimestamp(value))
+				where += u"`%s` = '%s'" % (attribute, forceOpsiTimestamp(value))
 				continue
 			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 			if valueInfo is None:
@@ -2426,9 +2425,9 @@ class MySQLBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardwareOnHost.items():
 			if attribute in ('hardwareClass', 'type'):
 				continue
-			if attribute in ('state', 'firstseen', 'lastseen'):
-				data['audit_%s' % attribute] = value
-				continue
+			#if attribute in ('state', 'firstseen', 'lastseen'):
+			#	data['audit_%s' % attribute] = value
+			#	continue
 			data[attribute] = value
 		
 		for (key, value) in auditHardware.items():
@@ -2460,7 +2459,7 @@ class MySQLBackend(ConfigDataBackend):
 		for (attribute, value) in data.items():
 			if attribute in ('state', 'lastseen', 'firstseen'):
 				if not value is None:
-					update['audit_%s' % attribute] = value
+					update[attribute] = value
 				del data[attribute]
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
@@ -2499,10 +2498,10 @@ class MySQLBackend(ConfigDataBackend):
 				#if value in (None, []):
 				#	continue
 				valueInfo = None
-				if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
-					if attribute in ('state', 'firstseen', 'lastseen'):
-						attribute = 'audit_' + attribute
-				else:
+				if not attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+					#if attribute in ('state', 'firstseen', 'lastseen'):
+					#	attribute = 'audit_' + attribute
+					
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
 						continue
@@ -2518,9 +2517,9 @@ class MySQLBackend(ConfigDataBackend):
 						pass
 					elif attribute in ('hostId',):
 						v = forceUnicode(v)
-					elif attribute in ('audit_state',):
+					elif attribute in ('state',):
 						v = forceAuditState(v)
-					elif attribute in ('audit_firstseen', 'audit_lastseen'):
+					elif attribute in ('firstseen', 'lastseen'):
 						v = forceOpsiTimestamp(v)
 					else:
 						type = valueInfo.get('Type', '')
@@ -2565,15 +2564,6 @@ class MySQLBackend(ConfigDataBackend):
 				del data['hardware_id']
 				if data.has_key('config_id'):
 					del data['config_id']
-				if data.has_key('audit_state'):
-					data['state'] = data['audit_state']
-					del data['audit_state']
-				if data.has_key('audit_firstseen'):
-					data['firstseen'] = data['audit_firstseen']
-					del data['audit_firstseen']
-				if data.has_key('audit_lastseen'):
-					data['lastseen'] = data['audit_lastseen']
-					del data['audit_lastseen']
 				
 				for attribute in self._auditHardwareConfig[hardwareClass].keys():
 					if not data.has_key(attribute):
