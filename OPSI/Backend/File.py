@@ -337,7 +337,7 @@ class FileBackend(ConfigDataBackend):
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
-				filename = os.path.join(self.__clientGroupsFile)
+				filename = os.path.join(self.__clientGroupsFile) #TODO: {'groupType': '___'}
 		
 		elif (fileType == 'pro'):
 			pVer = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
@@ -565,7 +565,7 @@ class FileBackend(ConfigDataBackend):
 								)
 		
 		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
-			filename = self._getConfigFile(objType, {}, 'ini')
+			filename = self._getConfigFile(objType, {}, 'ini') #TODO: {'groupType': '___'}
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			
@@ -584,6 +584,7 @@ class FileBackend(ConfigDataBackend):
 							
 							objIdents.append(
 								{
+								'groupType': u"HostGroup", #TODO: {'groupType': '___'}
 								'groupId':  section,
 								'objectId': forceHostId(option)
 								}
