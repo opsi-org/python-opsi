@@ -190,9 +190,12 @@ def generateProductOnClientSequence(productOnClients, availableProducts, product
 	priorityToProductIds = {}
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
+		# add id to collection 
 		availableProductsByProductId[availableProduct.id] = availableProduct
+		# if necessary initialize priorityToProductIds [priority]
 		if not priorityToProductIds.has_key(availableProduct.priority):
 			priorityToProductIds[availableProduct.priority] = []
+		# set id as value for priorityToProductIds [priority]
 		priorityToProductIds[availableProduct.priority].append(availableProduct.id)
 		
 	priorities = priorityToProductIds.keys()
