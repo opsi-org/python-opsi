@@ -1299,9 +1299,12 @@ class BackendTest(object):
 		
 		configs = self.backend.config_getObjects(description = u'Updated')
 		assert len(configs) == 1, u"got: '%s', expected: '%s'" % (configs, 1)
-		assert configs[0].getPossibleValues() == ['1', '2', '3'], u"got: '%s', expected: '%s'" % (configs[0].getPossibleValues(), ['1', '2', '3'])
-		assert configs[0].getDefaultValues() == ['1', '2'], u"got: '%s', expected: '%s'" % (configs[0].getDefaultValues(), ['1', '2'])
-		
+		assert len(configs[0].getPossibleValues()) == 3, u"got %s, expected length 3" % configs[0].getPossibleValues()
+		for i in ['1', '2', '3']:
+			assert i in configs[0].getPossibleValues(), u"%s not in %s" % (i, configs[0].getPossibleValues())
+		assert len(configs[0].getDefaultValues()) == 2, u"got %s, expected length 2" % configs[0].getDefaultValues()
+		for i in ['1', '2']:
+			assert i in configs[0].getDefaultValues(), u"%s not in %s" % (i, configs[0].getDefaultValues())
 		
 		# ConfigStates
 		logger.notice(u"Testing configState methods")
@@ -1375,11 +1378,12 @@ class BackendTest(object):
 					break
 		
 		self.product2.setName(u'Product 2 updated')
+		self.product2.setPriority(60)
 		products = self.backend.product_updateObject(self.product2)
-		products = self.backend.product_getObjects( attributes = ['name'], id = 'product2' )
+		products = self.backend.product_getObjects( attributes = ['name', 'priority'], id = 'product2' )
 		assert len(products) == 1, u"got: '%s', expected: '%s'" % (products, 1)
 		assert products[0].getName() == u'Product 2 updated', u"got: '%s', expected: '%s'" % (products[0].getName(), u'Product 2 updated')
-		
+		assert products[0].getPriority() == 60, u"got: '%s', expected: '60'" % products[0].getPriority()
 		
 		# ProductProperties
 		logger.notice(u"Testing productProperty methods")

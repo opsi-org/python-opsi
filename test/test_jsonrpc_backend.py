@@ -12,14 +12,14 @@ logger = Logger()
 logger.setConsoleLevel(LOG_NOTICE)
 logger.setConsoleColor(True)
 
-jsonrpcBackend = JSONRPCBackend(username = 'username', password = 'password', address = 'localhost')
+jsonrpcBackend = JSONRPCBackend(username = 'root', password = 'linux123', address = 'localhost')
 
 bt = BackendTest(jsonrpcBackend)
-#bt.cleanupBackend()
-#jsonrpcBackend.backend_createBase()
-#bt.testObjectMethods()
+bt.cleanupBackend()
+jsonrpcBackend.backend_createBase()
+bt.testObjectMethods()
 #bt.testNonObjectMethods()
-bt.testMultithreading()
+#bt.testMultithreading()
 
 jsonrpcBackend.backend_exit()
 

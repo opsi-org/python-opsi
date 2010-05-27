@@ -1202,7 +1202,7 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		hosts = self.host_getObjects( id = productPropertyState.objectId )
 		if not hosts:
-			raise BackendReferentialItegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
+			raise BackendReferentialIntegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
 
 		containerDn = u'cn=%s,%s' % (productPropertyState.objectId, self._productPropertyStatesContainerDn)
 		self._createOrganizationalRole(containerDn)

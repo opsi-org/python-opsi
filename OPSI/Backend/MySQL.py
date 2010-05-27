@@ -825,10 +825,9 @@ class MySQLBackend(ConfigDataBackend):
 		if not 'GROUP' in tables.keys():
 			logger.debug(u'Creating table GROUP')
 			table = u'''CREATE TABLE `GROUP` (
-					`groupId` varchar(255) NOT NULL,
-					PRIMARY KEY( `groupId` ),
 					`type` varchar(30) NOT NULL,
-					INDEX(`type`),
+					`groupId` varchar(255) NOT NULL,
+					PRIMARY KEY( `type`, `groupId` ),
 					`parentGroupId` varchar(255),
 					INDEX(`parentGroupId`),
 					`description` varchar(100),
@@ -841,11 +840,13 @@ class MySQLBackend(ConfigDataBackend):
 		if not 'OBJECT_TO_GROUP' in tables.keys():
 			logger.debug(u'Creating table OBJECT_TO_GROUP')
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
+					`object_to_group_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `object_to_group_id` ),
 					`groupType` varchar(30) NOT NULL,
-					`groupId` varchar(255) NOT NULL,
+					`groupId` varchar(100) NOT NULL,
 					FOREIGN KEY ( `groupType`, `groupId`) REFERENCES `GROUP` ( `type`, `groupId` ),
 					`objectId` varchar(255) NOT NULL,
-					PRIMARY KEY(`groupType`, `groupId`, `objectId` )
+					INDEX(`objectId`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)
@@ -946,11 +947,13 @@ class MySQLBackend(ConfigDataBackend):
 		if not 'LICENSE_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table LICENSE_ON_CLIENT')
 			table = u'''CREATE TABLE `LICENSE_ON_CLIENT` (
+					`license_on_client_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `license_on_client_id` ),
 					`softwareLicenseId` VARCHAR(100) NOT NULL,
 					`licensePoolId` VARCHAR(100) NOT NULL,
 					`clientId` varchar(255),
-					PRIMARY KEY( `softwareLicenseId`, `licensePoolId`, `clientId` ),
 					FOREIGN KEY( `softwareLicenseId`, `licensePoolId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId`, `licensePoolId` ),
+					INDEX( `clientId` ),
 					`licenseKey` VARCHAR(100),
 					`notes` VARCHAR(1024)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -1615,7 +1618,7 @@ class MySQLBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		if not self._mysql.getSet(self._createQuery('HOST', ['hostId'], {"hostId": productPropertyState.objectId})):
-			raise BackendReferentialItegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
+			raise BackendReferentialIntegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
 		data = self._objectToDatabaseHash(productPropertyState)
 		data['values'] = json.dumps(data['values'])
 		

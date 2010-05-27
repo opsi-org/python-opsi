@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
-import base64, urllib, httplib, new, stat, socket, time, threading
+import base64, urllib, httplib, new, stat, socket, time, threading, zlib
 from twisted.conch.ssh import keys
 
 from sys import version_info
@@ -70,6 +70,7 @@ class JSONRPCBackend(Backend):
 		
 		self._application = 'opsi jsonrpc module version %s' % __version__
 		self._sessionId   = None
+		self._deflate     = False
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -79,6 +80,8 @@ class JSONRPCBackend(Backend):
 				self._application = str(value)
 			if option in ('sessionid',):
 				self._sessionId = str(value)
+			if option in ('deflate',):
+				self._deflate = bool(value)
 		
 		# Default values
 		self._defaultHttpPort = 4444
@@ -310,6 +313,7 @@ class JSONRPCBackend(Backend):
 						self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 						logger.info(u"Legacy opsi")
 						self._legacyOpsi = True
+						self._deflate = False
 				finally:
 					self._retry = True
 			
@@ -384,11 +388,19 @@ class JSONRPCBackend(Backend):
 			else:
 				logger.debug(u"Using method POST")
 				self._connection.putrequest('POST', baseUrl)
-				self._connection.putheader('content-type', 'application/json-rpc')
+				if self._deflate:
+					logger.debug2(u"Compressing query")
+					self._connection.putheader('content-type', 'gzip-application/json-rpc')
+					level = 1
+					query = zlib.compress(query, level)
+				else:
+					self._connection.putheader('content-type', 'application/json-rpc')
 				self._connection.putheader('content-length', len(query))
 			
 			# Add some http headers
 			self._connection.putheader('user-agent', self._application)
+			if self._deflate:
+				self._connection.putheader('Accept', 'gzip-application/json-rpc')
 			self._connection.putheader('Accept', 'application/json-rpc')
 			self._connection.putheader('Accept', 'text/plain')
 			if self._sessionId:
@@ -404,7 +416,7 @@ class JSONRPCBackend(Backend):
 			if (self._method == METHOD_POST):
 				logger.debug2(u"Sending query")
 				self._connection.send(query)
-			
+				
 			# Get response
 			logger.debug2(u"Getting response")
 			response = self._connection.getresponse()
@@ -414,7 +426,7 @@ class JSONRPCBackend(Backend):
 			if cookie:
 				# Store sessionId cookie
 				self._sessionId = cookie.split(';')[0].strip()
-		
+			
 		except Exception, e:
 			logger.debug(u"Request to '%s' failed, retry: %s, started: %s, now: %s, maxRetrySeconds: %s" \
 					% (self._address, self._retry, started, now, maxRetrySeconds))
@@ -427,8 +439,13 @@ class JSONRPCBackend(Backend):
 				raise BackendIOError(u"Request to '%s' failed: %s" % (self._address, e))
 		
 		try:
-			# Return response content (body)
-			return response.read()
+			logger.debug(u"Content-Type: %s" % response.getheader('content-type', None))
+			if response.getheader('content-type', '').lower().startswith('gzip'):
+				logger.debug(u"Expecting compressed data from server")
+				return zlib.decompress(response.read())
+			else:
+				return response.read()
+			
 		except Exception, e:
 			raise BackendIOError(u"Cannot read '%s'" % e)
 	
