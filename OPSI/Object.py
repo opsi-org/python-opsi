@@ -2767,6 +2767,296 @@ Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
 
 
 
+class OrderRequirement:
+	'''Represents a request for ordering of two elements with a notice if it is fulfilled'''
+	
+	def __init__(self, prior, posterior, fulfilled=False):
+		self.prior = prior
+		assert isinstance(prior, int)
+		self.posterior = posterior
+		assert isinstance(posterior, int) 
+		self.fulfilled = fulfilled
+		assert isinstance(fulfilled, bool)
+	def __str__( self ):
+		return "(" + str(self.prior) + "," + str(self.posterior) + "," + str(self.fulfilled) + ")"
+
+class OrderBuild:
+	'''Describes the building of an ordering'''
+	
+	def __init__(self,elementCount, requs):
+		self.ordering = []
+		self.elementCount = elementCount
+		self.errorFound = False
+		self.allFulfilled = False
+		assert isinstance(requs, Requirements)
+		self.requs = requs
+		self.indexIsAmongPosteriors = []
+		j = 0
+		while j < elementCount:
+			self.indexIsAmongPosteriors.append(False)
+			j = j + 1
+		self.indexUsed = []
+		j = 0
+		while j < elementCount:
+			self.indexUsed.append(False)
+			j = j + 1
+		self.usedCount = 0
+		
+	def proceed(self):
+		result = True
+		lastSortedCount = 0
+		if self.usedCount >= self.elementCount:
+			return result
+			
+		indexRequToFulfill = self.requs.indexOfFirstNotFulfilledRequirementOrderedByPrior()
+		if indexRequToFulfill == -1:
+			self.allFulfilled = True
+			# get the posteriors that did not occur as priors
+			j = 0
+			while j < self.elementCount:
+				if self.indexIsAmongPosteriors[j] and not self.indexUsed[j]:
+					self.ordering.append(j)
+					self.indexUsed[j] = True
+					self.usedCount = self.usedCount + 1
+				j = j + 1
+			lastSortedCount = self.usedCount
+			
+			# take rest from list
+			j = 0
+			while j < self.elementCount:
+				if not self.indexUsed[j]:
+					self.ordering.append(j)
+					self.indexUsed[j] = True
+					self.usedCount = self.usedCount + 1
+				j = j + 1
+					
+			# move the sorted items to the end of the list
+			if lastSortedCount > 0:
+				newordering = []
+				k = 0
+				while k < self.elementCount:
+					newordering.append(k)
+					k = k + 1
+					
+				#rearrange
+				#not sorted elements
+				for k in range(self.elementCount - lastSortedCount):
+					newordering[k] = self.ordering[lastSortedCount + k]
+				
+				#sorted elements
+				for k in range(lastSortedCount):
+					newordering[self.elementCount - lastSortedCount + k] = self.ordering[k] 
+
+				#put back
+				self.ordering = newordering
+			
+					
+		else:
+			# at indexRequToFulfill we found a not fulfilled requirement, lets try to fulfill a requirement
+			# look only at not fulfilled reqirements
+			# find the first one, in ordering by priors, with the property that it does not occur as posterior
+			# take it as newEntry for the ordered list
+			# automatically any requirement is fulfilled where newEntry is the prior; do the markings 
+			
+			(newEntry, requ_no_in_list_ordered_by_priors) = self.requs.first_prior_not_occurring_as_posterior(indexRequToFulfill)
+			if newEntry == -1:
+				result = False
+			else:
+				self.ordering.append(newEntry)
+				#self.ordering[self.usedCount] = newEntry
+				self.usedCount = self.usedCount + 1
+				# mark all requirements with candidate in prior position as fulfilled
+				# and collect the posteriors
+				k = requ_no_in_list_ordered_by_priors
+				orderByPrior = self.requs.getOrderByPrior()
+				requ_k = self.requs.getRequList()[orderByPrior[k]]
+				while (k < self.requs.getCount()) and (newEntry == requ_k.prior):
+					requ_k.fulfilled = True
+					self.indexIsAmongPosteriors[ requ_k.posterior ] = True
+					k = k + 1
+					if k < self.requs.getCount():
+						requ_k = self.requs.getRequList()[orderByPrior[k]]
+				self.indexUsed[newEntry] = True
+				
+		#print self.ordering				
+		return result
+		
+	def getOrdering(self):
+		return self.ordering
+
+class Requirements:
+	'''Comprises a list with ordering requirements and ordered lists of them'''
+	
+	def __init__(self, allItemsCount):
+		self.list = []
+		self.orderByPrior=[]
+		self.orderByPosterior=[]
+	
+	def add(self, requirement):
+		assert isinstance(requirement, OrderRequirement)
+		self.list.append(requirement)
+		#extend the other lists by dummy valuesno_in_list_ordered_by_priors
+		self.orderByPrior.append(-1)
+		self.orderByPosterior.append(-1)
+		#print "length of list " + str(len(self.list))
+		#print "length of orderByPrior " + str(len(self.orderByPrior))
+		
+		#continue building the transform map of list indices 
+		#such that the transformed list is ordered by its prior values
+		#therefore:
+		#determine first the place of the added item 
+		#in the ordered sequence i -> list[orderByPrior[i]]
+		#then fix orderByPrior such that it gets this place
+		i = 0;
+		located = False;
+		while (i < len(self.list)-1) and not located:
+			#print("requirement.prior %s, self.list[self.orderByPrior[i]].prior) %s " % (requirement.prior,self.list[self.orderByPrior[i]].prior))
+			if requirement.prior > self.list[self.orderByPrior[i]].prior:
+				i = i+1
+				#print("inc i " + str(i))
+			else:
+				located = True
+				#we take the first place that fits to the ordering
+					
+				# shift all items by one place
+				j = len(self.list) - 1
+				while j > i:
+					self.orderByPrior[j] = self.orderByPrior[j-1]
+					j = j-1
+					
+				#print("freed " + str(j))
+					
+				# finally we map place i to the new element
+				self.orderByPrior[i] = len(self.list) - 1
+					
+		
+		if not located:
+			# no_in_list_ordered_by_priors
+			# if i = len(self.list) - 1 nothing is moved
+			self.orderByPrior[i] = len(self.list) - 1
+			
+		#print("set orderByPrior[%s] = %s" % (i, (len(self.list) - 1) ))
+				
+		#the analogous procedure to get a transformation
+		#i -> orderByPosterior[i] such that the sequence 
+		#i ->  self.list[orderByPosterior[i]]
+		#is ordered by the posterior values
+		
+		i = 0;
+		located = False;
+		while (i < len(self.list)-1) and not located:
+			#print("requirement.posterior %s, self.list[self.orderByPosterior[i]].posterior) %s " % (requirement.posterior,self.list[self.orderByPosterior[i]].posterior))
+			if requirement.posterior > self.list[self.orderByPosterior[i]].posterior:
+				i = i+1
+				#print("inc i " + str(i))
+			else:
+				located = True
+				#we take the first place that fits to the ordering
+					
+				# shift all items by one place
+				j = len(self.list) - 1
+				while j > i:
+					self.orderByPosterior[j] = self.orderByPosterior[j-1]
+					j = j-1
+				#print("freed " + str(j))
+					
+				# finally we map place i to the new element
+				self.orderByPosterior[i] = len(self.list) - 1
+					
+		
+		if not located:
+			# if i = len(self.list) - 1 nothing is moved
+			self.orderByPosterior[i] = len(self.list) - 1
+	
+	
+	def posteriorIndexOf(self, posti):
+		'''searches first occurrence of posti as posterior value in the posterior-ordered sequence of requirements'''
+
+		j = 0
+		searching = True
+		while j < len(self.list) and searching:
+			candidate = self.list[self.orderByPosterior[j]]
+			
+			if (candidate.fulfilled or (candidate.posterior < posti)):
+				j = j+1
+			else:
+				searching = False
+				
+		if searching:
+			#all candidates were less than the comparevalue or were not to be regarded any more
+			return -1
+		else:
+			#candidate is not fulfilled 
+			#and has posterior value >= posti
+			if candidate.posterior == posti:
+				return j
+			else:
+				#there are no more possible occurrences of posterior
+				return -1
+
+
+	def indexOfFirstNotFulfilledRequirementOrderedByPrior(self):
+		i = 0
+		found = False
+		while not found and (i < len(self.list)):
+			if (self.list[self.orderByPrior[i]].fulfilled):
+				i = i + 1
+			else: 
+				found = True
+				
+		if not found:
+			return -1
+		else:
+			return i
+			
+	def first_prior_not_occurring_as_posterior(self, startI):
+		j = startI
+		found = False
+		candidate = self.list[self.orderByPrior[startI]].prior
+		lastcandidate = -1
+		errorS0 = 'potentially conflicting requirements for: '
+		
+		while j < len(self.list) and not found:
+			if (not self.list[self.orderByPrior[j]].fulfilled) and (self.posteriorIndexOf(candidate) == -1):
+				# if requ j still not fulfilled and candidate does not occur 
+				# as posterior among the not fulfilled
+				# then we adopt candidate (i.e. the prior element of requ j in requ list ordered by priors)
+				# as next element in our ordered sequence
+				
+				found = True
+				
+			else:
+				if (self.posteriorIndexOf(candidate) > -1) and ( lastcandidate != candidate ): 
+					errorS0 = errorS0 + str(candidate) + " "
+					lastcandidate = candidate
+				
+				#go on searching
+				j =  j + 1
+				if j < len(self.list):
+					candidate = self.list[self.orderByPrior[j]].prior
+					
+				
+		if found:
+			no_in_list_ordered_by_priors = j
+			return (candidate, no_in_list_ordered_by_priors)
+			
+		raise OrderingError(errorS0)
+			
+		return (-1, j)
+
+	def getCount(self):
+		return len(self.list)
+		
+	def getRequList(self):
+		return self.list
+		
+	def getOrderByPrior(self):
+		return self.orderByPrior
+	
+	def getOrderByPosteriors(self):
+		return self.orderByPosteriors
+		
+
 
 
 

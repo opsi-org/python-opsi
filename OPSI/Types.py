@@ -685,9 +685,8 @@ class OpsiRpcError(OpsiError):
 class CanceledException(Exception):
 	ExceptionShortDescription = u"CanceledException"
 
-
-
-
+class OrderingError(RuntimeError):
+	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
 
 
