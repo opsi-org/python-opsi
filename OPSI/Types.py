@@ -682,11 +682,13 @@ class OpsiBadRpcError(OpsiError):
 class OpsiRpcError(OpsiError):
 	ExceptionShortDescription = u"Opsi rpc error"
 
+class OpsiProductOrderingError(OpsiError):
+	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
+
 class CanceledException(Exception):
 	ExceptionShortDescription = u"CanceledException"
 
-class OrderingError(RuntimeError):
-	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
+
 
 
 
