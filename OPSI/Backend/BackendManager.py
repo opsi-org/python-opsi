@@ -491,8 +491,9 @@ class BackendAccessControl(object):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_'):
-					if not methodName in protectedMethods:
-						protectedMethods.append(methodName)
+					continue
+				if not methodName in protectedMethods:
+					protectedMethods.append(methodName)
 		
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
@@ -687,6 +688,9 @@ class BackendAccessControl(object):
 					logger.error(u"Unhandled acl entry type: %s" % aclType)
 					continue
 				
+				if newGranted is False:
+					continue
+				
 				if (entry.get('denyAttributes') or entry.get('allowAttributes')):
 					newGranted = 'partial_attributes'
 				
@@ -695,9 +699,9 @@ class BackendAccessControl(object):
 					granted = newGranted
 				if granted is True:
 					break
-			if granted:
-				break
-			
+			#if granted:
+			break
+		
 		logger.info("Method: %s, using acls: %s" % (methodName, acls))
 		if   granted is True:
 			logger.debug(u"Full access to method '%s' granted to user '%s' by acl %s" % (methodName, self._username, acls[0]))
@@ -767,6 +771,7 @@ class BackendAccessControl(object):
 				objHash = obj
 			else:
 				objHash = obj.toHash()
+			
 			for acl in acls:
 				if (acl.get('type') == 'self'):
 					objectId = objHash.get('id', objHash.get('objectId', objHash.get('hostId', objHash.get('clientId', objHash.get('depotId', objHash.get('serverId'))))))

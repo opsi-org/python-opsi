@@ -107,7 +107,7 @@ class HostControlBackend(ExtendedBackend):
 		
 		self._opsiclientdPort = 4441
 		self._hostRpcTimeout  = 15
-		self._resolveHostAddress = False
+		self._resolveHostAddress = True
 		self._maxConnections = 20
 		
 		# Parse arguments
@@ -135,7 +135,7 @@ class HostControlBackend(ExtendedBackend):
 		for host in self._context.host_getObjects(id = hostIds):
 			try:
 				address = host.ipAddress
-				if self._resolveHostAddress:
+				if not address and self._resolveHostAddress:
 					address = socket.gethostbyname(host.id)
 				if not address:
 					raise Exception(u"Failed to get ip address for host '%s'" % host.id)

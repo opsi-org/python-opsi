@@ -41,12 +41,6 @@ from OPSI.Object import *
 # Get logger instance
 logger = Logger()
 
-def_echo = \
-u'''
-def echo(string):
-	return string
-'''
-
 def_addActionRequest = \
 u'''
 def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo = {}):
@@ -190,7 +184,7 @@ def generateProductOnClientSequence(productOnClients, availableProducts, product
 	priorityToProductIds = {}
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
-		# add id to collection 
+		# add id to collection
 		availableProductsByProductId[availableProduct.id] = availableProduct
 		# if necessary initialize priorityToProductIds [priority]
 		if not priorityToProductIds.has_key(availableProduct.priority):
@@ -265,7 +259,6 @@ def generateProductOnClientSequence(productOnClients, availableProducts, product
 	return sortedProductOnClients
 '''
 
-exec(def_echo)
 exec(def_addActionRequest)
 exec(def_addDependentProductOnClients)
 exec(def_generateProductOnClientSequence)
