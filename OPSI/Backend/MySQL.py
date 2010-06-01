@@ -2463,8 +2463,6 @@ class MySQLBackend(ConfigDataBackend):
 				del data[attribute]
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
-			print "WHERE", where
-			print "UPDATE", update
 			self._mysql.update('HARDWARE_CONFIG_%s' % auditHardwareOnHost.hardwareClass, where, update)
 		
 		

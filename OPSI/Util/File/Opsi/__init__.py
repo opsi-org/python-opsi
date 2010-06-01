@@ -344,7 +344,7 @@ class PackageControlFile(TextFile):
 		self._productProperties = []
 		self._packageDependencies = []
 		self._incrementalPackage = False
-	
+		
 	def parse(self, lines=None):
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -717,7 +717,15 @@ class PackageControlFile(TextFile):
 		self._lines.append( u'' )
 		
 		self._lines.append( u'[Product]' )
-		self._lines.append( u'type: %s' % self._product.getType() )
+		productType = self._product.getType()
+		if   (productType == 'LocalbootProduct'):
+			productType = 'localboot'
+		elif (productType == 'NetbootProduct'):
+			productType = 'netboot'
+		else:
+			raise Exception(u"Unhandled product type '%s'" % productType)
+		
+		self._lines.append( u'type: %s' % productType )
 		self._lines.append( u'id: %s'   % self._product.getId() )
 		self._lines.append( u'name: %s' % self._product.getName() )
 		self._lines.append( u'description: ' )

@@ -470,7 +470,7 @@ class BackendAccessControl(object):
 		return self._authenticated
 	
 	def accessControl_userIsAdmin(self):
-		return self._isMemberOfGroup('opsiadmin')
+		return self._isMemberOfGroup('opsiadmin') or self._isOpsiDepotserver()
 	
 	def __loadACLFile(self):
 		try:
