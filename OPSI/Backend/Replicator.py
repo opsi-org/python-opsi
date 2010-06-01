@@ -120,7 +120,11 @@ class BackendReplicator:
 		wb.backend_createBase()
 		
 		self.__overallProgressSubject.reset()
-		end = len(self.OBJECT_CLASSES)
+		end = 0
+		for objClass in self.OBJECT_CLASSES:
+			if not audit and objClass.lower().startswith('audit'):
+				continue
+			end += 1
 		if self.__cleanupFirst:
 			end += 1
 		self.__overallProgressSubject.setEnd(end)

@@ -417,7 +417,7 @@ def objectToHtml(obj, level=0):
 		html += u'&nbsp;'*hspace + u'{ <br />\n'
 		i = 0
 		for (key, value) in obj.items():
-			html += u'&nbsp;'*hspace + u'"<font class="json_key">' + key +  u'</font>": '
+			html += u'&nbsp;'*hspace + u'"<font class="json_key">%s</font>": ' % key
 			if type(value) in (types.DictType, types.ListType):
 				html += u'<br />\n'
 			html += objectToHtml(value, level+1)
