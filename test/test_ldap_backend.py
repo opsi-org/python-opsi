@@ -18,7 +18,7 @@ baseDn = u'dc=uib,dc=local'
 ldapBackend = LDAPBackend(
 	username         = "cn=admin,%s" % baseDn,
 	password         = "linux123",
-	adress           = "localhost",
+	adress           = "schwarz",
 	opsiBaseDn       = "cn=opsi-ldap-test,%s" % baseDn,
 	hostsContainerDn = u"cn=hosts,cn=opsi-ldap-test,%s" % baseDn
 )

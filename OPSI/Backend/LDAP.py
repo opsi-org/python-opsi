@@ -1399,7 +1399,6 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObject.readFromDirectory(self._ldap)
 			groupId = ldapObject.getAttribute('opsiGroupId')
 			groupType = None
-			print ldapObject.getObjectClasses()
 			if 'opsiHostGroup' in ldapObject.getObjectClasses():
 				groupType = 'HostGroup'
 			else:

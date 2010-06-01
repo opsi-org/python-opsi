@@ -891,7 +891,7 @@ class MySQLBackend(ConfigDataBackend):
 		if not 'LICENSE_POOL' in tables.keys():
 			logger.debug(u'Creating table LICENSE_POOL')
 			table = u'''CREATE TABLE `LICENSE_POOL` (
-					`licensePoolId` VARCHAR(200) NOT NULL,
+					`licensePoolId` VARCHAR(100) NOT NULL,
 					PRIMARY KEY( `licensePoolId` ),
 					`type` varchar(30) NOT NULL,
 					INDEX(`type`),
