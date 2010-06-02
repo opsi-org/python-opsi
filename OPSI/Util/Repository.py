@@ -457,9 +457,6 @@ class WebDAVRepository(Repository):
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
 		self._connection.putheader('user-agent', self._application)
-		if self._cookie:
-			# Add cookie to header
-			self._connection.putheader('cookie', self._cookie)
 		self._connection.putheader('authorization', self._auth)
 		self._connection.endheaders()
 		
@@ -499,7 +496,7 @@ class WebDAVRepository(Repository):
 		#for c in self._getContent(destination):
 		#	result.append( c['name'] )
 		return self._getContent(destination)
-		return result
+		#return result
 	
 	def fileInfo(self, destination):
 		destination = forceUnicode(destination)
