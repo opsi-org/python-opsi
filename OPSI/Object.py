@@ -1023,7 +1023,7 @@ class NetbootProduct(Product):
 		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
 		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, None,
 		     priority, description, advice, changelog, productClassIds, windowsSoftwareIds)
-		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
+		self.setPxeConfigTemplate(pxeConfigTemplate)
 	
 	def setDefaults(self):
 		Product.setDefaults(self)
@@ -1032,7 +1032,10 @@ class NetbootProduct(Product):
 		return self.pxeConfigTemplate
 	
 	def setPxeConfigTemplate(self, pxeConfigTemplate):
-		self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
+		if pxeConfigTemplate:
+			self.pxeConfigTemplate = forceFilename(pxeConfigTemplate)
+		else:
+			self.pxeConfigTemplate = None
 	
 	@staticmethod
 	def fromHash(hash):
