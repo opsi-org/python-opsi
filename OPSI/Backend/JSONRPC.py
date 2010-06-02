@@ -433,6 +433,8 @@ class JSONRPCBackend(Backend):
 			if self._retry and (now - started < maxRetrySeconds):
 				logger.debug(u"Request to '%s' failed: %s, trying to reconnect" % (self._address, e))
 				self._connect()
+				if self._deflate:
+					query = zlib.decompress(query)
 				return self._request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
 			else:
 				logger.logException(e)
