@@ -228,7 +228,8 @@ def getNetworkDeviceConfig(device):
 		if match and (match.group(2).lower() == device.lower()):
 			result['gateway'] = forceIpAddress(match.group(1))
 	
-	for line in execute(u"%s -short -numeric" % which(u'lshw')):
+	#for line in execute(u"%s -short -numeric" % which(u'lshw')):
+	for line in execute(u"%s -short" % which(u'lshw')):
 		parts = line.split(None, 3)
 		if (len(parts) < 4):
 			continue
