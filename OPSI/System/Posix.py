@@ -53,7 +53,7 @@ GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'
 BIN_WHICH        = '/usr/bin/which'
 WHICH_CACHE      = {}
 
-class SystemSpecificHook():
+class SystemSpecificHook(object):
 	def __init__(self):
 		pass
 	

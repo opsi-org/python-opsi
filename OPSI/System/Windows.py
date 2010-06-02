@@ -68,7 +68,7 @@ class PROCESSENTRY32(Structure):
                  ("szExeFile", c_char * 260)]
 
 
-class SystemSpecificHook():
+class SystemSpecificHook(object):
 	def __init__(self):
 		pass
 

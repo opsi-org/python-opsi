@@ -404,7 +404,7 @@ class Backend:
 				result['password'] = match.group(2)
 				break
 		if not result['password']:
-			raise BackendMissingDataError(u"Username '%s' not found")
+			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, OPSI_PASSWD_FILE))
 		
 		depot = self._context.host_getObjects(id = depotId)
 		if not depot:
