@@ -20,6 +20,9 @@ case "$1" in
 			groupadd opsiadmin
 		fi
 		
+		# Workaround problem in some python-ldaptor packages
+		update-python-modules python-ldaptor >/dev/null 2>/dev/null || true
+		
 		chown -R root:pcpatch /etc/opsi/backendManager
 		find /etc/opsi/backendManager -type d -exec chmod 770 {} \;
 		find /etc/opsi/backendManager -type f -exec chmod 660 {} \;
