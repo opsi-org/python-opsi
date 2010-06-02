@@ -229,7 +229,6 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['HostGroup'] = self._mappings['Group']
 	
 	def backend_exit(self):
-		logger.notice(u"Exiting backend (not implemented yet!)" % ())
 		pass
 	
 	def backend_createBase(self):
