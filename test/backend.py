@@ -2226,7 +2226,6 @@ class BackendTest(object):
 				description = random.choice(('Test product %d' % i, 'Some product', '--------', '', None)),
 				advice = random.choice(('Nothing', 'Be careful', '--------', '', None)),
 				changelog = None,
-				productClassNames = None,
 				windowsSoftwareIds = None
 			)
 		
