@@ -442,9 +442,13 @@ class JSONRPCBackend(Backend):
 			logger.debug(u"Content-Type: %s" % response.getheader('content-type', None))
 			if response.getheader('content-type', '').lower().startswith('gzip'):
 				logger.debug(u"Expecting compressed data from server")
-				return zlib.decompress(response.read())
+				res = zlib.decompress(response.read())
+				logger.debug2(res)
+				return res
 			else:
-				return response.read()
+				res = response.read()
+				logger.debug2(res)
+				return res
 			
 		except Exception, e:
 			raise BackendIOError(u"Cannot read '%s'" % e)

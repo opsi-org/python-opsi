@@ -84,10 +84,9 @@ class ServerConnection:
 class OpsiPXEConfdBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
-		self._name = 'opsipxeconfd'
-		
 		ConfigDataBackend.__init__(self, **kwargs)
 		
+		self._name    = 'opsipxeconfd'
 		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
 		
