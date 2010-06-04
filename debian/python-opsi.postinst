@@ -37,6 +37,7 @@ case "$1" in
 		
 		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
 		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		[ -e "/etc/opsi/backendManager/extend.d/configed/20_legacy.conf" ] || ln -s /etc/opsi/backendManager/extend.d/20_legacy.conf /etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 	;;
 	
 	abort-upgrade|abort-remove|abort-deconfigure)
