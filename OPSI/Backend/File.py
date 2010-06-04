@@ -700,6 +700,8 @@ class FileBackend(ConfigDataBackend):
 		return objHash
 	
 	def _read(self, objType, attributes, **filter):
+		if (objType == 'Group'): objType = 'HostGroup' #TODO: zwischen den einzelnen gruppen unterscheiden ...
+		
 		if filter.get('type'):
 			match = False
 			for objectType in forceList(filter['type']):
@@ -785,7 +787,7 @@ class FileBackend(ConfigDataBackend):
 							elif ( isinstance(value, str) or isinstance(value, unicode) ):
 								value = self.__unescape(value)
 							
-							# invalid values will throw exception
+							# invalid values will throw exceptions later
 							if (objType == 'ProductOnClient') and (section.endswith('_product_states')):
 								index = value.find(':')
 								if (index == -1):
