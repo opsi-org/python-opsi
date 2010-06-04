@@ -1,4 +1,4 @@
-python-opsi (3.99.0.0) testing; urgency=low
+python-opsi (3.99.0.0-1) testing; urgency=low
 
   * local package
   * opsi 4.0
