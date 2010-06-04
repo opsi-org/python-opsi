@@ -938,11 +938,11 @@ class FileBackend(ConfigDataBackend):
 									installationStatus = cp.get(section, option)
 								if installationStatus.find(u':') != -1:
 									(installationStatus, actionRequest) = installationStatus.split(u':', 1)
-								if not value is None:
-									if   (attribute == 'installationStatus'):
-										installationStatus = value
-									elif (attribute == 'actionRequest'):
-										actionRequest = value
+									if not value is None: #TODO: remove entry when "not_installed:none"?
+										if   (attribute == 'installationStatus'):
+											installationStatus = value
+										elif (attribute == 'actionRequest'):
+											actionRequest = value
 								value = installationStatus + u':' + actionRequest
 						elif objType in ('ObjectToGroup',):
 							value = 1
