@@ -91,7 +91,8 @@ class FileBackend(ConfigDataBackend):
 		self.__clientGroupsFile  = os.path.join(self.__baseDir, u'clientgroups.ini')
 		self.__clientTemplateDir = os.path.join(self.__baseDir, u'templates')
 		
-		self.__defaultClientTemplateName = 'pcproto'
+		self.__defaultClientTemplateName = u'pcproto'
+		self.__defaultClientTemplatePath = os.path.join(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + u'.ini'))
 		
 		self.__serverId = forceHostId(socket.getfqdn())
 		self._placeholderRegex  = re.compile('<([^>]+)>')
@@ -850,7 +851,7 @@ class FileBackend(ConfigDataBackend):
 		
 		if (objType == 'OpsiConfigserver'):
 			if (self.__serverId != obj.getId()):
-				raise Exception(u"File31 backend can only handle this config server '%s', not '%s'" \
+				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" \
 					% (self.__serverId, obj.getId()))
 #		elif (objType == 'OpsiDepotserver'):
 #			if os.path.isfile(self._getConfigFile('OpsiClient', {'id':obj.getId()}, 'ini')):
@@ -881,9 +882,14 @@ class FileBackend(ConfigDataBackend):
 			
 			elif (fileType == 'ini'):
 				iniFile = IniFile(filename = filename, ignoreCase = False)
-				if objType in ('OpsiClient',) and not iniFile.exists() and (mode == 'create'):
-					shutil.copyfile(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini'), filename)
-				self._touch(filename)
+				if (mode == 'create'):
+					if objType in ('OpsiClient',) and not iniFile.exists():
+						proto = os.path.join(self.__clientTemplateDir, os.path.basename(filename))
+						if not os.path.isfile(proto):
+							proto = self.__defaultClientTemplatePath
+						shutil.copyfile(proto, filename)
+					
+					self._touch(filename)
 				
 				cp = iniFile.parse()
 				
