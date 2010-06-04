@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: uib GmbH <info@uib.de>
 Build-Depends: debhelper (>= 5.0.37.1), python-support, python-dev
 XS-Python-Version: all
-Standards-Version: 3.7.2
+Standards-Version: 3.8.4
 
 Package: python-opsi
 Section: opsi

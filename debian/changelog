@@ -1,5 +1,6 @@
-python-opsi (3.99.0.0-1) testing; urgency=low
+python-opsi (3.99.0.0) testing; urgency=low
 
+  * local package
   * opsi 4.0
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 18 May 2010 15:38:15 +0200
@@ -424,7 +425,7 @@ python-opsi (3.3.0.0-1) stable; urgency=low
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 15 Apr 2008 13:42:27 +0200
 
- python-opsi (3.2.0.16-1) stable; urgency=low
+python-opsi (3.2.0.16-1) stable; urgency=low
 
   * JSONRPC - fixed bug in retry request
 

@@ -20,9 +20,6 @@ case "$1" in
 			groupadd opsiadmin
 		fi
 		
-		# Workaround problem with some python-ldaptor packages
-		update-python-modules --post-install python-ldaptor.public >/dev/null 2>/dev/null || true
-		
 		chown -R root:pcpatch /etc/opsi/backendManager
 		find /etc/opsi/backendManager -type d -exec chmod 770 {} \;
 		find /etc/opsi/backendManager -type f -exec chmod 660 {} \;
@@ -54,4 +51,6 @@ esac
 if [ "$1" = "configure" ] && which update-python-modules >/dev/null 2>&1; then
 	update-python-modules -i /usr/share/python-support/python-opsi
 fi
+
+#DEBHELPER#
 

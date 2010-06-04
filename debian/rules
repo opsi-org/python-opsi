@@ -1,72 +1,10 @@
 #!/usr/bin/make -f
 
-OPSI_VERSION := $(shell head -n 1 debian/changelog | cut -d" " -f2 | cut -d"-" -f1 | sed 's/.//')
-PYTHON_VERSION := $(shell python -c "import sys; print '%d.%d' % sys.version_info[:2]")
+OPSI_VERSION := $(shell dpkg-parsechangelog | grep "^Version:" | cut -d" " -f 2)
 
-clean:
-	dh_testdir
-	dh_testroot
-	dh_clean
-	rm -rf debian/python-opsi || true
-	rm debian/files || true
-	rm gettext/*.mo || true
+%:
+	dh $@
 
-install:
-	dh_testdir
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
-	
-	#msgfmt -o gettext/opsi_system_de.mo gettext/opsi_system_de.po
-	#msgfmt -o gettext/opsi_ui_de.mo gettext/opsi_ui_de.po
-	#msgfmt -o gettext/opsi_system_fr.mo gettext/opsi_system_fr.po
-	#msgfmt -o gettext/opsi_ui_fr.mo gettext/opsi_ui_fr.po
-	
-	cp -R OPSI/web2 debian/python-opsi/usr/share/python-support/python-opsi/OPSI/
-	
-	for i in `(find OPSI -name "*.py")`; do install -m 0755 $$i debian/python-opsi/usr/share/python-support/python-opsi/$$i; done
-	
-	find debian/python-opsi/usr/share/python-support/python-opsi/OPSI -name '.svn' -exec rm -rf '{}' \; 2>/dev/null || true
-	
-	#mkdir -p debian/python-opsi/usr/share/locale/de/LC_MESSAGES
-	#install -m 0644 gettext/opsi_system_de.mo debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
-	#install -m 0644 gettext/opsi_ui_de.mo     debian/python-opsi/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
-	#mkdir -p debian/python-opsi/usr/share/locale/fr/LC_MESSAGES
-	#install -m 0644 gettext/opsi_system_fr.mo debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_system.mo
-	#install -m 0644 gettext/opsi_ui_fr.mo     debian/python-opsi/usr/share/locale/fr/LC_MESSAGES/opsi_ui.mo
-	
-	for i in `(cd files/backendManager; find -name "*.conf")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
-	for i in `(cd files/backendManager; find -name "*.conf.default")`; do install -m 0660 files/backendManager/$$i debian/python-opsi/etc/opsi/backendManager/$$i; done
-	for i in `(cd files/backends; find -name "*.conf")`; do install -m 0660 files/backends/$$i debian/python-opsi/etc/opsi/backends/$$i; done
-	dh_link etc/opsi/backendManager/extend.d/20_legacy.conf etc/opsi/backendManager/extend.d/configed/20_legacy.conf
-	
-	install -m 0644 files/hwaudit/opsihwaudit.conf debian/python-opsi/etc/opsi/hwaudit/opsihwaudit.conf
-	for i in files/hwaudit/locales/*; do install -m 0644 $$i debian/python-opsi/etc/opsi/hwaudit/locales/; done
-	
-	install -m 0644  files/opsi.schema             debian/python-opsi/etc/ldap/schema/opsi.schema
-	install -m 0644  files/opsi-standalone.schema  debian/python-opsi/etc/ldap/schema/opsi-standalone.schema
-	
-	#mkdir -p debian/python-opsi/usr/share/opsi
-	#install -m 0755 files/share/init-opsi-mysql-db.py debian/python-opsi/usr/share/opsi/
-	#install -m 0755 files/share/register-depot.py debian/python-opsi/usr/share/opsi/
-	#install -m 0755 files/share/opsi-fire-event.py debian/python-opsi/usr/share/opsi/
-	
+override_dh_auto_install:
+	dh_auto_install
 	echo $(OPSI_VERSION) > debian/python-opsi/etc/opsi/version
-	
-	dh_install
-
-binary-indep: install
-	dh_testdir -i
-	dh_testroot -i
-	dh_installdebconf
-	dh_installchangelogs -i
-	dh_shlibdeps
-	dh_md5sums
-	dh_gencontrol
-	dh_installdeb
-	dh_builddeb
-
-binary: binary-indep
-build:
-.PHONY: clean binary-indep binary install build
-
