@@ -2193,6 +2193,11 @@ class MySQLBackend(ConfigDataBackend):
 	def _getHardwareIds(self, auditHardware):
 		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
+		
+		for (attribute, value) in auditHardware.items():
+			if value is None:
+				auditHardware[attribute] = [ None ]
+		
 		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
 		hardwareIds = self._auditHardware_search(returnHardwareIds = True, attributes=[], **auditHardware)
 		logger.debug(u"Found hardware ids: %s" % hardwareIds)
