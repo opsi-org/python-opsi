@@ -2915,20 +2915,32 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if licensePoolId:
 			licensePoolId = forceLicensePoolId(licensePoolId)
 		elif productId or windowsSoftwareId:
+			licensePoolIds = []
 			if productId:
 				productId = forceProductId(productId)
-			else:
-				productId = None
-			if windowsSoftwareId:
+				licensePoolIds = self.licensePool_getIdents(productIds = productId, returnType = 'unicode')
+			
+			elif windowsSoftwareId:
 				windowsSoftwareId = forceUnicode(windowsSoftwareId)
-			else:
-				windowsSoftwareId = None
-			idents = self.licensePool_getIdents(productIds = productId, windowsSoftwareIds = windowsSoftwareId, returnType = 'unicode')
-			if (len(idents) < 1):
+				
+				auditSoftwares = self.auditSoftware_getObjects(windowsSoftwareId = windowsSoftwareId)
+				for auditSoftware in auditSoftwares:
+					auditSoftwareToLicensePools = self.auditSoftwareToLicensePool_getObjects(
+									name         = auditSoftware.name,
+									version      = auditSoftware.version,
+									subVersion   = auditSoftware.subVersion,
+									language     = auditSoftware.language,
+									architecture = auditSoftware.architecture
+					)
+					if auditSoftwareToLicensePools:
+						licensePoolIds.append(auditSoftwareToLicensePools[0].licensePoolId)
+			
+			if (len(licensePoolIds) < 1):
 				raise LicenseConfigurationError(u"No license pool for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
-			elif (len(idents) > 1):
-				raise LicenseConfigurationError(u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
-			licensePoolId = idents[0]
+			elif (len(licensePoolIds) > 1):
+				raise LicenseConfigurationError(u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found: %s" \
+						% (productId, windowsSoftwareId, licensePoolIds))
+			licensePoolId = licensePoolIds[0]
 		else:
 			raise ValueError(u"You have to specify one of: licensePoolId, productId, windowsSoftwareId")
 		
@@ -2989,7 +3001,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				installations = len(self.licenseOnClient_getIdents(softwareLicenseId = softwareLicense.getId()))
 				logger.debug(u"Installations registered: %d" % installations)
 				if (installations < softwareLicense.getMaxInstallations()):
-					softwareLicenseId = res['softwareLicenseId']
+					softwareLicenseId = softwareLicense.getId()
 					break
 			
 			if softwareLicenseId:
