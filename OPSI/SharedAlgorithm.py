@@ -635,7 +635,7 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 	for (clientId, productOnClientsByProductId) in productOnClientsByClientIdAndProductId.items():
 		sequence = 0
 		for productId in sortedList:
-			if productOnClientsByProductId.has_key(productId)
+			if productOnClientsByProductId.has_key(productId):
 				productOnClientsByProductId[productId].actionSequence = sequence
 				productOnClients.append(productOnClientsByProductId[productId])
 				del productOnClientsByProductId[productId]
