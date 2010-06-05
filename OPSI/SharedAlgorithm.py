@@ -627,8 +627,6 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 	for productOnClient in productOnClients:
 		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
 			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
-		if not productOnClientsByClientIdAndProductId[productOnClient.clientId].has_key(productOnClient.productId):
-			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 	
 	productOnClients = []
