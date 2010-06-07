@@ -175,7 +175,7 @@ def forceHardwareDeviceId(var):
 		raise ValueError(u"Bad hardware device id '%s'" % var)
 	return forceUnicodeUpper(var)
 
-opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})$')
+opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
 opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
 def forceOpsiTimestamp(var):
 	if not var:
