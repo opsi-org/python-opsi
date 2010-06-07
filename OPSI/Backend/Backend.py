@@ -1170,9 +1170,10 @@ class ConfigDataBackend(Backend):
 		self._context.auditHardware_insertObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
 		
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
-		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
-		auditHardwareOnHost.setDefaults()
-		self._context.auditHardware_updateObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
+		#auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
+		#auditHardwareOnHost.setDefaults()
+		#self._context.auditHardware_updateObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
+		pass
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		return []
