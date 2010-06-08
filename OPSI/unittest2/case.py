@@ -18,6 +18,9 @@ from unittest2.compatibility import wraps
 __unittest = True
 
 
+DIFF_OMITTED = ('\nDiff is %s characters long. '
+                 'Set self.maxDiff to None to see it.')
+
 class SkipTest(Exception):
     """
     Raise this exception in a test to skip it.
@@ -173,6 +176,12 @@ class TestCase(unittest.TestCase):
     # exception will be deemed to have 'failed' rather than 'errored'
 
     failureException = AssertionError
+
+    # This attribute sets the maximum length of a diff in failure messsages
+    # by assert methods using difflib. It is looked up as an instance attribute
+    # so can be configured by individual tests if required.
+
+    maxDiff = 80*8
 
     # This attribute determines whether long messages (including repr of
     # objects used in assert methods) will be printed on failure in *addition*
@@ -615,7 +624,8 @@ class TestCase(unittest.TestCase):
     failUnlessRaises = _deprecate(assertRaises)
     failIf = _deprecate(assertFalse)
 
-    def assertSequenceEqual(self, seq1, seq2, msg=None, seq_type=None):
+    def assertSequenceEqual(self, seq1, seq2,
+                            msg=None, seq_type=None, max_diff=80*8):
         """An equality assertion for ordered sequences (like lists and tuples).
 
         For the purposes of this function, a valid ordered sequence type is one
@@ -628,6 +638,7 @@ class TestCase(unittest.TestCase):
                     datatype should be enforced.
             msg: Optional message to use on failure instead of a list of
                     differences.
+            max_diff: Maximum size off the diff, larger diffs are not shown
         """
         if seq_type is not None:
             seq_type_name = seq_type.__name__
@@ -710,11 +721,20 @@ class TestCase(unittest.TestCase):
                 except (TypeError, IndexError, NotImplementedError):
                     differing += ('Unable to index element %d '
                                   'of second %s\n' % (len1, seq_type_name))
-        standardMsg = differing + '\n' + '\n'.join(
+        standardMsg = differing
+        diffMsg = '\n' + '\n'.join(
             difflib.ndiff(pprint.pformat(seq1).splitlines(),
                           pprint.pformat(seq2).splitlines()))
+
+        standardMsg = self._truncateMessage(standardMsg, diffMsg)
         msg = self._formatMessage(msg, standardMsg)
         self.fail(msg)
+
+    def _truncateMessage(self, message, diff):
+        max_diff = self.maxDiff
+        if max_diff is None or len(diff) <= max_diff:
+            return message + diff
+        return message + (DIFF_OMITTED % len(diff))
 
     def assertListEqual(self, list1, list2, msg=None):
         """A list-specific equality assertion.
@@ -813,9 +833,11 @@ class TestCase(unittest.TestCase):
         self.assert_(isinstance(d2, dict), 'Second argument is not a dictionary')
 
         if d1 != d2:
-            standardMsg = ('\n' + '\n'.join(difflib.ndiff(
+            standardMsg = '%s != %s' % (safe_repr(d1, True), safe_repr(d2, True))
+            diff = ('\n' + '\n'.join(difflib.ndiff(
                            pprint.pformat(d1).splitlines(),
                            pprint.pformat(d2).splitlines())))
+            standardMsg = self._truncateMessage(standardMsg, diff)
             self.fail(self._formatMessage(msg, standardMsg))
 
     def assertDictContainsSubset(self, expected, actual, msg=None):
@@ -891,8 +913,10 @@ class TestCase(unittest.TestCase):
                 'Second argument is not a string'))
 
         if first != second:
-            standardMsg = '\n' + ''.join(difflib.ndiff(first.splitlines(True),
+            standardMsg = '%s != %s' % (safe_repr(first, True), safe_repr(second, True))
+            diff = '\n' + ''.join(difflib.ndiff(first.splitlines(True),
                                                        second.splitlines(True)))
+            standardMsg = self._truncateMessage(standardMsg, diff)
             self.fail(self._formatMessage(msg, standardMsg))
 
     def assertLess(self, a, b, msg=None):

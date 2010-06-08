@@ -31,7 +31,7 @@ __all__ = ['TestResult', 'TestCase', 'TestSuite',
            'defaultTestLoader', 'SkipTest', 'skip', 'skipIf', 'skipUnless',
            'expectedFailure', 'TextTestResult', '__version__']
 
-__version__ = '0.4.2 alpha'
+__version__ = '0.4.2'
 
 # Expose obsolete functions for backwards compatibility
 __all__.extend(['getTestCaseNames', 'makeSuite', 'findTestCases'])
@@ -47,7 +47,7 @@ from unittest2.loader import (
     TestLoader, defaultTestLoader, makeSuite, getTestCaseNames,
     findTestCases
 )
-from unittest2.main import TestProgram, main
+from unittest2.main import TestProgram, main, main_
 from unittest2.runner import TextTestRunner, TextTestResult
 
 try:

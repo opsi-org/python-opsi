@@ -1,10 +1,17 @@
 """Various utility functions."""
 
-def safe_repr(obj):
+__unittest = True
+
+
+_MAX_LENGTH = 80
+def safe_repr(obj, short=False):
     try:
-        return repr(obj)
+        result = repr(obj)
     except Exception:
-        return object.__repr__(obj)
+        result = object.__repr__(obj)
+    if not short or len(result) < _MAX_LENGTH:
+        return result
+    return result[:_MAX_LENGTH] + ' [truncated]...'
 
 def safe_str(obj):
     try:

@@ -234,3 +234,8 @@ class TestProgram(object):
             sys.exit(not self.result.wasSuccessful())
 
 main = TestProgram
+
+def main_():
+    TestProgram.USAGE = USAGE_AS_MAIN
+    main(module=None)
+

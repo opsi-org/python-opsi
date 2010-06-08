@@ -35,6 +35,7 @@
 from setuptools import setup, find_packages
 import os,sys
 
+
 setup(
 	name='python-opsi',
 	version='3.99.0.0',

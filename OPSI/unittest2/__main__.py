@@ -6,7 +6,5 @@ if sys.argv[0].endswith("__main__.py"):
 
 __unittest = True
 
-from unittest2.main import main, TestProgram, USAGE_AS_MAIN
-TestProgram.USAGE = USAGE_AS_MAIN
-
-main(module=None)
+from unittest2.main import main_
+main_()
