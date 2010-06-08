@@ -22,6 +22,16 @@
 #       backend_.*         : jsonrpc, opsipxeconfd, dhcpd
 #       .*                 : jsonrpc
 #
+#    ldap as main backend, mysql as hw/sw invent and license management backend, opsipxeconfd and dhcpd backend:
+#       backend_.*         : ldap, mysql, opsipxeconfd, dhcpd
+#       host_.*            : ldap, opsipxeconfd, dhcpd
+#       productOnClient_.* : ldap, opsipxeconfd
+#       configState_.*     : ldap, opsipxeconfd
+#       license.*          : mysql
+#       softwareLicense.*  : mysql
+#       audit.*            : mysql
+#       .*                 : ldap
+#
 
 backend_.*         : file, opsipxeconfd
 host_.*            : file, opsipxeconfd
