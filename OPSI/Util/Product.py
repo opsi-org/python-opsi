@@ -238,7 +238,7 @@ class ProductPackageFile(object):
 			
 			archive = Archive(self.packageFile)
 			
-			logger.debug(u"Extracting data from package '%s' to: '%s'" % (self.packageFile, self.tmpUnpackDir))
+			logger.info(u"Extracting data from package '%s' to: '%s'" % (self.packageFile, self.tmpUnpackDir))
 			archive.extract(targetPath = self.tmpUnpackDir, patterns=[u"CLIENT_DATA*", u"SERVER_DATA*"])
 			
 			clientDataArchives = []
