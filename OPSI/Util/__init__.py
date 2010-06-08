@@ -638,10 +638,17 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	files = []
 	entries = os.listdir(directory)
 	for entry in entries:
-		if os.path.islink(os.path.join(directory, entry)):
-			if returnLinks:
-				files.append( os.path.join(prefix, entry) )
-		elif os.path.isdir(os.path.join(directory, entry)):
+		if type(entry) is str:
+			logger.error(u"Need unicode, got type string for directory entry %s, skipping!" % os.path.join(prefix, unicode(entry, 'ascii', 'replace')))
+			continue
+		pp = os.path.join(prefix, entry)
+		dp = os.path.join(directory, entry)
+		isLink = False
+		if os.path.islink(dp):
+			isLink = True
+			if not returnLinks:
+				continue
+		elif os.path.isdir(dp):
 			if excludeDir and re.search(excludeDir, entry):
 				logger.debug(u"Excluding dir '%s' and containing files" % entry)
 				continue
@@ -650,26 +657,32 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 					continue
 				logger.debug(u"Including dir '%s' and containing files" % entry)
 			if returnDirs:
-				files.append( os.path.join(prefix, entry) )
+				files.append(pp)
 			files.extend(
 				findFiles(
-					directory   = os.path.join(directory, entry),
-					prefix      = os.path.join(prefix, entry),
+					directory   = dp,
+					prefix      = pp,
 					excludeDir  = excludeDir,
 					excludeFile = excludeFile,
 					includeDir  = includeDir,
 					includeFile = includeFile,
 					returnDirs  = returnDirs,
 					returnLinks = returnLinks ) )
-		else:
-			if excludeFile and re.search(excludeFile, entry):
+			continue
+		if excludeFile and re.search(excludeFile, entry):
+			if isLink:
+				logger.debug(u"Excluding link '%s'" % entry)
+			else:
 				logger.debug(u"Excluding file '%s'" % entry)
+			continue
+		if includeFile:
+			if not re.search(includeFile, entry):
 				continue
-			if includeFile:
-				if not re.search(includeFile, entry):
-					continue
+			if isLink:
+				logger.debug(u"Including link '%s'" % entry)
+			else:
 				logger.debug(u"Including file '%s'" % entry)
-			files.append( os.path.join(prefix, entry) )
+		files.append(pp)
 	return files
 	
 	
