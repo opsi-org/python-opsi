@@ -2,7 +2,7 @@ Source: python-opsi
 Section: opsi
 Priority: optional
 Maintainer: uib GmbH <info@uib.de>
-Build-Depends: debhelper (>= 5.0.37.1), python-support, python-dev, python-setuptools
+Build-Depends: debhelper (>= 7.0.50~), python-support, python-dev, python-setuptools
 XS-Python-Version: all
 Standards-Version: 3.8.4
 
