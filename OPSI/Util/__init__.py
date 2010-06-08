@@ -639,7 +639,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	entries = os.listdir(directory)
 	for entry in entries:
 		if type(entry) is str:
-			logger.error(u"Need unicode, got type string for directory entry %s, skipping!" % os.path.join(prefix, unicode(entry, 'ascii', 'replace')))
+			logger.error(u"Bad filename '%s' found in directory '%s', skipping entry!" % (unicode(entry, 'ascii', 'replace'), directory))
 			continue
 		pp = os.path.join(prefix, entry)
 		dp = os.path.join(directory, entry)
