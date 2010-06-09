@@ -35,10 +35,15 @@
 from setuptools import setup, find_packages
 import os,sys
 
+VERSION='3.99.0.0'
+
+f = open("data/version", "w")
+f.write(VERSION)
+f.close()
 
 setup(
 	name='python-opsi',
-	version='3.99.0.0',
+	version=VERSION,
 	license='GPL-2',
 	url="http://www.opsi.de",
 	description='The opsi python library',
