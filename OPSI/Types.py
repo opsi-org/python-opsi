@@ -224,7 +224,7 @@ def forceIPAddress(var):
 	return var
 forceIpAddress = forceIPAddress
 
-def forceNetworkAddress(var):
+def forceHostAddress(var):
 	var = forceUnicodeLower(var)
 	try:
 		try:
@@ -235,7 +235,8 @@ def forceNetworkAddress(var):
 		except Exception, e:
 			var = forceHostname(var)
 	except Exception, e:
-		raise ValueError(u"Bad network address: '%s'" % var)
+		raise ValueError(u"Bad host address: '%s'" % var)
+	return var
 	
 netmaskRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceNetmask(var):
@@ -483,12 +484,13 @@ def forceObjectIdList(var):
 		var[i] = forceObjectId(var[i])
 	return var
 
-emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
+#emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
+emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
 	match = re.search(emailRegex, var)
 	if not match:
-		raise ValueError(u"Bad email: '%s'" % var)
+		raise ValueError(u"Bad email address: '%s'" % var)
 	return var
 
 domainRegex = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
