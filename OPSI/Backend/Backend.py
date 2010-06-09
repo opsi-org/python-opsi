@@ -2137,7 +2137,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							# Product not found on any depot
 							self._backend.product_deleteObjects(
 								self._backend.product_getObjects(
-									productId      = [ productId ],
+									id      = [ productId ],
 									productVersion = [ productVersion ],
 									packageVersion = [ packageVersion ]))
 		return ret
