@@ -570,17 +570,29 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 	for requ in setupRequirements:
 		prod1 = requ[0]
 		prod2 = requ[1]
+		
+		logger.debug(u"Product 1 %s" % prod1)
+		if not productById.has_key(prod1):
+			logger.warning(u"Product %s is requested but not available" %  prod1)
+			continue
 		prio1 = productById[prod1].priority
 		if not prio1:
 			prio1 = 0
+		
+		logger.debug(u"Product 2 %s" % prod2)
+		if not productById.has_key(prod2):
+			logger.warning(u"Product %s is requested but not available" %  prod2)
+			continue
 		prio2 = productById[prod2].priority
 		if not prio2:
 			prio2 = 0
-			
+		
+		logger.debug(u"Priority product 1 %s" % prio1)
+		logger.debug(u"Priority product 2 %s" % prio2)
 		if (prio1 > prio2):
-			logger.notice(u"The ordering is guaranteed by the priority handling")
+			logger.notice(u"The ordering is guaranteed by priority handling")
 		elif (prio1 < prio2):
-			logger.info(u"Dependency declaration contradicts priority declaration, will be ignored")
+			logger.warning(u"Dependency declaration between %s and %s contradicts priority declaration, will be ignored" % (prod1, prod2))
 		else:
 			prioclasskey = str(prio1)
 			if not requirementsByClasses.has_key(prioclasskey):
