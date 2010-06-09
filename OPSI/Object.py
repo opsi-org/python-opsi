@@ -583,7 +583,14 @@ class Config(Entity):
 	
 	def setDefaults(self):
 		Entity.setDefaults(self)
-		self.setDefaultValues(self.defaultValues)
+		if self.editable is None:
+			self.editable = True
+		if self.multiValue is None:
+			self.multiValue = False
+		if self.possibleValues is None:
+			self.possibleValues = []
+		if self.defaultValues is None:
+			self.defaultValues = []
 	
 	def getId(self):
 		return self.id
@@ -671,16 +678,12 @@ class UnicodeConfig(Config):
 			self.setDefaultValues(defaultValues)
 		
 	def setDefaults(self):
-		Config.setDefaults(self)
-		if self.editable is None:
-			self.editable = True
-		if self.multiValue is None:
-			self.multiValue = False
 		if self.possibleValues is None:
 			self.possibleValues = [u'']
 		if self.defaultValues is None:
 			self.defaultValues = [u'']
-	
+		Config.setDefaults(self)
+		
 	def setPossibleValues(self, possibleValues):
 		Config.setPossibleValues(self, forceUnicodeList(possibleValues))
 	
@@ -705,8 +708,10 @@ class BoolConfig(Config):
 		Config.__init__(self, id, description, [ True, False ], defaultValues, False, False)
 	
 	def setDefaults(self):
+		if self.defaultValues is None:
+			self.defaultValues = [ False ]
 		Config.setDefaults(self)
-	
+		
 	def setPossibleValues(self, possibleValues):
 		Config.setPossibleValues(self, [ True, False ])
 	
