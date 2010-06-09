@@ -1197,6 +1197,10 @@ class UnicodeProductProperty(ProductProperty):
 			self.setDefaultValues(defaultValues)
 	
 	def setDefaults(self):
+		if self.possibleValues is None:
+			self.possibleValues = [u'']
+		if self.defaultValues is None:
+			self.defaultValues = [u'']
 		ProductProperty.setDefaults(self)
 	
 	def setPossibleValues(self, possibleValues):
@@ -1225,6 +1229,8 @@ class BoolProductProperty(ProductProperty):
 			raise BackendBadValueError(u"Bool product property cannot have multiple default values: %s" % self.defaultValues)
 	
 	def setDefaults(self):
+		if self.defaultValues is None:
+			self.defaultValues = [ False ]
 		ProductProperty.setDefaults(self)
 	
 	def setPossibleValues(self, possibleValues):
