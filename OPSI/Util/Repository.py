@@ -64,7 +64,9 @@ def getRepository(url, username=u'', password=u'', maxBandwidth=0, dynamicBandwi
 	maxBandwidth = forceInt(maxBandwidth)
 	if re.search('^file://', url):
 		return FileRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
-	if re.search('^webdavs*://', url):
+	if re.search('^https?://', url):
+		return HTTPRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
+	if re.search('^webdavs?://', url):
 		return WebDAVRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
@@ -288,10 +290,10 @@ class FileRepository(Repository):
 		
 		match = re.search('^file://(/[^/]+.*)$', self._url)
 		if not match:
-			raise RepositoryError(u"Bad url: '%s'" % self._url)
+			raise RepositoryError(u"Bad file url: '%s'" % self._url)
 		self._path = match.group(1)
 		
-	def _absolutePath(self, destination):
+	def _preProcessPath(self, destination):
 		destination = forceUnicode(destination)
 		if destination.startswith('/'):
 			destination = destination[1:]
@@ -299,7 +301,7 @@ class FileRepository(Repository):
 	
 	def content(self, destination=''):
 		content = []
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		try:
 			for f in os.listdir(destination):
 				content.append(fileInfo(destination + u'/' + f))
@@ -308,7 +310,7 @@ class FileRepository(Repository):
 		return content
 		
 	def fileInfo(self, destination):
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		try:
 			
 			return info
@@ -317,7 +319,7 @@ class FileRepository(Repository):
 	
 	def download(self, source, destination, progressSubject=None):
 		size = self.fileInfo(source)['size']
-		source = self._absolutePath(source)
+		source = self._preProcessPath(source)
 		destination = forceUnicode(destination)
 		
 		logger.debug(u"Length of binary data to download: %d bytes" % size)
@@ -339,7 +341,7 @@ class FileRepository(Repository):
 	
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]
@@ -361,27 +363,35 @@ class FileRepository(Repository):
 						% (source, destination, e))
 	
 	def delete(self, estination):
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		os.unlink(destination)
 	
 	def makeDirectory(self, destination):
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
 		
-	
-class WebDAVRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
+
+class HTTPRepository(Repository):
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application='', proxy = None):
 		Repository.__init__(self, url, username, password, maxBandwidth, dynamicBandwidth, application)
 		self._bufferSize = 4096
-		
-		match = re.search('^(webdavs*)://([^:]+:*[^:]+):(\d+)(/.*)$', self._url)
-		if not match:
-			raise RepositoryError(u"Bad url: '%s'" % self._url)
-		
 		self._connectTimeout = 30
-		self._protocol = match.group(1)
-		self._host = match.group(2)
+		self._port = 80
+		self._path = u'/'
+		
+		parts = self._url.split('/')
+		if (len(parts) < 3) or parts[0].lower() not in ('http:', 'https:', 'webdav:', 'webdavs:'):
+			raise RepositoryError(u"Bad http url: '%s'" % self._url)
+		
+		self._protocol = parts[0].lower()[:-1]
+		if self._protocol.endswith('s'):
+			self._port = 443
+		
+		self._host = parts[2]
+		if (len(parts) > 3):
+			self._path += u'/'.join(parts[3:])
+		
 		if (self._host.find('@') != -1):
 			(username, self._host) = self._host.split('@', 1)
 			password = ''
@@ -389,20 +399,60 @@ class WebDAVRepository(Repository):
 				(username, password) = username.split(':', 1)
 			if not self._username and username: self._username = username
 			if not self._password and password: self._password = password
-		self._port = forceInt(match.group(3))
-		self._path = match.group(4)
-		self._auth = 'Basic '+ base64.encodestring( urllib.unquote(self._username + ':' + self._password) ).strip()
+		
+		if (self._host.find(':') != -1):
+			(self._host, self._port) = self._host.split(':', 1)
+			self._port = forceInt(self._port)
+		
 		self._connection = None
 		self._cookie = ''
+		self._username = forceUnicode(self._username)
+		self._password = forceUnicode(self._password)
 		
-	def _absolutePath(self, destination):
+		auth = u'%s:%s' % (self._username, self._password)
+		self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
+		self._proxy = None
+		
+		if proxy:
+			self._proxy = proxy
+			self._auth = None
+			match = re.search('^(https?)://([^:]+:*[^:]+):(\d+)$', proxy)
+			if not match:
+				raise RepositoryError(u"Bad proxy url: '%s'" % proxy)
+			proxyProtocol = match.group(1)
+			proxyHost = match.group(2)
+			if (self._host.find('@') != -1):
+				(proxyUsername, proxyHost) = proxyHost.split('@', 1)
+				proxyPassword = ''
+				if (proxyUsername.find(':') != -1):
+					(proxyUsername, proxyPassword) = proxyUsername.split(':', 1)
+				auth = u'%s:%s' % (proxyUsername, proxyPassword)
+				self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
+			proxyPort = forceInt(match.group(3))
+			if self._username and self._password:
+				self._url = u'%s://%s:%s@%s:%d%s' % (self._protocol, self._username, self._password, self._host, self._port, self._path)
+			else:
+				self._url = u'%s://%s:%d%s' % (self._protocol, self._host, self._port, self._path)
+			self._protocol = proxyProtocol
+			self._host = proxyHost
+			self._port = proxyPort
+		
+	def _preProcessPath(self, destination):
 		destination = forceUnicode(destination)
 		if destination.startswith('/'):
 			destination = destination[1:]
-		return self._path + '/' + destination
+		if self._proxy:
+			if destination.startswith('/'):
+				destination = destination[1:]
+			if self._url.endswith('/'):
+				return self._url + destination
+			else:
+				return self._url + '/' + destination
+		else:
+			return urllib.quote(self._path + '/' + destination)
 	
 	def _connect(self):
-		logger.debug(u"WebDAVRepository _connect()")
+		logger.debug(u"HTTPRepository _connect()")
 		
 		if self._protocol.endswith('s'):
 			logger.info(u"Opening https connection to %s:%s" % (self._host, self._port))
@@ -415,32 +465,81 @@ class WebDAVRepository(Repository):
 		
 		self._connection.connect()
 		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
+	
+	def download(self, source, destination, progressSubject=None):
+		destination = forceUnicode(destination)
+		#try:
+		#	size = self.fileInfo(source)['size']
+		#except:
+		#	pass
+		source = self._preProcessPath(source)
 		
-		###################
-		return
-		###################
+		dst = None
+		try:
+			if not self._connection:
+				self._connect()
+			self._connection.putrequest('GET', source)
+			self._connection.putheader('user-agent', self._application)
+			if self._cookie:
+				# Add cookie to header
+				self._connection.putheader('cookie', self._cookie)
+			if self._auth:
+				self._connection.putheader('authorization', self._auth)
+			self._connection.endheaders()
+			
+			response = self._connection.getresponse()
+			if (response.status != responsecode.OK):
+				raise Exception(response.status)
+			
+			size = forceInt(response.getheader('content-length', 0))
+			logger.debug(u"Length of binary data to download: %d bytes" % size)
+			
+			if progressSubject: progressSubject.setEnd(size)
+			
+			dst = open(destination, 'wb')
+			self._transferDown(response, dst, progressSubject)
+			dst.close()
+			
+		except Exception, e:
+			logger.logException(e)
+			#if self._connection: self._connection.close()
+			if dst: dst.close()
+			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
+						% (source, destination, e))
+		logger.debug2(u"HTTP download done")
+	
+class WebDAVRepository(HTTPRepository):
+	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
+		HTTPRepository.__init__(self, url, username, password, maxBandwidth, dynamicBandwidth, application)
+		parts = self._url.split('/')
+		if (len(parts) < 3) or parts[0].lower() not in ('webdav:', 'webdavs:'):
+			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		
-		self._connection.putrequest('PROPFIND', urllib.quote(self._absolutePath('/')))
-		self._connection.putheader('user-agent', self._application)
-		if self._cookie:
-			# Add cookie to header
-			self._connection.putheader('cookie', self._cookie)
-		self._connection.putheader('authorization', self._auth)
-		self._connection.putheader('depth', '0')
-		self._connection.endheaders()
+	def _connect(self):
+		HTTPRepository._connect(self)
 		
-		response = self._connection.getresponse()
-		if (response.status != responsecode.MULTI_STATUS):
-			raise RepositoryError(u"Failed to connect to '%s://%s:%s': %s" \
-				% (self._protocol, self._host, self._port, response.status))
-		# We have to read the response!
-		response.read()
-		
-		# Get cookie from header
-		cookie = response.getheader('set-cookie', None)
-		if cookie:
-			# Store cookie
-			self._cookie = cookie.split(';')[0].strip()
+		#self._connection.putrequest('PROPFIND', self._preProcessPath('/'))
+		#self._connection.putheader('user-agent', self._application)
+		#if self._cookie:
+		#	# Add cookie to header
+		#	self._connection.putheader('cookie', self._cookie)
+		#if self._auth:
+		#	self._connection.putheader('authorization', self._auth)
+		#self._connection.putheader('depth', '0')
+		#self._connection.endheaders()
+		#
+		#response = self._connection.getresponse()
+		#if (response.status != responsecode.MULTI_STATUS):
+		#	raise RepositoryError(u"Failed to connect to '%s://%s:%s': %s" \
+		#		% (self._protocol, self._host, self._port, response.status))
+		## We have to read the response!
+		#response.read()
+		#
+		## Get cookie from header
+		#cookie = response.getheader('set-cookie', None)
+		#if cookie:
+		#	# Store cookie
+		#	self._cookie = cookie.split(';')[0].strip()
 	
 	def _getContent(self, destination=''):
 		destination = forceUnicode(destination)
@@ -451,13 +550,14 @@ class WebDAVRepository(Repository):
 		if not self._connection:
 			self._connect()
 		
-		self._connection.putrequest('PROPFIND', urllib.quote(destination))
+		self._connection.putrequest('PROPFIND', self._preProcessPath(destination))
 		self._connection.putheader('depth', '1')
 		if self._cookie:
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
 		self._connection.putheader('user-agent', self._application)
-		self._connection.putheader('authorization', self._auth)
+		if self._auth:
+			self._connection.putheader('authorization', self._auth)
 		self._connection.endheaders()
 		
 		response = self._connection.getresponse()
@@ -492,7 +592,7 @@ class WebDAVRepository(Repository):
 	
 	def content(self, destination=u''):
 		result = []
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		#for c in self._getContent(destination):
 		#	result.append( c['name'] )
 		return self._getContent(destination)
@@ -502,7 +602,7 @@ class WebDAVRepository(Repository):
 		destination = forceUnicode(destination)
 		info = {}
 		try:
-			path = self._absolutePath(u'/'.join(destination.split('/')[:-1]))
+			path = self._preProcessPath(u'/'.join(destination.split('/')[:-1]))
 			name = destination.split('/')[-1]
 			for c in self._getContent(path):
 				if (c['name'] == name):
@@ -513,50 +613,9 @@ class WebDAVRepository(Repository):
 			#logger.logException(e)
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
 	
-	def download(self, source, destination, progressSubject=None):
-		destination = forceUnicode(destination)
-		size = 0
-		try:
-			size = self.fileInfo(source)['size']
-		except:
-			pass
-		source = self._absolutePath(source)
-		
-		logger.debug(u"Length of binary data to download: %d bytes" % size)
-		
-		if progressSubject: progressSubject.setEnd(size)
-		
-		dst = None
-		try:
-			if not self._connection:
-				self._connect()
-			self._connection.putrequest('GET', urllib.quote(source))
-			self._connection.putheader('user-agent', self._application)
-			if self._cookie:
-				# Add cookie to header
-				self._connection.putheader('cookie', self._cookie)
-			self._connection.putheader('authorization', self._auth)
-			self._connection.endheaders()
-			
-			response = self._connection.getresponse()
-			if (response.status != responsecode.OK):
-				raise Exception(response.status)
-			
-			dst = open(destination, 'wb')
-			self._transferDown(response, dst, progressSubject)
-			dst.close()
-			
-		except Exception, e:
-			logger.logException(e)
-			#if self._connection: self._connection.close()
-			if dst: dst.close()
-			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
-						% (source, destination, e))
-		logger.debug2(u"WebDAV download done")
-	
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]
@@ -568,12 +627,13 @@ class WebDAVRepository(Repository):
 		try:
 			if not self._connection:
 				self._connect()
-			self._connection.putrequest('PUT', urllib.quote(destination))
+			self._connection.putrequest('PUT', destination)
 			self._connection.putheader('user-agent', self._application)
 			if self._cookie:
 				# Add cookie to header
 				self._connection.putheader('cookie', self._cookie)
-			self._connection.putheader('authorization', self._auth)
+			if self._auth:
+				self._connection.putheader('authorization', self._auth)
 			self._connection.putheader('content-length', size)
 			self._connection.endheaders()
 			
@@ -598,14 +658,15 @@ class WebDAVRepository(Repository):
 		if not self._connection:
 			self._connect()
 		
-		destination = self._absolutePath(destination)
+		destination = self._preProcessPath(destination)
 		
-		self._connection.putrequest('DELETE', urllib.quote(destination))
+		self._connection.putrequest('DELETE', destination)
 		self._connection.putheader('user-agent', self._application)
 		if self._cookie:
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
-		self._connection.putheader('authorization', self._auth)
+		if self._auth:
+			self._connection.putheader('authorization', self._auth)
 		self._connection.endheaders()
 		
 		response = self._connection.getresponse()
@@ -758,10 +819,34 @@ class DepotToLocalDirectorySychronizer(object):
 
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
-	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/products', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	#rep.download(u'preloginloader_3.4-48.opsi', '/tmp/preloginloader_3.4-48.opsi', progressSubject=None)
-	#rep = WebDAVRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
-	#rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
+	
+	tempFile = '/tmp/testfile.bin'
+	
+	rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
+	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	os.unlink(tempFile)
+	
+	rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'')
+	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	os.unlink(tempFile)
+	
+	rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'', proxy="http://192.168.1.254:3128")
+	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	os.unlink(tempFile)
+	
+	rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'', proxy="http://192.168.1.254:3128")
+	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	os.unlink(tempFile)
+	
+	rep = HTTPRepository(url = u'https://forum.opsi.org:443', username = u'', password = u'')
+	rep.download(u'/index.php', tempFile, progressSubject=None)
+	os.unlink(tempFile)
+	
+	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
+	
+	rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
+	rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/opsi-depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = '/tmp/depot', productIds=['preloginloader', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
