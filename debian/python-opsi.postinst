@@ -48,11 +48,4 @@ case "$1" in
 	;;
 esac
 
-#if [ "$1" = "configure" ] && which update-python-modules >/dev/null 2>&1; then
-#	update-python-modules -i /usr/share/python-support/python-opsi
-#fi
-
-if which update-python-modules >/dev/null 2>&1; then
-	update-python-modules python-opsi.public >/dev/null 2>&1 || update-python-modules python-opsi >/dev/null 2>&1
-fi
-
+#DEBHELPER#
