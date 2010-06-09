@@ -1856,11 +1856,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		del hash['self']
 		return self.product_createObjects(NetbootProduct.fromHash(hash))
 	
-	def product_delete(self, productId):
-		if productId is None: productId = []
+	def product_delete(self, productId, productVersion, packageVersion):
+		if productId is None:      productId = []
+		if productVersion is None: productVersion = []
+		if packageVersion is None: packageVersion = []
 		return self._backend.product_deleteObjects(
-				product_getObjects(
-					productId = forceProductIdList(productId)))
+				self._backend.product_getObjects(
+					productId      = forceProductIdList(productId),
+					productVersion = forceProductVersionList(productVersion),
+					packageVersion = forcePackageVersionList(packageVersion)))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -2109,6 +2113,35 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		del hash['self']
 		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
 	
+	def productOnDepot_deleteObjects(self, productOnDepots):
+		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
+		products = {}
+		for productOnDepot in productOnDepots:
+			if not products.has_key(productOnDepot.productId):
+				products[productOnDepot.productId] = {}
+			if not products[productOnDepot.productId].has_key(productOnDepot.productVersion):
+				products[productOnDepot.productId][productOnDepot.productVersion] = []
+			if not productOnDepot.packageVersion in products[productOnDepot.productId][productOnDepot.productVersion]:
+				products[productOnDepot.productId][productOnDepot.productVersion].append(productOnDepot.packageVersion)
+		
+		ret = self._backend.productOnDepot_deleteObjects(productOnDepots)
+		
+		if products:
+			for (productId, versions) in products.items():
+				for (productVersion, packageVersions) in versions.items():
+					for packageVersion in packageVersions:
+						if not self.productOnDepot_getIdents(
+								productId      = productId,
+								productVersion = productVersion,
+								packageVersion = packageVersion):
+							# Product not found on any depot
+							self._backend.product_deleteObjects(
+								self._backend.product_getObjects(
+									productId      = [ productId ],
+									productVersion = [ productVersion ],
+									packageVersion = [ packageVersion ]))
+		return ret
+		
 	def productOnDepot_delete(self, productId, productVersion, packageVersion, depotId):
 		if productId is None:      productId      = []
 		if productVersion is None: productVersion = []
