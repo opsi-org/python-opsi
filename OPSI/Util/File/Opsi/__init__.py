@@ -697,9 +697,10 @@ class PackageControlFile(TextFile):
 	def setIncrementalPackage(self, incremental):
 		self._incrementalPackage = forceBool(incremental)
 	
-	def generate(self):
+	def generate(self, opsi3compatible = False):
 		if not self._product:
 			raise Exception(u"Got no data to write")
+		opsi3compatible = forceBool(opsi3compatible)
 		
 		logger.info(u"Writing opsi package control file '%s'" % self._filename)
 		
@@ -745,9 +746,10 @@ class PackageControlFile(TextFile):
 		self._lines.append( u'updateScript: %s'    % self._product.getUpdateScript() )
 		self._lines.append( u'alwaysScript: %s'    % self._product.getAlwaysScript() )
 		self._lines.append( u'onceScript: %s'      % self._product.getOnceScript() )
-		self._lines.append( u'customScript: %s'    % self._product.getCustomScript() )
-		if isinstance(self._product, LocalbootProduct):
-			self._lines.append( u'userLoginScript: %s'   % self._product.getUserLoginScript() )
+		if not opsi3compatible:
+			self._lines.append( u'customScript: %s'    % self._product.getCustomScript() )
+			if isinstance(self._product, LocalbootProduct):
+				self._lines.append( u'userLoginScript: %s'   % self._product.getUserLoginScript() )
 		if isinstance(self._product, NetbootProduct):
 			pxeConfigTemplate = self._product.getPxeConfigTemplate()
 			if not pxeConfigTemplate:
@@ -767,9 +769,9 @@ class PackageControlFile(TextFile):
 				self._lines.append( u'requiredProduct: %s' % dependency.getRequiredProductId() )
 			#if dependency.requiredProductClassId:
 			#	self._lines.append( u'requiredClass: %s'   % dependency.requiredProductClassId )
-			if dependency.getRequiredProductVersion():
+			if not opsi3compatible and dependency.getRequiredProductVersion():
 				self._lines.append( u'requiredProductVersion: %s' % dependency.getRequiredProductVersion() )
-			if dependency.getRequiredPackageVersion():
+			if not opsi3compatible and dependency.getRequiredPackageVersion():
 				self._lines.append( u'requiredPackageVersion: %s' % dependency.getRequiredPackageVersion() )
 			if dependency.getRequiredAction():
 				self._lines.append( u'requiredAction: %s'  % dependency.getRequiredAction() )
@@ -784,9 +786,10 @@ class PackageControlFile(TextFile):
 			productPropertyType = 'unicode'
 			if isinstance(productProperty, BoolProductProperty):
 				productPropertyType = 'bool'
-			self._lines.append( u'type: %s' % productPropertyType )
+			if not opsi3compatible:
+				self._lines.append( u'type: %s' % productPropertyType )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
-			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+			if not opsi3compatible and not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 				self._lines.append( u'multivalue: %s' % productProperty.getMultiValue() )
 				self._lines.append( u'editable: %s' % productProperty.getEditable() )
 			if productProperty.getDescription():
@@ -796,13 +799,17 @@ class PackageControlFile(TextFile):
 					self._lines[-1] += descLines[0]
 					if (len(descLines) > 1):
 						self._lines.extend( descLines )
-			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
-				self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
-			if productProperty.getDefaultValues():
-				if isinstance(productProperty, BoolProductProperty):
-					self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
-				else:
-					self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
+			if opsi3compatible:
+				self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
+				self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
+			else:
+				if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
+				if productProperty.getDefaultValues():
+					if isinstance(productProperty, BoolProductProperty):
+						self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
+					else:
+						self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
 			self._lines.append( u'' )
 		
 		if self._product.getChangelog():

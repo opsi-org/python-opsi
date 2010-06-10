@@ -201,8 +201,10 @@ def parseDateTime(dateString):
 
     day = int(day)
     if not month.lower() in monthname_lower:
-        raise ValueError("month %s not in monthname list %s" % (month.lower, monthname_lower))
-    month = int(monthname_lower.index(month.lower()))
+        #raise ValueError("month %s not in monthname list %s" % (month.lower(), monthname_lower))
+        month = 1
+    else:
+        month = int(monthname_lower.index(month.lower()))
     year = int(year)
     hour, min, sec = map(int, time.split(':'))
     return int(timegm((year, month, day, hour, min, sec)))

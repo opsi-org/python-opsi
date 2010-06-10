@@ -415,7 +415,7 @@ class ProductPackageSource(object):
 		
 		self.customName = None
 		if customName:
-			self.customName = forcePackageCustomName(self.customName)
+			self.customName = forcePackageCustomName(customName)
 		
 		self.customOnly = forceBool(customOnly)
 		
