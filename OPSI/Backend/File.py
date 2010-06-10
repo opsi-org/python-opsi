@@ -2270,7 +2270,7 @@ class FileBackend(ConfigDataBackend):
 			identLowerKeys[key.lower()] = ident[key]
 		
 		sectionFound = None
-		
+
 		for section in ini.sections():
 			found = True
 			

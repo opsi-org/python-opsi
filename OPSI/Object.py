@@ -120,8 +120,11 @@ class BaseObject(object):
 		identAttributes = self.getIdentAttributes()
 		identValues = []
 		for attr in identAttributes:
-			v = getattr(self, attr)
-			if v is None:
+			try:
+				v = getattr(self, attr)
+				if v is None:
+					v = u''
+			except AttributeError, e:
 				v = u''
 			identValues.append(forceUnicode(v))
 		if returnType in ('list',):
@@ -2635,6 +2638,7 @@ class AuditHardwareOnHost(Relationship):
 				else:
 					kwargs[attribute] = None
 		
+		
 		if self.hardwareAttributes.get(hardwareClass):
 			for (attribute, value) in kwargs.items():
 				type = self.hardwareAttributes[hardwareClass].get(attribute)
@@ -2675,6 +2679,7 @@ class AuditHardwareOnHost(Relationship):
 			self.deviceId = forceHardwareDeviceId(self.deviceId)
 		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
 			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+
 		
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
