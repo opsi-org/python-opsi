@@ -261,12 +261,16 @@ class ChangelogFile(TextFile):
 			self.readlines()
 		self._parsed = False
 		self._entries = []
+		currentEntry = {}
 		for lineNum in range(len(self._lines)):
 			try:
 				line = self._lines[lineNum]
 				match = self.releaseLineRegex.search(line)
 				if match:
-					self._entries.append( {
+					if currentEntry:
+						self.addEntry(currentEntry)
+					
+					currentEntry = {
 						'package':         match.group(1),
 						'version':         match.group(2),
 						'release':         match.group(3),
@@ -275,13 +279,13 @@ class ChangelogFile(TextFile):
 						'maintainerName':  u'',
 						'maintainerEmail': u'',
 						'date':            None
-					})
+					}
 					continue
 				
 				if line.startswith(' --'):
 					if (line.find('  ') == -1):
 						raise Exception(u"maintainer must be separated from date using two spaces")
-					if (len(self._entries) == 0) or self._entries[-1]['date']:
+					if not currentEntry or currentEntry['date']:
 						raise Exception(u"found trailer out of release")
 					
 					(maintainer, date) = line[3:].strip().split('  ', 1)
@@ -290,14 +294,14 @@ class ChangelogFile(TextFile):
 						(maintainer, email) = maintainer.split('<', 1)
 						maintainer = maintainer.strip()
 						email = email.strip().replace('<', '').replace('>', '')
-					self._entries[-1]['maintainerName'] = maintainer
-					self._entries[-1]['maintainerEmail'] = email
+					currentEntry['maintainerName'] = maintainer
+					currentEntry['maintainerEmail'] = email
 					if (date.find('+') != -1):
 						date = date.split('+')[0]
-					self._entries[-1]['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
+					currentEntry['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
 					changelog = []
 					buf = []
-					for l in self._entries[-1]['changelog']:
+					for l in currentEntry['changelog']:
 						if not changelog and not l.strip():
 							continue
 						if not l.strip():
@@ -306,15 +310,17 @@ class ChangelogFile(TextFile):
 							changelog.extend(buf)
 							buf = []
 							changelog.append(l)
-					self._entries[-1]['changelog'] = changelog
+					currentEntry['changelog'] = changelog
 					
 				else:
-					if (len(self._entries) == 0) and line.strip():
-						raise Exception(u"text out of release")
-					self._entries[-1]['changelog'].append(line.rstrip())
+					if not currentEntry and line.strip():
+						raise Exception(u"text not in release")
+					if currentEntry:
+						currentEntry['changelog'].append(line.rstrip())
 			except Exception, e:
-				self._entries = []
 				raise Exception(u"Parse error in line %d: %s" % (lineNum, e))
+		if currentEntry:
+			self.addEntry(currentEntry)
 		self._parsed = True
 		return self._entries
 		
@@ -342,21 +348,25 @@ class ChangelogFile(TextFile):
 	
 	def setEntries(self, entries):
 		entries = forceList(entries)
-		for i in range(len(entries)):
-			entries[i] = forceDict(entries[i])
-			for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
-				if not entries[i].has_key(key):
-					raise Exception(u"Missing key '%s' in entry %s" % (key, entries[i]))
-			entries[i]['package']         = forceProductId(entries[i]['package'])
-			entries[i]['version']         = forceUnicode(entries[i]['version'])
-			entries[i]['release']         = forceUnicode(entries[i]['release'])
-			entries[i]['urgency']         = forceUnicode(entries[i]['urgency'])
-			entries[i]['changelog']       = forceUnicodeList(entries[i]['changelog'])
-			entries[i]['maintainerName']  = forceUnicode(entries[i]['maintainerName'])
-			entries[i]['maintainerEmail'] = forceEmailAddress(entries[i]['maintainerEmail'])
-			entries[i]['date']            = forceTime(entries[i]['date'])
-		self._entries = entries
+		self._entries = []
+		for entry in entries:
+			self.addEntry(entry)
 	
+	def addEntry(self, entry):
+		entry = forceDict(entry)
+		for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
+			if not entry.has_key(key):
+				raise Exception(u"Missing key '%s' in entry %s" % (key, entry))
+		entry['package']         = forceProductId(entry['package'])
+		entry['version']         = forceUnicode(entry['version'])
+		entry['release']         = forceUnicode(entry['release'])
+		entry['urgency']         = forceUnicode(entry['urgency'])
+		entry['changelog']       = forceUnicodeList(entry['changelog'])
+		entry['maintainerName']  = forceUnicode(entry['maintainerName'])
+		entry['maintainerEmail'] = forceEmailAddress(entry['maintainerEmail'])
+		entry['date']            = forceTime(entry['date'])
+		self._entries.append(entry)
+		
 class ConfigFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '#'], lstrip = True):
 		TextFile.__init__(self, filename, lockFailTimeout)

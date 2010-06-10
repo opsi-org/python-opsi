@@ -749,7 +749,10 @@ class PackageControlFile(TextFile):
 		if isinstance(self._product, LocalbootProduct):
 			self._lines.append( u'userLoginScript: %s'   % self._product.getUserLoginScript() )
 		if isinstance(self._product, NetbootProduct):
-			self._lines.append( u'pxeConfigTemplate: %s' % self._product.getPxeConfigTemplate() )
+			pxeConfigTemplate = self._product.getPxeConfigTemplate()
+			if not pxeConfigTemplate:
+				pxeConfigTemplate = u''
+			self._lines.append( u'pxeConfigTemplate: %s' % pxeConfigTemplate )
 		self._lines.append( u'' )
 		
 		if self._product.getWindowsSoftwareIds():
