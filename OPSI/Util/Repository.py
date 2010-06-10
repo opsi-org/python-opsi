@@ -592,7 +592,6 @@ class WebDAVRepository(HTTPRepository):
 	
 	def content(self, destination=u''):
 		result = []
-		destination = self._preProcessPath(destination)
 		#for c in self._getContent(destination):
 		#	result.append( c['name'] )
 		return self._getContent(destination)
@@ -844,9 +843,10 @@ if (__name__ == "__main__"):
 	
 	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
+	print rep.content()
 	
-	rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
-	rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
+	#rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/opsi-depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = '/tmp/depot', productIds=['preloginloader', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
