@@ -611,10 +611,12 @@ class FileBackend(ConfigDataBackend):
 				if os.path.isfile(filename):
 					filenames.append(filename)
 			else:
+				
+					
 				idFilter = {}
-				if   objType in ('AuditSoftwareOnClient', ):
+				if   objType in ('AuditSoftwareOnClient', ) and filter.get('clientId'):
 					idFilter = { 'id': filter['clientId'] }
-				elif objType in ('AuditHardwareOnHost', ):
+				elif objType in ('AuditHardwareOnHost', ) and filter.get('hostId'):
 					idFilter = { 'id': filter['hostId'] }
 				
 				for entry in os.listdir(self.__auditDir):
@@ -652,7 +654,7 @@ class FileBackend(ConfigDataBackend):
 							}
 						for key in objIdent.keys():
 							option = key.lower()
-							if cp.hasoption(section, option):
+							if cp.has_option(section, option):
 								objIdent[key] = self.__unescape(cp.get(section, option))
 						
 						if (objType == 'AuditSoftwareOnClient'):
