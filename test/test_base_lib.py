@@ -302,3 +302,41 @@ assert obj1 != obj2
 obj2 = {"test": 123}
 assert obj1 != obj2
 
+obj1 = LocalbootProduct(
+	id                 = 'product2',
+	name               = u'Product 2',
+	productVersion     = '2.0',
+	packageVersion     = 'test',
+	licenseRequired    = False,
+	setupScript        = "setup.ins",
+	uninstallScript    = u"uninstall.ins",
+	updateScript       = "update.ins",
+	alwaysScript       = None,
+	onceScript         = None,
+	priority           = 0,
+	description        = None,
+	advice             = "",
+	productClassIds    = ['localboot-products'],
+	windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
+)
+obj2 = LocalbootProduct(
+	id                 = 'product2',
+	name               = u'Product 2',
+	productVersion     = '2.0',
+	packageVersion     = 'test',
+	licenseRequired    = False,
+	setupScript        = "setup.ins",
+	uninstallScript    = u"uninstall.ins",
+	updateScript       = "update.ins",
+	alwaysScript       = None,
+	onceScript         = None,
+	priority           = 0,
+	description        = None,
+	advice             = "",
+	productClassIds    = ['localboot-products'],
+	windowsSoftwareIds = ['xxxxxxxx', '{98723-7898adf2-287aab}']
+)
+assert obj1 == obj2
+
+
+

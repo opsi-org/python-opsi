@@ -228,7 +228,7 @@ class BackendTest(object):
 			priority           = '100',
 			description        = "Nothing",
 			advice             = u"No advice",
-			productClassIds    = ['class1'],
+			productClassIds    = [],#['class1'],
 			windowsSoftwareIds = ['{be21bd07-eb19-44e4-893a-fa4e44e5f806}', 'product1'],
 			pxeConfigTemplate  = 'special'
 		)
@@ -249,7 +249,7 @@ class BackendTest(object):
 			priority           = 0,
 			description        = None,
 			advice             = "",
-			productClassIds    = ['localboot-products'],
+			productClassIds    = [],#['localboot-products'],
 			windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
 		)
 		
@@ -267,7 +267,7 @@ class BackendTest(object):
 			priority           = 100,
 			description        = "---",
 			advice             = "---",
-			productClassIds    = ['localboot-products'],
+			productClassIds    = [],#['localboot-products'],
 			windowsSoftwareIds = []
 		)
 		
@@ -1117,17 +1117,11 @@ class BackendTest(object):
 			assert host.getOpsiHostKey(), u"Host key for host '%s': %s" % (host.getId(), host.getOpsiHostKey())
 			for h in self.hosts:
 				if (host.id == h.id):
-					host = host.toHash()
-					h = h.toHash()
-					for (attribute, value) in h.items():
-						if not value is None:
-							if type(value) is list:
-								for v in value:
-									assert v in host[attribute], u"'%s' not in '%s'" % (v, host[attribute])
-							else:
-								assert value == host[attribute], u"got: '%s', expected: '%s'" % (host[attribute], value)
-					break
-		
+					h1 = h.toHash()
+					h2 = host.toHash()
+					h1['lastSeen'] = None
+					h2['lastSeen'] = None
+					assert h1 == h2 , u"got: '%s', expected: '%s'" % (h1, h2)
 		
 		self.backend.host_createObjects( self.depotservers )
 		hosts = self.backend.host_getObjects()
@@ -1226,31 +1220,6 @@ class BackendTest(object):
 			for c in self.configs:
 				if (config.id == c.id):
 					assert config == c, u"got: '%s', expected: '%s'" % (config, c)
-		
-#		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-#		configs = self.backend.config_getObjects()
-#		print "#######################"
-#		for config in configs:
-#			if config.id == u'opsi-linux-bootimage.cmdline.bool': #config2
-#				print config
-#		print "#######################"
-#		print self.config2.getDefaultValues(), "getDefaultValues()" #[True]
-#		print self.config2.defaultValues, "defaultValues" #[True]
-#		print "#######################"
-#		
-#		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
-#		
-#		print "#######################"
-#		print self.config2.getDefaultValues(), "getDefaultValues()" #[u'True']
-#		print self.config2.defaultValues, "defaultValues" #[u'True']
-#		
-#		print "#######################"
-#		configs = self.backend.config_getObjects()
-#		for config in configs:
-#			if config.id == u'opsi-linux-bootimage.cmdline.bool': #config2
-#				print config
-#		print "#######################"
-#		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 		
 		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
 		assert len(configs) == 1, u"got: '%s', expected: '%s'" % (configs, 1)
@@ -1353,21 +1322,8 @@ class BackendTest(object):
 			logger.debug(product)
 			for p in self.products:
 				if (product.id == p.id) and (product.productVersion == p.productVersion) and (product.packageVersion == p.packageVersion):
-					product = product.toHash()
-					p = p.toHash()
-					for (attribute, value) in p.items():
-						if (attribute == 'productClassIds'):
-							logger.warning(u"Skipping productClassIds attribute test!!!")
-							continue
-						if not value is None:
-							
-							if type(value) is list:
-								for v in value:
-									assert v in product[attribute], u"'%s' not in '%s'" % (v, product[attribute])
-							else:
-								assert value == product[attribute], u"got: '%s', expected: '%s'" % (product[attribute], value)
-					break
-		
+					assert product == p, u"got: '%s', expected: '%s'" % (product.toHash(), p.toHash())
+					
 		self.product2.setName(u'Product 2 updated')
 		self.product2.setPriority(60)
 		products = self.backend.product_updateObject(self.product2)

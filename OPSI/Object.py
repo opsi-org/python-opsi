@@ -623,7 +623,11 @@ class Config(Entity):
 			self.possibleValues = self.defaultValues
 		if self.defaultValues and (len(self.defaultValues) > 1):
 			self.multiValue = True
-	
+		if not self.possibleValues is None:
+			self.possibleValues.sort()
+		if not self.defaultValues is None:
+			self.defaultValues.sort()
+		
 	def getPossibleValues(self):
 		return self.possibleValues
 	
@@ -773,7 +777,8 @@ class ConfigState(Relationship):
 	
 	def setValues(self, values):
 		self.values = forceList(values)
-	
+		self.values.sort()
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'ConfigState'
@@ -980,13 +985,15 @@ class Product(Entity):
 	
 	def setProductClassIds(self, productClassIds):
 		self.productClassIds = forceUnicodeList(productClassIds)
-	
+		self.productClassIds.sort()
+		
 	def getWindowsSoftwareIds(self):
 		return self.windowsSoftwareIds
 	
 	def setWindowsSoftwareIds(self, windowsSoftwareIds):
 		self.windowsSoftwareIds = forceUnicodeList(windowsSoftwareIds)
-	
+		self.windowsSoftwareIds.sort()
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'Product'
@@ -1140,7 +1147,11 @@ class ProductProperty(Entity):
 			self.possibleValues = self.defaultValues
 		if self.defaultValues and (len(self.defaultValues) > 1):
 			self.multiValue = True
-	
+		if not self.possibleValues is None:
+			self.possibleValues.sort()
+		if not self.defaultValues is None:
+			self.defaultValues.sort()
+		
 	def getPossibleValues(self):
 		return self.possibleValues
 	
@@ -1620,7 +1631,8 @@ class ProductPropertyState(Relationship):
 	
 	def setValues(self, values):
 		self.values = forceList(values)
-	
+		self.values.sort()
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'ProductPropertyState'
@@ -2046,7 +2058,8 @@ class LicensePool(Entity):
 	
 	def setProductIds(self, productIds):
 		self.productIds = forceProductIdList(productIds)
-	
+		self.productIds.sort()
+		
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'LicensePool'
