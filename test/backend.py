@@ -2304,6 +2304,8 @@ class BackendTest(object):
 					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
 					self._backendTest.backend.host_createObjects(self._backendTest.client2)
 					self._backendTest.backend.host_createObjects(self._backendTest.client1)
+					self._backendTest.backend.objectToGroup_createObjects(self._backendTest.objectToGroup1)
+					self._backendTest.backend.objectToGroup_createObjects(self._backendTest.objectToGroup2)
 					self._backendTest.backend.host_getObjects()
 					self._backendTest.backend.host_createObjects(self._backendTest.client1)
 					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
@@ -2312,6 +2314,9 @@ class BackendTest(object):
 					logger.notice(u"Thread %s done" % self)
 				except Exception, e:
 					logger.logException(e)
+		
+		self.backend.group_createObjects(self.groups)
+		
 		mtts = []
 		for i in range(50):
 			mtt = MultiThreadTest(self)

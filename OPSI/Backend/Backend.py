@@ -567,36 +567,48 @@ class ConfigDataBackend(Backend):
 			self._context.objectToGroup_deleteObjects(
 				self._context.objectToGroup_getObjects(
 					groupType = 'HostGroup',
-					groupId   = [],
 					objectId  = host.id ))
 			if isinstance(host, OpsiClient):
 				# Remove product states
 				self._context.productOnClient_deleteObjects(
 					self._context.productOnClient_getObjects(
-						productId = [],
 						clientId = host.id ))
 			elif isinstance(host, OpsiDepotserver):
 				# This is also true for OpsiConfigservers
 				# Remove products
 				self._context.productOnDepot_deleteObjects(
 					self._context.productOnDepot_getObjects(
-						productId = [],
-						productVersion = [],
-						packageVersion = [],
 						depotId = host.id ))
 			# Remove product property states
 			self._context.productPropertyState_deleteObjects(
 				self._context.productPropertyState_getObjects(
-					productId  = [],
-					propertyId = [],
-					objectId   = host.id ))
+					objectId = host.id ))
 			# Remove config states
 			self._context.configState_deleteObjects(
 				self._context.configState_getObjects(
-					configId = [],
-					objectId = host.id,
-					values   = [] ))
-	
+					objectId = host.id ))
+			
+			if isinstance(host, OpsiClient):
+				# Remove audit softwares
+				self._context.auditSoftwareOnClient_deleteObjects(
+					self._context.auditSoftwareOnClient_getObjects(
+						clientId = host.id ))
+			
+			# Remove audit hardwares
+			self._context.auditHardwareOnHost_deleteObjects(
+				self._context.auditHardwareOnHost_getObjects(
+					hostId = host.id ))
+			
+			if isinstance(host, OpsiClient):
+				# Free software licenses
+				self._context.licenseOnClient_deleteObjects(
+					self._context.licenseOnClient_getObjects(
+						clientId = host.id ))
+				
+				for softwareLicense in self._context.softwareLicense_getObjects(boundToHost = host.id):
+					softwareLicense.boundToHost = None
+					self._context.softwareLicense_insertObject(softwareLicense)
+			
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1217,7 +1229,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						'Scope': value["Scope"]
 					}
 	
-	def backend_searchObjects(self, filter):
+	def backend_searchIdents(self, filter):
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
@@ -1429,6 +1441,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		for v in handleFilter(parsedFilter)[0].get('identValues', []):
 			result.append(v[0])
+		result.sort()
 		logger.info(u"=== Search done, result: %s" % result)
 		return result
 	
@@ -1587,6 +1600,80 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		return result
 	
+	def host_renameOpsiClient(self, id, newId):
+		id    = forceHostId(id)
+		newId = forceHostId(newId)
+		clients = self._backend.host_getObjects(type = 'OpsiClient', id = id)
+		if not clients:
+			raise BackendMissingDataError(u"Cannot rename: client '%s' not found" % id)
+		if self._backend.host_getObjects(type = 'OpsiClient', id = newId):
+			raise BackendError(u"Cannot rename: client '%s' already exists" % newId)
+		
+		client = clients[0]
+		
+		objectToGroups = []
+		for objectToGroup in self._backend.objectToGroup_getObjects(groupType = 'HostGroup', objectId  = client.id):
+			objectToGroup.setObjectId(newId)
+			objectToGroups.append(objectToGroup)
+		
+		productOnClients = []
+		for productOnClient in self._backend.productOnClient_getObjects(clientId = client.id):
+			productOnClient.setClientId(newId)
+			productOnClients.append(productOnClient)
+		
+		productPropertyStates = []
+		for productPropertyState in self._backend.productPropertyState_getObjects(objectId = client.id):
+			productPropertyState.setObjectId(newId)
+			productPropertyStates.append(productPropertyState)
+		
+		configStates = []
+		for configState in self._backend.configState_getObjects(objectId = client.id):
+			configState.setObjectId(newId)
+			configStates.append(configState)
+		
+		auditSoftwareOnClients = []
+		for auditSoftwareOnClient in self._backend.auditSoftwareOnClient_getObjects(clientId = client.id):
+			auditSoftwareOnClient.setClientId(newId)
+			auditSoftwareOnClients.append(auditSoftwareOnClient)
+		
+		auditHardwareOnHosts = []
+		for auditHardwareOnHost in self._backend.auditHardwareOnHost_getObjects(hostId = client.id):
+			auditHardwareOnHost.setHostId(newId)
+			auditHardwareOnHosts.append(auditHardwareOnHost)
+		
+		licenseOnClients = []
+		for licenseOnClient in self._backend.licenseOnClient_getObjects(clientId = client.id):
+			licenseOnClient.setClientId(newId)
+			licenseOnClients.append(licenseOnClient)
+		
+		softwareLicenses = []
+		for softwareLicense in self._backend.softwareLicense_getObjects(boundToHost = client.id):
+			softwareLicense.setBoundToHost(newId)
+			softwareLicenses.append(softwareLicense)
+		
+		logger.info(u"Deleting client '%s'" % client)
+		self._backend.host_deleteObjects([ client ])
+		
+		client.setId(newId)
+		self.host_createObjects([ client ])
+		
+		if objectToGroups:
+			self.objectToGroup_createObjects(objectToGroups)
+		if productOnClients:
+			self.productOnClient_createObjects(productOnClients)
+		if productPropertyStates:
+			self.productPropertyState_createObjects(productPropertyStates)
+		if configStates:
+			self.configState_createObjects(configStates)
+		if auditSoftwareOnClients:
+			self.auditSoftwareOnClient_createObjects(auditSoftwareOnClients)
+		if auditHardwareOnHosts:
+			self.auditHardwareOnHost_createObjects(auditHardwareOnHosts)
+		if licenseOnClients:
+			self.licenseOnClient_createObjects(licenseOnClients)
+		if softwareLicenses:
+			self.softwareLicense_createObjects(softwareLicenses)
+		
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
 		hash = locals()
 		del hash['self']

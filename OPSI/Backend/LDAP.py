@@ -768,7 +768,7 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 		
 		for host in forceObjectClassList(hosts, Host):
-			dn = self._getHostDn(hosts)
+			dn = self._getHostDn(host)
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting host: %s" % dn)

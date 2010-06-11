@@ -289,11 +289,10 @@ class FileBackend(ConfigDataBackend):
 	def _touch(self, filename):
 		logger.debug(u"Creating file: '%s'" % (filename))
 		if not os.path.exists(filename):
-			logger.debug(u"Creating file: '%s'" % (filename))
-			f = open(filename, 'w')
-			f.close()
+			f = LockableFile(filename)
+			f.create()
 		else:
-			logger.debug(u"Cannot create existing file, setting rights alone instead ..." % ())
+			logger.debug(u"Cannot create existing file, setting rights ..." % ())
 		self._setRights(filename)
 		
 	def __escape(self, string):

@@ -126,21 +126,35 @@ class File(object):
 			return getattr(self.__dict__['_fileHandle'], attr)
 
 class LockableFile(File):
+	_fileLockLock = threading.Lock()
+	
 	def __init__(self, filename, lockFailTimeout = 2000):
 		File.__init__(self, filename)
 		self._lockFailTimeout = forceInt(lockFailTimeout)
 	
-	def delete(self):
-		if os.path.exists(self._filename):
-			os.unlink(self._filename)
-	
-	def open(self, mode = 'r'):
-		File.open(self, mode)
+	def open(self, mode = 'r', encoding = None, errors = 'replace'):
+		truncate = False
+		if mode in ('w', 'wb') and os.path.exists(self._filename):
+			if (mode == 'w'):
+				mode = 'r+'
+				truncate = True
+			elif (mode == 'wb'):
+				mode = 'rb+'
+				truncate = True
+		if encoding:
+			self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
+		else:
+			self._fileHandle = __builtins__['open'](self._filename, mode)
 		self._lockFile(mode)
+		if truncate:
+			self._fileHandle.seek(0)
+			self._fileHandle.truncate()
 		return self._fileHandle
 		
 	def close(self):
-		self._unlockFile()
+		if not self._fileHandle:
+			return
+		self._fileHandle.flush()
 		File.close(self)
 		
 	def _lockFile(self, mode='r'):
@@ -149,8 +163,7 @@ class LockableFile(File):
 			# While not timed out and not locked
 			logger.debug("Trying to lock file '%s' (%s/%s)" % (self._filename, timeout, self._lockFailTimeout))
 			try:
-				# Try to lock file
-				if (os.name =='posix'):
+				if (os.name == 'posix'):
 					# Flags for exclusive, non-blocking lock
 					flags = fcntl.LOCK_EX | fcntl.LOCK_NB
 					if mode in ('r', 'rb'):
@@ -165,7 +178,6 @@ class LockableFile(File):
 					win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, pywintypes.OVERLAPPED())
 				
 			except IOError, e:
-				# Locking failed 
 				# increase timeout counter, sleep 100 millis
 				timeout += 100
 				time.sleep(0.1)
@@ -174,8 +186,8 @@ class LockableFile(File):
 			logger.debug("File '%s' locked after %d millis" % (self._filename, timeout))
 			return self._fileHandle
 		
-		self.close()
-		# File lock failed => raise BackendIOError
+		File.close(self)
+		# File lock failed => raise IOError
 		raise IOError("Failed to lock file '%s' after %d millis" % (self._filename,  self._lockFailTimeout))
 	
 	def _unlockFile(self):
@@ -186,7 +198,7 @@ class LockableFile(File):
 		elif (os.name == 'nt'):
 			hfile = win32file._get_osfhandle(self._fileHandle.fileno())
 			win32file.UnlockFileEx(hfile, 0, 0x7fff0000, pywintypes.OVERLAPPED())
-	
+		
 class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
@@ -194,9 +206,10 @@ class TextFile(LockableFile):
 		self._lineSeperator = u'\n'
 		
 	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
-		self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
-		self._lockFile(mode)
-		return self._fileHandle
+		#self._fileHandle = LockableFile.open(mode, encoding, errors)
+		#self._lockFile(mode)
+		#return self._fileHandle
+		return LockableFile.open(self, mode, encoding, errors)
 		
 	def write(self, str):
 		if not self._fileHandle:
@@ -495,7 +508,6 @@ class IniFile(ConfigFile):
 		data = StringIO.StringIO()
 		self._configParser.write(data)
 		self._lines = data.getvalue().decode('utf-8').replace('\r', '').split('\n')
-		
 		self.open('w')
 		self.writelines()
 		self.close()
