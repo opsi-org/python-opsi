@@ -181,6 +181,11 @@ class BaseObject(object):
 	def toJson(self):
 		return toJson(self)
 	
+	def __eq__(self, other):
+		if not isinstance(other, self.__class__):
+			return False
+		return (self.toHash() == other.toHash())
+		
 	def __str__(self):
 		return unicode(self).encode("utf-8")
 	

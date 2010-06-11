@@ -246,22 +246,59 @@ else:
 
 getPossibleClassAttributes(Host)
 
+obj1 = OpsiConfigserver(
+	id                  = 'configserver1.uib.local',
+	opsiHostKey         = '71234545689056789012123678901234',
+	depotLocalUrl       = 'file:///opt/pcbin/install',
+	depotRemoteUrl      = u'smb://configserver1/opt_pcbin/install',
+	repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
+	repositoryRemoteUrl = u'webdavs://configserver1:4447/repository',
+	description         = 'The configserver',
+	notes               = 'Config 1',
+	hardwareAddress     = None,
+	ipAddress           = None,
+	inventoryNumber     = '00000000001',
+	networkAddress      = '192.168.1.0/24',
+	maxBandwidth        = 10000
+)
 
+obj2 = OpsiConfigserver(
+	id                  = 'configserver1.uib.local',
+	opsiHostKey         = '71234545689056789012123678901234',
+	depotLocalUrl       = 'file:///opt/pcbin/install',
+	depotRemoteUrl      = u'smb://configserver1/opt_pcbin/install',
+	repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
+	repositoryRemoteUrl = u'webdavs://configserver1:4447/repository',
+	description         = 'The configserver',
+	notes               = 'Config 1',
+	hardwareAddress     = None,
+	ipAddress           = None,
+	inventoryNumber     = '00000000001',
+	networkAddress      = '192.168.1.0/24',
+	maxBandwidth        = 10000
+)
 
+assert obj1 == obj2
+obj2 = obj1
+assert obj1 == obj2
 
+obj2 = OpsiDepotserver(
+	id                  = 'depotserver1.uib.local',
+	opsiHostKey         = '19012334567845645678901232789012',
+	depotLocalUrl       = 'file:///opt/pcbin/install',
+	depotRemoteUrl      = 'smb://depotserver1.uib.local/opt_pcbin/install',
+	repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
+	repositoryRemoteUrl = 'webdavs://depotserver1.uib.local:4447/repository',
+	description         = 'A depot',
+	notes               = 'D€pot 1',
+	hardwareAddress     = None,
+	ipAddress           = None,
+	inventoryNumber     = '00000000002',
+	networkAddress      = '192.168.2.0/24',
+	maxBandwidth        = 10000
+)
+assert obj1 != obj2
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+obj2 = {"test": 123}
+assert obj1 != obj2
 

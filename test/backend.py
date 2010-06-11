@@ -1225,16 +1225,7 @@ class BackendTest(object):
 			logger.debug(config)
 			for c in self.configs:
 				if (config.id == c.id):
-					config = config.toHash()
-					c = c.toHash()
-					for (attribute, value) in c.items():
-						if not value is None:
-							if type(value) is list:
-								for v in value:
-									assert v in config[attribute], u"'%s' not in '%s'" % (v, config[attribute])
-							else:
-								assert value == config[attribute], u"got: '%s', expected: '%s'" % (config[attribute], value)
-					break
+					assert config == c, u"got: '%s', expected: '%s'" % (config, c)
 		
 #		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 #		configs = self.backend.config_getObjects()
@@ -2196,7 +2187,8 @@ class BackendTest(object):
 		consoleLevel = logger.getConsoleLevel()
 		if (consoleLevel > LOG_NOTICE):
 			logger.setConsoleLevel(LOG_NOTICE)
-		logger.notice("Testing backend performance...")
+		
+		logger.notice(u"Testing backend performance")
 		
 		start = time.time()
 		for i in range(clientCount):
@@ -2205,7 +2197,7 @@ class BackendTest(object):
 				ip -= 255
 			self.backend.host_createOpsiClient(
 				id = 'client%d.uib.local' % i,
-				opsiHostKey = None,
+				opsiHostKey = '01234567890123456789012345678912', #None,
 				description = 'Client %d' % i,
 				notes = 'No notes',
 				hardwareAddress = '',
