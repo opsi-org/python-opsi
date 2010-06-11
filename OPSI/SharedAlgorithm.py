@@ -416,7 +416,9 @@ class Requirements:
 			noInListOrderedByPriors = j
 			return (candidate, noInListOrderedByPriors)
 		
+		logger.error(errorS0)
 		raise OpsiProductOrderingError(errorS0)
+		
 	
 	def getCount(self):
 		return len(self.list)
@@ -605,35 +607,46 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 	
 	foundClasses = []
 	orderingsByClasses = {}
-	for p in prioRange:
-		prioclasskey = str(p)
-		if not priorityClasses.has_key(prioclasskey):
-			continue
-		foundClasses.append(prioclasskey)
-		prioclass = priorityClasses[prioclasskey]
-		
-		if requirementsByClasses.has_key(prioclasskey):
-			requs = requirementsByClasses[prioclasskey]
-			
-			requObjects = Requirements(len(prioclass))
-			for item in requs:
-				requObjects.add(OrderRequirement(item[0], item[1], False))
-			
-			ob = OrderBuild(len(prioclass), requObjects)
-			for k in range(len(prioclass)):
-				ob.proceed()
-			orderingsByClasses[prioclasskey] = ob.getOrdering()
-	
 	sortedList = []
-	for prioclasskey in foundClasses:
-		prioclass =  priorityClasses[prioclasskey]
-		if orderingsByClasses.has_key(prioclasskey):
-			ordering = orderingsByClasses[prioclasskey]
-			for idx in ordering:
-				sortedList.append(prioclass[idx])
-		else:
-			for element in prioclass:
-				sortedList.append(element)
+	try:
+		for p in prioRange:
+			prioclasskey = str(p)
+			if not priorityClasses.has_key(prioclasskey):
+				continue
+			foundClasses.append(prioclasskey)
+			prioclass = priorityClasses[prioclasskey]
+			
+			if requirementsByClasses.has_key(prioclasskey):
+				requs = requirementsByClasses[prioclasskey]
+				
+				requObjects = Requirements(len(prioclass))
+				for item in requs:
+					requObjects.add(OrderRequirement(item[0], item[1], False))
+				
+				ob = OrderBuild(len(prioclass), requObjects)
+				try:
+					for k in range(len(prioclass)):
+						ob.proceed()
+						
+				except OpsiProductOrderingError, e:
+					for i in range(len(prioclass)):
+						logger.info(u" product %s %s " % (i, prioclass[i]))
+					raise e
+						
+				orderingsByClasses[prioclasskey] = ob.getOrdering()
+	
+		for prioclasskey in foundClasses:
+			prioclass =  priorityClasses[prioclasskey]
+			if orderingsByClasses.has_key(prioclasskey):
+				ordering = orderingsByClasses[prioclasskey]
+				for idx in ordering:
+					sortedList.append(prioclass[idx])
+			else:
+				for element in prioclass:
+					sortedList.append(element)
+					
+	except OpsiProductOrderingError, e:
+		sortedList = []
 	
 	productOnClientsByClientIdAndProductId = {}
 	for productOnClient in productOnClients:
@@ -650,10 +663,11 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 				productOnClients.append(productOnClientsByProductId[productId])
 				del productOnClientsByProductId[productId]
 				sequence += 1
-		for productId in productOnClientsByProductId.keys():
-			productOnClientsByProductId[productId].actionSequence = sequence
-			productOnClients.append(productOnClientsByProductId[productId])
-			sequence += 1
+		if sortedList:
+			for productId in productOnClientsByProductId.keys():
+				productOnClientsByProductId[productId].actionSequence = sequence
+				productOnClients.append(productOnClientsByProductId[productId])
+				sequence += 1
 	return productOnClients
 '''
 
