@@ -1468,6 +1468,15 @@ class BackendTest(object):
 		productOnDepots = self.backend.productOnDepot_getObjects()
 		assert len(productOnDepots) == len(self.productOnDepots) - 1, u"got: '%s', expected: '%s'" % (productOnDepots, len(self.productOnDepots) - 1)
 		
+		excepted = False
+		try:
+			self.backend.productOnDepot_createObjects(self.productOnDepots)
+		except:
+			excepted = True
+		
+		assert excepted, u"Created productOnDepot for non existing product"
+		
+		self.backend.product_createObjects( self.products )
 		self.backend.productOnDepot_createObjects(self.productOnDepots)
 		productOnDepots = self.backend.productOnDepot_getObjects()
 		assert len(productOnDepots) == len(self.productOnDepots), u"got: '%s', expected: '%s'" % (productOnDepots, len(self.productOnDepots))
@@ -1559,6 +1568,7 @@ class BackendTest(object):
 		
 		
 		# ProductPropertyStates
+		self.backend.productProperty_createObjects(self.productProperties)
 		
 		excepted = False
 		try:
@@ -2056,25 +2066,25 @@ class BackendTest(object):
 		ids = self.backend.product_getIdents(id = '*product*')
 		
 		# TODO: assertions
-		result = self.backend.backend_searchObjects('(&(objectClass=Host)(type=OpsiDepotserver))')
+		result = self.backend.backend_searchIdents('(&(objectClass=Host)(type=OpsiDepotserver))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
+		result = self.backend.backend_searchIdents('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
+		result = self.backend.backend_searchIdents('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
+		result = self.backend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
+		result = self.backend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
+		result = self.backend.backend_searchIdents('(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(objectClass=Host)(description=T*))')
+		result = self.backend.backend_searchIdents('(&(objectClass=Host)(description=T*))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(objectClass=Host)(description=*))')
+		result = self.backend.backend_searchIdents('(&(objectClass=Host)(description=*))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
+		result = self.backend.backend_searchIdents('(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
 		logger.notice(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
+		result = self.backend.backend_searchIdents('(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
 		logger.notice(result)
 		
 		#self.backend.host_delete(id = [])

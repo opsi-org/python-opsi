@@ -671,36 +671,44 @@ class ConfigDataBackend(Backend):
 		return []
 		
 	def product_deleteObjects(self, products):
-		productIds = []
+		productByIdAndVersion = {}
 		for product in forceObjectClassList(products, Product):
-			if not product.id in productIds:
-				productIds.append(product.id)
+			if not productByIdAndVersion.has_key(product.id):
+				productByIdAndVersion[product.id] = {}
+			if not productByIdAndVersion[product.id].has_key(product.productVersion):
+				productByIdAndVersion[product.id][product.productVersion] = []
+			productByIdAndVersion[product.id][product.productVersion].append(product.packageVersion)
+			
 			self._context.productProperty_deleteObjects(
 				self._context.productProperty_getObjects(
-					productId = product.id,
+					productId      = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
 			self._context.productDependency_deleteObjects(
 				self._context.productDependency_getObjects(
-					productId = product.id,
+					productId      = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
 			self._context.productOnDepot_deleteObjects(
 				self._context.productOnDepot_getObjects(
-					productId = product.id,
+					productId      = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
+			
+		for (productId, versions) in productByIdAndVersion.items():
+			allProductVersionsWillBeDeleted = True
+			for product in self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'], id = productId):
+				if not product.packageVersion in versions.get(product.productVersion, []):
+					allProductVersionsWillBeDeleted = False
+					break
+			if not allProductVersionsWillBeDeleted:
+				continue
 			self._context.productOnClient_deleteObjects(
-				self._context.productOnClient_getObjects(
-					productId = product.id,
-					productVersion = product.productVersion,
-					packageVersion = product.packageVersion ))
-		
-		for productId in productIds:
-			if not self._context.product_getObjects(attributes = ['id'], id = productId):
-				# No more products with this id found => delete productPropertyStates
-				self._context.productPropertyState_deleteObjects(
-					self._context.productPropertyState_getObjects(productId = productId))
+				self._context.productOnClient_getObjects(productId = productId)
+			)
+			self._context.productPropertyState_deleteObjects(
+				self._context.productPropertyState_getObjects(productId = productId)
+			)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -

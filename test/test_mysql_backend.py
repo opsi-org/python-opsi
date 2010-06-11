@@ -9,7 +9,8 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from backend import *
 
 logger = Logger()
-logger.setConsoleLevel(LOG_DEBUG2)
+#logger.setConsoleLevel(LOG_DEBUG2)
+logger.setConsoleLevel(LOG_INFO)
 logger.setConsoleColor(True)
 
 mysqlBackend = MySQLBackend(username = 'opsi', password = 'opsi', database='opsi-myqsl-test')
