@@ -481,7 +481,7 @@ class LDAPBackend(ConfigDataBackend):
 			
 			filters = []
 			for value in forceList(values):
-				if (value == None):
+				if value in (None, ""):
 					filters.append(
 						pureldap.LDAPFilter_not(
 							pureldap.LDAPFilter_present(attribute)

@@ -747,7 +747,7 @@ class ConfigDataBackend(Backend):
 				productVersion    = productDependency.productVersion,
 				packageVersion    = productDependency.packageVersion):
 			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
+				% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion))
 		
 	def productDependency_updateObject(self, productDependency):
 		pass
