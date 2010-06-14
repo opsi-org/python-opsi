@@ -140,6 +140,7 @@ class ProductPackageFile(object):
 			archive.extract(targetPath = self.tmpUnpackDir)
 			
 			for f in os.listdir(self.tmpUnpackDir):
+				logger.info(u"Processing file '%s'" % f)
 				archiveName = u''
 				if   f.endswith('.cpio.gz'):
 					archiveName = f[:-8]
@@ -147,8 +148,10 @@ class ProductPackageFile(object):
 					archiveName = f[:-5]
 				elif f.endswith('.tar.gz'):
 					archiveName = f[:-7]
-				elif f.endswith('tar'):
+				elif f.endswith('.tar'):
 					archiveName = f[:-4]
+				elif f.startswith('OPSI'):
+					continue
 				else:
 					logger.warning(u"Unknown content in archive: %s" % f)
 					continue
@@ -164,6 +167,9 @@ class ProductPackageFile(object):
 					if not script:
 						continue
 					newScript = script.replace(product.id, newProductId)
+					if not os.path.exists(os.path.join(destinationDir, u'CLIENT_DATA', script)):
+						logger.warning(u"Script file '%s' not found" % os.path.join(destinationDir, u'CLIENT_DATA', script))
+						continue
 					os.rename(os.path.join(destinationDir, u'CLIENT_DATA', script), os.path.join(destinationDir, u'CLIENT_DATA', newScript))
 					setattr(product, scriptName, newScript)
 				product.setId(newProductId)
@@ -172,6 +178,7 @@ class ProductPackageFile(object):
 				self.packageControlFile.generate()
 				
 		except Exception, e:
+			logger.logException(e, LOG_INFO)
 			self.cleanup()
 			raise Exception(u"Failed to extract package source from '%s': %s" % (self.packageFile, e))
 		

@@ -478,7 +478,7 @@ class PackageControlFile(TextFile):
 				self._sections[sectionType][-1][option] = value
 			else:
 				if type(self._sections[sectionType][-1][option]) is unicode:
-					self._sections[sectionType][-1][option] += u'\n%s' % value
+					self._sections[sectionType][-1][option] += value
 		
 		for (sectionType, secs) in self._sections.items():
 			if (sectionType == 'changelog'):
