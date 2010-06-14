@@ -816,7 +816,7 @@ class PackageControlFile(TextFile):
 						self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
 			self._lines.append( u'' )
 		
-		if self._product.getChangelog():
+		if not opsi3compatible and self._product.getChangelog():
 			self._lines.append( u'[Changelog]' )
 			self._lines.extend( self._product.getChangelog().split('\n') )
 			self._lines.append( u'' )
