@@ -273,9 +273,14 @@ def adjustPrivilege(priv, enable = 1):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                             REGISTRY                                              -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def getRegistryValue(key, subKey, valueName):
+def getRegistryValue(key, subKey, valueName, reflection=True):
 	hkey = _winreg.OpenKey(key, subKey)
+	if not reflection and (2**63-1 == sys.maxint):
+		_winreg.DisableReflectionKey(hkey)
 	(value, type) = _winreg.QueryValueEx(hkey, valueName)
+	if (2**63-1 == sys.maxint) and not reflection:
+		if _winreg.QueryReflectionKey(hkey):
+			_winreg.EnableReflectionKey(hkey)
 	return value
 
 def setRegistryValue(key, subKey, valueName, value):
