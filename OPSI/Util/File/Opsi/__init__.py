@@ -478,7 +478,9 @@ class PackageControlFile(TextFile):
 				self._sections[sectionType][-1][option] = value
 			else:
 				if type(self._sections[sectionType][-1][option]) is unicode:
-					self._sections[sectionType][-1][option] += value
+					if not self._sections[sectionType][-1][option].endswith('\n'):
+						self._sections[sectionType][-1][option] += u'\n'
+					self._sections[sectionType][-1][option] += value.lstrip()
 		
 		for (sectionType, secs) in self._sections.items():
 			if (sectionType == 'changelog'):
@@ -730,11 +732,12 @@ class PackageControlFile(TextFile):
 		self._lines.append( u'id: %s'   % self._product.getId() )
 		self._lines.append( u'name: %s' % self._product.getName() )
 		self._lines.append( u'description: ' )
-		descLines = self._product.getDescription().split(u'\\n')
+		descLines = self._product.getDescription().split(u'\n')
 		if (len(descLines) > 0):
 			self._lines[-1] += descLines[0]
 			if (len(descLines) > 1):
-				self._lines.extend( descLines )
+				for l in descLines[1:]:
+					self._lines.append( u' %s' % l )
 		self._lines.append( u'advice: %s'          % self._product.getAdvice() )
 		self._lines.append( u'version: %s'         % self._product.getProductVersion() )
 		self._lines.append( u'priority: %s'        % self._product.getPriority() )
@@ -794,11 +797,12 @@ class PackageControlFile(TextFile):
 				self._lines.append( u'editable: %s' % productProperty.getEditable() )
 			if productProperty.getDescription():
 				self._lines.append( u'description: ' )
-				descLines = productProperty.getDescription().split(u'\\n')
+				descLines = productProperty.getDescription().split(u'\n')
 				if (len(descLines) > 0):
 					self._lines[-1] += descLines[0]
 					if (len(descLines) > 1):
-						self._lines.extend( descLines )
+						for l in descLines[1:]:
+							self._lines.append( u' %s' % l )
 			if opsi3compatible:
 				self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
 				self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
