@@ -1622,7 +1622,7 @@ class LDAPObject:
 				if type(v) is bool:
 					if v: v = 'TRUE'
 					else: v = 'FALSE'
-				if (v == u''):
+				if (forceUnicode(v) == u''):
 					v = u' '
 				ldapValue.append(forceUnicode(v).encode('utf-8'))
 		logger.debug(u"Setting attribute '%s' to '%s'" % (attribute, value))
