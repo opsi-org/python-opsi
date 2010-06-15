@@ -1400,10 +1400,10 @@ class Harddisk:
 		self.writePartitionTable()
 		self.readPartitionTable()
 	
-	def mountPartition(self, partition, mountpoint):
+	def mountPartition(self, partition, mountpoint, **options):
 		partition = forceInt(partition)
 		mountpoint = forceFilename(mountpoint)
-		mount(self.getPartition(partition)['device'], mountpoint)
+		mount(self.getPartition(partition)['device'], mountpoint, **options)
 	
 	def umountPartition(self, partition):
 		partition = forceInt(partition)
