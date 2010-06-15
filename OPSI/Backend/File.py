@@ -296,14 +296,14 @@ class FileBackend(ConfigDataBackend):
 		self._setRights(filename)
 		
 	def __escape(self, string):
-		logger.debug2(u"Escaping string: '%s'" % (string))
 		string = forceUnicode(string)
+		logger.debug2(u"Escaping string: '%s'" % (string))
 		string = string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
 		return string
 	
 	def __unescape(self, string):
-		logger.debug2(u"Unescaping string: '%s'" % (string))
 		string = forceUnicode(string)
+		logger.debug2(u"Unescaping string: '%s'" % (string))
 		string = string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
 		return string
 	
