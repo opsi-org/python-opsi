@@ -804,33 +804,6 @@ class ConfigDataBackend(Backend):
 			productOnClient.productVersion = None
 			productOnClient.packageVersion = None
 		
-		#if productOnClient.actionRequest not in ('none', None) or productOnClient.installationStatus not in ('not_installed', None):
-		#	products = self._context.product_getObjects(
-		#		id = productOnClient.productId,
-		#		productVersion = productOnClient.productVersion,
-		#		packageVersion = productOnClient.packageVersion)
-		#	if not products:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion))
-		#	if   (productOnClient.actionRequest == 'setup') and not products[0].setupScript:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		#	elif (productOnClient.actionRequest == 'uninstall') and not products[0].uninstallScript:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		#	elif (productOnClient.actionRequest == 'update') and not products[0].updateScript:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		#	elif (productOnClient.actionRequest == 'once') and not products[0].onceScript:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		#	elif (productOnClient.actionRequest == 'always') and not products[0].alwaysScript:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-		#	elif (productOnClient.actionRequest == 'custom') and not products[0].customScript:
-		#		raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' does not define a script for action '%s'" \
-		#			% (productOnClient.productId, productOnClient.productVersion, productOnClient.packageVersion, productOnClient.actionRequest))
-			
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		
@@ -2478,17 +2451,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			nextProductOnClient = productOnClient.clone()
 		
 		if nextProductOnClient.installationStatus:
-			if not nextProductOnClient.actionResult:
-				nextProductOnClient.setActionResult('none')
-			if not nextProductOnClient.actionProgress:
-				nextProductOnClient.setActionProgress(u'')
+			#if not nextProductOnClient.actionResult:
+			#	nextProductOnClient.setActionResult('none')
+			#if not nextProductOnClient.actionProgress:
+			#	nextProductOnClient.setActionProgress(u'')
 			if (nextProductOnClient.installationStatus == 'installed'):
 				# TODO: Check if product exists?
 				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
 					clientToDepots = self.configState_getClientToDepotserver(clientIds = [nextProductOnClient.clientId])
 					if not clientToDepots:
 						raise BackendError(u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and depot for client not found" \
-									% (productOnClient.productId, nextProductOnClient.clientId))
+									% (nextProductOnClient.productId, nextProductOnClient.clientId))
 					
 					productOnDepots = self._backend.productOnDepot_getObjects(
 										depotId   = clientToDepots[0]['depotId'],
@@ -2502,21 +2475,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				nextProductOnClient.productVersion = None
 				nextProductOnClient.packageVersion = None
 			
-		if productOnClient.actionRequest:
-			# An action request is about to change
-			if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
-				nextProductOnClient.setLastAction(productOnClient.actionRequest)
-			if not productOnClient.targetConfiguration:
-				if   (productOnClient.actionRequest == 'setup'):
-					nextProductOnClient.setTargetConfiguration('installed')
-				elif (productOnClient.actionRequest == 'always'):
-					nextProductOnClient.setTargetConfiguration('always')
-				elif (productOnClient.actionRequest == 'uninstall'):
-					nextProductOnClient.setTargetConfiguration('undefined')
-			if not productOnClient.actionResult:
-				nextProductOnClient.setActionResult('none')
-			if not productOnClient.actionProgress:
-				nextProductOnClient.setActionProgress(u'')
+		#if productOnClient.actionRequest:
+		#	# An action request is about to change
+		#	if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
+		#		nextProductOnClient.setLastAction(productOnClient.actionRequest)
+		#	if not productOnClient.targetConfiguration:
+		#		if   (productOnClient.actionRequest == 'setup'):
+		#			nextProductOnClient.setTargetConfiguration('installed')
+		#		elif (productOnClient.actionRequest == 'always'):
+		#			nextProductOnClient.setTargetConfiguration('always')
+		#		elif (productOnClient.actionRequest == 'uninstall'):
+		#			nextProductOnClient.setTargetConfiguration('undefined')
+		#	if not productOnClient.actionResult:
+		#		nextProductOnClient.setActionResult('none')
+		#	if not productOnClient.actionProgress:
+		#		nextProductOnClient.setActionProgress(u'')
 		
 		nextProductOnClient.setModificationTime(timestamp())
 		
