@@ -185,7 +185,9 @@ class LDAPBackend(ConfigDataBackend):
 						{ 'opsiAttribute': 'repositoryRemoteUrl', 'ldapAttribute': 'opsiRepositoryRemoteUrl' },
 						{ 'opsiAttribute': 'networkAddress',      'ldapAttribute': 'opsiNetworkAddress' },
 						{ 'opsiAttribute': 'maxBandwidth',        'ldapAttribute': 'opsiMaximumBandwidth' },
-						{ 'opsiAttribute': 'opsiHostKey',         'ldapAttribute': 'opsiHostKey' }
+						{ 'opsiAttribute': 'opsiHostKey',         'ldapAttribute': 'opsiHostKey' },
+						{ 'opsiAttribute': 'isMasterDepot',       'ldapAttribute': 'opsiIsMasterDepot' },
+						{ 'opsiAttribute': 'masterDepotId',       'ldapAttribute': 'opsiMasterDepotId' }
 					]
 				},
 				{

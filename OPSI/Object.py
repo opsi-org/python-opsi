@@ -455,7 +455,8 @@ class OpsiDepotserver(Host):
 	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None):
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
+		     isMasterDepot=None, masterDepotId=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
@@ -464,6 +465,8 @@ class OpsiDepotserver(Host):
 		self.repositoryRemoteUrl = None
 		self.networkAddress = None
 		self.maxBandwidth = None
+		self.isMasterDepot = None
+		self.masterDepotId = None
 		if not opsiHostKey is None:
 			self.setOpsiHostKey(opsiHostKey)
 		if not depotLocalUrl is None:
@@ -478,12 +481,18 @@ class OpsiDepotserver(Host):
 			self.setNetworkAddress(networkAddress)
 		if not maxBandwidth is None:
 			self.setMaxBandwidth(maxBandwidth)
+		if not isMasterDepot is None:
+			self.setIsMasterDepot(isMasterDepot)
+		if not masterDepotId is None:
+			self.setMasterDepotId(masterDepotId)
 		
 	def setDefaults(self):
 		Host.setDefaults(self)
 		if self.opsiHostKey is None:
 			self.setOpsiHostKey(generateOpsiHostKey())
-	
+		if self.isMasterDepot is None:
+			self.setIsMasterDepot(False)
+		
 	def getOpsiHostKey(self):
 		return self.opsiHostKey
 	
@@ -526,6 +535,18 @@ class OpsiDepotserver(Host):
 	def setMaxBandwidth(self, maxBandwidth):
 		self.maxBandwidth = forceInt(maxBandwidth)
 	
+	def setIsMasterDepot(self, isMasterDepot):
+		self.isMasterDepot = forceBool(isMasterDepot)
+	
+	def getIsMasterDepot(self):
+		return self.isMasterDepot
+	
+	def setMasterDepotId(self, masterDepotId)
+		self.masterDepotId = forceHostId(masterDepotId)
+	
+	def getMasterDepotId(self)
+		return self.masterDepotId
+	
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'OpsiDepotserver'
@@ -546,11 +567,14 @@ class OpsiConfigserver(OpsiDepotserver):
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None):
+		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
+		     isMasterDepot=None, masterDepotId=None):):
 		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
-		     description, notes, hardwareAddress, ipAddress, inventoryNumber, networkAddress, maxBandwidth)
+		     description, notes, hardwareAddress, ipAddress, inventoryNumber, networkAddress, maxBandwidth, isMasterDepot, masterDepotId)
 	
 	def setDefaults(self):
+		if self.isMasterDepot is None:
+			self.setIsMasterDepot(True)
 		OpsiDepotserver.setDefaults(self)
 	
 	@staticmethod
