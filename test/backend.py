@@ -1108,6 +1108,8 @@ class BackendTest(object):
 		# Hosts
 		logger.notice(u"Testing host methods")
 		
+		for host in self.hosts:
+			host.setDefaults()
 		self.backend.host_createObjects( self.hosts )
 		
 		hosts = self.backend.host_getObjects()
@@ -1205,6 +1207,8 @@ class BackendTest(object):
 		# Configs
 		logger.notice(u"Testing config methods")
 		
+		for config in self.configs:
+			config.setDefaults()
 		self.backend.config_createObjects( self.configs )
 		
 		configs = self.backend.config_getObjects()
@@ -1301,6 +1305,9 @@ class BackendTest(object):
 		
 		# Products
 		logger.notice(u"Testing product methods")
+		
+		for product in self.products:
+			product.setDefaults()
 		
 		self.backend.product_createObjects( self.products )
 		
