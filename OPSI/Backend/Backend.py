@@ -1676,7 +1676,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if id is None: id = []
 		return self._backend.host_deleteObjects(
 				self._backend.host_getObjects(
-					id = forceHostIdList(id)))
+					id = id))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -1726,7 +1726,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if id is None: id = []
 		return self._backend.config_deleteObjects(
 				self.config_getObjects(
-					id = forceUnicodeLowerList(id)))
+					id = id))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -1842,8 +1842,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if objectId is None: objectId = []
 		return self._backend.configState_deleteObjects(
 				self._backend.configState_getObjects(
-					configId = forceUnicodeLowerList(configId),
-					objectId = forceObjectIdList(objectId)))
+					configId = configId,
+					objectId = fobjectId))
 	
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[]):
 		addConfigStateDefaults = self._options['addConfigStateDefaults']
@@ -1930,9 +1930,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if packageVersion is None: packageVersion = []
 		return self._backend.product_deleteObjects(
 				self._backend.product_getObjects(
-					productId      = forceProductIdList(productId),
-					productVersion = forceProductVersionList(productVersion),
-					packageVersion = forcePackageVersionList(packageVersion)))
+					productId      = productId,
+					productVersion = productVersion,
+					packageVersion = packageVersion))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -2049,10 +2049,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if propertyId is None:     propertyId     = []
 		return self._backend.productOnDepot_deleteObjects(
 				self._backend.productOnDepot_getObjects(
-					productId      = forceProductIdList(productId),
-					productVersion = forceProductVersionList(productVersion),
-					packageVersion = forcePackageVersionList(packageVersion),
-					propertyIds    = forceUnicodeLowerList(propertyId)))
+					productId      = productId,
+					productVersion = productVersion,
+					packageVersion = packageVersion,
+					propertyIds    = propertyId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies                                                                       -
@@ -2113,11 +2113,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if requiredProductId is None: requiredProductId = []
 		return self._backend.productDependency_deleteObjects(
 				self._backend.productDependency_getObjects(
-					productId         = forceProductIdList(productId),
-					productVersion    = forceProductVersionList(productVersion),
-					packageVersion    = forcePackageVersionList(packageVersion),
-					productAction     = forceActionRequestList(productAction),
-					requiredProductId = forceProductIdList(requiredProductId)))
+					productId         = productId,
+					productVersion    = productVersion,
+					packageVersion    = packageVersion,
+					productAction     = productAction,
+					requiredProductId = requiredProductId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots                                                                           -
@@ -2217,10 +2217,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if depotId is None:        depotId        = []
 		return self._backend.productOnDepot_deleteObjects(
 				self._backend.productOnDepot_getObjects(
-					productId = forceProductIdList(productId),
-					productVersion = forceProductVersionList(productVersion),
-					packageVersion = forcePackageVersionList(packageVersion),
-					depotId = forceHostIdList(depotId)))
+					productId      = productId,
+					productVersion = productVersion,
+					packageVersion = packageVersion,
+					depotId        = depotId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
@@ -2560,8 +2560,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if clientId is None:   clientId   = []
 		return self._backend.productOnClient_deleteObjects(
 				self._backend.productOnClient_getObjects(
-					productId = forceProductIdList(productId),
-					clientId = forceHostIdList(clientId)))
+					productId = productId,
+					clientId  = clientId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
@@ -2666,9 +2666,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if objectId is None:   objectId   = []
 		return self._backend.productPropertyState_deleteObjects(
 				self._backend.productPropertyState_getObjects(
-					productId  = forceProductIdList(productId),
-					propertyId = forceUnicodeLowerList(propertyId),
-					objectId   = forceObjectIdList(objectId)))
+					productId  = productId,
+					propertyId = propertyId,
+					objectId   = objectId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups                                                                                    -
@@ -2709,7 +2709,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if id is None: id = []
 		return self._backend.group_deleteObjects(
 				self._backend.group_getObjects(
-					id = forceGroupIdList(id)))
+					id = id))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -2764,9 +2764,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if not objectId:  objectId = []
 		return self._backend.objectToGroup_deleteObjects(
 				self._backend.objectToGroup_getObjects(
-					groupType = forceGroupTypeList(groupType),
-					groupId   = forceGroupIdList(groupId),
-					objectId  = forceObjectIdList(objectId)))
+					groupType = groupType,
+					groupId   = groupId,
+					objectId  = objectId))
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2808,7 +2808,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if id is None: id = []
 		return self._backend.licenseContract_deleteObjects(
 				self._backend.licenseContract_getObjects(
-					id = forceLicenseContractIdList(id)))
+					id = id))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenses                                                                          -
@@ -2864,7 +2864,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if id is None: id = []
 		return self._backend.softwareLicense_deleteObjects(
 				self._backend.softwareLicense_getObjects(
-					id = forceSoftwareLicenseIdList(id)))
+					id = id))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePool                                                                               -
@@ -2905,7 +2905,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if id is None: id = []
 		return self._backend.licensePool_deleteObjects(
 				self._backend.licensePool_getObjects(
-					id = forceLicensePoolIdList(id)))
+					id = id))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools                                                             -
@@ -2955,8 +2955,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if not licensePoolId:     licensePoolId = []
 		return self._backend.softwareLicenseToLicensePool_deleteObjects(
 				self._backend.softwareLicenseToLicensePool_getObjects(
-					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
-					licensePoolId     = forceLicensePoolIdList(licensePoolId)))
+					softwareLicenseId = softwareLicenseId,
+					licensePoolId     = licensePoolId))
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients                                                                          -
@@ -3010,9 +3010,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if clientId is None:          clientId = []
 		return self._backend.licenseOnClient_deleteObjects(
 				self._backend.licenseOnClient_getObjects(
-					softwareLicenseId = forceSoftwareLicenseIdList(softwareLicenseId),
-					licensePoolId     = forceLicensePoolIdList(licensePoolId),
-					clientId          = forceHostIdList(clientId)))
+					softwareLicenseId = softwareLicenseId,
+					licensePoolId     = licensePoolId,
+					clientId          = clientId))
 	
 	def licenseOnClient_getOrCreateObject(self, clientId, licensePoolId = None, productId = None, windowsSoftwareId = None):
 		clientId = forceHostId(clientId)
@@ -3192,11 +3192,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if architecture is None: architecture = []
 		return self._backend.auditSoftware_deleteObjects(
 				self._backend.auditSoftware_getObjects(
-					name           = forceUnicodeList(name),
-					version        = forceUnicodeLowerList(version),
-					subVersion     = forceUnicodeLowerList(subVersion),
-					language       = forceLanguageCodeList(language),
-					architecture   = forceArchitectureList(architecture)))
+					name           = name,
+					version        = version,
+					subVersion     = subVersion,
+					language       = language,
+					architecture   = architecture))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareToLicensePools                                                               -
@@ -3259,12 +3259,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if licensePoolId is None: licensePoolId  = []
 		return self._backend.auditSoftwareToLicensePool_deleteObjects(
 				self._backend.auditSoftwareToLicensePool_getObjects(
-					name           = forceUnicodeList(name),
-					version        = forceUnicodeLowerList(version),
-					subVersion     = forceUnicodeLowerList(subVersion),
-					language       = forceLanguageCodeList(language),
-					architecture   = forceArchitectureList(architecture),
-					licensePoolId  = forceLicensePoolIdList(licensePoolId)))
+					name           = name,
+					version        = version,
+					subVersion     = subVersion,
+					language       = language,
+					architecture   = architecture,
+					licensePoolId  = licensePoolId))
 		
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3332,12 +3332,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if clientId is None:     clientId = []
 		return self._backend.auditSoftwareOnClient_deleteObjects(
 				self._backend.auditSoftwareOnClient_getObjects(
-					name           = forceUnicodeList(name),
-					version        = forceUnicodeLowerList(version),
-					subVersion     = forceUnicodeLowerList(subVersion),
-					language       = forceLanguageCodeList(language),
-					architecture   = forceArchitectureList(architecture),
-					clientId       = forceHostIdList(clientId)))
+					name           = name,
+					version        = version,
+					subVersion     = subVersion,
+					language       = language,
+					architecture   = architecture,
+					clientId       = clientId))
 	
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

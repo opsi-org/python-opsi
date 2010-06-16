@@ -397,43 +397,47 @@ def objectToBash(obj, bashVars = {}, level=0):
 	return bashVars
 
 def objectToHtml(obj, level=0):
-	# TODO: optimize for speed!
 	if (level == 0):
 		obj = serialize(obj)
 	
-	hspace = level*10
 	html = u''
 	if type(obj) is types.ListType:
-		html += u'&nbsp;'*hspace + u'[ <br />\n'
-		for i in range( len(obj) ):
-			if not type(obj[i]) in (types.DictType, types.ListType):
-				html += u'&nbsp;'*hspace
-			html += objectToHtml(obj[i], level+1)
-			
-			if (i < len(obj)-1):
-				html += u',<br />\n'
-		html += u'<br />\n' + u'&nbsp;'*hspace + u']'
+		html += u'['
+		if (len(obj) > 0):
+			html += u'<div style="padding-left: 3em;">'
+			for i in range( len(obj) ):
+				html += objectToHtml(obj[i], level+1)
+				if (i < len(obj)-1):
+					html += u',<br />\n'
+			html += u'</div>'
+		html += u']'
 	elif type(obj) is types.DictType:
-		html += u'&nbsp;'*hspace + u'{ <br />\n'
-		i = 0
-		for (key, value) in obj.items():
-			html += u'&nbsp;'*hspace + u'"<font class="json_key">%s</font>": ' % key
-			if type(value) in (types.DictType, types.ListType):
-				html += u'<br />\n'
-			html += objectToHtml(value, level+1)
-			
-			if (i < len(obj)-1):
-				html += u',<br />\n'
-			i+=1
-		html += u'<br />\n' + u'&nbsp;'*hspace + u'}'
-	elif type(obj) in (str, unicode):
-		html += u'"' + forceUnicode(obj).replace(u'\r', u'').replace(u'\t', u'     ').replace(u' ', u'&nbsp;').replace(u'<', u'&lt;').replace(u'>', u'&gt;').replace(u'\n', u'<br />\n' + u'&nbsp;'*hspace) + u'"'
+		html += u'{'
+		if (len(obj) > 0):
+			html += u'<div style="padding-left: 3em;">'
+			i = 0
+			for (key, value) in obj.items():
+				html += u'"<font class="json_key">%s</font>": ' % key
+				html += objectToHtml(value, level+1)
+				if (i < len(obj)-1):
+					html += u',<br />\n'
+				i+=1
+			html += u'</div>'
+		html += u'}'
 	else:
-		html += toJson(obj).replace(u'<', u'&lt;').replace(u'>', u'&gt;')
+		isStr = type(obj) in (str, unicode)
+		if isStr:
+			html += u'"'
+		html += forceUnicode(obj)\
+			.replace(u'\r', u'')\
+			.replace(u'\t', u'   ')\
+			.replace(u' ',  u'&#x202f;')\
+			.replace(u'<',  u'&lt;')\
+			.replace(u'>',  u'&gt;')\
+			.replace(u'\n', u'<br />\n')
+		if isStr:
+			html += u'"'
 	return html
-
-
-
 
 def compareVersions(v1, condition, v2):
 	v1 = forceUnicode(v1)
@@ -685,6 +689,35 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		files.append(pp)
 	return files
 	
+	
+if (__name__ == "__main__"):
+	logger.setConsoleLevel(LOG_DEBUG2)
+	logger.setConsoleColor(True)
+	from OPSI.Object import *
+	obj = []
+	for i in range(1000):
+		obj.append(
+			LocalbootProduct(
+				id = 'product%d' % i,
+				productVersion = random.choice(('1.0', '2', 'xxx', '3.1', '4')),
+				packageVersion = random.choice(('1', '2', 'y', '3', '10', 11, 22)),
+				name = 'Product %d' % i,
+				licenseRequired = random.choice((None, True, False)),
+				setupScript = random.choice(('setup.ins', None)),
+				uninstallScript = random.choice(('uninstall.ins', None)),
+				updateScript = random.choice(('update.ins', None)),
+				alwaysScript = random.choice(('always.ins', None)),
+				onceScript = random.choice(('once.ins', None)),
+				priority = random.choice((-100, -90, -30, 0, 30, 40, 60, 99)),
+				description = random.choice(('Test product %d' % i, 'Some product', '--------', '', None)),
+				advice = random.choice(('Nothing', 'Be careful', '--------', '', None)),
+				changelog = None,
+				windowsSoftwareIds = None
+			)
+		)
+	start = time.time()
+	print objectToHtml(obj, level=0)
+	print time.time() - start
 	
 	
 	
