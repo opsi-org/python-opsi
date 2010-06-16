@@ -541,10 +541,10 @@ class OpsiDepotserver(Host):
 	def getIsMasterDepot(self):
 		return self.isMasterDepot
 	
-	def setMasterDepotId(self, masterDepotId)
+	def setMasterDepotId(self, masterDepotId):
 		self.masterDepotId = forceHostId(masterDepotId)
 	
-	def getMasterDepotId(self)
+	def getMasterDepotId(self):
 		return self.masterDepotId
 	
 	@staticmethod
