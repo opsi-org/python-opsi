@@ -568,7 +568,7 @@ class OpsiConfigserver(OpsiDepotserver):
 	
 	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
-		     isMasterDepot=None, masterDepotId=None):):
+		     isMasterDepot=None, masterDepotId=None):
 		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
 		     description, notes, hardwareAddress, ipAddress, inventoryNumber, networkAddress, maxBandwidth, isMasterDepot, masterDepotId)
 	
