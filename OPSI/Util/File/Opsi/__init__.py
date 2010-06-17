@@ -335,7 +335,7 @@ class PackageControlFile(TextFile):
 	valueContinuationRegex = re.compile('^\s(.*)$')
 	optionRegex = re.compile('^([^\:]+)\s*\:\s*(.*)$')
 	
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename, lockFailTimeout = 2000, opsi3compatible = False):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
 		self._sections = {}
@@ -344,6 +344,7 @@ class PackageControlFile(TextFile):
 		self._productProperties = []
 		self._packageDependencies = []
 		self._incrementalPackage = False
+		self._opsi3compatible = forceBool(opsi3compatible)
 		
 	def parse(self, lines=None):
 		if lines:
@@ -493,6 +494,8 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows'         and option == 'softwareids'):
 						try:
+							if self._opsi3compatible:
+								raise Exception(u"Not allowed in opsi3 compatible control files")
 					   		value = fromJson(value.strip())
 					   	except Exception, e:
 					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
@@ -502,10 +505,11 @@ class PackageControlFile(TextFile):
 							newV = []
 							for v in value:
 								v = v.strip()
-								try:
-									v = fromJson(v)
-								except Exception, e:
-									logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
+								if not self._opsi3compatible:
+									try:
+										v = fromJson(v)
+									except Exception, e:
+										logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
 								newV.append(v)
 							value = newV
 						
@@ -699,10 +703,9 @@ class PackageControlFile(TextFile):
 	def setIncrementalPackage(self, incremental):
 		self._incrementalPackage = forceBool(incremental)
 	
-	def generate(self, opsi3compatible = False):
+	def generate(self):
 		if not self._product:
 			raise Exception(u"Got no data to write")
-		opsi3compatible = forceBool(opsi3compatible)
 		
 		logger.info(u"Writing opsi package control file '%s'" % self._filename)
 		
@@ -749,7 +752,7 @@ class PackageControlFile(TextFile):
 		self._lines.append( u'updateScript: %s'    % self._product.getUpdateScript() )
 		self._lines.append( u'alwaysScript: %s'    % self._product.getAlwaysScript() )
 		self._lines.append( u'onceScript: %s'      % self._product.getOnceScript() )
-		if not opsi3compatible:
+		if not self._opsi3compatible:
 			self._lines.append( u'customScript: %s'    % self._product.getCustomScript() )
 			if isinstance(self._product, LocalbootProduct):
 				self._lines.append( u'userLoginScript: %s'   % self._product.getUserLoginScript() )
@@ -772,9 +775,9 @@ class PackageControlFile(TextFile):
 				self._lines.append( u'requiredProduct: %s' % dependency.getRequiredProductId() )
 			#if dependency.requiredProductClassId:
 			#	self._lines.append( u'requiredClass: %s'   % dependency.requiredProductClassId )
-			if not opsi3compatible and dependency.getRequiredProductVersion():
+			if not self._opsi3compatible and dependency.getRequiredProductVersion():
 				self._lines.append( u'requiredProductVersion: %s' % dependency.getRequiredProductVersion() )
-			if not opsi3compatible and dependency.getRequiredPackageVersion():
+			if not self._opsi3compatible and dependency.getRequiredPackageVersion():
 				self._lines.append( u'requiredPackageVersion: %s' % dependency.getRequiredPackageVersion() )
 			if dependency.getRequiredAction():
 				self._lines.append( u'requiredAction: %s'  % dependency.getRequiredAction() )
@@ -789,10 +792,10 @@ class PackageControlFile(TextFile):
 			productPropertyType = 'unicode'
 			if isinstance(productProperty, BoolProductProperty):
 				productPropertyType = 'bool'
-			if not opsi3compatible:
+			if not self._opsi3compatible:
 				self._lines.append( u'type: %s' % productPropertyType )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
-			if not opsi3compatible and not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+			if not self._opsi3compatible and not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 				self._lines.append( u'multivalue: %s' % productProperty.getMultiValue() )
 				self._lines.append( u'editable: %s' % productProperty.getEditable() )
 			if productProperty.getDescription():
@@ -803,7 +806,7 @@ class PackageControlFile(TextFile):
 					if (len(descLines) > 1):
 						for l in descLines[1:]:
 							self._lines.append( u' %s' % l )
-			if opsi3compatible:
+			if self._opsi3compatible:
 				self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
 				self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
 			else:
@@ -816,7 +819,7 @@ class PackageControlFile(TextFile):
 						self._lines.append( u'default: %s' % toJson(productProperty.getDefaultValues()) )
 			self._lines.append( u'' )
 		
-		if not opsi3compatible and self._product.getChangelog():
+		if not self._opsi3compatible and self._product.getChangelog():
 			self._lines.append( u'[Changelog]' )
 			self._lines.extend( self._product.getChangelog().split('\n') )
 			self._lines.append( u'' )

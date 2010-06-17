@@ -359,7 +359,19 @@ class JSONRPCBackend(Backend):
 			
 			if response.get('error'):
 				# Error occurred
-				raise Exception(u'Error on server: %s' % response.get('error'))
+				error = response.get('error')
+				if type(error) is dict and error.get('message'):
+					message = error.get('message')
+					exceptionClass = Exception
+					try:
+						exceptionClass = eval(error.get('class', 'Exception'))
+						index = message.find(':')
+						if (index != -1) and (len(message) > index):
+							message = message[index+1:].lstrip()
+					except:
+						pass
+					raise exceptionClass(u'%s (error on server)' % message)
+				raise Exception(u'%s (error on server)' % error)
 			
 			# Return result python object
 			result = deserialize(response.get('result'))

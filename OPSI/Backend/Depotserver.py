@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import socket, shutil
@@ -50,28 +50,17 @@ from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDelt
 logger = Logger()
 
 
-# ======================================================================================================
-# =                                  CLASS DEPOTSERVERBACKEND                                          =
-# ======================================================================================================
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                   CLASS DEPOTSERVERBACKEND                                         =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
-		#if not (backend.__class__.__name__ == 'ExtendedConfigDataBackend') and not (backend.__class__.__name__ == 'BackendDispatcher'):
-		#	raise Exception(u"DepotserverBackend needs instance of ExtendedConfigDataBackend or BackendDispatcher as backend, got %s" % backend.__class__.__name__)
 		self._name = 'depotserver'
 		
 		ExtendedBackend.__init__(self, backend)
 		
 		self._packageLog           = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile  = u'/etc/ssh/ssh_host_rsa_key.pub'
-		
-		## Parse arguments
-		#for (option, value) in kwargs.items():
-		#	option = option.lower()
-		#	#if option in ('port',):
-		#	#	self._port = value
-		#
-		#if (self._maxConnections < 1):
-		#	self._maxConnections = 1
 		
 		self._depotId = forceHostId(socket.getfqdn())
 		if not self._context.host_getIdents(id = self._depotId):
@@ -127,7 +116,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                   CLASS DEPOTSERVERBACKEND                                         =
+=                               CLASS DEPOTSERVERPACKAGEMANAGER                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DepotserverPackageManager(object):
 	def __init__(self, depotBackend):
@@ -151,6 +140,8 @@ class DepotserverPackageManager(object):
 			
 			if not os.path.isfile(filename):
 				raise BackendIOError(u"Package file '%s' not found" % filename)
+			if not os.access(filename, os.R_OK):
+				raise BackendIOError(u"Read access denied for package file '%s'" % filename)
 			
 			depots = self._depotBackend._context.host_getObjects(id = depotId)
 			if not depots:
