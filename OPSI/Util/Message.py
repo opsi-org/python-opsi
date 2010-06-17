@@ -38,7 +38,7 @@ __version__ = '3.5'
 import threading
 from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 
 from sys import version_info
 if (version_info >= (2,6)):
@@ -591,7 +591,9 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	
 	def stop(self, stopReactor=True):
 		if self._server:
-			self._server.stopListening()
+			result = self._server.stopListening()
+			if isinstance(result, defer.Deferred):
+				defer.waitForDeferred(result)
 		if stopReactor and reactor and reactor.running:
 			try:
 				reactor.stop()
