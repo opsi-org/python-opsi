@@ -557,6 +557,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		self._factory = NotificationServerFactory()
 		self._factory.setSubjects(subjects)
 		self._server = None
+		self._listening = False
 		
 	def getFactory(self):
 		return self._factory
@@ -586,14 +587,26 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			
 			if not reactor.running:
 				reactor.run(installSignalHandlers=0)
+			self._listening = True
 		except Exception, e:
 			logger.logException(e)
 	
+	def _stopListeningCompleted(self, result):
+		self._listening = False
+	
 	def stop(self, stopReactor=True):
 		if self._server:
+			self._server.loseConnection()
 			result = self._server.stopListening()
 			if isinstance(result, defer.Deferred):
-				defer.waitForDeferred(result)
+				result.addCallback(self._stopListeningCompleted)
+				timeout = 3.0
+				while self._listening and (timeout > 0):
+					time.sleep(0.1)
+					timeout -= 0.1
+				if (timeout == 0):
+					logger.warning(u"Timed out while waiting for stop listening")
+			self._listening = False
 		if stopReactor and reactor and reactor.running:
 			try:
 				reactor.stop()

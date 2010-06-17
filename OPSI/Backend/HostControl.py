@@ -228,9 +228,9 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = forceHostIdList(hostIds)
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
 		
-	def hostControl_showPopup(self, hostIds=[], message):
-		hostIds = forceHostIdList(hostIds)
+	def hostControl_showPopup(self, message, hostIds=[]):
 		message = forceUnicode(message)
+		hostIds = forceHostIdList(hostIds)
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
 		
 	
