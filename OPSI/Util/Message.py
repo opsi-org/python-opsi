@@ -596,7 +596,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	
 	def stop(self, stopReactor=True):
 		if self._server:
-			self._server.loseConnection()
+			#self._server.loseConnection()
 			result = self._server.stopListening()
 			if isinstance(result, defer.Deferred):
 				result.addCallback(self._stopListeningCompleted)
