@@ -231,7 +231,7 @@ class HostControlBackend(ExtendedBackend):
 	def hostControl_showPopup(self, hostIds=[], message):
 		hostIds = forceHostIdList(hostIds)
 		message = forceUnicode(message)
-		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ event ])
+		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
 		
 	
 	
