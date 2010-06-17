@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '3.5'
 
 import os, socket, ConfigParser, shutil, types
 
@@ -99,42 +99,40 @@ class FileBackend(ConfigDataBackend):
 		
 		self._mappings = {
 			'Config': [
-				{ 'fileType': 'ini', 'attribute': 'type',           'section': '<id>', 'option': 'type',           'json': False },
-				{ 'fileType': 'ini', 'attribute': 'description',    'section': '<id>', 'option': 'description',    'json': False },
-				{ 'fileType': 'ini', 'attribute': 'editable',       'section': '<id>', 'option': 'editable' ,      'json': True  },
-				{ 'fileType': 'ini', 'attribute': 'multiValue',     'section': '<id>', 'option': 'multivalue' ,    'json': True  },
-				{ 'fileType': 'ini', 'attribute': 'possibleValues', 'section': '<id>', 'option': 'possiblevalues', 'json': True  },
-				{ 'fileType': 'ini', 'attribute': 'defaultValues',  'section': '<id>', 'option': 'defaultvalues',  'json': True  }
+				{ 'fileType': 'ini', 'attribute': 'type'           , 'section': '<id>', 'option': 'type',           'json': False     },
+				{ 'fileType': 'ini', 'attribute': 'description'    , 'section': '<id>', 'option': 'description',    'json': False     },
+				{ 'fileType': 'ini', 'attribute': 'editable'       , 'section': '<id>', 'option': 'editable' ,      'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'multiValue'     , 'section': '<id>', 'option': 'multivalue' ,    'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'possibleValues' , 'section': '<id>', 'option': 'possiblevalues', 'json': True      },
+				{ 'fileType': 'ini', 'attribute': 'defaultValues'  , 'section': '<id>', 'option': 'defaultvalues' , 'json': True      }
 			],
 			'OpsiClient': [
 				{ 'fileType': 'key', 'attribute': 'opsiHostKey' },
-				{ 'fileType': 'ini', 'attribute': 'oneTimePassword', 'section': 'info', 'option': 'onetimepassword', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'description',     'section': 'info', 'option': 'description',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'notes',           'section': 'info', 'option': 'notes',           'json': False },
-				{ 'fileType': 'ini', 'attribute': 'hardwareAddress', 'section': 'info', 'option': 'hardwareaddress', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'ipAddress',       'section': 'info', 'option': 'ipaddress',       'json': False },
-				{ 'fileType': 'ini', 'attribute': 'inventoryNumber', 'section': 'info', 'option': 'inventorynumber', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'created',         'section': 'info', 'option': 'created',         'json': False },
-				{ 'fileType': 'ini', 'attribute': 'lastSeen',        'section': 'info', 'option': 'lastseen',        'json': False }
+				{ 'fileType': 'ini', 'attribute': 'oneTimePassword', 'section': 'info', 'option': 'onetimepassword' },
+				{ 'fileType': 'ini', 'attribute': 'description',     'section': 'info', 'option': 'description'     },
+				{ 'fileType': 'ini', 'attribute': 'notes',           'section': 'info', 'option': 'notes'           },
+				{ 'fileType': 'ini', 'attribute': 'hardwareAddress', 'section': 'info', 'option': 'hardwareaddress' },
+				{ 'fileType': 'ini', 'attribute': 'ipAddress',       'section': 'info', 'option': 'ipaddress'       },
+				{ 'fileType': 'ini', 'attribute': 'inventoryNumber', 'section': 'info', 'option': 'inventorynumber' },
+				{ 'fileType': 'ini', 'attribute': 'created',         'section': 'info', 'option': 'created'         },
+				{ 'fileType': 'ini', 'attribute': 'lastSeen',        'section': 'info', 'option': 'lastseen'        }
 			],
 			'OpsiDepotserver': [
 				{ 'fileType': 'key', 'attribute': 'opsiHostKey' },
-				{ 'fileType': 'ini', 'attribute': 'description',         'section': 'depotserver', 'option': 'description',     'json': False },
-				{ 'fileType': 'ini', 'attribute': 'notes',               'section': 'depotserver', 'option': 'notes',           'json': False },
-				{ 'fileType': 'ini', 'attribute': 'hardwareAddress',     'section': 'depotserver', 'option': 'hardwareaddress', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'ipAddress',           'section': 'depotserver', 'option': 'ipaddress',       'json': False },
-				{ 'fileType': 'ini', 'attribute': 'inventoryNumber',     'section': 'depotserver', 'option': 'inventorynumber', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'networkAddress',      'section': 'depotserver', 'option': 'network',         'json': False },
-				{ 'fileType': 'ini', 'attribute': 'isMasterDepot',       'section': 'depotserver', 'option': 'ismasterdepot',   'json': True  },
-				{ 'fileType': 'ini', 'attribute': 'masterDepotId',       'section': 'depotserver', 'option': 'masterdepotid',   'json': False },
-				{ 'fileType': 'ini', 'attribute': 'depotRemoteUrl',      'section': 'depotshare',  'option': 'remoteurl',       'json': False },
-				{ 'fileType': 'ini', 'attribute': 'depotLocalUrl',       'section': 'depotshare',  'option': 'localurl',        'json': False },
-				{ 'fileType': 'ini', 'attribute': 'repositoryRemoteUrl', 'section': 'repository',  'option': 'remoteurl',       'json': False },
-				{ 'fileType': 'ini', 'attribute': 'repositoryLocalUrl',  'section': 'repository',  'option': 'localurl',        'json': False },
-				{ 'fileType': 'ini', 'attribute': 'maxBandwidth',        'section': 'repository',  'option': 'maxbandwidth',    'json': False }
+				{ 'fileType': 'ini', 'attribute': 'description',         'section': 'depotserver', 'option': 'description'     },
+				{ 'fileType': 'ini', 'attribute': 'notes',               'section': 'depotserver', 'option': 'notes'           },
+				{ 'fileType': 'ini', 'attribute': 'hardwareAddress',     'section': 'depotserver', 'option': 'hardwareaddress' },
+				{ 'fileType': 'ini', 'attribute': 'ipAddress',           'section': 'depotserver', 'option': 'ipaddress'       },
+				{ 'fileType': 'ini', 'attribute': 'inventoryNumber',     'section': 'depotserver', 'option': 'inventorynumber' },
+				{ 'fileType': 'ini', 'attribute': 'networkAddress',      'section': 'depotserver', 'option': 'network'         },
+				{ 'fileType': 'ini', 'attribute': 'depotRemoteUrl',      'section': 'depotshare',  'option': 'remoteurl'       },
+				{ 'fileType': 'ini', 'attribute': 'depotLocalUrl',       'section': 'depotshare',  'option': 'localurl'        },
+				{ 'fileType': 'ini', 'attribute': 'repositoryRemoteUrl', 'section': 'repository',  'option': 'remoteurl'       },
+				{ 'fileType': 'ini', 'attribute': 'repositoryLocalUrl',  'section': 'repository',  'option': 'localurl'        },
+				{ 'fileType': 'ini', 'attribute': 'maxBandwidth',        'section': 'repository',  'option': 'maxbandwidth'    }
 			],
 			'ConfigState': [
-				{ 'fileType': 'ini', 'attribute': 'values', 'section': 'generalconfig', 'option': '<configId>', 'json': True }
+				{ 'fileType': 'ini', 'attribute': 'values', 'section': 'generalconfig', 'option': '<configId>',    'json': True }
 			],
 			'Product': [
 				{ 'fileType': 'pro', 'attribute': 'name',               'object': 'product' },
@@ -152,12 +150,6 @@ class FileBackend(ConfigDataBackend):
 				{ 'fileType': 'pro', 'attribute': 'productClassNames',  'object': 'product' },
 				{ 'fileType': 'pro', 'attribute': 'windowsSoftwareIds', 'object': 'product' }
 			],
-			'LocalbootProduct': [
-				{ 'fileType': 'pro', 'attribute': 'userLoginScript', 'object': 'product' }
-			],
-			'NetbootProduct': [
-				{ 'fileType': 'pro', 'attribute': 'pxeConfigTemplate', 'object': 'product' }
-			],
 			'ProductProperty': [
 				{ 'fileType': 'pro', 'attribute': '*' }
 			],
@@ -169,41 +161,73 @@ class FileBackend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>-state', 'option': 'productversion', 'json': False },
 				{ 'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False }
 			],
+#			'ProductOnClient': [
+#				{ 'fileType': 'ini', 'attribute': 'productType',        'section': '<productId>-state', 'option': 'producttype',        'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'actionProgress',     'section': '<productId>-state', 'option': 'actionprogress',     'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'productVersion',     'section': '<productId>-state', 'option': 'productversion',     'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'packageVersion',     'section': '<productId>-state', 'option': 'packageversion',     'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'lastStateChange',    'section': '<productId>-state', 'option': 'laststatechange',    'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
+#				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
+#			],
 			'ProductOnClient': [
-				{ 'fileType': 'ini', 'attribute': 'productType',         'section': '<productId>-state',            'option': 'producttype',         'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionProgress',      'section': '<productId>-state',            'option': 'actionprogress',      'json': False },
-				{ 'fileType': 'ini', 'attribute': 'productVersion',      'section': '<productId>-state',            'option': 'productversion',      'json': False },
-				{ 'fileType': 'ini', 'attribute': 'packageVersion',      'section': '<productId>-state',            'option': 'packageversion',      'json': False },
-				{ 'fileType': 'ini', 'attribute': 'modificationTime',    'section': '<productId>-state',            'option': 'modificationtime',    'json': False },
-				{ 'fileType': 'ini', 'attribute': 'lastAction',          'section': '<productId>-state',            'option': 'lastaction',          'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionResult',        'section': '<productId>-state',            'option': 'actionresult',        'json': False },
-				{ 'fileType': 'ini', 'attribute': 'targetConfiguration', 'section': '<productId>-state',            'option': 'targetconfiguration', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'installationStatus',  'section': '<productType>_product_states', 'option': '<productId>',         'json': False },
-				{ 'fileType': 'ini', 'attribute': 'actionRequest',       'section': '<productType>_product_states', 'option': '<productId>',         'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productType',         'section': '<productId>-state', 'option': 'producttype',         'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionProgress',      'section': '<productId>-state', 'option': 'actionprogress',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'productVersion',      'section': '<productId>-state', 'option': 'productversion',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'packageVersion',      'section': '<productId>-state', 'option': 'packageversion',      'json': False },
+				{ 'fileType': 'ini', 'attribute': 'modificationTime',    'section': '<productId>-state', 'option': 'modificationtime',    'json': False },
+				
+				{ 'fileType': 'ini', 'attribute': 'lastAction',          'section': '<productId>-state', 'option': 'lastaction',          'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionResult',        'section': '<productId>-state', 'option': 'actionresult',        'json': False },
+				{ 'fileType': 'ini', 'attribute': 'targetConfiguration', 'section': '<productId>-state', 'option': 'targetconfiguration', 'json': False },
+				
+				{ 'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
+				{ 'fileType': 'ini', 'attribute': 'actionRequest',      'section': '<productType>_product_states', 'option': '<productId>', 'json': False },
 			],
 			'ProductPropertyState': [
-				{ 'fileType': 'ini', 'attribute': 'values', 'section': '<productId>-install', 'option': '<propertyId>', 'json': True }
+				{ 'fileType': 'ini', 'attribute': 'values', 'section': '<productId>-install', 'option': '<propertyId>',    'json': True }
 			],
 			'Group': [
-				{ 'fileType': 'ini', 'attribute': 'description',   'section': '<id>', 'option': 'description'  , 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'parentGroupId', 'section': '<id>', 'option': 'parentgroupid', 'json': False },
-				{ 'fileType': 'ini', 'attribute': 'notes',         'section': '<id>', 'option': 'notes'        , 'json': False }
+				{ 'fileType': 'ini', 'attribute': 'description',   'section': '<id>', 'option': 'description'   },
+				{ 'fileType': 'ini', 'attribute': 'parentGroupId', 'section': '<id>', 'option': 'parentgroupid' },
+				{ 'fileType': 'ini', 'attribute': 'notes',         'section': '<id>', 'option': 'notes'         }
 			],
 			'ObjectToGroup': [
-				{ 'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>', 'json': False }
-			]
+				{ 'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>' }
+			]#,
+#			'AuditSoftware': [
+#				{ 'fileType': 'sw', 'attribute': 'windowsSoftwareId',     'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowssoftwareid'     },
+#				{ 'fileType': 'sw', 'attribute': 'windowsDisplayName',    'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayname'    },
+#				{ 'fileType': 'sw', 'attribute': 'windowsDisplayVersion', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'windowsdisplayversion' },
+#				{ 'fileType': 'sw', 'attribute': 'installSize',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'installsize'           }
+#			],
+#			'AuditSoftwareOnClient': [
+#				{ 'fileType': 'sw', 'attribute': 'uninstallString', 'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'uninstallstring' },
+#				{ 'fileType': 'sw', 'attribute': 'binaryName',      'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'binaryname'      },
+#				{ 'fileType': 'sw', 'attribute': 'firstseen',       'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'firstseen'       },
+#				{ 'fileType': 'sw', 'attribute': 'lastseen',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastseen'        },
+#				{ 'fileType': 'sw', 'attribute': 'state',           'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'state'           },
+#				{ 'fileType': 'sw', 'attribute': 'usageFrequency',  'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'usagefrequency'  },
+#				{ 'fileType': 'sw', 'attribute': 'lastUsed',        'section': '<name>;<version>;<subVersion>;<language>;<architecture>', 'option': 'lastused'        }
+#			],
+#			'AuditHardware': [
+#				{ 'fileType': 'hw', 'attribute': '*' }
+#			],
+#			'AuditHardwareOnHost': [
+#				{ 'fileType': 'hw', 'attribute': '*' }
+#			]
 		}
 		
-		self._mappings['UnicodeConfig']          = self._mappings['Config']
-		self._mappings['BoolConfig']             = self._mappings['Config']
-		self._mappings['OpsiConfigserver']       = self._mappings['OpsiDepotserver']
-		self._mappings['LocalbootProduct']       = self._mappings['Product']
-		self._mappings['LocalbootProduct'].append( self._mappings['LocalbootProduct'] )
-		self._mappings['NetbootProduct']         = self._mappings['Product']
-		self._mappings['NetbootProduct'].append(   self._mappings['NetbootProduct'] )
+		self._mappings['UnicodeConfig'] = self._mappings['Config']
+		self._mappings['BoolConfig'] = self._mappings['Config']
+		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
+		self._mappings['LocalbootProduct'] = self._mappings['Product']
+		self._mappings['LocalbootProduct'].append({ 'fileType': 'pro', 'attribute': 'userLoginScript', 'object': 'product' })
+		self._mappings['NetbootProduct'] = self._mappings['Product']
+		self._mappings['NetbootProduct'].append({ 'fileType': 'pro', 'attribute': 'pxeConfigTemplate', 'object': 'product' })
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
-		self._mappings['BoolProductProperty']    = self._mappings['ProductProperty']
-		self._mappings['HostGroup']              = self._mappings['Group']
+		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
+		self._mappings['HostGroup'] = self._mappings['Group']
 	
 	def backend_exit(self):
 		pass
@@ -830,6 +854,12 @@ class FileBackend(ConfigDataBackend):
 			if (self.__serverId != obj.getId()):
 				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" \
 					% (self.__serverId, obj.getId()))
+#		elif (objType == 'OpsiDepotserver'):
+#			if os.path.isfile(self._getConfigFile('OpsiClient', {'id':obj.getId()}, 'ini')):
+#				raise Exception(u"depot id is a client")
+#		elif (objType == 'OpsiClient'):
+#			if os.path.isfile(self._getConfigFile('OpsiDepotserver', {'id':obj.getId()}, 'ini')):
+#				raise Exception(u"client id is a depot")
 		
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
@@ -1003,6 +1033,12 @@ class FileBackend(ConfigDataBackend):
 					obj.getType(), obj.getIdent(returnType = 'dict'), 'ini')
 				if os.path.isfile(filename):
 					os.unlink(filename)
+				#if obj.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+				#	if os.path.isdir(os.path.dirname(filename)):
+				#		shutil.rmtree(os.path.dirname(filename))
+				#elif obj.getType() in ('OpsiClient',):
+				#	if os.path.isfile(filename):
+				#		os.unlink(filename)
 			hostKeyFile.generate()
 		
 		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
@@ -1165,12 +1201,14 @@ class FileBackend(ConfigDataBackend):
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
+		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_insertObject(self, host)
 		
 		logger.debug(u"Inserting host: '%s'" % host.getIdent())
 		self._write(host, mode = 'create')
 	
 	def host_updateObject(self, host):
+		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_updateObject(self, host)
 		
 		logger.debug(u"Updating host: '%s'" % host.getIdent())
@@ -1207,12 +1245,14 @@ class FileBackend(ConfigDataBackend):
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
+		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_insertObject(self, config)
 		
 		logger.debug(u"Inserting config: '%s'" % config.getIdent())
 		self._write(config, mode = 'create')
 	
 	def config_updateObject(self, config):
+		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_updateObject(self, config)
 		
 		logger.debug(u"Updating config: '%s'" % config.getIdent())
@@ -1236,12 +1276,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
+		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_insertObject(self, configState)
 		
 		logger.debug(u"Inserting configState: '%s'" % configState.getIdent())
 		self._write(configState, mode = 'create')
 	
 	def configState_updateObject(self, configState):
+		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_updateObject(self, configState)
 		
 		logger.debug(u"Updating configState: '%s'" % configState.getIdent())
@@ -1265,12 +1307,14 @@ class FileBackend(ConfigDataBackend):
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
+		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_insertObject(self, product)
 		
 		logger.debug(u"Inserting product: '%s'" % product.getIdent())
 		self._write(product, mode = 'create')
 	
 	def product_updateObject(self, product):
+		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_updateObject(self, product)
 		
 		logger.debug(u"Updating product: '%s'" % product.getIdent())
@@ -1295,12 +1339,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
+		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		
 		logger.debug(u"Inserting productProperty: '%s'" % productProperty.getIdent())
 		self._write(productProperty, mode = 'create')
 	
 	def productProperty_updateObject(self, productProperty):
+		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		
 		logger.debug(u"Updating productProperty: '%s'" % productProperty.getIdent())
@@ -1324,12 +1370,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ProductDependencies                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_insertObject(self, productDependency):
+		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		
 		logger.debug(u"Inserting productDependency: '%s'" % productDependency.getIdent())
 		self._write(productDependency, mode = 'create')
 	
 	def productDependency_updateObject(self, productDependency):
+		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		
 		logger.debug(u"Updating productDependency: '%s'" % productDependency.getIdent())
@@ -1353,12 +1401,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ProductOnDepots                                                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		
 		logger.debug(u"Inserting productOnDepot: '%s'" % productOnDepot.getIdent())
 		self._write(productOnDepot, mode = 'create')
 	
 	def productOnDepot_updateObject(self, productOnDepot):
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		
 		logger.debug(u"Updating productOnDepot: '%s'" % productOnDepot.getIdent())
@@ -1382,12 +1432,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		
 		logger.debug(u"Inserting productOnClient: '%s'" % productOnClient.getIdent())
 		self._write(productOnClient, mode = 'create')
 	
 	def productOnClient_updateObject(self, productOnClient):
+		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		
 		logger.debug(u"Updating productOnClient: '%s'" % productOnClient.getIdent())
@@ -1411,12 +1463,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
+		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		
 		logger.debug(u"Inserting productPropertyState: '%s'" % productPropertyState.getIdent())
 		self._write(productPropertyState, mode = 'create')
 	
 	def productPropertyState_updateObject(self, productPropertyState):
+		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		
 		logger.debug(u"Updating productPropertyState: '%s'" % productPropertyState.getIdent())
@@ -1440,12 +1494,14 @@ class FileBackend(ConfigDataBackend):
 	# -   Groups                                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
+		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_insertObject(self, group)
 		
 		logger.debug(u"Inserting group: '%s'" % group.getIdent())
 		self._write(group, mode = 'create')
 	
 	def group_updateObject(self, group):
+		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_updateObject(self, group)
 		
 		logger.debug(u"Updating group: '%s'" % group.getIdent())
@@ -1469,12 +1525,14 @@ class FileBackend(ConfigDataBackend):
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
+		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
 		logger.debug(u"Inserting objectToGroup: '%s'" % objectToGroup.getIdent())
 		self._write(objectToGroup, mode = 'create')
 	
 	def objectToGroup_updateObject(self, objectToGroup):
+		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
 		logger.debug(u"Updating objectToGroup: '%s'" % objectToGroup.getIdent())
@@ -1498,6 +1556,7 @@ class FileBackend(ConfigDataBackend):
 	# -   AuditSoftwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_insertObject(self, auditSoftware):
+		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		
 		logger.debug(u"Inserting auditSoftware: '%s'" % auditSoftware.getIdent())
@@ -1525,6 +1584,7 @@ class FileBackend(ConfigDataBackend):
 		iniFile.generate(ini)
 		
 	def auditSoftware_updateObject(self, auditSoftware):
+		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		
 		logger.debug(u"Updating auditSoftware: '%s'" % auditSoftware.getIdent())
@@ -1614,6 +1674,7 @@ class FileBackend(ConfigDataBackend):
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		
 		logger.debug(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
@@ -1641,6 +1702,7 @@ class FileBackend(ConfigDataBackend):
 		iniFile.generate(ini)
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		
 		logger.debug(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
@@ -1743,21 +1805,131 @@ class FileBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def auditHardware_insertObject(self, auditHardware):
+		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 		
 		logger.debug(u"Inserting auditHardware: '%s'" % auditHardware.getIdent())
-		#TODO: forceObjectClass necessary?
-		forceObjectClass(auditHardware, AuditHardware)
 		self.__doAuditHardwareObj(auditHardware, mode = 'insert')
 		
+		
+#		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+#		
+#		if not os.path.exists(filename):
+#			self._touch(filename)
+#		
+#		iniFile = IniFile(filename = filename)
+#		ini = iniFile.parse()
+#		ident = auditHardware.getIdent(returnType = 'dict')
+#		
+#		sectionToEdit = None
+#		for section in ini.sections():
+#			found = True
+#			
+#			for option in ini.options(section):
+#				option = option.lower()
+#				if option == 'hardwareclass':
+#					option = 'hardwareClass'
+#				try:
+#					if (not option in ident.keys()):
+#						raise Exception
+#					if (not ident[option] == ini.get(section, option.lower())):
+#						raise Exception
+#				except:
+#					found = False
+#					break
+#			
+#			if not found:
+#				continue
+#			
+#			for key in ident.keys():
+#				key = key.lower()
+#				if key == 'hardwareclass':
+#					key = 'hardwareClass'
+#				try:
+#					if (not key.lower() in ini.options(section)):
+#						raise Exception
+#					if (not ident[key] == ini.get(section, key.lower())):
+#						raise Exception
+#				except:
+#					found = False
+#					break
+#			
+#			if found:
+#				sectionToEdit = section
+#				break
+#		
+#		if (sectionToEdit is None):
+#			nums = []
+#			for section in ini.sections():
+#				nums.append(int(section.split('_')[-1]))
+#			num = 0
+#			while num in nums:
+#				num += 1
+#			
+#			sectionToEdit = u'HARDWARE_%d' % num
+#		
+#		if not (ini.has_section(sectionToEdit)):
+#			ini.add_section(sectionToEdit)
+#		for (key, value) in auditHardware.toHash().items():
+#			key = key.lower()
+#			if (key == 'type'):
+#				continue
+#			if (value is None):
+#				value = u''
+#			ini.set(sectionToEdit, key, self.__escape(value))
+#		iniFile.generate(ini)
+	
 	def auditHardware_updateObject(self, auditHardware):
+		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 		
-		logger.debug(u"Updating auditHardware: '%s'" % auditHardware.getIdent())
-		#TODO: forceObjectClass necessary?
-		forceObjectClass(auditHardware, AuditHardware)
+		logger.debug(u"Updating auditHardware: '%s'" % auditHardware.getIdent())		
 		self.__doAuditHardwareObj(auditHardware, mode = 'update')
 		
+		
+#		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+#		iniFile = IniFile(filename = filename)
+#		ini = iniFile.parse()
+#		ident = auditHardware.getIdent(returnType = 'dict')
+#		
+#		for section in ini.sections():
+#			found = True
+#			
+#			for option in ini.options(section):
+#				option = option.lower()
+#				if option == 'hardwareclass':
+#					option = 'hardwareClass'
+#				try:
+#					if (not option in ident.keys()):
+#						raise Exception
+#					if (not ident[option] == ini.get(section, option.lower())):
+#						raise Exception
+#				except:
+#					found = False
+#					break
+#			
+#			if not found:
+#				continue
+#			
+#			for key in ident.keys():
+#				key = key.lower()
+#				if key == 'hardwareclass':
+#					key = 'hardwareClass'
+#				try:
+#					if (not key.lower() in ini.options(section)):
+#						raise Exception
+#					if (not ident[key] == ini.get(section, key.lower())):
+#						raise Exception
+#				except:
+#					found = False
+#					break
+#			
+#			if found:
+#				#only idents, no real update possible
+#				return
+#		
+#		raise Exception(u"auditHardware %s not found" % auditHardware)
+	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 		
@@ -1789,27 +1961,207 @@ class FileBackend(ConfigDataBackend):
 		#TODO: forceObjectClassList necessary?
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
 			self.__doAuditHardwareObj(auditHardware, mode = 'delete')
+		
+#		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+#		iniFile = IniFile(filename = filename)
+#		ini = iniFile.parse()
+#		idents = []
+#		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
+#			idents.append(auditHardware.getIdent(returnType = 'dict'))
+#		
+#		sections = []
+#		
+#		for ident in idents:
+#			for section in ini.sections():
+#				if section in sections:
+#					continue
+#				found = True
+#				
+#				for option in ini.options(section):
+#					option = option.lower()
+#					if option == 'hardwareclass':
+#						option = 'hardwareClass'
+#					try:
+#						if (not option in ident.keys()):
+#							raise Exception
+#						if (not ident[option] == ini.get(section, option.lower())):
+#							raise Exception
+#					except:
+#						found = False
+#						break
+#				
+#				if not found:
+#					continue
+#				
+#				for key in ident.keys():
+#					key = key.lower()
+#					if key == 'hardwareclass':
+#						key = 'hardwareClass'
+#					try:
+#						if (not key.lower() in ini.options(section)):
+#							raise Exception
+#						if (not ident[key] == ini.get(section, key.lower())):
+#							raise Exception
+#					except:
+#						found = False
+#						break
+#				
+#				if found:
+#					sections.append(section)
+#					break
+#		
+#		if len(sections) > 0:
+#			for section in sections:
+#				ini.remove_section(section)
+#				logger.debug2(u"Removed section '%s'" % (section))
+#			iniFile.generate(ini)
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 		
 		logger.debug(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		#TODO: forceObjectClass necessary?
-		forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
+
 		self.__doAuditHardwareObj(auditHardwareOnHost, mode = 'insert')
 		
+		
+#		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
+#		
+#		if not os.path.exists(filename):
+#			self._touch(filename)
+#		
+#		iniFile = IniFile(filename = filename)
+#		ini = iniFile.parse()
+#		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
+#		
+#		sectionToEdit = None
+#		for section in ini.sections():
+#			found = True
+#			
+#			for option in ini.options(section):
+#				option = option.lower()
+#				if option in ('firstseen', 'lastseen', 'state'):
+#					continue
+#				if option == 'hardwareclass':
+#					option = 'hardwareClass'
+#				try:
+#					if (not option in ident.keys()):
+#						raise Exception
+#					if (not ident[option] == ini.get(section, option.lower())):
+#						raise Exception
+#				except:
+#					found = False
+#					break
+#			
+#			if not found:
+#				continue
+#			
+#			for key in ident.keys():
+#				key = key.lower()
+#				if key == 'hostid':
+#					continue
+#				if key == 'hardwareclass':
+#					key = 'hardwareClass'
+#				try:
+#					if (not key.lower() in ini.options(section)):
+#						raise Exception
+#					if (not ident[key] == ini.get(section, key.lower())):
+#						raise Exception
+#				except:
+#					found = False
+#					break
+#			
+#			if found:
+#				sectionToEdit = section
+#				break
+#		
+#		if (sectionToEdit is None):
+#			nums = []
+#			for section in ini.sections():
+#				nums.append(int(section.split('_')[-1]))
+#			num = 0
+#			while num in nums:
+#				num += 1
+#			
+#			sectionToEdit = u'HARDWARE_%d' % num
+#		
+#		if not (ini.has_section(sectionToEdit)):
+#			ini.add_section(sectionToEdit)
+#		for (key, value) in auditHardwareOnHost.toHash().items():
+#			key = key.lower()
+#			if (key in ('hostid', 'type')):
+#				continue
+#			if (value is None):
+#				if (key in ('firstseen', 'lastseen', 'state')):
+#					continue
+#				value = u''
+#			ini.set(sectionToEdit, key, self.__escape(value))
+#		iniFile.generate(ini)
+	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 		
 		logger.debug(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-		#TODO: forceObjectClass necessary?
-		forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
+
 		self.__doAuditHardwareObj(auditHardwareOnHost, mode = 'update')
 		
+#		filename = self._getConfigFile('AuditHardwareOnHost', {"hostId": auditHardwareOnHost.hostId }, 'hw')
+#		iniFile = IniFile(filename = filename)
+#		ini = iniFile.parse()
+#		ident = auditHardwareOnHost.getIdent(returnType = 'dict')
+#		
+#		identLowerKeys = {}
+#		for key in ident.keys():
+#			identLowerKeys[key.lower()] = ident[key]
+#		
+#		for section in ini.sections():
+#			found = True
+#			
+#			for option in ini.options(section):
+#				if option in ('firstseen', 'lastseen', 'state'):
+#					continue
+#				try:
+#					if (not option in identLowerKeys):
+#						raise Exception
+#					if (not identLowerKeys[option] == ini.get(section, option)):
+#						raise Exception
+#				except:
+#					
+#					found = False
+#					break
+#			
+#			if not found:
+#				continue
+#			
+#			for key in identLowerKeys:
+#				if key == 'hostid':
+#					continue
+#				try:
+#					if (not key in ini.options(section)):
+#						raise Exception
+#					if (not identLowerKeys[key] == ini.get(section, key)):
+#						raise Exception
+#				except:
+#					
+#					found = False
+#					break
+#			
+#			if found:
+#				for (key, value) in auditHardwareOnHost.toHash().items():
+#					key = key.lower()
+#					if (value is None) or (not key in ('firstseen', 'lastseen', 'state')):
+#						continue
+#					ini.set(section, key, self.__escape(value))
+#				iniFile.generate(ini)
+#				return
+#		
+#		raise Exception(u"auditHardwareOnHost %s not found" % auditHardwareOnHost)
+	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 		
@@ -1850,6 +2202,75 @@ class FileBackend(ConfigDataBackend):
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			self.__doAuditHardwareObj(auditHardwareOnHost, mode = 'delete')
 		
+		
+		
+#		identsInFile = {}
+#		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+#			ident = auditHardwareOnHost.getIdent(returnType = 'dict')
+#			filename = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
+#			if filename in identsInFile.keys():
+#				identsInFile[filename].append(ident)
+#			else:
+#				identsInFile[filename] = [ident]
+#		
+#		for filename in identsInFile.keys():
+#			idents = identsInFile[filename]
+#			iniFile = IniFile(filename = filename)
+#			ini = iniFile.parse()
+#			
+#			sections = []
+#			
+#			for ident in idents:
+#				for section in ini.sections():
+#					if section in sections:
+#						continue
+#					found = True
+#					
+#					for option in ini.options(section):
+#						option = option.lower()
+#						if option in ('firstseen', 'lastseen', 'state'):
+#							continue
+#						if option == 'hardwareclass':
+#							option = 'hardwareClass'
+#						try:
+#							if (not option in ident.keys()):
+#								raise Exception
+#							if (not ident[option] == ini.get(section, option.lower())):
+#								raise Exception
+#						except:
+#							found = False
+#							break
+#					
+#					if not found:
+#						continue
+#					
+#					for key in ident.keys():
+#						key = key.lower()
+#						if key == 'hostid':
+#							continue
+#						if key == 'hardwareclass':
+#							key = 'hardwareClass'
+#						try:
+#							if (not key.lower() in ini.options(section)):
+#								raise Exception
+#							if (not ident[key] == ini.get(section, key.lower())):
+#								raise Exception
+#						except:
+#							found = False
+#							break
+#					
+#					if found:
+#						sections.append(section)
+#						break
+#			
+#			if len(sections) > 0:
+#				for section in sections:
+#					ini.remove_section(section)
+#					logger.debug2(u"Removed section '%s'" % (section))
+#				iniFile.generate(ini)
+	
+	
+	
 	def __doAuditHardwareObj(self, auditHardwareObj, mode):
 		if (not mode in ('insert', 'update', 'delete')):
 			raise Exception(u"Unknown mode: %s" % (mode))
