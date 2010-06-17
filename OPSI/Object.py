@@ -184,7 +184,7 @@ class BaseObject(object):
 	def __eq__(self, other):
 		if not isinstance(other, self.__class__):
 			return False
-		return (self.toHash() == other.toHash())
+		return (self.getIdent() == other.getIdent())
 		
 	def __str__(self):
 		return unicode(self).encode("utf-8")
@@ -815,7 +815,7 @@ class ConfigState(Relationship):
 	def __unicode__(self):
 		return u"<%s configId '%s', objectId '%s'>" \
 			% (self.getType(), self.configId, self.objectId)
-	
+
 Relationship.subClasses['ConfigState'] = ConfigState
 
 class Product(Entity):
@@ -1604,7 +1604,7 @@ class ProductOnClient(Relationship):
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'
 		return Relationship.fromHash(hash)
-	
+
 	@staticmethod
 	def fromJson(jsonString):
 		return fromJson(jsonString, 'ProductOnClient')
