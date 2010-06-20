@@ -3339,6 +3339,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					architecture   = architecture,
 					clientId       = clientId))
 	
+	def auditSoftwareOnClient_setObsolete(self, clientId):
+		if clientId is None: clientId  = []
+		clientId = forceHostIdList(clientId)
+		self._backend.auditSoftwareOnClient_deleteObjects(
+			self._backend.auditSoftwareOnClient_getObjects(
+				clientId = clientId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
