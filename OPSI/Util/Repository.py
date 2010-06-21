@@ -265,41 +265,55 @@ class Repository:
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
 	
-	def _preProcessPath(self, destination):
-		return destination
+	def _preProcessPath(self, path):
+		return path
 	
-	def content(self, destination='', recursive=False):
+	def content(self, source='', recursive=False):
 		raise RepositoryError(u"Not implemented")
 	
-	def getCountAndSize(self, destination=''):
-		destination = forceUnicode(destination)
+	def getCountAndSize(self, source=''):
+		source = forceUnicode(source)
 		(count, size) = (0, 0)
-		for entry in self.content(destination, recursive = True):
+		for entry in self.content(source, recursive = True):
 			if (entry.get('type', '') == 'file'):
 				count += 1
 				size += entry.get('size', 0)
 		return (count, size)
 	
-	def fileInfo(self, destination):
-		destination = forceUnicode(destination)
+	def fileInfo(self, source):
+		source = forceUnicode(source)
 		info = {}
 		try:
-			for c in self.content((u'/'.join(destination.split('/')[:-1]))):
-				if (c['path'] == destination):
+			for c in self.content((u'/'.join(source.split('/')[:-1]))):
+				if (c['path'] == source):
 					info = c
 					return info
 			raise Exception(u'File not found')
 		except Exception, e:
 			#logger.logException(e)
-			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
+			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
 		
-	def exists(self, destination):
+	def exists(self, source):
 		try:
-			self.fileInfo(destination)
+			self.fileInfo(source)
 		except:
 			return False
 		return True
-		
+	
+	def isfile(self, source):
+		try:
+			info = self.fileInfo(source)
+			return (info.get('type', '') == 'file')
+		except:
+			return False
+	
+	def isdir(self, source):
+		try:
+			info = self.fileInfo(source)
+			return (info.get('type', '') == 'dir')
+		except:
+			return False
+	
 	def upload(self, source, destination):
 		raise RepositoryError(u"Not implemented")
 	
@@ -322,24 +336,24 @@ class FileRepository(Repository):
 			raise RepositoryError(u"Bad file url: '%s'" % self._url)
 		self._path = match.group(1)
 		
-	def _preProcessPath(self, destination):
-		destination = forceUnicode(destination)
-		if destination.startswith('/'):
-			destination = destination[1:]
-		return self._path + u'/' + destination
+	def _preProcessPath(self, path):
+		path = forceUnicode(path)
+		if path.startswith('/'):
+			path = path[1:]
+		return self._path + u'/' + path
 	
-	def content(self, destination='', recursive=False):
-		destination = self._preProcessPath(destination)
+	def content(self, source='', recursive=False):
+		source = self._preProcessPath(source)
 		
 		content = []
-		destLen = len(destination)
+		srcLen = len(source)
 		def _recurse(path, content):
 			path = os.path.abspath(forceFilename(path))
 			for entry in os.listdir(path):
 				try:
 					info = { 'name': entry, 'size': long(0), 'type': 'file' }
 					entry = os.path.join(path, entry)
-					info['path'] = entry[destLen:]
+					info['path'] = entry[srcLen:]
 					size = 0
 					if os.path.islink(entry):
 						pass
@@ -354,7 +368,7 @@ class FileRepository(Repository):
 				except Exception, e:
 					logger.error(e)
 			return content
-		return _recurse(path = destination, content = content)
+		return _recurse(path = source, content = content)
 	
 	def download(self, source, destination, progressSubject=None):
 		size = self.fileInfo(source)['size']
@@ -401,7 +415,7 @@ class FileRepository(Repository):
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
 						% (source, destination, e))
 	
-	def delete(self, estination):
+	def delete(self, destination):
 		destination = self._preProcessPath(destination)
 		os.unlink(destination)
 	
@@ -476,19 +490,19 @@ class HTTPRepository(Repository):
 			self._host = proxyHost
 			self._port = proxyPort
 		
-	def _preProcessPath(self, destination):
-		destination = forceUnicode(destination)
-		if destination.startswith('/'):
-			destination = destination[1:]
+	def _preProcessPath(self, path):
+		path = forceUnicode(path)
+		if path.startswith('/'):
+			path = path[1:]
 		if self._proxy:
-			if destination.startswith('/'):
-				destination = destination[1:]
+			if path.startswith('/'):
+				path = path[1:]
 			if self._url.endswith('/'):
-				return self._url + destination
+				return self._url + path
 			else:
-				return self._url + '/' + destination
+				return self._url + '/' + path
 		else:
-			return urllib.quote(self._path + '/' + destination)
+			return urllib.quote(self._path + '/' + path)
 	
 	def _connect(self):
 		logger.debug(u"HTTPRepository _connect()")
@@ -553,6 +567,7 @@ class WebDAVRepository(HTTPRepository):
 		parts = self._url.split('/')
 		if (len(parts) < 3) or parts[0].lower() not in ('webdav:', 'webdavs:'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
+		self._contentCache = {}
 		
 	def _connect(self):
 		HTTPRepository._connect(self)
@@ -580,17 +595,21 @@ class WebDAVRepository(HTTPRepository):
 		#	# Store cookie
 		#	self._cookie = cookie.split(';')[0].strip()
 	
-	def content(self, destination='', recursive=False):
-		destination = forceUnicode(destination)
+	def content(self, source='', recursive=False):
+		source = forceUnicode(source)
+		
+		source = self._preProcessPath(source)
+		if not source.endswith('/'):
+			source += '/'
+		
+		if recursive and self._contentCache.has_key(source):
+			return self._contentCache[source]
+		
 		content = []
 		if not self._connection:
 			self._connect()
 		
-		destination = self._preProcessPath(destination)
-		if not destination.endswith('/'):
-			destination += '/'
-		
-		self._connection.putrequest('PROPFIND', destination)
+		self._connection.putrequest('PROPFIND', source)
 		depth = '1'
 		if recursive:
 			depth = 'infinity'
@@ -605,17 +624,17 @@ class WebDAVRepository(HTTPRepository):
 		
 		response = self._connection.getresponse()
 		if (response.status != responsecode.MULTI_STATUS):
-			raise RepositoryError(u"Failed to list dir '%s': %s" % (destination, response.status))
+			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
 		
 		msr = davxml.WebDAVDocument.fromString(response.read())
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
-			raise RepositoryError(u"Not a directory: '%s'" % destination)
+			raise RepositoryError(u"Not a directory: '%s'" % source)
 		
-		destLen = len(destination)
+		srcLen = len(source)
 		for child in msr.root_element.children[1:]:
 			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
 			info = { 'size': long(0), 'type': 'file' }
-			info['path'] = forceUnicode(child.childOfType(davxml.HRef))[destLen:]
+			info['path'] = forceUnicode(child.childOfType(davxml.HRef))[srcLen:]
 			info['name'] = forceUnicode(pContainer.childOfType(davxml.DisplayName))
 			if (str(pContainer.childOfType(davxml.GETContentLength)) != 'None'):
 				info['size'] = long( str(pContainer.childOfType(davxml.GETContentLength)) )
@@ -624,6 +643,9 @@ class WebDAVRepository(HTTPRepository):
 				if info['path'].endswith('/'):
 					info['path'] = info['path'][:-1]
 			content.append(info)
+		
+		if recursive:
+			self._contentCache[source] = content
 		return content
 	
 	def upload(self, source, destination, progressSubject=None):
@@ -685,7 +707,127 @@ class WebDAVRepository(HTTPRepository):
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
 		# We have to read the response!
 		response.read()
-
+	
+	def copy(self, source, destination, progressSubject=None):
+		#for hook in hooks:
+		#	(source, destination, progressSubject) = hook.pre_copy(source, destination, progressSubject)
+		
+		'''
+		source = file,  destination = file              => overwrite destination
+		source = file,  destination = dir               => copy into destination
+		source = file,  destination = not existent      => create destination directories, copy source to destination
+		source = dir,   destination = file              => error
+		source = dir,   destination = dir               => copy source dir into destination
+		source = dir,   destination = not existent      => create destination, copy content of source into destination
+		source = dir/*, destination = dir/not existent  => create destination if not exists, copy content of source into destination
+		'''
+		source = forceFilename(source)
+		destination = forceFilename(destination)
+		
+		copySrcContent = False
+		
+		if source.endswith('/*.*') or source.endswith('\\*.*'):
+			source = source[:-4]
+			copySrcContent = True
+			
+		elif source.endswith('/*') or source.endswith('\\*'):
+			source = source[:-2]
+			copySrcContent = True
+		
+		if copySrcContent and not self.isdir(source):
+			raise Exception(u"Source directory '%s' not found" % source)
+		
+		logger.info(u"Copying from '%s' to '%s'" % (source, destination))
+		(totalFiles, size) = (0, 0)
+		if progressSubject:
+			progressSubject.reset()
+			(totalFiles, size) = self.getCountAndSize(source)
+			progressSubject.setEnd(size)
+		
+		try:
+			info = self.fileInfo(source)
+			if (info.get('type') == 'file'):
+				destinationFile = destination
+				if not os.path.exists(destination):
+					os.makedirs(destination)
+					destinationFile = os.path.join(destination, info['name'])
+				elif os.path.isdir(destination):
+					destinationFile = os.path.join(destination, info['name'])
+				
+				if progressSubject:
+					sizeString = "%d Byte" % info['size']
+					if (size > 1024*1024):
+						sizeString = "%0.2f MByte" % ( float(size)/(1024*1024) )
+					elif (size > 1024):
+						sizeString = "%0.2f kByte" % ( float(size)/(1024) )
+					progressSubject.setMessage(u"[1/1] %s (%s)" % (info['name'], sizeString ) )
+				try:
+					self.download(source, destinationFile)
+				except OSError, e:
+					if (e.errno != 1):
+						raise
+					# Operation not permitted
+					logger.debug(e)
+				if progressSubject:
+					progressSubject.addToState(info['size'])
+				
+			elif (info.get('type') == 'dir'):
+				if not os.path.exists(destination):
+					os.makedirs(destination)
+				elif os.path.isfile(destination):
+					raise Exception(u"Cannot copy directory '%s' into file '%s'" % (source, destination))
+				elif os.path.isdir(destination):
+					if not copySrcContent:
+						destination = os.apth.join(destination, info['name'])
+				content = self.content(source, recursive = True)
+				fileCount = 0
+				for c in content:
+					if (c.get('type') == 'dir'):
+						path = [ destination ]
+						path.extend(c['path'].split('/'))
+						targetDir = os.path.join(*path)
+						if not targetDir:
+							raise Exception(u"Bad target directory '%s'" % targetDir)
+						if not os.path.isdir(targetDir):
+							os.makedirs(targetDir)
+					elif (c.get('type') == 'file'):
+						fileCount += 1
+						if progressSubject:
+							countLen = len(str(totalFiles))
+							countLenFormat = '%' + str(countLen) + 's'
+							sizeString = "%d Byte" % c['size']
+							if (size > 1024*1024):
+								sizeString = "%0.2f MByte" % ( float(size)/(1024*1024) )
+							elif (size > 1024):
+								sizeString = "%0.2f kByte" % ( float(size)/(1024) )
+							progressSubject.setMessage(u"[%s/%s] %s (%s)" \
+									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString ) )
+						
+						path = [ destination ]
+						path.extend(c['path'].split('/')[:-1])
+						targetDir = os.path.join(*path)
+						if not targetDir:
+							raise Exception(u"Bad target directory '%s'" % targetDir)
+						if targetDir and not os.path.isdir(targetDir):
+							os.makedirs(targetDir)
+						self.download(u'/'.join((source, c['path'])), os.path.join(targetDir, c['name']))
+						
+						if progressSubject:
+							progressSubject.addToState(c['size'])
+			else:
+				raise Exception(u"Failed to copy: unknown source type '%s'" % source)
+			logger.info(u'Copy done')
+			if progressSubject:
+				progressSubject.setState(size)
+		except Exception, e:
+			raise
+		#	for hook in hooks:
+		#		hook.error_copy(source, destination, progressSubject, e)
+		#
+		#for hook in hooks:
+		#	hook.post_copy(source, destination, progressSubject)
+		
+		
 
 class DepotToLocalDirectorySychronizer(object):
 	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
@@ -828,9 +970,14 @@ class DepotToLocalDirectorySychronizer(object):
 
 
 if (__name__ == "__main__"):
-	logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_DEBUG2)
 	
 	tempFile = '/tmp/testfile.bin'
+	tempDir = '/tmp/testdir'
+	if os.path.exists(tempFile):
+		os.unlink(tempFile)
+	if os.path.exists(tempDir):
+		shutil.rmtree(tempDir)
 	
 	#rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
 	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
@@ -857,15 +1004,33 @@ if (__name__ == "__main__"):
 	for c in rep.content():
 		print c
 	print rep.getCountAndSize()
-	print rep.exists('virdat_1-5992.opsi')
+	print rep.exists('shutdownwanted_1.0-2.opsi')
 	print rep.exists('notthere')
+	rep.copy('shutdownwanted_1.0-2.opsi', tempDir)
+	shutil.rmtree(tempDir)
+	os.makedirs(tempDir)
+	rep.copy('shutdownwanted_1.0-2.opsi', tempDir)
+	rep.copy('shutdownwanted_1.0-2.opsi', tempDir)
 	
-	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	#for c in rep.content('swaudit', recursive=True):
-	#	print c
+	shutil.rmtree(tempDir)
+	
+	from Message import ProgressObserver
+	progressSubject = ProgressSubject(id = u'copy_test', title = u'Copy test')
+	class SimpleProgressObserver(ProgressObserver):
+		def messageChanged(self, subject, message):
+			print u"%s" % message
+		
+		def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+			print u"state: %s, percent: %0.2f%%, timeSpend: %0.2fs, timeLeft: %0.2fs, speed: %0.2f" \
+				% (state, percent, timeSpend, timeLeft, speed)
+	progressSubject.attachObserver(SimpleProgressObserver())
+	
+	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	for c in rep.content('swaudit', recursive=True):
+		print c
+	rep.copy('swaudit/*', tempDir, progressSubject)
 	
 	#rep = FileRepository(url = u'file:///tmp')
-	#rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
 	#for c in rep.content('', recursive=True):
 	#	print c
 	
