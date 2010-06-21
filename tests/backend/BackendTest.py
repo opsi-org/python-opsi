@@ -11,6 +11,9 @@ class BackendTestCase(TestCase):
 	
 	backend = None
 	
+	licenseManagement = False
+	inventoryHistory = False
+	
 	def setUp(self):
 		self.serverId = socket.getfqdn()
 		self.failUnless(self.serverId.count('.') >= 2,
@@ -78,7 +81,7 @@ class BackendTestCase(TestCase):
 			ipAddress       = '192.168.1.100',
 			lastSeen        = '2009-01-01 00:00:00',
 			opsiHostKey     = '45656789789012789012345612340123',
-			inventoryNumber = None
+			inventoryNumber = "$$4"
 		)
 		
 		self.client2 = OpsiClient(
@@ -227,7 +230,7 @@ class BackendTestCase(TestCase):
 			priority           = '100',
 			description        = "Nothing",
 			advice             = u"No advice",
-			productClassIds    = ['class1'],
+			productClassIds    = [],
 			windowsSoftwareIds = ['{be21bd07-eb19-44e4-893a-fa4e44e5f806}', 'product1'],
 			pxeConfigTemplate  = 'special'
 		)
@@ -248,7 +251,7 @@ class BackendTestCase(TestCase):
 			priority           = 0,
 			description        = None,
 			advice             = "",
-			productClassIds    = ['localboot-products'],
+			productClassIds    = [],
 			windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
 		)
 		
@@ -266,7 +269,7 @@ class BackendTestCase(TestCase):
 			priority           = 100,
 			description        = "---",
 			advice             = "---",
-			productClassIds    = ['localboot-products'],
+			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
 		
@@ -1085,17 +1088,9 @@ class BackendTestCase(TestCase):
 	
 		self.createBackend()
 		
-		self.backend.backend_setOptions({
-			'processProductPriorities':            False,
-			'processProductDependencies':          False,
-			'addProductOnClientDefaults':          False,
-			'addProductPropertyStateDefaults':     False,
-			'addConfigStateDefaults':              False,
-			'deleteConfigStateIfDefault':          False,
-			'returnObjectsOnUpdateAndCreate':      False
-		})
-				
 		self.backend.backend_createBase()
+		
+		self.setBackendOptions()
 		
 		self.backend.host_createObjects( self.hosts )
 		self.backend.host_createObjects( self.depotservers )
@@ -1109,9 +1104,43 @@ class BackendTestCase(TestCase):
 		self.backend.productPropertyState_createObjects(self.productPropertyStates)
 		self.backend.group_createObjects(self.groups)
 		self.backend.objectToGroup_createObjects(self.objectToGroups)
+		self.backend.auditSoftware_createObjects(self.auditSoftwares)
+		self.backend.auditSoftwareOnClient_createObjects(self.auditSoftwareOnClients)
+		self.backend.auditHardware_createObjects(self.auditHardwares)
+		self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHosts)
+		if self.licenseManagement:
+			self.backend.licenseContract_createObjects(self.licenseContracts)
+			self.backend.softwareLicense_createObjects(self.softwareLicenses)
+			self.backend.licensePool_createObjects(self.licensePools)
+			self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
+			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
+
+	def setBackendOptions(self):
+		self.backend.backend_setOptions({
+			'processProductPriorities':            False,
+			'processProductDependencies':          False,
+			'addProductOnClientDefaults':          False,
+			'addProductPropertyStateDefaults':     False,
+			'addConfigStateDefaults':              False,
+			'deleteConfigStateIfDefault':          False,
+			'returnObjectsOnUpdateAndCreate':      False
+		})
 		
 	def createBackend(self):
 		self.fail("No Backend was created by Subclass.")
 
 	def tearDown(self):
 		self.backend.backend_deleteBase()
+		
+class ExtendedBackendTestCase(BackendTestCase):
+	def setBackendOptions(self):
+		self.backend.backend_setOptions({
+			'processProductPriorities':            True,
+			'processProductDependencies':          True,
+			'addProductOnClientDefaults':          True,
+			'addProductPropertyStateDefaults':     True,
+			'addConfigStateDefaults':              True,
+			'deleteConfigStateIfDefault':          True,
+			'returnObjectsOnUpdateAndCreate':      False
+		})
+		

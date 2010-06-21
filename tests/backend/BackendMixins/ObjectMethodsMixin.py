@@ -13,24 +13,29 @@ class ObjectMethodsMixin(object):
 			self.assertIsNotNone(host.getOpsiHostKey(), u"Host key for host '%s': '%s' is not expected." % (host.getId(), host.getOpsiHostKey()))
 			for h in self.hosts:
 				if (host.id == h.id):
-					host = host.toHash()
-					h = h.toHash()
-					for (attribute, value) in h.items():
-						if not value is None:
-							if type(value) is list:
-								for v in value:
-									self.assertIn(v, host[attribute], u"'%s' not in '%s'" % (v, host[attribute]))
-							else:
-								self.assertEqual(value, host[attribute], u"Value for attribute %s for host %s is: '%s', expected: '%s'" % (attribute, host['id'], value, host[attribute]))
-					break
+					h1 = h.toHash()
+					h2 = host.toHash()
+					h1['lastSeen'] = None
+					h2['lastSeen'] = None
+					h1['created'] = None
+					h2['created'] = None
+					h1['inventoryNumber'] = None
+					h2['inventoryNumber'] = None
+					h1['notes'] = None
+					h2['notes'] = None
+					h1['opsiHostKey'] = None
+					h2['opsiHostKey'] = None
+					h1['isMasterDepot'] = None
+					h2['isMasterDepot'] = None
+					self.assertEqual(h1, h2 , u"Expected host to be %s, got %s" % (h1, h2))
 
 	def test_createDeposserverOnBackend(self):
 		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
-		self.assertEqual(len(hosts), len(self.configservers), u"Expected '%s' Depotserver, but found '%s' on backend." % (len(self.hosts), len(hosts)))
+		self.assertEqual(len(hosts), len(self.configservers), u"Expected '%s' depotserver, but found '%s' on backend." % (len(self.hosts), len(hosts)))
 
 	def test_clientsOnBackend(self):
 		hosts = self.backend.host_getObjects( type = [ self.clients[0].getType() ] )
-		self.assertEqual( len(hosts), len(self.clients), u"Expected 2 Cients, but found '%s' on backend." %  len(hosts))
+		self.assertEqual( len(hosts), len(self.clients), u"Expected %s cients, but found '%s' on backend." %  (len(self.clients),len(hosts)))
 		ids = []
 		for host in hosts:
 			ids.append(host.getId())
@@ -137,16 +142,7 @@ class ObjectMethodsMixin(object):
 		for config in configs:
 			for c in self.configs:
 				if (config.id == c.id):
-					config = config.toHash()
-					c = c.toHash()
-					for (attribute, value) in c.items():
-						if not value is None:
-							if type(value) is list:
-								for v in value:
-									self.assertIn(v,config[attribute], u"'%s' not in '%s'" % (v, config[attribute]))
-							else:
-								self.assertEqual(value,config[attribute], u"Value for attribute %s of config %s is: '%s', expected: '%s'" % (attribute, config['id'], value, config[attribute]))
-					break
+					self.assertEqual(config, c, u"Expected config to be %s, got %s" % (c, config))
 				
 	def test_getConfigByDefaultValues(self):
 		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
@@ -199,7 +195,8 @@ class ObjectMethodsMixin(object):
 			
 	def test_getConfigStatesFromBackend(self):
 		configStates = self.backend.configState_getObjects()
-		self.assertEqual(len(configStates), len(self.configStates), u"Expected %s config states, but found '%s' on backend." % (len(self.configStates), configStates))
+		for state in self.configStates:
+			self.assertIn(state, configStates, u"Expected config state %s on backend, but did not find it." % state)
 		
 
 	def test_getConfigStateByClientID(self):
@@ -215,10 +212,8 @@ class ObjectMethodsMixin(object):
 	def test_deleteConfigStateFromBackend(self):
 		self.backend.configState_deleteObjects(self.configState2)
 		configStates = self.backend.configState_getObjects()
-		self.assertEqual(len(configStates), len(self.configStates)-1, u"Expected %s config states, but found '%s' on backend." % (len(self.configStates)-1, len(configStates)))
-		for configState in configStates:
-			self.failIf(configState.objectId == self.configState2.objectId and configState.configId == self.configState2.configId)
-		
+		self.assertNotIn(self.configState2, configStates, "Expected config state %s to be deleted, but found it on backend." % self.configState2.configId)
+
 	def test_updateConfigState(self):
 		self.configState3.setValues([True])
 		self.backend.configState_updateObject(self.configState3)
@@ -366,7 +361,8 @@ class ObjectMethodsMixin(object):
 
 	def test_getProductsOnClientsFromBackend(self):
 		productOnClients = self.backend.productOnClient_getObjects()
-		self.assertEqual(len(productOnClients), len(self.productOnClients), u"Expected %s products on clients, but got %s from backend." % (len(self.productOnClients), len(productOnClients)))
+		for poc in self.productOnClients:
+			self.assertIn(poc, productOnClients, u"Expected product %s on client %s, but did not get it from backend." % (poc.productId, poc.clientId))
 		
 	def test_selectProductOnClient(self):
 		client1ProductOnClients = []
@@ -387,83 +383,51 @@ class ObjectMethodsMixin(object):
 		self.productOnClient2.setTargetConfiguration('forbidden')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects(targetConfiguration = 'forbidden')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
+		self.assertIn(self.productOnClient2, productOnClients, u"Expected product %s on client %s, but did not get it from backend." % (self.productOnClient2.productId, self.productOnClient2.clientId))
 		
 		self.productOnClient2.setInstallationStatus('unknown')
 		self.backend.productOnClient_updateObject(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects(installationStatus = 'unknown')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setActionRequest('custom')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(actionRequest = 'custom')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setLastAction('once')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(lastAction = 'once')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setActionProgress('aUniqueProgress')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(actionProgress = 'aUniqueProgress')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setActionResult('failed')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(actionResult = 'failed')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setInstallationStatus('installed')
-		self.productOnClient2.setProductVersion('777777')
-		self.productOnClient2.setPackageVersion('1')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(productVersion = '777777')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setPackageVersion('999999')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(packageVersion = '999999')
-		self.assertEqual(len(productOnClients), 1, u"Expected one product on client, but found %s on backend." % (len(productOnClients)))
-		
-		self.productOnClient2.setModificationTime('2010-01-01 05:55:55')
-		self.backend.productOnClient_updateObject(self.productOnClient2)
-		productOnClients = self.backend.productOnClient_getObjects(modificationTime = '2010-01-01 05:55:55')
-		# You cant set modification time on update!
-		self.assertEqual(len(productOnClients), 0, u"Modification time cannot be set on update, but backend found %s products on clients." % (len(productOnClients)))
-		
+		self.assertEqual(len(productOnClients), 1, u"Expected one product with statud 'unknown' on client %s, but did got %s from backend." % (self.productOnClient2.clientId, len(productOnClients)))
 		
 	def test_deleteProductOnClient(self):
 		self.backend.productOnClient_deleteObjects(self.productOnClient2)
 		productOnClients = self.backend.productOnClient_getObjects()
-		self.assertEqual(len(productOnClients), len(self.productOnClients) - 1, u"Expected %s products on clients, but got %s from backend." % (len(self.productOnClients) - 1, len(productOnClients)))
+
+		self.assertNotIn(self.productOnClient2, productOnClients, u"Expected product %s on client %s to be deleted, but found it on backend." % (self.productOnClient2.productId, self.productOnClient2.clientId))
 		
 	
-	def test_insertPropertyState(self):
-		with self.assertRaises(Exception):
+	def test_insertFaultyPropertyState(self):
+		try:
 			pps0 = ProductPropertyState(
 						productId  = self.productProperty1.getProductId(),
 						propertyId = self.productProperty1.getPropertyId(),
 						objectId   = 'kaputtesdepot.dom.local'
 						)
 			self.backend.productPropertyState_insertObject(pps0)
+			self.fail("Successfuly inserted faulty object into backend. This should not have happened.")
+		except Exception, e:
+			pass
 
 	def test_getProductPropertyStatesFromBackend(self):
 		productPropertyStates = self.backend.productPropertyState_getObjects()
-		self.assertEqual(len(productPropertyStates), len(self.productPropertyStates), u"Expected %s product property states, but got %s from backend." % (len(self.productPropertyStates), len(productPropertyStates)))
+		for state in self.productPropertyStates:
+			self.assertIn(state, productPropertyStates, u"Expected product property state %s on backend, but did not find it." % state)
+
 		
 	def test_deleteProductPropertyState(self):
 		self.backend.productPropertyState_deleteObjects(self.productPropertyState2)
 		productPropertyStates = self.backend.productPropertyState_getObjects()
-		self.assertEqual(len(productPropertyStates), len(self.productPropertyStates) - 1, u"Expected %s product property states, but got %s from backend." % (len(self.productPropertyStates)-1, len(productPropertyStates)))
+		self.assertNotIn(self.productPropertyStates, productPropertyStates, u"Expected product property states %s to be deleted, but found it on backend." % self.productPropertyStates)
 		
 	def test_insertProductPropertyState(self):
 		self.backend.productPropertyState_deleteObjects(self.productPropertyState2)
 		
 		self.backend.productPropertyState_insertObject(self.productPropertyState2)
 		productPropertyStates = self.backend.productPropertyState_getObjects()
-		self.assertEqual(len(productPropertyStates), len(self.productPropertyStates), u"Expected %s product property states, but got %s from backend." % (len(self.productPropertyStates), len(productPropertyStates)))
 		
+		self.assertIn(self.productPropertyState2, productPropertyStates, u"Expected product property state %s on backend, but did not find it." % self.productPropertyState2)
+
 	def test_getGroupsFromBackend(self):
 		groups = self.backend.group_getObjects()
 		self.assertEqual(len(groups), len(self.groups), u"Expected %s groups, but found '%s' on backend" % (len(self.groups), len(groups)))
@@ -524,47 +488,3 @@ class ObjectMethodsMixin(object):
 		objectToGroups = self.backend.objectToGroup_getObjects()
 		self.assertEqual(len(objectToGroups), len(self.objectToGroups), u"Expected %s objects to group, but found '%s' on backend" % (len(self.objectToGroups), len(objectToGroups)))
 
-
-		
-		
-		
-
-
-
-######################### OLD STUFF ##########################################
-		
-#		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-#		configs = self.backend.config_getObjects()
-#		print "#######################"
-#		for config in configs:
-#			if config.id == u'opsi-linux-bootimage.cmdline.bool': #config2
-#				print config
-#		print "#######################"
-#		print self.config2.getDefaultValues(), "getDefaultValues()" #[True]
-#		print self.config2.defaultValues, "defaultValues" #[True]
-#		print "#######################"
-#		
-#		configs = self.backend.config_getObjects(defaultValues = self.config2.defaultValues)
-#		
-#		print "#######################"
-#		print self.config2.getDefaultValues(), "getDefaultValues()" #[u'True']
-#		print self.config2.defaultValues, "defaultValues" #[u'True']
-#		
-#		print "#######################"
-#		configs = self.backend.config_getObjects()
-#		for config in configs:
-#			if config.id == u'opsi-linux-bootimage.cmdline.bool': #config2
-#				print config
-#		print "#######################"
-#		print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-#		
-#----------
-
-		
-
-#		
-#		#cannot be updated ...
-#		groups = self.backend.group_getObjects(description = self.group1.description)
-#		assert len(groups) == 1
-#		assert groups[0].getDescription() == 'new description'
-		

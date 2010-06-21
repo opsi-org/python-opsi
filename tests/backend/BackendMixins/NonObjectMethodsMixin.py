@@ -129,40 +129,33 @@ class NonObjectMethodsMixin(object):
 			
 	
 	def test_ldapSearchFilter(self):
-		result = self.backend.backend_searchObjects('(&(objectClass=Host)(type=OpsiDepotserver))')
-		for server in self.depotservers:
-			self.assertIn(server.getId(), result)
+		result = self.backend.backend_searchIdents('(&(objectClass=Host)(type=OpsiDepotserver))')
+		expected = self.backend.host_getIdents(type="OpsiDepotserver")
+		result.sort()
+		expected.sort()
+		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+
+		result = self.backend.backend_searchIdents('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
+		expected = self.backend.host_getIdents(type="OpsiDepotserver")
+		result.sort()
+		expected.sort()
+		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
 		
-		result = self.backend.backend_searchObjects('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-		for server in self.depotservers:
-			self.assertIn(server.getId(), result)
-			
-		result = self.backend.backend_searchObjects('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-		self.assertListEqual(result,[self.client1.getId(), self.client2.getId()])
+		result = self.backend.backend_searchIdents('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
+		expected = self.backend.host_getIdents(type="OpsiClient", id = ["client1*", "client2*" ] )
+		result.sort()
+		expected.sort()
+		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
 		
-		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-		expected = map((lambda x: x.clientId), self.backend.productOnClient_getObjects(attributes=['clientId'], productId=self.product1.getId(),installationStatus='installed'))
-		for f in result:
-			print f
-		self.assertListEqual(expected, result)
+		result = self.backend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
+		expected = map((lambda x: x["clientId"]),self.backend.productOnClient_getIdents(returnType="dict", installationStatus="installed", productId="product1"))
+		result.sort()
+		expected.sort()
+		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+
 		
-		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
-		expected = map((lambda x: x.clientId), self.backend.productOnClient_getObjects(attributes=['clientId'], productId=[self.product1.getId(),self.product2.getId()] ,installationStatus=['installed']))
-	
-		#self.backend.productOnClient_getIdents(productId=[self.product1.getId(),self.product2.getId()] ,installationStatus='installed')
-		self.assertListEqual(expected, result)
-		
-		result = self.backend.backend_searchObjects('(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-		self.skipTest(result)
-		result = self.backend.backend_searchObjects('(&(objectClass=Host)(description=T*))')
-		self.skipTest(result)
-		result = self.backend.backend_searchObjects('(&(objectClass=Host)(description=*))')
-		self.skipTest(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-		self.skipTest(result)
-		result = self.backend.backend_searchObjects('(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-		self.skipTest(result)
-		
-		#self.backend.host_delete(id = [])
-		#hosts = self.backend.host_getObjects()
-		#assert len(hosts) == 0
+		result = self.backend.backend_searchIdents('(&(objectClass=Host)(description=T*))')
+		expected = self.backend.host_getIdents(description="T*")
+		result.sort()
+		expected.sort()
+		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))

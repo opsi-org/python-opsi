@@ -1,4 +1,5 @@
 
+from OPSI.Object import *
 
 class ExtendedBackendMixin(object):
 	
@@ -19,81 +20,49 @@ class ExtendedBackendMixin(object):
 		for clientToDepot in clientToDepots:
 			self.assertIn(clientToDepot['depotId'], map((lambda x: x.id),self.depotservers), u"Expected client %s to be in depot %s, but couldn't find it." %(clientToDepot['depotId'], depotserver.id))
 
+	def test_createProductOnClient(self):
+		poc = ProductOnClient(
+				productId          = 'product6',
+				productType        = 'LocalbootProduct',
+				clientId           = 'client1.uib.local',
+				installationStatus = 'not_installed',
+				actionRequest      = 'setup'
+		)
+		self.backend.productOnClient_createObjects(poc)
+		
+		productOnClients = map((lambda x: (x.actionRequest == 'setup') and x), self.backend.productOnClient_getObjects(clientId = 'client1.uib.local'))
+		self.assertIn ( poc, productOnClients, u"'%s' not in '%s'" % (poc, productOnClients))
 
-
-	def fppExtendedBackend(self):
-
-
+	def test_selectProductOnClientWithDefault(self):
 		
-		# TODO
-		
-		# depotserver1: client1, client2, client3, client4
-		# depotserver2: client5, client6, client7
-		
-		# depotserver1: product6_1.0-1, product7_1.0-1, product9_1.0-1
-		# depotserver2: product6_1.0-1, product7_1.0-2, product9_1.0-1
-		
-		# product6_1.0-1: setup requires product7_1.0-1
-		# product7_1.0-1: setup requires product9
-		
-		self.backend.productOnClient_create(
-			productId          = 'product6',
-			productType        = 'LocalbootProduct',
-			clientId           = 'client1.uib.local',
-			installationStatus = 'not_installed',
-			actionRequest      = 'setup')
+		poc = ProductOnClient(
+				productId          = 'product6',
+				productType        = 'LocalbootProduct',
+				clientId           = 'client1.uib.local',
+				installationStatus = 'not_installed',
+				actionRequest      = 'setup'
+		)
+		self.backend.productOnClient_createObjects(poc)
 		
 		self.backend.productOnClient_delete(
 			productId          = 'product7',
 			clientId           = 'client1.uib.local')
+			
+		productOnClients = map((lambda x: x.productId), self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['product6', 'product7']))
+		productOnClients.sort()
+		self.assertListEqual(productOnClients, [u'product6',u'product7'], u"Expected result to be '%s', but got %s from backend." % (productOnClients, ['product6', 'product7']))
+#		
+	def test_selectProductOnClientsByWildcard(self):
 		
-		self.backend.productOnClient_delete(
-			productId          = 'product9',
-			clientId           = 'client1.uib.local')
+		poc = ProductOnClient(
+				productId          = 'product6',
+				productType        = 'LocalbootProduct',
+				clientId           = 'client1.uib.local',
+				installationStatus = 'not_installed',
+				actionRequest      = 'setup'
+		)
 		
-		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local')
-		setup = []
-		for productOnClient in productOnClients:
-			logger.info(u"Got productOnClient: %s" % productOnClient)
-			if (productOnClient.actionRequest == 'setup'):
-				setup.append(productOnClient.productId)
-		assert 'product6' in setup, u"'%s' not in '%s'" % ('product6', setup)
-		#assert 'product7' in setup, u"'%s' not in '%s'" % ('product7', setup)
-		#assert 'product9' in setup, u"'%s' not in '%s'" % ('product9', setup)
-		
-		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['product6', 'product7'])
-		for productOnClient in productOnClients:
-			logger.info(u"Got productOnClient: %s" % productOnClient)
-			assert productOnClient.productId in ('product6', 'product7'), u"'%s' not in '%s'" % (productOnClient.productId, ('product6', 'product7'))
-#			, u"Product id filter failed, got product id: %s" % productOnClient.productId
+		self.backend.productOnClient_createObjects(poc)
 		
 		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['*6*'])
-		for productOnClient in productOnClients:
-			logger.info(u"Got productOnClient: %s" % productOnClient)
-			assert productOnClient.productId in ('product6'), u"'%s' not in '%s'" % (productOnClient.productId, ('product6'))
-#			, u"Product id filter failed, got product id: %s" % productOnClient.productId
-		
-		self.backend.productOnClient_create(
-			productId          = 'product6',
-			productType        = 'LocalbootProduct',
-			clientId           = 'client5.uib.local',
-			installationStatus = 'not_installed',
-			actionRequest      = 'setup')
-		
-		self.backend.productOnClient_delete(
-			productId          = 'product7',
-			clientId           = 'client5.uib.local')
-		
-		self.backend.productOnClient_delete(
-			productId          = 'product9',
-			clientId           = 'client5.uib.local')
-		
-		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client5.uib.local')
-		setup = []
-		for productOnClient in productOnClients:
-			if (productOnClient.actionRequest == 'setup'):
-				setup.append(productOnClient.productId)
-		#assert not 'product6' in setup, u"'%s' is in '%s'" % ('product6', setup)
-		assert not 'product7' in setup, u"'%s' is in '%s'" % ('product7', setup)
-		assert not 'product9' in setup, u"'%s' is in '%s'" % ('product9', setup)
-		
+		self.assertListEqual(productOnClients, [poc], "Expected product %s on client %s, but got %s from backend" % (poc.productId, poc.clientId, productOnClients))
