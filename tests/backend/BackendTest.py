@@ -66,23 +66,8 @@ class BackendTestCase(TestCase):
 			networkAddress      = '192.168.10.0/24',
 			maxBandwidth        = 240000
 		)
-		self.depotserver3 = 	OpsiDepotserver(
-			id			= 'depot100.uib.local',
-			opsiHostKey		= '123456789012345678901234567890aa',
-			depotLocalUrl		= 'file:///opt/pcbin/install',
-			depotRemoteUrl		= 'smb://depot3.uib.local/opt_pcbin/install',
-			repositoryLocalUrl	= 'file:///var/lib/opsi/products',
-			repositoryRemoteUrl	= 'webdavs://depot3.uib.local:4447/products',
-			description		= 'A depot',
-			notes			= 'Depot 100',
-			hardwareAddress		= None,
-			ipAddress		= None,
-			networkAddress		= '192.168.100.0/24',
-			maxBandwidth		= 0
-		)
-
 		
-		self.depotservers = [ self.depotserver1, self.depotserver2, self.depotserver3 ]
+		self.depotservers = [ self.depotserver1, self.depotserver2]
 		self.hosts.extend(self.depotservers)
 		
 		self.client1 = OpsiClient(

@@ -9,8 +9,8 @@ from BackendMixins.ObjectMethodsMixin import ObjectMethodsMixin
 from BackendMixins.NonObjectMethodsMixin import NonObjectMethodsMixin
 
 class FileTestCase(BackendTestCase,
-		   ObjectMethodsMixin,
-		   #NonObjectMethodsMixin
+		   #ObjectMethodsMixin,
+		   NonObjectMethodsMixin
 		   ):
 		
 

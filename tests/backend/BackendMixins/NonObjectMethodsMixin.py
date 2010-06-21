@@ -70,29 +70,30 @@ class NonObjectMethodsMixin(object):
 			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 			
 		ids = self.backend.host_getIdents(id = '*100*')
-		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
+		self.assertEqual(len(ids), 2, u"Expected %s idents, but found '%s' on backend." % (2, len(ids)))
 		for ident in ids:
 			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		ids = self.backend.host_getIdents(returnType = 'tuple')
 		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
+			self.assertIn(ident[0], selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 			
 		ids = self.backend.host_getIdents(returnType = 'list')
 		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
+			self.assertIn(ident[0], selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		ids = self.backend.host_getIdents(returnType = 'dict')
 		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
+			self.assertIn(ident['id'], selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		selfIdents = []
-		selfIds = map((lambda set: set['id']), selfIdents)		
+			
 		for config in self.configs:
 			selfIdents.append(config.getIdent(returnType = 'dict'))
+		selfIds = map((lambda set: set['id']), selfIdents)	
 		
 		ids = self.backend.config_getIdents()
 		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
@@ -100,14 +101,14 @@ class NonObjectMethodsMixin(object):
 			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		selfIdents = []
-		selfIds = map((lambda set: set['id']), selfIdents)
 		for configState in self.configStates:
 			selfIdents.append(configState.getIdent(returnType = 'dict'))
 		
 		ids = self.backend.configState_getIdents()
 		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
+			id = dict(zip(('configId', 'objectId'), tuple(ident.split(";"))))
+			self.assertIn(id, selfIdents, u"'%s' not in '%s'" % (ident, selfIdents))
 		
 	def test_noException(self):
 		try:
@@ -129,27 +130,38 @@ class NonObjectMethodsMixin(object):
 	
 	def test_ldapSearchFilter(self):
 		result = self.backend.backend_searchObjects('(&(objectClass=Host)(type=OpsiDepotserver))')
-		self.fail(result)
+		for server in self.depotservers:
+			self.assertIn(server.getId(), result)
 		
-		logger.notice(result)
 		result = self.backend.backend_searchObjects('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
-		logger.notice(result)
+		for server in self.depotservers:
+			self.assertIn(server.getId(), result)
+			
 		result = self.backend.backend_searchObjects('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
-		logger.notice(result)
+		self.assertListEqual(result,[self.client1.getId(), self.client2.getId()])
+		
 		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-		logger.notice(result)
+		expected = map((lambda x: x.clientId), self.backend.productOnClient_getObjects(attributes=['clientId'], productId=self.product1.getId(),installationStatus='installed'))
+		for f in result:
+			print f
+		self.assertListEqual(expected, result)
+		
 		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(|(&(objectClass=ProductOnClient)(productId=product1))(&(objectClass=ProductOnClient)(productId=product2))))')
-		logger.notice(result)
+		expected = map((lambda x: x.clientId), self.backend.productOnClient_getObjects(attributes=['clientId'], productId=[self.product1.getId(),self.product2.getId()] ,installationStatus=['installed']))
+	
+		#self.backend.productOnClient_getIdents(productId=[self.product1.getId(),self.product2.getId()] ,installationStatus='installed')
+		self.assertListEqual(expected, result)
+		
 		result = self.backend.backend_searchObjects('(&(objectClass=OpsiClient)(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
-		logger.notice(result)
+		self.skipTest(result)
 		result = self.backend.backend_searchObjects('(&(objectClass=Host)(description=T*))')
-		logger.notice(result)
+		self.skipTest(result)
 		result = self.backend.backend_searchObjects('(&(objectClass=Host)(description=*))')
-		logger.notice(result)
+		self.skipTest(result)
 		result = self.backend.backend_searchObjects('(&(&(objectClass=OpsiClient)(ipAddress=192*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-		logger.notice(result)
+		self.skipTest(result)
 		result = self.backend.backend_searchObjects('(&(&(objectClass=Product)(description=*))(&(objectClass=ProductOnClient)(installationStatus=installed)))')
-		logger.notice(result)
+		self.skipTest(result)
 		
 		#self.backend.host_delete(id = [])
 		#hosts = self.backend.host_getObjects()
