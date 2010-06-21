@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import re, stat, base64, urllib, httplib, os, shutil
@@ -265,8 +265,16 @@ class Repository:
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
 	
-	def content(self, destination=u''):
+	def content(self, destination='', recursive=False):
 		raise RepositoryError(u"Not implemented")
+	
+	def getCountAndSize(self, destination=''):
+		(count, size) = (0, 0)
+		for entry in self.content(destination, recursive = True):
+			if (entry.get('type', '') == 'file'):
+				count += 1
+				size += entry.get('size', 0)
+		return (count, size)
 	
 	def fileInfo(self, destination):
 		raise RepositoryError(u"Not implemented")
@@ -299,23 +307,33 @@ class FileRepository(Repository):
 			destination = destination[1:]
 		return self._path + u'/' + destination
 	
-	def content(self, destination=''):
-		content = []
+	def content(self, destination='', recursive=False):
 		destination = self._preProcessPath(destination)
-		try:
-			for f in os.listdir(destination):
-				content.append(fileInfo(destination + u'/' + f))
-		except:
-			raise RepositoryError(u"Not a directory: '%s'" % destination)
-		return content
 		
-	def fileInfo(self, destination):
-		destination = self._preProcessPath(destination)
-		try:
-			
-			return info
-		except Exception, e:
-			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
+		content = []
+		destLen = len(destination)
+		def _recurse(path, content):
+			path = os.path.abspath(forceFilename(path))
+			for entry in os.listdir(path):
+				try:
+					info = { 'name': entry, 'size': long(0), 'type': 'file' }
+					entry = os.path.join(path, entry)
+					info['path'] = entry[destLen:]
+					size = 0
+					if os.path.islink(entry):
+						pass
+					elif os.path.isfile(entry):
+						info['size'] = os.path.getsize(entry)
+						content.append(info)
+					elif os.path.isdir(entry):
+						info['type'] = 'dir'
+						content.append(info)
+						if recursive:
+							_recurse(path = entry, content = content)
+				except Exception, e:
+					logger.error(e)
+			return content
+		return _recurse(path = destination, content = content)
 	
 	def download(self, source, destination, progressSubject=None):
 		size = self.fileInfo(source)['size']
@@ -541,17 +559,21 @@ class WebDAVRepository(HTTPRepository):
 		#	# Store cookie
 		#	self._cookie = cookie.split(';')[0].strip()
 	
-	def _getContent(self, destination=''):
+	def content(self, destination='', recursive=False):
 		destination = forceUnicode(destination)
 		content = []
-		if not destination.endswith('/'):
-			destination += '/'
-		
 		if not self._connection:
 			self._connect()
 		
-		self._connection.putrequest('PROPFIND', self._preProcessPath(destination))
-		self._connection.putheader('depth', '1')
+		destination = self._preProcessPath(destination)
+		if not destination.endswith('/'):
+			destination += '/'
+		
+		self._connection.putrequest('PROPFIND', destination)
+		depth = '1'
+		if recursive:
+			depth = 'infinity'
+		self._connection.putheader('depth', depth)
 		if self._cookie:
 			# Add cookie to header
 			self._connection.putheader('cookie', self._cookie)
@@ -568,34 +590,21 @@ class WebDAVRepository(HTTPRepository):
 		msr = davxml.WebDAVDocument.fromString(response.read())
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
 			raise RepositoryError(u"Not a directory: '%s'" % destination)
+		
+		destLen = len(destination)
 		for child in msr.root_element.children[1:]:
-			#<prop>
-			#	<resourcetype/>
-			#	<getetag>W/"1737A0-373-47DFF2F3"</getetag>
-			#	<getcontenttype>text/plain</getcontenttype>
-			#	<getcontentlength>883</getcontentlength>
-			#	<getlastmodified>Tue, 18 Mar 2008 17:50:59 GMT</getlastmodified>
-			#	<creationdate>2008-03-18T17:50:59Z</creationdate>
-			#	<displayname>connect.vnc</displayname>
-			#</prop>
 			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
 			info = { 'size': long(0), 'type': 'file' }
-			info['name'] = str(pContainer.childOfType(davxml.DisplayName))
+			info['path'] = forceUnicode(child.childOfType(davxml.HRef))[destLen:]
+			info['name'] = forceUnicode(pContainer.childOfType(davxml.DisplayName))
 			if (str(pContainer.childOfType(davxml.GETContentLength)) != 'None'):
 				info['size'] = long( str(pContainer.childOfType(davxml.GETContentLength)) )
 			if pContainer.childOfType(davxml.ResourceType).children:
 				info['type'] = 'dir'
-			
+				if info['path'].endswith('/'):
+					info['path'] = info['path'][:-1]
 			content.append(info)
-		
 		return content
-	
-	def content(self, destination=u''):
-		result = []
-		#for c in self._getContent(destination):
-		#	result.append( c['name'] )
-		return self._getContent(destination)
-		#return result
 	
 	def fileInfo(self, destination):
 		destination = forceUnicode(destination)
@@ -603,7 +612,7 @@ class WebDAVRepository(HTTPRepository):
 		try:
 			path = self._preProcessPath(u'/'.join(destination.split('/')[:-1]))
 			name = destination.split('/')[-1]
-			for c in self._getContent(path):
+			for c in self.content(path):
 				if (c['name'] == name):
 					info['size'] = c['size']
 					return info
@@ -821,29 +830,40 @@ if (__name__ == "__main__"):
 	
 	tempFile = '/tmp/testfile.bin'
 	
-	rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
-	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
-	os.unlink(tempFile)
-	
-	rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'')
-	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
-	os.unlink(tempFile)
-	
-	rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'', proxy="http://192.168.1.254:3128")
-	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
-	os.unlink(tempFile)
-	
-	rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'', proxy="http://192.168.1.254:3128")
-	rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
-	os.unlink(tempFile)
-	
-	rep = HTTPRepository(url = u'https://forum.opsi.org:443', username = u'', password = u'')
-	rep.download(u'/index.php', tempFile, progressSubject=None)
-	os.unlink(tempFile)
+	#rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
+	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	#os.unlink(tempFile)
+	#
+	#rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'')
+	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	#os.unlink(tempFile)
+	#
+	#rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'', proxy="http://192.168.1.254:3128")
+	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	#os.unlink(tempFile)
+	#
+	#rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'', proxy="http://192.168.1.254:3128")
+	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
+	#os.unlink(tempFile)
+	#
+	#rep = HTTPRepository(url = u'https://forum.opsi.org:443', username = u'', password = u'')
+	#rep.download(u'/index.php', tempFile, progressSubject=None)
+	#os.unlink(tempFile)
 	
 	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
-	print rep.content()
+	#rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
+	for c in rep.content():
+		print c
+	print rep.getCountAndSize()
+	
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#for c in rep.content('swaudit', recursive=True):
+	#	print c
+	
+	#rep = FileRepository(url = u'file:///tmp')
+	#rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
+	#for c in rep.content('', recursive=True):
+	#	print c
 	
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
 	#rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
