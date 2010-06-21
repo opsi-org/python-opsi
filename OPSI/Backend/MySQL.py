@@ -2273,14 +2273,17 @@ class MySQLBackend(ConfigDataBackend):
 		
 		for hardwareClass in hardwareClasses:
 			classFilter = {}
+			skipHardwareClass = False
 			for (attribute, value) in filter.items():
 				if value in (None, []):
 					continue
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
-					continue
+					skipHardwareClass = True
+					break
 				if (valueInfo.get('Scope', '') != 'g'):
 					continue
+				skipHardwareClass = False
 				
 				classFilter[attribute] = []
 				for v in forceList(value):
@@ -2301,6 +2304,9 @@ class MySQLBackend(ConfigDataBackend):
 						else:
 							raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 					classFilter[attribute].append(v)
+			
+			if skipHardwareClass:
+				continue
 			
 			if not classFilter and filter:
 				continue
@@ -2499,6 +2505,7 @@ class MySQLBackend(ConfigDataBackend):
 		for hardwareClass in hardwareClasses:
 			auditHardwareFilter = {}
 			classFilter = {}
+			skipHardwareClass = False
 			for (attribute, value) in filter.items():
 				#if value in (None, []):
 				#	continue
@@ -2509,13 +2516,14 @@ class MySQLBackend(ConfigDataBackend):
 					
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
-						continue
+						skipHardwareClass = True
+						break
 					if (valueInfo.get('Scope', '') == 'g'):
 						auditHardwareFilter[attribute] = value
 						continue
 					if (valueInfo.get('Scope', '') != 'i'):
 						continue
-				
+					
 				classFilter[attribute] = []
 				for v in forceList(value):
 					if v is None:
@@ -2543,6 +2551,9 @@ class MySQLBackend(ConfigDataBackend):
 						else:
 							raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
 					classFilter[attribute].append(v)
+			
+			if skipHardwareClass:
+				continue
 			
 			hardwareIds = []
 			if auditHardwareFilter:

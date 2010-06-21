@@ -170,7 +170,7 @@ class BaseObject(object):
 		return unicode(self.__class__.__name__)
 	
 	def setGeneratedDefault(self, flag = True):
-		self._isGeneratedDefault = flag
+		self._isGeneratedDefault = forceBool(flag)
 		
 	def isGeneratedDefault(self):
 		return self._isGeneratedDefault

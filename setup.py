@@ -45,7 +45,7 @@ setup(
 	name='python-opsi',
 	version=VERSION,
 	license='GPL-2',
-	url="http://www.opsi.de",
+	url="http://www.opsi.org",
 	description='The opsi python library',
 	#long-description='Long description goes here',
 	packages=find_packages(),

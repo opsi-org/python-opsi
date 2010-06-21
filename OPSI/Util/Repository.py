@@ -265,10 +265,14 @@ class Repository:
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
 	
+	def _preProcessPath(self, destination):
+		return destination
+	
 	def content(self, destination='', recursive=False):
 		raise RepositoryError(u"Not implemented")
 	
 	def getCountAndSize(self, destination=''):
+		destination = forceUnicode(destination)
 		(count, size) = (0, 0)
 		for entry in self.content(destination, recursive = True):
 			if (entry.get('type', '') == 'file'):
@@ -277,8 +281,25 @@ class Repository:
 		return (count, size)
 	
 	def fileInfo(self, destination):
-		raise RepositoryError(u"Not implemented")
-	
+		destination = forceUnicode(destination)
+		info = {}
+		try:
+			for c in self.content((u'/'.join(destination.split('/')[:-1]))):
+				if (c['path'] == destination):
+					info = c
+					return info
+			raise Exception(u'File not found')
+		except Exception, e:
+			#logger.logException(e)
+			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
+		
+	def exists(self, destination):
+		try:
+			self.fileInfo(destination)
+		except:
+			return False
+		return True
+		
 	def upload(self, source, destination):
 		raise RepositoryError(u"Not implemented")
 	
@@ -584,8 +605,7 @@ class WebDAVRepository(HTTPRepository):
 		
 		response = self._connection.getresponse()
 		if (response.status != responsecode.MULTI_STATUS):
-			raise RepositoryError(u"Failed to list dir '%s': %s" \
-				% (destination, response.status))
+			raise RepositoryError(u"Failed to list dir '%s': %s" % (destination, response.status))
 		
 		msr = davxml.WebDAVDocument.fromString(response.read())
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
@@ -605,21 +625,6 @@ class WebDAVRepository(HTTPRepository):
 					info['path'] = info['path'][:-1]
 			content.append(info)
 		return content
-	
-	def fileInfo(self, destination):
-		destination = forceUnicode(destination)
-		info = {}
-		try:
-			path = self._preProcessPath(u'/'.join(destination.split('/')[:-1]))
-			name = destination.split('/')[-1]
-			for c in self.content(path):
-				if (c['name'] == name):
-					info['size'] = c['size']
-					return info
-			raise Exception(u'File not found')
-		except Exception, e:
-			#logger.logException(e)
-			raise RepositoryError(u"Failed to get file info for '%s': %s" % (destination, e))
 	
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
@@ -656,10 +661,8 @@ class WebDAVRepository(HTTPRepository):
 			response.read()
 		except Exception, e:
 			logger.logException(e)
-			#if self._connection: self._connection.close()
 			if src: src.close()
-			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
-						% (source, destination, e))
+			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, e))
 		logger.debug2(u"WebDAV upload done")
 	
 	def delete(self, destination):
@@ -679,8 +682,7 @@ class WebDAVRepository(HTTPRepository):
 		
 		response = self._connection.getresponse()
 		if (response.status != responsecode.NO_CONTENT):
-			raise RepositoryError(u"Failed to delete '%s': %s" \
-				% (destination, response.status))
+			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
 		# We have to read the response!
 		response.read()
 
@@ -855,6 +857,8 @@ if (__name__ == "__main__"):
 	for c in rep.content():
 		print c
 	print rep.getCountAndSize()
+	print rep.exists('virdat_1-5992.opsi')
+	print rep.exists('notthere')
 	
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#for c in rep.content('swaudit', recursive=True):

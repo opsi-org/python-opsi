@@ -1821,7 +1821,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					objectId = configState.objectId):
 				self.configState_updateObject(configState)
 			else:
-				logger.info(u"ConfigState %s does not exist, creating" % config)
+				logger.info(u"ConfigState %s does not exist, creating" % configState)
 				self.configState_insertObject(configState)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
