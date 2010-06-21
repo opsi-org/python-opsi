@@ -1,0 +1,13 @@
+Tests ausführen:
+
+  - Alle Tests:
+      python unit2.py tests.AllTests
+
+  - Einzeltests:
+      python unit2.py tests.backend.FileTest
+
+  - Nützliche Flags:
+      python unit2.py -c <TestCase>		# Testlauf kann mit strg+c abgebrochen werden
+      python unit2.py -f <TestCase>		# Testlauf wird nach dem ersten Fail sofort beendet
+      python unit2.py --help			# Zeigt alle Flags und Optionen
+
