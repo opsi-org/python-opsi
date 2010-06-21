@@ -191,8 +191,10 @@ class BaseObject(object):
 	def __eq__(self, other):
 		if not isinstance(other, self.__class__):
 			return False
+
 		if self.isGeneratedDefault() or other.isGeneratedDefault():
 			return False
+
 		return (self.getIdent() == other.getIdent())
 		
 	def __str__(self):
