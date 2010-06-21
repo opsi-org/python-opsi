@@ -1760,13 +1760,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			for clientId in clientIds:
 				if not config.id in css.get(clientId, []):
 					# Config state does not exist for client => create default
-					configStates.append(
-						ConfigState(
-							configId = config.id,
-							objectId = clientId,
-							values   = config.defaultValues
-						)
+					cf = ConfigState(
+						configId = config.id,
+						objectId = clientId,
+						values   = config.defaultValues
 					)
+					cf.setGeneratedDefault(True)
+					configStates.append(cf)
 		return configStates
 	
 	def _configStateMatchesDefault(self, configState):
@@ -2418,6 +2418,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 									installationStatus = u'not_installed',
 									actionRequest      = u'none',
 							)
+							poc.setGeneratedDefault(True)
 							productOnClients.append(poc)
 			
 			logger.debug(u"   * created productOnClient defaults")

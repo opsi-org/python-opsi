@@ -105,6 +105,7 @@ class BaseObject(object):
 	identSeparator = u';'
 	foreignIdAttributes = []
 	backendMethodPrefix = ''
+	_isGeneratedDefault = False
 	
 	def getBackendMethodPrefix(self):
 		return self.backendMethodPrefix
@@ -168,6 +169,12 @@ class BaseObject(object):
 	def getType(self):
 		return unicode(self.__class__.__name__)
 	
+	def setGeneratedDefault(self, flag = True):
+		self._isGeneratedDefault = flag
+		
+	def isGeneratedDefault(self):
+		return self._isGeneratedDefault
+	
 	def __unicode__(self):
 		return u"<%s>" % self.getType()
 	
@@ -183,6 +190,8 @@ class BaseObject(object):
 	
 	def __eq__(self, other):
 		if not isinstance(other, self.__class__):
+			return False
+		if self.isGeneratedDefault() or other.isGeneratedDefault():
 			return False
 		return (self.getIdent() == other.getIdent())
 		
