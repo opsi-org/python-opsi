@@ -61,122 +61,76 @@ class NonObjectMethodsMixin(object):
 		selfIdents.append({'id': 'depot100.uib.local'})
 		selfIdents.append({'id': 'client100.uib.local'})
 		
-		ids = self.backend.host_getIdents()
-		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
-
-		
 		selfIds = map((lambda set: set['id']), selfIdents)
 		
+		ids = self.backend.host_getIdents()
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
+		
 		for ident in ids:
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 			
-	def oldNonObjectMethodsMixin(self):
-		# Hosts
-		
-
-		
-
-		
-
-		
-
-		
-
-
-		
 		ids = self.backend.host_getIdents(id = '*100*')
-		assert len(ids) == 2, u"got: '%s', expected: '%s'" % (ids, 2)
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			found = False
-			for selfIdent in selfIdents:
-				if (ident == selfIdent['id']):
-					found = True; break
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		ids = self.backend.host_getIdents(returnType = 'tuple')
-		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			found = False
-			for selfIdent in selfIdents:
-				if (ident[0] == selfIdent['id']):
-					found = True; break
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
-		
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
+			
 		ids = self.backend.host_getIdents(returnType = 'list')
-		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			found = False
-			for selfIdent in selfIdents:
-				if (ident[0] == selfIdent['id']):
-					found = True; break
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		ids = self.backend.host_getIdents(returnType = 'dict')
-		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			found = False
-			for selfIdent in selfIdents:
-				if (ident['id'] == selfIdent['id']):
-					found = True; break
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
-		
-		
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		selfIdents = []
+		selfIds = map((lambda set: set['id']), selfIdents)		
 		for config in self.configs:
 			selfIdents.append(config.getIdent(returnType = 'dict'))
 		
 		ids = self.backend.config_getIdents()
-		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			found = False
-			for selfIdent in selfIdents:
-				if (ident == selfIdent['id']):
-					found = True; break
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
-		
-		
-		# some deleted?
-		self.backend.configState_createObjects(self.configStates)
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		selfIdents = []
+		selfIds = map((lambda set: set['id']), selfIdents)
 		for configState in self.configStates:
 			selfIdents.append(configState.getIdent(returnType = 'dict'))
 		
 		ids = self.backend.configState_getIdents()
-		assert len(ids) == len(selfIdents), u"got: '%s', expected: '%s'" % (ids, len(selfIdents))
+		self.assertEqual(len(ids), len(selfIdents), u"Expected %s idents, but found '%s' on backend." % (len(selfIdents), len(ids)))
 		for ident in ids:
-			i = ident.split(';')
-			found = False
-			for selfIdent in selfIdents:
-				if (i[0] == selfIdent['configId']) and (i[1] == selfIdent['objectId']):
-					found = True; break
-			assert found, u"'%s' not in '%s'" % (ident, selfIdents)
+			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		ids = self.backend.product_getIdents()
-		ids = self.backend.productProperty_getIdents()
-		ids = self.backend.productOnDepot_getIdents()
-		ids = self.backend.productOnDepot_getIdents()
-		ids = self.backend.productPropertyState_getIdents()
-		ids = self.backend.productPropertyState_getIdents(returnType = 'tuple')
-		ids = self.backend.productPropertyState_getIdents(returnType = 'list')
-		ids = self.backend.productPropertyState_getIdents(returnType = 'dict')
-		ids = self.backend.group_getIdents()
-		ids = self.backend.objectToGroup_getIdents()
-		ids = self.backend.product_getIdents(id = '*product*')
-		
-		# TODO: assertions
+	def test_noException(self):
+		try:
+			self.backend.product_getIdents()
+			self.backend.productProperty_getIdents()
+			self.backend.productOnDepot_getIdents()
+			self.backend.productOnDepot_getIdents()
+			self.backend.productPropertyState_getIdents()
+			self.backend.productPropertyState_getIdents(returnType = 'tuple')
+			self.backend.productPropertyState_getIdents(returnType = 'list')
+			self.backend.productPropertyState_getIdents(returnType = 'dict')
+			self.backend.group_getIdents()
+			self.backend.objectToGroup_getIdents()
+			self.backend.product_getIdents(id = '*product*')
+		except Exception, e:
+			self.fail(e)
+			
+			
+	
+	def test_ldapSearchFilter(self):
 		result = self.backend.backend_searchObjects('(&(objectClass=Host)(type=OpsiDepotserver))')
+		self.fail(result)
+		
 		logger.notice(result)
 		result = self.backend.backend_searchObjects('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
 		logger.notice(result)
