@@ -112,8 +112,14 @@ class UI:
 	def createProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
 		return ProgressBox(self)
 	
-	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
+	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
 		return CopyProgressBox(self)
+	
+	def createDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
+		return DualProgressBox(self)
+	
+	def createCopyDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
+		return CopyDualProgressBox(self)
 	
 	def createMessageBox(self, width=-1, height=-1, title=_(u'Text'), text=u''):
 		return MessageBox(self)
@@ -161,6 +167,13 @@ class ProgressBox(MessageBox):
 		pass
 
 class CopyProgressBox(ProgressBox):
+	pass
+
+class DualProgressBox(MessageBox):
+	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
+		pass
+
+class CopyDualProgressBox(DualProgressBox):
 	pass
 
 
@@ -306,7 +319,7 @@ class SnackUI(UI):
 			logger.logException(e)
 			raise
 	
-	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy Progress'), text=u''):
+	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
 		try:
 			width   = forceInt(width)
 			height  = forceInt(height)
@@ -315,6 +328,36 @@ class SnackUI(UI):
 			text    = forceUnicode(text)
 			
 			progressBox = SnackCopyProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
+			return progressBox
+		except Exception, e:
+			self.exit()
+			logger.logException(e)
+			raise
+	
+	def createDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
+		try:
+			width   = forceInt(width)
+			height  = forceInt(height)
+			total   = forceInt(total)
+			title   = forceUnicode(title)
+			text    = forceUnicode(text)
+			
+			dualProgressBox = SnackDualProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
+			return dualProgressBox
+		except Exception, e:
+			self.exit()
+			logger.logException(e)
+			raise
+	
+	def createCopyDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
+		try:
+			width   = forceInt(width)
+			height  = forceInt(height)
+			total   = forceInt(total)
+			title   = forceUnicode(title)
+			text    = forceUnicode(text)
+			
+			progressBox = SnackCopyDualProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
 			return progressBox
 		except Exception, e:
 			self.exit()
@@ -825,8 +868,103 @@ class SnackCopyProgressBox(SnackProgressBox):
 			secLeft = '0%d' % secLeft
 		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
 		self.addText(u"%s\n" % message)
+
+class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
+	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
+		ProgressObserver.__init__(self)
+		
+		self._ui = ui
+		width  = forceInt(width)
+		height = forceInt(height)
+		total  = forceInt(total)
+		title  = forceUnicode(title)
+		text   = forceUnicode(text)
+		
+		if (width <= 0):
+			width = self._ui.getScreen().width - 7
+		if (height <= 0):
+			height = self._ui.getScreen().height - 7
+		
+		SnackMessageBox.__init__(self, ui, width, height-4, title, text)
+		
+		self._overallTotal = total
+		self._overallState = -1
+		self._overallFactor = 1
+		self._overallProgressSubject = None
+		
+		self._currentTotal = 100
+		self._currentState = -1
+		self._currentFactor = 1
+		self._currentProgressSubject = None
+		
+		self._width = width
+		self._height = height
+		
+		self._gridForm = GridForm(self._ui.getScreen(), title.encode(encoding, 'replace'), 1, 3)
+		self._currentScale = Scale(self._width, self._currentTotal)
+		self._overallScale = Scale(self._width, self._overallTotal)
+		
+		self._gridForm.add(self._textbox, 0, 0)
+		self._gridForm.add(self._currentScale, 0, 1)
+		self._gridForm.add(self._overallScale, 0, 2)
+		
+		self._ui.getScreen().pushHelpLine("")
+		
+	def setOverallProgressSubject(self, subject):
+		self._overallProgressSubject = subject
+		self._overallProgressSubject.attachObserver(self)
+		
+	def setCurrentProgressSubject(self, subject):
+		self._currentProgressSubject = subject
+		self._currentProgressSubject.attachObserver(self)
 	
+	def setOverallState(self, state):
+		self._overallState = state
+		self._overallScale.set(int(self._overallState*self._overallFactor))
+		self.show()
 	
+	def setCurrentState(self, state):
+		self._currentState = state
+		self._currentScale.set(int(self._currentState*self._currentFactor))
+		self.show()
+	
+	def getState(self):
+		return self._overallState
+	
+	def endChanged(self, subject, end):
+		if (subject == self._overallProgressSubject):
+			if (end <= 0) or (self._overallTotal <= 0):
+				self.setOverallState(0)
+			else:
+				self._overallFactor = float(self._overallTotal)/end
+				self.setOverallState(self._overallState)
+		elif (subject == self._currentProgressSubject):
+			if (end <= 0) or (self._currentTotal <= 0):
+				self.setCurrentState(0)
+			else:
+				self._currentFactor = float(self._currentTotal)/end
+				self.setCurrentState(self._currentState)
+		
+	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+		if (subject == self._overallProgressSubject):
+			self.setOverallState(state)
+		elif (subject == self._currentProgressSubject):
+			self.setCurrentState(state)
+
+class SnackCopyDualProgressBox(SnackDualProgressBox):
+	def messageChanged(self, subject, message):
+		minLeft = 0
+		secLeft = subject.getTimeLeft()
+		if (secLeft >= 60):
+			minLeft = int(secLeft/60)
+			secLeft -= (minLeft*60)
+		if (minLeft < 10):
+			minLeft = '0%d' % minLeft
+		if (secLeft < 10):
+			secLeft = '0%d' % secLeft
+		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
+		self.addText(u"%s\n" % message)
+
 if (__name__ == "__main__"):
 	uiTest = UIFactory('snack')
 	uiTest.drawRootText(x = 1, y = 1, text = u'Test root text')

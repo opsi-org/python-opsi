@@ -2279,7 +2279,6 @@ class MySQLBackend(ConfigDataBackend):
 					continue
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
-					continue
 					skipHardwareClass = True
 					break
 				if (valueInfo.get('Scope', '') != 'g'):
@@ -2517,7 +2516,6 @@ class MySQLBackend(ConfigDataBackend):
 					
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
-						continue
 						skipHardwareClass = True
 						break
 					if (valueInfo.get('Scope', '') == 'g'):
