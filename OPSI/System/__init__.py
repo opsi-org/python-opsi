@@ -53,7 +53,7 @@ class SystemHook(SystemSpecificHook):
 		return result
 	
 	def error_getDirectorySize(self, path, result, exception):
-		raise exception
+		pass
 	
 	
 	def pre_getSize(self, path):
@@ -63,7 +63,7 @@ class SystemHook(SystemSpecificHook):
 		return result
 	
 	def error_getSize(self, path, result, exception):
-		raise exception
+		pass
 	
 	
 	def pre_countFiles(self, path):
@@ -73,7 +73,7 @@ class SystemHook(SystemSpecificHook):
 		return result
 	
 	def error_countFiles(self, path, result, exception):
-		raise exception
+		pass
 	
 	
 	def pre_getCountAndSize(self, path):
@@ -83,7 +83,7 @@ class SystemHook(SystemSpecificHook):
 		return result
 	
 	def error_getCountAndSize(self, path, result, exception):
-		raise exception
+		pass
 	
 	
 	def pre_copy(self, src, dst, progressSubject):
@@ -93,7 +93,7 @@ class SystemHook(SystemSpecificHook):
 		return None
 	
 	def error_copy(self, src, dst, progressSubject, exception):
-		raise exception
+		pass
 
 def getDirectorySize(path):
 	path = os.path.abspath(forceFilename(path))
@@ -113,7 +113,8 @@ def getDirectorySize(path):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_getDirectorySize(path, size, e)
-		
+		raise
+	
 	for hook in hooks:
 		size = hook.post_getDirectorySize(path, size)
 	
@@ -137,7 +138,8 @@ def getSize(path):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_getSize(path, size, e)
-	
+		raise
+		
 	for hook in hooks:
 		size = hook.post_getSize(path, size)
 	
@@ -161,6 +163,7 @@ def countFiles(path):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_countFiles(path, count, e)
+		raise
 	
 	for hook in hooks:
 		count = hook.post_countFiles(path, count)
@@ -192,6 +195,7 @@ def getCountAndSize(path):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_getCountAndSize(path, (count, size), e)
+		raise
 	
 	for hook in hooks:
 		(count, size) = hook.post_getCountAndSize(path, (count, size))
@@ -230,32 +234,32 @@ def copy(src, dst, progressSubject=None):
 	src = dir,   dst = not existent      => create dst, copy content of src into dst
 	src = dir/*, dst = dir/not existent  => create dst if not exists, copy content of src into dst
 	'''
-	src = forceFilename(src)
-	dst = forceFilename(dst)
-	
-	copySrcContent = False
-	
-	if src.endswith('/*.*') or src.endswith('\\*.*'):
-		src = src[:-4]
-		copySrcContent = True
-		
-	elif src.endswith('/*') or src.endswith('\\*'):
-		src = src[:-2]
-		copySrcContent = True
-	
-	if copySrcContent and not os.path.isdir(src):
-		raise Exception(u"Source directory '%s' not found" % src)
-	
-	logger.info(u"Copying from '%s' to '%s'" % (src, dst))
-	(count, size) = (0, 0)
-	if progressSubject:
-		#progressSubject.setMessage(u'Preparing copy')
-		#progressSubject.setMessage(u'Copying from %s to %s' % (src, dst))
-		progressSubject.reset()
-		(count, size) = getCountAndSize(src)
-		progressSubject.setEnd(size)
-	
 	try:
+		src = forceFilename(src)
+		dst = forceFilename(dst)
+		
+		copySrcContent = False
+		
+		if src.endswith('/*.*') or src.endswith('\\*.*'):
+			src = src[:-4]
+			copySrcContent = True
+			
+		elif src.endswith('/*') or src.endswith('\\*'):
+			src = src[:-2]
+			copySrcContent = True
+		
+		if copySrcContent and not os.path.isdir(src):
+			raise Exception(u"Source directory '%s' not found" % src)
+		
+		logger.info(u"Copying from '%s' to '%s'" % (src, dst))
+		(count, size) = (0, 0)
+		if progressSubject:
+			#progressSubject.setMessage(u'Preparing copy')
+			#progressSubject.setMessage(u'Copying from %s to %s' % (src, dst))
+			progressSubject.reset()
+			(count, size) = getCountAndSize(src)
+			progressSubject.setEnd(size)
+		
 		_copy(src, dst, copySrcContent, 0, count, size, progressSubject)
 		logger.info(u'Copy done')
 		if progressSubject:
@@ -263,6 +267,7 @@ def copy(src, dst, progressSubject=None):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_copy(src, dst, progressSubject, e)
+		raise
 	
 	for hook in hooks:
 		hook.post_copy(src, dst, progressSubject)

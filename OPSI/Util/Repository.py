@@ -68,6 +68,19 @@ def getRepository(url, **kwargs):
 		return CIFSRepository(url, **kwargs)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
+class RepositoryHook(object):
+	def __init__(self):
+		pass
+	
+	def pre_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
+		return (source, destination, overallProgressSubject, currentProgressSubject)
+	
+	def post_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
+		return None
+	
+	def error_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):
+		pass
+	
 class Repository:
 	def __init__(self, url, **kwargs):
 		'''
@@ -91,7 +104,8 @@ class Repository:
 		if self._dynamicBandwidth:
 			from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
 			self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
-	
+		self._hooks = []
+		
 	def __del__(self):
 		if self._networkPerformanceCounter:
 			try:
@@ -106,6 +120,18 @@ class Repository:
 		return unicode(self).encode("utf-8")
 	
 	__repr__ = __unicode__
+	
+	def addHook(hook):
+		if not isinstance(hook, RepositoryHook):
+			raise ValueError(u"Not a RepositoryHook: %s" % hook)
+		if not hook in self._hooks:
+			self._hooks.append(hook)
+	
+	def removeHook(hook):
+		if not isinstance(hook, RepositoryHook):
+			raise ValueError(u"Not a RepositoryHook: %s" % hook)
+		if hook in self._hooks:
+			self._hooks.remove(hook)
 	
 	def _sleepForBandwidth(self):
 		bwlimit = 0.0
@@ -319,9 +345,9 @@ class Repository:
 		except:
 			return False
 	
-	def copy(self, source, destination, fileProgressSubject=None, overallProgressSubject=None, currentProgressSubject=None):
-		#for hook in hooks:
-		#	(source, destination, overallProgressSubject) = hook.pre_copy(source, destination, overallProgressSubject)
+	def copy(self, source, destination, overallProgressSubject=None, currentProgressSubject=None):
+		for hook in self._hooks:
+			(source, destination, overallProgressSubject, currentProgressSubject) = hook.pre_copy(source, destination, overallProgressSubject, currentProgressSubject)
 		
 		'''
 		source = file,  destination = file              => overwrite destination
@@ -332,36 +358,37 @@ class Repository:
 		source = dir,   destination = not existent      => create destination, copy content of source into destination
 		source = dir/*, destination = dir/not existent  => create destination if not exists, copy content of source into destination
 		'''
-		source = forceFilename(source)
-		destination = forceFilename(destination)
-		
-		copySrcContent = False
-		
-		if source.endswith('/*.*') or source.endswith('\\*.*'):
-			source = source[:-4]
-			copySrcContent = True
-			
-		elif source.endswith('/*') or source.endswith('\\*'):
-			source = source[:-2]
-			copySrcContent = True
-		
-		if copySrcContent and not self.isdir(source):
-			raise Exception(u"Source directory '%s' not found" % source)
-		
-		logger.info(u"Copying from '%s' to '%s'" % (source, destination))
-		(totalFiles, size) = (0, 0)
-		if overallProgressSubject:
-			overallProgressSubject.reset()
-			(totalFiles, size) = self.getCountAndSize(source)
-			overallProgressSubject.setEnd(size)
-		
 		try:
+			source = forceFilename(source)
+			destination = forceFilename(destination)
+			
+			copySrcContent = False
+			
+			if source.endswith('/*.*') or source.endswith('\\*.*'):
+				source = source[:-4]
+				copySrcContent = True
+				
+			elif source.endswith('/*') or source.endswith('\\*'):
+				source = source[:-2]
+				copySrcContent = True
+			
+			if copySrcContent and not self.isdir(source):
+				raise Exception(u"Source directory '%s' not found" % source)
+			
+			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
+			(totalFiles, size) = (0, 0)
+			if overallProgressSubject:
+				overallProgressSubject.reset()
+				(totalFiles, size) = self.getCountAndSize(source)
+				overallProgressSubject.setEnd(size)
+			
 			info = self.fileInfo(source)
 			if (info.get('type') == 'file'):
 				destinationFile = destination
 				if not os.path.exists(destination):
-					os.makedirs(destination)
-					destinationFile = os.path.join(destination, info['name'])
+					parent = os.path.dirname(destination)
+					if not os.path.exists(parent):
+						os.makedirs(parent)
 				elif os.path.isdir(destination):
 					destinationFile = os.path.join(destination, info['name'])
 				
@@ -431,12 +458,12 @@ class Repository:
 			if overallProgressSubject:
 				overallProgressSubject.setState(size)
 		except Exception, e:
+			for hook in self._hooks:
+				hook.error_copy(source, destination, overallProgressSubject, currentProgressSubject, e)
 			raise
-		#	for hook in hooks:
-		#		hook.error_copy(source, destination, overallProgressSubject, e)
-		#
-		#for hook in hooks:
-		#	hook.post_copy(source, destination, overallProgressSubject)
+		
+		for hook in self._hooks:
+			hook.post_copy(source, destination, overallProgressSubject, currentProgressSubject)
 	
 	def upload(self, source, destination):
 		raise RepositoryError(u"Not implemented")

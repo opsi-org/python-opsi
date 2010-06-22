@@ -64,7 +64,7 @@ class SystemSpecificHook(object):
 		return None
 	
 	def error_reboot(self, wait):
-		raise exception
+		pass
 	
 	
 	def pre_halt(self, wait):
@@ -74,7 +74,7 @@ class SystemSpecificHook(object):
 		return None
 	
 	def error_halt(self, wait):
-		raise exception
+		pass
 	
 	
 	def pre_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):
@@ -84,7 +84,7 @@ class SystemSpecificHook(object):
 		return None
 	
 	def error_Harddisk_shred(self, harddisk, partition, iterations, progressSubject, exception):
-		raise exception
+		pass
 	
 	
 	def pre_Harddisk_fill(self, harddisk, partition, infile, progressSubject):
@@ -94,7 +94,7 @@ class SystemSpecificHook(object):
 		return None
 	
 	def error_Harddisk_fill(self, harddisk, partition, infile, progressSubject, exception):
-		raise exception
+		pass
 	
 	
 	def pre_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
@@ -114,7 +114,7 @@ class SystemSpecificHook(object):
 		return None
 	
 	def error_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject, exception):
-		raise exception
+		pass
 	
 	
 	def pre_auditHardware(self, config, hostId, progressSubject):
@@ -124,7 +124,7 @@ class SystemSpecificHook(object):
 		return result
 	
 	def error_auditHardware(self, config, hostId, progressSubject, exception):
-		raise exception
+		pass
 	
 hooks = []
 def addSystemHook(hook):
@@ -374,6 +374,7 @@ def reboot(wait = 10):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_reboot(wait)
+		raise
 	
 	for hook in hooks:
 		hook.post_reboot(wait)
@@ -393,6 +394,7 @@ def halt(wait = 10):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_halt(wait)
+		raise
 	
 	for hook in hooks:
 		hook.post_halt(wait)
@@ -1010,13 +1012,13 @@ class Harddisk:
 		self.partitions = []
 		
 	def shred(self, partition=0, iterations=25, progressSubject=None):
-		partition  = forceInt(partition)
-		iterations = forceInt(iterations)
-		
 		for hook in hooks:
 			(partition, iterations, progressSubject) = hook.pre_Harddisk_shred(self, partition, iterations, progressSubject)
 		
 		try:
+			partition  = forceInt(partition)
+			iterations = forceInt(iterations)
+			
 			dev = self.device
 			if (partition != 0):
 				dev = self.getPartition(partition)['device']
@@ -1065,7 +1067,8 @@ class Harddisk:
 		except Exception, e:
 			for hook in hooks:
 				hook.error_Harddisk_shred(self, partition, iterations, progressSubject, e)
-			
+			raise
+		
 		for hook in hooks:
 			hook.post_Harddisk_shred(self, partition, iterations, progressSubject)
 		
@@ -1077,15 +1080,15 @@ class Harddisk:
 		self.fill(forceInt(partition), u'/dev/urandom', progressSubject)
 	
 	def fill(self, partition=0, infile=u'', progressSubject=None):
-		partition = forceInt(partition)
-		if not infile:
-			raise Exception(u"No input file given")
-		infile = forceFilename(infile)
-		
 		for hook in hooks:
 			(partition, infile, progressSubject) = hook.pre_Harddisk_fill(self, partition, infile, progressSubject)
 		
 		try:
+			partition = forceInt(partition)
+			if not infile:
+				raise Exception(u"No input file given")
+			infile = forceFilename(infile)
+			
 			xfermax = 0
 			dev = self.device
 			if (partition != 0):
@@ -1152,6 +1155,7 @@ class Harddisk:
 		except Exception, e:
 			for hook in hooks:
 				hook.error_Harddisk_fill(self, partition, infile, progressSubject, e)
+			raise
 		
 		for hook in hooks:
 			hook.post_Harddisk_fill(self, partition, infile, progressSubject)
@@ -1468,13 +1472,13 @@ class Harddisk:
 			os.unsetenv("LD_PRELOAD")
 		
 	def saveImage(self, partition, imageFile, progressSubject=None):
-		partition = forceInt(partition)
-		imageFile = forceUnicode(imageFile)
-		
 		for hook in hooks:
 			(partition, imageFile, progressSubject) = hook.pre_Harddisk_saveImage(self, partition, imageFile, progressSubject)
 		
 		try:
+			partition = forceInt(partition)
+			imageFile = forceUnicode(imageFile)
+			
 			imageType = None
 			image = None
 			
@@ -1568,18 +1572,19 @@ class Harddisk:
 		except Exception, e:
 			for hook in hooks:
 				hook.error_Harddisk_saveImage(self, partition, imageFile, progressSubject, e)
-			
+			raise
+		
 		for hook in hooks:
 			hook.post_Harddisk_saveImage(self, partition, imageFile, progressSubject)
 		
 	def restoreImage(self, partition, imageFile, progressSubject=None):
-		partition = forceInt(partition)
-		imageFile = forceUnicode(imageFile)
-		
 		for hook in hooks:
 			(partition, imageFile, progressSubject) = hook.pre_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 		
 		try:
+			partition = forceInt(partition)
+			imageFile = forceUnicode(imageFile)
+			
 			imageType = None
 			image = None
 			
@@ -1712,6 +1717,7 @@ class Harddisk:
 		except Exception, e:
 			for hook in hooks:
 				hook.error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, e)
+			raise
 		
 		for hook in hooks:
 			hook.post_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
@@ -1726,9 +1732,9 @@ def auditHardware(config, hostId, progressSubject=None):
 	for hook in hooks:
 		(config, hostId, progressSubject) = hook.pre_auditHardware(config, hostId, progressSubject)
 	
-	hostId = forceHostId(hostId)
-	
 	try:
+		hostId = forceHostId(hostId)
+		
 		AuditHardwareOnHost.setHardwareConfig(config)
 		auditHardwareOnHosts = []
 		
@@ -1745,7 +1751,8 @@ def auditHardware(config, hostId, progressSubject=None):
 	except Exception, e:
 		for hook in hooks:
 			hook.error_auditHardware(config, hostId, progressSubject, e)
-		
+		raise
+	
 	for hook in hooks:
 		auditHardwareOnHosts = hook.post_auditHardware(config, hostId, auditHardwareOnHosts)
 	
