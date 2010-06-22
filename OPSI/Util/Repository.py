@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import re, stat, base64, urllib, httplib, os, shutil
+import re, stat, base64, urllib, httplib, os, shutil, codecs
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -44,9 +44,9 @@ from OPSI.web2.dav import davxml
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
-from OPSI.Util import md5sum, non_blocking_connect_http, non_blocking_connect_https
+from OPSI.Util import md5sum, randomString, non_blocking_connect_http, non_blocking_connect_https
 from OPSI.Util.File.Opsi import PackageContentFile
-
+from OPSI.System.Posix import which, execute
 # Get Logger instance
 logger = Logger()
 
@@ -57,33 +57,26 @@ def _(string):
 # =       Repositories                                                                =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-def getRepository(url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
-	url          = forceUnicode(url)
-	username     = forceUnicode(username)
-	password     = forceUnicode(password)
-	maxBandwidth = forceInt(maxBandwidth)
-	if re.search('^file://', url):
-		return FileRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
-	if re.search('^https?://', url):
-		return HTTPRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
-	if re.search('^webdavs?://', url):
-		return WebDAVRepository(url, username, password, maxBandwidth, dynamicBandwidth, application)
+def getRepository(url, **kwargs):
+	if re.search('^file://', url, re.IGNORECASE):
+		return FileRepository(url, **kwargs)
+	if re.search('^https?://', url, re.IGNORECASE):
+		return HTTPRepository(url, **kwargs)
+	if re.search('^webdavs?://', url, re.IGNORECASE):
+		return WebDAVRepository(url, **kwargs)
+	if re.search('^(smb|cifs)://', url, re.IGNORECASE):
+		return CIFSRepository(url, **kwargs)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
 class Repository:
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
+	def __init__(self, url, **kwargs):
 		'''
 		maxBandwith must be in byte/s
 		'''
 		self._url              = forceUnicode(url)
-		self._username         = forceUnicode(username)
-		self._password         = forceUnicode(password)
+		self._maxBandwidth     = forceInt(kwargs.get('maxBandwidth', 0))
+		self._dynamicBandwidth = forceBool(kwargs.get('dynamicBandwidth', False))
 		self._path             = u''
-		self._maxBandwidth     = forceInt(maxBandwidth)
-		self._dynamicBandwidth = forceBool(dynamicBandwidth)
-		self._application  = 'opsi repository module version %s' % __version__
-		if application:
-			self._application = str(application)
 		
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
@@ -458,14 +451,15 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 	
 class FileRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
-		Repository.__init__(self, url, username, password, maxBandwidth, False, application)
+	
+	def __init__(self, url, **kwargs):
+		Repository.__init__(self, url, **kwargs)
 		
-		match = re.search('^file://(/[^/]+.*)$', self._url)
+		match = re.search('^file://(/[^/]+.*)$', self._url, re.IGNORECASE)
 		if not match:
 			raise RepositoryError(u"Bad file url: '%s'" % self._url)
 		self._path = match.group(1)
-		
+	
 	def _preProcessPath(self, path):
 		path = forceUnicode(path)
 		if path.startswith('/'):
@@ -567,8 +561,15 @@ class FileRepository(Repository):
 		
 
 class HTTPRepository(Repository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application='', proxy = None):
-		Repository.__init__(self, url, username, password, maxBandwidth, dynamicBandwidth, application)
+	
+	def __init__(self, url, **kwargs):
+		Repository.__init__(self, url, **kwargs)
+		
+		self._application = str(kwargs.get('application', 'opsi repository module version %s' % __version__))
+		self._username = forceUnicode(kwargs.get('username', ''))
+		self._password = forceUnicode(kwargs.get('password', ''))
+		proxy = kwargs.get('proxy')
+		
 		self._connectTimeout = 30
 		self._port = 80
 		self._path = u'/'
@@ -592,7 +593,7 @@ class HTTPRepository(Repository):
 				(username, password) = username.split(':', 1)
 			if not self._username and username: self._username = username
 			if not self._password and password: self._password = password
-		
+			
 		if (self._host.find(':') != -1):
 			(self._host, self._port) = self._host.split(':', 1)
 			self._port = forceInt(self._port)
@@ -601,15 +602,17 @@ class HTTPRepository(Repository):
 		self._cookie = ''
 		self._username = forceUnicode(self._username)
 		self._password = forceUnicode(self._password)
+		if self._password:
+			logger.addConfidentialString(self._password)
 		
 		auth = u'%s:%s' % (self._username, self._password)
 		self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
 		self._proxy = None
 		
 		if proxy:
-			self._proxy = proxy
+			self._proxy = forceUnicode(proxy)
 			self._auth = None
-			match = re.search('^(https?)://([^:]+:*[^:]+):(\d+)$', proxy)
+			match = re.search('^(https?)://([^:]+:*[^:]+):(\d+)$', proxy, re.IGNORECASE)
 			if not match:
 				raise RepositoryError(u"Bad proxy url: '%s'" % proxy)
 			proxyProtocol = match.group(1)
@@ -702,8 +705,9 @@ class HTTPRepository(Repository):
 		logger.debug2(u"HTTP download done")
 	
 class WebDAVRepository(HTTPRepository):
-	def __init__(self, url, username=u'', password=u'', maxBandwidth=0, dynamicBandwidth=False, application=''):
-		HTTPRepository.__init__(self, url, username, password, maxBandwidth, dynamicBandwidth, application)
+	
+	def __init__(self, url, **kwargs):
+		HTTPRepository.__init__(self, url, **kwargs)
 		parts = self._url.split('/')
 		if (len(parts) < 3) or parts[0].lower() not in ('webdav:', 'webdavs:'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
@@ -854,6 +858,111 @@ class WebDAVRepository(HTTPRepository):
 		# We have to read the response!
 		response.read()
 
+class CIFSRepository(FileRepository):
+	def __init__(self, url, **kwargs):
+		Repository.__init__(self, url, **kwargs)
+		
+		match = re.search('^(smb|cifs)://([^/]+/.+)$', self._url, re.IGNORECASE)
+		if not match:
+			raise RepositoryError(u"Bad cifs url: '%s'" % self._url)
+		
+		if (os.name != 'posix'):
+			raise NotImplementedError(u"CIFSRepository not yet avaliable on os '%s'" % os.name)
+		
+		self._mounted = False
+		self._mountPointCreated = False
+		
+		self._mountPoint = forceUnicode(kwargs.get('mountPoint', u'/tmp/.cifs-mount.%s' % randomString(5)))
+		self._username = forceUnicode(kwargs.get('username', 'guest'))
+		self._password = forceUnicode(kwargs.get('password', ''))
+		if self._password:
+			logger.addConfidentialString(self._password)
+		self._credentialsFile = u"/tmp/.cifs-credentials.%s" % randomString(5)
+		
+		self._mountOptions = { 'credentials': self._credentialsFile }
+		if (self._username.find('\\') != -1):
+			(self._mountOptions['domain'], self._username) = self._username.split('\\', 1)
+		self._mountOptions.update(kwargs.get('mountOptions', {}))
+		
+		parts = match.group(2).split('/')
+		self._share = u'//%s/%s' % (parts[0], parts[1])
+		self._path = self._mountPoint
+		if (len(parts) > 2):
+			self._path += u'/' + u'/'.join(parts[2:])
+		if self._path.endswith('/'):
+			self._path = self._path[:-1]
+		
+		self._mount()
+		
+	def _mount(self):
+		if self._mounted:
+			self._umount()
+		if not self._mountPoint:
+			raise ValueError(u"Mount point not defined")
+		
+		logger.info(u"Mounting share '%s' to '%s'" % (self._share, self._mountPoint))
+		
+		if not os.path.isdir(self._mountPoint):
+			os.makedirs(self._mountPoint)
+			self._mountPointCreated = True
+		
+		if os.path.exists(self._credentialsFile):
+			os.remove(self._credentialsFile)
+		f = open(self._credentialsFile, "w")
+		f.close()
+		os.chmod(self._credentialsFile, 0600)
+		f = codecs.open(self._credentialsFile, "w", "iso-8859-15")
+		f.write(u"username=%s\n" % self._username)
+		f.write(u"password=%s\n" % self._password)
+		f.close()
+		
+		optString = u''
+		for (key, value) in self._mountOptions.items():
+			key = forceUnicode(key)
+			if value:
+				optString += u',%s=%s' % (key, forceUnicode(value))
+			else:
+				optString += u',%s' % key
+		if optString:
+			optString = u'-o "%s"' % optString[1:].replace('"', '\\"')
+		try:
+			result = execute(u"%s -t cifs %s %s %s" % (which('mount'), optString, self._share, self._mountPoint))
+			self._mounted = True
+		except Exception, e:
+			logger.error(u"Failed to mount '%s': %s" % (self._share, e))
+			try:
+				os.remove(self._credentialsFile)
+				if self._mountPointCreated:
+					os.rmdir(self._mountPoint)
+			except Exception, e2:
+				logger.error(e2)
+			raise Exception(u"Failed to mount '%s': %s" % (self._share, e))
+		os.remove(self._credentialsFile)
+		
+	def _umount(self):
+		if not self._mounted or not self._mountPoint:
+			return
+		
+		logger.info(u"Umounting share '%s' from '%s'" % (self._share, self._mountPoint))
+		
+		try:
+			result = execute(u"%s %s" % (which('umount'), self._mountPoint))
+			self._mounted = False
+			if self._mountPointCreated:
+				os.rmdir(self._mountPoint)
+		except Exception, e:
+			logger.error(u"Failed to umount '%s': %s" % (self._mountPoint, e))
+			raise Exception(u"Failed to umount '%s': %s" % (self._mountPoint, e))
+		
+	def __del__(self):
+		try:
+			if os.path.isdir(self._mountPoint):
+				if self._mounted:
+					os.system('umount %s' % self._mountPoint)
+				os.rmdir(self._mountPoint)
+		except:
+			pass
+
 class DepotToLocalDirectorySychronizer(object):
 	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
 		self._sourceDepot          = sourceDepot
@@ -995,8 +1104,13 @@ class DepotToLocalDirectorySychronizer(object):
 
 
 if (__name__ == "__main__"):
-	#logger.setConsoleLevel(LOG_DEBUG2)
+	logger.setConsoleLevel(LOG_DEBUG2)
 	
+	rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
+	print rep.listdir()
+	print rep.isdir('javavm')
+	
+	sys.exit(0)
 	tempFile = '/tmp/testfile.bin'
 	tempDir = '/tmp/testdir'
 	tempDir2 = '/tmp/testdir2'
