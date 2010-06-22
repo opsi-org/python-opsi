@@ -893,7 +893,10 @@ class CIFSRepository(FileRepository):
 			self._path = self._path[:-1]
 		
 		self._mount()
-		
+	
+	def getMountPoint(self):
+		return self._mountPoint
+	
 	def _mount(self):
 		if self._mounted:
 			self._umount()
