@@ -1064,7 +1064,7 @@ class ConfigDataBackend(Backend):
 	def auditHardware_getConfig(self, language=None):
 		if not language:
 			language = 'en_US'
-		language = forceLanguageCode(language)
+		language = forceLanguageCode(language).replace('-', '_')
 		
 		localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
 		if not os.path.exists(localeFile):

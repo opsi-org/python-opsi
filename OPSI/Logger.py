@@ -111,6 +111,7 @@ CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
 ESSENTIAL_COLOR    = COLOR_LIGHT_CYAN
 COMMENT_COLOR      = ESSENTIAL_COLOR
 
+encoding = sys.getfilesystemencoding()
 def forceUnicode(var):
 	if type(var) is types.UnicodeType:
 		return var
@@ -119,7 +120,7 @@ def forceUnicode(var):
 	if (os.name == 'nt') and type(var) is WindowsError:
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 	return unicode(var)
-
+	
 class LoggerSubject:
 	def __init__(self):
 		self._observers = []

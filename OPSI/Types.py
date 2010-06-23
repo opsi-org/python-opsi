@@ -565,7 +565,7 @@ def forceLanguageCode(var):
 		raise ValueError(u"Bad language code: '%s'" % var)
 	var = match.group(1)
 	if match.group(2):
-		var += u'_' + match.group(2).upper()
+		var += u'-' + match.group(2).upper()
 	return var
 
 def forceLanguageCodeList(var):

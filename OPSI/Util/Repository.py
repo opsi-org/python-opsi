@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import re, stat, base64, urllib, httplib, os, shutil, codecs
+import re, stat, base64, urllib, httplib, os, shutil, codecs, time
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -774,7 +774,10 @@ class WebDAVRepository(HTTPRepository):
 			source += '/'
 		
 		if recursive and self._contentCache.has_key(source):
-			return self._contentCache[source]
+			if (time.time() - self._contentCache[source]['time'] > 60):
+				del self._contentCache[source]
+			else:
+				return self._contentCache[source]['content']
 		
 		content = []
 		if not self._connection:
@@ -822,7 +825,10 @@ class WebDAVRepository(HTTPRepository):
 			content.append(info)
 		
 		if recursive:
-			self._contentCache[source] = content
+			self._contentCache[source] = {
+				'time':    time.time(),
+				'content': content
+			}
 		return content
 	
 	def upload(self, source, destination, progressSubject=None):

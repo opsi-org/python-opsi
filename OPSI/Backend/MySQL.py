@@ -447,15 +447,20 @@ class MySQLBackend(ConfigDataBackend):
 				else:
 					value = value.replace("\\", "\\\\").replace("'", "\\\'")
 					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', value)
+					isNum = False
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
+						isNum = True
 					
 					if (value.find('*') != -1):
 						operator = 'LIKE'
 						value = value.replace('%', '\%').replace('_', '\_').replace('*', '%')
 					
-					where += u"`%s` %s '%s'" % (key, operator, value)
+					if isNum:
+						where += u"`%s` %s %d" % (key, operator, value)
+					else:
+						where += u"`%s` %s '%s'" % (key, operator, value)
 				where += u' or '
 			where = where[:-4] + u')'
 		result = []
@@ -2267,6 +2272,9 @@ class MySQLBackend(ConfigDataBackend):
 		
 		if 'hardwareClass' in attributes:
 			attributes.remove('hardwareClass')
+		for attribute in attributes:
+			if not filter.has_key(attribute):
+				filter[attribute] = None
 		
 		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
 			attributes.append('hardware_id')
@@ -2275,17 +2283,15 @@ class MySQLBackend(ConfigDataBackend):
 			classFilter = {}
 			skipHardwareClass = False
 			for (attribute, value) in filter.items():
-				if value in (None, []):
-					continue
 				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 				if not valueInfo:
 					skipHardwareClass = True
 					break
 				if (valueInfo.get('Scope', '') != 'g'):
 					continue
-				skipHardwareClass = False
-				
 				classFilter[attribute] = []
+				if value in (None, []):
+					continue
 				for v in forceList(value):
 					if not v is None:
 						type = valueInfo.get('Type', '')
@@ -2313,6 +2319,7 @@ class MySQLBackend(ConfigDataBackend):
 			
 			logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
 			query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
+			print query
 			for res in self._mysql.getSet(query):
 				if returnHardwareIds:
 					results.append(res['hardware_id'])
@@ -2502,13 +2509,15 @@ class MySQLBackend(ConfigDataBackend):
 		if filter.has_key('hardwareClass'):
 			del filter['hardwareClass']
 		
+		for attribute in attributes:
+			if not filter.has_key(attribute):
+				filter[attribute] = None
+		
 		for hardwareClass in hardwareClasses:
 			auditHardwareFilter = {}
 			classFilter = {}
 			skipHardwareClass = False
 			for (attribute, value) in filter.items():
-				#if value in (None, []):
-				#	continue
 				valueInfo = None
 				if not attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
 					#if attribute in ('state', 'firstseen', 'lastseen'):
@@ -2523,8 +2532,9 @@ class MySQLBackend(ConfigDataBackend):
 						continue
 					if (valueInfo.get('Scope', '') != 'i'):
 						continue
-					
 				classFilter[attribute] = []
+				#if value in (None, []):
+				#	continue
 				for v in forceList(value):
 					if v is None:
 						pass

@@ -133,6 +133,9 @@ class DepotserverPackageManager(object):
 			filename = forceFilename(filename)
 			force = forceBool(force)
 			propertyDefaultValues = forceDict(propertyDefaultValues)
+			for propertyId in propertyDefaultValues:
+				if propertyDefaultValues[propertyId] is None:
+					propertyDefaultValues[propertyId] = []
 			if tempDir:
 				tempDir = forceFilename(tempDir)
 			else:

@@ -629,9 +629,9 @@ class PackageControlFile(TextFile):
 					productId      = self._product.getId(),
 					productVersion = self._product.getProductVersion(),
 					packageVersion = self._product.getPackageVersion(),
-					propertyId     = productProperty.get('name'),
-					description    = productProperty.get('description'),
-					defaultValues  = productProperty.get('default')
+					propertyId     = productProperty.get('name', u''),
+					description    = productProperty.get('description', u''),
+					defaultValues  = productProperty.get('default', [])
 				)
 			)
 			if isinstance(self._productProperties[-1], UnicodeProductProperty):
@@ -807,8 +807,10 @@ class PackageControlFile(TextFile):
 						for l in descLines[1:]:
 							self._lines.append( u' %s' % l )
 			if self._opsi3compatible:
-				self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
-				self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
+				if productProperty.getPossibleValues():
+					self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
+				if productProperty.getDefaultValues():
+					self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
 			else:
 				if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
