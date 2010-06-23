@@ -149,9 +149,9 @@ def non_blocking_connect_https(self, connectTimeout=0):
 		self.sock = httplib.FakeSocket(self.sock, ssl)
 
 
-def deserialize(obj):
+def deserialize(obj, preventObjectCreation=False):
 	newObj = None
-	if type(obj) is dict and obj.has_key('type'):
+	if not preventObjectCreation and type(obj) is dict and obj.has_key('type'):
 		try:
 			import OPSI.Object
 			c = eval('OPSI.Object.%s' % obj['type'])
@@ -162,11 +162,11 @@ def deserialize(obj):
 	elif type(obj) is list:
 		newObj = []
 		for o in obj:
-			newObj.append(deserialize(o))
+			newObj.append(deserialize(o, preventObjectCreation = preventObjectCreation))
 	elif type(obj) is dict:
 		newObj = {}
 		for (k, v) in obj.items():
-			newObj[k] = deserialize(v)
+			newObj[k] = deserialize(v, preventObjectCreation = preventObjectCreation)
 	else:
 		return obj
 	return newObj
@@ -189,11 +189,11 @@ def serialize(obj):
 		return obj
 	return newObj
 
-def fromJson(obj, objectType=None):
+def fromJson(obj, objectType=None, preventObjectCreation=False):
 	obj = json.loads(obj)
-	if objectType and type(obj) is dict:
+	if type(obj) is dict and objectType:
 		obj['type'] = objectType
-	return deserialize(obj)
+	return deserialize(obj, preventObjectCreation = preventObjectCreation)
 	
 def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
