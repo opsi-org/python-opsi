@@ -5,7 +5,7 @@ __unittest = True
 import sys, time, random, socket
 
 from OPSI.Object import *
-from OPSI.unittest2.case import TestCase
+from opsi_unittest.lib.unittest2.case import TestCase
 
 class BackendTestCase(TestCase):
 	

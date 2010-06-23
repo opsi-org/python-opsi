@@ -3,7 +3,7 @@ import time,sys
 from MySQLdb.constants.ER import DUP_ENTRY
 from MySQLdb import IntegrityError
 
-from OPSI import unittest2
+from opsi_unittest.lib import unittest2
 
 class MultithreadingMixin(object):
 	
