@@ -89,8 +89,11 @@ class RpcThread(KillableThread):
 			response = response.read()
 			response = fromJson(unicode(response, 'utf-8'))
 			
-			self.error  = response.get('error')
-			self.result = response.get('result')
+			if response and type(response) is dict:
+				self.error  = response.get('error')
+				self.result = response.get('result')
+			else:
+				self.error = u"Bad response from client: %s" % forceUnicode(response)
 		except Exception, e:
 			self.error = forceUnicode(e)
 		self.ended = time.time()
