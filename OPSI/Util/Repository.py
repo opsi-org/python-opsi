@@ -72,13 +72,13 @@ class RepositoryHook(object):
 	def __init__(self):
 		pass
 	
-	def pre_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
+	def pre_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
 		return (source, destination, overallProgressSubject, currentProgressSubject)
 	
-	def post_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
+	def post_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
 		return None
 	
-	def error_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):
+	def error_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):
 		pass
 	
 class Repository:
@@ -347,7 +347,7 @@ class Repository:
 	
 	def copy(self, source, destination, overallProgressSubject=None, currentProgressSubject=None):
 		for hook in self._hooks:
-			(source, destination, overallProgressSubject, currentProgressSubject) = hook.pre_copy(source, destination, overallProgressSubject, currentProgressSubject)
+			(source, destination, overallProgressSubject, currentProgressSubject) = hook.pre_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
 		
 		'''
 		source = file,  destination = file              => overwrite destination
@@ -459,11 +459,11 @@ class Repository:
 				overallProgressSubject.setState(size)
 		except Exception, e:
 			for hook in self._hooks:
-				hook.error_copy(source, destination, overallProgressSubject, currentProgressSubject, e)
+				hook.error_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject, e)
 			raise
 		
 		for hook in self._hooks:
-			hook.post_copy(source, destination, overallProgressSubject, currentProgressSubject)
+			hook.post_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
 	
 	def upload(self, source, destination):
 		raise RepositoryError(u"Not implemented")
