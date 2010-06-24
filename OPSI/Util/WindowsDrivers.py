@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import os, re
+import os, re, codecs
 
 # OPSI imports
 from OPSI.Logger import *
@@ -336,7 +336,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			massStorageDriverLines = []
 			oemBootFileLines = []
 			section = u''
-			sif = codes.open(sifFile, 'r', 'mbcs')
+			sif = codecs.open(sifFile, 'r', 'mbcs')
 			for line in sif.readlines():
 				if line.strip():
 					logger.debug2(u"Current sif file content: %s" % line.rstrip())
@@ -371,7 +371,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			logger.debug(oemBootFileLines)
 			lines.extend(oemBootFileLines)
 			
-			sif = open(sifFile, 'w')
+			sif = codecs.open(sifFile, 'w', 'mbcs')
 			sif.writelines(lines)
 			sif.close()
 
