@@ -121,13 +121,13 @@ class Repository:
 	
 	__repr__ = __unicode__
 	
-	def addHook(hook):
+	def addHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
 		if not hook in self._hooks:
 			self._hooks.append(hook)
 	
-	def removeHook(hook):
+	def removeHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
 		if hook in self._hooks:
@@ -331,6 +331,9 @@ class Repository:
 			return False
 		return True
 	
+	def islink(self, source):
+		return False
+	
 	def isfile(self, source):
 		try:
 			info = self.fileInfo(source)
@@ -376,13 +379,18 @@ class Repository:
 				raise Exception(u"Source directory '%s' not found" % source)
 			
 			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
+			
 			(totalFiles, size) = (0, 0)
+			info = self.fileInfo(source)
+			
 			if overallProgressSubject:
 				overallProgressSubject.reset()
-				(totalFiles, size) = self.getCountAndSize(source)
+				if (info.get('type') == 'file'):
+					(totalFiles, size) = (1, info['size'])
+				else:
+					(totalFiles, size) = self.getCountAndSize(source)
 				overallProgressSubject.setEnd(size)
 			
-			info = self.fileInfo(source)
 			if (info.get('type') == 'file'):
 				destinationFile = destination
 				if not os.path.exists(destination):
@@ -495,8 +503,31 @@ class FileRepository(Repository):
 			path = path[:-1]
 		return self._path + u'/' + path
 	
+	def fileInfo(self, source):
+		source = self._preProcessPath(source)
+		try:
+			info = {
+				'name': os.path.basename(source),
+				'path': source[len(self._path)+1:],
+				'type': 'file',
+				'size': long(0)
+			}
+			if not os.path.exists(source):
+				raise Exception(u'File not found')
+			if os.path.isdir(source):
+				info['type'] = 'dir'
+			if os.path.isfile(source):
+				info['size'] = os.path.getsize(source)
+			return info
+		except Exception, e:
+			#logger.logException(e)
+			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
+	
 	def exists(self, source):
 		return os.path.exists(self._preProcessPath(source))
+	
+	def islink(self, source):
+		return os.path.islink(self._preProcessPath(source))
 		
 	def isfile(self, source):
 		return os.path.isfile(self._preProcessPath(source))
@@ -1142,20 +1173,20 @@ class DepotToLocalDirectorySychronizer(object):
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	
-	rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
-	print rep.listdir()
-	print rep.isdir('javavm')
-	
-	sys.exit(0)
-	tempFile = '/tmp/testfile.bin'
-	tempDir = '/tmp/testdir'
-	tempDir2 = '/tmp/testdir2'
-	if os.path.exists(tempFile):
-		os.unlink(tempFile)
-	if os.path.exists(tempDir):
-		shutil.rmtree(tempDir)
-	if os.path.exists(tempDir2):
-		shutil.rmtree(tempDir2)
+	#rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
+	#print rep.listdir()
+	#print rep.isdir('javavm')
+	#
+	#sys.exit(0)
+	#tempFile = '/tmp/testfile.bin'
+	#tempDir = '/tmp/testdir'
+	#tempDir2 = '/tmp/testdir2'
+	#if os.path.exists(tempFile):
+	#	os.unlink(tempFile)
+	#if os.path.exists(tempDir):
+	#	shutil.rmtree(tempDir)
+	#if os.path.exists(tempDir2):
+	#	shutil.rmtree(tempDir2)
 	
 	#rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
 	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
@@ -1218,31 +1249,35 @@ if (__name__ == "__main__"):
 	
 	#progressSubject.attachObserver(copyBox)
 	
-	overallProgressSubject = None
-	currentProgressSubject = None
+	#overallProgressSubject = None
+	#currentProgressSubject = None
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#for c in rep.content('swaudit', recursive=True):
 	#	print c
 	
-	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot/swaudit', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot/swaudit', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#for c in rep.content('swaudit', recursive=True):
 	#	print c
-	print rep.listdir()
-	rep.copy(source = '/*', destination = tempDir, overallProgressSubject = overallProgressSubject, currentProgressSubject = currentProgressSubject)
+	#print rep.listdir()
+	#rep.copy(source = '/*', destination = tempDir, overallProgressSubject = overallProgressSubject, currentProgressSubject = currentProgressSubject)
 	
-	time.sleep(1)
+	#time.sleep(1)
 	
 	#overallProgressSubject.reset()
 	#currentProgressSubject.reset()
-	rep = FileRepository(url = u'file://%s' % tempDir)
+	#rep = FileRepository(url = u'file://%s' % tempDir)
 	#for c in rep.content('', recursive=True):
 	#	print c
-	print rep.exists('/MSVCR71.dll')
-	print rep.isdir('lib')
-	print rep.isfile('äää.txt')
-	print rep.listdir()
-	rep.copy(source = '/*', destination = tempDir2, overallProgressSubject = overallProgressSubject, currentProgressSubject = currentProgressSubject)
+	#print rep.exists('/MSVCR71.dll')
+	#print rep.isdir('lib')
+	#print rep.isfile('äää.txt')
+	#print rep.listdir()
+	#rep.copy(source = '/*', destination = tempDir2, overallProgressSubject = overallProgressSubject, currentProgressSubject = currentProgressSubject)
 	
+	rep = FileRepository(url = u'file:///usr')
+	print rep.fileInfo('')
+	for f in rep.listdir('src'):
+		print rep.fileInfo('src' + '/' + f)
 	
 	#ui.exit()
 	#rep = FileRepository(url = u'file:///tmp')

@@ -393,13 +393,19 @@ def integrateAdditionalDrivers(driverSourceDirectory, driverDestinationDirectory
 	if messageObserver:
 		messageSubject.detachObserver(messageObserver)
 	
-def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None):
+def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None):
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	if not type(additionalDrivers) is list:
 		additionalDrivers = [ additionalDriver.strip() for additionalDriver in forceUnicodeList(additionalDrivers.split(',')) ]
 	else:
 		additionalDrivers = forceUnicodeList(additionalDrivers)
+	
+	exists  = os.path.exists
+	if srcRepository:
+		if not isinstance(srcRepository, Repository):
+			raise Exception(u"Not a repository: %s" % srcRepository)
+		exists  = srcRepository.exists
 	
 	logger.info(u"Adding additional drivers")
 	
@@ -411,12 +417,17 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if not additionalDriver:
 			continue
 		additionalDriverDir = os.path.join(driverSourceDirectory, additionalDriver)
-		if not os.path.exists(additionalDriverDir):
+		if not exists(additionalDriverDir):
 			logger.error(u"Additional drivers dir '%s' not found" % additionalDriverDir)
 			if messageSubject:
 				messageSubject.setMessage("Additional drivers dir '%s' not found" % additionalDriverDir)
 			continue
-		infFiles = findFiles(directory = additionalDriverDir, prefix = additionalDriverDir, includeFile = re.compile('\.inf$', re.IGNORECASE), returnDirs = False)
+		infFiles = findFiles(
+				directory   = additionalDriverDir,
+				prefix      = additionalDriverDir,
+				includeFile = re.compile('\.inf$', re.IGNORECASE),
+				returnDirs  = False,
+				repository  = srcRepository)
 		logger.info(u"Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
 		if not infFiles:
 			logger.error(u"No drivers found in dir '%s'" % additionalDriverDir)
@@ -432,7 +443,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 				messageSubject.setMessage("Adding additional driver dir '%s'" % additionalDriverDir)
 			driverDirectories.append(additionalDriverDir)
 	
-	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject)
+	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository)
 
 def getOemPnpDriversPath(driverDirectory, target, separator=';', prePath='', postPath=''):
 	logger.info("Generating oemPnpDriversPath")

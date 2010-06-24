@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
-import socket
+import socket, threading, time
 
 # OPSI imports
 from OPSI.Logger import *
@@ -101,6 +101,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self._depotId = forceHostId(socket.getfqdn())
 		self._opsiHostKey = None
 		self._depotConnections  = {}
+		self._updateThreads = {}
+		self._updateThreadsLock = threading.Lock()
 		
 	def _getDepotConnection(self, depotId):
 		depotId = forceHostId(depotId)
@@ -153,17 +155,50 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 		
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
-		logger.info(u"Updating pxe boot configuration for client '%s'" % clientId)
-		
-		command = u'update %s' % clientId
+		clientId = forceHostId(clientId)
+		self._updateThreadsLock.acquire()
 		try:
-			sc = ServerConnection(self._port, self._timeout)
-			logger.info(u"Sending command '%s'" % command)
-			result = sc.sendCommand(command)
-			logger.info(u"Got result '%s'" % result)
-		except Exception, e:
-			raise BackendIOError(u"Failed to update PXE boot configuration: %s" % e)
-	
+			if not self._updateThreads.has_key(clientId):
+				command = u'update %s' % clientId
+				
+				class UpdateThread(threading.Thread):
+					def __init__(self, opsiPXEConfdBackend, clientId, command):
+						threading.Thread.__init__(self)
+						self._opsiPXEConfdBackend = opsiPXEConfdBackend
+						self._clientId            = clientId
+						self._command             = command
+						self._updateEvent         = threading.Event()
+						self._delay               = 3.0
+					
+					def run(self):
+						while (self._delay > 0):
+							time.sleep(0.2)
+							self._delay -= 0.2
+						
+						self._opsiPXEConfdBackend._updateThreadsLock.acquire()
+						try:
+							logger.info(u"Updating pxe boot configuration for client '%s'" % self._clientId)
+							sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
+							logger.info(u"Sending command '%s'" % self._command)
+							result = sc.sendCommand(self._command)
+							logger.info(u"Got result '%s'" % result)
+						
+						except Exception, e:
+							logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, e))
+						
+						del self._opsiPXEConfdBackend._updateThreads[self._clientId]
+						self._opsiPXEConfdBackend._updateThreadsLock.release()
+						
+					def delay(self):
+						self._delay = 3.0
+					
+				self._updateThreads[clientId] = UpdateThread(self, clientId, command)
+				self._updateThreads[clientId].start()
+			else:
+				self._updateThreads[clientId].delay()
+		finally:
+			self._updateThreadsLock.release()
+		
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
 			try:

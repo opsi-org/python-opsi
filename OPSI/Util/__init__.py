@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import ctypes, threading, os, random, base64, types, socket, httplib
@@ -613,7 +613,7 @@ def blowfishDecrypt(key, crypt):
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
 	
-def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True):
+def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, repository=None):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
 	if excludeDir:
@@ -639,20 +639,27 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	returnDirs = forceBool(returnDirs)
 	returnLinks = forceBool(returnLinks)
 	
+	islink  = os.path.islink
+	isdir   = os.path.isdir
+	listdir = os.listdir
+	if repository:
+		islink  = repository.islink
+		isdir   = repository.isdir
+		listdir = repository.listdir
+	
 	files = []
-	entries = os.listdir(directory)
-	for entry in entries:
+	for entry in listdir(directory):
 		if type(entry) is str:
 			logger.error(u"Bad filename '%s' found in directory '%s', skipping entry!" % (unicode(entry, 'ascii', 'replace'), directory))
 			continue
 		pp = os.path.join(prefix, entry)
 		dp = os.path.join(directory, entry)
 		isLink = False
-		if os.path.islink(dp):
+		if islink(dp):
 			isLink = True
 			if not returnLinks:
 				continue
-		elif os.path.isdir(dp):
+		elif isdir(dp):
 			if excludeDir and re.search(excludeDir, entry):
 				logger.debug(u"Excluding dir '%s' and containing files" % entry)
 				continue
@@ -671,7 +678,8 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 					includeDir  = includeDir,
 					includeFile = includeFile,
 					returnDirs  = returnDirs,
-					returnLinks = returnLinks ) )
+					returnLinks = returnLinks,
+					repository  = repository) )
 			continue
 		if excludeFile and re.search(excludeFile, entry):
 			if isLink:
