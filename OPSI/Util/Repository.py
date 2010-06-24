@@ -865,6 +865,7 @@ class WebDAVRepository(HTTPRepository):
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = self._preProcessPath(destination)
+		self._contentCache = {}
 		
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]

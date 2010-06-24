@@ -63,7 +63,7 @@ class SystemSpecificHook(object):
 	def post_reboot(self, wait):
 		return None
 	
-	def error_reboot(self, wait):
+	def error_reboot(self, wait, exception):
 		pass
 	
 	
@@ -73,7 +73,167 @@ class SystemSpecificHook(object):
 	def post_halt(self, wait):
 		return None
 	
-	def error_halt(self, wait):
+	def error_halt(self, wait, exception):
+		pass
+	
+	
+	def pre_Harddisk_deletePartitionTable(self, harddisk):
+		return None
+	
+	def post_Harddisk_deletePartitionTable(self, harddisk):
+		return None
+	
+	def error_Harddisk_deletePartitionTable(self, harddisk, exception):
+		pass
+	
+	
+	def pre_Harddisk_writePartitionTable(self, harddisk):
+		return None
+	
+	def post_Harddisk_writePartitionTable(self, harddisk):
+		return None
+	
+	def error_Harddisk_writePartitionTable(self, harddisk, exception):
+		pass
+	
+	
+	def pre_Harddisk_readPartitionTable(self, harddisk):
+		return None
+	
+	def post_Harddisk_readPartitionTable(self, harddisk):
+		return None
+	
+	def error_Harddisk_readPartitionTable(self, harddisk, exception):
+		pass
+	
+	
+	def pre_Harddisk_setPartitionBootable(self, harddisk, partition, bootable):
+		return (partition, bootable)
+	
+	def post_Harddisk_setPartitionBootable(self, harddisk, partition, bootable):
+		return None
+	
+	def error_Harddisk_setPartitionBootable(self, harddisk, partition, bootable, exception):
+		pass
+	
+	
+	def pre_Harddisk_setPartitionId(self, harddisk, partition, id):
+		return (partition, id)
+	
+	def post_Harddisk_setPartitionId(self, harddisk, partition, id):
+		return None
+	
+	def error_Harddisk_setPartitionId(self, harddisk, partition, id, exception):
+		pass
+	
+	
+	def pre_Harddisk_readMasterBootRecord(self, harddisk):
+		return None
+	
+	def post_Harddisk_readMasterBootRecord(self, harddisk, result):
+		return result
+	
+	def error_Harddisk_readMasterBootRecord(self, harddisk, exception):
+		pass
+	
+	
+	def pre_Harddisk_writeMasterBootRecord(self, harddisk, system):
+		return system
+	
+	def post_Harddisk_writeMasterBootRecord(self, harddisk, system):
+		return None
+	
+	def error_Harddisk_writeMasterBootRecord(self, harddisk, system, exception):
+		pass
+	
+	
+	def pre_Harddisk_readPartitionBootRecord(self, harddisk, partition):
+		return partition
+	
+	def post_Harddisk_readPartitionBootRecord(self, harddisk, partition, result):
+		return result
+	
+	def error_Harddisk_readPartitionBootRecord(self, harddisk, partition, exception):
+		pass
+	
+	
+	def pre_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType):
+		return (partition, fsType)
+	
+	def post_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType):
+		return None
+	
+	def error_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType, exception):
+		pass
+	
+	
+	def pre_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector):
+		return (partition, sector)
+	
+	def post_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector):
+		return None
+	
+	def error_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector, exception):
+		pass
+	
+	
+	def pre_Harddisk_createPartition(self, harddisk, start, end, fs, type, boot, lba):
+		return (start, end, fs, type, boot, lba)
+	
+	def post_Harddisk_createPartition(self, harddisk, start, end, fs, type, boot, lba):
+		return None
+	
+	def error_Harddisk_createPartition(self, harddisk, start, end, fs, type, boot, lba, exception):
+		pass
+	
+	
+	def pre_Harddisk_deletePartition(self, harddisk, partition):
+		return partition
+	
+	def post_Harddisk_deletePartition(self, harddisk, partition):
+		return None
+	
+	def error_Harddisk_deletePartition(self, harddisk, partition, exception):
+		pass
+	
+	
+	def pre_Harddisk_mountPartition(self, harddisk, partition, mountpoint, **options):
+		return (partition, mountpoint, options)
+	
+	def post_Harddisk_mountPartition(self, harddisk, partition, mountpoint, **options):
+		return None
+	
+	def error_Harddisk_mountPartition(self, harddisk, partition, mountpoint, exception, **options):
+		pass
+	
+	
+	def pre_Harddisk_umountPartition(self, harddisk, partition):
+		return partition
+	
+	def post_Harddisk_umountPartition(self, harddisk, partition):
+		return None
+	
+	def error_Harddisk_umountPartition(self, harddisk, partition, exception):
+		pass
+	
+	
+	def pre_Harddisk_createFilesystem(self, harddisk, partition, fs):
+		return (partition, fs)
+	
+	def post_Harddisk_createFilesystem(self, harddisk, partition, fs):
+		return None
+	
+	def error_Harddisk_createFilesystem(self, harddisk, partition, fs, exception):
+		pass
+	
+	
+	def pre_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs):
+		return (partition, size, fs)
+	
+	def post_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs):
+		return None
+	
+	def error_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs, exception):
 		pass
 	
 	
@@ -104,7 +264,7 @@ class SystemSpecificHook(object):
 		return None
 	
 	def error_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, exception):
-		raise exception
+		pass
 	
 	
 	def pre_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):
@@ -373,7 +533,7 @@ def reboot(wait = 10):
 		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception, e:
 		for hook in hooks:
-			hook.error_reboot(wait)
+			hook.error_reboot(wait, e)
 		raise
 	
 	for hook in hooks:
@@ -393,7 +553,7 @@ def halt(wait = 10):
 		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception, e:
 		for hook in hooks:
-			hook.error_halt(wait)
+			hook.error_halt(wait, e)
 		raise
 	
 	for hook in hooks:
@@ -828,168 +988,207 @@ class Harddisk:
 		self.label = label
 	
 	def setPartitionId(self, partition, id):
-		partition = forceInt(partition)
-		id = forceUnicodeLower(id)
+		for hook in hooks:
+			(partition, id) = hook.pre_Harddisk_setPartitionId(self, partition, id)
+		try:
+			partition = forceInt(partition)
+			id = forceUnicodeLower(id)
+			
+			if (partition < 1) or (partition > 4):
+				raise Exception(u"Partition has to be int value between 1 and 4")
+			
+			if not re.search('^[a-f0-9]{2}$', id):
+				if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
+					id = u'83'
+				elif (id == u'linux-swap'):
+					id = u'82'
+				elif (fs == u'fat32'):
+					id = u'0c'
+				elif (fs == u'ntfs'):
+					id = u'07'
+				else:
+					raise Exception(u"Partition type '%s' not supported!" % id)
+			id = eval('0x' + id)
+			offset = 0x1be + (partition-1)*16 + 4
+			f = open(self.device, 'rb+')
+			f.seek(offset)
+			f.write(chr(id))
+			f.close()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_setPartitionId(self, partition, id, e)
+			raise
 		
-		if (partition < 1) or (partition > 4):
-			raise Exception(u"Partition has to be int value between 1 and 4")
+		for hook in hooks:
+			hook.post_Harddisk_setPartitionId(self, partition, id)
 		
-		if not re.search('^[a-f0-9]{2}$', id):
-			if id in (u'linux', u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
-				id = u'83'
-			elif (id == u'linux-swap'):
-				id = u'82'
-			elif (fs == u'fat32'):
-				id = u'0c'
-			elif (fs == u'ntfs'):
-				id = u'07'
-			else:
-				raise Exception(u"Partition type '%s' not supported!" % id)
-		id = eval('0x' + id)
-		offset = 0x1be + (partition-1)*16 + 4
-		f = open(self.device, 'rb+')
-		f.seek(offset)
-		f.write(chr(id))
-		f.close()
-	
 	def setPartitionBootable(self, partition, bootable):
-		partition = forceInt(partition)
-		bootable = forceBool(bootable)
-		if (partition < 1) or (partition > 4):
-			raise Exception("Partition has to be int value between 1 and 4")
+		for hook in hooks:
+			(partition, bootable) = hook.pre_Harddisk_setPartitionBootable(self, partition, bootable)
+		try:
+			partition = forceInt(partition)
+			bootable = forceBool(bootable)
+			if (partition < 1) or (partition > 4):
+				raise Exception("Partition has to be int value between 1 and 4")
+			
+			offset = 0x1be + (partition-1)*16 + 4
+			f = open(self.device, 'rb+')
+			f.seek(offset)
+			if bootable:
+				f.write(chr(0x80))
+			else:
+				f.write(chr(0x00))
+			f.close()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_setPartitionBootable(self, partition, bootable, e)
+			raise
 		
-		offset = 0x1be + (partition-1)*16 + 4
-		f = open(self.device, 'rb+')
-		f.seek(offset)
-		if bootable:
-			f.write(chr(0x80))
-		else:
-			f.write(chr(0x00))
-		f.close()
+		for hook in hooks:
+			hook.post_Harddisk_setPartitionBootable(self, partition, bootable)
 	
 	def readPartitionTable(self):
-		self.partitions = []
-		if self.ldPreload:
-			os.putenv("LD_PRELOAD", self.ldPreload)
-		
-		result = execute(u"%s -l %s" % (which('sfdisk'), self.device))
-		for line in result:
-			if (line.find(u'unrecognized partition table type') != -1):
-				execute('%s -e "0,0\n\n\n\n" | %s -D %s' % (which('echo'), which('sfdisk'), self.device))
-				result = execute(which('sfdisk') + ' -l ' + self.device)
-				break
-		
-		for line in result:
-			line = line.strip()
-			if line.lower().startswith(u'disk'):
-				match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
-				if not match:
-					raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
-				
-				self.cylinders = forceInt(match.group(1))
-				self.heads     = forceInt(match.group(2))
-				self.sectors   = forceInt(match.group(3))
+		for hook in hooks:
+			hook.pre_Harddisk_readPartitionTable(self)
+		try:
+			self.partitions = []
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
 			
-			elif line.lower().startswith(u'units'):
-				match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
-				if not match:
-					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-				self.bytesPerCylinder = forceInt(match.group(1))
-				
-				self.size = self.bytesPerCylinder * self.cylinders
-				logger.info(u"Size of disk '%s': %s Byte / %s MB" % ( self.device, self.size, (self.size/(1024*1024))) )
+			result = execute(u"%s -l %s" % (which('sfdisk'), self.device))
+			for line in result:
+				if (line.find(u'unrecognized partition table type') != -1):
+					execute('%s -e "0,0\n\n\n\n" | %s -D %s' % (which('echo'), which('sfdisk'), self.device))
+					result = execute(which('sfdisk') + ' -l ' + self.device)
+					break
 			
-			elif line.startswith(self.device):
-				match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-				if not match:
-					raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+			for line in result:
+				line = line.strip()
+				if line.lower().startswith(u'disk'):
+					match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+					if not match:
+						raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
+					
+					self.cylinders = forceInt(match.group(1))
+					self.heads     = forceInt(match.group(2))
+					self.sectors   = forceInt(match.group(3))
 				
-				if match.group(5):
-					boot = False
-					if (match.group(3) == u'*'):
-						boot = True
+				elif line.lower().startswith(u'units'):
+					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
+					if not match:
+						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+					self.bytesPerCylinder = forceInt(match.group(1))
 					
-					fs = u'unknown'
-					if (match.group(8).lower() in [u"b", u"c", u"e"]):
-						fs = u'fat32'
-					elif (match.group(8).lower() in [u"7"]):
-						fs = u'ntfs'
-					
-					self.partitions.append( { 'device':	forceFilename(match.group(1) + match.group(2)),
-								  'number':	forceInt(match.group(2)),
-								  'cylStart':	forceInt(match.group(4)),
-								  'cylEnd':	forceInt(match.group(5)),
-								  'cylSize':	forceInt(match.group(6)),
-								  'start':	forceInt(match.group(4)) * self.bytesPerCylinder,
-								  'end':	forceInt(match.group(5)) * self.bytesPerCylinder,
-								  'size':	forceInt(match.group(6)) * self.bytesPerCylinder,
-								  'type':	forceUnicodeLower(match.group(8)),
-								  'fs':		fs,
-								  'boot': 	boot } )
-					
-					logger.debug(u"Partition found =>>> number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-							% (	self.partitions[-1]['number'],
-								(self.partitions[-1]['start']/(1024*1024)), self.partitions[-1]['cylStart'],
-								(self.partitions[-1]['end']/(1024*1024)),   self.partitions[-1]['cylEnd'],
-								(self.partitions[-1]['size']/(1024*1024)),  self.partitions[-1]['cylSize'] ) \
-							+ u"type: %s, fs: %s, boot: %s" \
-							% (match.group(8), fs, boot) )
-		
-		# Get sector data
-		result = execute(u"%s -uS -l %s" % (which('sfdisk'), self.device))
-		for line in result:
-			line = line.strip()
-			if line.startswith(self.device):
-				match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-				if not match:
-					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+					self.size = self.bytesPerCylinder * self.cylinders
+					logger.info(u"Size of disk '%s': %s Byte / %s MB" % ( self.device, self.size, (self.size/(1024*1024))) )
 				
-				if match.group(4):
-					for p in range(len(self.partitions)):
-						if (forceInt(self.partitions[p]['number']) == forceInt(match.group(1))):
-							self.partitions[p]['secStart'] = forceInt(match.group(3))
-							self.partitions[p]['secEnd']   = forceInt(match.group(4))
-							self.partitions[p]['secSize']  = forceInt(match.group(5))
-							logger.debug(u"Partition sector values =>>> number: %s, start: %s sec, end: %s sec, size: %s sec " \
-									% ( self.partitions[p]['number'], self.partitions[p]['secStart'],
-									    self.partitions[p]['secEnd'], self.partitions[p]['secSize']) )
-							break
+				elif line.startswith(self.device):
+					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+					if not match:
+						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+					
+					if match.group(5):
+						boot = False
+						if (match.group(3) == u'*'):
+							boot = True
+						
+						fs = u'unknown'
+						if (match.group(8).lower() in [u"b", u"c", u"e"]):
+							fs = u'fat32'
+						elif (match.group(8).lower() in [u"7"]):
+							fs = u'ntfs'
+						
+						self.partitions.append( { 'device':	forceFilename(match.group(1) + match.group(2)),
+									  'number':	forceInt(match.group(2)),
+									  'cylStart':	forceInt(match.group(4)),
+									  'cylEnd':	forceInt(match.group(5)),
+									  'cylSize':	forceInt(match.group(6)),
+									  'start':	forceInt(match.group(4)) * self.bytesPerCylinder,
+									  'end':	forceInt(match.group(5)) * self.bytesPerCylinder,
+									  'size':	forceInt(match.group(6)) * self.bytesPerCylinder,
+									  'type':	forceUnicodeLower(match.group(8)),
+									  'fs':		fs,
+									  'boot': 	boot } )
+						
+						logger.debug(u"Partition found =>>> number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
+								% (	self.partitions[-1]['number'],
+									(self.partitions[-1]['start']/(1024*1024)), self.partitions[-1]['cylStart'],
+									(self.partitions[-1]['end']/(1024*1024)),   self.partitions[-1]['cylEnd'],
+									(self.partitions[-1]['size']/(1024*1024)),  self.partitions[-1]['cylSize'] ) \
+								+ u"type: %s, fs: %s, boot: %s" \
+								% (match.group(8), fs, boot) )
+			
+			# Get sector data
+			result = execute(u"%s -uS -l %s" % (which('sfdisk'), self.device))
+			for line in result:
+				line = line.strip()
+				if line.startswith(self.device):
+					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+					if not match:
+						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+					
+					if match.group(4):
+						for p in range(len(self.partitions)):
+							if (forceInt(self.partitions[p]['number']) == forceInt(match.group(1))):
+								self.partitions[p]['secStart'] = forceInt(match.group(3))
+								self.partitions[p]['secEnd']   = forceInt(match.group(4))
+								self.partitions[p]['secSize']  = forceInt(match.group(5))
+								logger.debug(u"Partition sector values =>>> number: %s, start: %s sec, end: %s sec, size: %s sec " \
+										% ( self.partitions[p]['number'], self.partitions[p]['secStart'],
+										    self.partitions[p]['secEnd'], self.partitions[p]['secSize']) )
+								break
+			
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_readPartitionTable(self, e)
+			raise
 		
-		if self.ldPreload:
-			os.unsetenv("LD_PRELOAD")
+		for hook in hooks:
+			hook.post_Harddisk_readPartitionTable(self)
 		
 	def writePartitionTable(self):
-		logger.debug(u"Partition table to write to disk")
-		
-		cmd = u'%s -e "' % which('echo')
-		for p in range(4):
-			try:
-				part = self.getPartition(p + 1)
-				logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-							% (	part['number'], 
-								(part['start']/(1000*1000)), part['cylStart'], 
-								(part['end']/(1000*1000)), part['cylEnd'], 
-								(part['size']/(1000*1000)), part['cylSize'] ) \
-							+ "type: %s, fs: %s, boot: %s" \
-							% (part['type'], part['fs'], part['boot']) )
+		logger.debug(u"Writing partition table to disk %s" % self.device)
+		for hook in hooks:
+			hook.pre_Harddisk_writePartitionTable(self)
+		try:
+			cmd = u'%s -e "' % which('echo')
+			for p in range(4):
+				try:
+					part = self.getPartition(p + 1)
+					logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
+								% (	part['number'], 
+									(part['start']/(1000*1000)), part['cylStart'], 
+									(part['end']/(1000*1000)), part['cylEnd'], 
+									(part['size']/(1000*1000)), part['cylSize'] ) \
+								+ "type: %s, fs: %s, boot: %s" \
+								% (part['type'], part['fs'], part['boot']) )
+					
+					cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
+					if part['boot']:
+						cmd += u',*'
+				except Exception, e:
+					logger.debug(u"Partition %d not found: %s" % ((p+1), e))
+					cmd += u'0,0'
 				
-				cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
-				if part['boot']:
-					cmd += u',*'
-			except Exception, e:
-				logger.debug(u"Partition %d not found: %s" % ((p+1), e))
-				cmd += u'0,0'
+				cmd += u'\n'
+				
+			cmd +=  u'" | %s -D %s' % (which('sfdisk'), self.device)
 			
-			cmd += u'\n'
-			
-		cmd +=  u'" | %s -D %s' % (which('sfdisk'), self.device)
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
+			execute(cmd)
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
+			self._forceReReadPartionTable()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_writePartitionTable(self, e)
+			raise
 		
-		if self.ldPreload:
-			os.putenv("LD_PRELOAD", self.ldPreload)
-		execute(cmd)
-		if self.ldPreload:
-			os.unsetenv("LD_PRELOAD")
-		self._forceReReadPartionTable()
+		for hook in hooks:
+			hook.post_Harddisk_writePartitionTable(self)
 	
 	def _forceReReadPartionTable(self):
 		if self.ldPreload:
@@ -1002,14 +1201,24 @@ class Harddisk:
 			os.unsetenv("LD_PRELOAD")
 		
 	def deletePartitionTable(self):
-		logger.info(u"Deleting partition table on '%s'." % self.device)
-		f = open(self.device, 'rb+')
-		f.write(chr(0)*512)
-		f.close()
+		logger.info(u"Deleting partition table on '%s'" % self.device)
+		for hook in hooks:
+			hook.pre_Harddisk_deletePartitionTable(self)
+		try:
+			f = open(self.device, 'rb+')
+			f.write(chr(0)*512)
+			f.close()
+			
+			self._forceReReadPartionTable()
+			self.label = None
+			self.partitions = []
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_deletePartitionTable(self, e)
+			raise
 		
-		self._forceReReadPartionTable()
-		self.label = None
-		self.partitions = []
+		for hook in hooks:
+			hook.post_Harddisk_deletePartitionTable(self)
 		
 	def shred(self, partition=0, iterations=25, progressSubject=None):
 		for hook in hooks:
@@ -1162,111 +1371,163 @@ class Harddisk:
 		
 	
 	def readMasterBootRecord(self):
-		self.device
-		f = open(self.device, 'rb')
-		mbr = f.read(512)
-		f.close()
-		return mbr
-	
-	def writeMasterBootRecord(self, system=u'auto'):
-		system = forceUnicodeLower(system)
-		mbrType = u'-w'
-		if   system in (u'win2000', u'winxp', u'win2003', u'nt5'):
-			mbrType = u'--mbr'
-		elif system in (u'vista', u'win7', u'nt6'):
-			mbrType = u'--mbrnt60'
-		elif system in (u'win9x', u'win95', u'win98'):
-			mbrType = u'--mbr95b'
-		elif system in (u'dos', u'winnt'):
-			mbrType = u'--mbrdos'
-		
-		logger.info(u"Writing master boot record on '%s' (system: %s)" % (self.device, system))
-		
-		cmd = u"%s %s %s" % (which('ms-sys'), mbrType, self.device)
+		for hook in hooks:
+			hook.pre_Harddisk_readMasterBootRecord(self)
+		mbr = None
 		try:
-			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-			result = execute(cmd)
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
+			f = open(self.device, 'rb')
+			mbr = f.read(512)
+			f.close()
 		except Exception, e:
-			logger.error(u"Failed to write mbr: %s" % e)
-			raise Exception(u"Failed to write mbr: %s" % e)
-	
+			for hook in hooks:
+				hook.error_Harddisk_readMasterBootRecord(self, e)
+			raise
+		
+		for hook in hooks:
+			mbr = hook.post_Harddisk_readMasterBootRecord(self, mbr)
+		return mbr
+		
+	def writeMasterBootRecord(self, system=u'auto'):
+		for hook in hooks:
+			system = hook.pre_Harddisk_writeMasterBootRecord(self, system)
+		
+		try:
+			system = forceUnicodeLower(system)
+			mbrType = u'-w'
+			if   system in (u'win2000', u'winxp', u'win2003', u'nt5'):
+				mbrType = u'--mbr'
+			elif system in (u'vista', u'win7', u'nt6'):
+				mbrType = u'--mbrnt60'
+			elif system in (u'win9x', u'win95', u'win98'):
+				mbrType = u'--mbr95b'
+			elif system in (u'dos', u'winnt'):
+				mbrType = u'--mbrdos'
+			
+			logger.info(u"Writing master boot record on '%s' (system: %s)" % (self.device, system))
+			
+			cmd = u"%s %s %s" % (which('ms-sys'), mbrType, self.device)
+			try:
+				if self.ldPreload:
+					os.putenv("LD_PRELOAD", self.ldPreload)
+				result = execute(cmd)
+				if self.ldPreload:
+					os.unsetenv("LD_PRELOAD")
+			except Exception, e:
+				logger.error(u"Failed to write mbr: %s" % e)
+				raise Exception(u"Failed to write mbr: %s" % e)
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_writeMasterBootRecord(self, system, e)
+			raise
+		
+		for hook in hooks:
+			hook.post_Harddisk_writeMasterBootRecord(self, system)
+		
 	def readPartitionBootRecord(self, partition=1):
-		f = open(self.getPartition(partition)['device'], 'rb')
-		pbr = f.read(512)
-		f.close()
+		for hook in hooks:
+			partition = hook.pre_Harddisk_readPartitionBootRecord(self, partition)
+		pbr = None
+		try:
+			f = open(self.getPartition(partition)['device'], 'rb')
+			pbr = f.read(512)
+			f.close()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_readPartitionBootRecord(self, partition, e)
+			raise
+		
+		for hook in hooks:
+			pbr = hook.post_Harddisk_readPartitionBootRecord(self, partition, pbr)
 		return pbr
 		
 	def writePartitionBootRecord(self, partition=1, fsType=u'auto'):
-		partition = forceInt(partition)
-		fsType = forceUnicodeLower(fsType)
-		
-		logger.info(u"Writing partition boot record on '%s' (fs-type: %s)" % (self.getPartition(partition)['device'], fsType))
-		
-		if (fsType == u'auto'):
-			fsType = u'-w'
-		else:
-			fsType = u'--%s' % fsType
-		
-		cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
+		for hook in hooks:
+			(partition, fsType) = hook.pre_Harddisk_writePartitionBootRecord(self, partition, fsType)
 		try:
-			if self.ldPreload:
-				os.putenv("LD_PRELOAD", self.ldPreload)
-			result = execute(cmd)
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
-			if (result[0].find(u'successfully') == -1):
-				raise Exception(result)
+			partition = forceInt(partition)
+			fsType = forceUnicodeLower(fsType)
 			
+			logger.info(u"Writing partition boot record on '%s' (fs-type: %s)" % (self.getPartition(partition)['device'], fsType))
+			
+			if (fsType == u'auto'):
+				fsType = u'-w'
+			else:
+				fsType = u'--%s' % fsType
+			
+			cmd = u"%s -p %s %s" % (which('ms-sys'), fsType, self.getPartition(partition)['device'])
+			try:
+				if self.ldPreload:
+					os.putenv("LD_PRELOAD", self.ldPreload)
+				result = execute(cmd)
+				if self.ldPreload:
+					os.unsetenv("LD_PRELOAD")
+				if (result[0].find(u'successfully') == -1):
+					raise Exception(result)
+				
+			except Exception, e:
+				logger.error(u"Cannot write partition boot record: %s" % e)
+				raise Exception(u"Cannot write partition boot record: %s" % e)
 		except Exception, e:
-			logger.error(u"Cannot write partition boot record: %s" % e)
-			raise Exception(u"Cannot write partition boot record: %s" % e)
-	
+			for hook in hooks:
+				hook.error_Harddisk_writePartitionBootRecord(self, partition, fsType, e)
+			raise
+		
+		for hook in hooks:
+			hook.post_Harddisk_writePartitionBootRecord(self, partition, fsType)
+		
 	def setNTFSPartitionStartSector(self, partition, sector=0):
-		partition = forceInt(partition)
-		sector = forceInt(sector)
-		if not sector:
-			sector = self.getPartition(partition)['secStart']
+		for hook in hooks:
+			(partition, sector) = hook.pre_Harddisk_setNTFSPartitionStartSector(self, partition, sector)
+		try:
+			partition = forceInt(partition)
+			sector = forceInt(sector)
 			if not sector:
-				err = u"Failed to get partition start sector of partition '%s'" % (self.getPartition(partition)['device'])
-				logger.error(err)
-				raise Exception(err)
+				sector = self.getPartition(partition)['secStart']
+				if not sector:
+					err = u"Failed to get partition start sector of partition '%s'" % (self.getPartition(partition)['device'])
+					logger.error(err)
+					raise Exception(err)
+			
+			logger.info(u"Setting Partition start sector to %s in NTFS boot record " % sector \
+					+ u"on partition '%s'" % self.getPartition(partition)['device'] )
+			
+			x = [0, 0, 0, 0]
+			x[0] = int ( (sector & 0x000000FFL) )
+			x[1] = int ( (sector & 0x0000FF00L) >> 8 )
+			x[2] = int ( (sector & 0x00FF0000L) >> 16 )
+			x[3] = int ( (sector & 0xFFFFFFFFL) >> 24 )
+			
+			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
+			posix.lseek(hd, 0x1c, 0)
+			start = posix.read(hd, 4)
+			logger.debug(u"NTFS Boot Record currently using %s %s %s %s as partition start sector" \
+						% ( hex(ord(start[0])), hex(ord(start[1])), 
+						    hex(ord(start[2])), hex(ord(start[3])) ) )
+			posix.close(hd)
+			
+			logger.debug(u"Manipulating NTFS Boot Record!")
+			hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
+			logger.info(u"Writing new value %s %s %s %s at 0x1c" % ( hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
+			posix.lseek(hd, 0x1c, 0)
+			for i in x:
+				posix.write( hd, chr(i) )
+			posix.close(hd)
+			
+			hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
+			posix.lseek(hd, 0x1c, 0)
+			start = posix.read(hd, 4)
+			logger.debug(u"NTFS Boot Record now using %s %s %s %s as partition start sector" \
+						% ( hex(ord(start[0])), hex(ord(start[1])), 
+						    hex(ord(start[2])), hex(ord(start[3])) ) )
+			posix.close(hd)
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_setNTFSPartitionStartSector(self, partition, sector, e)
+			raise
 		
-		logger.info(u"Setting Partition start sector to %s in NTFS boot record " % sector \
-				+ u"on partition '%s'" % self.getPartition(partition)['device'] )
+		for hook in hooks:
+			hook.post_Harddisk_setNTFSPartitionStartSector(self, partition, sector)
 		
-		x = [0, 0, 0, 0]
-		x[0] = int ( (sector & 0x000000FFL) )
-		x[1] = int ( (sector & 0x0000FF00L) >> 8 )
-		x[2] = int ( (sector & 0x00FF0000L) >> 16 )
-		x[3] = int ( (sector & 0xFFFFFFFFL) >> 24 )
-		
-		hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-		posix.lseek(hd, 0x1c, 0)
-		start = posix.read(hd, 4)
-		logger.debug(u"NTFS Boot Record currently using %s %s %s %s as partition start sector" \
-					% ( hex(ord(start[0])), hex(ord(start[1])), 
-					    hex(ord(start[2])), hex(ord(start[3])) ) )
-		posix.close(hd)
-		
-		logger.debug(u"Manipulating NTFS Boot Record!")
-		hd = posix.open(self.getPartition(partition)['device'], posix.O_WRONLY)
-		logger.info(u"Writing new value %s %s %s %s at 0x1c" % ( hex(x[0]), hex(x[1]), hex(x[2]), hex(x[3])))
-		posix.lseek(hd, 0x1c, 0)
-		for i in x:
-			posix.write( hd, chr(i) )
-		posix.close(hd)
-		
-		hd = posix.open(self.getPartition(partition)['device'], posix.O_RDONLY)
-		posix.lseek(hd, 0x1c, 0)
-		start = posix.read(hd, 4)
-		logger.debug(u"NTFS Boot Record now using %s %s %s %s as partition start sector" \
-					% ( hex(ord(start[0])), hex(ord(start[1])), 
-					    hex(ord(start[2])), hex(ord(start[3])) ) )
-		posix.close(hd)
-	
 	def getPartitions(self):
 		return self.partitions
 	
@@ -1278,199 +1539,260 @@ class Harddisk:
 		raise Exception(u'Partition %s does not exist' % number)
 	
 	def createPartition(self, start, end, fs, type = u'primary', boot = False, lba = False):
-		start = forceUnicodeLower(start)
-		end   = forceUnicodeLower(end)
-		fs    = forceUnicodeLower(fs)
-		type  = forceUnicodeLower(type)
-		boot  = forceBool(boot)
-		lba   = forceBool(lba)
-		
-		partId = u'00'
-		if re.search('^[a-f0-9]{2}$', fs):
-			partId = fs
-		else:
-			if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
-				partId = u'83'
-			elif (fs == u'linux-swap'):
-				partId = u'82'
-			elif (fs == u'fat32'):
-				partId = u'c'
-			elif (fs == u'ntfs'):
-				partId = u'7'
+		for hook in hooks:
+			(start, end, fs, type, boot, lba) = hook.pre_Harddisk_createPartition(self, start, end, fs, type, boot, lba)
+		try:
+			start = forceUnicodeLower(start)
+			end   = forceUnicodeLower(end)
+			fs    = forceUnicodeLower(fs)
+			type  = forceUnicodeLower(type)
+			boot  = forceBool(boot)
+			lba   = forceBool(lba)
+			
+			partId = u'00'
+			if re.search('^[a-f0-9]{2}$', fs):
+				partId = fs
 			else:
-				raise Exception("Filesystem '%s' not supported!" % fs)
+				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
+					partId = u'83'
+				elif (fs == u'linux-swap'):
+					partId = u'82'
+				elif (fs == u'fat32'):
+					partId = u'c'
+				elif (fs == u'ntfs'):
+					partId = u'7'
+				else:
+					raise Exception("Filesystem '%s' not supported!" % fs)
+			
+			if (type != u'primary'):
+				raise Exception("Type '%s' not supported!" % type)
+			
+			start = start.replace(u' ', u'')
+			end   = end.replace(u' ', u'')
+			
+			if   start.endswith(u'm') or start.endswith(u'mb'):
+				match = re.search('^(\d+)\D', start)
+				start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
+			elif start.endswith(u'g') or start.endswith(u'gb'):
+				match = re.search('^(\d+)\D', start)
+				start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
+			elif start.lower().endswith(u'%'):
+				match = re.search('^(\d+)\D', start)
+				start = int(round( (float(match.group(1))/100) * self.cylinders ))
+			else:
+				start = int(start)
+			
+			if   end.endswith(u'm') or end.endswith(u'mb'):
+				match = re.search('^(\d+)\D', end)
+				end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
+			elif end.endswith(u'g') or end.endswith(u'gb'):
+				match = re.search('^(\d+)\D', end)
+				end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
+			elif end.lower().endswith(u'%'):
+				match = re.search('^(\d+)\D', end)
+				end = int(round( (float(match.group(1))/100) * self.cylinders ))
+			else:
+				end = int(end)
+			
+			if (start < 0):
+				# Lowest possible cylinder is 0
+				start = 0
+			if (end >= self.cylinders):
+				# Highest possible cylinder is total cylinders - 1
+				end = self.cylinders-1
+			
+			number = len(self.partitions) + 1
+			for part in self.partitions:
+				if (end <= part['cylStart']):
+					if (part['number']-1 <= number):
+						# Insert before
+						number = part['number']-1
+			
+			try:
+				prev = self.getPartition(number-1)
+				if (start <= prev['cylEnd']):
+					# Partitions overlap
+					start = prev['cylEnd']+1
+			except:
+				pass
+			
+			try:
+				next = self.getPartition(number+1)
+				if (end >= next['cylStart']):
+					# Partitions overlap
+					end = next['cylStart']-1
+			except:
+				pass
+			
+			logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
+						% (self.device, number, type, fs, start, end))
+			
+			if (number < 1) or (number > 4):
+				raise Exception(u'Cannot create partition %s' % number)
+			
+			self.partitions.append( { 'number':	number,
+						  'cylStart':	start,
+						  'cylEnd':	end,
+						  'cylSize':	end-start+1,
+						  'start':	start * self.bytesPerCylinder,
+						  'end':	end * self.bytesPerCylinder,
+						  'size':	(end-start+1) * self.bytesPerCylinder,
+						  'type':	partId,
+						  'fs':		fs,
+						  'boot':	boot,
+						  'lba':	lba } )
+			
+			self.writePartitionTable()
+			self.readPartitionTable()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_createPartition(self, start, end, fs, type, boot, lba, e)
+			raise
 		
-		if (type != u'primary'):
-			raise Exception("Type '%s' not supported!" % type)
-		
-		start = start.replace(u' ', u'')
-		end   = end.replace(u' ', u'')
-		
-		if   start.endswith(u'm') or start.endswith(u'mb'):
-			match = re.search('^(\d+)\D', start)
-			start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
-		elif start.endswith(u'g') or start.endswith(u'gb'):
-			match = re.search('^(\d+)\D', start)
-			start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
-		elif start.lower().endswith(u'%'):
-			match = re.search('^(\d+)\D', start)
-			start = int(round( (float(match.group(1))/100) * self.cylinders ))
-		else:
-			start = int(start)
-		
-		if   end.endswith(u'm') or end.endswith(u'mb'):
-			match = re.search('^(\d+)\D', end)
-			end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
-		elif end.endswith(u'g') or end.endswith(u'gb'):
-			match = re.search('^(\d+)\D', end)
-			end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
-		elif end.lower().endswith(u'%'):
-			match = re.search('^(\d+)\D', end)
-			end = int(round( (float(match.group(1))/100) * self.cylinders ))
-		else:
-			end = int(end)
-		
-		if (start < 0):
-			# Lowest possible cylinder is 0
-			start = 0
-		if (end >= self.cylinders):
-			# Highest possible cylinder is total cylinders - 1
-			end = self.cylinders-1
-		
-		number = len(self.partitions) + 1
-		for part in self.partitions:
-			if (end <= part['cylStart']):
-				if (part['number']-1 <= number):
-					# Insert before
-					number = part['number']-1
-		
-		try:
-			prev = self.getPartition(number-1)
-			if (start <= prev['cylEnd']):
-				# Partitions overlap
-				start = prev['cylEnd']+1
-		except:
-			pass
-		
-		try:
-			next = self.getPartition(number+1)
-			if (end >= next['cylStart']):
-				# Partitions overlap
-				end = next['cylStart']-1
-		except:
-			pass
-		
-		logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
-					% (self.device, number, type, fs, start, end))
-		
-		if (number < 1) or (number > 4):
-			raise Exception(u'Cannot create partition %s' % number)
-		
-		self.partitions.append( { 'number':	number,
-					  'cylStart':	start,
-					  'cylEnd':	end,
-					  'cylSize':	end-start+1,
-					  'start':	start * self.bytesPerCylinder,
-					  'end':	end * self.bytesPerCylinder,
-					  'size':	(end-start+1) * self.bytesPerCylinder,
-					  'type':	partId,
-					  'fs':		fs,
-					  'boot':	boot,
-					  'lba':	lba } )
-		
-		self.writePartitionTable()
-		self.readPartitionTable()
+		for hook in hooks:
+			hook.post_Harddisk_createPartition(self, start, end, fs, type, boot, lba)
 	
 	
 	def deletePartition(self, partition):
-		partition = forceInt(partition)
+		for hook in hooks:
+			partition = hook.pre_Harddisk_deletePartition(self, partition)
+		try:
+			partition = forceInt(partition)
+			
+			logger.info("Deleting partition '%s' on '%s'" % (partition, self.device))
+			
+			partitions = []
+			exists = False
+			for part in self.partitions:
+				if (part.get('number') == partition):
+					exists = True
+				else:
+					partitions.append(part)
+			
+			if not exists:
+				logger.warning(u"Cannot delete non existing partition '%s'." % partition)
+				return
+			
+			self.partitions = partitions
+			
+			self.writePartitionTable()
+			self.readPartitionTable()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_deletePartition(self, partition, e)
+			raise
 		
-		logger.info("Deleting partition '%s' on '%s'" % (partition, self.device))
+		for hook in hooks:
+			hook.post_Harddisk_deletePartition(self, partition)
 		
-		partitions = []
-		exists = False
-		for part in self.partitions:
-			if (part.get('number') == partition):
-				exists = True
-			else:
-				partitions.append(part)
-		
-		if not exists:
-			logger.warning(u"Cannot delete non existing partition '%s'." % partition)
-			return
-		
-		self.partitions = partitions
-		
-		self.writePartitionTable()
-		self.readPartitionTable()
-	
 	def mountPartition(self, partition, mountpoint, **options):
-		partition = forceInt(partition)
-		mountpoint = forceFilename(mountpoint)
-		mount(self.getPartition(partition)['device'], mountpoint, **options)
+		for hook in hooks:
+			(partition, mountpoint, options) = hook.pre_Harddisk_mountPartition(self, partition, mountpoint, **options)
+		try:
+			partition = forceInt(partition)
+			mountpoint = forceFilename(mountpoint)
+			mount(self.getPartition(partition)['device'], mountpoint, **options)
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_mountPartition(self, partition, mountpoint, e, **options)
+			raise
+		
+		for hook in hooks:
+			hook.post_Harddisk_mountPartition(self, partition, mountpoint, **options)
 	
 	def umountPartition(self, partition):
-		partition = forceInt(partition)
-		umount(self.getPartition(partition)['device'])
+		for hook in hooks:
+			partition = hook.pre_Harddisk_umountPartition(self, partition)
+		try:
+			partition = forceInt(partition)
+			umount(self.getPartition(partition)['device'])
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_umountPartition(self, partition, e)
+			raise
+		
+		for hook in hooks:
+			hook.post_Harddisk_umountPartition(self, partition)
 	
 	def createFilesystem(self, partition, fs=None):
-		partition = forceInt(partition)
-		if not fs:
-			fs = self.getPartition(partition)['fs']
-		fs = forceUnicodeLower(fs)
+		for hook in hooks:
+			(partition, fs) = hook.pre_Harddisk_createFilesystem(self, partition, fs)
 		
-		if not fs in (u'fat32', u'ntfs', u'linux-swap', u'ext2', u'ext3', u'ext4', u'reiserfs', u'reiser4', u'xfs'):
-			raise Exception(u"Creation of filesystem '%s' not supported!" % fs)
+		try:
+			partition = forceInt(partition)
+			if not fs:
+				fs = self.getPartition(partition)['fs']
+			fs = forceUnicodeLower(fs)
+			
+			if not fs in (u'fat32', u'ntfs', u'linux-swap', u'ext2', u'ext3', u'ext4', u'reiserfs', u'reiser4', u'xfs'):
+				raise Exception(u"Creation of filesystem '%s' not supported!" % fs)
+			
+			logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
+			
+			if   (fs == u'fat32'):
+				cmd = u"mkfs.vfat -F 32 %s" % self.getPartition(partition)['device']
+			elif (fs == u'linux-swap'):
+				cmd = u"mkswap %s" % self.getPartition(partition)['device']
+			else:
+				options = u''
+				if fs in (u'ext2', u'ext3', u'ext4', u'ntfs'):
+					options = u'-F'
+					if (fs == u'ntfs'):
+						# quick format
+						options += u' -Q'
+				elif fs in (u'xfs', u'reiserfs', u'reiser4'):
+					options = u'-f'
+				cmd = u"mkfs.%s %s %s" % (fs, options, self.getPartition(partition)['device'])
+			
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
+			execute(cmd)
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
+			self.readPartitionTable()
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_createFilesystem(self, partition, fs, e)
+			raise
 		
-		logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
-		
-		if   (fs == u'fat32'):
-			cmd = u"mkfs.vfat -F 32 %s" % self.getPartition(partition)['device']
-		elif (fs == u'linux-swap'):
-			cmd = u"mkswap %s" % self.getPartition(partition)['device']
-		else:
-			options = u''
-			if fs in (u'ext2', u'ext3', u'ext4', u'ntfs'):
-				options = u'-F'
-				if (fs == u'ntfs'):
-					# quick format
-					options += u' -Q'
-			elif fs in (u'xfs', u'reiserfs', u'reiser4'):
-				options = u'-f'
-			cmd = u"mkfs.%s %s %s" % (fs, options, self.getPartition(partition)['device'])
-		
-		if self.ldPreload:
-			os.putenv("LD_PRELOAD", self.ldPreload)
-		execute(cmd)
-		if self.ldPreload:
-			os.unsetenv("LD_PRELOAD")
-		self.readPartitionTable()
+		for hook in hooks:
+			hook.post_Harddisk_createFilesystem(self, partition, fs)
 		
 	def resizeFilesystem(self, partition, size=0, fs=None):
-		partition = forceInt(partition)
-		size = forceInt(size)
-		if not fs:
-			fs = self.getPartition(partition)['fs']
-		fs = forceUnicodeLower(fs)
-		if not fs in (u'ntfs',):
-			raise Exception(u"Resizing of filesystem '%s' not supported!" % fs)
+		for hook in hooks:
+			(partition, size, fs) = hook.pre_Harddisk_resizeFilesystem(self, partition, size, fs)
+		try:
+			partition = forceInt(partition)
+			size = forceInt(size)
+			if not fs:
+				fs = self.getPartition(partition)['fs']
+			fs = forceUnicodeLower(fs)
+			if not fs in (u'ntfs',):
+				raise Exception(u"Resizing of filesystem '%s' not supported!" % fs)
+			
+			if (size <= 0):
+				size = self.getPartition(partition)['size'] - 5*1024*1024
+			
+			if (size <= 0):
+				raise Exception(u"New filesystem size of %0.2f MB is not possible!" % (float(size)/(1024*1024)))
+			
+			if self.ldPreload:
+				os.putenv("LD_PRELOAD", self.ldPreload)
+			
+			if (fs.lower() == 'ntfs'):
+				cmd = u"echo 'y' | %s --force --size %s %s" % (which('ntfsresize'), size, self.getPartition(partition)['device'])
+				execute(cmd)
+			
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
+		except Exception, e:
+			for hook in hooks:
+				hook.error_Harddisk_resizeFilesystem(self, partition, size, fs, e)
+			raise
 		
-		if (size <= 0):
-			size = self.getPartition(partition)['size'] - 5*1024*1024
-		
-		if (size <= 0):
-			raise Exception(u"New filesystem size of %s MB is not possible!" % (size/(1024*1024)))
-		
-		if self.ldPreload:
-			os.putenv("LD_PRELOAD", self.ldPreload)
-		
-		if (fs.lower() == 'ntfs'):
-			cmd = u"echo 'y' | %s --force --size %s %s" % (which('ntfsresize'), size, self.getPartition(partition)['device'])
-			execute(cmd)
-		
-		if self.ldPreload:
-			os.unsetenv("LD_PRELOAD")
-		
+		for hook in hooks:
+			hook.post_Harddisk_resizeFilesystem(self, partition, size, fs)
+			
 	def saveImage(self, partition, imageFile, progressSubject=None):
 		for hook in hooks:
 			(partition, imageFile, progressSubject) = hook.pre_Harddisk_saveImage(self, partition, imageFile, progressSubject)
