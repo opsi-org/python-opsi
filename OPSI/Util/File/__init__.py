@@ -771,9 +771,8 @@ class TxtSetupOemFile(ConfigFile):
 		if not self._parsed:
 			self.parse()
 		for d in self._devices:
-			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
-				continue
-			return True
+			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
+				return True
 		return False
 	
 	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = []):
@@ -2827,7 +2826,8 @@ if (__name__ == "__main__"):
 				print f
 			#for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
 			#	print f
-			
+			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
+				
 		except Exception, e:
 			logger.logException(e)
 		
