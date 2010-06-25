@@ -340,7 +340,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			massStorageDriverLines = []
 			oemBootFileLines = []
 			section = u''
-			sif = codecs.open(sifFile, 'r', 'mbcs')
+			sif = codecs.open(sifFile, 'r', 'cp1250')
 			for line in sif.readlines():
 				if line.strip():
 					logger.debug2(u"Current sif file content: %s" % line.rstrip())
@@ -375,7 +375,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			logger.debug(oemBootFileLines)
 			lines.extend(oemBootFileLines)
 			
-			sif = codecs.open(sifFile, 'w', 'mbcs')
+			sif = codecs.open(sifFile, 'w', 'cp1250')
 			sif.writelines(lines)
 			sif.close()
 
