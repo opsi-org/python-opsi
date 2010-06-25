@@ -802,6 +802,24 @@ class TxtSetupOemFile(ConfigFile):
 				raise Exception(u"Driver disk for file %s not found in txtsetup.oem file '%s'" % (f, self._filename))
 			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
 		return files
+	
+	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType = None):
+		vendorId = forceHardwareVendorId(vendorId)
+		deviceId = forceHardwareDeviceId(deviceId)
+		if not self._parsed:
+			self.parse()
+		device = None
+		for d in self._devices:
+			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
+				device = d
+				break
+		if not device:
+			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
+		
+		for componentOptions in self._componentOptions:
+			if (componentOptions["componentName"] == device['componentName']):
+				return componentOptions
+		raise Exception(u"Component name '%s' not found in txtsetup.oem file '%s'" % (componentName, self._filename))
 		
 	def parse(self, lines=None):
 		logger.debug(u"Parsing txtsetup.oem file %s" % self._filename)
@@ -2827,7 +2845,8 @@ if (__name__ == "__main__"):
 			#for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
 			#	print f
 			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
-				
+			print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '10DE', deviceId = '0AD4')['description']
+			
 		except Exception, e:
 			logger.logException(e)
 		

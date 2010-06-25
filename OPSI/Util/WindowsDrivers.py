@@ -333,6 +333,8 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
 			oemBootFiles.append(fn)
 		
+		description = txtSetupOemFile.getComponentOptionsForDevice(vendorId = supportedDevice['vendorId'], deviceId = supportedDevice['deviceId'])['description']
+		
 		# Patch winnt.sif
 		if sifFile:
 			logger.notice(u"Registering textmode drivers in sif file '%s'" % sifFile)
