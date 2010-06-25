@@ -63,6 +63,13 @@ def forceUnicode(var):
 		return unicode(var, 'utf-8', 'replace')
 	if (os.name == 'nt') and type(var) is WindowsError:
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
+	if hasattr(var, '__unicode__'):
+		return var.__unicode__()
+	if hasattr(var, '__repr__'):
+		var = var.__repr__()
+		if type(var) is types.UnicodeType:
+			return var
+		return unicode(var, 'utf-8', 'replace')
 	return unicode(var)
 	
 def forceUnicodeLower(var):

@@ -295,15 +295,19 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 	
 	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
 	txtSetupOems = findFiles(directory = driverDirectory, prefix = driverDirectory, includeFile = re.compile('^txtsetup\.oem$', re.IGNORECASE), returnDirs = False)
+	if not txtSetupOems:
+		logger.info(u"No txtsetup.oem found in '%s'" % driverDirectory)
+		return
+	
 	for txtSetupOem in txtSetupOems:
-		logger.info(u"File '%s' found")
+		logger.info(u"File '%s' found" % txtSetupOem)
 		txtSetupOemFile = TxtSetupOemFile(txtSetupOem)
 		driverPath = os.path.dirname(txtSetupOem)
 		supportedDevice = None
 		for device in devices:
-			logger.debug(u"Testing if textmode driver '%s' supports device %s" % (driverPath, device))
+			logger.debug2(u"Testing if textmode driver '%s' supports device %s" % (driverPath, device))
 			if txtSetupOemFile.isDeviceKnown(vendorId = device.get('vendorId'), deviceId = device.get('deviceId')):
-				logger.debug2(u"Textmode driver '%s' supports device %s" % (driverPath, device))
+				logger.debug(u"Textmode driver '%s' supports device %s" % (driverPath, device))
 				supportedDevice = device
 				break
 			else:

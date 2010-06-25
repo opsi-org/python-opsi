@@ -528,6 +528,11 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			param.append(subject.serializable())
 		self.notify( name = u"subjectsChanged", params = [ param ] )
 	
+	def requestEndConnections(self):
+		if not clients:
+			return
+		self.notify( name = u"endConnection", params = [] )
+	
 	def notify(self, name, params, clients = []):
 		if not type(params) is list:
 			params = [ params ]
@@ -595,6 +600,9 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		self._listening = False
 	
 	def stop(self, stopReactor=True):
+		if self._factory:
+			self._factory.requestEndConnections()
+		
 		if self._server:
 			#self._server.loseConnection()
 			result = self._server.stopListening()
@@ -632,7 +640,8 @@ class NotificationClientFactory(ClientFactory):
 	_client = None
 	_observer = None
 	
-	def __init__(self, observer):
+	def __init__(self, notificationClient, observer):
+		self._notificationClient = notificationClient
 		self._observer = observer
 		self._rpcs = {}
 		self._timeout = 5
@@ -670,9 +679,12 @@ class NotificationClientFactory(ClientFactory):
 				# Notification
 				method = rpc['method']
 				params = rpc['params']
-				logger.info( u"eval self._observer.%s(%s)" % (method, unicode(params)[1:-1]) )
-				logger.debug( "self._observer.%s(*params)" % method )
-				eval( "self._observer.%s(*params)" % method )
+				if (method == 'endConnection'):
+					logger.info(u"Server requested connection end")
+					self._notificationClient.endConnectionRequested()
+				else:
+					logger.debug( "self._observer.%s(*params)" % method )
+					eval( "self._observer.%s(*params)" % method )
 		except Exception, e:
 			logger.error(e)
 	
@@ -699,8 +711,24 @@ class NotificationClient(threading.Thread):
 		self._address = address
 		self._port = port
 		self._observer = observer
-		self._factory = NotificationClientFactory(self._observer)
+		self._factory = NotificationClientFactory(self, self._observer)
 		self._client = None
+		self._endConnectionRequestedCallbacks = []
+	
+	def addEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
+		if not endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
+			self._endConnectionRequestedCallbacks.append(endConnectionRequestedCallback)
+	
+	def removeEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
+		if endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
+			self._endConnectionRequestedCallbacks.remove(endConnectionRequestedCallback)
+	
+	def endConnectionRequested(self):
+		for endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
+			try:
+				endConnectionRequestedCallback()
+			except Exception, e:
+				logger.error(e)
 		
 	def getFactory(self):
 		return self._factory
@@ -726,6 +754,20 @@ class NotificationClient(threading.Thread):
 	
 	def selectChoice(self, subjectId):
 		self._factory.execute(method = 'selectChoice', params = [ subjectId ])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

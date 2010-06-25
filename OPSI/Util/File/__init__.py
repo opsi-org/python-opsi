@@ -768,6 +768,8 @@ class TxtSetupOemFile(ConfigFile):
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
+		if not self._parsed:
+			self.parse()
 		for d in self._devices:
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
 				continue
@@ -2703,6 +2705,84 @@ catalog = d1,mpixp32.cat
 # <value_type> is a string like REG_DWORD.  See below.
 # <value> specifies the actual value; its format depends on <value_type>
 value = Parameters\PnpInterface,5,REG_DWORD,1
+''',
+'''
+[Disks]
+d1 = "NVIDIA AHCI DRIVER (SCSI)",\disk1,\
+
+[Defaults]
+
+[scsi]
+BUSDRV = "NVIDIA nForce Storage Controller (required)"
+
+[Files.scsi.BUSDRV]
+driver = d1,nvgts.sys,BUSDRV
+inf    = d1, nvgts.inf
+catalog = d1, nvata.cat
+dll    = d1,nvraidco.dll
+dll     = d1,NvRCoENU.dll
+dll     = d1,NvRCoAr.dll
+dll     = d1,NvRCoCs.dll
+dll     = d1,NvRCoDa.dll
+dll     = d1,NvRCoDe.dll
+dll     = d1,NvRCoEl.dll
+dll     = d1,NvRCoEng.dll
+dll     = d1,NvRCoEs.dll
+dll     = d1,NvRCoEsm.dll
+dll     = d1,NvRCoFi.dll
+dll     = d1,NvRCoFr.dll
+dll     = d1,NvRCoHe.dll
+dll     = d1,NvRCoHu.dll
+dll     = d1,NvRCoIt.dll
+dll     = d1,NvRCoJa.dll
+dll     = d1,NvRCoKo.dll
+dll     = d1,NvRCoNl.dll
+dll     = d1,NvRCoNo.dll
+dll     = d1,NvRCoPl.dll
+dll     = d1,NvRCoPt.dll
+dll     = d1,NvRCoPtb.dll
+dll     = d1,NvRCoRu.dll
+dll     = d1,NvRCoSk.dll
+dll     = d1,NvRCoSl.dll
+dll     = d1,NvRCoSv.dll
+dll     = d1,NvRCoTh.dll
+dll     = d1,NvRCoTr.dll
+dll     = d1,NvRCoZhc.dll
+dll     = d1,NvRCoZht.dll
+
+[Config.BUSDRV]
+value = parameters\PnpInterface,5,REG_DWORD,1
+
+[HardwareIds.scsi.BUSDRV]
+id = "PCI\VEN_10DE&DEV_0036", "nvgts"
+id = "PCI\VEN_10DE&DEV_003E", "nvgts"
+id = "PCI\VEN_10DE&DEV_0054", "nvgts"
+id = "PCI\VEN_10DE&DEV_0055", "nvgts"
+id = "PCI\VEN_10DE&DEV_0266", "nvgts"
+id = "PCI\VEN_10DE&DEV_0267", "nvgts"
+id = "PCI\VEN_10DE&DEV_037E", "nvgts"
+id = "PCI\VEN_10DE&DEV_037F", "nvgts"
+id = "PCI\VEN_10DE&DEV_036F", "nvgts"
+id = "PCI\VEN_10DE&DEV_03F6", "nvgts"
+id = "PCI\VEN_10DE&DEV_03F7", "nvgts"
+id = "PCI\VEN_10DE&DEV_03E7", "nvgts"
+id = "PCI\VEN_10DE&DEV_044D", "nvgts"
+id = "PCI\VEN_10DE&DEV_044E", "nvgts"
+id = "PCI\VEN_10DE&DEV_044F", "nvgts"
+id = "PCI\VEN_10DE&DEV_0554", "nvgts"
+id = "PCI\VEN_10DE&DEV_0555", "nvgts"
+id = "PCI\VEN_10DE&DEV_0556", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F4", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F5", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F6", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F7", "nvgts"
+id = "PCI\VEN_10DE&DEV_0768", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AD5", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AD4", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AB9", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AB8", "nvgts"
+id = "PCI\VEN_10DE&DEV_0BCC", "nvgts"
+id = "PCI\VEN_10DE&DEV_0BCD", "nvgts"
 '''
 ]
 
@@ -2729,23 +2809,24 @@ if (__name__ == "__main__"):
 	logger.setConsoleColor(True)
 	
 	
-	for data in infTestData:
-		infFile = InfFile('/tmp/test.inf')
-		infFile.parse(data.split('\n'))
-		devices = infFile.getDevices()
-		if not devices:
-			logger.error(u"No devices found!")
-		for dev in devices:
-			logger.notice(u"Found device: %s" % dev)
+	#for data in infTestData:
+	#	infFile = InfFile('/tmp/test.inf')
+	#	infFile.parse(data.split('\n'))
+	#	devices = infFile.getDevices()
+	#	if not devices:
+	#		logger.error(u"No devices found!")
+	#	for dev in devices:
+	#		logger.notice(u"Found device: %s" % dev)
 		
 	for data in txtsetupoemTestData[:1]:
 		try:
 			txtSetupOemFile = TxtSetupOemFile('/tmp/txtsetup.oem')
 			txtSetupOemFile.parse(data.split('\n'))
-			#for f in txtSetupOemFile.getFilesForDevice(vendorId = 1000, deviceId = '0056', fileTypes = []):
-			#	print f
-			for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
+			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0AD4')
+			for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '0AD4', fileTypes = []):
 				print f
+			#for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
+			#	print f
 			
 		except Exception, e:
 			logger.logException(e)
@@ -2756,9 +2837,9 @@ if (__name__ == "__main__"):
 		#for dev in devices:
 		#	logger.notice(u"Found device: %s" % dev)
 	
-	for data in iniTestData:
-		iniFile = IniFile('/tmp/test.ini')
-		iniFile.parse(data.split('\n'))
+	#for data in iniTestData:
+	#	iniFile = IniFile('/tmp/test.ini')
+	#	iniFile.parse(data.split('\n'))
 	
 	
 	
