@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import types, re, time, sys
+import types, re, time, sys, datetime
 
 # OPSI imports
 from OPSI.Logger import *
@@ -187,6 +187,8 @@ opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
 def forceOpsiTimestamp(var):
 	if not var:
 		var = u'0000-00-00 00:00:00'
+	if isinstance(var, datetime.datetime):
+		var = str(var)
 	var = forceUnicode(var)
 	match = re.search(opsiTimestampRegex, var)
 	if not match:
