@@ -529,7 +529,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self.notify( name = u"subjectsChanged", params = [ param ] )
 	
 	def requestEndConnections(self):
-		if not clients:
+		if not self.clients:
 			return
 		self.notify( name = u"endConnection", params = [] )
 	
