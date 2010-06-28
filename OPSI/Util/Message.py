@@ -442,6 +442,9 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		self._subjects = []
 		self._rpcs     = {}
 	
+	def connectionCount(self):
+		return len(self.clients)
+	
 	def connectionMade(self, client):
 		logger.info(u"client connection made")
 		self.clients.append(client)
@@ -544,7 +547,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			logger.info(u"cannot send notification '%s', no client connected" % name)
 			return
 		logger.info(u"sending notification '%s' to clients" % name)
-		for client in self.clients:
+		for client in clients:
 			# json-rpc: notifications have id null
 			jsonString = json.dumps( {"id": None, "method": name, "params": params } )
 			if type(jsonString) is unicode:
@@ -602,6 +605,10 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def stop(self, stopReactor=True):
 		if self._factory:
 			self._factory.requestEndConnections()
+		timeout = 5.0
+		while (self._factory.connectionCount() > 0) and (timeout > 0):
+			time.sleep(0.1)
+			timeout -= 0.1
 		
 		if self._server:
 			#self._server.loseConnection()
