@@ -363,7 +363,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			
 			if not massStorageDriverLines:
 				massStorageDriverLines = [u'\r\n', u'[MassStorageDrivers]\r\n']
-			massStorageDriverLines.append(u'"%s" = OEM\r\n' % description)
+			massStorageDriverLines.append(u'"%s" = "OEM"\r\n' % description)
 			
 			if not oemBootFileLines:
 				oemBootFileLines = [u'\r\n', u'[OEMBootFiles]\r\n']

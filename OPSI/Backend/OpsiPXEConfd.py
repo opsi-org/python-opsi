@@ -205,6 +205,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				self._depotConnections.backend_exit()
 			except:
 				pass
+		self._updateThreadsLock.acquire()
+		for updateThread in self._updateThreads.values():
+			updateThread.join(5)
+		self._updateThreadsLock.release()
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -

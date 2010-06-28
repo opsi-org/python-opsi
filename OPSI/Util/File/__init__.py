@@ -749,6 +749,7 @@ class TxtSetupOemFile(ConfigFile):
 	usbDeviceRegex   = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))', re.IGNORECASE)
 	filesRegex       = re.compile('files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
 	hardwareIdsRegex = re.compile('hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	dllEntryRegex    = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 	
 	def __init__(self, filename, lockFailTimeout = 2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
@@ -765,6 +766,24 @@ class TxtSetupOemFile(ConfigFile):
 			self.parse()
 		return self._devices
 	
+	def removeDllEntries(self, lines=None):
+		''' workaround windows textmode parser error '''
+		if not lines:
+			self.readlines()
+		else:
+			self._lines = lines
+		lines = []
+		for i in range(len(self._lines)):
+			match = self.dllEntryRegex.search(self._lines[i])
+			if match:
+				continue
+				#self._lines[i] = u'inf = %s' % match.group(2)
+			lines.append(self._lines[i])
+		self._lines = lines
+		f = codecs.open(self._filename, 'w', 'cp1250')
+		f.writelines(self._lines)
+		f.close()
+		
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
@@ -775,15 +794,25 @@ class TxtSetupOemFile(ConfigFile):
 				return True
 		return False
 	
-	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = []):
+	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = [], architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		fileTypes = forceUnicodeLowerList(fileTypes)
+		architecture = forceArchitecture(architecture)
+		
 		if not self._parsed:
 			self.parse()
 		device = None
 		for d in self._devices:
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
+				if (architecture == 'x86'):
+					if (d['componentId'].lower().find('amd64') != -1) or (d['componentId'].lower().find('x64') != -1):
+						logger.debug(u"Skipping device with component id '%s' which does not seem to match architecture '%s'" % (d['componentId'], architecture))
+						continue
+				elif (architecture == 'x64'):
+					if (d['componentId'].lower().find('i386') != -1) or (d['componentId'].lower().find('x86') != -1):
+						logger.debug(u"Skipping device with component id '%s' which does not seem to match architecture '%s'" % (d['componentId'], architecture))
+						continue
 				device = d
 				break
 		if not device:
@@ -823,6 +852,8 @@ class TxtSetupOemFile(ConfigFile):
 		
 	def parse(self, lines=None):
 		logger.debug(u"Parsing txtsetup.oem file %s" % self._filename)
+		self.removeDllEntries(lines)
+		
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
 		
@@ -922,9 +953,9 @@ class TxtSetupOemFile(ConfigFile):
 				if match.group(2):
 					device = forceHardwareDeviceId(match.group(3))
 				
-				if u"%s:%s" % (vendor, device) not in found:
+				if u"%s:%s:%s:%s" % (type, vendor, device, componentId) not in found:
 					logger.debug(u"   Found %s device: %s:%s, service name: %s" % (type, vendor, device, serviceName))
-					found.append(u"%s:%s:%s" % (type, vendor, device))
+					found.append(u"%s:%s:%s:%s" % (type, vendor, device, componentId))
 					self._devices.append( { 'vendor': vendor, 'device': device, 'type': type, 'serviceName': serviceName, 'componentName': componentName, 'componentId': componentId } )
 					if not serviceName in self._serviceNames:
 						self._serviceNames.append(serviceName)
@@ -2800,6 +2831,287 @@ id = "PCI\VEN_10DE&DEV_0AB9", "nvgts"
 id = "PCI\VEN_10DE&DEV_0AB8", "nvgts"
 id = "PCI\VEN_10DE&DEV_0BCC", "nvgts"
 id = "PCI\VEN_10DE&DEV_0BCD", "nvgts"
+''',
+'''
+[Disks] 
+disk0 = "AMD AHCI Compatible RAID Controller Driver Diskette", \\ahcix86, \\
+disk1 = "AMD AHCI Compatible RAID Controller Driver Diskette", \\ahcix86, \\x86
+disk2 = "AMD AHCI Compatible RAID Controller Driver Diskette", \\ahcix64, \\x64
+
+[Defaults] 
+SCSI = Napa_i386_ahci8086
+
+[SCSI] 
+Napa_i386_ahci8086 = "AMD AHCI Compatible RAID Controller-x86 platform", ahcix86 
+Napa_amd64_ahci    = "AMD AHCI Compatible RAID Controller-x64 platform", ahcix64
+
+[Files.SCSI.Napa_i386_ahci8086] 
+inf	= disk1, ahcix86.inf
+driver	= disk1, ahcix86.sys, ahcix86
+catalog = disk1, ahcix86.cat
+
+[Files.SCSI.Napa_amd64_ahci] 
+inf	= disk2, ahcix64.inf
+driver	= disk2, ahcix64.sys, ahcix64
+catalog = disk2, ahcix64.cat
+
+[HardwareIds.SCSI.Napa_i386_ahci8086] 
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_280A103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_2814103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_3029103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_3029103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E08105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E08105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_C2151631", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_C2151631", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2191631", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2191631", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2171631", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2171631", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE10105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE11105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE13105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE14105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0E105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0F105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_76401558", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_76411558", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_2A6E103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_2A6E103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E13105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E13105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E14105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E14105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_A7051478", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_A7051478", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_55021565", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_55021565", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_700116F3", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_700116F3", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_31331297", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_31331297", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_100415BD", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_100415BD", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014C1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014C1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_75011462", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_75011462", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_73021462", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_73021462", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_73041462", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_73041462", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01551025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01551025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02591028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_02591028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_027E1028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_82EF1043", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_82EF1043", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF6A1179", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF621179", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113E1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113E1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113A1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113A1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113B1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113B1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113D1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113D1734", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_88AD1033", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01471025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01471025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014B1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014B1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01481025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01481025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01491025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01491025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E3103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F2103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30F2103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_3600103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_3600103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F1103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E4103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30E4103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FB103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FB103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FE103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FE103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FC103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FC103C", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_149210CF", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_43901019", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_43901019", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_82881043", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_82881043", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_025B1028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_025A1028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02571028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_02571028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02551028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911849", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921849", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931849", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_B0021458", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_B0021458", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014E1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014E1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014F1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014F1025", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_303617AA", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_303617AA", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_303F17AA", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_303F17AA", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF501179", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02641028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02651028", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0E105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0F105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E10105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E11105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0E105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0F105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E10105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E11105B", "ahcix86"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911002", "ahcix86"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921002", "ahcix86"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931002", "ahcix86"
+id = "PCI\VEN_1002&DEV_4381&SUBSYS_43811002", "ahcix86"
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_43821002", "ahcix86"
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_43811002", "ahcix86" 
+
+[HardwareIds.SCSI.Napa_amd64_ahci] 
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_280A103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_2814103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_3029103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_3029103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E08105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E08105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_C2151631", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_C2151631", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2191631", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2191631", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2171631", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2171631", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE10105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE11105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE13105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE14105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0E105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0F105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_76401558", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_76411558", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_2A6E103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_2A6E103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E13105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E13105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E14105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E14105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_A7051478", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_A7051478", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_55021565", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_55021565", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_700116F3", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_700116F3", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_31331297", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_31331297", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_100415BD", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_100415BD", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014C1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014C1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_75011462", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_75011462", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_73021462", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_73021462", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_73041462", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_73041462", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01551025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01551025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02591028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_02591028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_027E1028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_82EF1043", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_82EF1043", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF6A1179", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF621179", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113E1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113E1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113A1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113A1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113B1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113B1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_113D1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_113D1734", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_88AD1033", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01471025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01471025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014B1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014B1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01481025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01481025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_01491025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_01491025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E3103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F2103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30F2103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_3600103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_3600103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F1103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E4103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30E4103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FB103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FB103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FE103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FE103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FC103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FC103C", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_149210CF", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_43901019", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_43901019", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_82881043", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_82881043", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_025B1028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_025A1028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02571028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_02571028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02551028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911849", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921849", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931849", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_B0021458", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_B0021458", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014E1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014E1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_014F1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_014F1025", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_303617AA", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_303617AA", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_303F17AA", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_303F17AA", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF501179", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02641028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_02651028", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0E105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0F105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E10105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E11105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0E105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0F105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E10105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E11105B", "ahcix64"
+id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911002", "ahcix64"
+id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921002", "ahcix64"
+id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931002", "ahcix64"
+id = "PCI\VEN_1002&DEV_4381&SUBSYS_43811002", "ahcix64"
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_43821002", "ahcix64"
+id = "PCI\VEN_1002&DEV_4380&SUBSYS_43811002", "ahcix64"
+
+[Config.ahcix86]
+value = "", Tag, REG_DWORD, 1
+
+[Config.ahcix64]
+value = "", Tag, REG_DWORD, 1
 '''
 ]
 
@@ -2835,20 +3147,27 @@ if (__name__ == "__main__"):
 	#	for dev in devices:
 	#		logger.notice(u"Found device: %s" % dev)
 		
-	for data in txtsetupoemTestData[:1]:
+	for data in txtsetupoemTestData:
 		try:
 			txtSetupOemFile = TxtSetupOemFile('/tmp/txtsetup.oem')
 			txtSetupOemFile.parse(data.split('\n'))
-			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0AD4')
-			for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '0AD4', fileTypes = []):
-				print f
-			#for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
+			#print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0AD4')
+			#for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '0AD4', fileTypes = []):
 			#	print f
-			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
-			print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '10DE', deviceId = '0AD4')['description']
+			##for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
+			##	print f
+			#print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
+			#print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '10DE', deviceId = '0AD4')['description']
 			
+			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '1002', deviceId = '4391')
+			if txtSetupOemFile.isDeviceKnown(vendorId = '1002', deviceId = '4391'):
+				for f in txtSetupOemFile.getFilesForDevice(vendorId = '1002', deviceId = '4391', fileTypes = []):
+					print f
+				print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '1002', deviceId = '4391')['description']
+				
 		except Exception, e:
 			logger.logException(e)
+			continue
 		
 		#devices = txtSetupOemFile.getDevices()
 		#if not devices:
