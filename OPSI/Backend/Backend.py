@@ -1331,7 +1331,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					objectClass = f.assertionValue.value
 				else:
 					objectFilter = { f.attributeDesc.value: f.assertionValue.value }
-					
+			
+			elif isinstance(f, pureldap.LDAPFilter_greaterOrEqual):
+				logger.debug(u"Handle greaterOrEqual attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
+				objectFilter = { f.attributeDesc.value: u'>=%s' % f.assertionValue.value }
+				
+			elif isinstance(f, pureldap.LDAPFilter_lessOrEqual):
+				logger.debug(u"Handle lessOrEqual attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
+				objectFilter = { f.attributeDesc.value: u'<=%s' % f.assertionValue.value }
+				
 			elif isinstance(f, pureldap.LDAPFilter_substrings):
 				logger.debug(u"Handle substrings type %s: %s" % (f.type, repr(f.substrings)))
 				if (f.type.lower() == 'objectclass'):
