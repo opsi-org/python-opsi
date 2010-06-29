@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.4.99'
+__version__ = '4.0'
 
 # Globals
 DEFAULT_TMP_DIR               = u'/tmp'
@@ -334,7 +334,9 @@ class ProductPackageFile(object):
 					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
 				
 				try:
-					if os.path.isdir(path):
+					if os.path.islink(path):
+						continue
+					elif os.path.isdir(path):
 						logger.debug(u"Setting rights on directory '%s'" % path)
 						os.chmod(path, 02770)
 					elif os.path.isfile(path):
@@ -367,6 +369,7 @@ class ProductPackageFile(object):
 			self.clientDataFiles.append(productId + u'.files')
 			
 		except Exception, e:
+			logger.logException(e)
 			self.cleanup()
 			raise Exception(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 		

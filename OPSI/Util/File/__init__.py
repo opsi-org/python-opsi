@@ -531,6 +531,16 @@ class InfFile(ConfigFile):
 			self.parse()
 		return self._devices
 	
+	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
+		vendorId = forceHardwareVendorId(vendorId)
+		deviceId = forceHardwareDeviceId(deviceId)
+		if not self._parsed:
+			self.parse()
+		for d in self._devices:
+			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
+				return True
+		return False
+	
 	def parse(self, lines=None):
 		logger.debug(u"Parsing inf file %s" % self._filename)
 		lines = ConfigFile.parse(self, lines)

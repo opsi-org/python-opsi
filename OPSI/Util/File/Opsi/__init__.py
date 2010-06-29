@@ -309,11 +309,14 @@ class PackageContentFile(TextFile):
 				if target.startswith(self._productClientDataDir):
 					target = target[len(self._productClientDataDir):]
 				else:
-					# link target not in client data dir => treat as file
-					type   = u'f'
-					size   = os.path.getsize(target)
-					md5    = md5sum(target)
-					target = u''
+					if os.path.isdir(path):
+						type = u'd'
+					else:
+						# link target not in client data dir => treat as file
+						type   = u'f'
+						size   = os.path.getsize(target)
+						md5    = md5sum(target)
+						target = u''
 			elif os.path.isdir(path):
 				type = u'd'
 			else:
