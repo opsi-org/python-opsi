@@ -344,6 +344,7 @@ def getEthernetDevices():
 				devices.append(device)
 	finally:
 		f.close()
+		
 	return devices
 
 def getNetworkInterfaces():
@@ -364,8 +365,7 @@ def getNetworkDeviceConfig(device):
 		'netmask':         None,
 		'gateway':         None,
 		'vendorId':        None,
-		'deviceId':        None,
-		'description':     None
+		'deviceId':        None
 	}
 	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
 		line = line.lower().strip()
@@ -388,19 +388,29 @@ def getNetworkDeviceConfig(device):
 		if match and (match.group(2).lower() == device.lower()):
 			result['gateway'] = forceIpAddress(match.group(1))
 	
-	#for line in execute(u"%s -short -numeric" % which(u'lshw')):
-	for line in execute(u"%s -short" % which(u'lshw')):
-		parts = line.split(None, 3)
-		if (len(parts) < 4):
-			continue
-		if (parts[1] == result['device']):
-			description = forceUnicode(parts[3])
-			match = re.search('^(.*)\s+\[([a-fA-F0-9]{4})\:([a-fA-F0-9]{4})\]', description)
-			if match:
-				description = match.group(1)
-				result['vendorId'] = forceHardwareVendorId(match.group(2))
-				result['deviceId'] = forceHardwareDeviceId(match.group(3))
-			result['description'] = description
+	try:
+		f = open('/sys/class/net/%s/device/vendor' % device)
+		x = f.read().strip()
+		f.close()
+		if not x.startswith('0x'):
+			x = "%x" % int(x)
+			x = ((4-len(x))*'0') + x
+		else:
+			x = x[2:]
+		result['vendorId'] = forceHardwareVendorId(x)
+		
+		f = open('/sys/class/net/%s/device/device' % device)
+		x = f.read().strip()
+		f.close()
+		if not x.startswith('0x'):
+			x = "%x" % int(x)
+			x = ((4-len(x))*'0') + x
+		else:
+			x = x[2:]
+		result['deviceId'] = forceHardwareDeviceId(x)
+	except Exception, e:
+		print e
+		logger.error(u"Failed to get vendor/device id for network device %s" % device)
 	return result
 	
 def getDefaultNetworkInterfaceName():
