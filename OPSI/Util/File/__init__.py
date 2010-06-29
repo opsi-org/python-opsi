@@ -745,10 +745,11 @@ UsbidsFile = PciidsFile
 
 class TxtSetupOemFile(ConfigFile):
 	sectionRegex     = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex   = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?')
-	usbDeviceRegex   = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))', re.IGNORECASE)
-	filesRegex       = re.compile('files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	hardwareIdsRegex = re.compile('hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	pciDeviceRegex   = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))(\S*)\s*$')
+	usbDeviceRegex   = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))(\S*)\s*$', re.IGNORECASE)
+	filesRegex       = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	configsRegex     = re.compile('^config\.(.+)$', re.IGNORECASE)
+	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
 	dllEntryRegex    = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 	
 	def __init__(self, filename, lockFailTimeout = 2000):
@@ -760,30 +761,13 @@ class TxtSetupOemFile(ConfigFile):
 		self._defaultComponentIds = []
 		self._serviceNames = []
 		self._driverDisks = []
+		self._configs = []
 		
 	def getDevices(self):
 		if not self._parsed:
 			self.parse()
 		return self._devices
 	
-	def removeDllEntries(self, lines=None):
-		''' workaround windows textmode parser error '''
-		if not lines:
-			self.readlines()
-		else:
-			self._lines = lines
-		lines = []
-		for i in range(len(self._lines)):
-			match = self.dllEntryRegex.search(self._lines[i])
-			if match:
-				continue
-				#self._lines[i] = u'inf = %s' % match.group(2)
-			lines.append(self._lines[i])
-		self._lines = lines
-		f = codecs.open(self._filename, 'w', 'cp1250')
-		f.writelines(self._lines)
-		f.close()
-		
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
@@ -850,9 +834,23 @@ class TxtSetupOemFile(ConfigFile):
 				return componentOptions
 		raise Exception(u"Component name '%s' not found in txtsetup.oem file '%s'" % (componentName, self._filename))
 		
+	def applyWorkarounds(self):
+		if not self._parsed:
+			self.parse()
+		if not self._defaultComponentIds:
+			# Missing default component will cause problems in windows textmode setup
+			logger.info(u"No default component ids found, using '%s' as default component id" % self._componentOptions[0]['componentId'])
+			self._defaultComponentIds.append({ 'componentName': self._componentOptions[0]['componentName'], 'componentId': self._componentOptions[0]['componentId'] })
+		files = []
+		for f in self._files:
+			if (f['fileType'] == 'dll'):
+				# dll entries will cause problems in windows textmode setup
+				continue
+			files.append(f)
+		self._files = files
+		
 	def parse(self, lines=None):
 		logger.debug(u"Parsing txtsetup.oem file %s" % self._filename)
-		self.removeDllEntries(lines)
 		
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
@@ -864,6 +862,7 @@ class TxtSetupOemFile(ConfigFile):
 		self._defaultComponentIds = []
 		self._serviceNames = []
 		self._driverDisks = []
+		self._configs = []
 		
 		sections = {}
 		section = None
@@ -881,13 +880,13 @@ class TxtSetupOemFile(ConfigFile):
 		for (section, lines) in sections.items():
 			if not section.lower() in ('computer', 'display', 'keyboard', 'mouse', 'scsi'):
 				continue
-			componentName = section.lower()
+			componentName = section#.lower()
 			for line in lines:
 				if (line.find(u'=') == -1):
 					continue
 				optionName = None
-				(optionId, value) = line.split('=', 1)
-				optionId = optionId.strip()
+				(componentId, value) = line.split('=', 1)
+				componentId = componentId.strip()
 				if (value.find(u',') != -1):
 					(description, optionName) = value.split(',', 1)
 					optionName = optionName.strip()
@@ -898,7 +897,7 @@ class TxtSetupOemFile(ConfigFile):
 					description = description[1:-1]
 				if not componentName in self._componentNames:
 					self._componentNames.append(componentName)
-					self._componentOptions.append({"componentName": componentName, "description": description, "optionName": optionName })
+				self._componentOptions.append({"componentName": componentName, "description": description, "componentId": componentId, "optionName": optionName })
 				
 		logger.info(u"Component names found: %s" % self._componentNames)
 		logger.info(u"Component options found: %s" % self._componentOptions)
@@ -910,11 +909,9 @@ class TxtSetupOemFile(ConfigFile):
 				continue
 			for line in lines:
 				(componentName, componentId) = line.split('=', 1)
-				self._defaultComponentIds.append({ 'componentName': componentName.strip().lower(), 'componentId': componentId.strip() })
+				self._defaultComponentIds.append({ 'componentName': componentName.strip(), 'componentId': componentId.strip() })
 		
-		if not self._defaultComponentIds:
-			logger.info(u"No default component ids found")
-		else:
+		if self._defaultComponentIds:
 			logger.info(u"Found default component ids: %s" % self._defaultComponentIds)
 		
 		# Search for hardware ids
@@ -923,7 +920,7 @@ class TxtSetupOemFile(ConfigFile):
 			match = re.search(self.hardwareIdsRegex, section)
 			if not match:
 				continue
-			componentName = match.group(1).lower()
+			componentName = match.group(1)
 			componentId   = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			found = []
@@ -950,15 +947,16 @@ class TxtSetupOemFile(ConfigFile):
 					continue
 				vendor = forceHardwareVendorId(match.group(1))
 				device = None
-				if match.group(2):
+				if match.group(3):
 					device = forceHardwareDeviceId(match.group(3))
-				
-				if u"%s:%s:%s:%s" % (type, vendor, device, componentId) not in found:
-					logger.debug(u"   Found %s device: %s:%s, service name: %s" % (type, vendor, device, serviceName))
-					found.append(u"%s:%s:%s:%s" % (type, vendor, device, componentId))
-					self._devices.append( { 'vendor': vendor, 'device': device, 'type': type, 'serviceName': serviceName, 'componentName': componentName, 'componentId': componentId } )
-					if not serviceName in self._serviceNames:
-						self._serviceNames.append(serviceName)
+				extra = None
+				if match.group(4):
+					extra = forceUnicode(match.group(4))
+				logger.debug(u"   Found %s device: %s:%s, service name: %s" % (type, vendor, device, serviceName))
+				self._devices.append( { 'vendor': vendor, 'device': device, 'extra': extra, 'type': type, 'serviceName': serviceName, \
+							'componentName': componentName, 'componentId': componentId } )
+				if not serviceName in self._serviceNames:
+					self._serviceNames.append(serviceName)
 		
 		if not self._devices:
 			raise Exception(u"No devices found in txtsetup file '%s'" % self._filename)
@@ -995,22 +993,111 @@ class TxtSetupOemFile(ConfigFile):
 			match = re.search(self.filesRegex, section)
 			if not match:
 				continue
-			componentName = match.group(1).lower()
+			componentName = match.group(1)#.lower()
 			componentId   = match.group(2)
 			logger.info(u"Found files section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
 				(fileType, value) = line.split(u'=', 1)
 				fileType = fileType.strip()
-				diskName = value.split(u',')[0].strip()
-				filename = value.split(u',')[1].strip()
-				self._files.append({ 'fileType': fileType, 'diskName': diskName, 'filename': filename, 'componentName': componentName, 'componentId': componentId })
+				parts = value.split(u',')
+				diskName = parts[0].strip()
+				filename = parts[1].strip()
+				optionName = None
+				if (len(parts) > 2):
+					optionName = parts[2].strip()
+				self._files.append({ 'fileType': fileType, 'diskName': diskName, 'filename': filename, 'componentName': componentName, 'componentId': componentId, 'optionName': optionName })
 		logger.debug(u"Found files: %s" % self._files)
 		
+		
+		# Search for configs
+		logger.info(u"Searching for configs")
+		for (section, lines) in sections.items():
+			match = re.search(self.configsRegex, section)
+			if not match:
+				continue
+			componentId   = match.group(1)
+			logger.info(u"Found configs section '%s', component id '%s'" % (section, componentId))
+			for line in lines:
+				value = line.split(u'=', 1)[1]
+				(keyName, valueName, valueType, value) = value.split(u',', 3)
+				keyName = keyName.strip()
+				valueName = valueName.strip()
+				valueType = valueType.strip()
+				value = value.strip()
+				self._configs.append({ 'keyName': keyName.strip(), 'valueName': valueName.strip(), 'valueType': valueType.strip(), 'value': value.strip(), 'componentId': componentId })
+		logger.debug(u"Found configs: %s" % self._configs)
 		self._parsed = True
-
-
-
-
+		
+	def generate(self):
+		lines = []
+		lines.append(u'[Disks]\r\n')
+		for disk in self._driverDisks:
+			lines.append(u'%s = "%s", \\%s, \\%s\r\n' % (disk["diskName"], disk["description"], disk["tagfile"], disk["driverDir"]))
+		lines.append(u'\r\n')
+		lines.append(u'[Defaults]\r\n')
+		for default in self._defaultComponentIds:
+			lines.append(u'%s = %s\r\n' % (default["componentName"], default["componentId"]))
+		
+		for name in self._componentNames:
+			lines.append(u'\r\n')
+			lines.append(u'[%s]\r\n' % name)
+			for options in self._componentOptions:
+				if (options["componentName"] != name):
+					continue
+				line = u'%s = "%s"' % (options["componentId"], options["description"])
+				if options["optionName"]:
+					line += u', %s' % options["optionName"]
+				lines.append(line + u'\r\n')
+		
+		for name in self._componentNames:
+			for options in self._componentOptions:
+				if (options["componentName"] != name):
+					continue
+				lines.append(u'\r\n')
+				lines.append(u'[Files.%s.%s]\r\n' % (name, options["componentId"]))
+				for f in self._files:
+					if (f['componentName'] != name) or (f['componentId'] != options["componentId"]):
+						continue
+					line = u'%s = %s, %s' % (f['fileType'], f['diskName'], f['filename'])
+					if f["optionName"]:
+						line += u', %s' % f["optionName"]
+					lines.append(line + u'\r\n')
+		
+		for name in self._componentNames:
+			for options in self._componentOptions:
+				if (options["componentName"] != name):
+					continue
+				lines.append(u'\r\n')
+				lines.append(u'[HardwareIds.%s.%s]\r\n' % (name, options["componentId"]))
+				for dev in self._devices:
+					if (dev['componentName'] != name) or (dev['componentId'] != options["componentId"]):
+						continue
+					
+					line = u'id = "%s\\VEN_%s' % (dev['type'], dev['vendor'])
+					if dev['device']:
+						line += u'&DEV_%s' % dev['device']
+					if dev['extra']:
+						line += dev['extra']
+					if (dev['type'] == 'USB'):
+						line = line.replace(u'VEN_', u'VID_').replace(u'DEV_', u'PID_')
+					line += '", "%s"' % dev['serviceName']
+					lines.append(line + u'\r\n')
+		
+		configComponents = {}
+		for config in self._configs:
+			if not configComponents.has_key(config['componentId']):
+				configComponents[config['componentId']] = []
+			configComponents[config['componentId']].append(config)
+		for (componentId, configs) in configComponents.items():
+			lines.append(u'\r\n')
+			lines.append(u'[Config.%s]\r\n' % componentId)
+			for conf in configs:
+				lines.append(u'value = %s, %s, %s, %s\r\n' % (conf['keyName'], conf['valueName'], conf['valueType'], conf['value']))
+		
+		self._lines = lines
+		self._fileHandle = codecs.open(self._filename, 'w', 'cp1250')
+		self.writelines()
+		self.close()
 
 
 
@@ -3112,6 +3199,224 @@ value = "", Tag, REG_DWORD, 1
 
 [Config.ahcix64]
 value = "", Tag, REG_DWORD, 1
+''',
+'''
+[Disks]
+d1 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\
+d2 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\i386
+d3 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\x86_64
+
+[Defaults]
+scsi = fttxr5_O_i386
+
+[scsi]
+fttxr5_O_i386 = "Promise FastTrak TX4310 (tm) Controller-Intel x86", fttxr5_O
+fttxr5_O_x86_64 = "Promise FastTrak TX4310 (tm) Controller-x86_64", fttxr5_O
+
+[Files.scsi.fttxr5_O_i386]
+driver = d2, fttxr5_O.sys, fttxr5_O
+;driver = d2, bb_run.sys, bb_run
+;driver = d1, DontGo.sys, dontgo
+;dll = d1, ftutil2.dll
+inf    = d2, fttxr5_O.inf
+catalog= d2, fttxr5_O.cat
+
+[Files.scsi.fttxr5_O_x86_64]
+driver = d3, fttxr5_O.sys, fttxr5_O
+;driver = d3, bb_run.sys, bb_run
+;driver = d1, DontGo.sys, dontgo
+;dll = d1, ftutil2.dll
+inf    = d3, fttxr5_O.inf
+catalog= d3, fttxr5_O.cat
+
+
+
+[HardwareIds.scsi.fttxr5_O_i386]
+id="PCI\VEN_105A", "fttxr5_O"
+
+[HardwareIds.scsi.fttxr5_O_x86_64]
+id="PCI\VEN_105A", "fttxr5_O"
+
+
+[Config.fttxr5_O]
+value = "", Tag, REG_DWORD, 1
+''',
+'''
+; Copyright (c) 2003-09 Intel Corporation
+;#############################################################################
+;#
+;#    Filename:  TXTSETUP.OEM
+;#
+;#############################################################################
+[Disks]
+disk1 = "Intel Matrix Storage Manager driver", iaStor.sys, \\
+
+[Defaults]
+scsi = iaStor_ICH8MEICH9ME
+;scsi = iaAHCI_ICH8
+
+;#############################################################################
+[scsi]
+
+; iaAHCI.inf
+iaAHCI_ESB2               = "Intel(R) ESB2 SATA AHCI Controller"
+iaAHCI_ICH7RDH            = "Intel(R) ICH7R/DH SATA AHCI Controller"
+iaAHCI_ICH7MMDH           = "Intel(R) ICH7M/MDH SATA AHCI Controller"
+iaAHCI_ICH8               = "Intel(R) 82801HB SATA AHCI Controller (Desktop ICH8)"
+iaAHCI_ICH8RDHDO          = "Intel(R) ICH8R/DH/DO SATA AHCI Controller"
+iaAHCI_ICH8MEM            = "Intel(R) ICH8M-E/M SATA AHCI Controller"
+iaAHCI_ICH9RDODH          = "Intel(R) ICH9R/DO/DH SATA AHCI Controller"
+iaAHCI_ICH9MEM            = "Intel(R) ICH9M-E/M SATA AHCI Controller"
+iaAHCI_ICH10DDO           = "Intel(R) ICH10D/DO SATA AHCI Controller"
+iaAHCI_ICH10R             = "Intel(R) ICH10R SATA AHCI Controller"
+
+; iaStor.inf
+iaStor_ESB2               = "Intel(R) ESB2 SATA RAID Controller"
+iaStor_ICH7RDH            = "Intel(R) ICH7R/DH SATA RAID Controller"
+iaStor_ICH7MDH            = "Intel(R) ICH7MDH SATA RAID Controller"
+iaStor_ICH8RICH9RICH10RDO = "Intel(R) ICH8R/ICH9R/ICH10R/DO SATA RAID Controller"
+iaStor_ICH8MEICH9ME       = "Intel(R) ICH8M-E/ICH9M-E SATA RAID Controller"
+
+;#############################################################################
+
+; iaAHCI.inf
+[Files.scsi.iaAHCI_ESB2]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH7RDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH7MMDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH8]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH8RDHDO]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH8MEM]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH9RDODH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH9MEM]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH10DDO]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+[Files.scsi.iaAHCI_ICH10R]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+
+
+; iaStor.inf
+[Files.scsi.iaStor_ESB2]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+
+[Files.scsi.iaStor_ICH7RDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+
+[Files.scsi.iaStor_ICH7MDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+
+[Files.scsi.iaStor_ICH8RICH9RICH10RDO]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+
+[Files.scsi.iaStor_ICH8MEICH9ME]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+
+
+;#############################################################################
+[Config.iaStor]
+value = "", tag, REG_DWORD, 1b
+value = "", ErrorControl, REG_DWORD, 1
+value = "", Group, REG_SZ, "SCSI Miniport"
+value = "", Start, REG_DWORD, 0
+value = "", Type, REG_DWORD, 1
+
+;#############################################################################
+
+; iaAHCI.inf
+[HardwareIds.scsi.iaAHCI_ESB2]
+id = "PCI\VEN_8086&DEV_2681&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH7RDH]
+id = "PCI\VEN_8086&DEV_27C1&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH7MMDH]
+id = "PCI\VEN_8086&DEV_27C5&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH8RDHDO]
+id = "PCI\VEN_8086&DEV_2821&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH8]
+id = "PCI\VEN_8086&DEV_2824&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH8MEM]
+id = "PCI\VEN_8086&DEV_2829&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH9RDODH]
+id = "PCI\VEN_8086&DEV_2922&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH9MEM]
+id = "PCI\VEN_8086&DEV_2929&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH10DDO]
+id = "PCI\VEN_8086&DEV_3A02&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_ICH10R]
+id = "PCI\VEN_8086&DEV_3A22&CC_0106","iaStor"
+
+
+; iaStor.inf
+[HardwareIds.scsi.iaStor_ESB2]
+id = "PCI\VEN_8086&DEV_2682&CC_0104","iaStor"
+
+[HardwareIds.scsi.iaStor_ICH7RDH]
+id = "PCI\VEN_8086&DEV_27C3&CC_0104","iaStor"
+
+[HardwareIds.scsi.iaStor_ICH7MDH]
+id = "PCI\VEN_8086&DEV_27C6&CC_0104","iaStor"
+
+[HardwareIds.scsi.iaStor_ICH8RICH9RICH10RDO]
+id = "PCI\VEN_8086&DEV_2822&CC_0104","iaStor"
+
+[HardwareIds.scsi.iaStor_ICH8MEICH9ME]
+id = "PCI\VEN_8086&DEV_282A&CC_0104","iaStor"
+
+
 '''
 ]
 
@@ -3134,7 +3439,7 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
 '''
 ]
 if (__name__ == "__main__"):
-	logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
 	
 	
@@ -3159,12 +3464,24 @@ if (__name__ == "__main__"):
 			#print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
 			#print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '10DE', deviceId = '0AD4')['description']
 			
-			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '1002', deviceId = '4391')
-			if txtSetupOemFile.isDeviceKnown(vendorId = '1002', deviceId = '4391'):
-				for f in txtSetupOemFile.getFilesForDevice(vendorId = '1002', deviceId = '4391', fileTypes = []):
-					print f
-				print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '1002', deviceId = '4391')['description']
-				
+			for (vendorId, deviceId) in (('1002', '4391'), ('10DE', '07F6')):
+				print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId)
+				if txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId):
+					print "Files:"
+					for f in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = []):
+						print f
+					print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = vendorId, deviceId = deviceId)['description']
+					
+					txtSetupOemFile.applyWorkarounds()
+					txtSetupOemFile.generate()
+					print "Fixed files:"
+					for f in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = []):
+						print f
+			
+			txtSetupOemFile.generate()
+			for line in txtSetupOemFile._lines:
+				print line.rstrip()
+			
 		except Exception, e:
 			logger.logException(e)
 			continue

@@ -322,16 +322,20 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			messageSubject.setMessage(u"Integrating textmode driver '%s'" % driverPath)
 		
 		oemBootFiles = []
+		for fn in txtSetupOemFile.getFilesForDevice(vendorId = supportedDevice['vendorId'], deviceId = supportedDevice['deviceId'], fileTypes = ['inf', 'driver', 'catalog', 'dll']):
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
+			oemBootFiles.append(fn)
+		
+		# Apply workarounds for windows setup errors
+		txtSetupOemFile.applyWorkarounds()
+		txtSetupOemFile.generate()
+		
 		oemBootFiles.append( os.path.basename(txtSetupOem) )
 		for textmodePath in ( 	os.path.join(destination, u'$', u'textmode'), \
 					os.path.join(destination, u'$win_nt$.~bt', u'$oem$') ):
 			System.mkdir(textmodePath)
 			System.copy(txtSetupOem, textmodePath)
-		
-		for fn in txtSetupOemFile.getFilesForDevice(vendorId = supportedDevice['vendorId'], deviceId = supportedDevice['deviceId'], fileTypes = ['inf', 'driver', 'catalog']):
-			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
-			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
-			oemBootFiles.append(fn)
 		
 		description = txtSetupOemFile.getComponentOptionsForDevice(vendorId = supportedDevice['vendorId'], deviceId = supportedDevice['deviceId'])['description']
 		
