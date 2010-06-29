@@ -173,11 +173,13 @@ def forceTime(var):
 
 hardwareIdRegex = re.compile('^[a-fA-F0-9]{4}$')
 def forceHardwareVendorId(var):
+	var = forceUnicode(var)
 	if not re.search(hardwareIdRegex, var):
 		raise ValueError(u"Bad hardware vendor id '%s'" % var)
 	return forceUnicodeUpper(var)
 
 def forceHardwareDeviceId(var):
+	var = forceUnicode(var)
 	if not re.search(hardwareIdRegex, var):
 		raise ValueError(u"Bad hardware device id '%s'" % var)
 	return forceUnicodeUpper(var)
