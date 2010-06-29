@@ -327,7 +327,7 @@ class ProductPackageFile(object):
 			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
 				
-				logger.info(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
+				logger.debug(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
 				try:
 					os.chown(path, uid, gid)
 				except Exception, e:
