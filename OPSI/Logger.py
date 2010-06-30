@@ -121,6 +121,10 @@ def forceUnicode(var):
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 	if hasattr(var, '__unicode__'):
 		return var.__unicode__()
+	try:
+		return unicode(var)
+	except:
+		pass
 	if hasattr(var, '__repr__'):
 		var = var.__repr__()
 		if type(var) is types.UnicodeType:
