@@ -970,13 +970,21 @@ class DataBackendReplicator(object):
 						
 					for definition in self.__readBackend.getProductPropertyDefinitions_listOfHashes(productId = productId, depotId = depotId):
 						logger.info("            Replicating product property definition '%s'" % definition.get('name') )
+						possibleValues	= definition.get('values')
+						if definition.get('default') and definition.get('values') and not definition.get('default') in definition.get('values'):
+							logger.warning(u"Default Property '%s' in Product '%s' not in possibleValues '%s'. Try to fix it." % \
+									(definition.get('default'),productId,definition.get('values'))
+								)
+							possibleValues.append(definition.get('default'))
+						
+							
 						self.__currentProgressSubject.setMessage("            Replicating product property definition '%s'" % definition.get('name') )
 						self.__writeBackend.createProductPropertyDefinition(
 								productId 	= productId,
 								name		= definition.get('name'),
 								description	= definition.get('description'),
 								defaultValue	= definition.get('default'),
-								possibleValues	= definition.get('values'),
+								possibleValues	= possibleValues,        
 								depotIds	= [ newDepotId ] )
 					self.__currentProgressSubject.addToState(1)
 				self.__currentProgressSubject.setMessage("")
