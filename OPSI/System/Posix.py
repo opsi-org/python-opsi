@@ -405,6 +405,9 @@ def getNetworkDeviceConfig(device):
 		if not x.startswith('0x'):
 			x = "%x" % int(x)
 			x = ((4-len(x))*'0') + x
+			# FIXME: what is wrong with virtio devices?
+			if (result['vendorId'] == '1AF4'):
+				x = '1' + x[1:]
 		else:
 			x = x[2:]
 		result['deviceId'] = forceHardwareDeviceId(x)
