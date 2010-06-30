@@ -18,7 +18,7 @@ from opsi_unittest.lib.unittest2.suite import TestSuite
 from opsi_unittest.lib.unittest2.case import TestCase
 import opsi_unittest.lib.unittest2
 
-test_cases = (FileTestCase,
+test_cases = (	FileTestCase,
 		MySQLTestCase,
 		#LdapTestCase
 		JSONRPCTestCase,

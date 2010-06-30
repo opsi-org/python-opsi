@@ -1,10 +1,10 @@
-import os, pwd, grp, json
+import os, pwd, grp
 
 from ConnectionHelper import *
 
 from OPSI.Backend import JSONRPC
 from OPSI.Backend.BackendManager import BackendManager
-from OPSI.Backend.JSONRPC import JSONRPCBackend
+from OPSI.Backend.JSONRPC import JSONRPCBackend, json
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Object import *
