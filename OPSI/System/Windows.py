@@ -423,7 +423,9 @@ def getActiveSessionIds():
 	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		logger.debug(u"   Found session: %s" % sessionData)
-		sessionIds.append(forceInt(sessionData['Session']))
+		sessionId = forceInt(sessionData['Session'])
+		if not sessionId in sessionIds:
+			sessionIds.append(sessionId)
 	return sessionIds
 	
 def getSessionInformation(sessionId):
