@@ -585,6 +585,10 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def getSubjects(self):
 		return self._factory.getSubjects()
 	
+	def requestEndConnections(self):
+		if self._factory:
+			self._factory.requestEndConnections()
+		
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
@@ -603,8 +607,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		self._listening = False
 	
 	def stop(self, stopReactor=True):
-		if self._factory:
-			self._factory.requestEndConnections()
+		self.requestEndConnections()
 		timeout = 5.0
 		while (self._factory.connectionCount() > 0) and (timeout > 0):
 			time.sleep(0.1)

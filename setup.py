@@ -35,8 +35,9 @@
 from setuptools import setup, find_packages
 import os,sys
 
-VERSION='3.99.0.0'
-
+f = open("debian/changelog")
+VERSION = f.readline().split('(')[1].split('-')[0]
+f.close()
 f = open("data/version", "w")
 f.write(VERSION)
 f.close()
@@ -60,6 +61,7 @@ setup(
 					     'data/backends/ldap.conf',
 					     'data/backends/mysql.conf',
 					     'data/backends/opsipxeconfd.conf']),
+		    ('/etc/opsi/', ['data/version']),
 		    ('/etc/opsi/hwaudit/', ['data/hwaudit/opsihwaudit.conf']),
 		    ('/etc/opsi/hwaudit/locales', ['data/hwaudit/locales/de_DE',
 						   'data/hwaudit/locales/en_US']),
