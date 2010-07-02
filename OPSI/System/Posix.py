@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import os, sys, subprocess, locale, threading, time, codecs
+import os, sys, subprocess, locale, threading, time, codecs, socket
 import xml.dom.minidom
 import copy as pycopy
 
@@ -300,6 +300,12 @@ def removeSystemHook(hook):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+def getHostname():
+	return forceHostname(socket.gethostname())
+
+def getFQDN():
+	return forceUnicodeLower(socket.getfqdn())
+	
 def getKernelParams():
 	"""
 	Reads the kernel cmdline and returns a dict

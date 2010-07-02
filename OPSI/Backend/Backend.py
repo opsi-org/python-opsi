@@ -617,7 +617,7 @@ class ConfigDataBackend(Backend):
 		config.setDefaults()
 		
 	def config_updateObject(self, config):
-		pass
+		config = forceObjectClass(config, Config)
 	
 	def config_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
@@ -647,7 +647,7 @@ class ConfigDataBackend(Backend):
 			raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
 		
 	def configState_updateObject(self, configState):
-		pass
+		configState = forceObjectClass(configState, ConfigState)
 	
 	def configState_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
@@ -664,7 +664,7 @@ class ConfigDataBackend(Backend):
 		product.setDefaults()
 		
 	def product_updateObject(self, product):
-		pass
+		product = forceObjectClass(product, Product)
 	
 	def product_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
@@ -725,7 +725,7 @@ class ConfigDataBackend(Backend):
 				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
 		
 	def productProperty_updateObject(self, productProperty):
-		pass
+		productProperty = forceObjectClass(productProperty, ProductProperty)
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
@@ -750,7 +750,7 @@ class ConfigDataBackend(Backend):
 				% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion))
 		
 	def productDependency_updateObject(self, productDependency):
-		pass
+		productDependency = forceObjectClass(productDependency, ProductDependency)
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductDependency, attributes, **filter)
@@ -774,6 +774,7 @@ class ConfigDataBackend(Backend):
 				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 		
 	def productOnDepot_updateObject(self, productOnDepot):
+		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
 			id = productOnDepot.productId,
 			productVersion = productOnDepot.productVersion,
@@ -827,7 +828,7 @@ class ConfigDataBackend(Backend):
 				% (productPropertyState.propertyId, productPropertyState.productId))
 	
 	def productPropertyState_updateObject(self, productPropertyState):
-		pass
+		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
@@ -844,7 +845,7 @@ class ConfigDataBackend(Backend):
 		group.setDefaults()
 	
 	def group_updateObject(self, group):
-		pass
+		group = forceObjectClass(group, Group)
 	
 	def group_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Group, attributes, **filter)
@@ -865,7 +866,7 @@ class ConfigDataBackend(Backend):
 		objectToGroup.setDefaults()
 	
 	def objectToGroup_updateObject(self, objectToGroup):
-		pass
+		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
@@ -882,7 +883,7 @@ class ConfigDataBackend(Backend):
 		licenseContract.setDefaults()
 	
 	def licenseContract_updateObject(self, licenseContract):
-		pass
+		licenseContract = forceObjectClass(licenseContract, LicenseContract)
 	
 	def licenseContract_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseContract, attributes, **filter)
@@ -903,7 +904,7 @@ class ConfigDataBackend(Backend):
 			raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
 		
 	def softwareLicense_updateObject(self, softwareLicense):
-		pass
+		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 	
 	def softwareLicense_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicense, attributes, **filter)
@@ -925,7 +926,7 @@ class ConfigDataBackend(Backend):
 		licensePool.setDefaults()
 	
 	def licensePool_updateObject(self, licensePool):
-		pass
+		licensePool = forceObjectClass(licensePool, LicensePool)
 	
 	def licensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicensePool, attributes, **filter)
@@ -961,7 +962,7 @@ class ConfigDataBackend(Backend):
 			raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
 		
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
-		pass
+		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicenseToLicensePool, attributes, **filter)
@@ -985,7 +986,7 @@ class ConfigDataBackend(Backend):
 		licenseOnClient.setDefaults()
 	
 	def licenseOnClient_updateObject(self, licenseOnClient):
-		pass
+		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseOnClient, attributes, **filter)
@@ -1002,7 +1003,7 @@ class ConfigDataBackend(Backend):
 		auditSoftware.setDefaults()
 	
 	def auditSoftware_updateObject(self, auditSoftware):
-		pass
+		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftware, attributes, **filter)
@@ -1019,7 +1020,7 @@ class ConfigDataBackend(Backend):
 		auditSoftwareToLicensePool.setDefaults()
 	
 	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
-		pass
+		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
 	
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareToLicensePool, attributes, **filter)
@@ -1036,7 +1037,7 @@ class ConfigDataBackend(Backend):
 		auditSoftwareOnClient.setDefaults()
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
-		pass
+		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareOnClient, attributes, **filter)
@@ -1053,7 +1054,7 @@ class ConfigDataBackend(Backend):
 		auditHardware.setDefaults()
 	
 	def auditHardware_updateObject(self, auditHardware):
-		pass
+		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		return []
@@ -1163,10 +1164,7 @@ class ConfigDataBackend(Backend):
 		self._context.auditHardware_insertObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
 		
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
-		#auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
-		#auditHardwareOnHost.setDefaults()
-		#self._context.auditHardware_updateObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
-		pass
+		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		return []
