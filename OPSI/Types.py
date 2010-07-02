@@ -572,7 +572,7 @@ def forceAuditState(var):
 		raise ValueError(u"Bad audit state value '%s': %s" % (var, e))
 	return var
 
-languageCodeRegex = re.compile('^([a-z]{2})[-_]?([a-z]{2})?$')
+languageCodeRegex = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 def forceLanguageCode(var):
 	var = forceUnicodeLower(var)
 	match = languageCodeRegex.search(var)
@@ -580,7 +580,9 @@ def forceLanguageCode(var):
 		raise ValueError(u"Bad language code: '%s'" % var)
 	var = match.group(1)
 	if match.group(2):
-		var += u'-' + match.group(2).upper()
+		var += u'-' + match.group(2)[0].upper() + match.group(2)[1:]
+	if match.group(3):
+		var += u'-' + match.group(3).upper()
 	return var
 
 def forceLanguageCodeList(var):

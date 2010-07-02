@@ -919,7 +919,7 @@ class MySQLBackend(ConfigDataBackend):
 					`name` varchar(100) NOT NULL,
 					`version` varchar(100) NOT NULL,
 					`subVersion` varchar(100) NOT NULL,
-					`language` varchar(5) NOT NULL,
+					`language` varchar(10) NOT NULL,
 					`architecture` varchar(3) NOT NULL,
 					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -978,7 +978,7 @@ class MySQLBackend(ConfigDataBackend):
 					`name` varchar(100) NOT NULL,
 					`version` varchar(100) NOT NULL,
 					`subVersion` varchar(100) NOT NULL,
-					`language` varchar(5) NOT NULL,
+					`language` varchar(10) NOT NULL,
 					`architecture` varchar(3) NOT NULL,
 					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` ),
 					`windowsSoftwareId` varchar(100),
@@ -1003,7 +1003,7 @@ class MySQLBackend(ConfigDataBackend):
 					`name` varchar(100) NOT NULL,
 					`version` varchar(100) NOT NULL,
 					`subVersion` varchar(100) NOT NULL,
-					`language` varchar(5) NOT NULL,
+					`language` varchar(10) NOT NULL,
 					`architecture` varchar(3) NOT NULL,
 					INDEX( `name`, `version`, `subVersion`, `language`, `architecture` ),
 					`uninstallString` varchar(200),

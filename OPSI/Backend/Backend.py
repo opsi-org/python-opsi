@@ -1866,10 +1866,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				if not configState.objectId in knownClientIds:
 					logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
 					continue
-				depotId = configState.values[0]
-				if not depotId:
+				if not configState.values or not configState.values[0]:
 					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
 					continue
+				depotId = configState.values[0]
 				if not depotId in depotIds:
 					continue
 				result.append({ 'depotId': depotId, 'clientId': configState.objectId })

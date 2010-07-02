@@ -221,13 +221,17 @@ assert type(forceActionProgress('installing 50%')) is unicode
 
 
 assert forceLanguageCode('dE') == u'de'
-assert forceLanguageCode('en-us') == u'en_US'
+assert forceLanguageCode('en-us') == u'en-US'
 try:
 	forceLanguageCode('de-DEU')
 except ValueError:
 	pass
 else:
 	raise Exception(u"'de-DEU' was accepted as languageCode")
+assert forceLanguageCode('xx-xxxx-xx') == u'xx-Xxxx-XX'
+assert forceLanguageCode('yy_yy') == u'yy-YY'
+assert forceLanguageCode('zz_ZZZZ') == u'zz-Zzzz'
+
 
 assert forceArchitecture('X86') == u'x86'
 assert forceArchitecture('X64') == u'x64'
