@@ -1202,12 +1202,8 @@ class LDAPBackend(DataBackend):
 		# Delete group object from ldap if exists
 		if not group.exists(self._ldap):
 			return
-		try:
-			search = ObjectSearch(self._ldap, group.getDn(), filter='(objectClass=*)')
-		except BackendMissingDataError:
-			group.deleteFromDirectory(self._ldap)
-			return
-		raise BackendIOError("Cannot delete group '%s': groups has child groups")
+		
+		group.deleteFromDirectory(self._ldap)
 		
 	# -------------------------------------------------
 	# -     PASSWORD FUNCTIONS                        -
