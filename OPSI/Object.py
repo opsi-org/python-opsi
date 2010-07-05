@@ -2443,6 +2443,8 @@ class AuditSoftwareOnClient(Relationship):
 			self.setUsageFrequency(usageFrequency)
 		if not lastUsed is None:
 			self.setLastUsed(lastUsed)
+		if not licenseKey is None:
+			self.setLicenseKey(licenseKey)
 		
 	def setDefaults(self):
 		Relationship.setDefaults(self)
