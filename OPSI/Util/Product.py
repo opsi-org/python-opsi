@@ -212,7 +212,6 @@ class ProductPackageFile(object):
 			
 			# Sorting to unpack custom version metadata at last
 			metadataArchives.sort()
-			metadataArchives.reverse()
 			
 			for metadataArchive in metadataArchives:
 				archive = Archive( os.path.join(metaDataTmpDir, metadataArchive) )
@@ -272,9 +271,7 @@ class ProductPackageFile(object):
 			
 			# Sorting to unpack custom version data at last
 			clientDataArchives.sort()
-			clientDataArchives.reverse()
 			serverDataArchives.sort()
-			serverDataArchives.reverse()
 			
 			for serverDataArchive in serverDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
