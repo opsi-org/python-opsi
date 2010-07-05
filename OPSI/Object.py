@@ -2414,7 +2414,7 @@ Entity.subClasses['AuditSoftware'] = AuditSoftware
 class AuditSoftwareOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditSoftwareOnClient'
-	def __init__(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+	def __init__(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None, licenseKey=None):
 		self.uninstallString = None
 		self.binaryName = None
 		self.firstseen = None
@@ -2422,6 +2422,7 @@ class AuditSoftwareOnClient(Relationship):
 		self.state = None
 		self.usageFrequency = None
 		self.lastUsed = None
+		self.licenseKey = None
 		self.setName(name)
 		self.setVersion(version)
 		self.setSubVersion(subVersion)
@@ -2543,6 +2544,12 @@ class AuditSoftwareOnClient(Relationship):
 	
 	def setLastUsed(self, lastUsed):
 		self.lastUsed = forceOpsiTimestamp(lastUsed)
+	
+	def getLicenseKey(self):
+		return self.licenseKey
+	
+	def setLicenseKey(self, licenseKey):
+		self.licenseKey = forceUnicodeLower(licenseKey)
 	
 	@staticmethod
 	def fromHash(hash):

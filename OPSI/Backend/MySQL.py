@@ -1012,7 +1012,8 @@ class MySQLBackend(ConfigDataBackend):
 					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`state` TINYINT NOT NULL,
 					`usageFrequency` int NOT NULL DEFAULT -1,
-					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
+					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`licenseKey` VARCHAR(100)
 				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 				'''
 			logger.debug(table)

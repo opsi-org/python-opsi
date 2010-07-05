@@ -3330,7 +3330,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return result
 		
 	
-	def auditSoftwareOnClient_create(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None):
+	def auditSoftwareOnClient_create(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None, licenseKey=None):
 		hash = locals()
 		del hash['self']
 		return self.auditSoftwareOnClient_createObjects(AuditSoftwareOnClient.fromHash(hash))

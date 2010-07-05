@@ -1719,7 +1719,8 @@ class FileBackend(ConfigDataBackend):
 					"lastseen":        None,
 					"state":           None,
 					"usageFrequency":  None,
-					"lastUsed":        None
+					"lastUsed":        None,
+					"licenseKey":      None
 				}
 				for (key, value) in objHash.items():
 					try:
