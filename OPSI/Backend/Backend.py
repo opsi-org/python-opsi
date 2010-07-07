@@ -843,7 +843,9 @@ class ConfigDataBackend(Backend):
 	def group_insertObject(self, group):
 		group = forceObjectClass(group, Group)
 		group.setDefaults()
-	
+		if group.parentGroupId and not self._context.group_getObjects(attributes = ['id'], id = group.parentGroupId):
+			raise BackendReferentialIntegrityError(u"Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))
+		
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
 	

@@ -64,10 +64,10 @@ class FileBackend(ConfigDataBackend):
 		self.__hostKeyFile = u'/etc/opsi/pckeys'
 		
 		self.__fileUser  = u'opsiconfd'
-		self.__fileGroup = u'opsiadmin'
+		self.__fileGroup = u'pcpatch'
 		self.__fileMode  = 0660
 		self.__dirUser   = u'opsiconfd'
-		self.__dirGroup  = u'opsiadmin'
+		self.__dirGroup  = u'pcpatch'
 		self.__dirMode   = 0770
 		
 		# Parse arguments
