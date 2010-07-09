@@ -181,6 +181,7 @@ class LDAPBackend(ConfigDataBackend):
 					'attributes': [
 						{ 'opsiAttribute': 'depotLocalUrl',       'ldapAttribute': 'opsiDepotLocalUrl' },
 						{ 'opsiAttribute': 'depotRemoteUrl',      'ldapAttribute': 'opsiDepotRemoteUrl' },
+						{ 'opsiAttribute': 'depotWebdavUrl',      'ldapAttribute': 'opsiDepotWebdavUrl' },
 						{ 'opsiAttribute': 'repositoryLocalUrl',  'ldapAttribute': 'opsiRepositoryLocalUrl' },
 						{ 'opsiAttribute': 'repositoryRemoteUrl', 'ldapAttribute': 'opsiRepositoryRemoteUrl' },
 						{ 'opsiAttribute': 'networkAddress',      'ldapAttribute': 'opsiNetworkAddress' },

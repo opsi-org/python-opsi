@@ -463,13 +463,14 @@ class OpsiDepotserver(Host):
 	subClasses = {}
 	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 	
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
+	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
 		     isMasterDepot=None, masterDepotId=None):
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
 		self.depotRemoteUrl = None
+		self.depotWebdavUrl = None
 		self.repositoryLocalUrl = None
 		self.repositoryRemoteUrl = None
 		self.networkAddress = None
@@ -482,6 +483,8 @@ class OpsiDepotserver(Host):
 			self.setDepotLocalUrl(depotLocalUrl)
 		if not depotRemoteUrl is None:
 			self.setDepotRemoteUrl(depotRemoteUrl)
+		if not depotWebdavUrl is None:
+			self.setDepotWebdavUrl(depotWebdavUrl)
 		if not repositoryLocalUrl is None:
 			self.setRepositoryLocalUrl(repositoryLocalUrl)
 		if not repositoryRemoteUrl is None:
@@ -516,6 +519,12 @@ class OpsiDepotserver(Host):
 	
 	def getDepotRemoteUrl(self):
 		return self.depotRemoteUrl
+	
+	def setDepotWebdavUrl(self, depotWebdavUrl):
+		self.depotWebdavUrl = forceUrl(depotWebdavUrl)
+	
+	def getDepotWebdavUrl(self):
+		return self.depotWebdavUrl
 	
 	def setDepotRemoteUrl(self, depotRemoteUrl):
 		self.depotRemoteUrl = forceUrl(depotRemoteUrl)
@@ -575,10 +584,10 @@ class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 	
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
+	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
 		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
 		     isMasterDepot=None, masterDepotId=None):
-		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, repositoryLocalUrl, repositoryRemoteUrl,
+		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, depotWebdavUrl, repositoryLocalUrl, repositoryRemoteUrl,
 		     description, notes, hardwareAddress, ipAddress, inventoryNumber, networkAddress, maxBandwidth, isMasterDepot, masterDepotId)
 	
 	def setDefaults(self):

@@ -625,6 +625,7 @@ class MySQLBackend(ConfigDataBackend):
 					`maxBandwidth` int,
 					`depotLocalUrl` varchar(128),
 					`depotRemoteUrl` varchar(255),
+					`depotWebdavUrl` varchar(255),
 					`repositoryLocalUrl` varchar(128),
 					`repositoryRemoteUrl` varchar(255),
 					`networkAddress` varchar(31),

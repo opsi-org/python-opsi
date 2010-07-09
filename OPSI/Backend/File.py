@@ -128,6 +128,7 @@ class FileBackend(ConfigDataBackend):
 				{ 'fileType': 'ini', 'attribute': 'isMasterDepot',       'section': 'depotserver', 'option': 'ismasterdepot',   'json': True  },
 				{ 'fileType': 'ini', 'attribute': 'masterDepotId',       'section': 'depotserver', 'option': 'masterdepotid',   'json': False },
 				{ 'fileType': 'ini', 'attribute': 'depotRemoteUrl',      'section': 'depotshare',  'option': 'remoteurl',       'json': False },
+				{ 'fileType': 'ini', 'attribute': 'depotWebdavUrl',      'section': 'depotshare',  'option': 'webdavurl',       'json': False },
 				{ 'fileType': 'ini', 'attribute': 'depotLocalUrl',       'section': 'depotshare',  'option': 'localurl',        'json': False },
 				{ 'fileType': 'ini', 'attribute': 'repositoryRemoteUrl', 'section': 'repository',  'option': 'remoteurl',       'json': False },
 				{ 'fileType': 'ini', 'attribute': 'repositoryLocalUrl',  'section': 'repository',  'option': 'localurl',        'json': False },
