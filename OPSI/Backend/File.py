@@ -913,7 +913,7 @@ class FileBackend(ConfigDataBackend):
 									(installationStatus, actionRequest) = combined.split(u':', 1)
 								elif combined:
 									installationStatus = combined
-								if not value is None: #TODO: remove entry when "not_installed:none"?
+								if not value is None:
 									if   (attribute == 'installationStatus'):
 										installationStatus = value
 									elif (attribute == 'actionRequest'):
