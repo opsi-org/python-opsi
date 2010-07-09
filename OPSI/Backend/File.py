@@ -905,16 +905,19 @@ class FileBackend(ConfigDataBackend):
 						
 						if objType in ('ProductOnClient',):
 							if attribute in ('installationStatus', 'actionRequest'):
-								(installationStatus, actionRequest) = (u'', u'')
+								(installationStatus, actionRequest) = (u'not_installed', u'none')
+								combined = u''
 								if cp.has_option(section, option):
-									installationStatus = cp.get(section, option)
-								if installationStatus.find(u':') != -1:
-									(installationStatus, actionRequest) = installationStatus.split(u':', 1)
-									if not value is None: #TODO: remove entry when "not_installed:none"?
-										if   (attribute == 'installationStatus'):
-											installationStatus = value
-										elif (attribute == 'actionRequest'):
-											actionRequest = value
+									combined = cp.get(section, option)
+								if (combined.find(u':') != -1):
+									(installationStatus, actionRequest) = combined.split(u':', 1)
+								elif combined:
+									installationStatus = combined
+								if not value is None: #TODO: remove entry when "not_installed:none"?
+									if   (attribute == 'installationStatus'):
+										installationStatus = value
+									elif (attribute == 'actionRequest'):
+										actionRequest = value
 								value = installationStatus + u':' + actionRequest
 						elif objType in ('ObjectToGroup',):
 							value = 1
