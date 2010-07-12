@@ -1586,6 +1586,13 @@ class FileBackend(ConfigDataBackend):
 			return result
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
+		fastFilter = {}
+		if filter:
+			for (attribute, value) in filter.items():
+				if attribute in ("name", "version", "subVersion", "language", "architecture") and value:
+					value = forceUnicodeList(value)
+					if (len(value) == 1) and (value[0].find('*') == -1):
+						fastFilter[attribute] = value[0]
 		for section in ini.sections():
 			objHash = {
 				"name":                  None,
@@ -1598,13 +1605,17 @@ class FileBackend(ConfigDataBackend):
 				"windowsDisplayVersion": None,
 				"installSize":           None
 			}
+			fastFiltered = False
 			for (key, value) in objHash.items():
 				try:
-					objHash[key] = self.__unescape(ini.get(section, key.lower()))
+					value = self.__unescape(ini.get(section, key.lower()))
+					if fastFilter and value and fastFilter.has_key(key) and (fastFilter[key] != value):
+						fastFiltered = True
+						break
+					objHash[key] = value
 				except:
 					pass
-			
-			if self._objectHashMatches(objHash, **filter):
+			if not fastFiltered and self._objectHashMatches(objHash, **filter):
 				#TODO: adaptObjHash?
 				result.append(AuditSoftware.fromHash(objHash))
 		

@@ -761,8 +761,8 @@ UsbidsFile = PciidsFile
 
 class TxtSetupOemFile(ConfigFile):
 	sectionRegex     = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex   = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))(\S*)\s*$')
-	usbDeviceRegex   = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))(\S*)\s*$', re.IGNORECASE)
+	pciDeviceRegex   = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
+	usbDeviceRegex   = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
 	filesRegex       = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
 	configsRegex     = re.compile('^config\.(.+)$', re.IGNORECASE)
 	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
@@ -794,10 +794,9 @@ class TxtSetupOemFile(ConfigFile):
 				return True
 		return False
 	
-	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = [], architecture='x86'):
+	def getDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
-		fileTypes = forceUnicodeLowerList(fileTypes)
 		architecture = forceArchitecture(architecture)
 		
 		if not self._parsed:
@@ -817,6 +816,16 @@ class TxtSetupOemFile(ConfigFile):
 				break
 		if not device:
 			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
+		return device
+		
+	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = [], architecture='x86'):
+		vendorId = forceHardwareVendorId(vendorId)
+		deviceId = forceHardwareDeviceId(deviceId)
+		fileTypes = forceUnicodeLowerList(fileTypes)
+		architecture = forceArchitecture(architecture)
+		
+		device = self.getDevice(vendorId = vendorId, deviceId = deviceId, deviceType = deviceType, architecture = architecture)
+		
 		files = []
 		diskDriverDirs = {}
 		for d in self._driverDisks:
@@ -832,18 +841,12 @@ class TxtSetupOemFile(ConfigFile):
 			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
 		return files
 	
-	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType = None):
+	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
-		if not self._parsed:
-			self.parse()
-		device = None
-		for d in self._devices:
-			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
-				device = d
-				break
-		if not device:
-			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
+		
+		device = self.getDevice(vendorId = vendorId, deviceId = deviceId, deviceType = deviceType, architecture = architecture)
+		
 		for componentOptions in self._componentOptions:
 			if (componentOptions['componentName'] == device['componentName']) and (componentOptions["componentId"] == device['componentId']):
 				return componentOptions
