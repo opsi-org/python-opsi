@@ -844,9 +844,8 @@ class TxtSetupOemFile(ConfigFile):
 				break
 		if not device:
 			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
-		
 		for componentOptions in self._componentOptions:
-			if (componentOptions["componentName"] == device['componentName']):
+			if (componentOptions['componentName'] == device['componentName']) and (componentOptions["componentId"] == device['componentId']):
 				return componentOptions
 		raise Exception(u"Component name '%s' not found in txtsetup.oem file '%s'" % (componentName, self._filename))
 		
@@ -7498,6 +7497,140 @@ id = "PCI\VEN_8086&DEV_2822&CC_0104","iaStor"
 id = "PCI\VEN_8086&DEV_282A&CC_0104","iaStor"
 
 
+''',
+'''
+[Disks]
+disk1 = "Intel(R) Rapid Storage Technology Driver", iaStor.sys, \\
+[Defaults]
+scsi = iaStor_8ME9ME5
+[scsi]
+iaAHCI_ESB2       = "Intel(R) ESB2 SATA AHCI Controller"
+iaAHCI_7RDH       = "Intel(R) ICH7R/DH SATA AHCI Controller"
+iaAHCI_7MMDH      = "Intel(R) ICH7M/MDH SATA AHCI Controller"
+iaAHCI_8RDHDO     = "Intel(R) ICH8R/DH/DO SATA AHCI Controller"
+iaAHCI_8MEM       = "Intel(R) ICH8M-E/M SATA AHCI Controller"
+iaAHCI_9RDODH     = "Intel(R) ICH9R/DO/DH SATA AHCI Controller"
+iaAHCI_9MEM       = "Intel(R) ICH9M-E/M SATA AHCI Controller"
+iaAHCI_10DDO      = "Intel(R) ICH10D/DO SATA AHCI Controller"
+iaAHCI_10R        = "Intel(R) ICH10R SATA AHCI Controller"
+iaAHCI_5          = "Intel(R) 5 Series 4 Port SATA AHCI Controller"
+iaAHCI_5_1        = "Intel(R) 5 Series 6 Port SATA AHCI Controller"
+iaAHCI_5_1_1      = "Intel(R) 5 Series/3400 Series SATA AHCI Controller"
+iaStor_ESB2       = "Intel(R) ESB2 SATA RAID Controller"
+iaStor_7RDH       = "Intel(R) ICH7R/DH SATA RAID Controller"
+iaStor_7MDH       = "Intel(R) ICH7MDH SATA RAID Controller"
+iaStor_8R9R10RDO5 = "Intel(R) ICH8R/ICH9R/ICH10R/DO/5 Series/3400 Series SATA RAID Controller"
+iaStor_8ME9ME5    = "Intel(R) ICH8M-E/ICH9M-E/5 Series SATA RAID Controller"
+[Files.scsi.iaAHCI_ESB2]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_7RDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_7MMDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_8RDHDO]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_8MEM]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_9RDODH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_9MEM]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_10DDO]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_10R]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_5]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_5_1]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaAHCI_5_1_1]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaAHCI.inf
+catalog = disk1, iaAHCI.cat
+[Files.scsi.iaStor_ESB2]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+[Files.scsi.iaStor_7RDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+[Files.scsi.iaStor_7MDH]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+[Files.scsi.iaStor_8R9R10RDO5]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+[Files.scsi.iaStor_8ME9ME5]
+driver = disk1, iaStor.sys, iaStor
+inf = disk1, iaStor.inf
+catalog = disk1, iaStor.cat
+[Config.iaStor]
+value = "", tag, REG_DWORD, 1b
+value = "", ErrorControl, REG_DWORD, 1
+value = "", Group, REG_SZ, "SCSI Miniport"
+value = "", Start, REG_DWORD, 0
+value = "", Type, REG_DWORD, 1
+[HardwareIds.scsi.iaAHCI_ESB2]
+id = "PCI\VEN_8086&DEV_2681&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_7RDH]
+id = "PCI\VEN_8086&DEV_27C1&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_7MMDH]
+id = "PCI\VEN_8086&DEV_27C5&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_8RDHDO]
+id = "PCI\VEN_8086&DEV_2821&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_8MEM]
+id = "PCI\VEN_8086&DEV_2829&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_9RDODH]
+id = "PCI\VEN_8086&DEV_2922&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_9MEM]
+id = "PCI\VEN_8086&DEV_2929&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_10DDO]
+id = "PCI\VEN_8086&DEV_3A02&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_10R]
+id = "PCI\VEN_8086&DEV_3A22&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_5]
+id = "PCI\VEN_8086&DEV_3B29&CC_0106","iaStor"
+[HardwareIds.scsi.iaAHCI_5_1]
+id = "PCI\VEN_8086&DEV_3B2F&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaAHCI_5_1_1]
+id = "PCI\VEN_8086&DEV_3B22&CC_0106","iaStor"
+
+[HardwareIds.scsi.iaStor_ESB2]
+id = "PCI\VEN_8086&DEV_2682&CC_0104","iaStor"
+[HardwareIds.scsi.iaStor_7RDH]
+id = "PCI\VEN_8086&DEV_27C3&CC_0104","iaStor"
+[HardwareIds.scsi.iaStor_7MDH]
+id = "PCI\VEN_8086&DEV_27C6&CC_0104","iaStor"
+[HardwareIds.scsi.iaStor_8R9R10RDO5]
+id = "PCI\VEN_8086&DEV_2822&CC_0104","iaStor"
+[HardwareIds.scsi.iaStor_8ME9ME5]
+id = "PCI\VEN_8086&DEV_282A&CC_0104","iaStor"
 '''
 ]
 
@@ -7521,7 +7654,7 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
 ]
 if (__name__ == "__main__"):
 	#logger.setConsoleLevel(LOG_DEBUG2)
-	logger.setConsoleLevel(LOG_NOTICE)
+	logger.setConsoleLevel(LOG_INFO)
 	logger.setConsoleColor(True)
 	
 	
@@ -7534,8 +7667,8 @@ if (__name__ == "__main__"):
 		for dev in devices:
 			logger.notice(u"Found device: %s" % dev)
 	
-	sys.exit(0)
 	for data in txtsetupoemTestData:
+		print "============================================================================================================="
 		try:
 			txtSetupOemFile = TxtSetupOemFile('/tmp/txtsetup.oem')
 			txtSetupOemFile.parse(data.split('\n'))
@@ -7547,7 +7680,7 @@ if (__name__ == "__main__"):
 			#print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
 			#print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '10DE', deviceId = '0AD4')['description']
 			
-			for (vendorId, deviceId) in (('1002', '4391'), ('10DE', '07F6')):
+			for (vendorId, deviceId) in (('8086', '3B22'), ('1002', '4391'), ('10DE', '07F6')):
 				print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId)
 				if txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId):
 					print "Files:"
@@ -7562,8 +7695,8 @@ if (__name__ == "__main__"):
 						print f
 			
 			txtSetupOemFile.generate()
-			for line in txtSetupOemFile._lines:
-				print line.rstrip()
+			#for line in txtSetupOemFile._lines:
+			#	print line.rstrip()
 			
 		except Exception, e:
 			logger.logException(e)
