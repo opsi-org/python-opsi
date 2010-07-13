@@ -161,3 +161,11 @@ class Worker(threading.Thread):
 
 
 Pool = ThreadPool()
+
+## Decorator to launch a function as a thread job
+def poolJob(callback=None):
+	def runPoolJob(function):
+		def _run(*args, **kwargs):
+			Pool.addJob(function, callback, *args, **kwargs)
+		return _run
+	return runPoolJob

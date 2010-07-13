@@ -2,7 +2,7 @@
 
 import time, threading
 
-from OPSI.Util.ThreadPool import * #ThreadPool, ThreadPoolException #, Pool
+from OPSI.Util.ThreadPool import *
 from opsidevtools.unittest.lib.unittest2.case import TestCase
 
 class ThreadPoolTestCase(TestCase):
