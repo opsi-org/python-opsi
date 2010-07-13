@@ -241,7 +241,7 @@ class DepotserverPackageManager(object):
 					if productProperty.editable or not productProperty.possibleValues:
 						continue
 					newValues = []
-					for v in propertyDefaultValues[productProperty.propertyId]:
+					for v in propertyDefaultValues.get(productProperty.propertyId, []):
 						if v in productProperty.possibleValues:
 							newValues.append(v)
 					if not newValues and productProperty.defaultValues:
