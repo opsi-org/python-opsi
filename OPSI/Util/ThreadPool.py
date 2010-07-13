@@ -34,10 +34,13 @@
 
 __version__ = '4.0'
 
-import threading, Queue
+import threading, Queue, copy
+from Queue import Queue, Empty
 from OPSI.Logger import *
-
+from time import sleep
 logger = Logger()
+class StopJob(object):
+	pass
 
 class ThreadPoolException(Exception):
 	pass
@@ -49,7 +52,7 @@ class ThreadPool(object):
 		self.max = max
 		self.started = False
 		self.worker = []
-		self.queue = Queue.Queue()
+		self.queue = Queue()
 		
 		if autostart:
 			self.start()
@@ -70,57 +73,91 @@ class ThreadPool(object):
 		self.min = min
 		self.max = max
 		
+			
 		if self.started:
-			while len(self.worker) > max:
+			while len(self.worker) > self.max:
 				self.stopWorker()
 		
-			while len(self.worker) < min:
+			while len(self.worker) < self.min:
 				self.startWorker()
+		
 			
 	def addJob(self, function, callback = None, *args, **kwargs):
+		if not self.started:
+			raise ThreadPoolException("Pool is not running.")
 		self.queue.put((function, callback, args, kwargs))
 		while len(self.worker) < min(self.queue.qsize(), self.max):
 			self.startWorker()
 			
 	def startWorker(self):
-		worker = Worker(self.queue)
+		logger.debug("Starting new worker %s" % (len(self.worker)+1))
+		
+		worker = Worker(self.queue, len(self.worker)+1)
 		self.worker.append(worker)
 		
 	def stopWorker(self):
 		worker = self.worker.pop()
 		worker.stop()
-	
+		
 	def stop(self):
-		for worker in range(len(self.worker)):
-			self.stopWorker()
+		logger.debug("Stopping threadpool")
 		self.started = False
 		
+		workers = copy.copy(self.worker)
+		
+		while(len(self.worker)):
+			self.queue.put(StopJob())
+			self.worker.pop()
+		
+		for worker in workers:
+			worker.join()
+			
+			
+	def __del__(self):
+		if self.started:
+			self.stop()
+		
 class Worker(threading.Thread):
-	def __init__(self, queue):
-		threading.Thread.__init__(self)
-		self.stoped = False
+	def __init__(self, queue, name=None):
+		threading.Thread.__init__(self, name=name)
+		self.running = True
 		self.queue = queue
 		self.daemon = True
 		self.start()
 		
 	def run(self):
 
-		while not self.stoped:
-			function, callback, args, kwargs = self.queue.get()
-			success = False
-			try:
-				result = function(*args, **kwargs) 
-				success = True
-				errors = None
-			except Exception, e:
-				logger.debug(e)
-				result = None
-				errors = e
+		while self.running:
 			
-			if callback:
-				callback(success, result, errors)
-			self.queue.task_done()
+			try:
+				if not self.queue.empty():
+					object = self.queue.get(block=False)
+				
+					if object:
+						if isinstance(object, StopJob):
+							self.stop()
+						else:
+							function, callback, args, kwargs = object
+							success = False
+							try:
+								result = function(*args, **kwargs) 
+								success = True
+								errors = None
+							except Exception, e:
+								logger.debug(e)
+								result = None
+								errors = e
+			
+							if callback:
+								callback(success, result, errors)
+						self.queue.task_done()
+			except Empty:
+				sleep(0.00001)
 
 	def stop(self):
-		self.stoped = True
+		logger.debug("Stopping worker %s" % self.name)
+		self.running = False
 		
+
+
+Pool = ThreadPool()
