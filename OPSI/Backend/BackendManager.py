@@ -236,8 +236,7 @@ class BackendDispatcher(Backend):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
 			l["config"]["context"] = self
-			exec(u'from %s import %sBackend' % (l['module'], l['module']))
-			exec(u'backendInstance = %sBackend(**l["config"])' % l['module'])
+			b = __import__(l['module'], globals(), locals(), "%sBackend"%l['module'], -1)
 			#if not isinstance(backendInstance, JSONRPCBackend):
 			#	# Assuming that JSONRPC is already extended
 			#	# Not extending JSONRPCBackend will increase performance because ExtendedConfigDataBackend methods
@@ -245,7 +244,7 @@ class BackendDispatcher(Backend):
 			#	# ExtendedConfigDataBackend which then would call host_insertObject on JSONRPCBackend
 			#	logger.info(u"* BackendDispatcher is creating ExtendedConfigDataBackend on %s" % backendInstance)
 			#	backendInstance = ExtendedConfigDataBackend(backendInstance)
-			self._backends[backend]["instance"] = backendInstance
+			self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
 			
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
