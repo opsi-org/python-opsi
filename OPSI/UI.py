@@ -38,8 +38,9 @@ __version__ = '4.0'
 snackError = None
 
 # Imports
-import time, gettext, locale, signal
+import time, gettext, locale
 from snack import *
+import signal as ui_signal
 
 # OPSI imports
 from Logger import *
@@ -192,7 +193,7 @@ class SnackUI(UI):
 		self.messageBox = None
 		self._screen.pushHelpLine(u"")
 		
-		signal.signal(signal.SIGWINCH, self.sigwinchHandler)
+		ui_signal.signal(ui_signal.SIGWINCH, self.sigwinchHandler)
 		
 	def __del__(self):
 		try:
