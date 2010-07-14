@@ -243,20 +243,23 @@ class FileBackend(ConfigDataBackend):
 	
 	def _setRights(self, path):
 		logger.debug(u"Setting rights for path '%s'" % (path))
-		if os.path.isfile(path):
-			logger.debug(u"Setting rights on file '%s'" % (path))
-			os.chmod(path, self.__fileMode)
-			if (os.geteuid() == 0):
-				os.chown(path, self.__fileUid, self.__fileGid)
-			else:
-				os.chown(path, -1, self.__fileGid)
-		elif os.path.isdir(path):
-			logger.debug(u"Setting rights on directory '%s'" % (path))
-			os.chmod(path, self.__dirMode)
-			if (os.geteuid() == 0):
-				os.chown(path, self.__dirUid, self.__dirGid)
-			else:
-				os.chown(path, -1, self.__dirGid)
+		try:
+			if os.path.isfile(path):
+				logger.debug(u"Setting rights on file '%s'" % (path))
+				os.chmod(path, self.__fileMode)
+				if (os.geteuid() == 0):
+					os.chown(path, self.__fileUid, self.__fileGid)
+				else:
+					os.chown(path, -1, self.__fileGid)
+			elif os.path.isdir(path):
+				logger.debug(u"Setting rights on directory '%s'" % (path))
+				os.chmod(path, self.__dirMode)
+				if (os.geteuid() == 0):
+					os.chown(path, self.__dirUid, self.__dirGid)
+				else:
+					os.chown(path, -1, self.__dirGid)
+		except Exception, e:
+			logger.warning(u"Failed to set rights for path '%s': %s" % (path, e))
 		
 	def _mkdir(self, path):
 		logger.debug(u"Creating path: '%s'" % (path))
