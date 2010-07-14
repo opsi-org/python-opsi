@@ -38,7 +38,7 @@ __version__ = '4.0'
 snackError = None
 
 # Imports
-import time, gettext, locale
+import time, gettext, locale, signal
 from snack import *
 
 # OPSI imports
@@ -192,12 +192,19 @@ class SnackUI(UI):
 		self.messageBox = None
 		self._screen.pushHelpLine(u"")
 		
+		signal.signal(signal.SIGWINCH, self.sigwinchHandler)
+		
 	def __del__(self):
 		try:
 			self.exit()
 		except:
 			pass
 	
+	def sigwinchHandler(self, signo, stackFrame):
+		#self._screen.finish()
+		#self._screen = SnackScreen()
+		self.refresh()
+		
 	def getScreen(self):
 		return self._screen
 	
@@ -991,7 +998,7 @@ if (__name__ == "__main__"):
 	while (state < 200):
 		state += 20
 		pb.setState(state)
-		time.sleep(0.2)
+		time.sleep(0.5)
 	time.sleep(1)
 	
 	mb = uiTest.createMessageBox(width = -1, height = -1, title = u'€€€€€€€€', text = u'@&%$§"ß')
