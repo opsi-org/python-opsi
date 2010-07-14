@@ -34,7 +34,7 @@
 
 __version__ = '4.0'
 
-import threading, Queue, copy
+import threading, Queue, copy, atexit
 from Queue import Queue, Empty
 from OPSI.Logger import *
 from time import sleep
@@ -161,7 +161,7 @@ class Worker(threading.Thread):
 
 
 Pool = ThreadPool()
-
+atexit.register(Pool.stop)
 ## Decorator to launch a function as a thread job
 def poolJob(callback=None):
 	def runPoolJob(function):
