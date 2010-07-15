@@ -2601,13 +2601,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	
 	def _productOnClient_processWithFunction(self, productOnClients, function):
-		# Get client ids
+		# Get client and product ids
 		productOnClientsByClient = {}
+		productIds = []
 		for poc in productOnClients:
 			if not poc.getClientId() in productOnClientsByClient.keys():
 				productOnClientsByClient[poc.getClientId()] = []
 			productOnClientsByClient[poc.getClientId()].append(poc)
-		
+			if not poc.productId in productIds:
+				productIds.append(poc.productId)
+			
 		# Get depot to client assignment
 		depotToClients = {}
 		for clientToDepot in self.configState_getClientToDepotserver(clientIds = productOnClientsByClient.keys()):
@@ -2619,7 +2622,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		productCache = {}
 		dependencyCache = {}
 		for (depotId, clientIds) in depotToClients.items():
-			productOnDepots = self._backend.productOnDepot_getObjects(depotId = depotId)
+			productOnDepots = self._backend.productOnDepot_getObjects(depotId = depotId, productId = productIds)
 			products = []
 			productDependencies = []
 			for productOnDepot in productOnDepots:
@@ -2809,8 +2812,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return productOnClients
 		
 		logger.debug(u"   * generating productOnClient sequence")
-		return self.productOnClient_generateSequence(productOnClients)
-	
+		productOnClientsFiltered = []
+		for productOnClient in self.productOnClient_generateSequence(productOnClients):
+			if self._objectHashMatches(productOnClient.toHash(), **filter):
+				productOnClientsFiltered.append(productOnClient)
+		return productOnClientsFiltered
+		
+		
 	def _productOnClientUpdateOrCreate(self, productOnClient, update=False):
 		nextProductOnClient = None
 		currentProductOnClients = self._backend.productOnClient_getObjects(
