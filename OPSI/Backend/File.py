@@ -1539,19 +1539,45 @@ class FileBackend(ConfigDataBackend):
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		
-		nums = []
-		for section in ini.sections():
-			nums.append(int(section.split('_')[-1]))
-		num = 0
-		while num in nums:
-			num += 1
-		
-		section = u'software_%d' % num
-		ini.add_section(section)
-		for (key, value) in auditSoftware.toHash().items():
-			if (value is None) or (key == 'type'):
+		auditSoftware = auditSoftware.toHash()
+		for attribute in auditSoftware.keys():
+			if (auditSoftware[attribute] is None) or (attribute == 'type'):
 				continue
-			ini.set(section, key, self.__escape(value))
+			auditSoftware[attribute] = self.__escape(auditSoftware[attribute])
+		
+		newNum = 0
+		removeSection = None
+		for section in ini.sections():
+			num = int(section.split('_')[-1])
+			if (num >= newNum):
+				newNum = num + 1
+			
+			matches = True
+			for attribute in ('name', 'version', 'subVersion', 'language', 'architecture'):
+				if not ini.has_option(section, attribute):
+					if not auditSoftware[attribute] is None:
+						matches = False
+						break
+				elif (ini.get(section, attribute) != auditSoftware[attribute]):
+					matches = False
+					break
+			if matches:
+				removeSection = section
+				newNum = num
+				logger.info(u"Found auditSoftware section '%s' to replace" % removeSection)
+				break
+			
+		section = u'software_%d' % newNum
+		if removeSection:
+			ini.remove_section(removeSection)
+		else:
+			logger.info(u"Inserting new auditSoftware section '%s'" % section)
+		
+		ini.add_section(section)
+		for (attribute, value) in auditSoftware.items():
+			if (value is None) or (attribute == 'type'):
+				continue
+			ini.set(section, attribute, self.__escape(value))
 		iniFile.generate(ini)
 		
 	def auditSoftware_updateObject(self, auditSoftware):
@@ -1668,19 +1694,45 @@ class FileBackend(ConfigDataBackend):
 		iniFile = IniFile(filename = filename)
 		ini = iniFile.parse()
 		
-		nums = []
-		for section in ini.sections():
-			nums.append(int(section.split('_')[-1]))
-		num = 0
-		while num in nums:
-			num += 1
+		auditSoftwareOnClient = auditSoftwareOnClient.toHash()
+		for attribute in auditSoftwareOnClient.keys():
+			if (auditSoftwareOnClient[attribute] is None):
+				continue
+			auditSoftwareOnClient[attribute] = self.__escape(auditSoftwareOnClient[attribute])
 		
-		section = u'software_%d' % num
+		newNum = 0
+		removeSection = None
+		for section in ini.sections():
+			num = int(section.split('_')[-1])
+			if (num >= newNum):
+				newNum = num + 1
+			
+			matches = True
+			for attribute in ('name', 'version', 'subVersion', 'language', 'architecture'):
+				if not ini.has_option(section, attribute):
+					if not auditSoftwareOnClient[attribute] is None:
+						matches = False
+						break
+				elif (ini.get(section, attribute) != auditSoftwareOnClient[attribute]):
+					matches = False
+					break
+			if matches:
+				removeSection = section
+				newNum = num
+				logger.info(u"Found auditSoftwareOnClient section '%s' to replace" % removeSection)
+				break
+			
+		section = u'software_%d' % newNum
+		if removeSection:
+			ini.remove_section(removeSection)
+		else:
+			logger.info(u"Inserting new auditSoftwareOnClient section '%s'" % section)
+		
 		ini.add_section(section)
-		for (key, value) in auditSoftwareOnClient.toHash().items():
+		for (attribute, value) in auditSoftwareOnClient.items():
 			if (value is None):
 				continue
-			ini.set(section, key, self.__escape(value))
+			ini.set(section, attribute, self.__escape(value))
 		iniFile.generate(ini)
 	
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
