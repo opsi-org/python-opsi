@@ -1564,14 +1564,14 @@ class FileBackend(ConfigDataBackend):
 			if matches:
 				removeSection = section
 				newNum = num
-				logger.info(u"Found auditSoftware section '%s' to replace" % removeSection)
+				logger.debug(u"Found auditSoftware section '%s' to replace" % removeSection)
 				break
 			
 		section = u'software_%d' % newNum
 		if removeSection:
 			ini.remove_section(removeSection)
 		else:
-			logger.info(u"Inserting new auditSoftware section '%s'" % section)
+			logger.debug(u"Inserting new auditSoftware section '%s'" % section)
 		
 		ini.add_section(section)
 		for (attribute, value) in auditSoftware.items():
@@ -1719,14 +1719,14 @@ class FileBackend(ConfigDataBackend):
 			if matches:
 				removeSection = section
 				newNum = num
-				logger.info(u"Found auditSoftwareOnClient section '%s' to replace" % removeSection)
+				logger.debug(u"Found auditSoftwareOnClient section '%s' to replace" % removeSection)
 				break
 			
 		section = u'software_%d' % newNum
 		if removeSection:
 			ini.remove_section(removeSection)
 		else:
-			logger.info(u"Inserting new auditSoftwareOnClient section '%s'" % section)
+			logger.debug(u"Inserting new auditSoftwareOnClient section '%s'" % section)
 		
 		ini.add_section(section)
 		for (attribute, value) in auditSoftwareOnClient.items():
