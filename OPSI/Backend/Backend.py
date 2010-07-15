@@ -1990,7 +1990,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 		
 		depot = depots[0]
-		isConfigServer = bool(self._backend.host_getIdents(type = 'OpsiConfigserver', id = id))
+		isConfigServer = bool(self.host_getIdents(type = 'OpsiConfigserver', id = id))
 		
 		productOnDepots = []
 		for productOnDepot in self._backend.productOnDepot_getObjects(depotId = depot.id):
@@ -2018,13 +2018,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if depot.depotRemoteUrl:
 			depot.setDepotRemoteUrl(depot.depotRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
 		if depot.depotWebdavUrl:
-			depot.setDepotRemoteUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
+			depot.setDepotWebdavUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
 		self.host_createObjects([ depot ])
 		
-		if objectToGroups:
-			self.objectToGroup_createObjects(objectToGroups)
 		if productOnDepots:
-			self.productOnClient_createObjects(productOnClients)
+			self.productOnDepot_createObjects(productOnDepots)
 		if productPropertyStates:
 			self.productPropertyState_createObjects(productPropertyStates)
 		if configStates:
@@ -2035,26 +2033,26 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if config.defaultValues:
 				changed = False
 				for i in range(len(config.defaultValues)):
-					if (config.defaultValues[i].find(oldHostname) != -1):
-						config.defaultValues[i] = config.defaultValues[i].replace(id, newId).replace(oldHostname, newHostname)
+					if (config.defaultValues[i].find(id) != -1):
+						config.defaultValues[i] = config.defaultValues[i].replace(id, newId)
 						changed = True
 				if changed:
 					updateConfigs.append(config)
 		if updateConfigs:
-			self._backend.config_updateObjects(updateConfigs)
+			self.config_updateObjects(updateConfigs)
 		
 		updateConfigStates = []
 		for configState in self._backend.configState_getObjects(configId = ['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if configState.values:
 				changed = False
 				for i in range(len(configState.values)):
-					if (configState.values[i].find(oldHostname) != -1):
-						configState.values[i] = configState.values[i].replace(id, newId).replace(oldHostname, newHostname)
+					if (configState.values[i].find(id) != -1):
+						configState.values[i] = configState.values[i].replace(id, newId)
 						changed = True
 				if changed:
 					updateConfigStates.append(configState)
 		if updateConfigStates:
-			self._backend.configState_updateObjects(updateConfigStates)
+			self.configState_updateObjects(updateConfigStates)
 		
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
 		hash = locals()
