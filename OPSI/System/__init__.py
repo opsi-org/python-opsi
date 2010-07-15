@@ -202,7 +202,7 @@ def getCountAndSize(path):
 	
 	return (count, size)
 
-def mkdir(newDir):
+def mkdir(newDir, mode=0750):
 	"""
 	- already exists, silently complete
 	- regular file in the way, raise an exception
@@ -217,9 +217,10 @@ def mkdir(newDir):
 	else:
 		(head, tail) = os.path.split(newDir)
 		if head and not os.path.isdir(head):
-			mkdir(head)
+			mkdir(head, mode=mode)
 		if tail:
 			os.mkdir(newDir)
+			os.chmod(newDir, mode)
 	
 def copy(src, dst, progressSubject=None):
 	for hook in hooks:
