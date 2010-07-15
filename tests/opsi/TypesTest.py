@@ -19,11 +19,12 @@ class TypesTestCase(TestCase):
 			self.assertIsNone(someObj.someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj.someOtherArg)
 		except AttributeError, e:
 			self.fail(e)
-			
-		@args("somearg", someOtherArg=forceInt)
-		class SomeOtherClass(object):
-			def __init__(self, **kwargs):
-				pass
+		
+		raise Excpetion("produces syntax error on python 2.5")
+		#@args("somearg", someOtherArg=forceInt)
+		#class SomeOtherClass(object):
+		#	def __init__(self, **kwargs):
+		#		pass
 		
 		someOtherObj = SomeOtherClass(someOtherArg="5")
 		
@@ -37,10 +38,11 @@ class TypesTestCase(TestCase):
 			
 	def test_argsDecoratorWithPrivateArgs(self):
 		
-		@args("_somearg", "_someOtherArg")
-		class SomeClass(object):
-			def __init__(self, **kwargs):
-				pass
+		raise Excpetion("produces syntax error on python 2.5")
+		#@args("_somearg", "_someOtherArg")
+		#class SomeClass(object):
+		#	def __init__(self, **kwargs):
+		#		pass
 		
 		someObj = SomeClass(somearg=5)
 		try:
