@@ -7,10 +7,11 @@ class TypesTestCase(TestCase):
 	
 	def test_argsDecoratorClassConstruction(self):
 		
-		@args("somearg", "someOtherArg")
-		class SomeClass(object):
-			def __init__(self, **kwargs):
-				pass
+		raise Excpetion("produces syntax error on python 2.5")
+		#@args("somearg", "someOtherArg")
+		#class SomeClass(object):
+		#	def __init__(self, **kwargs):
+		#		pass
 		
 		someObj = SomeClass()
 		try:
