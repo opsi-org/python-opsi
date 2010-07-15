@@ -634,16 +634,21 @@ def args(*vars, **typeVars):
 				obj = object.__new__(typ) ### Suppress deprecation warning
 			else:
 				obj = cls.__base__.__new__(typ, *args, **kwargs)
+			
 			vars.extend(typeVars.keys())
-			for key, value in kwargs.iteritems():
-				if key in typeVars.keys():
-					if value is not None:
-						func = typeVars[key]
-						kwargs[key] = func(value)
+			ka = kwargs.copy()
+
 			for var in vars:
-				if getattr(obj, var, None) is None:
-					setattr(obj, var, None)
-			for key, value in kwargs.iteritems():
+				varName = var.lstrip("_")
+				if ka.has_key(varName):
+					if typeVars.has_key(var):
+						func = typeVars[var]
+						ka[var] = func(ka[varName])
+					else:
+						ka[var] = ka[varName]
+				else:
+					ka[var] = None
+			for key, value in ka.iteritems():
 				if getattr(obj, key, None) is None:
 					setattr(obj, key, value)
 			return obj
