@@ -605,6 +605,54 @@ def forceArchitectureList(var):
 	return var
 
 
+def args(*vars, **typeVars):
+	"""Function to populate an object with passed on keyword args.
+	This is intended to be used as a decorator.
+	Classes using this decorator must explicitly inherit from object or a subclass ob object.
+		
+		@args()			#works
+		class Foo(object):
+			pass
+			
+		@args()			#works
+		class Bar(Foo):
+			pass
+			
+		@args()			#does not work
+		class Foo():
+			pass
+			
+		@args()			#does not work
+		class Foo:
+			pass
+	"""
+	vars = list(vars)
+	def wrapper(cls):
+		
+		def new(typ, *args, **kwargs):
+			if getattr(cls, "__base__", None) in (object, None):
+				obj = object.__new__(typ) ### Suppress deprecation warning
+			else:
+				obj = cls.__base__.__new__(typ, *args, **kwargs)
+			vars.extend(typeVars.keys())
+			for key, value in kwargs.iteritems():
+				if key in typeVars.keys():
+					if value is not None:
+						func = typeVars[key]
+						kwargs[key] = func(value)
+			for var in vars:
+				if getattr(obj, var, None) is None:
+					setattr(obj, var, None)
+			for key, value in kwargs.iteritems():
+				if getattr(obj, key, None) is None:
+					setattr(obj, key, value)
+			return obj
+		
+		cls.__new__ = staticmethod(new)
+		return cls
+	return wrapper
+
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                      EXCEPTION CLASSES                                             =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
