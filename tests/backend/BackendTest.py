@@ -51,7 +51,8 @@ class BackendTestCase(TestCase):
 			ipAddress           = None,
 			inventoryNumber     = '00000000002',
 			networkAddress      = '192.168.2.0/24',
-			maxBandwidth        = 10000
+			maxBandwidth        = 10000,
+			isMasterDepot       = True
 		)
 		
 		self.depotserver2 = OpsiDepotserver(
@@ -67,7 +68,8 @@ class BackendTestCase(TestCase):
 			ipAddress           = '192.168.10.1',
 			inventoryNumber     = '',
 			networkAddress      = '192.168.10.0/24',
-			maxBandwidth        = 240000
+			maxBandwidth        = 240000,
+			isMasterDepot       = True
 		)
 		
 		self.depotservers = [ self.depotserver1, self.depotserver2]

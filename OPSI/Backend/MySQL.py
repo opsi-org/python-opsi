@@ -451,9 +451,9 @@ class MySQLBackend(ConfigDataBackend):
 						value = value.replace('%', '\%').replace('_', '\_').replace('*', '%')
 					
 					if isNum:
-						where += u"`%s` %s %s" % (key, operator, value)
+						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
 					else:
-						where += u"`%s` %s '%s'" % (key, operator, value)
+						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
 				where += u' or '
 			where = where[:-4] + u')'
 		return where

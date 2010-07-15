@@ -3,7 +3,7 @@ import os, pwd, grp
 from OPSI.Backend.LDAP import LDAPBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Object import *
-from opsi_unittest.lib import unittest2 as unittest
+from opsidevtools.unittest.lib import unittest2 as unittest
 
 from BackendTest import BackendTestCase
 from BackendMixins.ObjectMethodsMixin import ObjectMethodsMixin

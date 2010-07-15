@@ -14,9 +14,9 @@ from backend.HostControlTest import HostControlTestCase
 #logger.setConsoleLevel(LOG_DEBUG2)
 #logger.setConsoleColor(True)
 
-from opsi_unittest.lib.unittest2.suite import TestSuite
-from opsi_unittest.lib.unittest2.case import TestCase
-import opsi_unittest.lib.unittest2
+from opsidevtools.unittest.lib.unittest2.suite import TestSuite
+from opsidevtools.unittest.lib.unittest2.case import TestCase
+import opsidevtools.unittest.lib.unittest2
 
 test_cases = (	FileTestCase,
 		MySQLTestCase,
