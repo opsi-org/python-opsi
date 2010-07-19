@@ -87,9 +87,8 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 			continue
 		
 		name = u'unknown'
-		if hasattr(auditHardware, 'name'):
-			name = auditHardware.name
-		name = name.replace(u'/', u'_')
+		if hasattr(auditHardware, 'name') and auditHardware.name:
+			name = auditHardware.name.replace(u'/', u'_')
 		
 		logger.info(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
 		if messageSubject:
