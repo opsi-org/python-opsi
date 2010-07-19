@@ -79,10 +79,10 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 			logger.debug(u"Skipping unhandled hardware class '%s' (%s)" % (hwClass, auditHardware))
 			continue
 		
-		if not hasattr(auditHardware, 'vendorId'):
+		if not hasattr(auditHardware, 'vendorId') or not auditHardware.vendorId:
 			logger.debug(u"Skipping %s device %s: vendor id not found" % (hwClass, auditHardware))
 			continue
-		if not hasattr(auditHardware, 'deviceId'):
+		if not hasattr(auditHardware, 'deviceId') or not auditHardware.deviceId:
 			logger.debug(u"Skipping %s device %s: device id not found" % (hwClass, auditHardware))
 			continue
 		
