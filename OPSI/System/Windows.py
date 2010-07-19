@@ -515,7 +515,7 @@ def logoffCurrentUser():
 		raise Exception(u"Operating system not supported")
 	runCommandInSession(
 			command              = command,
-			sessionId            = getActiveConsoleSessionId(),
+			sessionId            = getActiveSessionId(),
 			waitForProcessEnding = False )
 	
 def lockWorkstation():
@@ -523,7 +523,7 @@ def lockWorkstation():
 	#windll.user32.LockWorkStation()
 	runCommandInSession(
 			command              = u"rundll32.exe user32.dll,LockWorkStation",
-			sessionId            = getActiveConsoleSessionId(),
+			sessionId            = getActiveSessionId(),
 			waitForProcessEnding = False )
 
 def reboot(wait=10):
@@ -712,7 +712,7 @@ def getPids(process, sessionId = None):
 		sessionId = forceInt(sessionId)
 	
 	#if not sessionId:
-	#	sessionId = getActiveConsoleSessionId()
+	#	sessionId = getActiveSessionId()
 	logger.info(u"Searching pids of process name %s (session id: %s)" % (process, sessionId))
 	processIds = []
 	CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
@@ -829,7 +829,7 @@ def getUserToken(sessionId = None, duplicateFrom = u"winlogon.exe"):
 	duplicateFrom = forceUnicode(duplicateFrom)
 	
 	if sessionId is None or (sessionId < 0):
-		sessionId = getActiveConsoleSessionId()
+		sessionId = getActiveSessionId()
 	
 	pid = getPid(process = duplicateFrom, sessionId = sessionId)
 	if not pid:
@@ -873,8 +873,8 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	
 	logger.debug(u"Session id given: %s" % sessionId)
 	if sessionId is None or (sessionId < 0):
-		logger.debug(u"No session id given, running in active console session")
-		sessionId = getActiveConsoleSessionId()
+		logger.debug(u"No session id given, running in active session")
+		sessionId = getActiveSessionId()
 	
 	userToken = getUserToken(sessionId, duplicateFrom)
 	
