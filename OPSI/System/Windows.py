@@ -427,6 +427,16 @@ def getActiveSessionIds():
 		if not sessionId in sessionIds:
 			sessionIds.append(sessionId)
 	return sessionIds
+
+def getActiveSessionId():
+	sessionIds = getActiveSessionIds()
+	if (len(sessionIds) == 0):
+		return 0
+	if (len(sessionIds) == 1):
+		return sessionIds[0]
+	if 0 in sessionIds:
+		return 0
+	return sessionIds[0]
 	
 def getSessionInformation(sessionId):
 	#info = {}
