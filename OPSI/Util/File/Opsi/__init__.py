@@ -500,9 +500,7 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows'         and option == 'softwareids'):
 						try:
-							if self._opsi3compatible:
-								raise Exception(u"Not allowed in opsi3 compatible control files")
-					   		value = fromJson(value.strip())
+							value = fromJson(value.strip())
 					   	except Exception, e:
 					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
@@ -511,11 +509,10 @@ class PackageControlFile(TextFile):
 							newV = []
 							for v in value:
 								v = v.strip()
-								if not self._opsi3compatible:
-									try:
-										v = fromJson(v)
-									except Exception, e:
-										logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
+								try:
+									v = fromJson(v)
+								except Exception, e:
+									logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
 								newV.append(v)
 							value = newV
 						
