@@ -2028,7 +2028,7 @@ class FileBackend(ConfigDataBackend):
 		
 		elif (mode == 'update'):
 			if (sectionFound is None):
-				raise Exception()
+				raise Exception(u"Cannot update AuditHardware '%s': not found" % auditHardwareObj)
 			
 			if (objType == 'AuditHardware'):
 				return #cannot really update: there are only idents
