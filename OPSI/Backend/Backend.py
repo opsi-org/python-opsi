@@ -2270,7 +2270,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					continue
 				if not depotId in usedMasterDepotIds:
 					usedMasterDepotIds.append(depotId)
-				result.append({ 'depotId': depotId, 'clientId': configState.objectId })
+				result.append({ 'depotId': depotId, 'clientId': configState.objectId, 'slaveDepotIds': [] })
 		finally:
 			self._options['addConfigStateDefaults'] = addConfigStateDefaults
 		if masterOnly:
@@ -2279,7 +2279,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		masterDepotIds = usedMasterDepotIds
 		if not masterDepotIds:
 			raise BackendConfigurationError(u"No master depots found")
-		
 		
 		depotIds = []
 		masterToSlave = {}
@@ -2293,7 +2292,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			masterToSlave[depot.masterDepotId].append(depot.id)
 			if not depot.id in depotIds:
 				depotIds.append(depot.id)
-			
+		
+		if (len(depotIds) <= 1):
+			return result
+		
 		pHash = {}
 		for depotId in depotIds:
 			pHash[depotId] = []
