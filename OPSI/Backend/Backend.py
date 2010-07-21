@@ -2255,6 +2255,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		masterDepotIds = self.host_getIdents(type = 'OpsiDepotserver', isMasterDepot = True, id = depotIds)
 		knownClientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
+		usedMasterDepotIds = []
 		try:
 			self._options['addConfigStateDefaults'] = True
 			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
@@ -2267,14 +2268,18 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				depotId = configState.values[0]
 				if not depotId in masterDepotIds:
 					continue
+				if not depotId in usedMasterDepotIds:
+					usedMasterDepotIds.append(depotId)
 				result.append({ 'depotId': depotId, 'clientId': configState.objectId })
 		finally:
 			self._options['addConfigStateDefaults'] = addConfigStateDefaults
 		if masterOnly:
 			return result
 		
+		masterDepotIds = usedMasterDepotIds
 		if not masterDepotIds:
 			raise BackendConfigurationError(u"No master depots found")
+		
 		
 		depotIds = []
 		masterToSlave = {}
