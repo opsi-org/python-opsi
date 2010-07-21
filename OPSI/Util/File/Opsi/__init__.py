@@ -640,6 +640,8 @@ class PackageControlFile(TextFile):
 			if isinstance(self._productProperties[-1], UnicodeProductProperty):
 				if not productProperty.get('values') is None:
 					self._productProperties[-1].setPossibleValues(productProperty.get('values'))
+				else:
+					self._productProperties[-1].possibleValues = []
 				if not productProperty.get('editable') is None:
 					self._productProperties[-1].setEditable(productProperty['editable'])
 				else:
