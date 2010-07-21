@@ -505,17 +505,17 @@ class PackageControlFile(TextFile):
 					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
-							value = value.split(u',')
-							newV = []
-							for v in value:
-								v = v.strip()
-								try:
-									v = fromJson(v)
-								except Exception, e:
-									logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
-								newV.append(v)
-							value = newV
-						
+							if not (sectionType == 'productproperty' and option == 'default'):
+								value = value.split(u',')
+								newV = []
+								for v in value:
+									v = v.strip()
+									#try:
+									#	v = fromJson(v)
+									#except Exception, e:
+									#	logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
+									newV.append(v)
+								value = newV
 						# Remove duplicates
 						tmp = []
 						for v in forceList(value):
@@ -651,7 +651,7 @@ class PackageControlFile(TextFile):
 						self._productProperties[-1].setEditable(True)
 				if not productProperty.get('multivalue') is None:
 					self._productProperties[-1].setMultiValue(productProperty['multivalue'])
-				
+			
 			self._productProperties[-1].setDefaults()
 		self._parsed = True
 		return self._sections
