@@ -815,7 +815,7 @@ class PackageControlFile(TextFile):
 				if productProperty.getPossibleValues():
 					self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
 				if productProperty.getDefaultValues():
-					self._lines.append( u'default: %s' % productProperty.getDefaultValues()[0] )
+					self._lines.append( u'default: %s' % u', '.join(productProperty.getDefaultValues()) )
 			else:
 				if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
