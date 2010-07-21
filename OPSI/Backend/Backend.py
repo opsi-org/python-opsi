@@ -327,7 +327,7 @@ class Backend:
 	def backend_exit(self):
 		pass
 	
-	def log_write(self, logType, data, objectId=None, append=True):
+	def log_write(self, logType, data, objectId=None, append=False):
 		logType = forceUnicode(logType)
 		data = forceUnicode(data)
 		if not objectId:
