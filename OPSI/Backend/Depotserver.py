@@ -290,6 +290,19 @@ class DepotserverPackageManager(object):
 				productOnDepot.setLocked(False)
 				self._depotBackend._context.productOnDepot_updateObject(productOnDepot)
 				
+				# Clean up products
+				productIdents = []
+				for productOnDepot in self._depotBackend._context.productOnDepot_getObjects(productId = productOnDepot.productId):
+					productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+					if not productIdent in productIdents:
+						productIdents.append(productIdent)
+				deleteProducts = []
+				for product in self._depotBackend._context.product_getObjects(id = productOnDepot.productId):
+					if not product.getIdent(returnType = 'unicode') in productIdents:
+						deleteProducts.append(product)
+				if deleteProducts:
+					self._depotBackend._context.product_deleteObjects(deleteProducts)
+				
 			except Exception, e:
 				try:
 					ppf.cleanup()
