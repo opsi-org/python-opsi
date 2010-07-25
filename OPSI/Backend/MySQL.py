@@ -708,12 +708,12 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
+		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 		if not 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' in tables.keys():
 			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
 			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
 					`productId` varchar(50) NOT NULL,
-					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 					PRIMARY KEY( `windowsSoftwareId`, `productId` )
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				'''
@@ -794,11 +794,11 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
+		# FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
 		if not 'PRODUCT_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
 			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
 					`productId` varchar(50) NOT NULL,
-					FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
 					`clientId` varchar(255) NOT NULL,
 					FOREIGN KEY ( `clientId` ) REFERENCES `HOST` ( `hostId` ),
 					PRIMARY KEY( `productId`, `clientId` ),
@@ -817,13 +817,13 @@ class MySQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._mysql.execute(table)
 		
+		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 		if not 'PRODUCT_PROPERTY_STATE' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY_STATE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
 					`product_property_state_id` int NOT NULL AUTO_INCREMENT,
 					PRIMARY KEY( `product_property_state_id` ),
 					`productId` varchar(50) NOT NULL,
-					FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 					`propertyId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					INDEX(`objectId`),
