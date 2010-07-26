@@ -191,7 +191,6 @@ class HostControlBackend(ExtendedBackend):
 		
 	def hostControl_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
-		hostIds = forceHostIdList(hostIds)
 		hosts = self._context.host_getObjects(attributes = ['hardwareAddress'], id = hostIds)
 		errors = []
 		for host in hosts:
@@ -223,17 +222,17 @@ class HostControlBackend(ExtendedBackend):
 			raise Exception(u', '.join(errors))
 	
 	def hostControl_shutdown(self, hostIds=[]):
-		hostIds = forceHostIdList(hostIds)
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
 	def hostControl_fireEvent(self, event, hostIds=[]):
 		event = forceUnicode(event)
-		hostIds = forceHostIdList(hostIds)
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
 		
 	def hostControl_showPopup(self, message, hostIds=[]):
 		message = forceUnicode(message)
-		hostIds = forceHostIdList(hostIds)
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
 		
 	
