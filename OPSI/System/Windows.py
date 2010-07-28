@@ -435,9 +435,11 @@ def getActiveSessionId():
 	sessionIds = getActiveSessionIds()
 	if (len(sessionIds) == 0):
 		return defaultSessionId
-	if (len(sessionIds) == 1):
-		return sessionIds[0]
 	if defaultSessionId in sessionIds:
+		return defaultSessionId
+	if (sys.getwindowsversion()[0]>= 6) and (sessionIds[0] == 0):
+		if (len(sessionIds) > 1):
+			return sessionIds[1]
 		return defaultSessionId
 	return sessionIds[0]
 	
