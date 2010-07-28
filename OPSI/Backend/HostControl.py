@@ -225,6 +225,10 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
+	def hostControl_reboot(self, hostIds=[]):
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
+	
 	def hostControl_fireEvent(self, event, hostIds=[]):
 		event = forceUnicode(event)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
