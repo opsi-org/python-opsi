@@ -321,6 +321,9 @@ class ProductPackageFile(object):
 				uid = pwd.getpwnam(DEFAULT_CLIENT_DATA_USER)[2]
 			gid = grp.getgrnam(DEFAULT_CLIENT_DATA_GROUP)[2]
 			
+			os.chown(productClientDataDir, uid, gid)
+			os.chmod(productClientDataDir, 02770)
+			
 			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
 				
