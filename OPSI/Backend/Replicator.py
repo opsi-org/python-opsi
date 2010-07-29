@@ -70,7 +70,7 @@ class BackendReplicator:
 		'AuditSoftwareOnClient',
 	]
 	
-	def __init__(self, readBackend, writeBackend, newServerId=None, cleanupFirst=True):
+	def __init__(self, readBackend, writeBackend, newServerId=None, oldServerId=None, cleanupFirst=True):
 		self.__readBackend  = readBackend
 		self.__writeBackend = writeBackend
 		
@@ -80,6 +80,9 @@ class BackendReplicator:
 		self.__newServerId  = None
 		if newServerId:
 			self.__newServerId = forceHostId(newServerId)
+		self.__oldServerId  = None
+		if oldServerId:
+			self.__oldServerId = forceHostId(oldServerId)
 		self.__cleanupFirst = forceBool(cleanupFirst)
 		self.__oldServerId  = u''
 		self.__strict       = False
@@ -232,19 +235,31 @@ class BackendReplicator:
 				self.__currentProgressSubject.setState(len(objs))
 				
 			self.__overallProgressSubject.addToState(1)
-			
-			if self.__newServerId:
-				oldServerId = None
-				if configServer:
-					oldServerId = configServer[0].id
-				if not oldServerId and depotServer:
-					oldServerId = depotServer[0].id
-				if oldServerId:
-					if (self.__newServerId != oldServerId):
-						wb.host_renameOpsiDepotserver(id = oldServerId, newId = self.__newServerId)
+		
+		if not configServer:
+			if self.__oldServerId:
+				for depot in depotServer:
+					if (depot.id == self.__oldServerId):
+						hash = depot.toHash()
+						del hash['type']
+						configServer = [ OpsiConfigserver.fromHash(hash) ]
+						break
+			if not configServer:
+				if not depotServer:
+					logger.error(u"No config/depot servers found")
 				else:
-					logger.warning(u"Failed to get previous server id")
-				
+					hash = depotServer[0].toHash()
+					del hash['type']
+					configServer = [ OpsiConfigserver.fromHash(hash) ]
+			if configServer:
+				wb.host_createObject(configServer[0])
+		
+		if self.__oldServerId and configServer:
+			self.__oldServerId = configServer[0].id
+		
+		if self.__newServerId and self.__oldServerId and (self.__oldServerId != self.__newServerId):
+			wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
+		
 	
 	
 
