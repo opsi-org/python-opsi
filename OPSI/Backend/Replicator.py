@@ -252,7 +252,7 @@ class BackendReplicator:
 					del hash['type']
 					configServer = [ OpsiConfigserver.fromHash(hash) ]
 			if configServer:
-				wb.host_createObject(configServer[0])
+				wb.host_createObjects(configServer[0])
 		
 		if self.__oldServerId and configServer:
 			self.__oldServerId = configServer[0].id
