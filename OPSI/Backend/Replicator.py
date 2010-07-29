@@ -142,6 +142,7 @@ class BackendReplicator:
 			self.__overallProgressSubject.setMessage(u"Cleanup done!")
 			self.__overallProgressSubject.addToState(1)
 		
+		oldServerId = None
 		for objClass in self.OBJECT_CLASSES:
 			if not audit and objClass.lower().startswith('audit'):
 				continue
@@ -186,45 +187,43 @@ class BackendReplicator:
 					sortedObjs = []
 					groupIds = []
 					while True:
-						numAdded = 0
+						notAddedObjs = []
 						for obj in objs:
-							if not obj.getParentGroupId():
-								logger.debug(u"Adding group '%s' without parent group set" % obj)
-								sortedObjs.append(obj)
-								objs.remove(obj)
-								groupIds.append(obj.getId())
-								numAdded += 1
-							else:
-								if obj.getParentGroupId() in groupIds:
-									logger.debug(u"Adding group '%s' with parent group '%s' set" % (obj, obj.getParentGroupId()))
-									sortedObjs.append(obj)
-									objs.remove(obj)
-									groupIds.append(obj.getId())
-									numAdded += 1
+							if not obj.getParentGroupId() or obj.getParentGroupId() in groupIds:
+								if not obj.getParentGroupId():
+									logger.debug(u"Adding group '%s' without parent group set" % obj)
 								else:
-									logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
-						if not objs:
+									logger.debug(u"Adding group '%s' with parent group '%s' already added" % (obj, obj.getParentGroupId()))
+								sortedObjs.append(obj)
+								groupIds.append(obj.getId())
+							else:
+								logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
+								notAddedObjs.add(obj)
+						if not notAddedObjs:
 							break
-						if (numAdded == 0):
+						if len(notAddedObjs) == len(objs):
 							for obj in objs:
 								logger.error(u"Failed to add group: %s" % obj)
 							break
+						objs = notAddedObjs
 					objs = sortedObjs
 				
 				self.__currentProgressSubject.reset()
 				self.__currentProgressSubject.setMessage(u"Writing objects")
 				if self.__strict:
 					self.__currentProgressSubject.setEnd(1)
-					eval('wb.%s_createObjects(objs)' % Class.backendMethodPrefix)
+					exec('wb.%s_createObjects(objs)' % Class.backendMethodPrefix)
 					self.__currentProgressSubject.addToState(1)
 				else:
 					self.__currentProgressSubject.setEnd(len(objs))
 					for obj in objs:
 						try:
 							if self.__cleanupFirst:
-								eval('wb.%s_createObjects(obj)' % Class.backendMethodPrefix)
+								exec('wb.%s_createObjects(obj)' % Class.backendMethodPrefix)
 							else:
-								eval('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
+								if self.__newServerId and (obj.getType() == 'OpsiConfigserver'):
+									oldServerId = obj.id
+								exec('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
 						except Exception, e:
 							logger.logException(e, LOG_DEBUG)
 							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
@@ -233,6 +232,8 @@ class BackendReplicator:
 				
 			self.__overallProgressSubject.addToState(1)
 			
+			if self.__newServerId and oldServerId:
+				wb.host_renameOpsiDepotserver(id = oldServerId, newId = self.__newServerId)
 	
 	
 

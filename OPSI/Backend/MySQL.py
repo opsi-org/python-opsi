@@ -1773,8 +1773,9 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseContract_insertObject(self, licenseContract):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
@@ -1787,8 +1788,9 @@ class MySQLBackend(ConfigDataBackend):
 		
 	def licenseContract_updateObject(self, licenseContract):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
@@ -1797,8 +1799,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def licenseContract_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return []
 		
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseContracts, filter: %s" % filter)
@@ -1811,12 +1814,14 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def licenseContract_deleteObjects(self, licenseContracts):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
@@ -1829,8 +1834,9 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicense_insertObject(self, softwareLicense):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
@@ -1843,8 +1849,9 @@ class MySQLBackend(ConfigDataBackend):
 		
 	def softwareLicense_updateObject(self, softwareLicense):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
@@ -1853,8 +1860,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def softwareLicense_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return []
 		
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
@@ -1867,8 +1875,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def softwareLicense_deleteObjects(self, softwareLicenses):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
@@ -1881,8 +1890,9 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licensePool_insertObject(self, licensePool):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		modules = self._context.backend_info()['modules']
 		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
@@ -1915,8 +1925,9 @@ class MySQLBackend(ConfigDataBackend):
 		
 	def licensePool_updateObject(self, licensePool):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
@@ -1930,8 +1941,9 @@ class MySQLBackend(ConfigDataBackend):
 		
 	def licensePool_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return []
 		
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licensePools, filter: %s" % filter)
@@ -1962,8 +1974,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def licensePool_deleteObjects(self, licensePools):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
@@ -1977,8 +1990,9 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
@@ -1991,8 +2005,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
@@ -2001,8 +2016,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return []
 		
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
@@ -2014,8 +2030,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
@@ -2028,8 +2045,9 @@ class MySQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseOnClient_insertObject(self, licenseOnClient):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
@@ -2042,8 +2060,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def licenseOnClient_updateObject(self, licenseOnClient):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
@@ -2052,8 +2071,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return []
 		
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
@@ -2065,8 +2085,9 @@ class MySQLBackend(ConfigDataBackend):
 	
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
 		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
+			raise Exception(u"License management module disabled")
+			#logger.warning(u"License management module disabled")
+			#return
 		
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
