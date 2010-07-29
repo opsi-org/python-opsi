@@ -254,10 +254,11 @@ class BackendReplicator:
 			if configServer:
 				wb.host_createObjects(configServer[0])
 		
-		if self.__oldServerId and configServer:
+		if not self.__oldServerId and configServer:
 			self.__oldServerId = configServer[0].id
 		
 		if self.__newServerId and self.__oldServerId and (self.__oldServerId != self.__newServerId):
+			logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
 			wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
 		
 	

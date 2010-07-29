@@ -1980,8 +1980,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.softwareLicense_createObjects(softwareLicenses)
 	
 	def host_renameOpsiDepotserver(self, id, newId):
-		id    = forceHostId(id)
-		newId = forceHostId(newId)
+		id          = forceHostId(id)
+		newId       = forceHostId(newId)
+		oldHostname = id.split('.')[0]
+		newHostname = newId.split('.')[0]
 		
 		depots = self._backend.host_getObjects(type = 'OpsiDepotserver', id = id)
 		if not depots:
@@ -1993,26 +1995,60 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		isConfigServer = bool(self.host_getIdents(type = 'OpsiConfigserver', id = id))
 		
 		productOnDepots = []
-		for productOnDepot in self._backend.productOnDepot_getObjects(depotId = depot.id):
+		for productOnDepot in self._backend.productOnDepot_getObjects(depotId = id):
 			productOnDepot.setDepotId(newId)
 			productOnDepots.append(productOnDepot)
 		
+		modifiedProductProperties = []
+		for productProperty in self._backend.productProperty_getObjects():
+			if productProperty.possibleValues and id in productProperty.possibleValues:
+				productProperty.possibleValues.remove(id)
+				productProperty.possibleValues.append(newId)
+				if not productProperty in modifiedProductProperties:
+					modifiedProductProperties.append(productProperty)
+			if productProperty.defaultValues and id in productProperty.defaultValues:
+				productProperty.defaultValues.remove(id)
+				productProperty.defaultValues.append(newId)
+				if not productProperty in modifiedProductProperties:
+					modifiedProductProperties.append(productProperty)
+		if modifiedProductProperties:
+			self.productProperty_updateObjects(modifiedProductProperties)
+		
 		productPropertyStates = []
-		for productPropertyState in self._backend.productPropertyState_getObjects(objectId = depot.id):
+		for productPropertyState in self._backend.productPropertyState_getObjects(objectId = id):
 			productPropertyState.setObjectId(newId)
+			if productPropertyState.values and id in productPropertyState.values:
+				productPropertyState.values.remove(id)
+				productPropertyState.values.append(newId)
 			productPropertyStates.append(productPropertyState)
 		
+		modifiedConfigs = []
+		for config in self._backend.config_getObjects():
+			if config.possibleValues and id in config.possibleValues:
+				config.possibleValues.remove(id)
+				config.possibleValues.append(newId)
+				if not config in modifiedConfigs:
+					modifiedConfigs.append(config)
+			if config.defaultValues and id in config.defaultValues:
+				config.defaultValues.remove(id)
+				config.defaultValues.append(newId)
+				if not config in modifiedConfigs:
+					modifiedConfigs.append(config)
+		if modifiedConfigs:
+			self.config_updateObjects(modifiedConfigs)
+		
 		configStates = []
-		for configState in self._backend.configState_getObjects(objectId = depot.id):
+		for configState in self._backend.configState_getObjects(objectId = id):
 			configState.setObjectId(newId)
+			if configState.values and id in configState.values:
+				configState.values.remove(id)
+				configState.values.append(newId)
 			configStates.append(configState)
 		
 		logger.info(u"Deleting depot '%s'" % depot)
 		self._backend.host_deleteObjects([ depot ])
 		
 		depot.setId(newId)
-		oldHostname = id.split('.')[0]
-		newHostname = newId.split('.')[0]
 		if depot.repositoryRemoteUrl:
 			depot.setRepositoryRemoteUrl(depot.repositoryRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
 		if depot.depotRemoteUrl:
@@ -2053,6 +2089,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					updateConfigStates.append(configState)
 		if updateConfigStates:
 			self.configState_updateObjects(updateConfigStates)
+		
+		modifiedDepots = []
+		for depot in self._backend.host_getObjects(type = 'OpsiDepotserver'):
+			if depot.masterDepotId and (depot.masterDepotId == id):
+				depot.masterDepotId = newId
+				modifiedDepots.append(depot)
+		if modifiedDepots:
+			self.host_updateObjects(modifiedDepots)
 		
 	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
 		hash = locals()
