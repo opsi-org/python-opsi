@@ -202,7 +202,7 @@ class BackendReplicator:
 						if not notAddedObjs:
 							break
 						if len(notAddedObjs) == len(objs):
-							for obj in objs:
+							for obj in notAddedObjs:
 								logger.error(u"Failed to add group: %s" % obj)
 							break
 						objs = notAddedObjs
@@ -210,6 +210,9 @@ class BackendReplicator:
 				
 				self.__currentProgressSubject.reset()
 				self.__currentProgressSubject.setMessage(u"Writing objects")
+				if (subClass == 'OpsiConfigserver') and self.__newServerId:
+					for obj in objs:
+						oldServerId = obj.id
 				if self.__strict:
 					self.__currentProgressSubject.setEnd(1)
 					exec('wb.%s_createObjects(objs)' % Class.backendMethodPrefix)
@@ -218,12 +221,7 @@ class BackendReplicator:
 					self.__currentProgressSubject.setEnd(len(objs))
 					for obj in objs:
 						try:
-							if self.__cleanupFirst:
-								exec('wb.%s_createObjects(obj)' % Class.backendMethodPrefix)
-							else:
-								if self.__newServerId and (obj.getType() == 'OpsiConfigserver'):
-									oldServerId = obj.id
-								exec('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
+							exec('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
 						except Exception, e:
 							logger.logException(e, LOG_DEBUG)
 							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
