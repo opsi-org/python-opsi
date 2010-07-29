@@ -198,7 +198,7 @@ class BackendReplicator:
 								groupIds.append(obj.getId())
 							else:
 								logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
-								notAddedObjs.add(obj)
+								notAddedObjs.append(obj)
 						if not notAddedObjs:
 							break
 						if len(notAddedObjs) == len(objs):
