@@ -142,7 +142,8 @@ class BackendReplicator:
 			self.__overallProgressSubject.setMessage(u"Cleanup done!")
 			self.__overallProgressSubject.addToState(1)
 		
-		oldServerId = None
+		configServer = []
+		depotServer = []
 		for objClass in self.OBJECT_CLASSES:
 			if not audit and objClass.lower().startswith('audit'):
 				continue
@@ -210,9 +211,11 @@ class BackendReplicator:
 				
 				self.__currentProgressSubject.reset()
 				self.__currentProgressSubject.setMessage(u"Writing objects")
-				if (subClass == 'OpsiConfigserver') and self.__newServerId:
-					for obj in objs:
-						oldServerId = obj.id
+				if (subClass == 'OpsiConfigserver'):
+					configServer = objs
+				if (subClass == 'OpsiDepotserver'):
+					depotServer = objs
+				
 				if self.__strict:
 					self.__currentProgressSubject.setEnd(1)
 					exec('wb.%s_createObjects(objs)' % Class.backendMethodPrefix)
@@ -230,8 +233,18 @@ class BackendReplicator:
 				
 			self.__overallProgressSubject.addToState(1)
 			
-			if self.__newServerId and oldServerId:
-				wb.host_renameOpsiDepotserver(id = oldServerId, newId = self.__newServerId)
+			if self.__newServerId:
+				oldServerId = None
+				if configServer:
+					oldServerId = configServer[0].id
+				if not oldServerId and depotServer:
+					oldServerId = depotServer[0].id
+				if oldServerId:
+					if (self.__newServerId != oldServerId):
+						wb.host_renameOpsiDepotserver(id = oldServerId, newId = self.__newServerId)
+				else:
+					logger.warning(u"Failed to get previous server id")
+				
 	
 	
 
