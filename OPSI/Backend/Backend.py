@@ -1255,10 +1255,10 @@ class ConfigDataBackend(Backend, ConfigBackend):
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			licensePoolIds.append(licensePool.id)
 		if licensePoolIds:
-			softwareLicenseToLicensePoolIdents = self._context.softwareLicenseToLicensePool_getIdents(licensePoolId = licensePoolIds, returnType = 'unicode')
-			if softwareLicenseToLicensePoolIdents:
+			softwareLicenseToLicensePools = self._context.softwareLicenseToLicensePool_getObjects(licensePoolId = licensePoolIds)
+			if softwareLicenseToLicensePools:
 				raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
-					(licensePoolIds, softwareLicenseToLicensePoolIdents))
+					(licensePoolIds, softwareLicenseToLicensePools))
 			self._context.auditSoftwareToLicensePool_deleteObjects(
 				self._context.auditSoftwareToLicensePool_getObjects(
 								name          = [],
