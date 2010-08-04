@@ -84,7 +84,6 @@ class BackendReplicator:
 		if oldServerId:
 			self.__oldServerId = forceHostId(oldServerId)
 		self.__cleanupFirst = forceBool(cleanupFirst)
-		self.__oldServerId  = u''
 		self.__strict       = False
 		self.__serverIds    = []
 		self.__depotIds     = []
