@@ -145,8 +145,8 @@ class BackendReplicator:
 			self.__overallProgressSubject.setMessage(u"Cleanup done!")
 			self.__overallProgressSubject.addToState(1)
 		
-		configServer = []
-		depotServer = []
+		configServer = None
+		depotServers = []
 		for objClass in self.OBJECT_CLASSES:
 			if not audit and objClass.lower().startswith('audit'):
 				continue
@@ -214,10 +214,11 @@ class BackendReplicator:
 				
 				self.__currentProgressSubject.reset()
 				self.__currentProgressSubject.setMessage(u"Writing objects")
-				if (subClass == 'OpsiConfigserver'):
-					configServer = objs
+				if (subClass == 'OpsiConfigserver') and objs:
+					configServer = objs[0]
+					depotServers.extend(objs)
 				if (subClass == 'OpsiDepotserver'):
-					depotServer = objs
+					depotServers.extend(objs)
 				
 				if self.__strict:
 					self.__currentProgressSubject.setEnd(1)
@@ -236,31 +237,29 @@ class BackendReplicator:
 				
 			self.__overallProgressSubject.addToState(1)
 		
-		if not configServer:
-			if self.__oldServerId:
-				for depot in depotServer:
-					if (depot.id == self.__oldServerId):
-						hash = depot.toHash()
-						del hash['type']
-						configServer = [ OpsiConfigserver.fromHash(hash) ]
-						break
-			if not configServer:
-				if not depotServer:
-					logger.error(u"No config/depot servers found")
+		if self.__newServerId:
+			if not self.__oldServerId:
+				if configServer:
+					self.__oldServerId = configServer.id
+				elif depotServers:
+					self.__oldServerId = depotServers[0].id
 				else:
-					hash = depotServer[0].toHash()
+					logger.error(u"No config/depot servers found")
+			
+			if self.__oldServerId and (self.__oldServerId != self.__newServerId):
+				logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
+				wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
+				
+				newDepots = []
+				for depot in wb.host_getObjects(type = 'OpsiDepotserver'):
+					hash = depot.toHash()
 					del hash['type']
-					configServer = [ OpsiConfigserver.fromHash(hash) ]
-			if configServer:
-				wb.host_createObjects(configServer[0])
-		
-		if not self.__oldServerId and configServer:
-			self.__oldServerId = configServer[0].id
-		
-		if self.__newServerId and self.__oldServerId and (self.__oldServerId != self.__newServerId):
-			logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
-			wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
-		
+					if (depot.id == self.__newServerId):
+						newDepots.append( OpsiConfigserver.fromHash(hash) )
+					else:
+						newDepots.append( OpsiDepotserver.fromHash(hash) )
+				wb.host_createObjects(newDepots)
+				
 	
 	
 
