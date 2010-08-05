@@ -432,9 +432,25 @@ def getActiveSessionId():
 	defaultSessionId = 0
 	if (sys.getwindowsversion()[0] >= 6):
 		defaultSessionId = 1
-	sessionIds = getActiveSessionIds()
+	sessionIds = []
+	newest = None
+	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
+		sessionData = win32security.LsaGetLogonSessionData(s)
+		logger.debug(u"   Found session: %s" % sessionData)
+		if not forceInt(sessionData['LogonType']) in (2, 10):
+			continue
+		sessionId = forceInt(sessionData['Session'])
+		if not sessionId in sessionIds:
+			sessionIds.append(sessionId)
+		if newest:
+			if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+				newest = sessionData
+		else:
+			newest = sessionData
 	if (len(sessionIds) == 0):
 		return defaultSessionId
+	if newest:
+		return forceInt(newest['Session'])
 	if defaultSessionId in sessionIds:
 		return defaultSessionId
 	if (sys.getwindowsversion()[0]>= 6) and (sessionIds[0] == 0):
