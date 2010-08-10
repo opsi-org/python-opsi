@@ -645,7 +645,7 @@ class PackageControlFile(TextFile):
 				if not productProperty.get('editable') is None:
 					self._productProperties[-1].setEditable(productProperty['editable'])
 				else:
-					if not productProperty.get('values') is None:
+					if not productProperty.get('values') in (None, []):
 						self._productProperties[-1].setEditable(False)
 					else:
 						self._productProperties[-1].setEditable(True)
