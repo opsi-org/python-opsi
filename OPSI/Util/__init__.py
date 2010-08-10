@@ -613,7 +613,7 @@ def blowfishDecrypt(key, crypt):
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
 	
-def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, repository=None):
+def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
 	if excludeDir:
@@ -638,6 +638,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		includeFile = None
 	returnDirs = forceBool(returnDirs)
 	returnLinks = forceBool(returnLinks)
+	followLinks = forceBool(followLinks)
 	
 	islink  = os.path.islink
 	isdir   = os.path.isdir
@@ -657,9 +658,9 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		isLink = False
 		if islink(dp):
 			isLink = True
-			if not returnLinks:
+			if not returnLinks and not followLinks:
 				continue
-		elif isdir(dp):
+		if isdir(dp) and (not isLink or followLinks):
 			if excludeDir and re.search(excludeDir, entry):
 				logger.debug(u"Excluding dir '%s' and containing files" % entry)
 				continue
@@ -679,6 +680,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 					includeFile = includeFile,
 					returnDirs  = returnDirs,
 					returnLinks = returnLinks,
+					followLinks = followLinks,
 					repository  = repository) )
 			continue
 		if excludeFile and re.search(excludeFile, entry):

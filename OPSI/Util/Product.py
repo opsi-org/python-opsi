@@ -503,7 +503,11 @@ class ProductPackageSource(object):
 					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
 					continue
 				
-				fileList = findFiles( os.path.join(self.packageSourceDir, d), excludeDir = EXCLUDE_DIRS_ON_PACK, excludeFile = EXCLUDE_FILES_ON_PACK )
+				fileList = findFiles(
+					os.path.join(self.packageSourceDir, d),
+					excludeDir  = EXCLUDE_DIRS_ON_PACK,
+					excludeFile = EXCLUDE_FILES_ON_PACK,
+					followLinks = self.dereference )
 				
 				if d.startswith(u'SERVER_DATA'):
 					# Never change permissions of existing directories in /
