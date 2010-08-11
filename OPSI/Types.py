@@ -310,7 +310,7 @@ def forcePackageVersionList(var):
 		var[i] = forcePackageVersion(var[i])
 	return var
 
-productIdRegex = re.compile('^[a-z0-9-_]{1,32}$')
+productIdRegex = re.compile('^[a-z0-9-_\.]{1,32}$')
 def forceProductId(var):
 	var = forceObjectId(var)
 	#if (var.find('_') != -1):
