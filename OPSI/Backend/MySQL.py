@@ -446,7 +446,8 @@ class MySQLBackend(ConfigDataBackend):
 						value = match.group(2)
 						isNum = True
 					
-					if (value.find('*') != -1):
+					index = value.find('*')
+					if (index != -1) and ((index == 0) or (value[index-1] != '\\')):
 						operator = 'LIKE'
 						value = value.replace('%', '\%').replace('_', '\_').replace('*', '%')
 					
@@ -2221,9 +2222,12 @@ class MySQLBackend(ConfigDataBackend):
 		logger.info(u"Inserting auditHardware: %s" % auditHardware)
 		filter = {}
 		for (attribute, value) in auditHardware.toHash().items():
-			filter[attribute] = value
 			if value is None:
 				filter[attribute] = [ None ]
+			elif type(value) is unicode:
+				filter[attribute] = value.replace(u'*', u'\\*')
+			else:
+				filter[attribute] = value
 		res = self.auditHardware_getObjects(**filter)
 		if res:
 			return
@@ -2377,8 +2381,12 @@ class MySQLBackend(ConfigDataBackend):
 		filter = {}
 		for (attribute, value) in auditHardwareOnHost.items():
 			if value is None:
-				value = [ None ]
-			filter[attribute] = value
+				filter[attribute] = [ None ]
+			elif type(value) is unicode:
+				filter[attribute] = value.replace(u'*', u'\\*')
+			else:
+				filter[attribute] = value
+			
 		where = self._filterToSql(filter)
 		
 		hwIdswhere = u''
