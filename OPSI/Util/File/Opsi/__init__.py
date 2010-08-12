@@ -541,7 +541,7 @@ class PackageControlFile(TextFile):
 					if not match.group(1):
 						raise Exception(u"Bad package dependency '%s' in control file" % dep)
 						continue
-					package = match.group(1)
+					package = match.group(1).strip()
 					version = match.group(2)
 					condition = None
 					if version:
@@ -721,7 +721,7 @@ class PackageControlFile(TextFile):
 			if depends: depends += u', '
 			depends += packageDependency['package']
 			if packageDependency['version']:
-				depends += ' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
+				depends += u' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
 		
 		self._lines.append( u'depends: %s' % depends )
 		self._lines.append( u'incremental: %s' % self._incrementalPackage )
