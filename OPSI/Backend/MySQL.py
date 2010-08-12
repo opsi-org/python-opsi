@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+   Copyright (C) 2006 - 2010 uib GmbH
    
    http://www.uib.de/
    
@@ -440,20 +440,16 @@ class MySQLBackend(ConfigDataBackend):
 				else:
 					value = value.replace("\\", "\\\\").replace("'", "\\\'")
 					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', value)
-					isNum = False
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
-						isNum = True
-					
-					index = value.find('*')
-					if (index != -1) and ((index == 0) or (value[index-1] != '\\')):
-						operator = 'LIKE'
-						value = value.replace('%', '\%').replace('_', '\_').replace('*', '%')
-					
-					if isNum:
 						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
 					else:
+						value = value.replace("\\*", u'\ufffd')
+						if (value.find('*') != -1):
+							operator = 'LIKE'
+							value = value.replace("%", "\\%").replace("_", "\\_").replace('*', '%')
+						value = value.replace(u'\ufffd', "\\*")
 						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
 				where += u' or '
 			where = where[:-4] + u')'
