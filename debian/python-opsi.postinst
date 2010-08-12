@@ -39,6 +39,7 @@ case "$1" in
 		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
 		
 		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
+		update-python-modules -p >/dev/null 2>/dev/null || true
 	;;
 	
 	abort-upgrade|abort-remove|abort-deconfigure)
