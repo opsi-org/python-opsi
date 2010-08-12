@@ -428,7 +428,7 @@ def getActiveSessionIds():
 			sessionIds.append(sessionId)
 	return sessionIds
 
-def getActiveSessionId():
+def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	defaultSessionId = 0
 	if (sys.getwindowsversion()[0] >= 6):
 		defaultSessionId = 1
@@ -439,7 +439,11 @@ def getActiveSessionId():
 		logger.debug(u"   Found session: %s" % sessionData)
 		if not forceInt(sessionData['LogonType']) in (2, 10):
 			continue
+		
 		sessionId = forceInt(sessionData['Session'])
+		if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
+			continue
+		
 		if not sessionId in sessionIds:
 			sessionIds.append(sessionId)
 		if newest:
