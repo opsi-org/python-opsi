@@ -721,7 +721,7 @@ class PackageControlFile(TextFile):
 			if depends: depends += u', '
 			depends += packageDependency['package']
 			if packageDependency['version']:
-				depends += ' (%s %s)'(packageDependency['condition'], packageDependency['version'])
+				depends += ' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
 		
 		self._lines.append( u'depends: %s' % depends )
 		self._lines.append( u'incremental: %s' % self._incrementalPackage )
