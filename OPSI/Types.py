@@ -45,7 +45,7 @@ encoding = sys.getfilesystemencoding()
 logger = Logger()
 
 def forceList(var):
-	if not type(var) is types.ListType:
+	if not type(var) in (types.ListType, types.TupleType):
 		return [ var ]
 	return list(var)
 
