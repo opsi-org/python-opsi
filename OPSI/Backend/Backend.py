@@ -2298,14 +2298,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		addConfigStateDefaults = self._options['addConfigStateDefaults']
 		result = []
 		masterDepotIds = self.host_getIdents(type = 'OpsiDepotserver', isMasterDepot = True, id = depotIds)
-		knownClientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
+		clientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
+		if not clientIds:
+			return result
 		usedMasterDepotIds = []
 		try:
 			self._options['addConfigStateDefaults'] = True
 			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
-				if not configState.objectId in knownClientIds:
-					logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
-					continue
+				#if not configState.objectId in knownClientIds:
+				#	logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
+				#	continue
 				if not configState.values or not configState.values[0]:
 					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
 					continue
