@@ -16,7 +16,7 @@ cat /tmp/${packagename}.spec \
 	| sed -ne '1,/%changelog/p' \
 	> rpm/${packagename}.spec
 
-cat debian/changelog >> rpm/${packagename}.spec
+#cat debian/changelog | sed "s/^${packagename}/* ${packagename}/" >> rpm/${packagename}.spec
 rm /tmp/${packagename}.spec
 
 test -e $tmpdir && rm -rf $tmpdir
