@@ -3,21 +3,32 @@
 packagename=$(basename rpm/*.spec .spec)
 version=$(head -n1 debian/changelog | cut -d'(' -f2 | cut -d')' -f1 | cut -d'-' -f1)
 release=$(head -n1 debian/changelog | cut -d'(' -f2 | cut -d')' -f1 | cut -d'-' -f2)
+cwd=$(pwd)
+dir=$(dirname ${cwd}/$(dirname $0))
+tmpdir=/tmp/${packagename}-${version}
+
+cd $dir
 
 cp rpm/${packagename}.spec /tmp/
-cat /tmp/${packagename}.spec | sed "s/^Version:.*/Version:        ${version}/" | sed "s/^Release:.*/Release:        ${release}/" > rpm/${packagename}.spec
-rm rpm/${packagename}.spec
+cat /tmp/${packagename}.spec \
+	| sed "s/^Version:.*/Version:        ${version}/" \
+	| sed "s/^Release:.*/Release:        ${release}/" \
+	| sed -ne '1,/%changelog/p' \
+	> rpm/${packagename}.spec
 
-tmpdir=/tmp/${packagename}-${version}
-cwd=$(pwd)
-dir=${cwd}/$(dirname $0)
+cat debian/changelog >> rpm/${packagename}.spec
+rm /tmp/${packagename}.spec
 
-cd $dir/..
 test -e $tmpdir && rm -rf $tmpdir
 mkdir $tmpdir
 cp -r OPSI data setup.py ${tmpdir}/
+find ${tmpdir} -iname *.pyc -exec rm {} \;
+find ${tmpdir} -iname *.marks -exec rm {} \;
+find ${tmpdir} -iname *~ -exec rm {} \;
+find ${tmpdir} -iname *.svn -exec rm -rf {} \; 2>/dev/null
+
 cd ${tmpdir}/..
-tar cjvf /tmp/${packagename}-${version}.tar.bz2 ${packagename}-${version}
+tar cjf /tmp/${packagename}-${version}.tar.bz2 ${packagename}-${version}
 rm -rf $tmpdir
 echo "Source archive: /tmp/${packagename}-${version}.tar.bz2"
 cd $cwd
