@@ -22,7 +22,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %{py_requires}
 # python noarch modules are only working on openSUSE 11.2 or higher
 # also disabled for non SUSE distros
-if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
+%if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
 BuildArch:      noarch
 %endif
 
