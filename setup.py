@@ -35,13 +35,45 @@
 from setuptools import setup, find_packages
 import os,sys
 
-f = open("debian/changelog")
-VERSION = f.readline().split('(')[1].split('-')[0]
-f.close()
+deb = False
+if os.path.exists("debian/changelog"):
+    deb = True
+    f = open("debian/changelog")
+    VERSION = f.readline().split('(')[1].split('-')[0]
+    f.close()
+else:
+    for f in os.listdir(".."):
+	if (f.find('-') != -1):
+	    VERSION = f.split('-')[-1]
+
+if not VERSION:
+    raise Exception(u"Failed to get version info")
+
 f = open("data/version", "w")
 f.write(VERSION)
 f.close()
 
+data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default', 
+					  'data/backendManager/dispatch.conf.default']),
+	    ('/etc/opsi/backendManager/extend.d', ['data/backendManager/extend.d/10_opsi.conf',
+						   'data/backendManager/extend.d/20_legacy.conf',
+						   'data/backendManager/extend.d/21_multiplex.conf']),
+	    ('/etc/opsi/backendManager/extend.d/configed', ['data/backendManager/extend.d/configed/30_configed.conf']),
+	    ('/etc/opsi/backends/', ['data/backends/dhcpd.conf',
+				     'data/backends/file.conf',
+				     'data/backends/jsonrpc.conf',
+				     'data/backends/ldap.conf',
+				     'data/backends/mysql.conf',
+				     'data/backends/opsipxeconfd.conf']),
+	    ('/etc/opsi/', ['data/version']),
+	    ('/etc/opsi/hwaudit/', ['data/hwaudit/opsihwaudit.conf']),
+	    ('/etc/opsi/hwaudit/locales', ['data/hwaudit/locales/de_DE',
+					   'data/hwaudit/locales/en_US'])]
+if deb:
+	data_files.append( ('/etc/ldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
+else:
+	data_files.append( ('/etc/openldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
+	
 setup(
 	name='python-opsi',
 	version=VERSION,
@@ -50,22 +82,5 @@ setup(
 	description='The opsi python library',
 	#long-description='Long description goes here',
 	packages=find_packages(),
-	data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default', 
-						  'data/backendManager/dispatch.conf.default']),
-		    ('/etc/opsi/backendManager/extend.d', ['data/backendManager/extend.d/10_opsi.conf',
-							   'data/backendManager/extend.d/20_legacy.conf',
-							   'data/backendManager/extend.d/21_multiplex.conf']),
-		    ('/etc/opsi/backendManager/extend.d/configed', ['data/backendManager/extend.d/configed/30_configed.conf']),
-		    ('/etc/opsi/backends/', ['data/backends/dhcpd.conf',
-					     'data/backends/file.conf',
-					     'data/backends/jsonrpc.conf',
-					     'data/backends/ldap.conf',
-					     'data/backends/mysql.conf',
-					     'data/backends/opsipxeconfd.conf']),
-		    ('/etc/opsi/', ['data/version']),
-		    ('/etc/opsi/hwaudit/', ['data/hwaudit/opsihwaudit.conf']),
-		    ('/etc/opsi/hwaudit/locales', ['data/hwaudit/locales/de_DE',
-						   'data/hwaudit/locales/en_US']),
-		    ('/etc/ldap/schema/', ['data/opsi.schema',
-					   'data/opsi-standalone.schema'])]
+	data_files=data_files
 )
