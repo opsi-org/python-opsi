@@ -6,8 +6,12 @@
 # package are under the same license as the package itself.
 #
 Name:           python-opsi
-BuildRequires:  pwdutils python-devel gettext-devel python-setuptools
-Requires:       pwdutils python >= 2.5 python-twisted-web python-twisted-conch python-magic python-crypto python-ldap python-simplejson python-newt python-pam python-openssl python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
+BuildRequires:  python-devel gettext-devel python-setuptools
+Requires:       python >= 2.5 python-twisted-web python-twisted-conch python-magic python-crypto python-ldap python-simplejson python-newt python-pam python-openssl python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
+%if 0%{?suse_version}
+BuildRequires:  pwdutils
+Requires:       pwdutils
+%endif
 Url:            http://www.opsi.org
 License:        GPL v2 or later
 Group:          Productivity/Networking/Opsi
