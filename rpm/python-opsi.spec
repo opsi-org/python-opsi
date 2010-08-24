@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.5 python-twisted-web python-twisted-conch python-magic python-crypto python-ldap python-simplejson python-newt python-pam python-openssl python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
+Requires:       python >= 2.4 python-twisted-web python-twisted-conch python-magic python-crypto python-ldap python-simplejson python-newt python-pam python-openssl python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
@@ -55,7 +55,11 @@ python setup.py build
 # ===[ install ]====================================
 %install
 # install python files and record installed files in INSTALLED_FILES
+%if 0%{?suse_version}
 python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=INSTALLED_FILES
+%else
+python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+%endif
 #mkdir -p $RPM_BUILD_ROOT/usr/share/locale/de/LC_MESSAGES
 #mkdir -p $RPM_BUILD_ROOT/usr/share/locale/fr/LC_MESSAGES
 #install -m 0644 gettext/opsi_system_de.mo $RPM_BUILD_ROOT/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
