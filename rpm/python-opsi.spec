@@ -11,6 +11,7 @@ Requires:       python >= 2.5 python-twisted-web python-twisted-conch python-mag
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
+%{py_requires}
 %endif
 Url:            http://www.opsi.org
 License:        GPL v2 or later
@@ -23,7 +24,6 @@ Summary:        opsi python library
 Source:         %{tarname}-%{version}.tar.bz2
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-%{py_requires}
 # python noarch modules are only working on openSUSE 11.2 or higher
 # also disabled for non SUSE distros
 %if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
