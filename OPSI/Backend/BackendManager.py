@@ -385,6 +385,9 @@ class BackendAccessControl(object):
 		self._host          = None
 		self._authenticated = False
 		
+		if os.path.exists('/etc/SuSE-release'):
+			self._pamService = 'sshd'
+		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('username',):
