@@ -13,6 +13,9 @@ BuildRequires:  pwdutils
 Requires:       pwdutils
 %{py_requires}
 %endif
+%if 0%{?rhel_version} || 0%{?centos_version}
+Requires:       python-ctypes
+%endif
 Url:            http://www.opsi.org
 License:        GPL v2 or later
 Group:          Productivity/Networking/Opsi
@@ -84,6 +87,7 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INST
 #install -m 0755 files/share/opsi-fire-event.py $RPM_BUILD_ROOT/usr/share/opsi/
 #echo %{version} > $RPM_BUILD_ROOT/etc/opsi/version
 #mkdir -p $RPM_BUILD_ROOT/var/lib/opsi
+ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 
 # ===[ clean ]======================================
 %clean
@@ -150,6 +154,7 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
 %config /etc/opsi/backendManager/extend.d/configed/30_configed.conf
+/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US

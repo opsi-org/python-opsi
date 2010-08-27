@@ -55,6 +55,14 @@ from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
 # Get logger instance
 logger = Logger()
 
+DISTRIBUTOR_ID = 'unknown'
+try:
+	f = os.popen("lsb_release -i")
+	DISTRIBUTOR_ID = f.read().lower().split(':')[1].strip()
+	f.close()
+except:
+	pass
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -236,8 +244,13 @@ class BackendDispatcher(Backend):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
 			l["config"]["context"] = self
-			b = __import__(l['module'], globals(), locals(), "%sBackend"%l['module'], -1)
-			self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
+			if (sys.version_info >= (2,5)):
+				b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
+				self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
+			else:
+				exec('from %s import %sBackend' % (l['module'], l['module']))
+				exec('b = %sBackend(**l["config"])' % l['module'])
+				self._backends[backend]["instance"] = b
 			
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
@@ -385,7 +398,7 @@ class BackendAccessControl(object):
 		self._host          = None
 		self._authenticated = False
 		
-		if os.path.exists('/etc/SuSE-release'):
+		if (DISTRIBUTOR_ID.find('suse') != -1) or (DISTRIBUTOR_ID.find('centos') != -1):
 			self._pamService = 'sshd'
 		
 		for (option, value) in kwargs.items():
