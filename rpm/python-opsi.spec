@@ -23,8 +23,7 @@ AutoReqProv:    on
 Version:        3.99.0.0
 Release:        1
 Summary:        opsi python library
-%define tarname python-opsi
-Source:         %{tarname}-%{version}.tar.bz2
+Source:         python-opsi_3.99.0.0-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
@@ -32,6 +31,8 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
 BuildArch:      noarch
 %endif
+
+%define toplevel_dir %{name}-%{version}
 
 # ===[ description ]================================
 %description
@@ -44,7 +45,7 @@ This package contains the opsi python library.
 %prep
 
 # ===[ setup ]======================================
-%setup -n %{tarname}-%{version}
+%setup -n %{name}-%{version}
 
 # ===[ build ]======================================
 %build

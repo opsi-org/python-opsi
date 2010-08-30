@@ -35,7 +35,7 @@
 from setuptools import setup, find_packages
 import os,sys
 
-deb = False
+deb = not bool(os.getenv("RPM_BUILD_ROOT"))
 if os.path.exists("debian/changelog"):
     deb = True
     f = open("debian/changelog")
