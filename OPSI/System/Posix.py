@@ -36,7 +36,6 @@ __version__ = '4.0'
 
 # Imports
 import os, sys, subprocess, locale, threading, time, codecs, socket
-import xml.dom.minidom
 import copy as pycopy
 
 # OPSI imports
@@ -2101,6 +2100,8 @@ def auditHardware(config, hostId, progressSubject=None):
 	return auditHardwareOnHosts
 	
 def hardwareInventory(config, progressSubject=None):
+	import xml.dom.minidom
+	
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
 		return {}
