@@ -98,7 +98,7 @@ class ConnectionPool(object):
 # =                                       CLASS MYSQL                                                  =
 # ======================================================================================================
 
-class MySQL:
+class MySQL(object):
 	def __init__(self, **kwargs):
 		
 		self._address                   = u'localhost'
