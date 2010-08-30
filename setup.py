@@ -33,18 +33,11 @@
 """
 
 from setuptools import setup, find_packages
-import os,sys
+import os, sys
 
-deb = not bool(os.getenv("RPM_BUILD_ROOT"))
-if os.path.exists("debian/changelog"):
-    deb = True
-    f = open("debian/changelog")
-    VERSION = f.readline().split('(')[1].split('-')[0]
-    f.close()
-else:
-    for f in os.listdir(".."):
-	if (f.find('-') != -1):
-	    VERSION = f.split('-')[-1]
+f = open("debian/changelog")
+VERSION = f.readline().split('(')[1].split('-')[0]
+f.close()
 
 if not VERSION:
     raise Exception(u"Failed to get version info")
@@ -69,10 +62,10 @@ data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default'
 	    ('/etc/opsi/hwaudit/', ['data/hwaudit/opsihwaudit.conf']),
 	    ('/etc/opsi/hwaudit/locales', ['data/hwaudit/locales/de_DE',
 					   'data/hwaudit/locales/en_US'])]
-if deb:
-	data_files.append( ('/etc/ldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
-else:
+if bool(os.getenv("RPM_BUILD_ROOT")):
 	data_files.append( ('/etc/openldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
+else:
+	data_files.append( ('/etc/ldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
 	
 setup(
 	name='python-opsi',
