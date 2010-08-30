@@ -35,8 +35,9 @@
 __version__ = '4.0'
 
 # Imports
-import os, sys, subprocess, locale, threading, time, codecs, socket
+import os, sys, subprocess, locale, threading, time, codecs, socket, posix
 import copy as pycopy
+from signal import *
 
 # OPSI imports
 from OPSI.Logger import *
@@ -1965,10 +1966,10 @@ class Harddisk:
 									ppid = line.split()[1].strip()
 									if (ppid == str(pid)):
 										logger.info(u"Killing process %s" % p)
-										os.kill(int(p), signal.SIGKILL)
+										os.kill(int(p), SIGKILL)
 										
 						logger.info(u"Killing process %s" % pid)
-						os.kill(pid, signal.SIGKILL)
+						os.kill(pid, SIGKILL)
 						time.sleep(1)
 				else:
 					image = open(imageFile, 'r')
