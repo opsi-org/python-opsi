@@ -1137,7 +1137,19 @@ class Harddisk:
 									(self.partitions[-1]['size']/(1024*1024)),  self.partitions[-1]['cylSize'] ) \
 								+ u"type: %s, fs: %s, boot: %s" \
 								% (match.group(8), fs, boot) )
-			
+						
+						if self.partitions[-1]['device']:
+							logger.debug(u"Waiting for device '%s' to appear" % self.partitions[-1]['device'])
+							timeout = 5
+							while (timeout > 0):
+								if os.path.exists(self.partitions[-1]['device']):
+									break
+								time.sleep(1)
+								timeout -= 1
+							if os.path.exists(self.partitions[-1]['device']):
+								logger.debug(u"Device '%s' found" % self.partitions[-1]['device'])
+							else:
+								logger.warning(u"Device '%s' not found" % self.partitions[-1]['device'])
 			# Get sector data
 			result = execute(u"%s -uS -l %s" % (which('sfdisk'), self.device))
 			for line in result:
@@ -1214,9 +1226,7 @@ class Harddisk:
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
-		time.sleep(1)
 		execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
-		time.sleep(1)
 		if self.ldPreload:
 			os.unsetenv("LD_PRELOAD")
 		
