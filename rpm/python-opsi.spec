@@ -90,6 +90,11 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INST
 #mkdir -p $RPM_BUILD_ROOT/var/lib/opsi
 ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 
+sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+%if 0%{?sles_version}
+	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+%endif
+
 # ===[ clean ]======================================
 %clean
 rm -rf $RPM_BUILD_ROOT
