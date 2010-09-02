@@ -3254,6 +3254,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		else:
 			raise ValueError(u"You have to specify one of: licensePoolId, productId, windowsSoftwareId")
 		
+		if not self.licensePool_getIdents(id = licensePoolId):
+			raise LicenseConfigurationError(u"License pool '%s' not found" % licensePoolId)
+		
 		# Test if a license is already used by the host
 		licenseOnClient = None
 		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId = licensePoolId, clientId = clientId)
