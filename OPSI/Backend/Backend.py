@@ -1974,7 +1974,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self._backend.configState_deleteObjects(
 				self._backend.configState_getObjects(
 					configId = configId,
-					objectId = fobjectId))
+					objectId = objectId))
 	
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
 		addConfigStateDefaults = self._options['addConfigStateDefaults']
