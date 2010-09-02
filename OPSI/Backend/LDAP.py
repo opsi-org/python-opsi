@@ -697,6 +697,9 @@ class LDAPBackend(ConfigDataBackend):
 			ldapFilter = ldapFilter.replace(u'%hardwareaddress%', host.hardwareAddress)
 			ldapFilter = ldapFilter.replace(u'%ipaddress%',       host.ipAddress)
 			ldapFilter = ldapFilter.replace(u'%inventorynumber%', host.inventoryNumber)
+			ldapFilter = ldapFilter.replace(u'%username%',        self._username)
+			ldapFilter = ldapFilter.replace(u'%password%',        self._password)
+			
 			search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
 			dn = search.getDn()
 			if not dn:
@@ -716,6 +719,8 @@ class LDAPBackend(ConfigDataBackend):
 					createCommand = createCommand.replace(u'%hardwareaddress%', host.hardwareAddress)
 					createCommand = createCommand.replace(u'%ipaddress%',       host.ipAddress)
 					createCommand = createCommand.replace(u'%inventorynumber%', host.inventoryNumber)
+					createCommand = createCommand.replace(u'%username%',        self._username)
+					createCommand = createCommand.replace(u'%password%',        self._password)
 					try:
 						System.execute(createCommand)
 					except Exception, e:
@@ -782,6 +787,7 @@ class LDAPBackend(ConfigDataBackend):
 					if (host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServerCommand):
 						deleteCommand = self._deleteServerCommand
 					if deleteCommand:
+						deleteCommand = deleteCommand.replace(u'%dn%',              dn)
 						deleteCommand = deleteCommand.replace(u'%name%',            host.id.split(u'.')[0])
 						deleteCommand = deleteCommand.replace(u'%hostname%',        host.id.split(u'.')[0])
 						deleteCommand = deleteCommand.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
@@ -792,6 +798,8 @@ class LDAPBackend(ConfigDataBackend):
 						deleteCommand = deleteCommand.replace(u'%hardwareaddress%', host.hardwareAddress)
 						deleteCommand = deleteCommand.replace(u'%ipaddress%',       host.ipAddress)
 						deleteCommand = deleteCommand.replace(u'%inventorynumber%', host.inventoryNumber)
+						deleteCommand = deleteCommand.replace(u'%username%',        self._username)
+						deleteCommand = deleteCommand.replace(u'%password%',        self._password)
 						System.execute(deleteCommand)
 					else:
 						ldapObj.deleteFromDirectory(self._ldap, recursive = True)
