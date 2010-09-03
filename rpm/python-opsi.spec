@@ -33,6 +33,11 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
 BuildArch:      noarch
 %endif
+%if 0%{?centos_version} || 0%{?rhel_version}
+BuildRequires:  gettext
+%else
+BuildRequires:  gettext-runtime
+%endif
 
 %define toplevel_dir %{name}-%{version}
 
@@ -53,10 +58,6 @@ This package contains the opsi python library.
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
 python setup.py build
-#msgfmt -o gettext/opsi_system_de.mo gettext/opsi_system_de.po
-#msgfmt -o gettext/opsi_ui_de.mo gettext/opsi_ui_de.po
-#msgfmt -o gettext/opsi_system_fr.mo gettext/opsi_system_fr.po
-#msgfmt -o gettext/opsi_ui_fr.mo gettext/opsi_ui_fr.po
 
 # ===[ install ]====================================
 %install
@@ -66,30 +67,6 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record-rpm=
 %else
 python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 %endif
-#mkdir -p $RPM_BUILD_ROOT/usr/share/locale/de/LC_MESSAGES
-#mkdir -p $RPM_BUILD_ROOT/usr/share/locale/fr/LC_MESSAGES
-#install -m 0644 gettext/opsi_system_de.mo $RPM_BUILD_ROOT/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
-#install -m 0644 gettext/opsi_ui_de.mo     $RPM_BUILD_ROOT/usr/share/locale/de/LC_MESSAGES/opsi_ui.mo
-#install -m 0644 gettext/opsi_system_fr.mo $RPM_BUILD_ROOT/usr/share/locale/fr/LC_MESSAGES/opsi_system.mo
-#install -m 0644 gettext/opsi_ui_fr.mo     $RPM_BUILD_ROOT/usr/share/locale/fr/LC_MESSAGES/opsi_ui.mo
-#mkdir -p $RPM_BUILD_ROOT/etc/opsi/backendManager
-#for i in `(cd files/backendManager.d; ls *.conf)`; do install -m 0644 files/backendManager.d/$i $RPM_BUILD_ROOT/etc/opsi/backendManager.d/; done
-#cat files/backendManager.d/13_dhcpd.conf \
-#    | sed 's#"dhcpdConfigFile":.*#"dhcpdConfigFile":         "/etc/dhcpd.conf",#' \
-#    | sed 's#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' \
-#    > $RPM_BUILD_ROOT/etc/opsi/backendManager.d/13_dhcpd.conf
-#mkdir -p $RPM_BUILD_ROOT/etc/opsi/hwaudit/locales
-#install -m 0644 files/hwaudit/opsihwaudit.conf $RPM_BUILD_ROOT/etc/opsi/hwaudit/
-#for i in files/hwaudit/locales/*; do install -m 0644 $i $RPM_BUILD_ROOT/etc/opsi/hwaudit/locales/; done
-#mkdir -p $RPM_BUILD_ROOT/etc/openldap/schema
-#install -m 0644 files/opsi.schema $RPM_BUILD_ROOT/etc/openldap/schema/
-#install -m 0644 files/opsi-standalone.schema $RPM_BUILD_ROOT/etc/openldap/schema/
-#mkdir -p $RPM_BUILD_ROOT/usr/share/opsi
-#install -m 0755 files/share/init-opsi-mysql-db.py $RPM_BUILD_ROOT/usr/share/opsi/
-#install -m 0755 files/share/register-depot.py $RPM_BUILD_ROOT/usr/share/opsi/
-#install -m 0755 files/share/opsi-fire-event.py $RPM_BUILD_ROOT/usr/share/opsi/
-#echo %{version} > $RPM_BUILD_ROOT/etc/opsi/version
-#mkdir -p $RPM_BUILD_ROOT/var/lib/opsi
 ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 
 sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf

@@ -66,7 +66,10 @@ if bool(os.getenv("RPM_BUILD_ROOT")):
 	data_files.append( ('/etc/openldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
 else:
 	data_files.append( ('/etc/ldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
-	
+
+os.system('msgfmt -o python-opsi_de.mo gettext/python-opsi_de.po')
+data_files.append( ('/usr/share/locale/de/LC_MESSAGES/python-opsi.mo', ['python-opsi_de.mo']) )
+
 setup(
 	name='python-opsi',
 	version=VERSION,
@@ -77,3 +80,8 @@ setup(
 	packages=find_packages(),
 	data_files=data_files
 )
+
+
+
+
+
