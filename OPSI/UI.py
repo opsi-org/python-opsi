@@ -51,8 +51,13 @@ from OPSI.Util.Message import MessageObserver, ProgressObserver
 logger = Logger()
 encoding = locale.getpreferredencoding()
 
-def _(string):
-	return string
+try:
+	t = gettext.translation('python-opsi', '/usr/share/locale')
+	_ = t.ugettext
+except Exception, e:
+	logger.error(u"Locale not found: %s" % e)
+	def _(string):
+		return string
 
 def UIFactory(type = u''):
 	type = forceUnicode(type)
