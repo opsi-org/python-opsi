@@ -28,7 +28,7 @@ cp rpm/${packagename}.spec $destdir/
 
 test -e $tmpdir && rm -rf $tmpdir
 mkdir $tmpdir
-cp -r debian OPSI data setup.py ${tmpdir}/
+cp -r debian gettext OPSI data setup.py ${tmpdir}/
 find ${tmpdir} -iname "*.pyc"   -exec rm "{}" \;
 find ${tmpdir} -iname "*.marks" -exec rm "{}" \;
 find ${tmpdir} -iname "*~"      -exec rm "{}" \;

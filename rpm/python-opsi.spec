@@ -14,9 +14,9 @@ Requires:       pwdutils
 %{py_requires}
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version}
-Requires:       python-ctypes pyOpenSSL
+Requires:       python-ctypes pyOpenSSL redhat-lsb
 %else
-Requires:       python-openssl
+Requires:       python-openssl lsb-release
 %endif
 Url:            http://www.opsi.org
 License:        GPL v2 or later

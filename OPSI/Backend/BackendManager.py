@@ -55,18 +55,20 @@ from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
 # Get logger instance
 logger = Logger()
 
-DISTRIBUTOR_ID = 'unknown'
+DISTRIBUTOR = 'unknown'
 try:
 	f = os.popen('lsb_release -i 2>/dev/null')
-	DISTRIBUTOR_ID = f.read().split(':')[1].strip()
+	DISTRIBUTOR = f.read().split(':')[1].strip()
 	f.close()
 except Exception, e:
-	try:
-		f = open('/etc/SuSE-brand')
-		DISTRIBUTOR_ID = f.readline().strip()
-		f.close()
-	except Exception, e:
-		pass
+	pass
+DISTRIBUTION = 'unknown'
+try:
+	f = os.popen('lsb_release -d 2>/dev/null')
+	DISTRIBUTION = f.read().split(':')[1].strip()
+	f.close()
+except Exception, e:
+	pass
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
@@ -403,7 +405,7 @@ class BackendAccessControl(object):
 		self._host          = None
 		self._authenticated = False
 		
-		if (DISTRIBUTOR_ID.find('suse') != -1) or (DISTRIBUTOR_ID.find('sles') != -1) or (DISTRIBUTOR_ID.find('centos') != -1)  or (DISTRIBUTOR_ID.find('redhat') != -1):
+		if (DISTRIBUTOR.find('suse') != -1) or (DISTRIBUTOR.find('centos') != -1) or (DISTRIBUTOR.find('red hat') != -1):
 			self._pamService = 'sshd'
 		
 		for (option, value) in kwargs.items():
