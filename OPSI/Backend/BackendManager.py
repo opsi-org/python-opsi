@@ -403,7 +403,7 @@ class BackendAccessControl(object):
 		self._host          = None
 		self._authenticated = False
 		
-		if (DISTRIBUTOR_ID.find('suse') != -1) or (DISTRIBUTOR_ID.find('sles') != -1) or (DISTRIBUTOR_ID.find('centos') != -1):
+		if (DISTRIBUTOR_ID.find('suse') != -1) or (DISTRIBUTOR_ID.find('sles') != -1) or (DISTRIBUTOR_ID.find('centos') != -1)  or (DISTRIBUTOR_ID.find('redhat') != -1):
 			self._pamService = 'sshd'
 		
 		for (option, value) in kwargs.items():
