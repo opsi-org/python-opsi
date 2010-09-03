@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - DHCPD    =
-   = = = = = = = = = = = = = = = = = = = = = =
+   = = = = = = = = = = = = = = = = = =
+   =   opsi python library - DHCPD   =
+   = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '3.5'
+__version__ = '4.0'
 
 # Imports
 import socket, threading
@@ -90,6 +90,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadEvent = threading.Event()
 		self._reloadEvent.set()
 		self._reloadLock = threading.Lock()
+		self._reloadThread = None 
 		self._depotId = forceHostId(socket.getfqdn())
 		self._opsiHostKey = None
 		self._depotConnections  = {}
@@ -119,7 +120,8 @@ class DHCPDBackend(ConfigDataBackend):
 					logger.critical("Failed to restart dhcpd: %s" % e)
 				self._reloadLock.release()
 				self._reloadEvent.set()
-		ReloadThread(self._reloadEvent, self._reloadLock, self._reloadConfigCommand).start()
+		self._reloadThread = ReloadThread(self._reloadEvent, self._reloadLock, self._reloadConfigCommand)
+		self._reloadThread.start()
 	
 	def _getDepotConnection(self, depotId):
 		depotId = forceHostId(depotId)
@@ -152,6 +154,10 @@ class DHCPDBackend(ConfigDataBackend):
 			depotId = configs[0].defaultValues[0]
 		return depotId
 	
+	def backend_exit(self):
+		if self._reloadThread:
+			self._reloadThread.join(10)
+		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
