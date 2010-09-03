@@ -57,11 +57,16 @@ logger = Logger()
 
 DISTRIBUTOR_ID = 'unknown'
 try:
-	f = os.popen("lsb_release -i")
-	DISTRIBUTOR_ID = f.read().lower().split(':')[1].strip()
+	f = os.popen('lsb_release -i 2>/dev/null')
+	DISTRIBUTOR_ID = f.read().split(':')[1].strip()
 	f.close()
-except:
-	pass
+except Exception, e:
+	try:
+		f = open('/etc/SuSE-brand')
+		DISTRIBUTOR_ID = f.readline().strip()
+		f.close()
+	except Exception, e:
+		pass
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
