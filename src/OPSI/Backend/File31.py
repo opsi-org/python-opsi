@@ -32,10 +32,16 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '1.0.7'
+__version__ = '1.0.8'
 
 # Imports
-import socket, os, time, re, ConfigParser, json, StringIO, stat, codecs
+import socket, os, time, re, ConfigParser, StringIO, stat, codecs
+
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
 
 if os.name == 'nt':
 	# Windows imports for file locking
