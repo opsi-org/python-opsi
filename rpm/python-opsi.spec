@@ -14,7 +14,7 @@ Requires:       pwdutils
 %{py_requires}
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version}
-Requires:       python-ctypes pyOpenSSL redhat-lsb
+Requires:       python-ctypes pyOpenSSL
 %else
 Requires:       python-openssl lsb-release
 %endif
