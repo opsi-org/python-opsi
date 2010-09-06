@@ -405,8 +405,10 @@ class BackendAccessControl(object):
 		self._host          = None
 		self._authenticated = False
 		
-		if (DISTRIBUTOR.find('suse') != -1) or (DISTRIBUTOR.find('centos') != -1) or (DISTRIBUTOR.find('red hat') != -1):
+		if (DISTRIBUTOR.lower().find('suse') != -1):
 			self._pamService = 'sshd'
+		elif (DISTRIBUTOR.lower().find('redhat') != -1) or (DISTRIBUTOR.lower().find('centos') != -1):
+			self._pamService = 'system-auth'
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
