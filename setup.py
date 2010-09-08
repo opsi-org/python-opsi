@@ -67,8 +67,10 @@ if bool(os.getenv("RPM_BUILD_ROOT")):
 else:
 	data_files.append( ('/etc/ldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
 
-os.system('msgfmt -o python-opsi_de.mo gettext/python-opsi_de.po')
-data_files.append( ('/usr/share/locale/de/LC_MESSAGES/python-opsi.mo', ['python-opsi_de.mo']) )
+if not os.path.exists('locale/de/LC_MESSAGES'):
+	os.makedirs('locale/de/LC_MESSAGES')
+os.system('msgfmt -o locale/de/LC_MESSAGES/python-opsi.mo gettext/python-opsi_de.po')
+data_files.append( ('/usr/share/locale/de/LC_MESSAGES', ['locale/de/LC_MESSAGES/python-opsi.mo']) )
 
 setup(
 	name='python-opsi',
