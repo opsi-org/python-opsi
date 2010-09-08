@@ -19,62 +19,62 @@ msgstr ""
 #: ../OPSI/UI.py:142 ../OPSI/UI.py:145 ../OPSI/UI.py:242 ../OPSI/UI.py:281
 #: ../OPSI/UI.py:394 ../OPSI/UI.py:470 ../OPSI/UI.py:574 ../OPSI/UI.py:669
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: ../OPSI/UI.py:112 ../OPSI/UI.py:242
 msgid "An error occured"
-msgstr ""
+msgstr "Ein Fehler ist aufgetreten"
 
 #: ../OPSI/UI.py:115 ../OPSI/UI.py:281
 msgid "Message"
-msgstr ""
+msgstr "Nachricht"
 
 #: ../OPSI/UI.py:118 ../OPSI/UI.py:124 ../OPSI/UI.py:320 ../OPSI/UI.py:350
 msgid "Progress"
-msgstr ""
+msgstr "Fortschritt"
 
 #: ../OPSI/UI.py:121 ../OPSI/UI.py:127 ../OPSI/UI.py:335 ../OPSI/UI.py:365
 msgid "Copy progress"
-msgstr ""
+msgstr "Kopier-Fortschritt"
 
 #: ../OPSI/UI.py:130 ../OPSI/UI.py:380
 msgid "Text"
-msgstr ""
+msgstr "Text"
 
 #: ../OPSI/UI.py:136 ../OPSI/UI.py:139 ../OPSI/UI.py:142 ../OPSI/UI.py:145
 #: ../OPSI/UI.py:394 ../OPSI/UI.py:470 ../OPSI/UI.py:574 ../OPSI/UI.py:669
 msgid "Cancel"
-msgstr ""
+msgstr "Abbrechen"
 
 #: ../OPSI/UI.py:136 ../OPSI/UI.py:394
 msgid "Please type text"
-msgstr ""
+msgstr "Bitte Test eingeben"
 
 #: ../OPSI/UI.py:139 ../OPSI/UI.py:470
 msgid "Please select"
-msgstr ""
+msgstr "Bitte auswählen"
 
 #: ../OPSI/UI.py:142 ../OPSI/UI.py:574
 msgid "Please fill in"
-msgstr ""
+msgstr "Bitte einfüllen"
 
 #: ../OPSI/UI.py:145 ../OPSI/UI.py:669
 msgid "Question"
-msgstr ""
+msgstr "Frage"
 
 #: ../OPSI/UI.py:149 ../OPSI/UI.py:166 ../OPSI/UI.py:179 ../OPSI/UI.py:723
 #: ../OPSI/UI.py:822 ../OPSI/UI.py:886
 msgid "Title"
-msgstr ""
+msgstr "Titel"
 
 #: ../OPSI/UI.py:273 ../OPSI/UI.py:312
 msgid "<F12> %s | <Space> select | <Up/Down> scroll text"
-msgstr ""
+msgstr "<F12> %s | <Space> wählen | <Up/Down> Text scrollen"
 
 #: ../OPSI/UI.py:449 ../OPSI/UI.py:546 ../OPSI/UI.py:641 ../OPSI/UI.py:701
 msgid "<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select"
-msgstr ""
+msgstr "<ESC> %s | <F12> %s | <Tab> bewegen | <Space> wählen"
 
 #: ../OPSI/UI.py:451 ../OPSI/UI.py:548 ../OPSI/UI.py:643 ../OPSI/UI.py:703
 msgid " | <Up/Down> scroll text"
-msgstr ""
+msgstr " | <Up/Down> Text scrollen"
