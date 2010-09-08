@@ -298,14 +298,18 @@ class JSONRPCBackend(Backend):
 					try:
 						self._interface = self._jsonRPC(u'backend_getInterface')
 						try:
-							modules = self._jsonRPC(u'backend_info')['modules']
-							logger.confidential(u"Modules: %s" % modules)
-							if not modules:
+							modules = self._jsonRPC(u'backend_info').get('modules', None)
+							if modules:
+								logger.confidential(u"Modules: %s" % modules)
+							else:
 								modules = {'customer': None}
-							for entry in self._jsonRPC(u'dispatcher_getConfig'):
-								for bn in entry[1]:
-									if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
-										mysqlBackend = True
+							for m in self._interface:
+								if (m.get('name') == 'dispatcher_getConfig'):
+									for entry in self._jsonRPC(u'dispatcher_getConfig'):
+										for bn in entry[1]:
+											if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
+												mysqlBackend = True
+									break
 						except Exception, e:
 							logger.info(e)
 					except Exception, e:
