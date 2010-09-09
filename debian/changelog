@@ -1,3 +1,27 @@
+python-opsi (3.4.0.14-1) stable; urgency=low
+
+  * add %username%, %password% to LDAP client/server create/delete commands
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 09 Sep 2010 13:49:12 +0200
+
+python-opsi (3.4.0.13-1) stable; urgency=low
+
+  * Fixed json import in OpsiPXEConfd (again)
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 07 Sep 2010 14:58:00 +0200
+
+python-opsi (3.4.0.12-1) stable; urgency=low
+
+  * Fixed json import in OpsiPXEConfd
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 07 Sep 2010 14:11:53 +0200
+
+python-opsi (3.4.0.11-1) stable; urgency=low
+
+  * Fixed json import in opsi-fire-event.py
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 06 Sep 2010 17:42:23 +0200
+
 python-opsi (3.4.0.10-1) stable; urgency=low
 
   * Fixed json import in File31 

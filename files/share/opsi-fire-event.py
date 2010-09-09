@@ -32,10 +32,15 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.1'
+__version__ = '0.1.1'
 
-import os, sys, httplib, urllib, base64, json
+import os, sys, httplib, urllib, base64
 from OPSI.Backend.BackendManager import *
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
 
 def usage():
 	print "Usage: %s <clientId> <event>" % os.path.basename(sys.argv[0])
@@ -52,7 +57,7 @@ def main():
 	backend.exit()
 	
 	host = clientId
-	query = json.write( { 'id': 1, 'method': 'fireEvent', 'params': [ event ] } )
+	query = json.dumps( { 'id': 1, 'method': 'fireEvent', 'params': [ event ] } )
 	connection = httplib.HTTPSConnection(host, 4441)
 	connection.putrequest('POST', '/opsiclientd')
 	connection.putheader('content-type', 'application/json-rpc')
@@ -65,10 +70,10 @@ def main():
 	response = connection.getresponse()
 	response = response.read()
 	
-	if json.read(response).get('error'):
+	if json.loads(response).get('error'):
 		# Error occurred
-		raise Exception( json.read(response).get('error') )
-	result = json.read(response).get('result')
+		raise Exception( json.loads(response).get('error') )
+	result = json.loads(response).get('result')
 	if result:
 		print "OK: %s" % result
 	else:

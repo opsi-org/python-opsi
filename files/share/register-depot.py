@@ -59,7 +59,7 @@ repositoryRemoteUrl = 'webdavs://%s:4447/products' % fqdn
 network = '0.0.0.0/0'
 description = 'Depotserver %s' % depotName
 maxBandwidth = 0
-notes = ''         
+notes = ''
 
 try:
 	if (os.getuid() != 0):

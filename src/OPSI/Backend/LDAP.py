@@ -65,6 +65,9 @@ class LDAPBackend(DataBackend):
 		self._username = username
 		self._password = password
 		
+		if self._password:
+			logger.addConfidentialString(self._password)
+		
 		self.__backendManager = backendManager
 		
 		# Default values
@@ -377,7 +380,7 @@ class LDAPBackend(DataBackend):
 		if (objectId == self._defaultDomain):
 			objectId = self.getServerId()
 		
-		networkConfig = { 
+		networkConfig = {
 			'opsiServer': 	self.getServerId(objectId),
 			'utilsDrive':	'',
 			'depotDrive':	'',
@@ -467,6 +470,7 @@ class LDAPBackend(DataBackend):
 				filter = self._serverObjectSearchFilter
 				filter = filter.replace('%name%', serverName.lower())
 				filter = filter.replace('%domain%', domain.lower())
+				
 				try:
 					server = self._getHostObject(hostId, filter)
 				except BackendMissingDataError, e:
@@ -474,6 +478,8 @@ class LDAPBackend(DataBackend):
 						cmd = self._createServerCommand
 						cmd = cmd.replace('%name%', serverName.lower())
 						cmd = cmd.replace('%domain%', domain.lower())
+						cmd = cmd.replace(u'%username%', self._username)
+						cmd = cmd.replace(u'%password%', self._password)
 						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
 						# Search again
 						server = self._getHostObject(hostId, filter)
@@ -545,6 +551,8 @@ class LDAPBackend(DataBackend):
 						cmd = cmd.replace('%ip%', ipAddress.lower())
 						cmd = cmd.replace('%description%', description)
 						cmd = cmd.replace('%notes%', notes)
+						cmd = cmd.replace(u'%username%', self._username)
+						cmd = cmd.replace(u'%password%', self._password)
 						System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
 						# Search again
 						client = self._getHostObject(hostId, filter)
@@ -632,6 +640,8 @@ class LDAPBackend(DataBackend):
 					cmd = cmd.replace('%name%', serverId.split('.')[0])
 					cmd = cmd.replace('%domain%', '.'.join(serverId.split('.')[1:]))
 					cmd = cmd.replace('%dn%',  server.getDn())
+					cmd = cmd.replace(u'%username%', self._username)
+					cmd = cmd.replace(u'%password%', self._password)
 					System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
 				elif server.exists(self._ldap):
 					# Delete host object and possible childs
@@ -679,6 +689,8 @@ class LDAPBackend(DataBackend):
 					cmd = cmd.replace('%name%', clientId.split('.')[0])
 					cmd = cmd.replace('%domain%', '.'.join(clientId.split('.')[1:]))
 					cmd = cmd.replace('%dn%', client.getDn())
+					cmd = cmd.replace(u'%username%', self._username)
+					cmd = cmd.replace(u'%password%', self._password)
 					System.execute(cmd, logLevel = LOG_CONFIDENTIAL)
 				elif client.exists(self._ldap):
 					# Delete host object and possible childs

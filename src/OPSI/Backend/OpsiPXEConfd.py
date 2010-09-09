@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '0.3.4'
+__version__ = '0.3.6'
 
 # Imports
 import socket
@@ -78,7 +78,7 @@ class OpsiPXEConfdBackend(Backend):
 		logger.debug("setPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
 		if (depotId != socket.getfqdn()):
 			logger.info("setPXEBootConfiguration: forwarding request to depot '%s'" % depotId)
-			import httplib, urllib, base64, json
+			import httplib, urllib, base64
 			socket.setdefaulttimeout(5)
 			opsiHostKey = self.__backendManager._execMethod(self.__backendManager.defaultBackend, 'getOpsiHostKey', depotId)
 			logger.debug("Connecting to '%s:%d'" % (depotId, 4447))
@@ -124,7 +124,7 @@ class OpsiPXEConfdBackend(Backend):
 		logger.debug("unsetPXEBootConfiguration: depot for host '%s' is '%s'" % (hostId, depotId))
 		if (depotId != socket.getfqdn()):
 			logger.info("unsetPXEBootConfiguration: forwarding request to depot '%s'" % depotId)
-			import httplib, urllib, base64, json
+			import httplib, urllib, base64
 			socket.setdefaulttimeout(5)
 			opsiHostKey = self.__backendManager._execMethod(self.__backendManager.defaultBackend, 'getOpsiHostKey', depotId)
 			logger.debug("Connecting to '%s:%d'" % (depotId, 4447))
