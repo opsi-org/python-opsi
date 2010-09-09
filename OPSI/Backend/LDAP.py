@@ -149,6 +149,9 @@ class LDAPBackend(ConfigDataBackend):
 		self._productPropertyStatesContainerDn = u'cn=productPropertyStates,%s' % self._opsiBaseDn
 		#self._objectToGroupsContainerDn        = u'cn=objectToGroups,%s'        % self._opsiBaseDn
 		
+		if self._password:
+			logger.addConfidentialString(self._password)
+		
 		self._mappings = [
 				{
 					'opsiClass':     'Host',
