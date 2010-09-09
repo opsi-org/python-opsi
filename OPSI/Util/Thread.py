@@ -85,7 +85,6 @@ class ThreadPool(object):
 		self.worker = []
 		self.workerLock = threading.Lock()
 		self.jobQueue = Queue()
-		self.resizing = False
 		if autostart:
 			self.start()
 		
@@ -96,7 +95,6 @@ class ThreadPool(object):
 	def adjustSize(self, size):
 		size = int(size)
 		self.workerLock.acquire()
-		self.resizing = True
 		try:
 			if (size < 1):
 				raise ThreadPoolException(u"Threadpool size %d is invalid" % size)
@@ -108,19 +106,20 @@ class ThreadPool(object):
 				while (len(self.worker) < self.size):
 					self.__createWorker()
 		finally:
-			self.resizing = False
 			self.workerLock.release()
 		
 	def __deleteWorker(self):
 		logger.debug(u"Deleting a worker")
-		while True:
-			for worker in self.worker:
-				if not worker.busy:
-					worker.stop()
-					worker.join(1)
-					self.worker.remove(worker)
-					return
-			time.sleep(0.01)
+		for worker in self.worker:
+			if not worker.busy and not worker.stopped:
+				worker.stop()
+				self.worker.remove(worker)
+				return
+		for worker in self.worker:
+			if not worker.stopped:
+				worker.stop()
+				self.worker.remove(worker)
+				return
 	
 	def __createWorker(self):
 		logger.debug(u"Creating new worker %s" % (len(self.worker)+1))
@@ -164,13 +163,12 @@ class Worker(threading.Thread):
 	
 	def run(self):
 		while True:
-			if self.threadPool.resizing:
-				time.sleep(0.0001)
-			else:
-				self.duty.wait()
 			if self.stopped:
 				break
-			while not self.threadPool.jobQueue.empty():
+			self.duty.wait()
+			if self.stopped:
+				break
+			while not self.stopped and not self.threadPool.jobQueue.empty():
 				object = self.threadPool.jobQueue.get()
 				if object:
 					self.busy = True
@@ -189,8 +187,6 @@ class Worker(threading.Thread):
 						callback(success, result, errors)
 					self.threadPool.jobQueue.task_done()
 					self.busy = False
-					if self.threadPool.resizing:
-						break
 	
 	def stop(self):
 		self.stopped = True
