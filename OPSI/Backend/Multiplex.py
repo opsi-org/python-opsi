@@ -90,9 +90,14 @@ class MultiplexBackend(object):
 				del(kwargs[option])
 				logger.info(u"Backend context was set to %s" % self._context)
 				context = self._context
-				while hasattr(context, '_context') and (context != context._context):
-					context = context._context
-				setattr(context, 'log_read', self.log_read)
+				#while hasattr(context, '_context'):
+				#	print "CONTEXT: ", context
+				#	setattr(context, 'log_read', self.log_read)
+				#	setattr(context, 'log_write', self.log_write)
+				#	if (context == context._context):
+				#		break
+				#	context = context._context
+				
 			
 		logger.notice(u"Initializing services")
 		if kwargs.has_key('services'):
@@ -224,12 +229,23 @@ class MultiplexBackend(object):
 		while len(results) != calls:
 			time.sleep(0.1)
 		
-		r = []
+		r = None
+		errors = []
 		for (success, result, error) in results:
 			if success:
-				r.extend(forceList(result))
+				if   type(r) is list:
+					r.extend(forceList(result))
+				elif type(r) is dict:
+					r.update(forceDict(result))
+				elif type(r) in (str, unicode):
+					r = forceUnicode(r) + forceUnicode(result)
+				elif not r:
+					r = result
 			else:
-				logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
+				errors.append(error)
+		if errors:
+			#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
+			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
 		return r
 	
 	def backend_exit(self):
@@ -254,12 +270,6 @@ class MultiplexBackend(object):
 			if self.__services.values()[0].isConnected():
 				return self.__services.values()[0].backend_getInterface()
 		raise AttributeError(u"Could not determine the interface of any service.")
-	
-	def log_read(self, logType, objectId=None, maxSize=0):
-		return self.dispatch("log_read", logType, objectId, maxSize)
-	
-	#def getServerIds_list(self):
-	#	return self._getDepotIds()
 	
 	def configState_insertObject(self, configState):
 		self._configState_insertOrupdateObject(configState, isUpdate = False)

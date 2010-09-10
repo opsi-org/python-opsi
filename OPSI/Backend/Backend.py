@@ -326,143 +326,6 @@ class Backend:
 	
 	def backend_exit(self):
 		pass
-	
-	def log_write(self, logType, data, objectId=None, append=False):
-		logType = forceUnicode(logType)
-		data = forceUnicode(data)
-		if not objectId:
-			objectId = None
-		else:
-			objectId = forceObjectId(objectId)
-		append = forceBool(append)
-		
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
-			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
-		
-		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
-			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
-		
-		if not os.path.exists( os.path.join(LOG_DIR, logType) ):
-			os.mkdir(os.path.join(LOG_DIR, logType), 02770)
-		
-		logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
-		
-		f = None
-		if append:
-			f = codecs.open(logFile, 'a+', 'utf-8', 'replace')
-		else:
-			f = codecs.open(logFile, 'w', 'utf-8', 'replace')
-		f.write(data)
-		f.close()
-		os.chmod(logFile, 0640)
-		
-	def log_read(self, logType, objectId=None, maxSize=0):
-		logType = forceUnicode(logType)
-		if not objectId:
-			objectId = None
-		else:
-			objectId = forceObjectId(objectId)
-		maxSize = forceInt(maxSize)
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
-			raise BackendBadValueError(u'Unknown log type %s' % logType)
-		
-		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog'):
-			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
-		
-		if not objectId:
-			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
-		else:
-			logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
-		data = u''
-		if not os.path.exists(logFile):
-			return data
-		logFile = codecs.open(logFile, 'r', 'utf-8', 'replace')
-		data = logFile.read()
-		logFile.close()
-		if maxSize and (len(data) > maxSize):
-			start = data.find('\n', len(data)-maxSize)
-			if (start == -1):
-				start = len(data)-maxSize
-			return data[start+1:]
-		return data
-	
-	def user_getCredentials(self, username = u'pcpatch', hostId = None):
-		username = forceUnicodeLower(username)
-		if hostId:
-			hostId = forceHostId(hostId)
-		depotId = forceHostId(socket.getfqdn())
-		
-		result = { 'password': u'', 'rsaPrivateKey': u'' }
-		
-		cf = ConfigFile(filename = OPSI_PASSWD_FILE)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
-		for line in cf.parse():
-			match = lineRegex.search(line)
-			if not match:
-				continue
-			if (match.group(1) == username):
-				result['password'] = match.group(2)
-				break
-		if not result['password']:
-			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, OPSI_PASSWD_FILE))
-		
-		backendStack = [ self._context, self, self._backend, self._backend._backend, self._backend._backend._backend, self._backend._backend._backend._backend]
-		unprotectedBackend = self._context
-		for i in range(len(backendStack)):
-			if backendStack[i].__class__.__name__.endswith('BackendAccessControl'):
-				unprotectedBackend = backendStack[i+1]
-		depot = unprotectedBackend.host_getObjects(id = depotId)
-		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % depotId)
-		depot = depot[0]
-		if not depot.opsiHostKey:
-			raise Exception(u"Host key for depot '%s' not found" % depotId)
-		
-		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
-		
-		if (username == 'pcpatch'):
-			try:
-				import pwd
-				idRsa = os.path.join(pwd.getpwnam(username)[5], u'.ssh', u'id_rsa')
-				f = open(idRsa, 'r')
-				result['rsaPrivateKey'] = f.read()
-				f.close()
-			except Exception, e:
-				logger.debug(e)
-		if hostId:
-			host  = self._context.host_getObjects(id = hostId)
-			if not host:
-				raise Exception(u"Host '%s' not found in backend" % hostId)
-			host = host[0]
-			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
-			if result['rsaPrivateKey']:
-				result['rsaPrivateKey'] = blowfishEncrypt(host.opsiHostKey, result['rsaPrivateKey'])
-		return result
-		
-	def user_setCredentials(self, username, password):
-		username = forceUnicodeLower(username)
-		password = forceUnicode(password)
-		depotId = forceHostId(socket.getfqdn())
-		
-		depot = self._context.host_getObjects(id = depotId)
-		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % depotId)
-		depot = depot[0]
-		
-		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
-		
-		cf = ConfigFile(filename = OPSI_PASSWD_FILE)
-		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
-		lines = []
-		for line in cf.readlines():
-			match = lineRegex.search(line)
-			if not match or (match.group(1) != username):
-				lines.append(line.rstrip())
-		lines.append(u'%s:%s' % (username, encodedPassword))
-		cf.open('w')
-		cf.writelines(lines)
-		cf.close()
-		
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                    CLASS EXTENDEDBACKEND                                           =
@@ -545,6 +408,148 @@ class ConfigDataBackend(Backend):
 	def backend_deleteBase(self):
 		pass
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Logs                                                                                      -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def log_write(self, logType, data, objectId=None, append=False):
+		logType = forceUnicode(logType)
+		data = forceUnicode(data)
+		if not objectId:
+			objectId = None
+		else:
+			objectId = forceObjectId(objectId)
+		append = forceBool(append)
+		
+		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
+		
+		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+		
+		if not os.path.exists( os.path.join(LOG_DIR, logType) ):
+			os.mkdir(os.path.join(LOG_DIR, logType), 02770)
+		
+		logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
+		
+		f = None
+		if append:
+			f = codecs.open(logFile, 'a+', 'utf-8', 'replace')
+		else:
+			f = codecs.open(logFile, 'w', 'utf-8', 'replace')
+		f.write(data)
+		f.close()
+		os.chmod(logFile, 0640)
+		
+	def log_read(self, logType, objectId=None, maxSize=0):
+		logType = forceUnicode(logType)
+		if not objectId:
+			objectId = None
+		else:
+			objectId = forceObjectId(objectId)
+		maxSize = forceInt(maxSize)
+		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+			raise BackendBadValueError(u'Unknown log type %s' % logType)
+		
+		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog'):
+			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+		
+		if not objectId:
+			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
+		else:
+			logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
+		data = u''
+		if not os.path.exists(logFile):
+			return data
+		logFile = codecs.open(logFile, 'r', 'utf-8', 'replace')
+		data = logFile.read()
+		logFile.close()
+		if maxSize and (len(data) > maxSize):
+			start = data.find('\n', len(data)-maxSize)
+			if (start == -1):
+				start = len(data)-maxSize
+			return data[start+1:]
+		return data
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Users                                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def user_getCredentials(self, username = u'pcpatch', hostId = None):
+		username = forceUnicodeLower(username)
+		if hostId:
+			hostId = forceHostId(hostId)
+		depotId = forceHostId(socket.getfqdn())
+		
+		result = { 'password': u'', 'rsaPrivateKey': u'' }
+		
+		cf = ConfigFile(filename = OPSI_PASSWD_FILE)
+		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		for line in cf.parse():
+			match = lineRegex.search(line)
+			if not match:
+				continue
+			if (match.group(1) == username):
+				result['password'] = match.group(2)
+				break
+		if not result['password']:
+			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, OPSI_PASSWD_FILE))
+		
+		backendStack = [ self._context, self, self._backend, self._backend._backend, self._backend._backend._backend, self._backend._backend._backend._backend]
+		unprotectedBackend = self._context
+		for i in range(len(backendStack)):
+			if backendStack[i].__class__.__name__.endswith('BackendAccessControl'):
+				unprotectedBackend = backendStack[i+1]
+		depot = unprotectedBackend.host_getObjects(id = depotId)
+		if not depot:
+			raise Exception(u"Depot '%s' not found in backend" % depotId)
+		depot = depot[0]
+		if not depot.opsiHostKey:
+			raise Exception(u"Host key for depot '%s' not found" % depotId)
+		
+		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
+		
+		if (username == 'pcpatch'):
+			try:
+				import pwd
+				idRsa = os.path.join(pwd.getpwnam(username)[5], u'.ssh', u'id_rsa')
+				f = open(idRsa, 'r')
+				result['rsaPrivateKey'] = f.read()
+				f.close()
+			except Exception, e:
+				logger.debug(e)
+		if hostId:
+			host  = self._context.host_getObjects(id = hostId)
+			if not host:
+				raise Exception(u"Host '%s' not found in backend" % hostId)
+			host = host[0]
+			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
+			if result['rsaPrivateKey']:
+				result['rsaPrivateKey'] = blowfishEncrypt(host.opsiHostKey, result['rsaPrivateKey'])
+		return result
+		
+	def user_setCredentials(self, username, password):
+		username = forceUnicodeLower(username)
+		password = forceUnicode(password)
+		depotId = forceHostId(socket.getfqdn())
+		
+		depot = self._context.host_getObjects(id = depotId)
+		if not depot:
+			raise Exception(u"Depot '%s' not found in backend" % depotId)
+		depot = depot[0]
+		
+		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
+		
+		cf = ConfigFile(filename = OPSI_PASSWD_FILE)
+		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
+		lines = []
+		for line in cf.readlines():
+			match = lineRegex.search(line)
+			if not match or (match.group(1) != username):
+				lines.append(line.rstrip())
+		lines.append(u'%s:%s' % (username, encodedPassword))
+		cf.open('w')
+		cf.writelines(lines)
+		cf.close()
+		
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
