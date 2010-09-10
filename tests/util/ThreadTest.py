@@ -34,8 +34,8 @@ class ThreadTestCase(TestCase):
 			result.append(success)
 			result.append(returned)
 			result.append(errors)
-        
-        
+		
+		
 		self.pool.addJob(function=(lambda: 'test'), callback=assertCallback)
 		
 		#give thread time to finish
@@ -54,11 +54,11 @@ class ThreadTestCase(TestCase):
 			result.append(success)
 			result.append(returned)
 			result.append(errors)
-        
-        
+		
+		
 		def raiseError():
 			raise Exception("TestException")
-        
+		
 		self.pool.addJob(function=raiseError, callback=assertCallback)
 		
 		#give thread time to finish
@@ -67,7 +67,7 @@ class ThreadTestCase(TestCase):
 		self.assertFalse(result[0], "Expected callback success to be 'False', but got %s"%result[0])
 		self.assertIsNone(result[1], "Expected callback to return no result, but got %s"%result[1])
 		self.assertIsNotNone(result[2], "Expected function to run successfully, but got error %s"% result[2])
-        
+		
 	def test_invalidThreadPoolSize(self):
 		try:
 			self.pool.adjustSize(-1)
@@ -111,17 +111,17 @@ class ThreadTestCase(TestCase):
 		for i in range(10):
 			time.sleep(1)
 		self.assertEquals(5, len(results), "Expected %s results but, but got %s" % (5, len(results)))
-        
+		
 	def test_globalPool(self):
-		pool = getGlobalPool()
+		pool = getGlobalThreadPool()
 		self.assertTrue(isinstance(pool, ThreadPool), "Expected %s to be a ThreadPool instance." % pool)
-        
-        def test_dutyAfterNoDuty(self):
-        	self.pool.adjustSize(5)
-        	self.pool.stop()
-        	self.pool.start()
-        	
-        	results = []
+		
+	def test_dutyAfterNoDuty(self):
+		self.pool.adjustSize(5)
+		self.pool.stop()
+		self.pool.start()
+		
+		results = []
 		def callback(success, returned, errors):
 			results.append(success)
 		
@@ -145,13 +145,13 @@ class ThreadTestCase(TestCase):
 	def test_grow(self):
 		self.pool.adjustSize(2)
 		self.pool.stop()
-        	self.pool.start()
-        	
-        	results = []
+		self.pool.start()
+		
+		results = []
 		def callback(success, returned, errors):
 			results.append(success)
 		
-        	def sleepJob():
+		def sleepJob():
 			time.sleep(3)
 		
 		for i in range(20):
@@ -166,13 +166,13 @@ class ThreadTestCase(TestCase):
 	def test_shrink(self):
 		self.pool.adjustSize(5)
 		self.pool.stop()
-        	self.pool.start()
-        	
-        	results = []
+		self.pool.start()
+		
+		results = []
 		def callback(success, returned, errors):
 			results.append(success)
 		
-        	def sleepJob():
+		def sleepJob():
 			time.sleep(3)
 		
 		for i in range(12):
@@ -196,7 +196,7 @@ class ThreadTestCase(TestCase):
 	#		result.append(success)
 	#		result.append(returned)
 	#		result.append(errors)
-        #
+	#
 	#	#run class method in ThreadPool via decorator
 	#	class SomeClass(object):
 	#		@poolJob(callback=decoratorCallback)

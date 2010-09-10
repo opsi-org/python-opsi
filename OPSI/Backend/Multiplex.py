@@ -51,6 +51,7 @@ from OPSI.Object import *
 
 logger = Logger()
 #reactor = ReactorCore()
+threadPool = ThreadPool(size = 20)
 
 # ======================================================================================================
 # =                                   CLASS MULTIPLEXBACKEND                                           =
@@ -77,16 +78,21 @@ class MultiplexBackend(object):
 		self._defaultServiceType = u"remote"
 		self._ready = False
 		self._buffer = {}
-
+		self._context = self
+		
 		# Parse arguments
-		for (option, value) in kwargs.iteritems():
+		for (option, value) in dict(kwargs).items():
 			if   (option.lower() == 'servicetimeout'):
 				self.__serviceTimeout = value
 				del(kwargs[option])
 			elif (option.lower() == 'defaultdomain'):
 				self._defaultDomain = value
 				del(kwargs[option])
-		
+			elif (option.lower() == 'context'):
+				self._context = value
+				del(kwargs[option])
+				logger.info(u"Backend context was set to %s" % self._context)
+			
 		logger.notice(u"Initializing services")
 		if kwargs.has_key('services'):
 			services = kwargs['services']
@@ -220,7 +226,7 @@ class MultiplexBackend(object):
 		for service in dispatcher:
 			if service.isConnected():
 				logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
-				Pool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
+				threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
 				calls +=1
 		while len(results) != calls:
 			time.sleep(0.1)
@@ -235,6 +241,7 @@ class MultiplexBackend(object):
 	
 	def backend_exit(self):
 		logger.debug(u"Shutting down multiplex backend.")
+		threadPool.exit()
 		#for service in self.services:
 		#	if service.isConnected():
 		#		service.disconnect()
@@ -250,10 +257,10 @@ class MultiplexBackend(object):
 			for service in self.__services.values():
 				if service.isConnected():
 					if service.isMasterService:
-						return service.getInterface()
+						return service.backend_getInterface()
 			if self.__services.values()[0].isConnected():
-				return self.__services.values()[0].getInterface()
-		raise AttributeError(u"Could not determain the interface of any service.")
+				return self.__services.values()[0].backend_getInterface()
+		raise AttributeError(u"Could not determine the interface of any service.")
 	
 	def getServerIds_list(self):
 		return self._getDepotIds()
@@ -513,15 +520,15 @@ class RemoteService(Service, JSONRPCBackend):
 				self._rpcLock.release()
 		logger.debug(u"Connecting to service %s" %self.url )
 		
-		Pool.addJob(_connect, self._onConnect)
+		threadPool.addJob(_connect, self._onConnect)
 	
 	def _onConnect(self, success, result, error):
 		if success:
 			self.error = None
-			logger.notice(u"Successfully connected to service %s (Thread: %s)" %(self.url, threading.currentThread()))
+			logger.notice(u"Successfully connected to service %s (Thread: %s)" % (self.url, threading.currentThread()))
 		else:
 			self.error = error
-			logger.error(u"Failed to connect to service %s: %s (Thread: %s)" %(self.url, error, threading.currentThread()))
+			logger.error(u"Failed to connect to service %s: %s (Thread: %s)" % (self.url, error, threading.currentThread()))
 	
 	def refresh(self):
 		self.clients = self.host_getObjects(type = "OpsiClient")

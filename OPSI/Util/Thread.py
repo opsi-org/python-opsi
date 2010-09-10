@@ -44,13 +44,13 @@ from OPSI.Logger import *
 logger = Logger()
 
 GlobalPool = None
-def getGlobalPool():
+def getGlobalThreadPool():
 	global GlobalPool
 	if not GlobalPool:
 		GlobalPool = ThreadPool()
 		atexit.register(GlobalPool.stop)
 	return GlobalPool
-	
+
 def _async_raise(tid, excobj):
 	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
 	if (res == 0):
