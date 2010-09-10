@@ -315,7 +315,7 @@ class MultiplexBackend(object):
 							try:
 								dispatcher.auditSoftwareOnClient_createObjects(asoc)
 							except Exception, e:
-								logger.error(u"Failed do create auditSoftwareOnClients: %s" e)
+								logger.error(u"Failed do create auditSoftwareOnClients: %s" % e)
 						
 						ahoc = source.auditHardwareOnHost_getObjects(clientId = configState.objectId)
 						if ahoc:
@@ -346,7 +346,7 @@ class MultiplexBackend(object):
 									source.softwareLicense_deleteObjects(softwareLicenses)
 								source.refresh()
 							else:
-								raise Exception(u"Client was not found on destination server %s."% dispatcher.url)
+								raise Exception(u"Client was not found on destination server %s." % dispatcher.url)
 						except Exception,e:
 							logger.error(e)
 					finally:

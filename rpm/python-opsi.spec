@@ -133,6 +133,7 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/ldap.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
+%config(noreplace) /etc/opsi/backends/multiplex.conf
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
 %config /etc/opsi/backendManager/acl.conf.default
 %config /etc/opsi/backendManager/dispatch.conf.default
