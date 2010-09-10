@@ -332,7 +332,7 @@ class MultiplexBackend(object):
 						dispatcher.refresh()
 						r = dispatcher.host_getObjects(type = 'OpsiClient', id = configState.objectId)
 						try:
-							if r and (r[0].id == configState.objectId:)
+							if r and (r[0].id == configState.objectId):
 								logger.noticel(u"Client successfully moved to %s" % dispatcher.url)
 								source.host_deleteObjects(clients[0])
 								if pocs:
@@ -507,7 +507,7 @@ class RemoteService(Service, JSONRPCBackend):
 			try:
 				JSONRPCBackend._connect(self)
 				while not self.isConnected():
-					time.sleep(0.00001)
+					time.sleep(0.01)
 				self.refresh()
 			finally:
 				self._rpcLock.release()
