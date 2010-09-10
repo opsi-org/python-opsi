@@ -350,7 +350,7 @@ class MultiplexBackend(object):
 						except Exception,e:
 							logger.error(e)
 					finally:
-						self.__connectLock.release():
+						self.__connectLock.release()
 		else:
 			self.dispatch("configState_updateObject", configState)
 	
