@@ -130,7 +130,7 @@ class BackendManager(ExtendedBackend):
 		
 		if dispatch:
 			logger.info(u"* BackendManager is creating BackendDispatcher")
-			self._backend = BackendDispatcher(**kwargs)
+			self._backend = BackendDispatcher(context = self, **kwargs)
 			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
 		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
@@ -174,7 +174,6 @@ class BackendManager(ExtendedBackend):
 		exec(u'from %s import %sBackend' % (l['module'], l['module']))
 		return eval(u'%sBackend(**l["config"])' % l['module'])
 	
-	
 class BackendDispatcher(Backend):
 	def __init__(self, **kwargs):
 		#ExtendedConfigDataBackend.__init__(self, **kwargs)
@@ -185,6 +184,7 @@ class BackendDispatcher(Backend):
 		self._backendConfigDir = None
 		self._backends = {}
 		self._options = {}
+		self._context = self
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -196,7 +196,9 @@ class BackendDispatcher(Backend):
 				self._dispatchIgnoreModules = forceList(value)
 			elif option in ('backendconfigdir',):
 				self._backendConfigDir = value
-		
+			elif option in ('context',):
+				self._context = value
+			
 		if self._dispatchConfigFile:
 			logger.info(u"Loading dispatch config file '%s'" % self._dispatchConfigFile)
 			self.__loadDispatchConfig()

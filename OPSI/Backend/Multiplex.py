@@ -76,7 +76,6 @@ class MultiplexBackend(object):
 		self._ready = False
 		self._buffer = {}
 		self._context = self
-		self._realContext = self
 		
 		# Parse arguments
 		for (option, value) in dict(kwargs).items():
@@ -87,9 +86,13 @@ class MultiplexBackend(object):
 				self._defaultDomain = value
 				del(kwargs[option])
 			elif (option.lower() == 'context'):
-				self._realContext = value
+				self._context = value
 				del(kwargs[option])
 				logger.info(u"Backend context was set to %s" % self._context)
+				context = self._context
+				while hasattr(context, '_context') and (context != context._context):
+					context = context._context
+				setattr(context, 'log_read', self.log_read)
 			
 		logger.notice(u"Initializing services")
 		if kwargs.has_key('services'):
@@ -108,7 +111,7 @@ class MultiplexBackend(object):
 		for option in kwargs.keys():
 			logger.warning(u"Unknown argument '%s' passed to MultiplexBackend constructor" % option)
 		
-		modules =self._realContext.backend_info()['modules']
+		modules = self._context.backend_info()['modules']
 		if not modules.get('customer'):
 			raise Exception(u"Disabling multiplex backend: no customer in modules file")
 		
@@ -252,8 +255,11 @@ class MultiplexBackend(object):
 				return self.__services.values()[0].backend_getInterface()
 		raise AttributeError(u"Could not determine the interface of any service.")
 	
-	def getServerIds_list(self):
-		return self._getDepotIds()
+	def log_read(self, logType, objectId=None, maxSize=0):
+		return self.dispatch("log_read", logType, objectId, maxSize)
+	
+	#def getServerIds_list(self):
+	#	return self._getDepotIds()
 	
 	def configState_insertObject(self, configState):
 		self._configState_insertOrupdateObject(configState, isUpdate = False)
@@ -349,9 +355,9 @@ class MultiplexBackend(object):
 						self.__connectLock.release()
 		else:
 			if isUpdate:
-				self.dispatch("configState_updateObject", configState)
+				return self.dispatch("configState_updateObject", configState)
 			else:
-				self.dispatch("configState_insertObject", configState)
+				return self.dispatch("configState_insertObject", configState)
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		if "licensePoolId" in filter.keys() and "clientId" in filter.keys() \
@@ -385,7 +391,7 @@ class MultiplexBackend(object):
 				self.dispatch("configState_updateObjects", configs)
 	
 	def host_insertObject(self, host):
-		modules = self._realContext.backend_info()['modules']
+		modules = self._context.backend_info()['modules']
 		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:

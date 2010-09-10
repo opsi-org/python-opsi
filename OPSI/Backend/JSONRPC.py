@@ -256,12 +256,13 @@ class JSONRPCBackend(Backend):
 					
 				logger.debug2(u"Arg string is: %s" % argString)
 				logger.debug2(u"Call string is: %s" % callString)
-				if getattr(self, methodName, None) is None:
-					if not licenseManagementModule and (methodName.find("license") != -1):
-						exec(u'def %s(self, %s): return' % (methodName, argString))
-					else:
-						exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-					setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				# This would result in not overwriting Backend methods like log_read, log_write, ...
+				#if getattr(self, methodName, None) is None:
+				if not licenseManagementModule and (methodName.find("license") != -1):
+					exec(u'def %s(self, %s): return' % (methodName, argString))
+				else:
+					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
+				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 			except Exception, e:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
 	
