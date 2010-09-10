@@ -44,14 +44,11 @@ if (sys.version_info < (2,6)):
 from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import *
 from OPSI.Util.Thread import *
-#from OPSI.Util.Reactor import ReactorCore, defer, threads
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 
 logger = Logger()
-#reactor = ReactorCore()
-threadPool = ThreadPool(size = 20)
 
 # ======================================================================================================
 # =                                   CLASS MULTIPLEXBACKEND                                           =
@@ -79,6 +76,7 @@ class MultiplexBackend(object):
 		self._ready = False
 		self._buffer = {}
 		self._context = self
+		self._realContext = self
 		
 		# Parse arguments
 		for (option, value) in dict(kwargs).items():
@@ -89,7 +87,7 @@ class MultiplexBackend(object):
 				self._defaultDomain = value
 				del(kwargs[option])
 			elif (option.lower() == 'context'):
-				self._context = value
+				self._realContext = value
 				del(kwargs[option])
 				logger.info(u"Backend context was set to %s" % self._context)
 			
@@ -102,8 +100,7 @@ class MultiplexBackend(object):
 					logger.debug(u"Initializing service %s as type %s" % (service["url"], type))
 					
 					s = getattr(sys.modules[__name__], "%sService" % type.lower().capitalize())
-					self.__services[service['url']] = (s(timeout=self.__serviceTimeout,**service))
-					#self.services[service['url']] = s(timeout=self.__serviceTimeout,**service)
+					self.__services[service['url']] = (s(timeout = self.__serviceTimeout, multiplexBackend = self, **service ))
 				else:
 					logger.notice(u"Using cached service for %s" % service['url'])
 			del(kwargs['services'])
@@ -111,7 +108,7 @@ class MultiplexBackend(object):
 		for option in kwargs.keys():
 			logger.warning(u"Unknown argument '%s' passed to MultiplexBackend constructor" % option)
 		
-		modules = self._context.backend_info()['modules']
+		modules =self._realContext.backend_info()['modules']
 		if not modules.get('customer'):
 			raise Exception(u"Disabling multiplex backend: no customer in modules file")
 		
@@ -139,6 +136,8 @@ class MultiplexBackend(object):
 		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
 			raise Exception(u"Disabling mmultiplex backend: modules file invalid")
 		logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+		
+		self._threadPool = getGlobalThreadPool()
 		self.connect()
 	
 	def _getDepotIds(self):
@@ -159,7 +158,7 @@ class MultiplexBackend(object):
 			try:
 				for service in self.__services.values():
 					if not service.isConnected():
-						logger.critical(u"Service not connected. Trying to connect: %s" % service)
+						logger.notice(u"Service not connected. Trying to connect: %s" % service)
 						service.connect()
 				while not self.isReady():
 					time.sleep(0.0001)
@@ -183,36 +182,27 @@ class MultiplexBackend(object):
 	def _getDispatcher(self, *args, **kwargs):
 		def getDispatcherFromFilter(*args, **kwargs):
 			dispatcher = set()
+			args = list(args)
+			args.extend(kwargs.values())
 			for arg in args:
-				if isinstance(arg, list):
+				if isinstance(arg, BaseObject):
+					dispatcher.update(getDispatcherFromFilter(*arg.getIdent(returnType = 'list')))
+				elif isinstance(arg, list):
 					dispatcher.update(getDispatcherFromFilter(*arg))
 				elif isinstance(arg, dict):
 					dispatcher.update(getDispatcherFromFilter(**arg))
 				else:
 					for service in self.__services.values():
-						if arg in map((lambda x: x.id),service.clients)	\
-						or arg in map((lambda x: x.id),service.depots)	\
-						or arg in map((lambda x: x.id),service.hosts):
-							dispatcher.add(service)
-			
-			for arg in kwargs.values():
-				if isinstance(arg, list):
-					dispatcher.update(getDispatcherFromFilter(*arg))
-				if isinstance(arg, dict):
-					dispatcher.update(getDispatcherFromFilter(**arg))
-				else:
-					for service in self.__services.values():
-						if arg in map((lambda x: x.id),service.clients)	\
-						or arg in map((lambda x: x.id),service.depots)	\
-						or arg in map((lambda x: x.id),service.hosts):
+						if arg in map((lambda x: x.id), service.clients) \
+						or arg in map((lambda x: x.id), service.depots):
 							dispatcher.add(service)
 			return dispatcher
-			 
+		
 		dispatcher = getDispatcherFromFilter(*args, **kwargs)
 		if not len(dispatcher):
 			dispatcher = self.__services.values()
 			
-		logger.debug(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
+		logger.info(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
 		return dispatcher
 	
 	def dispatch(self, methodName, *args, **kwargs):
@@ -226,7 +216,7 @@ class MultiplexBackend(object):
 		for service in dispatcher:
 			if service.isConnected():
 				logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
-				threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
+				self._threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
 				calls +=1
 		while len(results) != calls:
 			time.sleep(0.1)
@@ -240,8 +230,8 @@ class MultiplexBackend(object):
 		return r
 	
 	def backend_exit(self):
-		logger.debug(u"Shutting down multiplex backend.")
-		threadPool.exit()
+		logger.info(u"Shutting down multiplex backend.")
+		self._threadPool.free()
 		#for service in self.services:
 		#	if service.isConnected():
 		#		service.disconnect()
@@ -266,24 +256,24 @@ class MultiplexBackend(object):
 		return self._getDepotIds()
 	
 	def configState_insertObject(self, configState):
-		result = self.dispatch("configState_insertObject", configState)
-		dispatcher = self._getDispatcher(configState.values)
-		for d in dispatcher:
-			d.configState_insertObject(configState)
-			d.refresh()
-	
+		self._configState_insertOrupdateObject(configState, isUpdate = False)
+		
 	def configState_updateObject(self, configState):
+		self._configState_insertOrupdateObject(configState, isUpdate = True)
+	
+	def _configState_insertOrupdateObject(self, configState, isUpdate=False):
 		if (configState.configId == u"clientconfig.depot.id"):
 			for service in self.__services.values():
 				dispatcher = self._getDispatcher(configState.values).pop()
 				if "OpsiClient.%s" % configState.objectId in self._buffer:
-					logger.info(u"Creating client %s from buffer on depot %s" %(configState.objectId,dispatcher.url ))
+					logger.notice(u"Creating client %s from buffer on depot %s" % (configState.objectId,dispatcher.url ))
 					dispatcher.host_insertObject(self._buffer["OpsiClient.%s" % configState.objectId])
 					del(self._buffer["OpsiClient.%s" % configState.objectId])
 					dispatcher.configState_updateObjects(configState)
 					dispatcher.refresh()
+				
 				elif (service.url == dispatcher.url):
-						dispatcher.configState_updateObjects(configState)
+					dispatcher.configState_updateObjects(configState)
 				
 				elif configState.objectId in map((lambda x: x.id),service.clients):
 					
@@ -291,7 +281,7 @@ class MultiplexBackend(object):
 					
 					self.__connectLock.acquire()
 					try:
-						logger.info(u"Moving client from %s to %s" %(source.url, dispatcher.url))
+						logger.notice(u"Moving client from %s to %s" %(source.url, dispatcher.url))
 						
 						clients = source.host_getObjects(type = 'OpsiClient', id = configState.objectId)
 						dispatcher.host_insertObject(clients[0])
@@ -337,10 +327,9 @@ class MultiplexBackend(object):
 						dispatcher.configState_updateObject(configState)
 						
 						dispatcher.refresh()
-						r = dispatcher.host_getObjects(type = 'OpsiClient', id = configState.objectId)
 						try:
-							if r and (r[0].id == configState.objectId):
-								logger.noticel(u"Client successfully moved to %s" % dispatcher.url)
+							if configState.objectId in map((lambda x:x.id), dispatcher.clients):
+								logger.notice(u"Client successfully moved to %s" % dispatcher.url)
 								source.host_deleteObjects(clients[0])
 								if pocs:
 									source.productOnClient_deleteObjects(pocs)
@@ -359,7 +348,10 @@ class MultiplexBackend(object):
 					finally:
 						self.__connectLock.release()
 		else:
-			self.dispatch("configState_updateObject", configState)
+			if isUpdate:
+				self.dispatch("configState_updateObject", configState)
+			else:
+				self.dispatch("configState_insertObject", configState)
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		if "licensePoolId" in filter.keys() and "clientId" in filter.keys() \
@@ -393,7 +385,7 @@ class MultiplexBackend(object):
 				self.dispatch("configState_updateObjects", configs)
 	
 	def host_insertObject(self, host):
-		modules = self._context.backend_info()['modules']
+		modules = self._realContext.backend_info()['modules']
 		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
@@ -464,8 +456,6 @@ class MultiplexBackend(object):
 	
 class Service(object):
 	def __init__(self, master=False):
-		
-		self.hosts = []
 		self.clients = []
 		self.depots = []
 		self.licensePools = []
@@ -482,16 +472,14 @@ class Service(object):
 	
 	def connect(self):
 		pass
-	
-	def setHosts(self, hosts):
-		self.hosts = hosts
 
 class RemoteService(Service, JSONRPCBackend):
-	def __init__(self, url, domain, opsiHostKey, timeout, **kwargs):
+	def __init__(self, url, domain, opsiHostKey, timeout, multiplexBackend, **kwargs):
 		self.url = url
 		self.domain = domain
 		self.opsiHostKey = opsiHostKey
 		self.timeout = timeout
+		self.multiplexBackend = multiplexBackend
 		Service.__init__(self, **kwargs)
 		JSONRPCBackend.__init__(
 			self,
@@ -520,7 +508,7 @@ class RemoteService(Service, JSONRPCBackend):
 				self._rpcLock.release()
 		logger.debug(u"Connecting to service %s" %self.url )
 		
-		threadPool.addJob(_connect, self._onConnect)
+		self.multiplexBackend._threadPool.addJob(_connect, self._onConnect)
 	
 	def _onConnect(self, success, result, error):
 		if success:
@@ -531,8 +519,13 @@ class RemoteService(Service, JSONRPCBackend):
 			logger.error(u"Failed to connect to service %s: %s (Thread: %s)" % (self.url, error, threading.currentThread()))
 	
 	def refresh(self):
-		self.clients = self.host_getObjects(type = "OpsiClient")
-		self.depots = self.host_getObjects(type = "OpsiDepotserver")
+		self.clients = []
+		self.depots = []
+		for host in self.host_getObjects(attributes = ['id']):
+			if   host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+				self.depots.append(host)
+			elif host.getType() in ('OpsiClient'):
+				self.clients.append(host)
 		self.licensePools = self.licensePool_getObjects()
 	
 	def licensePool_getObjects(self, attributes=[], **filter):

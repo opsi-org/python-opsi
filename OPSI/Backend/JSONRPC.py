@@ -63,38 +63,48 @@ METHOD_GET = 2
 # ======================================================================================================
 class JSONRPCBackend(Backend):
 	
-	def __init__(self, **kwargs):
+	def __init__(self, address, **kwargs):
 		self._name = 'jsonrpc'
+		self._address = address
 		
 		Backend.__init__(self, **kwargs)
 		
 		self._application = 'opsi jsonrpc module version %s' % __version__
 		self._sessionId   = None
 		self._deflate     = False
+		self._timeout = None
+		self._connectTimeout = 20
+		self._connectOnInit = True
+		self._retry = True
+		self._bufferTime = 0
+		self._buffer = []
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('address',):
-				self._address = value
 			if option in ('application',):
 				self._application = str(value)
 			if option in ('sessionid',):
 				self._sessionId = str(value)
 			if option in ('deflate',):
 				self._deflate = bool(value)
-		
+			if option in ('connectoninit',):
+				self._connectOnInit = bool(value)
+			if option in ('connecttimeout',):
+				self._connectTimeout = int(value)
+			if option in ('timeout',):
+				self._timeout = int(value)
+			if option in ('retry',):
+				self._retry = bool(value)
+			if option in ('bufferTime'):
+				self._bufferTime = forceFoat(value)
 		# Default values
 		self._defaultHttpPort = 4444
 		self._defaultHttpsPort = 4447
 		self._protocol = u'https'
 		self._method = METHOD_POST
-		self._timeout = None
-		self._connectTimeout = 20
-		self._connectOnInit = True
 		self._connected = False
 		self._interface = None
-		self._retry = True
-		self._rpcLock = threading.Lock()
+		self._rpcLock = threading.RLock()
 		self._backendOptions = {}
 		self._legacyOpsi = False
 		
@@ -106,7 +116,7 @@ class JSONRPCBackend(Backend):
 		
 		socket.setdefaulttimeout(self._timeout)
 		if self._connectOnInit:
-			self._connect()
+			self.connect()
 	
 	def isOpsi35(self):
 		return not self._legacyOpsi
@@ -125,8 +135,8 @@ class JSONRPCBackend(Backend):
 			if self._legacyOpsi:
 				self._jsonRPC('exit')
 			else:
-				self._jsonRPC('backend_exit')
-			self._disconnect()
+				self._jsonRPC('backend_exit', reconnect=False)
+			self.disconnect()
 	
 	def backend_setOptions(self, options):
 		self._backendOptions = options
@@ -246,20 +256,27 @@ class JSONRPCBackend(Backend):
 					
 				logger.debug2(u"Arg string is: %s" % argString)
 				logger.debug2(u"Call string is: %s" % callString)
-				
-				if not licenseManagementModule and (methodName.find("license") != -1):
-					exec(u'def %s(self, %s): return' % (methodName, argString))
-				else:
-					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				if getattr(self, methodName, None) is None:
+					if not licenseManagementModule and (methodName.find("license") != -1):
+						exec(u'def %s(self, %s): return' % (methodName, argString))
+					else:
+						exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
+					setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 			except Exception, e:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
 	
-	def _disconnect(self):
+	def disconnect(self):
 		if self._connection:
 			self._connection.close()
 		self._connected = False
-		
+
+	def connect(self):
+		self._rpcLock.acquire()
+		try:
+			self._connect()
+		finally:
+			self._rpcLock.release()
+
 	def _connect(self):
 		# Split address which should be something like http(s)://xxxxxxxxxx:yy/zzzzz
 		parts = self._address.split('/')
@@ -276,8 +293,8 @@ class JSONRPCBackend(Backend):
 		if ( len(hostAndPort) > 1 ):
 			port = int(hostAndPort[1])
 		self._baseUrl = u'/' + u'/'.join(parts[3:])
-		
 		# Connect to host
+		
 		try:
 			if (self._protocol == 'https'):
 				logger.info(u"Opening https connection to %s:%s" % (host, port))
@@ -290,37 +307,33 @@ class JSONRPCBackend(Backend):
 				
 			self._connection.connect()
 			
+			
 			modules = None
 			mysqlBackend = False
 			if not self._interface:
-				self._retry = False
 				try:
+					self._interface = self._jsonRPC(u'backend_getInterface', retry=False)
 					try:
-						self._interface = self._jsonRPC(u'backend_getInterface')
-						try:
-							modules = self._jsonRPC(u'backend_info').get('modules', None)
-							if modules:
-								logger.confidential(u"Modules: %s" % modules)
-							else:
-								modules = {'customer': None}
-							for m in self._interface:
-								if (m.get('name') == 'dispatcher_getConfig'):
-									for entry in self._jsonRPC(u'dispatcher_getConfig'):
-										for bn in entry[1]:
-											if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
-												mysqlBackend = True
-									break
-						except Exception, e:
-							logger.info(e)
+						modules = self._jsonRPC(u'backend_info', retry=False).get('modules', None)
+						if modules:
+							logger.confidential(u"Modules: %s" % modules)
+						else:
+							modules = {'customer': None}
+						for m in self._interface:
+							if (m.get('name') == 'dispatcher_getConfig'):
+								for entry in self._jsonRPC(u'dispatcher_getConfig', retry=False):
+									for bn in entry[1]:
+										if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
+											mysqlBackend = True
+								break
 					except Exception, e:
-						logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
-						self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
-						logger.info(u"Legacy opsi")
-						self._legacyOpsi = True
-						self._deflate = False
-				finally:
-					self._retry = True
-			
+						logger.info(e)
+				except Exception, e:
+					logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
+					self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes', retry=False)
+					logger.info(u"Legacy opsi")
+					self._legacyOpsi = True
+					self._deflate = False
 			if self._legacyOpsi:
 				self._createInstanceMethods34()
 			else:
@@ -338,14 +351,15 @@ class JSONRPCBackend(Backend):
 		except Exception, e:
 			logger.logException(e)
 			raise BackendIOError(u"Failed to connect to '%s': %s" % (self._address, e))
-	
-	def _jsonRPC(self, method, params=[]):
+		
+				
+	def _jsonRPC(self, method, params=[], retry=None, reconnect=True):
 		if self._legacyOpsi:
 			for i in range(len(params)):
 				if (params[i] == '__UNDEF__'):
 					params[i] = None
 		
-		logger.debug(u"Executing jsonrpc method '%s'" % method)
+		logger.debug(u"Executing jsonrpc method '%s' on host %s" % (method, self._address))
 		self._rpcLock.acquire()
 		try:
 			# Get params
@@ -356,8 +370,7 @@ class JSONRPCBackend(Backend):
 			logger.debug2(u"jsonrpc string: %s" % jsonrpc)
 			
 			logger.debug2(u"requesting: '%s', query '%s'" % (self._address, jsonrpc))
-			response = self._request(self._baseUrl, jsonrpc)
-			
+			response = self._request(self._baseUrl, jsonrpc, retry = retry, reconnect=reconnect)
 			# Read response
 			response = json.loads(response)
 			
@@ -382,12 +395,16 @@ class JSONRPCBackend(Backend):
 			return result
 		finally:
 			self._rpcLock.release()
-		
-	def _request(self, baseUrl, query='', maxRetrySeconds=5, started=None):
+	
+	
+	def _request(self, baseUrl, query='', maxRetrySeconds=5, started=None, retry=None, reconnect=True):
 		''' Do a http request '''
 		now = time.time()
 		if not started:
 			started = now
+		
+		if not retry:
+			retry = self._retry
 		
 		if type(query) is types.StringType:
 			query = unicode(query, 'utf-8')
@@ -446,12 +463,12 @@ class JSONRPCBackend(Backend):
 		except Exception, e:
 			logger.debug(u"Request to '%s' failed, retry: %s, started: %s, now: %s, maxRetrySeconds: %s" \
 					% (self._address, self._retry, started, now, maxRetrySeconds))
-			if self._retry and (now - started < maxRetrySeconds):
+			if retry and (now - started < maxRetrySeconds) and reconnect:
 				logger.debug(u"Request to '%s' failed: %s, trying to reconnect" % (self._address, e))
 				self._connect()
 				if self._deflate:
 					query = zlib.decompress(query)
-				return self._request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started)
+				return self._request(baseUrl, query=query, maxRetrySeconds=maxRetrySeconds, started=started, retry=True)
 			else:
 				logger.logException(e)
 				raise BackendIOError(u"Request to '%s' failed: %s" % (self._address, e))
@@ -471,26 +488,8 @@ class JSONRPCBackend(Backend):
 		except Exception, e:
 			raise BackendIOError(u"Cannot read '%s'" % e)
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	def getInterface(self):
+		return self._interface
 	
 	
 	

@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # imports
-import threading, ctypes, time, atexit
+import threading, ctypes, time
 from Queue import Queue
 
 # OPSI imports
@@ -48,7 +48,8 @@ def getGlobalThreadPool():
 	global GlobalPool
 	if not GlobalPool:
 		GlobalPool = ThreadPool()
-		atexit.register(GlobalPool.stop)
+	else:
+		GlobalPool.increaseUsageCount()
 	return GlobalPool
 
 def _async_raise(tid, excobj):
@@ -94,9 +95,20 @@ class ThreadPool(object):
 		self.worker = []
 		self.workerLock = threading.Lock()
 		self.jobQueue = Queue()
+		self.usageCount = 1
 		if autostart:
 			self.start()
-		
+	
+	def increaseUsageCount(self):
+		self.usageCount += 1
+	
+	def decreaseUsageCount(self):
+		self.usageCount -= 1
+		if (self.usageCount <= 0):
+			self.stop()
+	
+	free = decreaseUsageCount
+	
 	def start(self):
 		self.started = True
 		self.adjustSize(self.size)
@@ -149,19 +161,15 @@ class ThreadPool(object):
 				break
 		
 	def stop(self):
-		self.workerLock.acquire()
 		logger.debug(u"Stopping ThreadPool")
+		self.workerLock.acquire()
 		self.started = False
 		try:
 			for i in range(len(self.worker)):
 				self.__deleteWorker(wait = True)
 		finally:
 			self.workerLock.release()
-		
-	def __del__(self):
-		self.stop()
-
-
+	
 class Worker(threading.Thread):
 	def __init__(self, threadPool, name=None):
 		threading.Thread.__init__(self, name=name)
