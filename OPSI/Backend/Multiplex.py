@@ -90,15 +90,7 @@ class MultiplexBackend(object):
 				del(kwargs[option])
 				logger.info(u"Backend context was set to %s" % self._context)
 				context = self._context
-				#while hasattr(context, '_context'):
-				#	print "CONTEXT: ", context
-				#	setattr(context, 'log_read', self.log_read)
-				#	setattr(context, 'log_write', self.log_write)
-				#	if (context == context._context):
-				#		break
-				#	context = context._context
-				
-			
+		
 		logger.notice(u"Initializing services")
 		if kwargs.has_key('services'):
 			services = kwargs['services']
