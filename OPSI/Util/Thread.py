@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # imports
-import threading, ctypes, time
+import threading, ctypes, time, atexit
 from Queue import Queue
 
 # OPSI imports
@@ -43,6 +43,14 @@ from OPSI.Logger import *
 
 logger = Logger()
 
+GlobalPool = None
+def getGlobalPool():
+	global GlobalPool
+	if not GlobalPool:
+		GlobalPool = ThreadPool()
+		atexit.register(GlobalPool.stop)
+	return GlobalPool
+	
 def _async_raise(tid, excobj):
 	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
 	if (res == 0):
@@ -77,6 +85,7 @@ class KillableThread(threading.Thread):
 class ThreadPoolException(Exception):
 	pass
 
+
 class ThreadPool(object):
 	
 	def __init__(self, size = 20, autostart = True):
@@ -108,16 +117,18 @@ class ThreadPool(object):
 		finally:
 			self.workerLock.release()
 		
-	def __deleteWorker(self):
+	def __deleteWorker(self, wait=False):
 		logger.debug(u"Deleting a worker")
 		for worker in self.worker:
 			if not worker.busy and not worker.stopped:
 				worker.stop()
+				if wait: worker.join(1)
 				self.worker.remove(worker)
 				return
 		for worker in self.worker:
 			if not worker.stopped:
 				worker.stop()
+				if wait: worker.join(60)
 				self.worker.remove(worker)
 				return
 	
@@ -143,7 +154,7 @@ class ThreadPool(object):
 		self.started = False
 		try:
 			for i in range(len(self.worker)):
-				self.__deleteWorker()
+				self.__deleteWorker(wait = True)
 		finally:
 			self.workerLock.release()
 		
@@ -191,4 +202,6 @@ class Worker(threading.Thread):
 	def stop(self):
 		self.stopped = True
 		self.duty.set()
+
+
 
