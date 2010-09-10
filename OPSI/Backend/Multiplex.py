@@ -489,6 +489,7 @@ class RemoteService(Service, JSONRPCBackend):
 			timeout        = self.timeout,
 			username       = self.url.split('/')[2].split(':')[0],
 			password       = self.opsiHostKey,
+			application    = u'opsi multiplex backend %s' % __version__,
 			**kwargs
 		)
 		self.error = None
