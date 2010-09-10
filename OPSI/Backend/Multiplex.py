@@ -282,7 +282,7 @@ class MultiplexBackend(object):
 					
 					source = service
 					
-					self.__connectLock.acquire():
+					self.__connectLock.acquire()
 					try:
 						logger.info(u"Moving client from %s to %s" %(source.url, dispatcher.url))
 						
