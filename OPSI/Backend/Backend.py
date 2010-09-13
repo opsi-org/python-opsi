@@ -493,12 +493,7 @@ class ConfigDataBackend(Backend):
 		if not result['password']:
 			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, OPSI_PASSWD_FILE))
 		
-		backendStack = [ self._context, self, self._backend, self._backend._backend, self._backend._backend._backend, self._backend._backend._backend._backend]
-		unprotectedBackend = self._context
-		for i in range(len(backendStack)):
-			if backendStack[i].__class__.__name__.endswith('BackendAccessControl'):
-				unprotectedBackend = backendStack[i+1]
-		depot = unprotectedBackend.host_getObjects(id = depotId)
+		depot = self.host_getObjects(id = depotId)
 		if not depot:
 			raise Exception(u"Depot '%s' not found in backend" % depotId)
 		depot = depot[0]
