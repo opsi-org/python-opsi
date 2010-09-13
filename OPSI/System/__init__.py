@@ -32,6 +32,8 @@
    @license: GNU General Public License version 2
 """
 
+__version__ = '4.0'
+
 import os, shutil
 
 if (os.name == 'posix'):
