@@ -133,6 +133,7 @@ class HostControlBackend(ExtendedBackend):
 		method  = forceUnicode(method)
 		params  = forceList(params)
 		
+		result = {}
 		errors = []
 		rpcts = []
 		for host in self._context.host_getObjects(id = hostIds):
@@ -161,9 +162,11 @@ class HostControlBackend(ExtendedBackend):
 				if rpct.ended:
 					if rpct.error:
 						logger.error(u"Rpc to host %s failed, error: %s" % (rpct.hostId, rpct.error))
-						errors.append(u"%s: %s" % (rpct.hostId, rpct.error))
+						#errors.append(u"%s: %s" % (rpct.hostId, rpct.error))
+						result[rpct.hostId] = {"result": None, "error": rpct.error}
 					else:
 						logger.info(u"Rpc to host %s successful, result: %s" % (rpct.hostId, rpct.result))
+						result[rpct.hostId] = {"result": rpct.result, "error": None}
 					runningThreads -= 1
 					continue
 				if not rpct.started:
@@ -175,7 +178,8 @@ class HostControlBackend(ExtendedBackend):
 					timeRunning = time.time() - rpct.started
 					if (timeRunning >= self._hostRpcTimeout):
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
-						errors.append(u"%s: timed out after %0.2f seconds" % (rpct.hostId, timeRunning))
+						#errors.append(u"%s: timed out after %0.2f seconds" % (rpct.hostId, timeRunning))
+						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
 						try:
 							rpct.terminate()
 						except Exception, e:
@@ -186,8 +190,9 @@ class HostControlBackend(ExtendedBackend):
 			rpcts = newRpcts
 			time.sleep(0.1)
 		
-		if errors:
-			raise Exception(u', '.join(errors))
+		#if errors:
+		#	raise Exception(u', '.join(errors))
+		return result
 		
 	def hostControl_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
@@ -238,7 +243,10 @@ class HostControlBackend(ExtendedBackend):
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
-		
+	
+	def hostControl_uptime(self, hostIds=[]):
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
 	
 	
 	
