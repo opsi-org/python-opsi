@@ -502,8 +502,10 @@ class IniFile(ConfigFile):
 		
 		for section in sectionNames:
 			self._configParser.add_section(section)
-			for (option, value) in sections[section].items():
-				self._configParser.set(section, option, value)
+			options = sections[section].keys()
+			options.sort()
+			for option in options:
+				self._configParser.set(section, option, sections[section][option])
 		
 		data = StringIO.StringIO()
 		self._configParser.write(data)
