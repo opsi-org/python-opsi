@@ -2436,47 +2436,47 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				depotToClients[clientToDepot['depotId']] = []
 			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 		
+		productByProductIdAndVersion = {}
+		for product in self._backend.product_getObjects(id = productIds):
+			if not productByProductIdAndVersion.has_key(product.id):
+				productByProductIdAndVersion[product.id] = {}
+			if not productByProductIdAndVersion[product.id].has_key(product.productVersion):
+				productByProductIdAndVersion[product.id][product.productVersion] = {}
+			productByProductIdAndVersion[product.id][product.productVersion][product.packageVersion] = product
+		
+		additionalProductIds = []
+		productDependenciesByProductIdAndVersion = {}
+		for productDependency in self._backend.productDependency_getObjects(productId = productIds):
+			if not productDependenciesByProductIdAndVersion.has_key(productDependency.productId):
+				productDependenciesByProductIdAndVersion[productDependency.productId] = {}
+			if not productDependenciesByProductIdAndVersion[productDependency.productId].has_key(productDependency.productVersion):
+				productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion] = {}
+			if not productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion].has_key(productDependency.packageVersion):
+				productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion] = []
+			productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion].append(productDependency)
+			if not productDependency.requiredProductId in productIds and not productDependency.requiredProductId in additionalProductIds:
+				additionalProductIds.append(productDependency.requiredProductId)
+		
+		if additionalProductIds:
+			for product in self._backend.product_getObjects(id = additionalProductIds):
+				if not productByProductIdAndVersion.has_key(product.id):
+					productByProductIdAndVersion[product.id] = {}
+				if not productByProductIdAndVersion[product.id].has_key(product.productVersion):
+					productByProductIdAndVersion[product.id][product.productVersion] = {}
+				productByProductIdAndVersion[product.id][product.productVersion][product.packageVersion] = product
+			productIds.extend(additionalProductIds)
+		
 		productOnClients = []
-		productCache = {}
-		dependencyCache = {}
 		for (depotId, clientIds) in depotToClients.items():
-			productOnDepots = self._backend.productOnDepot_getObjects(depotId = depotId, productId = productIds)
 			products = []
 			productDependencies = []
-			for productOnDepot in productOnDepots:
-				if productCache.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion) is None:
-					if not productCache.has_key(productOnDepot.productId):
-						productCache[productOnDepot.productId] = {}
-					if not productCache[productOnDepot.productId].has_key(productOnDepot.productVersion):
-						productCache[productOnDepot.productId][productOnDepot.productVersion] = {}
-					objs = self._backend.product_getObjects(
-							id             = productOnDepot.productId,
-							productVersion = productOnDepot.productVersion,
-							packageVersion = productOnDepot.packageVersion
-						)
-					if not objs:
-						raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found" \
+			for productOnDepot in self._backend.productOnDepot_getObjects(depotId = depotId, productId = productIds):
+				product = productByProductIdAndVersion.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion)
+				if product is None:
+					raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found" \
 							% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
-					productCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion] = objs[0]
-				products.append(
-					productCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion]
-				)
-				
-				if dependencyCache.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion) is None:
-					if not dependencyCache.has_key(productOnDepot.productId):
-						dependencyCache[productOnDepot.productId] = {}
-					if not dependencyCache[productOnDepot.productId].has_key(productOnDepot.productVersion):
-						dependencyCache[productOnDepot.productId][productOnDepot.productVersion] = {}
-					dependencyCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion] = \
-						self._backend.productDependency_getObjects(
-							productId      = productOnDepot.productId,
-							productVersion = productOnDepot.productVersion,
-							packageVersion = productOnDepot.packageVersion
-						)
-				productDependencies.extend(
-					dependencyCache[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion]
-				)
-			
+				products.append(product)
+				productDependencies.extend(productDependenciesByProductIdAndVersion.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion, []))
 			for clientId in clientIds:
 				productOnClients.extend(
 					function(
