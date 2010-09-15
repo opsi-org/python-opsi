@@ -475,22 +475,22 @@ class IniFile(ConfigFile):
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
 		
 		self._parsed = True
-		# Return ConfigParser
 		return self._configParser
 	
 	def generate(self, configParser):
 		self._configParser = configParser
+		self._lines = []
 		
 		if not self._configParser:
 			raise Exception(u"Got no data to write")
 		
-		sectionNames = self._configParser.sections()
-		sectionNames.sort()
+		sections = self._configParser.sections()
+		sections.sort()
 		for sn in self._sectionSequence:
-			if (sn in sectionNames):
-				sectionNames.insert(0, sectionNames.pop(sectionNames.index(sn)))
+			if (sn in sections):
+				sections.insert(0, sections.pop(sections.index(sn)))
 		
-		for section in sectionNames:
+		for section in sections:
 			self._lines.append(u'[%s]' % forceUnicode(section))
 			options = self._configParser.options(section)
 			options.sort()
