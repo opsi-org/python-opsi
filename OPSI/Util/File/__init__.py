@@ -440,6 +440,10 @@ class IniFile(ConfigFile):
 		self._raw = forceBool(raw)
 		self._configParser = None
 		self._parsed = False
+		self._sectionSequence = []
+	
+	def setSectionSequence(sectionSequence):
+		self._sectionSequence = forceUnicodeList(sectionSequence)
 		
 	def parse(self, lines=None):
 		self._parsed = False
@@ -480,6 +484,30 @@ class IniFile(ConfigFile):
 		if not self._configParser:
 			raise Exception(u"Got no data to write")
 		
+		sectionNames = self._configParser.sections()
+		sectionNames.sort()
+		for sn in self._sectionSequence:
+			if (sn in sectionNames):
+				sectionNames.insert(0, sectionNames.pop(sectionNames.index(sn)))
+		
+		for section in sectionNames:
+			self._lines.append(u'[%s]' % forceUnicode(section))
+			options = self._configParser.options(section)
+			options.sort()
+			for option in options:
+				self._lines.append(u'%s = %s' % (forceUnicode(option), forceUnicode(self._configParser.get(section, option))))
+			self._lines.append(u'')
+			
+		self.open('w')
+		self.writelines()
+		self.close()
+	
+	def generate_old(self, configParser):
+		self._configParser = configParser
+		
+		if not self._configParser:
+			raise Exception(u"Got no data to write")
+		
 		sections = {}
 		for section in self._configParser.sections():
 			if type(section) is unicode:
@@ -513,7 +541,6 @@ class IniFile(ConfigFile):
 		self.open('w')
 		self.writelines()
 		self.close()
-	
 
 class InfFile(ConfigFile):
 	sectionRegex       = re.compile('\[\s*([^\]]+)\s*\]')
