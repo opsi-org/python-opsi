@@ -95,7 +95,7 @@ class FileBackend(ConfigDataBackend):
 		self.__defaultClientTemplatePath = os.path.join(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + u'.ini'))
 		
 		self.__serverId = forceHostId(socket.getfqdn())
-		self._placeholderRegex  = re.compile('<([^>]+)>')
+		self._placeholderRegex  = re.compile('^(.*)<([^>]+)>(.*)$')
 		
 		self._mappings = {
 			'Config': [
@@ -746,6 +746,21 @@ class FileBackend(ConfigDataBackend):
 						iniFileCache[filename] = iniFile.parse()
 					cp = iniFileCache[filename]
 					
+					if cp.has_section('LocalbootProduct_product_states') or cp.has_section('NetbootProduct_product_states'):
+						if cp.has_section('LocalbootProduct_product_states'):
+							if not cp.has_section('localboot_product_states'):
+								cp.add_section('localboot_product_states')
+							for (k, v) in cp.items('LocalbootProduct_product_states'):
+								cp.set('localboot_product_states', k, v)
+							cp.remove_section('LocalbootProduct_product_states')
+						if cp.has_section('NetbootProduct_product_states'):
+							if not cp.has_section('netboot_product_states'):
+								cp.add_section('netboot_product_states')
+							for (k, v) in cp.items('NetbootProduct_product_states'):
+								cp.set('netboot_product_states', k, v)
+							cp.remove_section('NetbootProduct_product_states')
+						IniFile(filename = filename, ignoreCase = False).generate(cp)
+						
 					for m in mapping:
 						attribute = m['attribute']
 						section = m['section']
@@ -753,14 +768,13 @@ class FileBackend(ConfigDataBackend):
 						
 						match = self._placeholderRegex.search(section)
 						if match:
-							replaceValue = objHash[match.group(1)]
-							if objType == 'ProductOnClient': #<productType>_product_states
-								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
-							section = section.replace(u'<%s>' % match.group(1), replaceValue)
+							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
+							if (objType == 'ProductOnClient'): #<productType>_product_states
+								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 						
 						match = self._placeholderRegex.search(option)
 						if match:
-							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 						
 						if cp.has_option(section, option):
 							value = cp.get(section, option)
@@ -897,14 +911,13 @@ class FileBackend(ConfigDataBackend):
 						
 						match = self._placeholderRegex.search(section)
 						if match:
-							replaceValue = objHash[match.group(1)]
+							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 							if objType in ('ProductOnClient',):
-								replaceValue.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
-							section = section.replace(u'<%s>' % match.group(1), replaceValue)
+								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 						
 						match = self._placeholderRegex.search(option)
 						if match:
-							option = option.replace(u'<%s>' % match.group(1), objHash[match.group(1)])
+							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 						
 						if objType in ('ProductOnClient',):
 							if attribute in ('installationStatus', 'actionRequest'):
@@ -937,7 +950,7 @@ class FileBackend(ConfigDataBackend):
 							
 							cp.set(section, option, value)
 				
-				iniFile.setSectionSequence(['info', 'genralconfig', 'localboot_product_states', 'netboot_product_states'])
+				iniFile.setSectionSequence(['info', 'generalconfig', 'localboot_product_states', 'netboot_product_states'])
 				iniFile.generate(cp)
 			
 			elif (fileType == 'pro'):

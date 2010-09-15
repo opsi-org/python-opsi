@@ -157,8 +157,8 @@ class BackendReplicator:
 			
 			methodPrefix = eval("%s.backendMethodPrefix" % objClass)
 			
-			self.__overallProgressSubject.setMessage(u"Replicating %ss" % objClass)
-			self.__currentProgressSubject.setTitle(u"Replicating %ss" % objClass)
+			self.__overallProgressSubject.setMessage(u"Replicating %s" % objClass)
+			self.__currentProgressSubject.setTitle(u"Replicating %s" % objClass)
 			for subClass in subClasses:
 				if   (subClass == 'OpsiConfigserver'):
 					ids = serverIds
