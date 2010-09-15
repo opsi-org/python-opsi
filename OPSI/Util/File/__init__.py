@@ -486,10 +486,13 @@ class IniFile(ConfigFile):
 		
 		sections = self._configParser.sections()
 		sections.sort()
+		logger.debug2(u"Sorted sections: %s" % sections)
 		for sn in self._sectionSequence:
 			if sn in sections:
+				logger.debug2(u"Moving section %s to top" % sn)
 				sections.remove(sn)
 				sections.insert(0, sn)
+		logger.debug2(u"Section sequence: %s" % sections)
 		
 		for section in sections:
 			self._lines.append(u'[%s]' % forceUnicode(section))
