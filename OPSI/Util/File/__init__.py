@@ -487,8 +487,9 @@ class IniFile(ConfigFile):
 		sections = self._configParser.sections()
 		sections.sort()
 		for sn in self._sectionSequence:
-			if (sn in sections):
-				sections.insert(0, sections.pop(sections.index(sn)))
+			if sn in sections:
+				sections.remove(sn)
+				sections.insert(0, sn)
 		
 		for section in sections:
 			self._lines.append(u'[%s]' % forceUnicode(section))

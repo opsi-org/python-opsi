@@ -937,6 +937,7 @@ class FileBackend(ConfigDataBackend):
 							
 							cp.set(section, option, value)
 				
+				iniFile.setSectionSequence(['info', 'genralconfig', 'localboot_product_states', 'netboot_product_states'])
 				iniFile.generate(cp)
 			
 			elif (fileType == 'pro'):
