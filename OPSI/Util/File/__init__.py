@@ -442,7 +442,7 @@ class IniFile(ConfigFile):
 		self._parsed = False
 		self._sectionSequence = []
 	
-	def setSectionSequence(sectionSequence):
+	def setSectionSequence(self, sectionSequence):
 		self._sectionSequence = forceUnicodeList(sectionSequence)
 		
 	def parse(self, lines=None):
