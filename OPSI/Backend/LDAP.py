@@ -762,6 +762,7 @@ class LDAPBackend(ConfigDataBackend):
 				if not host.notes:           host.notes = None
 				if not host.hardwareAddress: host.hardwareAddress = None
 				if not host.ipAddress:       host.ipAddress = None
+				if not host.inventoryNumber: host.inventoryNumber = None
 			self._updateLdapObject(ldapObject, host, updateWhereNone = isOpsiHost)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(host, dn)
