@@ -1,8 +1,8 @@
-python-opsi (4.0.0.0-1) stable; urgency=low
+python-opsi (3.99.0.2-1) testing; urgency=low
 
-  * 4.0 stable release
+  * rc2
 
- -- Jan Schneider <j.schneider@uib.de>  Mon, 13 Sep 2010 16:08:22 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 16 Sep 2010 10:04:21 +0200
 
 python-opsi (3.99.0.1-1) testing; urgency=low
 
