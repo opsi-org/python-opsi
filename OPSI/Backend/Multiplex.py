@@ -96,7 +96,7 @@ class MultiplexBackend(object):
 			services = kwargs['services']
 			for service in services:
 				if service["url"] not in self.__services.keys():
-					type = service["type"] if service.has_key("type") else self._defaultServiceType
+					type = service.get("type", self._defaultServiceType)
 					logger.debug(u"Initializing service %s as type %s" % (service["url"], type))
 					
 					s = getattr(sys.modules[__name__], "%sService" % type.lower().capitalize())
