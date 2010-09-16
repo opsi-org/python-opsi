@@ -418,6 +418,11 @@ class LDAPBackend(ConfigDataBackend):
 				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
 		
 		self._ldapClassesToOpsiClassCache = {}
+		self._opsiLdapClasses = []
+		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
+			for ldapClass in ldapClasses:
+				if not ldapClass in self._opsiLdapClasses:
+					self._opsiLdapClasses.append(ldapClass)
 		
 		logger.info(u"Connecting to ldap server '%s' as user '%s'" % (self._address, self._username))
 		self._ldap = LDAPSession(**kwargs)
@@ -483,7 +488,7 @@ class LDAPBackend(ConfigDataBackend):
 					break
 			
 			if not mappingFound:
-				logger.error(u"No mapping found for opsi attribute '%s' of classes %s" % (attribute, objectTypes))
+				logger.debug(u"No mapping found for opsi attribute '%s' of classes %s" % (attribute, objectTypes))
 			
 			filters = []
 			for value in forceList(values):
@@ -581,6 +586,9 @@ class LDAPBackend(ConfigDataBackend):
 				#logger.debug2(u"Testing opsi class '%s' (ldapClasses: %s)" % (opsiClass, ldapClasses))
 				matched = True
 				for objectClass in ldapObject.getObjectClasses():
+					if not objectClass in self._opsiLdapClasses:
+						# Not an opsi ldap class
+						continue
 					if not objectClass in ldapClasses:
 						matched = False
 						continue
@@ -615,7 +623,7 @@ class LDAPBackend(ConfigDataBackend):
 			if self._ldapAttributeToOpsiAttribute[opsiClassName].has_key(attribute):
 				attribute = self._ldapAttributeToOpsiAttribute[opsiClassName][attribute]
 			else:
-				logger.error(u"No mapping found for ldap attribute '%s' of class '%s'" % (attribute, opsiClassName))
+				logger.debug(u"No mapping found for ldap attribute '%s' of class '%s'" % (attribute, opsiClassName))
 			
 			if attribute in ('cn',):
 				continue
@@ -654,7 +662,7 @@ class LDAPBackend(ConfigDataBackend):
 					continue
 				attribute = self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute]
 			else:
-				logger.error(u"No mapping found for opsi attribute '%s' of class '%s'" % (attribute, opsiObject.getType()))
+				logger.debug(u"No mapping found for opsi attribute '%s' of class '%s'" % (attribute, opsiObject.getType()))
 			ldapObj.setAttribute(attribute, value)
 		
 		return ldapObj
@@ -663,13 +671,19 @@ class LDAPBackend(ConfigDataBackend):
 		ldapObject.readFromDirectory(self._ldap)
 		newLdapObject = self._opsiObjectToLdapObject(opsiObject, ldapObject.getDn())
 		for (attribute, value) in newLdapObject.getAttributeDict(valuesAsList=True).items():
-			if attribute in ('cn', 'objectClass'):
+			if   (attribute == 'cn'):
 				continue
-			if value in (None, []):
+			elif (attribute == 'objectClass'):
+				if not value:
+					value = []
+				value = forceList(value)
+				for oc in ldapObject.getObjectClasses():
+					if not oc in value:
+						value.append(oc)
+			elif value in (None, []):
 				if not updateWhereNone:
 					continue
 				value = []
-				
 			ldapObject.setAttribute(attribute, value)
 		ldapObject.writeToDirectory(self._ldap)
 	
