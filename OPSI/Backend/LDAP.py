@@ -756,7 +756,13 @@ class LDAPBackend(ConfigDataBackend):
 		
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, host, updateWhereNone = bool('OpsiHost' in ldapObject.getObjectClasses()))
+			isOpsiHost = bool('OpsiHost' in ldapObject.getObjectClasses())
+			if not isOpsiHost:
+				if not host.description:     host.description = None
+				if not host.notes:           host.notes = None
+				if not host.hardwareAddress: host.hardwareAddress = None
+				if not host.ipAddress:       host.ipAddress = None
+			self._updateLdapObject(ldapObject, host, updateWhereNone = isOpsiHost)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(host, dn)
 			ldapObject.writeToDirectory(self._ldap)
