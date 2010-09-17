@@ -628,7 +628,7 @@ class MySQLBackend(ConfigDataBackend):
 					`networkAddress` varchar(31),
 					`isMasterDepot` bool,
 					`masterDepotId` varchar(255)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -643,7 +643,7 @@ class MySQLBackend(ConfigDataBackend):
 					`description` varchar(256),
 					`multiValue` bool NOT NULL,
 					`editable` bool NOT NULL
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -657,7 +657,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `configId` ) REFERENCES `CONFIG` ( `configId` ),
 					`value` TEXT,
 					`isDefault` bool
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -672,7 +672,7 @@ class MySQLBackend(ConfigDataBackend):
 					`objectId` varchar(255) NOT NULL,
 					INDEX(`objectId`),
 					`values` text
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -700,7 +700,7 @@ class MySQLBackend(ConfigDataBackend):
 					`advice` TEXT,
 					`pxeConfigTemplate` varchar(50),
 					`changelog` TEXT
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -712,7 +712,7 @@ class MySQLBackend(ConfigDataBackend):
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
 					`productId` varchar(50) NOT NULL,
 					PRIMARY KEY( `windowsSoftwareId`, `productId` )
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -730,7 +730,7 @@ class MySQLBackend(ConfigDataBackend):
 					`productType` varchar(16) NOT NULL,
 					INDEX(`productType`),
 					`locked` bool
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -749,7 +749,7 @@ class MySQLBackend(ConfigDataBackend):
 					`description` varchar(256),
 					`multiValue` bool NOT NULL,
 					`editable` bool NOT NULL
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -766,7 +766,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `propertyId` ) REFERENCES `PRODUCT_PROPERTY` ( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
 					`value` text,
 					`isDefault` bool
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -786,7 +786,7 @@ class MySQLBackend(ConfigDataBackend):
 					`requiredAction` varchar(16),
 					`requiredInstallationStatus` varchar(16),
 					`requirementType` varchar(16)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -809,7 +809,7 @@ class MySQLBackend(ConfigDataBackend):
 					`productVersion` varchar(32),
 					`packageVersion` varchar(16),
 					`modificationTime` TIMESTAMP
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -825,7 +825,7 @@ class MySQLBackend(ConfigDataBackend):
 					`objectId` varchar(255) NOT NULL,
 					INDEX(`objectId`),
 					`values` text
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -840,7 +840,7 @@ class MySQLBackend(ConfigDataBackend):
 					INDEX(`parentGroupId`),
 					`description` varchar(100),
 					`notes` varchar(500)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -855,7 +855,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `groupType`, `groupId`) REFERENCES `GROUP` ( `type`, `groupId` ),
 					`objectId` varchar(255) NOT NULL,
 					INDEX(`objectId`)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -873,7 +873,7 @@ class MySQLBackend(ConfigDataBackend):
 					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -891,7 +891,7 @@ class MySQLBackend(ConfigDataBackend):
 					INDEX(`boundToHost`),
 					`maxInstallations` int,
 					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -904,7 +904,7 @@ class MySQLBackend(ConfigDataBackend):
 					`type` varchar(30) NOT NULL,
 					INDEX(`type`),
 					`description` varchar(200)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -920,7 +920,7 @@ class MySQLBackend(ConfigDataBackend):
 					`language` varchar(10) NOT NULL,
 					`architecture` varchar(3) NOT NULL,
 					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` )
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -932,7 +932,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
 					`productId` VARCHAR(100) NOT NULL,
 					PRIMARY KEY( `licensePoolId`, `productId` )
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -946,7 +946,7 @@ class MySQLBackend(ConfigDataBackend):
 					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
 					PRIMARY KEY( `softwareLicenseId`, `licensePoolId` ),
 					`licenseKey` VARCHAR(100)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -963,7 +963,7 @@ class MySQLBackend(ConfigDataBackend):
 					INDEX( `clientId` ),
 					`licenseKey` VARCHAR(100),
 					`notes` VARCHAR(1024)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -986,7 +986,7 @@ class MySQLBackend(ConfigDataBackend):
 					`type` varchar(30) NOT NULL,
 					INDEX(`type`),
 					`installSize` BIGINT
-				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+				) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -1012,7 +1012,7 @@ class MySQLBackend(ConfigDataBackend):
 					`usageFrequency` int NOT NULL DEFAULT -1,
 					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`licenseKey` VARCHAR(100)
-				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+				) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
 				'''
 			logger.debug(table)
 			self._mysql.execute(table)
@@ -1081,12 +1081,12 @@ class MySQLBackend(ConfigDataBackend):
 			if hardwareDeviceTableExists:
 				hardwareDeviceTable += u' ;\n'
 			else:
-				hardwareDeviceTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET=utf8;\n'
+				hardwareDeviceTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;\n'
 			
 			if hardwareConfigTableExists:
 				hardwareConfigTable += u' ;\n'
 			else:
-				hardwareConfigTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET=utf8;\n'
+				hardwareConfigTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;\n'
 			
 			# Log sql query
 			logger.debug(hardwareDeviceTable)
