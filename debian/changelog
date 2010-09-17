@@ -1,3 +1,9 @@
+python-opsi (3.99.0.3-1) testing; urgency=low
+
+  * Fix table creation in MySQL-Backend
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 17 Sep 2010 12:04:11 +0200
+
 python-opsi (3.99.0.2-1) testing; urgency=low
 
   * rc2
