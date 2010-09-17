@@ -1,13 +1,13 @@
 Tests ausführen:
 
   - Alle Tests:
-      python unit2.py tests.AllTests
+      opsi-devtools test --failfast --catch
 
   - Einzeltests:
-      python unit2.py tests.backend.FileTest
+     opsi-devtools test --failfast --catch --suite=tests.backend.FileTest
 
   - Nützliche Flags:
-      python unit2.py -c <TestCase>		# Testlauf kann mit strg+c abgebrochen werden
-      python unit2.py -f <TestCase>		# Testlauf wird nach dem ersten Fail sofort beendet
-      python unit2.py --help			# Zeigt alle Flags und Optionen
+      opsi-devtools test --catch		# Testlauf kann mit strg+c abgebrochen werden
+      opsi-devtools test --failfast		# Testlauf wird nach dem ersten Fail sofort beendet
+      opsi-devtools test --help			# Zeigt alle Flags und Optionen
 

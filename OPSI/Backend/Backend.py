@@ -2446,7 +2446,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		
 		additionalProductIds = []
 		productDependenciesByProductIdAndVersion = {}
-		for productDependency in self._backend.productDependency_getObjects(productId = productIds):
+		def addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion):
 			if not productDependenciesByProductIdAndVersion.has_key(productDependency.productId):
 				productDependenciesByProductIdAndVersion[productDependency.productId] = {}
 			if not productDependenciesByProductIdAndVersion[productDependency.productId].has_key(productDependency.productVersion):
@@ -2456,6 +2456,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion].append(productDependency)
 			if not productDependency.requiredProductId in productIds and not productDependency.requiredProductId in additionalProductIds:
 				additionalProductIds.append(productDependency.requiredProductId)
+				for productDependency in self._backend.productDependency_getObjects(productId = productDependency.requiredProductId):
+					addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
+		for productDependency in self._backend.productDependency_getObjects(productId = productIds):
+			addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
 		
 		if additionalProductIds:
 			for product in self._backend.product_getObjects(id = additionalProductIds):
@@ -2476,7 +2480,18 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found" \
 							% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 				products.append(product)
-				productDependencies.extend(productDependenciesByProductIdAndVersion.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion, []))
+				def addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion):
+					dependencies = productDependenciesByProductIdAndVersion.get(product.id, {}).get(product.productVersion, {}).get(product.packageVersion, [])
+					for dep in dependencies:
+						product = productByProductIdAndVersion.get(dep.productId, {}).get(dep.productVersion, {}).get(dep.packageVersion)
+						if product:
+							if not product in products:
+								products.append(product)
+							if not dep in productDependencies:
+								productDependencies.append(dep)
+								addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
+				addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
+				
 			for clientId in clientIds:
 				productOnClients.extend(
 					function(
