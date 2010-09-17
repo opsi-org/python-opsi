@@ -189,6 +189,11 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadLock.acquire()
 		try:
 			self._dhcpdConfFile.parse()
+			currentHostParams = self._dhcpdConfFile.getHost(host.id.split('.')[0])
+			if (currentHostParams.get('hardware', ' ').split(' ')[1] == host.hardwareAddress) and (currentHostParams.get('fixed-address') == fixedAddress):
+				logger.debug(u"DHCPD config of host '%s' unchanged, no need to update config file" % host)
+				self._reloadLock.release()
+				return
 			self._dhcpdConfFile.addHost(
 				hostname        = host.id.split('.')[0],
 				hardwareAddress = host.hardwareAddress,
@@ -196,8 +201,9 @@ class DHCPDBackend(ConfigDataBackend):
 				fixedAddress    = fixedAddress,
 				parameters      = self._defaultClientParameters)
 			self._dhcpdConfFile.generate()
-		finally:
-			self._reloadLock.release()
+		except Exception, e:
+			logger.error(e)
+		self._reloadLock.release()
 		self._triggerReload()
 	
 	def dhcpd_deleteHost(self, host):

@@ -1466,8 +1466,8 @@ class DHCPDConfFile(TextFile):
 		if not self._parsed:
 			self.parse()
 		
-		logger.info(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s'" % \
-					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters) )
+		logger.notice(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'" % \
+					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename) )
 		
 		existingHost = None
 		for block in self._globalBlock.getBlocks('host', recursive = True):
@@ -1555,7 +1555,7 @@ class DHCPDConfFile(TextFile):
 				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
 		
 		parentBlock.addComponent(hostBlock)
-	
+		
 	def getHost(self, hostname):
 		hostname = forceHostname(hostname)
 		
