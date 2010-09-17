@@ -70,8 +70,8 @@ class JSONRPCBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		
 		self._application = 'opsi jsonrpc module version %s' % __version__
-		self._sessionId   = None
-		self._deflate     = False
+		self._sessionId = None
+		self._deflate = False
 		self._timeout = None
 		self._connectTimeout = 20
 		self._connectOnInit = True
@@ -118,6 +118,12 @@ class JSONRPCBackend(Backend):
 		if self._connectOnInit:
 			self.connect()
 	
+	def setDeflate(self, deflate):
+		deflate = forceBool(deflate)
+		if deflate and self.isLegacyOpsi():
+			logger.error(u"Refusing to set deflate because we are connected to legacy opsi service")
+		self._deflate = deflate
+		
 	def isOpsi35(self):
 		return not self._legacyOpsi
 	
