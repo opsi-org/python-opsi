@@ -22,10 +22,10 @@ Url:            http://www.opsi.org
 License:        GPL v2 or later
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
-Version:        3.99.0.3
+Version:        3.99.0.4
 Release:        1
 Summary:        opsi python library
-Source:         python-opsi_3.99.0.3-1.tar.gz
+Source:         python-opsi_3.99.0.4-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
