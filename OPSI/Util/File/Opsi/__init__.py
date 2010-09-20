@@ -34,7 +34,7 @@
 
 __version__ = "4.0"
 
-import os, codecs, re, ConfigParser, StringIO, cStringIO
+import os, codecs, re, ConfigParser, StringIO
 
 if (os.name == 'posix'):
 	import fcntl
