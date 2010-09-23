@@ -50,6 +50,11 @@ from Crypto.Cipher import Blowfish
 
 if (os.name == 'posix'):
 	from duplicity import librsync
+if (os.name == 'nt'):
+	try:
+		import librsync
+	except Exception, e:
+		logger.error(u"Failed to import librsync: %s" % e)
 
 # OPSI imports
 from OPSI.Logger import *
@@ -199,8 +204,8 @@ def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
 
 def librsyncSignature(filename):
-	if (os.name != 'posix'):
-		raise NotImplementedError(u"Not implemented for non-posix os")
+	#if (os.name != 'posix'):
+	#	raise NotImplementedError(u"Not implemented for non-posix os")
 	
 	(f, sf) = (None, None)
 	try:
@@ -216,8 +221,8 @@ def librsyncSignature(filename):
 		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
-	if (os.name != 'posix'):
-		raise NotImplementedError(u"Not implemented for non-posix os")
+	#if (os.name != 'posix'):
+	#	raise NotImplementedError(u"Not implemented for non-posix os")
 	
 	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
 	if (oldfile == newfile):
@@ -250,8 +255,8 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		raise Exception(u"Failed to patch file: %s" % forceUnicode(e))
 
 def librsyncDeltaFile(filename, signature, deltafile):
-	if (os.name != 'posix'):
-		raise NotImplementedError(u"Not implemented for non-posix os")
+	#if (os.name != 'posix'):
+	#	raise NotImplementedError(u"Not implemented for non-posix os")
 	
 	(f, df, ldf) = (None, None, None)
 	bufsize = 1024*1024

@@ -439,7 +439,7 @@ class MySQLBackend(ConfigDataBackend):
 					where += u"`%s` is NULL" % key
 				else:
 					value = value.replace("\\", "\\\\").replace("'", "\\\'")
-					match = re.search('^\s*([>=<]+)\s*([\d\.]+)', value)
+					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
 					if match:
 						operator = match.group(1)
 						value = match.group(2)

@@ -2599,21 +2599,21 @@ class AuditHardware(Entity):
 		
 		if self.hardwareAttributes.get(hardwareClass):
 			for (attribute, value) in kwargs.items():
-				type = self.hardwareAttributes[hardwareClass].get(attribute)
-				if not type:
+				attrType = self.hardwareAttributes[hardwareClass].get(attribute)
+				if not attrType:
 					del kwargs[attribute]
 					continue
 				if value is None:
 					continue
-				if type.startswith('varchar'):
+				if attrType.startswith('varchar'):
 					kwargs[attribute] = forceUnicode(value)
-				elif (type.find('int') != -1):
+				elif (attrType.find('int') != -1):
 					try:
 						kwargs[attribute] = forceInt(value)
 					except Exception, e:
 						logger.debug2(e)
 						kwargs[attribute] = None
-				elif (type == 'double'):
+				elif (attrType == 'double'):
 					try:
 						kwargs[attribute] = forceFloat(value)
 					except Exception, e:
@@ -2621,6 +2621,11 @@ class AuditHardware(Entity):
 						kwargs[attribute] = None
 				else:
 					raise BackendConfigurationError(u"Attribute '%s' of hardware class '%s' has unknown type '%s'" % (attribute, hardwareClass, type))
+		else:
+			for (attribute, value) in kwargs.items():
+				if type(value) is str:
+					kwargs[attribute] = forceUnicode(value)
+		
 		self.__dict__.update(kwargs)
 		
 		if hasattr(self, 'vendorId') and self.vendorId:
