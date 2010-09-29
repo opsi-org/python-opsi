@@ -1140,7 +1140,7 @@ class Harddisk:
 						
 						if self.partitions[-1]['device']:
 							logger.debug(u"Waiting for device '%s' to appear" % self.partitions[-1]['device'])
-							timeout = 5
+							timeout = 15
 							while (timeout > 0):
 								if os.path.exists(self.partitions[-1]['device']):
 									break
