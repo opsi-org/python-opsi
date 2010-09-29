@@ -1,62 +1,65 @@
-python-opsi (3.4.0.14-1) stable; urgency=low
+python-opsi (4.0.0.0-1) stable; urgency=low
 
-  * add %username%, %password% to LDAP client/server create/delete commands
+  * opsi 4.0 stable release
 
- -- Jan Schneider <j.schneider@uib.de>  Thu, 09 Sep 2010 13:49:12 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 27 Sep 2010 14:11:39 +0200
 
-python-opsi (3.4.0.13-1) stable; urgency=low
+python-opsi (3.99.0.6-1) testing; urgency=low
 
-  * Fixed json import in OpsiPXEConfd (again)
+  * Object __repr__ now returning __str__
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 07 Sep 2010 14:58:00 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 27 Sep 2010 10:34:59 +0200
 
-python-opsi (3.4.0.12-1) stable; urgency=low
+python-opsi (3.99.0.5-1) testing; urgency=low
 
-  * Fixed json import in OpsiPXEConfd
+  * Fix getDepotIds_list in legacy extension
+  * Fix SQL expression for numbers
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 07 Sep 2010 14:11:53 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 24 Sep 2010 14:35:08 +0200
 
-python-opsi (3.4.0.11-1) stable; urgency=low
+python-opsi (3.99.0.4-1) testing; urgency=low
 
-  * Fixed json import in opsi-fire-event.py
+  * Fix dependcy recurion in _productOnClient_processWithFunction
+  * Prevent unnecessary update of dhcpd configuration 
 
- -- Jan Schneider <j.schneider@uib.de>  Mon, 06 Sep 2010 17:42:23 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 17 Sep 2010 14:15:01 +0200
 
-python-opsi (3.4.0.10-1) stable; urgency=low
+python-opsi (3.99.0.3-1) testing; urgency=low
 
-  * Fixed json import in File31 
+  * Fix table creation in MySQL-Backend
 
- -- Jan Schneider <j.schneider@uib.de>  Fri, 03 Sep 2010 16:38:10 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 17 Sep 2010 12:04:11 +0200
 
-python-opsi (3.4.0.9-1) stable; urgency=low
+python-opsi (3.99.0.2-1) testing; urgency=low
 
-  * Replaced json module
+  * rc2
 
- -- Jan Schneider <j.schneider@uib.de>  Mon, 16 Aug 2010 10:22:23 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 16 Sep 2010 10:04:21 +0200
 
-python-opsi (3.4.0.8-1) stable; urgency=low
+python-opsi (3.99.0.1-1) testing; urgency=low
 
-  * Force int value for usageFrequency in MySQL backend
+  * rc 1
 
- -- Jan Schneider <j.schneider@uib.de>  Wed, 04 Aug 2010 14:58:12 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 01 Sep 2010 15:45:41 +0200
 
-python-opsi (3.4.0.7-1) stable; urgency=low
+python-opsi (3.99.0.0-1) testing; urgency=low
 
-  * Fix description in LDAP-schema and LDAP-Backend
+  * local package
+  * opsi 4.0
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 03 Aug 2010 10:19:46 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 18 May 2010 15:38:15 +0200
 
-python-opsi (3.4.0.6-1) stable; urgency=low
+python-opsi (3.4.99.1-1) testing; urgency=low
 
-  * Product.py 1.1.5 productProperty name to lower case
+  * testing release
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 22 Mar 2010 17:45:49 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 06 Apr 2010 12:19:37 +0200
 
-python-opsi (3.4.0.5-1) stable; urgency=low
+python-opsi (3.4.99.0-1) experimental; urgency=low
 
-  * Modified setIpAddress()
+  * starting 3.5 development
 
- -- Jan Schneider <j.schneider@uib.de>  Wed, 20 Jan 2010 10:20:55 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 06 Nov 2009 15:33:48 +0100
 
 python-opsi (3.4.0.4-1) stable; urgency=low
 
@@ -466,7 +469,7 @@ python-opsi (3.3.0.0-1) stable; urgency=low
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 15 Apr 2008 13:42:27 +0200
 
- python-opsi (3.2.0.16-1) stable; urgency=low
+python-opsi (3.2.0.16-1) stable; urgency=low
 
   * JSONRPC - fixed bug in retry request
 

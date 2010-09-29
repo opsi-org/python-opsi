@@ -1,7 +1,7 @@
 #! /bin/bash -e
 
 # = = = = = = = = = = = = = = = = = = = = = = =
-# =  Copyright (C) 2006, 2007, 2008 uib GmbH  =
+# =       Copyright (C) 2010 uib GmbH         =
 # =           http://www.uib.de               =
 # =          All rights reserved.             =
 # = = = = = = = = = = = = = = = = = = = = = = =
@@ -20,21 +20,26 @@ case "$1" in
 			groupadd opsiadmin
 		fi
 		
-		chown -R pcpatch:pcpatch /etc/opsi/backendManager.d
-		chmod 660 /etc/opsi/backendManager.d/*
+		chown -R root:pcpatch /etc/opsi/backendManager
+		find /etc/opsi/backendManager -type d -exec chmod 770 {} \;
+		find /etc/opsi/backendManager -type f -exec chmod 660 {} \;
+		chown -R root:pcpatch /etc/opsi/backends
+		chmod 770 /etc/opsi/backends
+		chmod 660 /etc/opsi/backends/*.conf
 		
 		test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
-		chown pcpatch:pcpatch /etc/opsi/pckeys
+		chown root:pcpatch /etc/opsi/pckeys
 		chmod 660 /etc/opsi/pckeys
 		
 		test -e /etc/opsi/passwd || touch /etc/opsi/passwd
-		chown pcpatch:pcpatch /etc/opsi/passwd
+		chown root:pcpatch /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 		
-		if [ -d /var/lib/opsi ]; then
-			chown pcpatch:pcpatch /var/lib/opsi
-			chmod 2750 /var/lib/opsi
-		fi
+		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
+		[ -e "/etc/opsi/backendManager/dispatch.conf" ] || ln -s /etc/opsi/backendManager/dispatch.conf.default /etc/opsi/backendManager/dispatch.conf
+		
+		update-python-modules python-ldaptor.public >/dev/null 2>/dev/null || true
+		update-python-modules -p >/dev/null 2>/dev/null || true
 	;;
 	
 	abort-upgrade|abort-remove|abort-deconfigure)
@@ -46,7 +51,4 @@ case "$1" in
 	;;
 esac
 
-if [ "$1" = "configure" ] && which update-python-modules >/dev/null 2>&1; then
-	update-python-modules -i /usr/share/python-support/python-opsi
-fi
-
+#DEBHELPER#

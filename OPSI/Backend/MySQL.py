@@ -1,0 +1,2559 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+   = = = = = = = = = = = = = = = = = =
+   =   opsi python library - MySQL   =
+   = = = = = = = = = = = = = = = = = =
+   
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2006 - 2010 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
+   @author: Jan Schneider <j.schneider@uib.de>
+   @license: GNU General Public License version 2
+"""
+
+__version__ = '4.0'
+
+# Imports
+import MySQLdb, warnings, time
+from _mysql_exceptions import *
+from sqlalchemy import pool
+import threading
+from twisted.conch.ssh import keys
+
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
+
+# OPSI imports
+from OPSI.Logger import *
+from OPSI.Types import *
+from OPSI.Object import *
+from OPSI.Util import md5
+from OPSI.Backend.Backend import *
+
+# Get logger instance
+logger = Logger()
+
+class ConnectionPool(object):
+	# Storage for the instance reference
+	__instance = None
+	
+	def __init__(self, **kwargs):
+		""" Create singleton instance """
+		
+		# Check whether we already have an instance
+		if ConnectionPool.__instance is None:
+			logger.info(u"Creating ConnectionPool instance")
+			# Create and remember instance
+			poolArgs = {}
+			for key in ('pool_size', 'max_overflow', 'timeout'):
+				if key in kwargs.keys():
+					poolArgs[key] = kwargs[key]
+					del kwargs[key]
+			def creator():
+				return MySQLdb.connect(**kwargs)
+			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)
+			con = ConnectionPool.__instance.connect()
+			con.close()
+			
+		# Store instance reference as the only member in the handle
+		self.__dict__['_ConnectionPool__instance'] = ConnectionPool.__instance
+	
+	def destroy(self):
+		logger.notice(u"Destroying ConnectionPool instance")
+		ConnectionPool.__instance = None
+		
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+	
+# ======================================================================================================
+# =                                       CLASS MYSQL                                                  =
+# ======================================================================================================
+
+class MySQL(object):
+	def __init__(self, **kwargs):
+		
+		self._address                   = u'localhost'
+		self._username                  = u'opsi'
+		self._password                  = u'opsi'
+		self._database                  = u'opsi'
+		self._databaseCharset           = 'utf8'
+		self._connectionPoolSize        = 20
+		self._connectionPoolMaxOverflow = 10
+		self._connectionPoolTimeout     = 30
+		
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('address',):
+				self._address = forceUnicode(value)
+			elif option in ('username',):
+				self._username = forceUnicode(value)
+			elif option in ('password'):
+				self._password = forceUnicode(value)
+			elif option in ('database',):
+				self._database = forceUnicode(value)
+			elif option in ('databasecharset',):
+				self._databaseCharset = str(value)
+			elif option in ('connectionpoolsize',):
+				self._connectionPoolSize = forceInt(value)
+			elif option in ('connectionpoolmaxoverflow',):
+				self._connectionPoolMaxOverflow = forceInt(value)
+			elif option in ('connectionpooltimeout',):
+				self._connectionPoolTimeout = forceInt(value)
+		
+		self._transactionLock = threading.Lock()
+		self._pool = None
+		
+		self._createConnectionPool()
+		logger.debug(u'MySQL created: %s' % self)
+	
+	def _createConnectionPool(self):
+		logger.debug2(u"Creating connection pool")
+		self._transactionLock.acquire(0)
+		try:
+			try:
+				if self._pool:
+					self._pool.destroy()
+				self._pool = ConnectionPool(
+						host         = self._address,
+						user         = self._username,
+						passwd       = self._password,
+						db           = self._database,
+						use_unicode  = True,
+						charset      = self._databaseCharset,
+						pool_size    = self._connectionPoolSize,
+						max_overflow = self._connectionPoolMaxOverflow,
+						timeout      = self._connectionPoolTimeout
+				)
+			except Exception, e:
+				logger.logException(e)
+				raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
+		finally:
+			self._transactionLock.release()
+		
+	def connect(self):
+		logger.debug2(u"Connecting to connection pool")
+		self._transactionLock.acquire()
+		logger.debug2(u"Connection pool status: %s" % self._pool.status())
+		conn = self._pool.connect()
+		cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+		return (conn, cursor)
+		
+	def close(self, conn, cursor):
+		try:
+			cursor.close()
+			conn.close()
+		finally:
+			self._transactionLock.release()
+	
+	def query(self, query):
+		(conn, cursor) = self.connect()
+		result = 0
+		try:
+			logger.debug2(u"query: %s" % query)
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect()
+				self.execute(query, conn, cursor)
+			result = cursor.rowcount
+		finally:
+			self.close(conn, cursor)
+		return result
+		
+	def getSet(self, query):
+		logger.debug2(u"getSet: %s" % query)
+		(conn, cursor) = self.connect()
+		try:
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect()
+				self.execute(query, conn, cursor)
+			valueSet = cursor.fetchall()
+			if not valueSet:
+				logger.debug(u"No result for query '%s'" % query)
+				return []
+		finally:
+			self.close(conn, cursor)
+		return valueSet
+		
+	def getRow(self, query):
+		logger.debug2(u"getRow: %s" % query)
+		(conn, cursor) = self.connect()
+		try:
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect()
+				self.execute(query, conn, cursor)
+			row = cursor.fetchone()
+			if not row:
+				logger.debug(u"No result for query '%s'" % query)
+				return {}
+			logger.debug2(u"Result: '%s'" % row)
+		finally:
+			self.close(conn, cursor)
+		return row
+		
+	def insert(self, table, valueHash):
+		(conn, cursor) = self.connect()
+		result = -1
+		try:
+			colNames = values = u''
+			for (key, value) in valueHash.items():
+				colNames += u"`%s`, " % key
+				if value is None:
+					values += u"NULL, "
+				elif type(value) in (float, long, int, bool):
+					values += u"%s, " % value
+				elif type(value) is str:
+					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				else:
+					values += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+				
+			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			logger.debug2(u"insert: %s" % query)
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect()
+				self.execute(query, conn, cursor)
+			result = cursor.lastrowid
+		finally:
+			self.close(conn, cursor)
+		return result
+		
+	def update(self, table, where, valueHash, updateWhereNone=False):
+		(conn, cursor) = self.connect()
+		result = 0
+		try:
+			if not valueHash:
+				raise BackendBadValueError(u"No values given")
+			query = u"UPDATE `%s` SET " % table
+			for (key, value) in valueHash.items():
+				if value is None and not updateWhereNone:
+					continue
+				query += u"`%s` = " % key
+				if value is None:
+					query += u"NULL, "
+				elif type(value) in (float, long, int, bool):
+					query += u"%s, " % value
+				elif type(value) is str:
+					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				else:
+					query += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+			
+			query = u'%s WHERE %s;' % (query[:-2], where)
+			logger.debug2(u"update: %s" % query)
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect()
+				self.execute(query, conn, cursor)
+			result = cursor.rowcount
+		finally:
+			self.close(conn, cursor)
+		return result
+	
+	def delete(self, table, where):
+		(conn, cursor) = self.connect()
+		result = 0
+		try:
+			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
+			logger.debug2(u"delete: %s" % query)
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect()
+				self.execute(query, conn, cursor)
+			result = cursor.rowcount
+		finally:
+			self.close(conn, cursor)
+		return result
+	
+	
+	def execute(self, query, conn=None, cursor=None):
+		needClose = False
+		if not conn or not cursor:
+			(conn, cursor) = self.connect()
+			needClose = True
+		try:
+			query = forceUnicode(query)
+			logger.debug(u"SQL query: %s" % query)
+			res = cursor.execute(query)
+			conn.commit()
+		finally:
+			if needClose:
+				self.close(conn, cursor)
+		return res
+	
+
+# ======================================================================================================
+# =                                    CLASS MYSQLBACKEND                                              =
+# ======================================================================================================
+class MySQLBackend(ConfigDataBackend):
+	
+	def __init__(self, **kwargs):
+		self._name = 'mysql'
+		
+		ConfigDataBackend.__init__(self, **kwargs)
+		
+		self._mysql = MySQL(**kwargs)
+		
+		warnings.showwarning = self._showwarning
+		self._licenseManagementEnabled = True
+		
+		self._auditHardwareConfig = {}
+		for config in self.auditHardware_getConfig():
+			hwClass = config['Class']['Opsi']
+			self._auditHardwareConfig[hwClass] = {}
+			for value in config['Values']:
+				self._auditHardwareConfig[hwClass][value['Opsi']] = {
+					'Type':  value["Type"],
+					'Scope': value["Scope"]
+				}
+		
+		self._licenseManagementModule = False
+		self._mysqlBackendModule = False
+		
+		modules = self._context.backend_info()['modules']
+		
+		if not modules.get('customer'):
+			logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
+			
+		elif not modules.get('valid'):
+			logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
+		
+		elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
+			logger.notice(u"Disabling mysql backend and license management module: modules file expired")
+		
+		else:
+			logger.info(u"Verifying modules file signature")
+			publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			data = u''
+			mks = modules.keys()
+			mks.sort()
+			for module in mks:
+				if module in ('valid', 'signature'):
+					continue
+				val = modules[module]
+				if (val == False): val = 'no'
+				if (val == True):  val = 'yes'
+				data += u'%s = %s\r\n' % (module.lower().strip(), val)
+			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
+			else:
+				logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+				
+				if modules.get('license_management'):
+					self._licenseManagementModule = True
+				
+				if modules.get('mysql_backend'):
+					self._mysqlBackendModule = True
+		
+		logger.debug(u'MySQLBackend created: %s' % self)
+		
+	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
+		#logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))
+		if str(message).startswith('Data truncated for column'):
+			logger.error(message)
+		else:
+			logger.warning(message)
+	
+	def _filterToSql(self, filter={}):
+		where = u''
+		for (key, values) in filter.items():
+			if values is None:
+				continue
+			values = forceList(values)
+			if not values:
+				continue
+			if where:
+				where += u' and '
+			where += u'('
+			for value in values:
+				operator = '='
+				if type(value) in (float, long, int, bool):
+					where += u"`%s` %s %s" % (key, operator, value)
+				elif value is None:
+					where += u"`%s` is NULL" % key
+				else:
+					value = value.replace("\\", "\\\\").replace("'", "\\\'")
+					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
+					if match:
+						operator = match.group(1)
+						value = match.group(2)
+						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
+					else:
+						value = value.replace("\\*", u'\ufffd')
+						if (value.find('*') != -1):
+							operator = 'LIKE'
+							value = value.replace("%", "\\%").replace("_", "\\_").replace('*', '%')
+						value = value.replace(u'\ufffd', "\\*")
+						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
+				where += u' or '
+			where = where[:-4] + u')'
+		return where
+	
+	def _createQuery(self, table, attributes=[], filter={}):
+		select = u''
+		for attribute in attributes:
+			if select:
+				select += u','
+			select += u'`%s`' % attribute
+		if not select:
+			select = u'*'
+		
+		where = self._filterToSql(filter)
+		query = u''
+		if where:
+			query = u'select %s from `%s` where %s' % (select, table, where)
+		else:
+			query = u'select %s from `%s`' % (select, table)
+		logger.debug(u"Created query: '%s'" % query)
+		return query
+		
+	def _adjustAttributes(self, objectClass, attributes, filter):
+		if not attributes:
+			attributes = []
+		# Work on copies of attributes and filter!
+		newAttributes = list(forceUnicodeList(attributes))
+		newFilter = dict(forceDict(filter))
+		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+		if newFilter.has_key('id'):
+			newFilter[id] = newFilter['id']
+			del newFilter['id']
+		if 'id' in newAttributes:
+			newAttributes.remove('id')
+			newAttributes.append(id)
+		if 'type' in filter.keys():
+			for oc in forceList(filter['type']):
+				if (objectClass.__name__ == oc):
+					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
+		if newAttributes:
+			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
+				newAttributes.append('type')
+			objectClasses = [ objectClass ]
+			objectClasses.extend(objectClass.subClasses.values())
+			for oc in objectClasses:
+				for arg in mandatoryConstructorArgs(oc):
+					if (arg == 'id'):
+						arg = id
+					if not arg in newAttributes:
+						newAttributes.append(arg)
+		return (newAttributes, newFilter)
+		
+	def _adjustResult(self, objectClass, result):
+		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+		if result.has_key(id):
+			result['id'] = result[id]
+			del result[id]
+		return result
+	
+	def _objectToDatabaseHash(self, object):
+		hash = object.toHash()
+		if (object.getType() == 'ProductOnClient'):
+			if hash.has_key('actionSequence'):
+				del hash['actionSequence']
+		
+		if issubclass(object.__class__, Relationship):
+			if hash.has_key('type'):
+				del hash['type']
+		
+		for (key, value) in hash.items():
+			arg = self._objectAttributeToDatabaseAttribute(object.__class__, key)
+			if (key != arg):
+				hash[arg] = hash[key]
+				del hash[key]
+		return hash
+		
+	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):
+		if (attribute == 'id'):
+			# A class is considered a subclass of itself
+			if issubclass(objectClass, Product):
+				return 'productId'
+			if issubclass(objectClass, Host):
+				return 'hostId'
+			if issubclass(objectClass, Group):
+				return 'groupId'
+			if issubclass(objectClass, Config):
+				return 'configId'
+			if issubclass(objectClass, LicenseContract):
+				return 'licenseContractId'
+			if issubclass(objectClass, SoftwareLicense):
+				return 'softwareLicenseId'
+			if issubclass(objectClass, LicensePool):
+				return 'licensePoolId'
+		return attribute
+	
+	def _uniqueCondition(self, object):
+		condition = u''
+		args = mandatoryConstructorArgs(object.__class__)
+		for arg in args:
+			value = getattr(object, arg)
+			if value is None:
+				continue
+			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
+			if condition:
+				condition += u' and '
+			if type(value) in (float, long, int, bool):
+				condition += u"`%s` = %s" % (arg, value)
+			#elif value is None:
+			#	where += u"`%s` is NULL" % key
+			else:
+				condition += u"`%s` = '%s'" % (arg, value.replace("\\", "\\\\").replace("'", "\\\'"))
+		return condition
+	
+	def _objectExists(self, table, object):
+		query = 'select * from `%s` where %s' % (table, self._uniqueCondition(object))
+		return bool(self._mysql.getRow(query))
+		
+	def backend_exit(self):
+		pass
+	
+	def backend_deleteBase(self):
+		ConfigDataBackend.backend_deleteBase(self)
+		# Drop database
+		errors = 0
+		done = False
+		while not done and (errors < 100):
+			done = True
+			for i in self._mysql.getSet(u'SHOW TABLES;'):
+				try:
+					logger.debug(u'DROP TABLE `%s`;' % i.values()[0])
+					self._mysql.execute(u'DROP TABLE `%s`;' % i.values()[0])
+				except Exception, e:
+					logger.error(e)
+					done = False
+					errors += 1
+		
+	def backend_createBase(self):
+		ConfigDataBackend.backend_createBase(self)
+		# Hardware audit database
+		tables = {}
+		logger.debug(u"Current tables:")
+		for i in self._mysql.getSet(u'SHOW TABLES;'):
+			tableName = i.values()[0]
+			logger.debug(u" [ %s ]" % tableName)
+			tables[tableName] = []
+			for j in self._mysql.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
+				logger.debug(u"      %s" % j)
+				tables[tableName].append(j['Field'])
+		
+		logger.notice(u'Creating opsi base')
+		
+		# Host table
+		if not 'HOST' in tables.keys():
+			logger.debug(u'Creating table HOST')
+			table = u'''CREATE TABLE `HOST` (
+					`hostId` varchar(255) NOT NULL,
+					PRIMARY KEY( `hostId` ),
+					`type` varchar(30),
+					INDEX(`type`),
+					`description` varchar(100),
+					`notes` varchar(500),
+					`hardwareAddress` varchar(17),
+					`ipAddress` varchar(15),
+					`inventoryNumber` varchar(30),
+					`created` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`lastSeen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`opsiHostKey` varchar(32),
+					`oneTimePassword` varchar(32),
+					`maxBandwidth` int,
+					`depotLocalUrl` varchar(128),
+					`depotRemoteUrl` varchar(255),
+					`depotWebdavUrl` varchar(255),
+					`repositoryLocalUrl` varchar(128),
+					`repositoryRemoteUrl` varchar(255),
+					`networkAddress` varchar(31),
+					`isMasterDepot` bool,
+					`masterDepotId` varchar(255)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'CONFIG' in tables.keys():
+			logger.debug(u'Creating table CONFIG')
+			table = u'''CREATE TABLE `CONFIG` (
+					`configId` varchar(200) NOT NULL,
+					PRIMARY KEY( `configId` ),
+					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
+					`description` varchar(256),
+					`multiValue` bool NOT NULL,
+					`editable` bool NOT NULL
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'CONFIG_VALUE' in tables.keys():
+			logger.debug(u'Creating table CONFIG_VALUE')
+			table = u'''CREATE TABLE `CONFIG_VALUE` (
+					`config_value_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `config_value_id` ),
+					`configId` varchar(200) NOT NULL,
+					FOREIGN KEY ( `configId` ) REFERENCES `CONFIG` ( `configId` ),
+					`value` TEXT,
+					`isDefault` bool
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'CONFIG_STATE' in tables.keys():
+			logger.debug(u'Creating table CONFIG_STATE')
+			table = u'''CREATE TABLE `CONFIG_STATE` (
+					`config_state_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `config_state_id` ),
+					`configId` varchar(200) NOT NULL,
+					INDEX(`configId`),
+					`objectId` varchar(255) NOT NULL,
+					INDEX(`objectId`),
+					`values` text
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'PRODUCT' in tables.keys():
+			logger.debug(u'Creating table PRODUCT')
+			table = u'''CREATE TABLE `PRODUCT` (
+					`productId` varchar(50) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
+					`packageVersion` varchar(16) NOT NULL,
+					PRIMARY KEY( `productId`, `productVersion`, `packageVersion` ),
+					`type` varchar(32) NOT NULL,
+					INDEX(`type`),
+					`name` varchar(128) NOT NULL,
+					`licenseRequired` varchar(50),
+					`setupScript` varchar(50),
+					`uninstallScript` varchar(50),
+					`updateScript` varchar(50),
+					`alwaysScript` varchar(50),
+					`onceScript` varchar(50),
+					`customScript` varchar(50),
+					`userLoginScript` varchar(50),
+					`priority` int,
+					`description` TEXT,
+					`advice` TEXT,
+					`pxeConfigTemplate` varchar(50),
+					`changelog` TEXT
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
+		if not 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' in tables.keys():
+			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
+			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
+					`windowsSoftwareId` VARCHAR(100) NOT NULL,
+					`productId` varchar(50) NOT NULL,
+					PRIMARY KEY( `windowsSoftwareId`, `productId` )
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'PRODUCT_ON_DEPOT' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
+			table = u'''CREATE TABLE `PRODUCT_ON_DEPOT` (
+					`productId` varchar(50) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
+					`packageVersion` varchar(16) NOT NULL,
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
+					`depotId` varchar(50) NOT NULL,
+					FOREIGN KEY ( `depotId` ) REFERENCES HOST( `hostId` ),
+					PRIMARY KEY(  `productId`, `depotId` ),
+					`productType` varchar(16) NOT NULL,
+					INDEX(`productType`),
+					`locked` bool
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'PRODUCT_PROPERTY' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_PROPERTY')
+			table = u'''CREATE TABLE `PRODUCT_PROPERTY` (
+					`productId` varchar(50) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
+					`packageVersion` varchar(16) NOT NULL,
+					`propertyId` varchar(200) NOT NULL,
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
+					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
+					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
+					`description` varchar(256),
+					`multiValue` bool NOT NULL,
+					`editable` bool NOT NULL
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'PRODUCT_PROPERTY_VALUE' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_PROPERTY_VALUE')
+			table = u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
+					`product_property_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `product_property_id` ),
+					`productId` varchar(50) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
+					`packageVersion` varchar(16) NOT NULL,
+					`propertyId` varchar(200) NOT NULL,
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion`, `propertyId` ) REFERENCES `PRODUCT_PROPERTY` ( `productId`, `productVersion`, `packageVersion`, `propertyId` ),
+					`value` text,
+					`isDefault` bool
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'PRODUCT_DEPENDENCY' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_DEPENDENCY')
+			table = u'''CREATE TABLE `PRODUCT_DEPENDENCY` (
+					`productId` varchar(50) NOT NULL,
+					`productVersion` varchar(32) NOT NULL,
+					`packageVersion` varchar(16) NOT NULL,
+					FOREIGN KEY ( `productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` ( `productId`, `productVersion`, `packageVersion` ),
+					`productAction` varchar(16) NOT NULL,
+					`requiredProductId` varchar(50) NOT NULL,
+					PRIMARY KEY( `productId`, `productVersion`, `packageVersion`, `productAction`, `requiredProductId` ),
+					`requiredProductVersion` varchar(32),
+					`requiredPackageVersion` varchar(16),
+					`requiredAction` varchar(16),
+					`requiredInstallationStatus` varchar(16),
+					`requirementType` varchar(16)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		# FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
+		if not 'PRODUCT_ON_CLIENT' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
+			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
+					`productId` varchar(50) NOT NULL,
+					`clientId` varchar(255) NOT NULL,
+					FOREIGN KEY ( `clientId` ) REFERENCES `HOST` ( `hostId` ),
+					PRIMARY KEY( `productId`, `clientId` ),
+					`productType` varchar(16) NOT NULL,
+					`targetConfiguration` varchar(16),
+					`installationStatus` varchar(16),
+					`actionRequest` varchar(16),
+					`actionProgress` varchar(255),
+					`actionResult` varchar(16),
+					`lastAction` varchar(16),
+					`productVersion` varchar(32),
+					`packageVersion` varchar(16),
+					`modificationTime` TIMESTAMP
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
+		if not 'PRODUCT_PROPERTY_STATE' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_PROPERTY_STATE')
+			table = u'''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
+					`product_property_state_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `product_property_state_id` ),
+					`productId` varchar(50) NOT NULL,
+					`propertyId` varchar(200) NOT NULL,
+					`objectId` varchar(255) NOT NULL,
+					INDEX(`objectId`),
+					`values` text
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'GROUP' in tables.keys():
+			logger.debug(u'Creating table GROUP')
+			table = u'''CREATE TABLE `GROUP` (
+					`type` varchar(30) NOT NULL,
+					`groupId` varchar(255) NOT NULL,
+					PRIMARY KEY( `type`, `groupId` ),
+					`parentGroupId` varchar(255),
+					INDEX(`parentGroupId`),
+					`description` varchar(100),
+					`notes` varchar(500)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'OBJECT_TO_GROUP' in tables.keys():
+			logger.debug(u'Creating table OBJECT_TO_GROUP')
+			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
+					`object_to_group_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `object_to_group_id` ),
+					`groupType` varchar(30) NOT NULL,
+					`groupId` varchar(100) NOT NULL,
+					FOREIGN KEY ( `groupType`, `groupId`) REFERENCES `GROUP` ( `type`, `groupId` ),
+					`objectId` varchar(255) NOT NULL,
+					INDEX(`objectId`)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'LICENSE_CONTRACT' in tables.keys():
+			logger.debug(u'Creating table LICENSE_CONTRACT')
+			table = u'''CREATE TABLE `LICENSE_CONTRACT` (
+					`licenseContractId` VARCHAR(100) NOT NULL,
+					PRIMARY KEY( `licenseContractId` ),
+					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
+					`description` varchar(100),
+					`notes` varchar(1000),
+					`partner` varchar(100),
+					`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'SOFTWARE_LICENSE' in tables.keys():
+			logger.debug(u'Creating table SOFTWARE_LICENSE')
+			table = u'''CREATE TABLE `SOFTWARE_LICENSE` (
+					`softwareLicenseId` VARCHAR(100) NOT NULL,
+					PRIMARY KEY( `softwareLicenseId` ),
+					`licenseContractId` VARCHAR(100) NOT NULL,
+					FOREIGN KEY ( `licenseContractId` ) REFERENCES LICENSE_CONTRACT( `licenseContractId` ),
+					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
+					`boundToHost` varchar(255),
+					INDEX(`boundToHost`),
+					`maxInstallations` int,
+					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00'
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'LICENSE_POOL' in tables.keys():
+			logger.debug(u'Creating table LICENSE_POOL')
+			table = u'''CREATE TABLE `LICENSE_POOL` (
+					`licensePoolId` VARCHAR(100) NOT NULL,
+					PRIMARY KEY( `licensePoolId` ),
+					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
+					`description` varchar(200)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'AUDIT_SOFTWARE_TO_LICENSE_POOL' in tables.keys():
+			logger.debug(u'Creating table AUDIT_SOFTWARE_TO_LICENSE_POOL')
+			table = u'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
+					`licensePoolId` VARCHAR(100) NOT NULL,
+					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(10) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` )
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'PRODUCT_ID_TO_LICENSE_POOL' in tables.keys():
+			logger.debug(u'Creating table PRODUCT_ID_TO_LICENSE_POOL')
+			table = u'''CREATE TABLE `PRODUCT_ID_TO_LICENSE_POOL` (
+					`licensePoolId` VARCHAR(100) NOT NULL,
+					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
+					`productId` VARCHAR(100) NOT NULL,
+					PRIMARY KEY( `licensePoolId`, `productId` )
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'SOFTWARE_LICENSE_TO_LICENSE_POOL' in tables.keys():
+			logger.debug(u'Creating table SOFTWARE_LICENSE_TO_LICENSE_POOL')
+			table = u'''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
+					`softwareLicenseId` VARCHAR(100) NOT NULL,
+					FOREIGN KEY ( `softwareLicenseId` ) REFERENCES SOFTWARE_LICENSE( `softwareLicenseId` ),
+					`licensePoolId` VARCHAR(100) NOT NULL,
+					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
+					PRIMARY KEY( `softwareLicenseId`, `licensePoolId` ),
+					`licenseKey` VARCHAR(100)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'LICENSE_ON_CLIENT' in tables.keys():
+			logger.debug(u'Creating table LICENSE_ON_CLIENT')
+			table = u'''CREATE TABLE `LICENSE_ON_CLIENT` (
+					`license_on_client_id` int NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `license_on_client_id` ),
+					`softwareLicenseId` VARCHAR(100) NOT NULL,
+					`licensePoolId` VARCHAR(100) NOT NULL,
+					`clientId` varchar(255),
+					FOREIGN KEY( `softwareLicenseId`, `licensePoolId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId`, `licensePoolId` ),
+					INDEX( `clientId` ),
+					`licenseKey` VARCHAR(100),
+					`notes` VARCHAR(1024)
+				) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		
+		# Software audit tables
+		if not 'SOFTWARE' in tables.keys():
+			logger.debug(u'Creating table SOFTWARE')
+			table = u'''CREATE TABLE `SOFTWARE` (
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(10) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` ),
+					`windowsSoftwareId` varchar(100),
+					INDEX(`windowsSoftwareId`),
+					`windowsDisplayName` varchar(100),
+					`windowsDisplayVersion` varchar(100),
+					`type` varchar(30) NOT NULL,
+					INDEX(`type`),
+					`installSize` BIGINT
+				) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		if not 'SOFTWARE_CONFIG' in tables.keys():
+			logger.debug(u'Creating table SOFTWARE_CONFIG')
+			table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
+					`config_id` INT NOT NULL AUTO_INCREMENT,
+					PRIMARY KEY( `config_id` ),
+					`clientId` varchar(255) NOT NULL,
+					INDEX(`clientId`),
+					`name` varchar(100) NOT NULL,
+					`version` varchar(100) NOT NULL,
+					`subVersion` varchar(100) NOT NULL,
+					`language` varchar(10) NOT NULL,
+					`architecture` varchar(3) NOT NULL,
+					INDEX( `name`, `version`, `subVersion`, `language`, `architecture` ),
+					`uninstallString` varchar(200),
+					`binaryName` varchar(100),
+					`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`state` TINYINT NOT NULL,
+					`usageFrequency` int NOT NULL DEFAULT -1,
+					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`licenseKey` VARCHAR(100)
+				) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+				'''
+			logger.debug(table)
+			self._mysql.execute(table)
+		
+		# Hardware audit tables
+		for (hwClass, values) in self._auditHardwareConfig.items():
+			logger.info(u"Processing hardware class '%s'" % hwClass)
+			
+			hardwareDeviceTableName = u'HARDWARE_DEVICE_' + hwClass
+			hardwareConfigTableName = u'HARDWARE_CONFIG_' + hwClass
+			
+			hardwareDeviceTable = u'CREATE TABLE `' + hardwareDeviceTableName + '` (\n' + \
+						u'`hardware_id` INT NOT NULL AUTO_INCREMENT,\n' + \
+						u'PRIMARY KEY( `hardware_id` ),\n'
+			hardwareConfigTable = u'CREATE TABLE `' + hardwareConfigTableName + '` (\n' + \
+						u'`config_id` INT NOT NULL AUTO_INCREMENT,\n' + \
+						u'PRIMARY KEY( `config_id` ),\n' + \
+						u'`hostId` varchar(50) NOT NULL,\n' + \
+						u'`hardware_id` INT NOT NULL,\n' + \
+						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
+						u'`state` TINYINT NOT NULL,\n'
+			
+			hardwareDeviceTableExists = hardwareDeviceTableName in tables.keys()
+			hardwareConfigTableExists = hardwareConfigTableName in tables.keys()
+			
+			if hardwareDeviceTableExists:
+				hardwareDeviceTable = u'ALTER TABLE `' + hardwareDeviceTableName + u'`\n'
+			if hardwareConfigTableExists:
+				hardwareConfigTable = u'ALTER TABLE `' + hardwareConfigTableName + u'`\n'
+			
+			for (value, valueInfo) in values.items():
+				logger.debug(u"  Processing value '%s'" % value)
+				if   (valueInfo['Scope'] == 'g'):
+					if hardwareDeviceTableExists:
+						if value in tables[hardwareDeviceTableName]:
+							# Column exists => change
+							hardwareDeviceTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
+						else:
+							# Column does not exist => add
+							hardwareDeviceTable += u'ADD `%s` %s NULL,\n' % (value, value)
+					else:
+						hardwareDeviceTable += u'`%s` %s NULL,\n' % (value, valueInfo["Type"])
+				elif (valueInfo['Scope'] == 'i'):
+					if hardwareConfigTableExists:
+						if value in tables[hardwareConfigTableName]:
+							# Column exists => change
+							hardwareConfigTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
+						else:
+							# Column does not exist => add
+							hardwareConfigTable += u'ADD `%s` %s NULL,\n' % (value, valueInfo['Type'])
+					else:
+						hardwareConfigTable += u'`%s` %s NULL,\n' % (value, valueInfo['Type'])
+			
+			# Remove leading and trailing whitespace
+			hardwareDeviceTable = hardwareDeviceTable.strip()
+			hardwareConfigTable = hardwareConfigTable.strip()
+			
+			# Remove trailing comma
+			if (hardwareDeviceTable[-1] == u','):
+				hardwareDeviceTable = hardwareDeviceTable[:-1]
+			if (hardwareConfigTable[-1] == u','):
+				hardwareConfigTable = hardwareConfigTable[:-1]
+			
+			# Finish sql query
+			if hardwareDeviceTableExists:
+				hardwareDeviceTable += u' ;\n'
+			else:
+				hardwareDeviceTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;\n'
+			
+			if hardwareConfigTableExists:
+				hardwareConfigTable += u' ;\n'
+			else:
+				hardwareConfigTable += u'\n) ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;\n'
+			
+			# Log sql query
+			logger.debug(hardwareDeviceTable)
+			logger.debug(hardwareConfigTable)
+			
+			# Execute sql query
+			self._mysql.execute(hardwareDeviceTable)
+			self._mysql.execute(hardwareConfigTable)
+		
+		
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Hosts                                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def host_insertObject(self, host):
+		ConfigDataBackend.host_insertObject(self, host)
+		data = self._objectToDatabaseHash(host)
+		where = self._uniqueCondition(host)
+		if self._mysql.getRow('select * from `HOST` where %s' % where):
+			self._mysql.update('HOST', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('HOST', data)
+	
+	def host_updateObject(self, host):
+		ConfigDataBackend.host_updateObject(self, host)
+		data = self._objectToDatabaseHash(host)
+		where = self._uniqueCondition(host)
+		self._mysql.update('HOST', where, data)
+	
+	def host_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting hosts, filter: %s" % filter)
+		hosts = []
+		type = forceList(filter.get('type', []))
+		if 'OpsiDepotserver' in type and not 'OpsiConfigserver' in type:
+			type.append('OpsiConfigserver')
+			filter['type'] = type
+		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
+		for res in  self._mysql.getSet(self._createQuery('HOST', attributes, filter)):
+			self._adjustResult(Host, res)
+			hosts.append(Host.fromHash(res))
+		return hosts
+	
+	def host_deleteObjects(self, hosts):
+		ConfigDataBackend.host_deleteObjects(self, hosts)
+		for host in forceObjectClassList(hosts, Host):
+			logger.info(u"Deleting host %s" % host)
+			where = self._uniqueCondition(host)
+			self._mysql.delete('HOST', where)
+	
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Configs                                                                                   -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def config_insertObject(self, config):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.config_insertObject(self, config)
+		data = self._objectToDatabaseHash(config)
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		del data['possibleValues']
+		del data['defaultValues']
+		
+		where = self._uniqueCondition(config)
+		if self._mysql.getRow('select * from `CONFIG` where %s' % where):
+			self._mysql.update('CONFIG', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('CONFIG', data)
+		
+		self._mysql.delete('CONFIG_VALUE', where)
+		for value in possibleValues:
+			self._mysql.insert('CONFIG_VALUE', {
+				'configId': data['configId'],
+				'value': value,
+				'isDefault': (value in defaultValues)
+				})
+	
+	def config_updateObject(self, config):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.config_updateObject(self, config)
+		data = self._objectToDatabaseHash(config)
+		where = self._uniqueCondition(config)
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		del data['possibleValues']
+		del data['defaultValues']
+		
+		self._mysql.update('CONFIG', where, data)
+		self._mysql.delete('CONFIG_VALUE', where)
+		for value in possibleValues:
+			self._mysql.insert('CONFIG_VALUE', {
+				'configId': data['configId'],
+				'value': value,
+				'isDefault': (value in defaultValues)
+				})
+	
+	def config_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting configs, filter: %s" % filter)
+		configs = []
+		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
+		
+		if filter.has_key('defaultValues'):
+			if filter['defaultValues']:
+				configIds = filter.get('configId')
+				filter['configId'] = []
+				for res in self._mysql.getSet(self._createQuery('CONFIG_VALUE', ['configId'], {'configId': configIds, 'value': filter['defaultValues'], 'isDefault': True})):
+					filter['configId'].append(res['configId'])
+				if not filter['configId']:
+					return []
+			del filter['defaultValues']
+		if filter.has_key('possibleValues'):
+			if filter['possibleValues']:
+				configIds = filter.get('configId')
+				filter['configId'] = []
+				for res in self._mysql.getSet(self._createQuery('CONFIG_VALUE', ['configId'], {'configId': configIds, 'value': filter['possibleValues']})):
+					filter['configId'].append(res['configId'])
+				if not filter['configId']:
+					return []
+			del filter['possibleValues']
+		attrs = []
+		for attr in attributes:
+			if not attr in ('defaultValues', 'possibleValues'):
+				attrs.append(attr)
+		for res in self._mysql.getSet(self._createQuery('CONFIG', attrs, filter)):
+			res['possibleValues'] = []
+			res['defaultValues'] = []
+			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
+				for res2 in self._mysql.getSet(u"select * from CONFIG_VALUE where `configId` = '%s'" % res['configId']):
+					res['possibleValues'].append(res2['value'])
+					if res2['isDefault']:
+						res['defaultValues'].append(res2['value'])
+			self._adjustResult(Config, res)
+			configs.append(Config.fromHash(res))
+		return configs
+	
+	def config_deleteObjects(self, configs):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.config_deleteObjects(self, configs)
+		for config in forceObjectClassList(configs, Config):
+			logger.info(u"Deleting config %s" % config)
+			where = self._uniqueCondition(config)
+			self._mysql.delete('CONFIG_VALUE', where)
+			self._mysql.delete('CONFIG', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ConfigStates                                                                              -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def configState_insertObject(self, configState):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.configState_insertObject(self, configState)
+		data = self._objectToDatabaseHash(configState)
+		data['values'] = json.dumps(data['values'])
+		
+		where = self._uniqueCondition(configState)
+		if self._mysql.getRow('select * from `CONFIG_STATE` where %s' % where):
+			self._mysql.update('CONFIG_STATE', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('CONFIG_STATE', data)
+	
+	def configState_updateObject(self, configState):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.configState_updateObject(self, configState)
+		data = self._objectToDatabaseHash(configState)
+		where = self._uniqueCondition(configState)
+		data['values'] = json.dumps(data['values'])
+		self._mysql.update('CONFIG_STATE', where, data)
+	
+	def configState_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting configStates, filter: %s" % filter)
+		configStates = []
+		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
+			if res.has_key('values'):
+				res['values'] = json.loads(res['values'])
+			configStates.append(ConfigState.fromHash(res))
+		return configStates
+	
+	def configState_deleteObjects(self, configStates):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.configState_deleteObjects(self, configStates)
+		for configState in forceObjectClassList(configStates, ConfigState):
+			logger.info("Deleting configState %s" % configState)
+			where = self._uniqueCondition(configState)
+			self._mysql.delete('CONFIG_STATE', where)
+	
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Products                                                                                  -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def product_insertObject(self, product):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		modules = self._context.backend_info()['modules']
+		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''; mks = modules.keys(); mks.sort()
+		for module in mks:
+			if module in ('valid', 'signature'):
+				continue
+			val = modules[module]
+			if (val == False): val = 'no'
+			if (val == True):  val = 'yes'
+			data += u'%s = %s\r\n' % (module.lower().strip(), val)
+		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+			logger.error(u"Failed to verify modules signature")
+			return
+		
+		ConfigDataBackend.product_insertObject(self, product)
+		data = self._objectToDatabaseHash(product)
+		windowsSoftwareIds = data['windowsSoftwareIds']
+		del data['windowsSoftwareIds']
+		del data['productClassIds']
+		
+		where = self._uniqueCondition(product)
+		if self._mysql.getRow('select * from `PRODUCT` where %s' % where):
+			self._mysql.update('PRODUCT', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('PRODUCT', data)
+		
+		self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
+		for windowsSoftwareId in windowsSoftwareIds:
+			self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+	
+	def product_updateObject(self, product):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.product_updateObject(self, product)
+		data = self._objectToDatabaseHash(product)
+		where = self._uniqueCondition(product)
+		windowsSoftwareIds = data['windowsSoftwareIds']
+		del data['windowsSoftwareIds']
+		del data['productClassIds']
+		self._mysql.update('PRODUCT', where, data)
+		self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
+		if windowsSoftwareIds:
+			for windowsSoftwareId in windowsSoftwareIds:
+				self._mysql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+	
+	def product_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting products, filter: %s" % filter)
+		products = []
+		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT', attributes, filter)):
+			res['windowsSoftwareIds'] = []
+			res['productClassIds'] = []
+			if not attributes or 'windowsSoftwareIds' in attributes:
+				for res2 in self._mysql.getSet(u"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '%s'" % res['productId']):
+					res['windowsSoftwareIds'].append(res2['windowsSoftwareId'])
+			if not attributes or 'productClassIds' in attributes:
+				pass
+			self._adjustResult(Product, res)
+			products.append(Product.fromHash(res))
+		return products
+	
+	def product_deleteObjects(self, products):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.product_deleteObjects(self, products)
+		for product in forceObjectClassList(products, Product):
+			logger.info("Deleting product %s" % product)
+			where = self._uniqueCondition(product)
+			self._mysql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % product.getId())
+			self._mysql.delete('PRODUCT', where)
+	
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductProperties                                                                         -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productProperty_insertObject(self, productProperty):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productProperty_insertObject(self, productProperty)
+		data = self._objectToDatabaseHash(productProperty)
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		del data['possibleValues']
+		del data['defaultValues']
+		
+		where = self._uniqueCondition(productProperty)
+		if self._mysql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
+			self._mysql.update('PRODUCT_PROPERTY', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('PRODUCT_PROPERTY', data)
+		
+		if not possibleValues is None:
+			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
+		for value in possibleValues:
+			self._mysql.insert('PRODUCT_PROPERTY_VALUE', {
+					'productId': data['productId'],
+					'productVersion': data['productVersion'],
+					'packageVersion': data['packageVersion'],
+					'propertyId': data['propertyId'],
+					'value': value,
+					'isDefault': (value in defaultValues)
+					})
+	
+	def productProperty_updateObject(self, productProperty):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productProperty_updateObject(self, productProperty)
+		data = self._objectToDatabaseHash(productProperty)
+		where = self._uniqueCondition(productProperty)
+		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
+		del data['possibleValues']
+		del data['defaultValues']
+		self._mysql.update('PRODUCT_PROPERTY', where, data)
+		
+		if not possibleValues is None:
+			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
+		
+		for value in possibleValues:
+			self._mysql.insert('PRODUCT_PROPERTY_VALUE', {
+					'productId': data['productId'],
+					'productVersion': data['productVersion'],
+					'packageVersion': data['packageVersion'],
+					'propertyId': data['propertyId'],
+					'value': value,
+					'isDefault': (value in defaultValues)
+					})
+	
+	def productProperty_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting product properties, filter: %s" % filter)
+		productProperties = []
+		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY', attributes, filter)):
+			res['possibleValues'] = []
+			res['defaultValues'] = []
+			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
+				for res2 in self._mysql.getSet(u"select * from PRODUCT_PROPERTY_VALUE where " \
+					+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
+					% (res['propertyId'], res['productId'], res['productVersion'], res['packageVersion'])):
+					res['possibleValues'].append(res2['value'])
+					if res2['isDefault']:
+						res['defaultValues'].append(res2['value'])
+			productProperties.append(ProductProperty.fromHash(res))
+		return productProperties
+	
+	def productProperty_deleteObjects(self, productProperties):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
+		for productProperty in forceObjectClassList(productProperties, ProductProperty):
+			logger.info("Deleting product property %s" % productProperty)
+			where = self._uniqueCondition(productProperty)
+			self._mysql.delete('PRODUCT_PROPERTY_VALUE', where)
+			self._mysql.delete('PRODUCT_PROPERTY', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductDependencies                                                                         -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productDependency_insertObject(self, productDependency):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productDependency_insertObject(self, productDependency)
+		data = self._objectToDatabaseHash(productDependency)
+		
+		where = self._uniqueCondition(productDependency)
+		if self._mysql.getRow('select * from `PRODUCT_DEPENDENCY` where %s' % where):
+			self._mysql.update('PRODUCT_DEPENDENCY', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('PRODUCT_DEPENDENCY', data)
+	
+	def productDependency_updateObject(self, productDependency):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productDependency_updateObject(self, productDependency)
+		data = self._objectToDatabaseHash(productDependency)
+		where = self._uniqueCondition(productDependency)
+		
+		self._mysql.update('PRODUCT_DEPENDENCY', where, data)
+	
+	def productDependency_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting product dependencies, filter: %s" % filter)
+		productDependencies = []
+		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter)):
+			productDependencies.append(ProductDependency.fromHash(res))
+		return productDependencies
+	
+	def productDependency_deleteObjects(self, productDependencies):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
+		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
+			logger.info("Deleting product dependency %s" % productDependency)
+			where = self._uniqueCondition(productDependency)
+			self._mysql.delete('PRODUCT_DEPENDENCY', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnDepots                                                                           -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnDepot_insertObject(self, productOnDepot):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
+		data = self._objectToDatabaseHash(productOnDepot)
+		
+		productOnDepotClone = productOnDepot.clone(identOnly = True)
+		productOnDepotClone.productVersion = None
+		productOnDepotClone.packageVersion = None
+		productOnDepotClone.productType = None
+		where = self._uniqueCondition(productOnDepotClone)
+		if self._mysql.getRow('select * from `PRODUCT_ON_DEPOT` where %s' % where):
+			self._mysql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('PRODUCT_ON_DEPOT', data)
+	
+	def productOnDepot_updateObject(self, productOnDepot):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
+		data = self._objectToDatabaseHash(productOnDepot)
+		where = self._uniqueCondition(productOnDepot)
+		self._mysql.update('PRODUCT_ON_DEPOT', where, data)
+	
+	def productOnDepot_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
+		productOnDepots = []
+		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
+			productOnDepots.append(ProductOnDepot.fromHash(res))
+		return productOnDepots
+	
+	def productOnDepot_deleteObjects(self, productOnDepots):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
+		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
+			logger.info(u"Deleting productOnDepot %s" % productOnDepot)
+			where = self._uniqueCondition(productOnDepot)
+			self._mysql.delete('PRODUCT_ON_DEPOT', where)
+		
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productOnClient_insertObject(self, productOnClient):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
+		data = self._objectToDatabaseHash(productOnClient)
+		
+		productOnClientClone = productOnClient.clone(identOnly = True)
+		productOnClientClone.productVersion = None
+		productOnClientClone.packageVersion = None
+		productOnClientClone.productType = None
+		where = self._uniqueCondition(productOnClientClone)
+		
+		if self._mysql.getRow('select * from `PRODUCT_ON_CLIENT` where %s' % where):
+			self._mysql.update('PRODUCT_ON_CLIENT', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('PRODUCT_ON_CLIENT', data)
+		
+	def productOnClient_updateObject(self, productOnClient):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
+		data = self._objectToDatabaseHash(productOnClient)
+		where = self._uniqueCondition(productOnClient)
+		self._mysql.update('PRODUCT_ON_CLIENT', where, data)
+	
+	def productOnClient_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting productOnClients, filter: %s" % filter)
+		productOnClients = []
+		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter)):
+			productOnClients.append(ProductOnClient.fromHash(res))
+		return productOnClients
+	
+	def productOnClient_deleteObjects(self, productOnClients):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
+		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
+			logger.info(u"Deleting productOnClient %s" % productOnClient)
+			where = self._uniqueCondition(productOnClient)
+			self._mysql.delete('PRODUCT_ON_CLIENT', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductPropertyStates                                                                     -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def productPropertyState_insertObject(self, productPropertyState):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
+		if not self._mysql.getSet(self._createQuery('HOST', ['hostId'], {"hostId": productPropertyState.objectId})):
+			raise BackendReferentialIntegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
+		data = self._objectToDatabaseHash(productPropertyState)
+		data['values'] = json.dumps(data['values'])
+		
+		where = self._uniqueCondition(productPropertyState)
+		if self._mysql.getRow('select * from `PRODUCT_PROPERTY_STATE` where %s' % where):
+			self._mysql.update('PRODUCT_PROPERTY_STATE', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('PRODUCT_PROPERTY_STATE', data)
+	
+	def productPropertyState_updateObject(self, productPropertyState):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
+		data = self._objectToDatabaseHash(productPropertyState)
+		where = self._uniqueCondition(productPropertyState)
+		data['values'] = json.dumps(data['values'])
+		self._mysql.update('PRODUCT_PROPERTY_STATE', where, data)
+	
+	def productPropertyState_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
+		productPropertyStates = []
+		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
+			if res.has_key('values'):
+				res['values'] = json.loads(res['values'])
+			productPropertyStates.append(ProductPropertyState.fromHash(res))
+		return productPropertyStates
+	
+	def productPropertyState_deleteObjects(self, productPropertyStates):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
+		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
+			logger.info(u"Deleting productPropertyState %s" % productPropertyState)
+			where = self._uniqueCondition(productPropertyState)
+			self._mysql.delete('PRODUCT_PROPERTY_STATE', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Groups                                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def group_insertObject(self, group):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.group_insertObject(self, group)
+		data = self._objectToDatabaseHash(group)
+		
+		where = self._uniqueCondition(group)
+		if self._mysql.getRow('select * from `GROUP` where %s' % where):
+			self._mysql.update('GROUP', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('GROUP', data)
+	
+	def group_updateObject(self, group):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.group_updateObject(self, group)
+		data = self._objectToDatabaseHash(group)
+		where = self._uniqueCondition(group)
+		self._mysql.update('GROUP', where, data)
+	
+	def group_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting groups, filter: %s" % filter)
+		groups = []
+		(attributes, filter) = self._adjustAttributes(Group, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('GROUP', attributes, filter)):
+			self._adjustResult(Group, res)
+			groups.append(Group.fromHash(res))
+		return groups
+	
+	def group_deleteObjects(self, groups):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.group_deleteObjects(self, groups)
+		for group in forceObjectClassList(groups, Group):
+			logger.info(u"Deleting group %s" % group)
+			where = self._uniqueCondition(group)
+			self._mysql.delete('GROUP', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ObjectToGroups                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def objectToGroup_insertObject(self, objectToGroup):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
+		data = self._objectToDatabaseHash(objectToGroup)
+		
+		where = self._uniqueCondition(objectToGroup)
+		if self._mysql.getRow('select * from `OBJECT_TO_GROUP` where %s' % where):
+			self._mysql.update('OBJECT_TO_GROUP', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('OBJECT_TO_GROUP', data)
+	
+	def objectToGroup_updateObject(self, objectToGroup):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
+		data = self._objectToDatabaseHash(objectToGroup)
+		where = self._uniqueCondition(objectToGroup)
+		self._mysql.update('OBJECT_TO_GROUP', where, data)
+	
+	def objectToGroup_getObjects(self, attributes=[], **filter):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting objectToGroups, filter: %s" % filter)
+		objectToGroups = []
+		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter)):
+			objectToGroups.append(ObjectToGroup.fromHash(res))
+		return objectToGroups
+	
+	def objectToGroup_deleteObjects(self, objectToGroups):
+		if not self._mysqlBackendModule:
+			raise Exception(u"MySQL backend module disabled")
+		
+		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
+		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
+			logger.info(u"Deleting objectToGroup %s" % objectToGroup)
+			where = self._uniqueCondition(objectToGroup)
+			self._mysql.delete('OBJECT_TO_GROUP', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseContracts                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseContract_insertObject(self, licenseContract):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
+		data = self._objectToDatabaseHash(licenseContract)
+		
+		where = self._uniqueCondition(licenseContract)
+		if self._mysql.getRow('select * from `LICENSE_CONTRACT` where %s' % where):
+			self._mysql.update('LICENSE_CONTRACT', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('LICENSE_CONTRACT', data)
+		
+	def licenseContract_updateObject(self, licenseContract):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
+		data = self._objectToDatabaseHash(licenseContract)
+		where = self._uniqueCondition(licenseContract)
+		self._mysql.update('LICENSE_CONTRACT', where, data)
+	
+	def licenseContract_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
+		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting licenseContracts, filter: %s" % filter)
+		licenseContracts = []
+		(attributes, filter) = self._adjustAttributes(LicenseContract, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('LICENSE_CONTRACT', attributes, filter)):
+			self._adjustResult(LicenseContract, res)
+			licenseContracts.append(LicenseContract.fromHash(res))
+		return licenseContracts
+	
+	def licenseContract_deleteObjects(self, licenseContracts):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
+		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
+			logger.info(u"Deleting licenseContract %s" % licenseContract)
+			where = self._uniqueCondition(licenseContract)
+			self._mysql.delete('LICENSE_CONTRACT', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenses                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def softwareLicense_insertObject(self, softwareLicense):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
+		data = self._objectToDatabaseHash(softwareLicense)
+		
+		where = self._uniqueCondition(softwareLicense)
+		if self._mysql.getRow('select * from `SOFTWARE_LICENSE` where %s' % where):
+			self._mysql.update('SOFTWARE_LICENSE', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('SOFTWARE_LICENSE', data)
+		
+	def softwareLicense_updateObject(self, softwareLicense):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
+		data = self._objectToDatabaseHash(softwareLicense)
+		where = self._uniqueCondition(softwareLicense)
+		self._mysql.update('SOFTWARE_LICENSE', where, data)
+	
+	def softwareLicense_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
+		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
+		softwareLicenses = []
+		(attributes, filter) = self._adjustAttributes(SoftwareLicense, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('SOFTWARE_LICENSE', attributes, filter)):
+			self._adjustResult(SoftwareLicense, res)
+			softwareLicenses.append(SoftwareLicense.fromHash(res))
+		return softwareLicenses
+	
+	def softwareLicense_deleteObjects(self, softwareLicenses):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
+		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
+			logger.info(u"Deleting softwareLicense %s" % softwareLicense)
+			where = self._uniqueCondition(softwareLicense)
+			self._mysql.delete('SOFTWARE_LICENSE', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicensePools                                                                              -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licensePool_insertObject(self, licensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		modules = self._context.backend_info()['modules']
+		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''; mks = modules.keys(); mks.sort()
+		for module in mks:
+			if module in ('valid', 'signature'):
+				continue
+			val = modules[module]
+			if (val == False): val = 'no'
+			if (val == True):  val = 'yes'
+			data += u'%s = %s\r\n' % (module.lower().strip(), val)
+		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+			logger.error(u"Failed to verify modules signature")
+			return
+		
+		ConfigDataBackend.licensePool_insertObject(self, licensePool)
+		data = self._objectToDatabaseHash(licensePool)
+		productIds = data['productIds']
+		del data['productIds']
+		
+		where = self._uniqueCondition(licensePool)
+		if self._mysql.getRow('select * from `LICENSE_POOL` where %s' % where):
+			self._mysql.update('LICENSE_POOL', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('LICENSE_POOL', data)
+		
+		self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
+		for productId in productIds:
+			self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
+		
+	def licensePool_updateObject(self, licensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licensePool_updateObject(self, licensePool)
+		data = self._objectToDatabaseHash(licensePool)
+		where = self._uniqueCondition(licensePool)
+		productIds = data['productIds']
+		del data['productIds']
+		self._mysql.update('LICENSE_POOL', where, data)
+		self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
+		for productId in productIds:
+			self._mysql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
+		
+	def licensePool_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
+		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting licensePools, filter: %s" % filter)
+		licensePools = []
+		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
+		
+		if filter.has_key('productIds'):
+			if filter['productIds']:
+				licensePoolIds = filter.get('licensePoolId')
+				filter['licensePoolId'] = []
+				for res in self._mysql.getSet(self._createQuery('PRODUCT_ID_TO_LICENSE_POOL', ['licensePoolId'], {'licensePoolId': licensePoolIds, 'productId': filter['productIds']})):
+					filter['licensePoolId'].append(res['licensePoolId'])
+				if not filter['licensePoolId']:
+					return []
+			del filter['productIds']
+		attrs = []
+		for attr in attributes:
+			if not attr in ('productIds',):
+				attrs.append(attr)
+		for res in self._mysql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
+			res['productIds'] = []
+			if not attributes or 'productIds' in attributes:
+				for res2 in self._mysql.getSet(u"select * from PRODUCT_ID_TO_LICENSE_POOL where `licensePoolId` = '%s'" % res['licensePoolId']):
+					res['productIds'].append(res2['productId'])
+			self._adjustResult(LicensePool, res)
+			licensePools.append(LicensePool.fromHash(res))
+		return licensePools
+	
+	def licensePool_deleteObjects(self, licensePools):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
+		for licensePool in forceObjectClassList(licensePools, LicensePool):
+			logger.info(u"Deleting licensePool %s" % licensePool)
+			where = self._uniqueCondition(licensePool)
+			self._mysql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % licensePool.id)
+			self._mysql.delete('LICENSE_POOL', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenseToLicensePools                                                             -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
+		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
+		
+		where = self._uniqueCondition(softwareLicenseToLicensePool)
+		if self._mysql.getRow('select * from `SOFTWARE_LICENSE_TO_LICENSE_POOL` where %s' % where):
+			self._mysql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
+	
+	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
+		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
+		where = self._uniqueCondition(softwareLicenseToLicensePool)
+		self._mysql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data)
+	
+	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
+		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
+		softwareLicenseToLicensePools = []
+		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('SOFTWARE_LICENSE_TO_LICENSE_POOL', attributes, filter)):
+			softwareLicenseToLicensePools.append(SoftwareLicenseToLicensePool.fromHash(res))
+		return softwareLicenseToLicensePools
+	
+	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
+		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
+			logger.info(u"Deleting softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
+			where = self._uniqueCondition(softwareLicenseToLicensePool)
+			self._mysql.delete('SOFTWARE_LICENSE_TO_LICENSE_POOL', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseOnClients                                                                          -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def licenseOnClient_insertObject(self, licenseOnClient):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
+		data = self._objectToDatabaseHash(licenseOnClient)
+		
+		where = self._uniqueCondition(licenseOnClient)
+		if self._mysql.getRow('select * from `LICENSE_ON_CLIENT` where %s' % where):
+			self._mysql.update('LICENSE_ON_CLIENT', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('LICENSE_ON_CLIENT', data)
+	
+	def licenseOnClient_updateObject(self, licenseOnClient):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
+		data = self._objectToDatabaseHash(licenseOnClient)
+		where = self._uniqueCondition(licenseOnClient)
+		self._mysql.update('LICENSE_ON_CLIENT', where, data)
+	
+	def licenseOnClient_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return []
+		
+		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
+		licenseOnClients = []
+		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('LICENSE_ON_CLIENT', attributes, filter)):
+			licenseOnClients.append(LicenseOnClient.fromHash(res))
+		return licenseOnClients
+	
+	def licenseOnClient_deleteObjects(self, licenseOnClients):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+		
+		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
+		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
+			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)
+			where = self._uniqueCondition(licenseOnClient)
+			self._mysql.delete('LICENSE_ON_CLIENT', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftware_insertObject(self, auditSoftware):
+		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
+		data = self._objectToDatabaseHash(auditSoftware)
+		
+		where = self._uniqueCondition(auditSoftware)
+		if self._mysql.getRow('select * from `SOFTWARE` where %s' % where):
+			self._mysql.update('SOFTWARE', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('SOFTWARE', data)
+	
+	def auditSoftware_updateObject(self, auditSoftware):
+		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
+		data = self._objectToDatabaseHash(auditSoftware)
+		where = self._uniqueCondition(auditSoftware)
+		self._mysql.update('SOFTWARE', where, data)
+	
+	def auditSoftware_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditSoftware, filter: %s" % filter)
+		auditSoftwares = []
+		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('SOFTWARE', attributes, filter)):
+			auditSoftwares.append(AuditSoftware.fromHash(res))
+		return auditSoftwares
+	
+	def auditSoftware_deleteObjects(self, auditSoftwares):
+		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
+		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
+			logger.info(u"Deleting auditSoftware %s" % auditSoftware)
+			where = self._uniqueCondition(auditSoftware)
+			self._mysql.delete('SOFTWARE', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareToLicensePools                                                               -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
+		ConfigDataBackend.auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool)
+		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
+		
+		where = self._uniqueCondition(auditSoftwareToLicensePool)
+		if self._mysql.getRow('select * from `AUDIT_SOFTWARE_TO_LICENSE_POOL` where %s' % where):
+			self._mysql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('AUDIT_SOFTWARE_TO_LICENSE_POOL', data)
+	
+	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
+		ConfigDataBackend.auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool)
+		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
+		where = self._uniqueCondition(auditSoftwareToLicensePool)
+		self._mysql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data)
+	
+	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditSoftwareToLicensePool, filter: %s" % filter)
+		auditSoftwareToLicensePools = []
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('AUDIT_SOFTWARE_TO_LICENSE_POOL', attributes, filter)):
+			auditSoftwareToLicensePools.append(AuditSoftwareToLicensePool.fromHash(res))
+		return auditSoftwareToLicensePools
+	
+	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
+		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
+		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
+			logger.info(u"Deleting auditSoftware %s" % auditSoftwareToLicensePool)
+			where = self._uniqueCondition(auditSoftwareToLicensePool)
+			self._mysql.delete('AUDIT_SOFTWARE_TO_LICENSE_POOL', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareOnClients                                                                    -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
+		data = self._objectToDatabaseHash(auditSoftwareOnClient)
+		
+		where = self._uniqueCondition(auditSoftwareOnClient)
+		if self._mysql.getRow('select * from `SOFTWARE_CONFIG` where %s' % where):
+			self._mysql.update('SOFTWARE_CONFIG', where, data, updateWhereNone = True)
+		else:
+			self._mysql.insert('SOFTWARE_CONFIG', data)
+	
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
+		data = self._objectToDatabaseHash(auditSoftwareOnClient)
+		where = self._uniqueCondition(auditSoftwareOnClient)
+		self._mysql.update('SOFTWARE_CONFIG', where, data)
+	
+	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting auditSoftwareOnClient, filter: %s" % filter)
+		auditSoftwareOnClients = []
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes, filter)
+		for res in self._mysql.getSet(self._createQuery('SOFTWARE_CONFIG', attributes, filter)):
+			auditSoftwareOnClients.append(AuditSoftwareOnClient.fromHash(res))
+		return auditSoftwareOnClients
+	
+	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
+		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
+			logger.info(u"Deleting auditSoftwareOnClient %s" % auditSoftwareOnClient)
+			where = self._uniqueCondition(auditSoftwareOnClient)
+			self._mysql.delete('SOFTWARE_CONFIG', where)
+	
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwares                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	
+	def _uniqueAuditHardwareCondition(self, auditHardware):
+		if hasattr(auditHardware, 'toHash'):
+			auditHardware = auditHardware.toHash()
+		
+		condition = u''
+		for (attribute, value) in auditHardware.items():
+			if attribute in ('hardwareClass', 'type'):
+				continue
+			if condition:
+				condition += u' and '
+			if value is None or (value == [None]):
+				condition += u"`%s` is NULL" % attribute
+			elif type(value) in (float, long, int, bool):
+				condition += u"`%s` = %s" % (attribute, value)
+			else:
+				condition += u"`%s` = '%s'" % (attribute, value)
+		return condition
+		
+	def _getHardwareIds(self, auditHardware):
+		if hasattr(auditHardware, 'toHash'):
+			auditHardware = auditHardware.toHash()
+		
+		for (attribute, value) in auditHardware.items():
+			if value is None:
+				auditHardware[attribute] = [ None ]
+		
+		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
+		hardwareIds = self._auditHardware_search(returnHardwareIds = True, attributes=[], **auditHardware)
+		logger.debug(u"Found hardware ids: %s" % hardwareIds)
+		return hardwareIds
+	
+	def auditHardware_insertObject(self, auditHardware):
+		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
+		
+		logger.info(u"Inserting auditHardware: %s" % auditHardware)
+		filter = {}
+		for (attribute, value) in auditHardware.toHash().items():
+			if value is None:
+				filter[attribute] = [ None ]
+			elif type(value) is unicode:
+				filter[attribute] = value.replace(u'*', u'\\*')
+			else:
+				filter[attribute] = value
+		res = self.auditHardware_getObjects(**filter)
+		if res:
+			return
+		
+		data = auditHardware.toHash()
+		table = u'HARDWARE_DEVICE_' + data['hardwareClass']
+		del data['hardwareClass']
+		del data['type']
+		
+		self._mysql.insert(table, data)
+		
+	def auditHardware_updateObject(self, auditHardware):
+		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
+		
+		logger.info(u"Updating auditHardware: %s" % auditHardware)
+		filter = {}
+		for (attribute, value) in auditHardware.toHash().items():
+			if value is None:
+				filter[attribute] = [ None ]
+		if not self.auditHardware_getObjects(**filter):
+			raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
+		
+	def auditHardware_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting auditHardwares, filter: %s" % filter)
+		auditHardwares = []
+		for res in self._auditHardware_search(returnHardwareIds = False, attributes = attributes, **filter):
+			auditHardwares.append( AuditHardware.fromHash(res) )
+		return auditHardwares
+		
+	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
+		results = []
+		hardwareClasses = []
+		hardwareClass = filter.get('hardwareClass')
+		if not hardwareClass in ([], None):
+			for hwc in forceUnicodeList(hardwareClass):
+				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
+				for key in self._auditHardwareConfig.keys():
+					if regex.search(key):
+						if not key in hardwareClasses:
+							hardwareClasses.append(key)
+			if not hardwareClasses:
+				return results
+		if not hardwareClasses:
+			for key in self._auditHardwareConfig.keys():
+				hardwareClasses.append(key)
+		
+		if filter.has_key('hardwareClass'):
+			del filter['hardwareClass']
+		if filter.has_key('type'):
+			del filter['type']
+		
+		if 'hardwareClass' in attributes:
+			attributes.remove('hardwareClass')
+		for attribute in attributes:
+			if not filter.has_key(attribute):
+				filter[attribute] = None
+		
+		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
+			attributes.append('hardware_id')
+		
+		for hardwareClass in hardwareClasses:
+			classFilter = {}
+			skipHardwareClass = False
+			for (attribute, value) in filter.items():
+				valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+				if not valueInfo:
+					skipHardwareClass = True
+					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
+					break
+				if (valueInfo.get('Scope', '') != 'g'):
+					continue
+				if not value is None:
+					value = forceList(value)
+				classFilter[attribute] = value
+				
+			if skipHardwareClass:
+				continue
+			
+			if not classFilter and filter:
+				continue
+			
+			logger.debug(u"Getting auditHardwares, hardwareClass '%s', filter: %s" % (hardwareClass, classFilter))
+			query = self._createQuery(u'HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
+			for res in self._mysql.getSet(query):
+				if returnHardwareIds:
+					results.append(res['hardware_id'])
+					continue
+				elif res.has_key('hardware_id'):
+					del res['hardware_id']
+				res['hardwareClass'] = hardwareClass
+				for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
+					if (valueInfo.get('Scope', 'g') == 'i'):
+						continue
+					if not res.has_key(attribute):
+						res[attribute] = None
+				results.append(res)
+		return results
+	
+	def auditHardware_deleteObjects(self, auditHardwares):
+		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
+		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
+			logger.info(u"Deleting auditHardware: %s" % auditHardware)
+			
+			where = self._uniqueAuditHardwareCondition(auditHardware)
+			for hardware_id in self._getHardwareIds(auditHardware):
+				self._mysql.delete( u'HARDWARE_CONFIG_' + auditHardware.getHardwareClass(), u'`hardware_id` = %s' % hardware_id)
+			self._mysql.delete( u'HARDWARE_DEVICE_' + auditHardware.getHardwareClass(), where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwareOnHosts                                                                      -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def _extractAuditHardwareHash(self, auditHardwareOnHost):
+		if hasattr(auditHardwareOnHost, 'toHash'):
+			auditHardwareOnHost = auditHardwareOnHost.toHash()
+		
+		hardwareClass = auditHardwareOnHost['hardwareClass']
+		
+		auditHardware = { 'type': 'AuditHardware' }
+		auditHardwareOnHostNew = {}
+		for (attribute, value) in auditHardwareOnHost.items():
+			#if value is None or (attribute == 'type'):
+			#	continue
+			if (attribute == 'type'):
+				continue
+			if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+				auditHardwareOnHostNew[attribute] = value
+				continue
+			if attribute in ('hardwareClass',):
+				auditHardware[attribute] = value
+				auditHardwareOnHostNew[attribute] = value
+				continue
+			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+			if valueInfo is None:
+				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
+			scope = valueInfo.get('Scope', '')
+			if (scope == 'g'):
+				auditHardware[attribute] = value
+				continue
+			auditHardwareOnHostNew[attribute] = value
+		
+		return (auditHardware, auditHardwareOnHostNew)
+	
+	def _uniqueAuditHardwareOnHostCondition(self, auditHardwareOnHost):
+		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
+		
+		hardwareClass = auditHardwareOnHost['hardwareClass']
+		del auditHardwareOnHost['hardwareClass']
+		
+		filter = {}
+		for (attribute, value) in auditHardwareOnHost.items():
+			if value is None:
+				filter[attribute] = [ None ]
+			elif type(value) is unicode:
+				filter[attribute] = value.replace(u'*', u'\\*')
+			else:
+				filter[attribute] = value
+			
+		where = self._filterToSql(filter)
+		
+		hwIdswhere = u''
+		for hardwareId in self._getHardwareIds(auditHardware):
+			if hwIdswhere: hwIdswhere += u' or '
+			hwIdswhere += u'`hardware_id` = %s' % hardwareId
+		if not hwIdswhere:
+			raise BackendReferentialIntegrityError(u"Hardware device %s not found" % auditHardware)
+		return where + u' and (%s)' % hwIdswhere
+	
+	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
+		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
+		
+		hardwareClass = auditHardwareOnHost['hardwareClass']
+		
+		data = {}
+		for (attribute, value) in auditHardwareOnHost.items():
+			if attribute in ('hardwareClass', 'type'):
+				continue
+			data[attribute] = value
+		
+		for (key, value) in auditHardware.items():
+			if value is None:
+				auditHardware[key] = [ None ]
+		hardwareIds = self._getHardwareIds(auditHardware)
+		if not hardwareIds:
+			raise BackendReferentialIntegrityError(u"Hardware device %s not found" % auditHardware)
+		data['hardware_id'] = hardwareIds[0]
+		return data
+	
+	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
+		
+		hardwareClass = auditHardwareOnHost.getHardwareClass()
+		table = u'HARDWARE_CONFIG_' + hardwareClass
+		
+		where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
+		if not self._mysql.getRow('select * from `%s` where %s' % (table, where)):
+			data = self._auditHardwareOnHostObjectToDatabaseHash(auditHardwareOnHost)
+			self._mysql.insert(table, data)
+		
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
+		
+		logger.info(u"Updating auditHardwareOnHost: %s" % auditHardwareOnHost)
+		data = auditHardwareOnHost.toHash()
+		update = {}
+		for (attribute, value) in data.items():
+			if attribute in ('state', 'lastseen', 'firstseen'):
+				if not value is None:
+					update[attribute] = value
+				del data[attribute]
+		if update:
+			where = self._uniqueAuditHardwareOnHostCondition(data)
+			self._mysql.update('HARDWARE_CONFIG_%s' % auditHardwareOnHost.hardwareClass, where, update)
+		
+		
+	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting auditHardwareOnHosts, filter: %s" % filter)
+		auditHardwareOnHosts = []
+		hardwareClasses = []
+		hardwareClass = filter.get('hardwareClass')
+		if not hardwareClass in ([], None):
+			for hwc in forceUnicodeList(hardwareClass):
+				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
+				for key in self._auditHardwareConfig.keys():
+					if regex.search(key):
+						if not key in hardwareClasses:
+							hardwareClasses.append(key)
+			if not hardwareClasses:
+				return auditHardwareOnHosts
+		if not hardwareClasses:
+			for key in self._auditHardwareConfig.keys():
+				hardwareClasses.append(key)
+		
+		if filter.has_key('hardwareClass'):
+			del filter['hardwareClass']
+		if filter.has_key('type'):
+			del filter['type']
+		
+		for attribute in attributes:
+			if not filter.has_key(attribute):
+				filter[attribute] = None
+		
+		for hardwareClass in hardwareClasses:
+			auditHardwareFilter = {}
+			classFilter = {}
+			skipHardwareClass = False
+			for (attribute, value) in filter.items():
+				valueInfo = None
+				if not attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
+					if not valueInfo:
+						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
+						skipHardwareClass = True
+						break
+					if (valueInfo.get('Scope', '') == 'g'):
+						auditHardwareFilter[attribute] = value
+						continue
+					if (valueInfo.get('Scope', '') != 'i'):
+						continue
+				if not value is None:
+					value = forceList(value)
+				classFilter[attribute] = value
+				
+			if skipHardwareClass:
+				continue
+			
+			hardwareIds = []
+			if auditHardwareFilter:
+				auditHardwareFilter['hardwareClass'] = hardwareClass
+				hardwareIds = self._getHardwareIds(auditHardwareFilter)
+				logger.debug2(u"Filtered matching hardware ids: %s" % hardwareIds)
+				if not hardwareIds:
+					continue
+			classFilter['hardware_id'] = hardwareIds
+			
+			if attributes and not 'hardware_id' in attributes:
+				attributes.append('hardware_id')
+			
+			logger.debug(u"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s" % (hardwareClass, hardwareIds, classFilter))
+			for res in self._mysql.getSet(self._createQuery(u'HARDWARE_CONFIG_' + hardwareClass, attributes, classFilter)):
+				data = self._mysql.getSet(u'SELECT * from `HARDWARE_DEVICE_%s` where `hardware_id` = %s' \
+								% (hardwareClass, res['hardware_id']))
+				if not data:
+					logger.error(u"Hardware device of class '%s' with hardware_id '%s' not found" % (hardwareClass, res['hardware_id']))
+					continue
+				data = data[0]
+				data.update(res)
+				data['hardwareClass'] = hardwareClass
+				del data['hardware_id']
+				if data.has_key('config_id'):
+					del data['config_id']
+				
+				for attribute in self._auditHardwareConfig[hardwareClass].keys():
+					if not data.has_key(attribute):
+						data[attribute] = None
+				
+				auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(data))
+		return auditHardwareOnHosts
+	
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
+		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
+			logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost)
+			where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
+			self._mysql.delete( u'HARDWARE_CONFIG_' + auditHardwareOnHost.getHardwareClass(), where)
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
