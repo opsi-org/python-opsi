@@ -34,7 +34,7 @@
 
 __version__ = '4.0'
 
-import os, socket, ConfigParser, shutil, types
+import os, socket, ConfigParser, shutil, types, pwd, grp
 
 # OPSI imports
 from OPSI.Logger import *
