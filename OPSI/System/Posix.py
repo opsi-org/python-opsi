@@ -2023,7 +2023,7 @@ class Harddisk:
 				
 				if progressSubject:
 					progressSubject.setEnd(100)
-					progressSubject.setMessage(u"Restoring image")
+					progressSubject.setMessage(u"Scanning image")
 					
 				handle = execute(cmd, getHandle = True)
 				done = False
