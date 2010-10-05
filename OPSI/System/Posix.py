@@ -1907,6 +1907,8 @@ class Harddisk:
 								if progressSubject:
 									progressSubject.setMessage(u"%s: %s" % (k, v))
 								if (k.lower().find('used') != -1):
+									if progressSubject:
+										progressSubject.setMessage(u"Creating image")
 									started = True
 									continue
 						else:
@@ -2061,6 +2063,8 @@ class Harddisk:
 									if progressSubject:
 										progressSubject.setMessage(u"%s: %s" % (k, v))
 									if (k.lower().find('used') != -1):
+										if progressSubject:
+											progressSubject.setMessage(u"Restoring image")
 										started = True
 										continue
 							else:
