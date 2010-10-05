@@ -1899,7 +1899,7 @@ class Harddisk:
 								logger.info(u"Save image: Scanning filesystem")
 								if progressSubject:
 									progressSubject.setMessage(u"Scanning filesystem")
-							elif ( buf[i].count(':') == 1 ):
+							elif ( buf[i].count(':') == 1 ) and (buf[i].find('http:') == -1):
 								(k, v) = buf[i].split(':')
 								k = k.strip()
 								v = v.strip()
@@ -1955,6 +1955,7 @@ class Harddisk:
 				imageFile = u'-'
 			
 			try:
+				head = u''
 				if pipe:
 					proc = subprocess.Popen(
 						pipe[:-1] + u" 2>/dev/null",
@@ -1967,12 +1968,6 @@ class Harddisk:
 					
 					head = proc.stdout.read(128)
 					logger.debug(u"Read 128 Bytes from pipe '%s': %s" % (pipe, head.decode('ascii', 'replace')))
-					if (head.find('ntfsclone-image') != -1):
-						logger.notice(u"Image type is ntfsclone")
-						imageType = u'ntfsclone'
-					if (head.find('partclone-image') != -1):
-						logger.notice(u"Image type is partclone")
-						imageType = u'partclone'
 					
 					proc.stdout.close()
 					proc.stdin.close()
@@ -1996,17 +1991,22 @@ class Harddisk:
 				else:
 					image = open(imageFile, 'r')
 					head = image.read(128)
-					logger.debug("Read 128 Bytes from file '%s': %s" % (imageFile, head.decode('ascii', 'replace')))
-					if (head.find(u'ntfsclone-image') != -1):
-						logger.info(u"Image type is ntfsclone")
-						imageType = u'ntfsclone'
+					logger.debug(u"Read 128 Bytes from file '%s': %s" % (imageFile, head.decode('ascii', 'replace')))
 					image.close()
+				
+				if   (head.find('ntfsclone-image') != -1):
+					logger.notice(u"Image type is ntfsclone")
+					imageType = u'ntfsclone'
+				elif (head.find('partclone-image') != -1):
+					logger.notice(u"Image type is partclone")
+					imageType = u'partclone'
+				
 			except:
 				if image:
 					image.close()
 				raise
 			
-			if imageType in (u'ntfsclone', u'partclone'):
+			if imageType not in (u'ntfsclone', u'partclone'):
 				raise Exception(u"Unknown image type.")
 			
 			if self.ldPreload:
@@ -2029,6 +2029,7 @@ class Harddisk:
 				timeout = 0
 				buf = [u'']
 				lastMsg = u''
+				started = False
 				while not done:
 					inp = handle.read(128)
 					
@@ -2052,7 +2053,7 @@ class Harddisk:
 							if ( buf[i].find(u'Partclone successfully') != -1 ):
 								done = True
 							if not started:
-								if ( buf[i].count(':') == 1 ):
+								if ( buf[i].count(':') == 1 ) and (buf[i].find('http:') == -1):
 									(k, v) = buf[i].split(':')
 									k = k.strip()
 									v = v.strip()
