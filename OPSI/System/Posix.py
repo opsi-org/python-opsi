@@ -1950,6 +1950,7 @@ class Harddisk:
 			
 			imageType = None
 			image = None
+			fs = None
 			
 			pipe = u''
 			if imageFile.endswith(u'|'):
@@ -2062,7 +2063,9 @@ class Harddisk:
 									logger.info(u"Save image: %s: %s" % (k, v))
 									if progressSubject:
 										progressSubject.setMessage(u"%s: %s" % (k, v))
-									if (k.lower().find('used') != -1):
+									if   (k.lower().find('file system') != -1):
+										fs = v.lower()
+									elif (k.lower().find('used') != -1):
 										if progressSubject:
 											progressSubject.setMessage(u"Restoring image")
 										started = True
@@ -2089,6 +2092,7 @@ class Harddisk:
 				time.sleep(3)
 				if handle: handle.close()
 			else:
+				fs = 'ntfs'
 				logger.info(u"Restoring ntfsclone-image '%s' to '%s'" % \
 							(imageFile, self.getPartition(partition)['device']) )
 			
@@ -2147,13 +2151,15 @@ class Harddisk:
 				time.sleep(3)
 				if handle: handle.close()
 				
+			
+			if (fs == 'ntfs'):
+				self.setNTFSPartitionStartSector(partition)
+				if progressSubject:
+					progressSubject.setMessage(u"Resizing filesystem to partition size")
+				self.resizeFilesystem(partition, fs = u'ntfs')
+				
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
-			
-			self.setNTFSPartitionStartSector(partition)
-			if progressSubject:
-				progressSubject.setMessage(u"Resizing filesystem to partition size")
-			self.resizeFilesystem(partition, fs = u'ntfs')
 			
 		except Exception, e:
 			for hook in hooks:

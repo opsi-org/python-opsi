@@ -1,3 +1,10 @@
+python-opsi (4.0.0.3-1) stable; urgency=low
+
+  * Types,Logger: forceUnicode try except __unicode__
+  * System/Posix: get fs from partclone
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 07 Oct 2010 09:21:58 +0200
+
 python-opsi (4.0.0.2-1) stable; urgency=low
 
   * UI: drawRootText: encode to ascii because snack does not support unicode here
