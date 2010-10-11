@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.0.1'
 
 # Imports
 import ldap, ldap.modlist
@@ -631,7 +631,10 @@ class LDAPBackend(ConfigDataBackend):
 			if not attributes or attribute in attributes:
 				opsiObjectHash[attribute] = value
 		
-		return Class.fromHash(opsiObjectHash)
+		opsiObject = Class.fromHash(opsiObjectHash)
+		# Call setDefaults because LDAPBackend cannot distinguish between None and []
+		opsiObject.setDefaults()
+		return opsiObject
 	
 	def _opsiObjectToLdapObject(self, opsiObject, dn):
 		'''

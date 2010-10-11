@@ -1,3 +1,10 @@
+python-opsi (4.0.0.5-1) stable; urgency=low
+
+  * Util/File/Opsi: Fix parsing of true/false of product property defaults in control file
+  * Backend/LDAP: Fix reading objects with attribute value []
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 11 Oct 2010 18:02:52 +0200
+
 python-opsi (4.0.0.4-1) stable; urgency=low
 
   * 30_configed.conf: add method getConfigs

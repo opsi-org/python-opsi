@@ -32,9 +32,9 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = "4.0"
+__version__ = '4.0.0.1'
 
-import os, codecs, re, ConfigParser, StringIO
+import os, codecs, re, ConfigParser
 
 if (os.name == 'posix'):
 	import fcntl
@@ -500,6 +500,8 @@ class PackageControlFile(TextFile):
 					   (sectionType == 'productproperty' and option == 'values') or \
 					   (sectionType == 'windows'         and option == 'softwareids'):
 						try:
+							if not value.strip().startswith('{', '['):
+								raise Exception(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
 					   	except Exception, e:
 					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
@@ -510,10 +512,6 @@ class PackageControlFile(TextFile):
 								newV = []
 								for v in value:
 									v = v.strip()
-									#try:
-									#	v = fromJson(v)
-									#except Exception, e:
-									#	logger.debug2(u"Failed to read json string '%s': %s" % (v, e) )
 									newV.append(v)
 								value = newV
 						# Remove duplicates
@@ -525,8 +523,6 @@ class PackageControlFile(TextFile):
 						
 					if type(value) is unicode:
 						value = value.rstrip()
-						#value = value.replace(u'\n', u'')
-						#value = value.replace(u'\t', u'')
 					
 					self._sections[sectionType][i][option] = value
 		
