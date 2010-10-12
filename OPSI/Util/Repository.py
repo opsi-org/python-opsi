@@ -507,7 +507,10 @@ class FileRepository(Repository):
 			path = path[1:]
 		if path.endswith('/'):
 			path = path[:-1]
-		return self._path + u'/' + path
+		path = self._path + u'/' + path
+		if (os.name == 'nt'):
+			path = path.replace('/', '\\')
+		return path
 	
 	def fileInfo(self, source):
 		source = self._preProcessPath(source)
