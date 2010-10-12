@@ -1201,8 +1201,12 @@ class DepotToLocalDirectorySychronizer(object):
 					os.chdir(productDestinationDirectory)
 					try:
 						if (os.name == 'nt'):
+							logger.info("t: %s" % t)
+							logger.info("f: %s" % f)
 							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
 							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
+							logger.info("t: %s" % t)
+							logger.info("f: %s" % f)
 							if os.path.exists(f):
 								if os.path.isdir(f):
 									shutil.rmtree(f)
