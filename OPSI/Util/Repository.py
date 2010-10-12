@@ -995,6 +995,7 @@ class CIFSRepository(FileRepository):
 		self._mountOptions = kwargs.get('mountOptions', {})
 		
 		self._path = self._mountPoint
+		parts = match.group(2).split('/')
 		if (len(parts) > 2):
 			self._path += u'/' + u'/'.join(parts[2:])
 		if self._path.endswith('/'):
