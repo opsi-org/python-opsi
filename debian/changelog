@@ -1,3 +1,9 @@
+python-opsi (4.0.0.7-1) stable; urgency=low
+
+  * Util/Repository: call mount from System, nt compatibility
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 12 Oct 2010 16:26:43 +0200
+
 python-opsi (4.0.0.6-1) stable; urgency=low
 
   * Util/File/Opsi: Fix parsing of true/false of product property defaults in control file (again)

@@ -374,7 +374,7 @@ def mount(dev, mountpoint, **options):
 			else:
 				logger.addConfidentialString(options['password'])
 			
-			if not options['domain']:
+			if not 'domain' in options:
 				options['domain'] = getHostname()
 			username = None
 			if options['username']:
