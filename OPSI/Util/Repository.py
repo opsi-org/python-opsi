@@ -1205,21 +1205,21 @@ class DepotToLocalDirectorySychronizer(object):
 								shutil.rmtree(f)
 							else:
 								os.remove(f)
-						if (os.name == 'posix'):
+						if (os.name == 'nt'):
+							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
+							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
+							logger.info(u"Symlink => copying '%s' to '%s'" % (t, f))
+							if os.path.isdir(t):
+								shutil.copytree(t, f)
+							else:
+								shutil.copyfile(t, f)
+						else:
 							parts = len(f.split('/'))
 							parts -= len(t.split('/'))
 							for i in range(parts):
 								t = os.path.join('..', t)
 							logger.info(u"Symlink '%s' to '%s'" % (f, t))
 							os.symlink(t, f)
-						else:
-							t = os.path.join(productDestinationDirectory, t)
-							f = os.path.join(productDestinationDirectory, f)
-							logger.info(u"Copying '%s' to '%s'" % (t, f))
-							if os.path.isdir(t):
-								shutil.copytree(t, f)
-							else:
-								shutil.copyfile(t, f)
 					finally:
 						os.chdir(cwd)
 			except Exception, e:
