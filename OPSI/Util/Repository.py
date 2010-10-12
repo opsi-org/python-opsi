@@ -1203,6 +1203,10 @@ class DepotToLocalDirectorySychronizer(object):
 						if (os.name == 'nt'):
 							logger.info("t: %s" % t)
 							logger.info("f: %s" % f)
+							if t.startswith('/'): t = t[1:]
+							if f.startswith('/'): f = f[1:]
+							logger.info("t: %s" % t)
+							logger.info("f: %s" % f)
 							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
 							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
 							logger.info("t: %s" % t)
