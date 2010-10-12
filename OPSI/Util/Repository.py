@@ -1200,20 +1200,25 @@ class DepotToLocalDirectorySychronizer(object):
 					cwd = os.getcwd()
 					os.chdir(productDestinationDirectory)
 					try:
-						if os.path.exists(f):
-							if os.path.isdir(f) and not os.path.islink(f):
-								shutil.rmtree(f)
-							else:
-								os.remove(f)
 						if (os.name == 'nt'):
 							t = os.path.join(productDestinationDirectory, t.replace('/', '\\'))
 							f = os.path.join(productDestinationDirectory, f.replace('/', '\\'))
+							if os.path.exists(f):
+								if os.path.isdir(f):
+									shutil.rmtree(f)
+								else:
+									os.remove(f)
 							logger.info(u"Symlink => copying '%s' to '%s'" % (t, f))
 							if os.path.isdir(t):
 								shutil.copytree(t, f)
 							else:
 								shutil.copyfile(t, f)
 						else:
+							if os.path.exists(f):
+								if os.path.isdir(f) and not os.path.islink(f):
+									shutil.rmtree(f)
+								else:
+									os.remove(f)
 							parts = len(f.split('/'))
 							parts -= len(t.split('/'))
 							for i in range(parts):
