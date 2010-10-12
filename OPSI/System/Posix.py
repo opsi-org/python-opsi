@@ -749,11 +749,11 @@ def mount(dev, mountpoint, **options):
 	
 	fs = u''
 	credentialsFiles = []
-	if dev.lower().startswith('smb://'):
-		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
+	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = u'-t cifs'
-			parts = match.group(1).split('/')
+			parts = match.group(2).split('/')
 			dev = u'//%s/%s' % (parts[0], parts[1])
 			if not 'username' in options:
 				options['username'] = u'guest'
@@ -780,7 +780,7 @@ def mount(dev, mountpoint, **options):
 			del options['username']
 			del options['password']
 		else:
-			raise Exception(u"Bad smb uri '%s'" % dev)
+			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
 		
 	elif dev.lower().startswith('webdav://') or dev.lower().startswith('webdavs://') or \
 	     dev.lower().startswith('http://') or dev.lower().startswith('https://'):

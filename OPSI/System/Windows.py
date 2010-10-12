@@ -356,59 +356,62 @@ def mount(dev, mountpoint, **options):
 		logger.error(u"Bad mountpoint '%s'" % mountpoint)
 		raise ValueError(u"Bad mountpoint '%s'" % mountpoint)
 	
-	if dev.lower().startswith(u'smb://'):
-		match = re.search('^smb://([^/]+\/.+)$', dev, re.IGNORECASE)
+	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
+		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
-			parts = match.group(1).split('/')
+			parts = match.group(2).split('/')
 			dev = u'\\\\%s\\%s' % (parts[0], parts[1])
-		else:
-			raise Exception(u"Bad smb uri '%s'" % dev)
-		
-		if not 'username' in options:
-			options['username'] = None
-		
-		elif options['username'] and (options['username'].find(u'\\') != -1):
-			options['domain'] = options['username'].split(u'\\')[-1]
-			options['username'] = options['username'].split(u'\\')[0]
 			
-		if not 'password' in options:
-			options['password'] = None
-		else:
-			logger.addConfidentialString(options['password'])
-		
-		if not options['domain']:
-			options['domain'] = getHostname()
-		username = None
-		if options['username']:
-			username = options['domain'] + u'\\' + options['username']
-		
-		try:
+			if not 'username' in options:
+				options['username'] = None
+			
+			elif options['username'] and (options['username'].find(u'\\') != -1):
+				options['domain'] = options['username'].split(u'\\')[-1]
+				options['username'] = options['username'].split(u'\\')[0]
+				
+			if not 'password' in options:
+				options['password'] = None
+			else:
+				logger.addConfidentialString(options['password'])
+			
+			if not options['domain']:
+				options['domain'] = getHostname()
+			username = None
+			if options['username']:
+				username = options['domain'] + u'\\' + options['username']
+			
 			try:
-				# Remove connection and update user profile (remove persistent connection)
-				win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
-			except pywintypes.error, details:
-				if (details[0] == 2250):
-					# Not connected
-					logger.debug(u"Failed to umount '%s': %s" % (mountpoint, details))
-				else:
-					raise
+				try:
+					# Remove connection and update user profile (remove persistent connection)
+					win32wnet.WNetCancelConnection2(mountpoint, win32netcon.CONNECT_UPDATE_PROFILE, True)
+				except pywintypes.error, details:
+					if (details[0] == 2250):
+						# Not connected
+						logger.debug(u"Failed to umount '%s': %s" % (mountpoint, details))
+					else:
+						raise
+				
+				logger.notice(u"Mounting '%s' to '%s'" % (dev, mountpoint))
+				# Mount not persistent
+				win32wnet.WNetAddConnection2(
+					win32netcon.RESOURCETYPE_DISK,
+					mountpoint,
+					dev,
+					None,
+					username,
+					options['password'],
+					0
+				)
 			
-			logger.notice(u"Mounting '%s' to '%s'" % (dev, mountpoint))
-			# Mount not persistent
-			win32wnet.WNetAddConnection2(
-				win32netcon.RESOURCETYPE_DISK,
-				mountpoint,
-				dev,
-				None,
-				username,
-				options['password'],
-				0
-			)
+			except Exception, e:
+				logger.error(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
+				raise Exception(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
+		else:
+			raise Exception(u"Bad smb/cifs uri '%s'" % dev)
 		
-		except Exception, e:
-			logger.error(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
-			raise Exception(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
-
+	else:
+		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
+	
 def umount(mountpoint):
 	try:
 		# Remove connection and update user profile (remove persistent connection)
