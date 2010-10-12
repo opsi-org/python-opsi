@@ -972,7 +972,7 @@ class CIFSRepository(FileRepository):
 		
 		match = re.search('^(smb|cifs)://([^/]+/.+)$', self._url, re.IGNORECASE)
 		if not match:
-			raise RepositoryError(u"Bad cifs url: '%s'" % self._url)
+			raise RepositoryError(u"Bad smb/cifs url: '%s'" % self._url)
 		
 		if not os.name in ('posix', 'nt'):
 			raise NotImplementedError(u"CIFSRepository not yet avaliable on os '%s'" % os.name)
@@ -994,8 +994,6 @@ class CIFSRepository(FileRepository):
 		
 		self._mountOptions = kwargs.get('mountOptions', {})
 		
-		parts = match.group(2).split('/')
-		self._share = u'//%s/%s' % (parts[0], parts[1])
 		self._path = self._mountPoint
 		if (len(parts) > 2):
 			self._path += u'/' + u'/'.join(parts[2:])
@@ -1013,7 +1011,7 @@ class CIFSRepository(FileRepository):
 		if not self._mountPoint:
 			raise ValueError(u"Mount point not defined")
 		
-		logger.info(u"Mounting share '%s' to '%s'" % (self._share, self._mountPoint))
+		logger.info(u"Mounting '%s' to '%s'" % (self._url, self._mountPoint))
 		if (os.name == 'posix') and not os.path.isdir(self._mountPoint):
 			os.makedirs(self._mountPoint)
 			self._mountPointCreated = True
@@ -1021,7 +1019,7 @@ class CIFSRepository(FileRepository):
 			mountOptions = self._mountOptions
 			mountOptions['username'] = self._username
 			mountOptions['password'] = self._password
-			mount(self._share, self._mountPoint, **mountOptions)
+			mount(self._url, self._mountPoint, **mountOptions)
 			self._mounted = True
 		except Exception, e:
 			if self._mountPointCreated:
@@ -1035,7 +1033,7 @@ class CIFSRepository(FileRepository):
 		if not self._mounted or not self._mountPoint:
 			return
 		
-		logger.info(u"Umounting share '%s' from '%s'" % (self._share, self._mountPoint))
+		logger.info(u"Umounting '%s' from '%s'" % (self._url, self._mountPoint))
 		
 		umount(self._mountPoint)
 		
