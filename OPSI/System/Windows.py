@@ -39,7 +39,7 @@ import re, os, time, socket, sys
 
 # Win32 imports
 from ctypes import *
-import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process
+import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
 import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
 import win32pdhutil, win32pdh
 
@@ -299,6 +299,13 @@ def createRegistryKey(key, subKey):
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def getFreeDrive():
+	for letter in ('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'):
+		letter += ':'
+		if (win32file.GetDriveType(letter) == 1):
+			return letter
+	raise Exception(u'No free drive available')
+
 def getDiskSpaceUsage(path):
 	path = forceUnicode(path)
 	if (len(path) == 1):
@@ -348,14 +355,21 @@ def mount(dev, mountpoint, **options):
 		
 		if not 'username' in options:
 			options['username'] = None
+		
 		elif options['username'] and (options['username'].find(u'\\') != -1):
-			# Ensure format <domain>\<username>
-			options['username'] = options['username'].split(u'\\')[0] + u'\\' + options['username'].split(u'\\')[-1]
+			options['domain'] = options['username'].split(u'\\')[-1]
+			options['username'] = options['username'].split(u'\\')[0]
 			
 		if not 'password' in options:
 			options['password'] = None
 		else:
 			logger.addConfidentialString(options['password'])
+		
+		if not options['domain']:
+			options['domain'] = getHostname()
+		username = None
+		if options['username']:
+			username = options['domain'] + u'\\' + options['username']
 		
 		try:
 			try:
@@ -375,7 +389,7 @@ def mount(dev, mountpoint, **options):
 				mountpoint,
 				dev,
 				None,
-				options['username'],
+				username,
 				options['password'],
 				0
 			)

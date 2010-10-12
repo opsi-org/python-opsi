@@ -46,7 +46,8 @@ from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString, non_blocking_connect_http, non_blocking_connect_https
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.System.Posix import which, execute
+from OPSI.System import *
+
 # Get Logger instance
 logger = Logger()
 
@@ -222,14 +223,14 @@ class Repository:
 			logger.debug2(u"Sleeping %f seconds to correct bandwidth" % self._bandwidthSleepTime)
 			time.sleep(self._bandwidthSleepTime)
 	
-	def _transferDown(self, src, dst, progressSubject=None):
-		self._transfer('in', src, dst, progressSubject)
+	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):
+		self._transfer('in', src, dst, progressSubject, bytes=bytes)
 		
 	def _transferUp(self, src, dst, progressSubject=None):
 		self._transfer('out', src, dst, progressSubject)
 	
 	
-	def _transfer(self, transferDirection, src, dst, progressSubject=None):
+	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
 		self._transferDirection = transferDirection
 		bytesTransfered = 0
 		lastBytes = 0
@@ -241,10 +242,14 @@ class Repository:
 		self._averageSpeed = 0.0
 		self._currentSpeed = 0.0
 		
-		while(buf):
+		while buf and ( (bytes < 0) or (bytesTransfered < bytes) ):
 			buf = src.read(self._bufferSize)
 			read = len(buf)
 			if (read > 0):
+				if (bytes >= 0):
+					if ((bytesTransfered + read) > bytes):
+						buf = buf[:bytes-bytesTransfered]
+						read = len(buf)
 				lastAverageBytes += read
 				lastBytes += read
 				bytesTransfered += read
@@ -564,10 +569,21 @@ class FileRepository(Repository):
 			return content
 		return _recurse(path = source, content = content)
 	
-	def download(self, source, destination, progressSubject=None):
+	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
+		'''
+		startByteNumber: position of first byte to be read
+		endByteNumber:   position of last byte to be read
+		'''
 		size = self.fileInfo(source)['size']
 		source = self._preProcessPath(source)
 		destination = forceUnicode(destination)
+		startByteNumber = forceInt(startByteNumber)
+		endByteNumber = forceInt(endByteNumber)
+		
+		if (endByteNumber > -1):
+			size -= endByteNumber
+		if (startByteNumber > -1):
+			size -= startByteNumber
 		
 		logger.debug(u"Length of binary data to download: %d bytes" % size)
 		
@@ -576,8 +592,18 @@ class FileRepository(Repository):
 		(src, dst) = (None, None)
 		try:
 			src = open(source, 'rb')
-			dst = open(destination, 'wb')
-			self._transferDown(src, dst, progressSubject)
+			if (startByteNumber > -1):
+				src.seek(startByteNumber)
+			bytes = -1
+			if (endByteNumber > -1):
+				bytes = endByteNumber + 1
+				if (startByteNumber > -1):
+					bytes -= startByteNumber
+			if (startByteNumber > 0) and os.path.exists(destination):
+				dst = open(destination, 'ab')
+			else:
+				dst = open(destination, 'wb')
+			self._transferDown(src, dst, progressSubject, bytes = bytes)
 			src.close()
 			dst.close()
 		except Exception, e:
@@ -722,14 +748,14 @@ class HTTPRepository(Repository):
 		self._connection.connect()
 		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
 	
-	def download(self, source, destination, progressSubject=None, rangeStartByte=-1, rangeEndByte=-1):
+	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
+		'''
+		startByteNumber: position of first byte to be read
+		endByteNumber:   position of last byte to be read
+		'''
 		destination = forceUnicode(destination)
-		rangeStartByte = forceInt(rangeStartByte)
-		rangeEndByte = forceInt(rangeEndByte)
-		#try:
-		#	size = self.fileInfo(source)['size']
-		#except:
-		#	pass
+		startByteNumber = forceInt(startByteNumber)
+		endByteNumber = forceInt(endByteNumber)
 		source = self._preProcessPath(source)
 		
 		dst = None
@@ -743,14 +769,14 @@ class HTTPRepository(Repository):
 				self._connection.putheader('cookie', self._cookie)
 			if self._auth:
 				self._connection.putheader('authorization', self._auth)
-			if (rangeStartByte > -1) or (rangeEndByte > -1):
-				rsb = rangeStartByte
-				reb = rangeEndByte
-				if (rsb <= -1):
-					rsb = 0
-				if (reb <= -1):
+			if (startByteNumber > -1) or (endByteNumber > -1):
+				sbn = startByteNumber
+				ebn = endByteNumber
+				if (sbn <= -1):
+					sbn = 0
+				if (ebn <= -1):
 					reb = ''
-				self._connection.putheader('range', 'bytes=%s-%s' % (rsb, reb))
+				self._connection.putheader('range', 'bytes=%s-%s' % (sbn, ebn))
 			self._connection.endheaders()
 			
 			response = self._connection.getresponse()
@@ -762,7 +788,7 @@ class HTTPRepository(Repository):
 			
 			if progressSubject: progressSubject.setEnd(size)
 			
-			if (rangeStartByte > 0) and os.path.exists(destination):
+			if (startByteNumber > 0) and os.path.exists(destination):
 				dst = open(destination, 'ab')
 			else:
 				dst = open(destination, 'wb')
@@ -945,23 +971,25 @@ class CIFSRepository(FileRepository):
 		if not match:
 			raise RepositoryError(u"Bad cifs url: '%s'" % self._url)
 		
-		if (os.name != 'posix'):
+		if not os.name in ('posix', 'nt'):
 			raise NotImplementedError(u"CIFSRepository not yet avaliable on os '%s'" % os.name)
 		
 		self._mounted = False
 		self._mountPointCreated = False
 		
-		self._mountPoint = forceUnicode(kwargs.get('mountPoint', u'/tmp/.cifs-mount.%s' % randomString(5)))
+		self._mountPoint = kwargs.get('mountPoint')
+		if not self._mountPoint:
+			if   (os.name == 'posix'):
+				self._mountPoint = u'/tmp/.cifs-mount.%s' % randomString(5)
+			elif (os.name == 'nt'):
+				self._mountPoint = getFreeDrive()
+		
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
 		self._password = forceUnicode(kwargs.get('password', ''))
 		if self._password:
 			logger.addConfidentialString(self._password)
-		self._credentialsFile = u"/tmp/.cifs-credentials.%s" % randomString(5)
 		
-		self._mountOptions = { 'credentials': self._credentialsFile }
-		if (self._username.find('\\') != -1):
-			(self._mountOptions['domain'], self._username) = self._username.split('\\', 1)
-		self._mountOptions.update(kwargs.get('mountOptions', {}))
+		self._mountOptions = kwargs.get('mountOptions', {})
 		
 		parts = match.group(2).split('/')
 		self._share = u'//%s/%s' % (parts[0], parts[1])
@@ -983,43 +1011,22 @@ class CIFSRepository(FileRepository):
 			raise ValueError(u"Mount point not defined")
 		
 		logger.info(u"Mounting share '%s' to '%s'" % (self._share, self._mountPoint))
-		
 		if not os.path.isdir(self._mountPoint):
 			os.makedirs(self._mountPoint)
 			self._mountPointCreated = True
-		
-		if os.path.exists(self._credentialsFile):
-			os.remove(self._credentialsFile)
-		f = open(self._credentialsFile, "w")
-		f.close()
-		os.chmod(self._credentialsFile, 0600)
-		f = codecs.open(self._credentialsFile, "w", "iso-8859-15")
-		f.write(u"username=%s\n" % self._username)
-		f.write(u"password=%s\n" % self._password)
-		f.close()
-		
-		optString = u''
-		for (key, value) in self._mountOptions.items():
-			key = forceUnicode(key)
-			if value:
-				optString += u',%s=%s' % (key, forceUnicode(value))
-			else:
-				optString += u',%s' % key
-		if optString:
-			optString = u'-o "%s"' % optString[1:].replace('"', '\\"')
 		try:
-			result = execute(u"%s -t cifs %s %s %s" % (which('mount'), optString, self._share, self._mountPoint))
+			mountOptions = self._mountOptions
+			mountOptions['username'] = self._username
+			mountOptions['password'] = self._password
+			mount(self._share, self._mountPoint, **mountOptions)
 			self._mounted = True
 		except Exception, e:
-			logger.error(u"Failed to mount '%s': %s" % (self._share, e))
-			try:
-				os.remove(self._credentialsFile)
-				if self._mountPointCreated:
+			if self._mountPointCreated:
+				try:
 					os.rmdir(self._mountPoint)
-			except Exception, e2:
-				logger.error(e2)
-			raise Exception(u"Failed to mount '%s': %s" % (self._share, e))
-		os.remove(self._credentialsFile)
+				except Exception, e2:
+					logger.error(e2)
+			raise e
 		
 	def _umount(self):
 		if not self._mounted or not self._mountPoint:
@@ -1027,21 +1034,19 @@ class CIFSRepository(FileRepository):
 		
 		logger.info(u"Umounting share '%s' from '%s'" % (self._share, self._mountPoint))
 		
-		try:
-			result = execute(u"%s %s" % (which('umount'), self._mountPoint))
-			self._mounted = False
-			if self._mountPointCreated:
-				os.rmdir(self._mountPoint)
-		except Exception, e:
-			logger.error(u"Failed to umount '%s': %s" % (self._mountPoint, e))
-			raise Exception(u"Failed to umount '%s': %s" % (self._mountPoint, e))
+		umount(self._mountPoint)
+		
+		self._mounted = False
+		if self._mountPointCreated:
+			os.rmdir(self._mountPoint)
 		
 	def __del__(self):
 		try:
-			if os.path.isdir(self._mountPoint):
-				if self._mounted:
-					os.system('umount %s' % self._mountPoint)
-				os.rmdir(self._mountPoint)
+			self._umount()
+			#if os.path.isdir(self._mountPoint):
+			#	if self._mounted:
+			#		os.system('umount %s' % self._mountPoint)
+			#	os.rmdir(self._mountPoint)
 		except:
 			pass
 
@@ -1058,7 +1063,7 @@ class DepotToLocalDirectorySychronizer(object):
 	def _synchronizeDirectories(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = forceUnicode(destination)
-		logger.debug(u"   Syncing directory %s to %s" % (source, destination))
+		logger.debug(u"Syncing directory %s to %s" % (source, destination))
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
 		
@@ -1069,7 +1074,7 @@ class DepotToLocalDirectorySychronizer(object):
 			if self._fileInfo.has_key(relSource):
 				continue
 			
-			logger.info(u"      Deleting '%s'" % relSource)
+			logger.info(u"Deleting '%s'" % relSource)
 			path = os.path.join(destination, f)
 			if os.path.isdir(path) and not os.path.islink(path):
 				shutil.rmtree(path)
@@ -1085,23 +1090,66 @@ class DepotToLocalDirectorySychronizer(object):
 			if (f['type'] == 'dir'):
 				self._synchronizeDirectories(s, d, progressSubject)
 			else:
-				bytes = 0
-				logger.debug(u"      Syncing %s: %s" % (relSource, self._fileInfo[relSource]))
+				logger.debug(u"Syncing %s with %s %s" % (relSource, d, self._fileInfo[relSource]))
 				if (self._fileInfo[relSource]['type'] == 'l'):
 					self._linkFiles[relSource] = self._fileInfo[relSource]['target']
 					continue
-				elif (self._fileInfo[relSource]['type'] == 'f'):
-					bytes = int(self._fileInfo[relSource]['size'])
-					if os.path.exists(d):
+				size = 0
+				localSize = 0
+				exists = False
+				if (self._fileInfo[relSource]['type'] == 'f'):
+					size = int(self._fileInfo[relSource]['size'])
+					exists = os.path.exists(d)
+					if exists:
 						md5s = md5sum(d)
-						logger.debug(u"      Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, bytes, md5s))
-						if (os.path.getsize(d) == bytes) and (md5s == self._fileInfo[relSource]['md5sum']):
-							if progressSubject: progressSubject.addToState(bytes)
+						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, size, md5s))
+						localSize = os.path.getsize(d)
+						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
+							if progressSubject: progressSubject.addToState(size)
 							continue
-				logger.info(u"      Downloading file '%s'" % f['name'])
+				
 				if progressSubject: progressSubject.setMessage( _(u"Downloading file '%s'") % f['name'] )
-				self._sourceDepot.download(s, d)
-				if progressSubject: progressSubject.addToState(bytes)
+				if exists and (localSize < size):
+					partialEndFile = d + '.endpart'
+					# First byte needed is byte number <localSize>
+					logger.info(u"Downloading file '%s' starting at byte number %d" % (f['name'], localSize))
+					if os.path.exists(partialEndFile):
+						os.remove(partialEndFile)
+					self._sourceDepot.download(s, partialEndFile, startByteNumber = localSize)
+					(f1, f2) = (None, None)
+					try:
+						f1 = open(d, 'ab')
+						f2 = open(partialEndFile, 'rb')
+						f1.write(f2.read())
+					finally:
+						if f1: f1.close(); f1 = None
+						if f2: f2.close(); f2 = None
+					md5s = md5sum(d)
+					if (md5s != self._fileInfo[relSource]['md5sum']):
+						logger.warning(u"MD5sum of composed file differs")
+						partialStartFile = d + '.startpart'
+						if os.path.exists(partialStartFile):
+							os.remove(partialStartFile)
+						# Last byte needed is byte number <localSize> - 1
+						logger.info(u"Downloading file '%s' ending at byte number %d" % (f['name'], localSize-1))
+						self._sourceDepot.download(s, partialStartFile, endByteNumber = localSize-1)
+						(f1, f2) = (None, None)
+						try:
+							f1 = open(partialStartFile, 'ab')
+							f2 = open(partialEndFile, 'rb')
+							f1.write(f2.read())
+						finally:
+							if f1: f1.close(); f1 = None
+							if f2: f2.close(); f2 = None
+						os.rename(partialStartFile, d)
+					os.remove(partialEndFile)
+				else:
+					logger.info(u"Downloading file '%s'" % f['name'])
+					self._sourceDepot.download(s, d)
+				md5s = md5sum(d)
+				if (md5s != self._fileInfo[relSource]['md5sum']):
+					raise Exception(u"Download error: MD5sum mismatch (%s != %s)" % (md5s, self._fileInfo[relSource]['md5sum']))
+				if progressSubject: progressSubject.addToState(size)
 				
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		
@@ -1134,12 +1182,12 @@ class DepotToLocalDirectorySychronizer(object):
 				self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
 				self._fileInfo = PackageContentFile(packageContentFile).parse()
 				
-				bytes = 0
+				size = 0
 				for value in self._fileInfo.values():
 					if value.has_key('size'):
-						bytes += int(value['size'])
-				productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
-				productProgressSubject.setEnd(bytes)
+						size += int(value['size'])
+				productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size/1024)) )
+				productProgressSubject.setEnd(size)
 				
 				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
 				
@@ -1251,18 +1299,34 @@ class DepotToLocalDirectorySychronizer(object):
 #		
 
 if (__name__ == "__main__"):
-	logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_DEBUG2)
+	logger.setConsoleLevel(LOG_INFO)
+	logger.setConsoleColor(True)
 	
 	tempDir = '/tmp/testdir'
-	if os.path.exists(tempDir):
-		shutil.rmtree(tempDir)
-	os.mkdir(tempDir)
+	#if os.path.exists(tempDir):
+	#	shutil.rmtree(tempDir)
+	if not os.path.exists(tempDir):
+		os.mkdir(tempDir)
 	
-	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	print rep.listdir()
-	destination = os.path.join(tempDir, 'AdbeRdr930_de_DE.msi')
-	rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, rangeEndByte = 20000000)
-	rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, rangeStartByte = 20000001)
+	##rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)
+	##rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
+	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
+	#dtlds.synchronize()
+	
+	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'pcpatch', mountOptions = { "iocharset": 'iso8859-1' })
+	dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
+	dtlds.synchronize()
+	
+	#print rep.listdir()
+	#print rep.isdir('javavm')
+	
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#print rep.listdir()
+	#destination = os.path.join(tempDir, 'AdbeRdr930_de_DE.msi')
+	#rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, endByteNumber = 20000000)
+	#rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, startByteNumber = 20000001)
 	
 	#rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
 	#print rep.listdir()
@@ -1375,11 +1439,7 @@ if (__name__ == "__main__"):
 	#for c in rep.content('', recursive=True):
 	#	print c
 	
-	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi3.4', dynamicBandwidth = True)
-	#rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
-	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/opsi-depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = '/tmp/depot', productIds=['preloginloader', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
-	#dtlds.synchronize()
+	
 
 
 

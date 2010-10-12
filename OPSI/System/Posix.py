@@ -869,8 +869,8 @@ def umount(devOrMountpoint):
 	try:
 		result = execute(cmd)
 	except Exception, e:
-		logger.error(u"Cannot umount: %s" % e)
-		raise Exception(u"Cannot umount: %s" % e)
+		logger.error(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
+		raise Exception(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 
 def getBlockDeviceBusType(device):
 	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
