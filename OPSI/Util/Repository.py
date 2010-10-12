@@ -1011,7 +1011,7 @@ class CIFSRepository(FileRepository):
 			raise ValueError(u"Mount point not defined")
 		
 		logger.info(u"Mounting share '%s' to '%s'" % (self._share, self._mountPoint))
-		if not os.path.isdir(self._mountPoint):
+		if (os.name == 'posix') and not os.path.isdir(self._mountPoint):
 			os.makedirs(self._mountPoint)
 			self._mountPointCreated = True
 		try:
