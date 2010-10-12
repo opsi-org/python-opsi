@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import re, os, time, socket, sys
+import re, os, time, socket, sys, locale
 
 # Win32 imports
 from ctypes import *
@@ -86,6 +86,44 @@ def removeSystemHook(hook):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+def getArchitecture():
+	if (2**63-1 == sys.maxint):
+		return u'x64'
+	return u'x86'
+
+def getOpsiHotfixName():
+	arch = getArchitecture()
+	major = sys.getwindowsversion()[0]
+	minor = sys.getwindowsversion()[1]
+	os = u'unknown'
+	lang = u'unknown'
+	
+	if (major == 5):
+		loc = locale.getdefaultlocale()[0].split('_')[0]
+		if   (loc == 'en'): lang = u'enu'
+		elif (loc == 'de'): lang = u'deu'
+		elif (loc == 'fr'): lang = u'fra'
+		elif (loc == 'it'): lang = u'ita'
+		elif (loc == 'ch'): lang = u'chs'
+		if (minor == 1):
+			os = u'winxp'
+		elif (minor == 2):
+			if (arch == 'x86'):
+				os = u'win2003'
+			else:
+				os = u'win2003-winxp'
+	elif (major == 6):
+		lang = u'glb'
+		if (minor == 0):
+			if (arch == 'x86'):
+				os = u'win7'
+			else:
+				os = u'win7-win2008r2'
+		elif (minor == 1):
+			os = u'vista-win2008'
+		
+	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
+	
 def getHostname():
 	return forceHostname(win32api.GetComputerName())
 
@@ -280,16 +318,15 @@ def adjustPrivilege(priv, enable = 1):
 	# and make the adjustment.
 	win32security.AdjustTokenPrivileges(htoken, 0, newPrivileges)
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                             REGISTRY                                              -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getRegistryValue(key, subKey, valueName, reflection=True):
 	hkey = _winreg.OpenKey(key, subKey)
-	if not reflection and (2**63-1 == sys.maxint):
+	if not reflection and (getArchitecture() == 'x64'):
 		_winreg.DisableReflectionKey(hkey)
 	(value, type) = _winreg.QueryValueEx(hkey, valueName)
-	if (2**63-1 == sys.maxint) and not reflection:
+	if (getArchitecture() == 'x64') and not reflection:
 		if _winreg.QueryReflectionKey(hkey):
 			_winreg.EnableReflectionKey(hkey)
 	return value
