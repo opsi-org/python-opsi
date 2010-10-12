@@ -72,6 +72,17 @@ class SystemSpecificHook(object):
 	def __init__(self):
 		pass
 
+hooks = []
+def addSystemHook(hook):
+	global hooks
+	if not hook in hooks:
+		hooks.append(hook)
+
+def removeSystemHook(hook):
+	global hooks
+	if hook in hooks:
+		hooks.remove(hook)
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
