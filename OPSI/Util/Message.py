@@ -275,6 +275,7 @@ class ProgressSubject(MessageSubject):
 		
 		now = int(time.time())
 		if self._fireAlways or (self._timeFired != now) or (self._state == self._end) or (self._state == 0):
+			logger.essential('%s: %s - %s - %s' % (self._id, now, self._timeFired, self._fireAlways))
 			if (self._state == 0):
 				self._percent = 0
 			elif (self._end == 0):
