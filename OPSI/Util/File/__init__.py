@@ -32,9 +32,9 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = "4.0"
+__version__ = "4.0.1"
 
-import os, codecs, re, ConfigParser, StringIO
+import os, codecs, re, ConfigParser, StringIO, locale
 
 if (os.name == 'posix'):
 	import fcntl, grp, pwd
@@ -338,21 +338,27 @@ class ChangelogFile(TextFile):
 		return self._entries
 		
 	def generate(self):
-		if not self._entries:
-			raise Exception(u"No entries to write")
-		self._lines = []
-		for entry in self._entries:
-			self._lines.append(u'%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
-			self._lines.append(u'')
-			for line in entry['changelog']:
-				self._lines.append(line)
-			if self._lines[-1].strip():
+		# get current locale
+		loc = locale.getlocale()
+		locale.setlocale(locale.LC_ALL, 'C')
+		try:
+			if not self._entries:
+				raise Exception(u"No entries to write")
+			self._lines = []
+			for entry in self._entries:
+				self._lines.append(u'%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
 				self._lines.append(u'')
-			self._lines.append(u' -- %s <%s>  %s' % (entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])))
-			self._lines.append(u'')
-		self.open('w')
-		self.writelines()
-		self.close()
+				for line in entry['changelog']:
+					self._lines.append(line)
+				if self._lines[-1].strip():
+					self._lines.append(u'')
+				self._lines.append(u' -- %s <%s>  %s' % (entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])))
+				self._lines.append(u'')
+			self.open('w')
+			self.writelines()
+			self.close()
+		finally:
+			locale.setlocale(locale.LC_ALL, loc)
 		
 	def getEntries(self):
 		if not self._parsed:
