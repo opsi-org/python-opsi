@@ -101,15 +101,10 @@ class BaseArchive(object):
 			error = ''
 			ret = None
 			while ret is None:
-				#try:
-				#	chunk = proc.stdout.read()
-				#	if chunk:
-				#		filesExtracted = chunk.count('\n')
-				#		if (filesExtracted > 0):
-				#			if self._progressSubject:
-				#				self._progressSubject.addToState(filesExtracted)
-				#except:
-				#	pass
+				try:
+					chunk = proc.stdout.read()
+				except:
+					pass
 				try:
 					chunk = proc.stderr.read()
 					if chunk:
@@ -119,7 +114,7 @@ class BaseArchive(object):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
 				except:
-					pass
+					time.sleep(0.001)
 				ret = proc.poll()
 			
 			logger.info(u"Exit code: %s" % ret)
@@ -180,13 +175,16 @@ class BaseArchive(object):
 							self._progressSubject.addToState(chunk.count('\n'))
 						error += chunk
 				except:
-					pass
+					time.sleep(0.001)
 				
 			proc.stdin.close()
 			
 			while ret is None:
 				ret = proc.poll()
-				
+				try:
+					chunk = proc.stdout.read()
+				except:
+					pass
 				try:
 					chunk = proc.stderr.read()
 					if chunk:
