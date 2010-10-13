@@ -1151,6 +1151,8 @@ class DepotToLocalDirectorySychronizer(object):
 						finally:
 							if f1: f1.close(); f1 = None
 							if f2: f2.close(); f2 = None
+						if os.path.exists(d):
+							os.remove(d)
 						os.rename(partialStartFile, d)
 					os.remove(partialEndFile)
 				else:
