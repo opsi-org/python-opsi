@@ -482,7 +482,7 @@ class Repository:
 	def upload(self, source, destination):
 		raise RepositoryError(u"Not implemented")
 	
-	def download(self, source, destination, progressObserver=None):
+	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		raise RepositoryError(u"Not implemented")
 	
 	def delete(self, destination):
@@ -1147,7 +1147,7 @@ class DepotToLocalDirectorySychronizer(object):
 					os.remove(partialEndFile)
 				else:
 					logger.info(u"Downloading file '%s'" % f['name'])
-					self._sourceDepot.download(s, d)
+					self._sourceDepot.download(s, d, progressSubject = progressSubject)
 				md5s = md5sum(d)
 				if (md5s != self._fileInfo[relSource]['md5sum']):
 					raise Exception(u"Download error: MD5sum mismatch (%s != %s)" % (md5s, self._fileInfo[relSource]['md5sum']))
@@ -1190,6 +1190,7 @@ class DepotToLocalDirectorySychronizer(object):
 						size += int(value['size'])
 				productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size/1024)) )
 				productProgressSubject.setEnd(size)
+				productProgressSubject.setEndChangable(False)
 				
 				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
 				
