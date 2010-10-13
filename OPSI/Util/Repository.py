@@ -491,6 +491,15 @@ class Repository:
 	def makeDirectory(self, destination):
 		raise RepositoryError(u"Not implemented")
 	
+	def disconnect(self):
+		raise RepositoryError(u"Not implemented")
+	
+	def __del__(self):
+		try:
+			self.disconnect()
+		except:
+			pass
+	
 class FileRepository(Repository):
 	
 	def __init__(self, url, **kwargs):
@@ -646,7 +655,9 @@ class FileRepository(Repository):
 		destination = self._preProcessPath(destination)
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
-		
+	
+	def disconnect(self):
+		pass
 
 class HTTPRepository(Repository):
 	
@@ -804,6 +815,10 @@ class HTTPRepository(Repository):
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, e))
 		logger.debug2(u"HTTP download done")
+	
+	def disconnect(self):
+		if self._connection:
+			self._connection.close()
 	
 class WebDAVRepository(HTTPRepository):
 	
@@ -1041,17 +1056,10 @@ class CIFSRepository(FileRepository):
 		self._mounted = False
 		if self._mountPointCreated:
 			os.rmdir(self._mountPoint)
-		
-	def __del__(self):
-		try:
-			self._umount()
-			#if os.path.isdir(self._mountPoint):
-			#	if self._mounted:
-			#		os.system('umount %s' % self._mountPoint)
-			#	os.rmdir(self._mountPoint)
-		except:
-			pass
-
+	
+	def disconnect(self):
+		self._umount()
+	
 class DepotToLocalDirectorySychronizer(object):
 	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
 		self._sourceDepot          = sourceDepot
