@@ -103,6 +103,11 @@ class BaseArchive(object):
 			while ret is None:
 				try:
 					chunk = proc.stdout.read()
+					if chunk:
+						filesExtracted = chunk.count('\n')
+						if (filesExtracted > 0):
+							if self._progressSubject:
+								self._progressSubject.addToState(filesExtracted)
 				except:
 					pass
 				try:
@@ -145,6 +150,8 @@ class BaseArchive(object):
 			if not encoding:
 				encoding = locale.getpreferredencoding()
 			
+			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 			
@@ -169,11 +176,22 @@ class BaseArchive(object):
 				proc.stdin.write("%s\n" % f.encode(encoding))
 				
 				try:
+					chunk = proc.stdout.read()
+					if chunk:
+						filesAdded = chunk.count('\n')
+						if (filesAdded > 0):
+							if self._progressSubject:
+								self._progressSubject.addToState(filesAdded)
+				except:
+					pass
+				try:
 					chunk = proc.stderr.read()
 					if chunk:
-						if self._progressSubject:
-							self._progressSubject.addToState(chunk.count('\n'))
 						error += chunk
+						filesAdded = chunk.count('\n')
+						if (filesAdded > 0):
+							if self._progressSubject:
+								self._progressSubject.addToState(filesAdded)
 				except:
 					time.sleep(0.001)
 				
