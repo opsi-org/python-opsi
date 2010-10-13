@@ -215,6 +215,7 @@ class ProgressSubject(MessageSubject):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._fireAlways = True
+		self._endChangable = True
 		if args.has_key('end'):
 			self._end = forceInt(args['end'])
 			if (self._end < 0): self._end = 0
@@ -239,6 +240,7 @@ class ProgressSubject(MessageSubject):
 	def reset(self):
 		MessageSubject.reset(self)
 		self._end          = 0
+		self._endChangable = True
 		self._percent      = 0
 		self._state        = 0
 		self._timeStarted  = time.time()
@@ -248,8 +250,13 @@ class ProgressSubject(MessageSubject):
 		self._speed        = 0
 		self._notifyEndChanged()
 		self._notifyProgressChanged()
-		
+	
+	def setEndChangable(self, changable):
+		self._endChangable = forceBool(changable)
+	
 	def setEnd(self, end):
+		if not self._endChangable:
+			return
 		self._end = forceInt(end)
 		if (self._end < 0):
 			self._end = 0
