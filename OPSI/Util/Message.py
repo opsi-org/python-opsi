@@ -400,7 +400,6 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 		ChoiceObserver.__init__(self)
 		ProgressSubject.__init__(self, id, type, title, **args)
 		ProgressObserver.__init__(self)
-		self._fireAlways = True
 	
 	def messageChanged(self, subject, message):
 		self.setMessage(message, severity = subject.getSeverity())
