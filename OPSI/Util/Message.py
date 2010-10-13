@@ -274,6 +274,7 @@ class ProgressSubject(MessageSubject):
 		self._state = state
 		
 		now = time.time()
+		logger.error("setState => %s: %s %s" % (self._id, self._fireAlways, self._timeFired))
 		if self._fireAlways or (self._timeFired != now) or (self._state == self._end) or (self._state == 0):
 			if (self._state == 0):
 				self._percent = 0
