@@ -1,14 +1,9 @@
-python-opsi (4.0.0.8-1) stable; urgency=low
-
-  * Util/Repository: remove functools import, Repository.disconnect(), adapted to nt
-  * Util/Message: fix fireAlways
-  * System/Windows: new funftions: getArchitecture, getFreeDrive, reimplemented mount for cifs/smb
-
- -- Jan Schneider <j.schneider@uib.de>  Wed, 13 Oct 2010 14:34:07 +0200
-
 python-opsi (4.0.0.7-1) stable; urgency=low
 
-  * Util/Repository: call mount from System, nt compatibility
+  * Util/Repository: remove functools import, Repository.disconnect()
+                     call mount from System, nt compatibility
+  * Util/Message: fix fireAlways
+  * System/Windows: new funftions: getArchitecture, getFreeDrive, reimplemented mount for cifs/smb
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 12 Oct 2010 16:26:43 +0200
 
