@@ -1107,7 +1107,7 @@ class DepotToLocalDirectorySychronizer(object):
 						logger.debug(u"Destination file '%s' already exists (size: %s, md5sum: %s)" % (d, size, md5s))
 						localSize = os.path.getsize(d)
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
-							if progressSubject: progressSubject.addToState(size)
+							#if progressSubject: progressSubject.addToState(size)
 							continue
 				
 				if progressSubject: progressSubject.setMessage( _(u"Downloading file '%s'") % f['name'] )
@@ -1151,7 +1151,7 @@ class DepotToLocalDirectorySychronizer(object):
 				md5s = md5sum(d)
 				if (md5s != self._fileInfo[relSource]['md5sum']):
 					raise Exception(u"Download error: MD5sum mismatch (%s != %s)" % (md5s, self._fileInfo[relSource]['md5sum']))
-				if progressSubject: progressSubject.addToState(size)
+				#if progressSubject: progressSubject.addToState(size)
 				
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
 		
