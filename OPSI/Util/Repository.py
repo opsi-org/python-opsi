@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.1'
 
 # Imports
-import re, stat, base64, urllib, httplib, os, shutil, codecs, time, functools, inspect
+import re, stat, base64, urllib, httplib, os, shutil, codecs, time, inspect
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -1335,7 +1335,7 @@ if (__name__ == "__main__"):
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
 	
-	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'pcpatch', mountOptions = { "iocharset": 'iso8859-1' })
+	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxxxxx', mountOptions = { "iocharset": 'iso8859-1' })
 	dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	dtlds.synchronize()
 	
