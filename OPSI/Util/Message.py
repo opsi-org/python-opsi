@@ -276,7 +276,6 @@ class ProgressSubject(MessageSubject):
 		now = time.time()
 		logger.error("setState => %s %s %s %s" % (self._id, self._state, self._fireAlways, self._timeFired))
 		if self._fireAlways or (self._timeFired != now) or (self._state == self._end) or (self._state == 0):
-			logger.error("=========== fire")
 			if (self._state == 0):
 				self._percent = 0
 			elif (self._end == 0):
@@ -315,6 +314,7 @@ class ProgressSubject(MessageSubject):
 		return self._speed
 	
 	def _notifyProgressChanged(self):
+		logger.error("_notifyProgressChanged => %s" % (self._id))
 		for o in self._observers:
 			o.progressChanged(self, self._state, self._percent, self._timeSpend, self._timeLeft, self._speed)
 	
@@ -413,6 +413,7 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 		self.setChoices(choices)
 	
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+		logger.critical("progressChanged: %s - %s" % (self._id, self._fireAlways))
 		self.setState(state)
 	
 	def endChanged(self, subject, end):
