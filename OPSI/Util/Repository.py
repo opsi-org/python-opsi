@@ -985,7 +985,7 @@ class CIFSRepository(FileRepository):
 			if   (os.name == 'posix'):
 				self._mountPoint = u'/tmp/.cifs-mount.%s' % randomString(5)
 			elif (os.name == 'nt'):
-				self._mountPoint = getFreeDrive()
+				self._mountPoint = getFreeDrive(startLetter = 'g')
 		
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
 		self._password = forceUnicode(kwargs.get('password', ''))
