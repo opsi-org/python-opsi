@@ -58,7 +58,7 @@ class SQLite(SQL):
 	ALTER_TABLE_CHANGE_SUPPORTED = False
 	
 	def __init__(self, **kwargs):
-		self._database = u'/tmp/opsi.sqlite'
+		self._database = ":memory:"
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -73,7 +73,7 @@ class SQLite(SQL):
 		if not self._connection:
 			self._connection = Connection(
 				filename           = self._database,
-				flags              = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+				flags              = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
 				vfs                = None,
 				statementcachesize = 100,
 			)
@@ -88,7 +88,7 @@ class SQLite(SQL):
 		cursor = self._connection.cursor()
 		cursor.setrowtrace(rowtrace)
 		return (self._connection, cursor)
-		
+	
 	def close(self, conn, cursor):
 		pass
 	
@@ -106,7 +106,11 @@ class SQLite(SQL):
 		logger.debug2(u"getRow: %s" % query)
 		(conn, cursor) = self.connect()
 		self.execute(query, conn, cursor)
-		row = cursor.next()
+		row = {}
+		try:
+			row = cursor.next()
+		except:
+			pass
 		if not row:
 			logger.debug(u"No result for query '%s'" % query)
 			return {}
@@ -120,17 +124,23 @@ class SQLite(SQL):
 			colNames += u"`%s`, " % key
 			if value is None:
 				values += u"NULL, "
-			elif type(value) in (float, long, int, bool):
+			elif type(value) is bool:
+				if value:
+					values += u"1, "
+				else:
+					values += u"0, "
+			elif type(value) in (float, long, int):
 				values += u"%s, " % value
 			elif type(value) is str:
-				values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
 			else:
-				values += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+				values += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
 			
 		query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 		logger.debug2(u"insert: %s" % query)
-		return self.execute(query, conn, cursor)
-	
+		self.execute(query, conn, cursor)
+		return conn.changes()
+		
 	def update(self, table, where, valueHash, updateWhereNone=False):
 		(conn, cursor) = self.connect()
 		if not valueHash:
@@ -142,23 +152,29 @@ class SQLite(SQL):
 			query += u"`%s` = " % key
 			if value is None:
 				query += u"NULL, "
-			elif type(value) in (float, long, int, bool):
+			elif type(value) is bool:
+				if value:
+					query += u"1, "
+				else:
+					query += u"0, "
+			elif type(value) in (float, long, int):
 				query += u"%s, " % value
 			elif type(value) is str:
-				query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+				query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
 			else:
-				query += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+				query += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
 		
 		query = u'%s WHERE %s;' % (query[:-2], where)
 		logger.debug2(u"update: %s" % query)
-		return self.execute(query, conn, cursor)
-		
+		self.execute(query, conn, cursor)
+		return conn.changes()
 	
 	def delete(self, table, where):
 		(conn, cursor) = self.connect()
 		query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
 		logger.debug2(u"delete: %s" % query)
-		return self.execute(query, conn, cursor)
+		self.execute(query, conn, cursor)
+		return conn.changes()
 	
 	def execute(self, query, conn=None, cursor=None):
 		if not conn or not cursor:
@@ -189,17 +205,21 @@ class SQLiteBackend(SQLBackend):
 		
 		SQLBackend.__init__(self, **kwargs)
 		
+		self._database = ":memory:"
+		
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option in ('database',):
+				self._database = forceFilename(value)
+		
 		self._sql = SQLite(**kwargs)
 		
 		self._licenseManagementEnabled = True
-		self._licenseManagementModule = False
-		self._sqlBackendModule = False
+		self._licenseManagementModule = True
+		self._sqlBackendModule = True
 		
 		logger.debug(u'SQLiteBackend created: %s' % self)
 	
-	def backend_deleteBase(self):
-		if os.path.exists(self._database):
-			os.path.remove(self._database)
 	
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)

@@ -159,10 +159,12 @@ class InventoryObjectMethodMixin(object):
 		self.assertEqual(len(auditHardwareOnHosts), len(self.auditHardwareOnHosts), u"Expected %s audit hardware objects on host, but found %s on backend." % (len(self.auditHardwareOnHosts), len(auditHardwareOnHosts)))
 		
 	def test_createDuplicateAuditHardwareOnHost(self):
+		numBefore = len(self.backend.auditHardwareOnHost_getObjects())
 		auditHardwareOnHost4update = self.auditHardwareOnHost4.clone()
 		self.backend.auditHardwareOnHost_updateObject(auditHardwareOnHost4update)
 		auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-		self.assertEqual(len(auditHardwareOnHosts), len(self.auditHardwareOnHosts), u"Expected %s audit hardware objects on host, but found %s on backend." % (len(self.auditHardwareOnHosts), len(auditHardwareOnHosts)))
+		numAfter = len(self.backend.auditHardwareOnHost_getObjects())
+		self.assertEqual(numBefore, numAfter, u"Expected %s audit hardware objects on host, but found %s on backend." % (numBefore, numAfter))
 
 	def test_deleteAuditHardwareOnHost(self):
 		self.backend.auditHardwareOnHost_deleteObjects([self.auditHardwareOnHost4, self.auditHardwareOnHost3])

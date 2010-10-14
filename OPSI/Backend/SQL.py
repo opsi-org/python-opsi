@@ -34,6 +34,17 @@
 
 __version__ = '4.0'
 
+from twisted.conch.ssh import keys
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
+
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -115,7 +126,12 @@ class SQLBackend(ConfigDataBackend):
 			where += u'('
 			for value in values:
 				operator = '='
-				if type(value) in (float, long, int, bool):
+				if type(value) is bool:
+					if value:
+						where += u"`%s` %s %s" % (key, operator, 1)
+					else:
+						where += u"`%s` %s %s" % (key, operator, 0)
+				elif type(value) in (float, long, int):
 					where += u"`%s` %s %s" % (key, operator, value)
 				elif value is None:
 					where += u"`%s` is NULL" % key
@@ -238,7 +254,12 @@ class SQLBackend(ConfigDataBackend):
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
 			if condition:
 				condition += u' and '
-			if type(value) in (float, long, int, bool):
+			if type(value) is bool:
+				if value:
+					condition += u"`%s` = %s" % (arg, 1)
+				else:
+					condition += u"`%s` = %s" % (arg, 0)
+			elif type(value) in (float, long, int):
 				condition += u"`%s` = %s" % (arg, value)
 			#elif value is None:
 			#	where += u"`%s` is NULL" % key
@@ -260,10 +281,10 @@ class SQLBackend(ConfigDataBackend):
 		done = False
 		while not done and (errors < 100):
 			done = True
-			for i in self._sql.getSet(u'SHOW TABLES;'):
+			for i in self._sql.getTables().keys():
 				try:
-					logger.debug(u'DROP TABLE `%s`;' % i.values()[0])
-					self._sql.execute(u'DROP TABLE `%s`;' % i.values()[0])
+					logger.debug(u'DROP TABLE `%s`;' % i)
+					self._sql.execute(u'DROP TABLE `%s`;' % i)
 				except Exception, e:
 					logger.error(e)
 					done = False
@@ -287,11 +308,11 @@ class SQLBackend(ConfigDataBackend):
 					`hardwareAddress` varchar(17),
 					`ipAddress` varchar(15),
 					`inventoryNumber` varchar(30),
-					`created` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-					`lastSeen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+					`created` TIMESTAMP,
+					`lastSeen` TIMESTAMP,
 					`opsiHostKey` varchar(32),
 					`oneTimePassword` varchar(32),
-					`maxBandwidth` int,
+					`maxBandwidth` integer,
 					`depotLocalUrl` varchar(128),
 					`depotRemoteUrl` varchar(255),
 					`depotWebdavUrl` varchar(255),
@@ -302,11 +323,11 @@ class SQLBackend(ConfigDataBackend):
 					`masterDepotId` varchar(255),
 					PRIMARY KEY (`hostId`)
 				) %s;
-				CREATE INDEX `index_host_type` on `HOST` (`type`);
 				''' % self._sql.getTableCreationOptions('HOST')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
+			
 		if not 'CONFIG' in tables.keys():
 			logger.debug(u'Creating table CONFIG')
 			table = u'''CREATE TABLE `CONFIG` (
@@ -317,15 +338,15 @@ class SQLBackend(ConfigDataBackend):
 					`editable` bool NOT NULL,
 					PRIMARY KEY (`configId`)
 				) %s;
-				CREATE INDEX `index_config_type` on `CONFIG` (`type`);
 				''' % self._sql.getTableCreationOptions('CONFIG')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_config_type` on `CONFIG` (`type`);')
+			
 		if not 'CONFIG_VALUE' in tables.keys():
 			logger.debug(u'Creating table CONFIG_VALUE')
 			table = u'''CREATE TABLE `CONFIG_VALUE` (
-					`config_value_id` int NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`config_value_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`configId` varchar(200) NOT NULL,
 					`value` TEXT,
 					`isDefault` bool,
@@ -339,18 +360,18 @@ class SQLBackend(ConfigDataBackend):
 		if not 'CONFIG_STATE' in tables.keys():
 			logger.debug(u'Creating table CONFIG_STATE')
 			table = u'''CREATE TABLE `CONFIG_STATE` (
-					`config_state_id` int NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`config_state_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`configId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					`values` text,
 					PRIMARY KEY (`config_state_id`)
 				) %s;
-				CREATE INDEX `index_config_state_configId` on `CONFIG_STATE` (`configId`);
-				CREATE INDEX `index_config_state_objectId` on `CONFIG_STATE` (`objectId`);
 				''' % self._sql.getTableCreationOptions('CONFIG_STATE')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_config_state_configId` on `CONFIG_STATE` (`configId`);')
+			self._sql.execute('CREATE INDEX `index_config_state_objectId` on `CONFIG_STATE` (`objectId`);')
+			
 		if not 'PRODUCT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT')
 			table = u'''CREATE TABLE `PRODUCT` (
@@ -367,18 +388,18 @@ class SQLBackend(ConfigDataBackend):
 					`onceScript` varchar(50),
 					`customScript` varchar(50),
 					`userLoginScript` varchar(50),
-					`priority` int,
+					`priority` integer,
 					`description` TEXT,
 					`advice` TEXT,
 					`pxeConfigTemplate` varchar(50),
 					`changelog` TEXT,
 					PRIMARY KEY (`productId`, `productVersion`, `packageVersion`)
 				) %s;
-				CREATE INDEX `index_product_type` on `PRODUCT` (`type`);
 				''' % self._sql.getTableCreationOptions('PRODUCT')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
+			
 		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
 		if not 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' in tables.keys():
 			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
@@ -404,11 +425,11 @@ class SQLBackend(ConfigDataBackend):
 					FOREIGN KEY (`productId`, `productVersion`, `packageVersion` ) REFERENCES `PRODUCT` (`productId`, `productVersion`, `packageVersion`),
 					FOREIGN KEY (`depotId`) REFERENCES `HOST` (`hostId`)
 				) %s;
-				CREATE INDEX `index_product_on_depot_productType` on `PRODUCT_ON_DEPOT` (`productType`);
 				''' % self._sql.getTableCreationOptions('PRODUCT_ON_DEPOT')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_product_on_depot_productType` on `PRODUCT_ON_DEPOT` (`productType`);')
+			
 		if not 'PRODUCT_PROPERTY' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY` (
@@ -423,15 +444,15 @@ class SQLBackend(ConfigDataBackend):
 					PRIMARY KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`),
 					FOREIGN KEY (`productId`, `productVersion`, `packageVersion`) REFERENCES `PRODUCT` (`productId`, `productVersion`, `packageVersion`)
 				) %s;
-				CREATE INDEX `index_product_property_type` on `PRODUCT_PROPERTY` (`type`);
 				''' % self._sql.getTableCreationOptions('PRODUCT_PROPERTY')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_product_property_type` on `PRODUCT_PROPERTY` (`type`);')
+			
 		if not 'PRODUCT_PROPERTY_VALUE' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY_VALUE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
-					`product_property_id` int NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`product_property_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`productId` varchar(50) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
@@ -492,18 +513,18 @@ class SQLBackend(ConfigDataBackend):
 		if not 'PRODUCT_PROPERTY_STATE' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY_STATE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
-					`product_property_state_id` int NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`product_property_state_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`productId` varchar(50) NOT NULL,
 					`propertyId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					`values` text,
 					PRIMARY KEY (`product_property_state_id`)
 				) %s;
-				CREATE INDEX `index_product_property_state_objectId` on `PRODUCT_PROPERTY_STATE` (`objectId`);
 				''' % self._sql.getTableCreationOptions('PRODUCT_PROPERTY_STATE')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_product_property_state_objectId` on `PRODUCT_PROPERTY_STATE` (`objectId`);')
+			
 		if not 'GROUP' in tables.keys():
 			logger.debug(u'Creating table GROUP')
 			table = u'''CREATE TABLE `GROUP` (
@@ -514,26 +535,26 @@ class SQLBackend(ConfigDataBackend):
 					`notes` varchar(500),
 					PRIMARY KEY (`type`, `groupId`)
 				) %s;
-				CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);
 				''' % self._sql.getTableCreationOptions('GROUP')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);')
+			
 		if not 'OBJECT_TO_GROUP' in tables.keys():
 			logger.debug(u'Creating table OBJECT_TO_GROUP')
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
-					`object_to_group_id` int NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`object_to_group_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`groupType` varchar(30) NOT NULL,
 					`groupId` varchar(100) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					PRIMARY KEY (`object_to_group_id`),
 					FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
 				) %s;
-				CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);
 				''' % self._sql.getTableCreationOptions('OBJECT_TO_GROUP')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
+			
 		if not 'LICENSE_CONTRACT' in tables.keys():
 			logger.debug(u'Creating table LICENSE_CONTRACT')
 			table = u'''CREATE TABLE `LICENSE_CONTRACT` (
@@ -547,11 +568,11 @@ class SQLBackend(ConfigDataBackend):
 					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					PRIMARY KEY (`licenseContractId`)
 				) %s;
-				CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);
 				''' % self._sql.getTableCreationOptions('LICENSE_CONTRACT')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);')
+			
 		if not 'SOFTWARE_LICENSE' in tables.keys():
 			logger.debug(u'Creating table SOFTWARE_LICENSE')
 			table = u'''CREATE TABLE `SOFTWARE_LICENSE` (
@@ -559,17 +580,17 @@ class SQLBackend(ConfigDataBackend):
 					`licenseContractId` VARCHAR(100) NOT NULL,
 					`type` varchar(30) NOT NULL,
 					`boundToHost` varchar(255),
-					`maxInstallations` int,
+					`maxInstallations` integer,
 					`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					PRIMARY KEY (`softwareLicenseId`),
 					FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
 				) %s;
-				CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);
-				CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);
 				''' % self._sql.getTableCreationOptions('SOFTWARE_LICENSE')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);')
+			self._sql.execute('CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
+			
 		if not 'LICENSE_POOL' in tables.keys():
 			logger.debug(u'Creating table LICENSE_POOL')
 			table = u'''CREATE TABLE `LICENSE_POOL` (
@@ -578,11 +599,11 @@ class SQLBackend(ConfigDataBackend):
 					`description` varchar(200),
 					PRIMARY KEY (`licensePoolId`)
 				) %s;
-				CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);
 				''' % self._sql.getTableCreationOptions('LICENSE_POOL')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);')
+			
 		if not 'AUDIT_SOFTWARE_TO_LICENSE_POOL' in tables.keys():
 			logger.debug(u'Creating table AUDIT_SOFTWARE_TO_LICENSE_POOL')
 			table = u'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
@@ -628,7 +649,7 @@ class SQLBackend(ConfigDataBackend):
 		if not 'LICENSE_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table LICENSE_ON_CLIENT')
 			table = u'''CREATE TABLE `LICENSE_ON_CLIENT` (
-					`license_on_client_id` int NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`license_on_client_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`softwareLicenseId` VARCHAR(100) NOT NULL,
 					`licensePoolId` VARCHAR(100) NOT NULL,
 					`clientId` varchar(255),
@@ -637,11 +658,10 @@ class SQLBackend(ConfigDataBackend):
 					PRIMARY KEY (`license_on_client_id`),
 					FOREIGN KEY (`softwareLicenseId`, `licensePoolId`) REFERENCES `SOFTWARE_LICENSE_TO_LICENSE_POOL` (`softwareLicenseId`, `licensePoolId`)
 				) %s;
-				CREATE INDEX `index_license_on_client_clientId` on `LICENSE_ON_CLIENT` (`clientId`);
 				''' % self._sql.getTableCreationOptions('LICENSE_ON_CLIENT')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_license_on_client_clientId` on `LICENSE_ON_CLIENT` (`clientId`);')
 		
 		# Software audit tables
 		if not 'SOFTWARE' in tables.keys():
@@ -659,16 +679,16 @@ class SQLBackend(ConfigDataBackend):
 					`installSize` BIGINT,
 					PRIMARY KEY (`name`, `version`, `subVersion`, `language`, `architecture`)
 				) %s;
-				CREATE INDEX `index_software_windowsSoftwareId` on `SOFTWARE` (`windowsSoftwareId`);
-				CREATE INDEX `index_software_type` on `SOFTWARE` (`type`);
 				''' % self._sql.getTableCreationOptions('SOFTWARE')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_software_windowsSoftwareId` on `SOFTWARE` (`windowsSoftwareId`);')
+			self._sql.execute('CREATE INDEX `index_software_type` on `SOFTWARE` (`type`);')
+			
 		if not 'SOFTWARE_CONFIG' in tables.keys():
 			logger.debug(u'Creating table SOFTWARE_CONFIG')
 			table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
-					`config_id` INT NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`config_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
 					`clientId` varchar(255) NOT NULL,
 					`name` varchar(100) NOT NULL,
 					`version` varchar(100) NOT NULL,
@@ -680,30 +700,29 @@ class SQLBackend(ConfigDataBackend):
 					`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`state` TINYINT NOT NULL,
-					`usageFrequency` int NOT NULL DEFAULT -1,
+					`usageFrequency` integer NOT NULL DEFAULT -1,
 					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
 					`licenseKey` VARCHAR(100),
 					PRIMARY KEY (`config_id`)
 				) %s;
-				CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);
-				CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);
 				''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
 			logger.debug(table)
 			self._sql.execute(table)
-		
+			self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+			self._sql.execute('CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);')
+			
 		# Hardware audit tables
 		for (hwClass, values) in self._auditHardwareConfig.items():
 			logger.info(u"Processing hardware class '%s'" % hwClass)
-			
 			hardwareDeviceTableName = u'HARDWARE_DEVICE_' + hwClass
 			hardwareConfigTableName = u'HARDWARE_CONFIG_' + hwClass
 			
 			hardwareDeviceTable = u'CREATE TABLE `' + hardwareDeviceTableName + '` (\n' + \
-						u'`hardware_id` INT NOT NULL ' + self._sql.AUTOINCREMENT + ',\n'
+						u'`hardware_id` INTEGER NOT NULL ' + self._sql.AUTOINCREMENT + ',\n'
 			hardwareConfigTable = u'CREATE TABLE `' + hardwareConfigTableName + '` (\n' + \
-						u'`config_id` INT NOT NULL ' + self._sql.AUTOINCREMENT + ',\n' + \
+						u'`config_id` INTEGER NOT NULL ' + self._sql.AUTOINCREMENT + ',\n' + \
 						u'`hostId` varchar(50) NOT NULL,\n' + \
-						u'`hardware_id` INT NOT NULL,\n' + \
+						u'`hardware_id` INTEGER NOT NULL,\n' + \
 						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
 						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
 						u'`state` TINYINT NOT NULL,\n'
@@ -774,10 +793,10 @@ class SQLBackend(ConfigDataBackend):
 				hardwareConfigTable += u'\n) %s;\n' % self._sql.getTableCreationOptions(hardwareConfigTableName)
 			
 			# Execute sql query
-			if hardwareDeviceValuesProcessed:
+			if hardwareDeviceValuesProcessed or not hardwareDeviceTableExists:
 				logger.debug(hardwareDeviceTable)
 				self._sql.execute(hardwareDeviceTable)
-			if hardwareConfigValuesProcessed:
+			if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
 		

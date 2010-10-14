@@ -421,7 +421,9 @@ class OpsiClient(Host):
 			self.setOpsiHostKey(generateOpsiHostKey())
 		if self.created is None:
 			self.setCreated(timestamp())
-	
+		if self.lastSeen is None:
+			self.setLastSeen(timestamp())
+		
 	def getLastSeen(self):
 		return self.lastSeen
 	

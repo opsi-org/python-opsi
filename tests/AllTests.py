@@ -3,6 +3,7 @@ __unittest = True
 
 from backend.FileTest import FileTestCase
 from backend.MySQLTest import MySQLTestCase
+from backend.SQLiteTest import SQLiteTestCase
 from backend.LdapTest import LdapTestCase
 from backend.JsonRPCTest import JSONRPCTestCase
 from backend.HostControlTest import HostControlTestCase
@@ -20,6 +21,7 @@ import opsidevtools.unittest.lib.unittest2
 
 test_cases = (	FileTestCase,
 		MySQLTestCase,
+		SQLiteTestCase,
 		#LdapTestCase
 		JSONRPCTestCase,
 		HostControlTestCase)

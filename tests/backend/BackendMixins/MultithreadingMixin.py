@@ -1,5 +1,5 @@
 
-import time,sys
+import time, sys, traceback
 from MySQLdb.constants.ER import DUP_ENTRY
 from MySQLdb import IntegrityError
 
@@ -36,6 +36,7 @@ class MultithreadingMixin(object):
 						self.errorMessage = e
 						self.exitCode = 1
 				except Exception, e:
+					traceback.print_exc(file=sys.stderr)
 					self.errorMessage = e
 					self.exitCode = 1
 					#sys.exit()
@@ -55,4 +56,5 @@ class MultithreadingMixin(object):
 				else:
 					mtts.append(mtt)
 		except Exception, e:
+			traceback.print_exc(file=sys.stderr)
 			self.fail(str(e))

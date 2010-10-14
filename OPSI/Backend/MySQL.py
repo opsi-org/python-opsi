@@ -35,17 +35,10 @@
 __version__ = '4.0'
 
 # Imports
-import MySQLdb, warnings, time
+import MySQLdb, warnings, time, threading
 from _mysql_exceptions import *
 from sqlalchemy import pool
-import threading
 from twisted.conch.ssh import keys
-
-from sys import version_info
-if (version_info >= (2,6)):
-	import json
-else:
-	import simplejson as json
 try:
 	from hashlib import md5
 except ImportError:
@@ -257,7 +250,12 @@ class MySQL(SQL):
 				colNames += u"`%s`, " % key
 				if value is None:
 					values += u"NULL, "
-				elif type(value) in (float, long, int, bool):
+				elif type(value) is bool:
+					if value:
+						values += u"1, "
+					else:
+						values += u"0, "
+				elif type(value) in (float, long, int):
 					values += u"%s, " % value
 				elif type(value) is str:
 					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
@@ -294,7 +292,12 @@ class MySQL(SQL):
 				query += u"`%s` = " % key
 				if value is None:
 					query += u"NULL, "
-				elif type(value) in (float, long, int, bool):
+				elif type(value) is bool:
+					if value:
+						query += u"1, "
+					else:
+						query += u"0, "
+				elif type(value) in (float, long, int):
 					query += u"%s, " % value
 				elif type(value) is str:
 					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")

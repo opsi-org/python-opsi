@@ -56,6 +56,7 @@ data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default'
 				     'data/backends/jsonrpc.conf',
 				     'data/backends/ldap.conf',
 				     'data/backends/mysql.conf',
+				     'data/backends/sqlite.conf',
 				     'data/backends/multiplex.conf',
 				     'data/backends/opsipxeconfd.conf']),
 	    ('/etc/opsi/', ['data/version']),

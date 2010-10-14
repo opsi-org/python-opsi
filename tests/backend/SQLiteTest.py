@@ -18,12 +18,12 @@ class SQLiteTestCase(ExtendedBackendTestCase,
 		    InventoryObjectMethodMixin,
 		    LicenseManagementObjectsMixin,
 		    ExtendedBackendMixin,
-		    MultithreadingMixin
+		    #MultithreadingMixin
 		):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.sqliteBackend = MySQLBackend(database='/tmp/opsi-test.sqlite')
+		cls.sqliteBackend = SQLiteBackend(database = ":memory:")
 	
 	def createBackend(self):
 		env = os.environ.copy()

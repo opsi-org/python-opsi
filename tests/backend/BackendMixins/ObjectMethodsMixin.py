@@ -224,7 +224,8 @@ class ObjectMethodsMixin(object):
 	def test_selectConfigStateFromBackend(self):
 		configStates = self.backend.configState_getObjects(objectId = self.configState4.getObjectId(), configId = self.configState4.getConfigId())
 		self.assertEqual(len(configStates),1, u"Expected one config state, but found '%s' on backend." % len(configStates))
-		self.assertEqual(configStates[0].getValues()[0], self.configState4.getValues()[0], u"Expected config state %s do have values %s, got '%s'" % (self.configState4.getObjectId(), self.configState4.getValues()[0],configStates[0].getValues()[0]))
+		self.assertEqual(configStates[0].getValues()[0], self.configState4.getValues()[0], u"Expected config state %s to have values ==>>>%s<<<==, got ==>>>%s<<<==" \
+					% (self.configState4.getObjectId(), self.configState4.getValues()[0],configStates[0].getValues()[0]))
 		
 
 	def test_getProductsFromBackend(self):
