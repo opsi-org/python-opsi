@@ -176,29 +176,10 @@ class MySQL(SQL):
 		finally:
 			self._transactionLock.release()
 	
-	def query(self, query):
-		(conn, cursor) = self.connect()
-		result = 0
-		try:
-			logger.debug2(u"query: %s" % query)
-			try:
-				self.execute(query, conn, cursor)
-			except Exception, e:
-				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
-					# 2006: MySQL server has gone away
-					raise
-				self._createConnectionPool()
-				(conn, cursor) = self.connect()
-				self.execute(query, conn, cursor)
-			result = cursor.rowcount
-		finally:
-			self.close(conn, cursor)
-		return result
-		
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
 		(conn, cursor) = self.connect()
+		valueSet = []
 		try:
 			try:
 				self.execute(query, conn, cursor)
@@ -213,7 +194,7 @@ class MySQL(SQL):
 			valueSet = cursor.fetchall()
 			if not valueSet:
 				logger.debug(u"No result for query '%s'" % query)
-				return []
+				valueSet = []
 		finally:
 			self.close(conn, cursor)
 		return valueSet
@@ -221,6 +202,7 @@ class MySQL(SQL):
 	def getRow(self, query):
 		logger.debug2(u"getRow: %s" % query)
 		(conn, cursor) = self.connect()
+		row = {}
 		try:
 			try:
 				self.execute(query, conn, cursor)
@@ -235,8 +217,9 @@ class MySQL(SQL):
 			row = cursor.fetchone()
 			if not row:
 				logger.debug(u"No result for query '%s'" % query)
-				return {}
-			logger.debug2(u"Result: '%s'" % row)
+				row = {}
+			else:
+				logger.debug2(u"Result: '%s'" % row)
 		finally:
 			self.close(conn, cursor)
 		return row
@@ -343,6 +326,7 @@ class MySQL(SQL):
 		return result
 	
 	def execute(self, query, conn=None, cursor=None):
+		res = None
 		needClose = False
 		if not conn or not cursor:
 			(conn, cursor) = self.connect()

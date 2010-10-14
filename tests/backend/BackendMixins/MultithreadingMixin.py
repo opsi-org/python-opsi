@@ -2,7 +2,7 @@
 import time, sys, traceback
 from MySQLdb.constants.ER import DUP_ENTRY
 from MySQLdb import IntegrityError
-
+from apsw import ConstraintError
 from opsidevtools.unittest.lib import unittest2
 
 class MultithreadingMixin(object):
@@ -31,12 +31,17 @@ class MultithreadingMixin(object):
 					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
 					self._backendTest.backend.host_createObjects(self._backendTest.client1)
 					self._backendTest.backend.host_getObjects()
-				except IntegrityError,e:
+				except IntegrityError, e:
 					if e[0] != DUP_ENTRY:
 						self.errorMessage = e
 						self.exitCode = 1
+				except ConstraintError, e:
+					if e.result != 19:
+						# column is not unique
+						self.errorMessage = e
+						self.exitCode = 1
 				except Exception, e:
-					traceback.print_exc(file=sys.stderr)
+					#traceback.print_exc(file=sys.stderr)
 					self.errorMessage = e
 					self.exitCode = 1
 					#sys.exit()
@@ -56,5 +61,5 @@ class MultithreadingMixin(object):
 				else:
 					mtts.append(mtt)
 		except Exception, e:
-			traceback.print_exc(file=sys.stderr)
+			#traceback.print_exc(file=sys.stderr)
 			self.fail(str(e))

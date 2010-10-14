@@ -18,7 +18,7 @@ class MySQLTestCase(ExtendedBackendTestCase,
 		    InventoryObjectMethodMixin,
 		    LicenseManagementObjectsMixin,
 		    ExtendedBackendMixin,
-		#    MultithreadingMixin
+		    MultithreadingMixin
 		):
 	
 	@classmethod

@@ -67,9 +67,6 @@ class SQL(object):
 	def close(self, conn, cursor):
 		pass
 	
-	def query(self, query):
-		pass
-	
 	def getSet(self, query):
 		return []
 	

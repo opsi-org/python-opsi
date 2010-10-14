@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import os
+import os, threading
 try:
 	from apsw import *
 except:
@@ -53,7 +53,6 @@ logger = Logger()
 
 
 class SQLite(SQL):
-	
 	AUTOINCREMENT = ''
 	ALTER_TABLE_CHANGE_SUPPORTED = False
 	
@@ -66,9 +65,11 @@ class SQLite(SQL):
 				self._database = forceFilename(value)
 		
 		self._connection = None
+		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
 		
 	def connect(self):
+		#self._transactionLock.acquire()
 		logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
 		if not self._connection:
 			self._connection = Connection(
@@ -90,99 +91,131 @@ class SQLite(SQL):
 		return (self._connection, cursor)
 	
 	def close(self, conn, cursor):
+		#self._transactionLock.release()
 		pass
 	
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
 		(conn, cursor) = self.connect()
-		self.execute(query, conn, cursor)
-		valueSet = cursor.fetchall()
-		if not valueSet:
-			logger.debug(u"No result for query '%s'" % query)
-			return []
+		valueSet = []
+		try:
+			self.execute(query, conn, cursor)
+			valueSet = cursor.fetchall()
+			if not valueSet:
+				logger.debug(u"No result for query '%s'" % query)
+				valueSet = []
+		finally:
+			self.close(conn, cursor)
 		return valueSet
 		
 	def getRow(self, query):
 		logger.debug2(u"getRow: %s" % query)
 		(conn, cursor) = self.connect()
-		self.execute(query, conn, cursor)
 		row = {}
 		try:
-			row = cursor.next()
-		except:
-			pass
-		if not row:
-			logger.debug(u"No result for query '%s'" % query)
-			return {}
-		logger.debug2(u"Result: '%s'" % row)
+			self.execute(query, conn, cursor)
+			try:
+				row = cursor.next()
+			except:
+				pass
+			if not row:
+				logger.debug(u"No result for query '%s'" % query)
+				row = {}
+			else:
+				logger.debug2(u"Result: '%s'" % row)
+		finally:
+			self.close(conn, cursor)
 		return row
 	
 	def insert(self, table, valueHash):
 		(conn, cursor) = self.connect()
-		colNames = values = u''
-		for (key, value) in valueHash.items():
-			colNames += u"`%s`, " % key
-			if value is None:
-				values += u"NULL, "
-			elif type(value) is bool:
-				if value:
-					values += u"1, "
+		result = -1
+		try:
+			colNames = values = u''
+			for (key, value) in valueHash.items():
+				colNames += u"`%s`, " % key
+				if value is None:
+					values += u"NULL, "
+				elif type(value) is bool:
+					if value:
+						values += u"1, "
+					else:
+						values += u"0, "
+				elif type(value) in (float, long, int):
+					values += u"%s, " % value
+				elif type(value) is str:
+					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
 				else:
-					values += u"0, "
-			elif type(value) in (float, long, int):
-				values += u"%s, " % value
-			elif type(value) is str:
-				values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
-			else:
-				values += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
-			
-		query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
-		logger.debug2(u"insert: %s" % query)
-		self.execute(query, conn, cursor)
-		return conn.changes()
+					values += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
+				
+			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			logger.debug2(u"insert: %s" % query)
+			self.execute(query, conn, cursor)
+			result = conn.changes()
+		finally:
+			self.close(conn, cursor)
+		return result
 		
 	def update(self, table, where, valueHash, updateWhereNone=False):
 		(conn, cursor) = self.connect()
-		if not valueHash:
-			raise BackendBadValueError(u"No values given")
-		query = u"UPDATE `%s` SET " % table
-		for (key, value) in valueHash.items():
-			if value is None and not updateWhereNone:
-				continue
-			query += u"`%s` = " % key
-			if value is None:
-				query += u"NULL, "
-			elif type(value) is bool:
-				if value:
-					query += u"1, "
+		result = 0
+		try:
+			if not valueHash:
+				raise BackendBadValueError(u"No values given")
+			query = u"UPDATE `%s` SET " % table
+			for (key, value) in valueHash.items():
+				if value is None and not updateWhereNone:
+					continue
+				query += u"`%s` = " % key
+				if value is None:
+					query += u"NULL, "
+				elif type(value) is bool:
+					if value:
+						query += u"1, "
+					else:
+						query += u"0, "
+				elif type(value) in (float, long, int):
+					query += u"%s, " % value
+				elif type(value) is str:
+					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
 				else:
-					query += u"0, "
-			elif type(value) in (float, long, int):
-				query += u"%s, " % value
-			elif type(value) is str:
-				query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
-			else:
-				query += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
-		
-		query = u'%s WHERE %s;' % (query[:-2], where)
-		logger.debug2(u"update: %s" % query)
-		self.execute(query, conn, cursor)
-		return conn.changes()
+					query += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
+			
+			query = u'%s WHERE %s;' % (query[:-2], where)
+			logger.debug2(u"update: %s" % query)
+			self.execute(query, conn, cursor)
+			result = conn.changes()
+		finally:
+			self.close(conn, cursor)
+		return result
 	
 	def delete(self, table, where):
 		(conn, cursor) = self.connect()
-		query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
-		logger.debug2(u"delete: %s" % query)
-		self.execute(query, conn, cursor)
-		return conn.changes()
-	
+		result = 0
+		try:
+			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
+			logger.debug2(u"delete: %s" % query)
+			self.execute(query, conn, cursor)
+			result = conn.changes()
+		finally:
+			self.close(conn, cursor)
+		return result
+		
 	def execute(self, query, conn=None, cursor=None):
+		res = None
+		needClose = False
 		if not conn or not cursor:
 			(conn, cursor) = self.connect()
-		query = forceUnicode(query)
-		logger.debug(u"SQL query: %s" % query)
-		return cursor.execute(query)
-	
+			needClose = True
+		try:
+			query = forceUnicode(query)
+			logger.debug(u"SQL query: %s" % query)
+			res = cursor.execute(query)
+		finally:
+			if needClose:
+				self.close(conn, cursor)
+		return res
+		
 	def getTables(self):
 		tables = {}
 		logger.debug(u"Current tables:")

@@ -18,7 +18,7 @@ class SQLiteTestCase(ExtendedBackendTestCase,
 		    InventoryObjectMethodMixin,
 		    LicenseManagementObjectsMixin,
 		    ExtendedBackendMixin,
-		    #MultithreadingMixin
+		    MultithreadingMixin
 		):
 	
 	@classmethod
