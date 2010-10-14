@@ -1,3 +1,9 @@
+python-opsi (4.0.0.8-1) stable; urgency=low
+
+  * Added SQLite backend
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 14 Oct 2010 17:45:58 +0200
+
 python-opsi (4.0.0.7-1) stable; urgency=low
 
   * Util/Repository: remove functools import, Repository.disconnect()
