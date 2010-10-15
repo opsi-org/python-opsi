@@ -714,9 +714,6 @@ class JSONRPCBackend(Backend):
 			except Exception, e:
 				logger.critical(u"Failed to create instance method '%s': %s" % (method, e))
 	
-	def testCallback(self, jsonrpc):
-		print "CALLBACK:", jsonrpc.result
-	
 	def _jsonRPC(self, method, params=[], retry=True):
 		if self._async:
 			jsonrpc = JSONRPC(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
