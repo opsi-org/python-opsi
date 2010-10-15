@@ -318,8 +318,9 @@ class JSONRPC(threading.Thread):
 			response = self.jsonrpcBackend._request(baseUrl = self.baseUrl, data = rpc, retry = self.retry)
 			self.processResult(json.loads(response))
 		except Exception, e:
-			logger.logException(e, LOG_INFO)
-			self.error = e
+			if not self.method in ('backend_exit', 'exit'):
+				logger.logException(e, LOG_INFO)
+				self.error = e
 			if self.callback:
 				self.callback(self)
 			self.finished.set()
