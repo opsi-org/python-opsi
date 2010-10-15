@@ -130,8 +130,6 @@ class Backend:
 			elif option in ('context',):
 				self._context = value
 				logger.info(u"Backend context was set to %s" % self._context)
-		if self._password:
-			logger.addConfidentialString(self._password)
 		self._options = {}
 	
 	def _setContext(self, context):

@@ -116,13 +116,13 @@ class HTTPConnectionPool(object):
 	scheme = 'http'
 	
 	def __init__(self, host, port=None, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False):
-		self.host           = host
-		self.port           = port
-		self.socketTimeout  = socketTimeout
-		self.connectTimeout = connectTimeout
-		self.retryTime      = retryTime
+		self.host           = forceUnicode(host)
+		self.port           = forceInt(port)
+		self.socketTimeout  = forceInt(socketTimeout)
+		self.connectTimeout = forceInt(connectTimeout)
+		self.retryTime      = forceInt(retryTime)
 		self.pool           = Queue(maxsize)
-		self.block          = block
+		self.block          = forceBool(block)
 		
 		# Fill the queue up so that doing get() on it will block properly
 		[self.pool.put(None) for i in xrange(maxsize)]
@@ -318,6 +318,7 @@ class JSONRPC(threading.Thread):
 			response = self.jsonrpcBackend._request(baseUrl = self.baseUrl, data = rpc, retry = self.retry)
 			self.processResult(json.loads(response))
 		except Exception, e:
+			logger.logException(e, LOG_INFO)
 			self.error = e
 			if self.callback:
 				self.callback(self)
@@ -426,17 +427,20 @@ class JSONRPCBackend(Backend):
 			if option in ('connectoninit',):
 				self._connectOnInit = bool(value)
 			if option in ('connecttimeout',):
-				self._connectTimeout = int(value)
+				self._connectTimeout = forceInt(value)
 			if option in ('connectionpoolsize',):
-				self._connectionPoolSize = int(value)
+				self._connectionPoolSize = forceInt(value)
 			if option in ('timeout', 'sockettimeout'):
-				self._socketTimeout = int(value)
+				self._socketTimeout = forceInt(value)
 			if option in ('retry',):
 				retry = bool(value)
 			if option in ('retrytime',):
-				self._retryTime = int(value)
+				self._retryTime = forceInt(value)
 		if not retry:
 			self._retryTime = 0
+		
+		if self._password:
+			logger.addConfidentialString(self._password)
 		
 		self._connectionPool = None
 		
@@ -488,7 +492,7 @@ class JSONRPCBackend(Backend):
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface', retry = False)
 				try:
-					modules = self._jsonRPC(u'backend_info', retry=False).get('modules', None)
+					modules = self._jsonRPC(u'backend_info', retry = False).get('modules', None)
 					if modules:
 						logger.confidential(u"Modules: %s" % modules)
 					else:
@@ -712,7 +716,7 @@ class JSONRPCBackend(Backend):
 	def testCallback(self, jsonrpc):
 		print "CALLBACK:", jsonrpc.result
 	
-	def _jsonRPC(self, method, params=[], retry = True):
+	def _jsonRPC(self, method, params=[], retry=True):
 		if self._async:
 			jsonrpc = JSONRPC(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
 			self._rpcQueue.add(jsonrpc)
