@@ -514,6 +514,7 @@ class JSONRPCBackend(Backend):
 				logger.info(u"Legacy opsi")
 				self._legacyOpsi = True
 				self._deflate = False
+				self._jsonRPC(u'authenticated', retry = False)
 			if self._legacyOpsi:
 				self._createInstanceMethods34()
 			else:
