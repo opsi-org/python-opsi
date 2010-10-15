@@ -502,6 +502,8 @@ class JSONRPCBackend(Backend):
 							break
 				except Exception, e:
 					logger.info(e)
+			except OpsiAuthenticationError:
+				raise
 			except Exception, e:
 				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
 				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes', retry = False)
@@ -515,8 +517,6 @@ class JSONRPCBackend(Backend):
 			self._connected = True
 		finally:
 			self._async = async
-		if self._async:
-			self._rpcQueue = Queue(20)
 		
 	def _getRpcId(self):
 		self._rpcIdLock.acquire()
@@ -774,34 +774,40 @@ class JSONRPCBackend(Backend):
 if (__name__ == '__main__'):
 	import threading
 	
-	logger.setConsoleLevel(LOG_ERROR)
-	#logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_ERROR)
+	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
+	
+	
+	#be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c')
+	be = JSONRPCBackend(address = '192.168.1.14', username = 'someone', password = '123')
+	print be.authenticated()
 	
 	def callback(jsonrpc):
 		print jsonrpc.result
 	
-	class Thread(threading.Thread):
-		def __init__(self, be):
-			threading.Thread.__init__(self)
-			self.be = be
-		
-		def run(self):
-			for i in range(5):
-				be.authenticated().setCallback(callback)
-				time.sleep(0.3)
+	#class Thread(threading.Thread):
+	#	def __init__(self, be):
+	#		threading.Thread.__init__(self)
+	#		self.be = be
+	#	
+	#	def run(self):
+	#		for i in range(5):
+	#			be.authenticated().setCallback(callback)
+	#			time.sleep(0.3)
+	#
+	#be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c', deflate = True, connectionPoolSize = 30)
 	
-	be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c', deflate = True, connectionPoolSize = 30)
-	be.setAsync(True)
-	
-	threads = []
-	for i in range(20):
-		t = Thread(be)
-		threads.append(t)
-		t.start()
-	
-	for t in threads:
-		t.join()
+	#be.setAsync(True)
+	#
+	#threads = []
+	#for i in range(20):
+	#	t = Thread(be)
+	#	threads.append(t)
+	#	t.start()
+	#
+	#for t in threads:
+	#	t.join()
 	#while True:
 	#print be.authenticated()
 	#print be.group_getIdents()
