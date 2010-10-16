@@ -44,7 +44,7 @@ from OPSI.web2.dav import davxml
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
-from OPSI.Util import md5sum, randomString, non_blocking_connect_http, non_blocking_connect_https
+from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.System import *

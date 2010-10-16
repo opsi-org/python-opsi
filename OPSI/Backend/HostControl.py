@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.1'
 
 # Imports
 import socket, threading, httplib, base64, time, struct
@@ -42,7 +42,8 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-from OPSI.Util import fromJson, toJson, non_blocking_connect_https, KillableThread
+from OPSI.Util import fromJson, toJson
+from OPSI.Util.HTTP import non_blocking_connect_https, KillableThread
 
 # Get logger instance
 logger = Logger()
