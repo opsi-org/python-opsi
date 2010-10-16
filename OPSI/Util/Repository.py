@@ -759,6 +759,13 @@ class HTTPRepository(Repository):
 			headers['authorization'] = self._auth
 		return headers
 	
+	def _processResponseHeaders(self, response):
+		# Get cookie from header
+		cookie = response.getheader('set-cookie', None)
+		if cookie:
+			# Store cookie
+			self._cookie = cookie.split(';')[0].strip()
+		
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		'''
 		startByteNumber: position of first byte to be read
@@ -782,6 +789,7 @@ class HTTPRepository(Repository):
 				headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 			
 			response = self._connectionPool.urlopen(method = 'GET', url = source, body = None, headers = headers, retry = True, redirect = True)
+			self._processResponseHeaders(response)
 			if response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
 				raise Exception(response.status)
 			
@@ -799,7 +807,6 @@ class HTTPRepository(Repository):
 			
 		except Exception, e:
 			logger.logException(e)
-			#if self._connection: self._connection.close()
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, e))
 		logger.debug2(u"HTTP download done")
@@ -865,6 +872,7 @@ class WebDAVRepository(HTTPRepository):
 		headers['depth'] = depth
 		
 		response = self._connectionPool.urlopen(method = 'PROPFIND', url = source, body = None, headers = headers, retry = True, redirect = True)
+		self._processResponseHeaders(response)
 		if (response.status != responsecode.MULTI_STATUS):
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
 		
@@ -919,7 +927,7 @@ class WebDAVRepository(HTTPRepository):
 			conn = self._connectionPool.getConnection()
 			conn.putrequest('PUT', destination)
 			for (k, v) in headers.items():
-				conn.putheader('content-length', size)
+				conn.putheader(k, v)
 			conn.endheaders()
 			
 			src = open(source, 'rb')
@@ -928,6 +936,7 @@ class WebDAVRepository(HTTPRepository):
 			
 			response = self._connectionPool.endConnection(conn)
 			conn = None
+			self._processResponseHeaders(response)
 			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
 				raise Exception(response.status)
 			## Do we have to read the response?
@@ -941,13 +950,11 @@ class WebDAVRepository(HTTPRepository):
 		logger.debug2(u"WebDAV upload done")
 	
 	def delete(self, destination):
-		if not self._connection:
-			self._connect()
-		
 		destination = self._preProcessPath(destination)
 		
 		headers = self._headers()
 		response = self._connectionPool.urlopen(method = 'DELETE', url = destination, body = None, headers = headers, retry = True, redirect = True)
+		self._processResponseHeaders(response)
 		if (response.status != responsecode.NO_CONTENT):
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
 		# We have to read the response!
