@@ -37,11 +37,6 @@ __version__ = '4.0.1'
 # Imports
 import base64, new, stat, time, threading, zlib, threading
 from twisted.conch.ssh import keys
-from Queue import Queue, Empty, Full
-from urllib import urlencode
-from httplib import HTTPConnection, HTTPSConnection, HTTPException
-from socket import error as SocketError, timeout as SocketTimeout
-
 from sys import version_info
 if (version_info >= (2,6)):
 	import json
@@ -53,200 +48,12 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from Backend import *
 from OPSI import Object
-from OPSI.Util import non_blocking_connect_http, non_blocking_connect_https, serialize, deserialize
+from OPSI.Util import serialize, deserialize
+from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 
 # Get logger instance
 logger = Logger()
-
-# ======================================================================================================
-# = Connection pool based on urllib3                                                                   =
-# ======================================================================================================
-class HTTPError(Exception):
-	"Base exception used by this module."
-	pass
-
-class TimeoutError(HTTPError):
-	"Raised when a socket timeout occurs."
-	pass
-
-class HostChangedError(HTTPError):
-	"Raised when an existing pool gets a request for a foreign host."
-	pass
-
-class HTTPResponse(object):
-	"""
-	HTTP Response container.
 	
-	Similar to httplib's HTTPResponse but the data is pre-loaded.
-	"""
-	def __init__(self, data='', headers={}, status=0, version=0, reason=None, strict=0):
-		self.data    = data
-		self.headers = headers
-		self.status  = status
-		self.version = version
-		self.reason  = reason
-		self.strict  = strict
-	
-	@staticmethod
-	def from_httplib(r):
-		"""
-		Given an httplib.HTTPResponse instance, return a corresponding
-		urllib3.HTTPResponse object.
-		
-		NOTE: This method will perform r.read() which will have side effects
-		on the original http.HTTPResponse object.
-		"""
-		return HTTPResponse(
-			data    = r.read(),
-			headers = dict(r.getheaders()),
-			status  = r.status,
-			version = r.version,
-			reason  = r.reason,
-			strict  = r.strict)
-	
-	# Backwards-compatibility methods for httplib.HTTPResponse
-	def getheaders(self):
-		return self.headers
-	
-	def getheader(self, name, default=None):
-		return self.headers.get(name, default)
- 
-class HTTPConnectionPool(object):
-	
-	scheme = 'http'
-	
-	def __init__(self, host, port=None, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False):
-		self.host           = forceUnicode(host)
-		self.port           = forceInt(port)
-		self.socketTimeout  = forceInt(socketTimeout)
-		self.connectTimeout = forceInt(connectTimeout)
-		self.retryTime      = forceInt(retryTime)
-		self.pool           = Queue(maxsize)
-		self.block          = forceBool(block)
-		
-		# Fill the queue up so that doing get() on it will block properly
-		[self.pool.put(None) for i in xrange(maxsize)]
-		
-		self.num_connections = 0
-		self.num_requests = 0
-		
-	def _new_conn(self):
-		"""
-		Return a fresh HTTPConnection.
-		"""
-		self.num_connections += 1
-		logger.info(u"Starting new HTTP connection (%d): %s" % (self.num_connections, self.host))
-		
-		conn = HTTPConnection(host=self.host, port=self.port)
-		self._connect(con)
-		return conn
-	
-	def _connect(self, conn):
-		non_blocking_connect_http(conn, self.connectTimeout)
-		logger.info(u"Connection established to: %s" % self.host)
-		
-	def _get_conn(self, timeout=None):
-		"""
-		Get a connection. Will return a pooled connection if one is available.
-		Otherwise, a fresh connection is returned.
-		"""
-		conn = None
-		try:
-			conn = self.pool.get(block=self.block, timeout=timeout)
-		except Empty, e:
-			pass # Oh well, we'll create a new connection then
-		
-		return conn or self._new_conn()
-
-	def _put_conn(self, conn):
-		"""
-		Put a connection back into the pool.
-		If the pool is already full, the connection is discarded because we
-		exceeded maxsize. If connections are discarded frequently, then maxsize
-		should be increased.
-		"""
-		try:
-			self.pool.put(conn, block=False)
-		except Full, e:
-			# This should never happen if self.block == True
-			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
-	
-	def urlopen(self, method, url, body=None, headers={}, retry = True, firstTryTime=None):
-		"""
-		Get a connection from the pool and perform an HTTP request.
-		
-		method
-			HTTP request method (such as GET, POST, PUT, etc.)
-		
-		body
-			Data to send in the request body (useful for creating POST requests,
-			see HTTPConnectionPool.post_url for more convenience).
-		
-		headers
-			Custom headers to send (such as User-Agent, If-None-Match, etc.)
-		"""
-		now = time.time()
-		if not firstTryTime:
-			firstTryTime = now
-		
-		try:
-			# Request a connection from the queue
-			conn = self._get_conn()
-			
-			# Make the request
-			self.num_requests += 1
-			conn.request(method, url, body=body, headers=headers)
-			conn.sock.settimeout(self.socketTimeout)
-			httplib_response = conn.getresponse()
-			#logger.debug(u"\"%s %s %s\" %s %s" % (method, url, conn._http_vsn_str, httplib_response.status, httplib_response.length))
-			
-			# from_httplib will perform httplib_response.read() which will have
-			# the side effect of letting us use this connection for another
-			# request.
-			response = HTTPResponse.from_httplib(httplib_response)
-			
-			# Put the connection back to be reused
-			self._put_conn(conn)
-			
-
-		except (SocketTimeout, Empty), e:
-			# Timed out either by socket or queue
-			raise TimeoutError(u"Request timed out after %f seconds" % self.socketTimeout)
-		
-		except (HTTPException, SocketError), e:
-			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s (%s)" \
-					% (self.host, retry, firstTryTime, now, self.retryTime, e))
-			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, e))
-				time.sleep(0.01)
-				self._put_conn(None)
-				return self.urlopen(method, url, body, headers, retry, firstTryTime) # Try again
-			else:
-				raise
-		return response
-	
-class HTTPSConnectionPool(HTTPConnectionPool):
-	"""
-	Same as HTTPConnectionPool, but HTTPS.
-	"""
-	
-	scheme = 'https'
-	
-	def _new_conn(self):
-		"""
-		Return a fresh HTTPSConnection.
-		"""
-		self.num_connections += 1
-		logger.info(u"Starting new HTTPS connection (%d): %s" % (self.num_connections, self.host))
-		
-		conn = HTTPSConnection(host=self.host, port=self.port)
-		self._connect(conn)
-		return conn
-	
-	def _connect(self, conn):
-		non_blocking_connect_https(conn, self.connectTimeout)
-		logger.info(u"Connection established to: %s" % self.host)
-		
 class JSONRPC(threading.Thread):
 	def __init__(self, jsonrpcBackend, baseUrl, method, params=[], retry = True, callback = None):
 		threading.Thread.__init__(self)
@@ -443,10 +250,17 @@ class JSONRPCBackend(Backend):
 		if self._password:
 			logger.addConfidentialString(self._password)
 		
-		self._connectionPool = None
-		
 		self._processAddress(address)
-		self._createConnectionPool()
+		self._connectionPool = getSharedConnectionPool(
+			scheme         = self._protocol,
+			host           = self._host,
+			port           = self._port,
+			socketTimeout  = self._socketTimeout,
+			connectTimeout = self._connectTimeout,
+			retryTime      = self._retryTime,
+			maxsize        = self._connectionPoolSize,
+			block          = True
+		)
 		
 		if self._connectOnInit:
 			self.connect()
@@ -492,21 +306,22 @@ class JSONRPCBackend(Backend):
 			mysqlBackend = False
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface', retry = False)
-				try:
-					modules = self._jsonRPC(u'backend_info', retry = False).get('modules', None)
-					if modules:
-						logger.confidential(u"Modules: %s" % modules)
-					else:
-						modules = {'customer': None}
-					for m in self._interface:
-						if (m.get('name') == 'dispatcher_getConfig'):
-							for entry in self._jsonRPC(u'dispatcher_getConfig', retry=False):
-								for bn in entry[1]:
-									if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
-										mysqlBackend = True
-							break
-				except Exception, e:
-					logger.info(e)
+				if (self._application.find('opsiclientd') != -1):
+					try:
+						modules = self._jsonRPC(u'backend_info', retry = False).get('modules', None)
+						if modules:
+							logger.confidential(u"Modules: %s" % modules)
+						else:
+							modules = {'customer': None}
+						for m in self._interface:
+							if (m.get('name') == 'dispatcher_getConfig'):
+								for entry in self._jsonRPC(u'dispatcher_getConfig', retry=False):
+									for bn in entry[1]:
+										if (bn.lower().find("sql") != -1) and (len(entry[0]) <= 4) and (entry[0].find('*') != -1):
+											mysqlBackend = True
+								break
+					except Exception, e:
+						logger.info(e)
 			except OpsiAuthenticationError:
 				raise
 			except Exception, e:
@@ -533,41 +348,22 @@ class JSONRPCBackend(Backend):
 		finally:
 			self._rpcIdLock.release()
 		return self._rpcId
-		
-	def _createConnectionPool(self):
-		PoolClass = HTTPSConnectionPool
-		if (self._protocol == 'http'):
-			PoolClass = HTTPConnectionPool
-		self._connectionPool = PoolClass(
-			host           = self._host,
-			port           = self._port,
-			socketTimeout  = self._socketTimeout,
-			connectTimeout = self._connectTimeout,
-			retryTime      = self._retryTime,
-			maxsize        = self._connectionPoolSize,
-			block          = True
-		)
-		
+	
 	def _processAddress(self, address):
 		self._protocol = 'https'
-		if (address.find('://') != -1):
-			(protocol, address) = address.split('://', 1)
-			protocol = protocol.lower()
-			if not protocol in ('http', 'https'):
-				raise Exception(u"Protocol %s not supported" % protocol)
-			self._protocol = protocol
-		parts = address.split('/', 1)
-		self._host = parts[0]
-		if (len(parts) > 1):
-			self._baseUrl = u'/%s' % parts[1]
-		self._port = None
-		if (self._host.find(':') != -1):
-			(self._host, self._port) = self._host.split(':', 1)
-		if not self._port:
-			if (self._protocol == 'https'):
-				self._port = self._defaultHttpsPort
-			else:
-				self._port = self._defaultHttpPort
+		(scheme, host, port, baseurl) = urlsplit(address)
+		if scheme:
+			if not scheme in ('http', 'https'):
+				raise Exception(u"Protocol %s not supported" % scheme)
+				self._protocol = scheme
+		self._host = host
+		if port:
+			self._port = port
+		elif (self._protocol == 'https'):
+			self._port = self._defaultHttpsPort
+		else:
+			self._port = self._defaultHttpPort
+		self._baseUrl = baseurl
 	
 	def isOpsi35(self):
 		return not self._legacyOpsi
