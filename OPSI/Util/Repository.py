@@ -46,6 +46,7 @@ from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString, non_blocking_connect_http, non_blocking_connect_https
 from OPSI.Util.File.Opsi import PackageContentFile
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
 from OPSI.System import *
 
 # Get Logger instance
@@ -669,36 +670,28 @@ class HTTPRepository(Repository):
 		self._password = forceUnicode(kwargs.get('password', ''))
 		proxy = kwargs.get('proxy')
 		
-		self._connectTimeout = 30
 		self._port = 80
 		self._path = u'/'
+		self._socketTimeout = 30
+		self._connectTimeout = 30
+		self._retryTime = 5
+		self._connectionPoolSize = 1
+		self._cookie = ''
 		
-		parts = self._url.split('/')
-		if (len(parts) < 3) or parts[0].lower() not in ('http:', 'https:', 'webdav:', 'webdavs:'):
+		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
+		
+		if not scheme in ('http', 'https', 'webdav', 'webdavs'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
-		
-		self._protocol = parts[0].lower()[:-1]
-		if self._protocol.endswith('s'):
+		self._protocol = scheme
+		if port:
+			self._port = port
+		elif self._protocol.endswith('s'):
 			self._port = 443
 		
-		self._host = parts[2]
-		if (len(parts) > 3):
-			self._path += u'/'.join(parts[3:])
-		
-		if (self._host.find('@') != -1):
-			(username, self._host) = self._host.split('@', 1)
-			password = ''
-			if (username.find(':') != -1):
-				(username, password) = username.split(':', 1)
-			if not self._username and username: self._username = username
-			if not self._password and password: self._password = password
-			
-		if (self._host.find(':') != -1):
-			(self._host, self._port) = self._host.split(':', 1)
-			self._port = forceInt(self._port)
-		
-		self._connection = None
-		self._cookie = ''
+		self._host = host
+		self._path = baseurl
+		if not self._username and username: self._username = username
+		if not self._password and password: self._password = password
 		self._username = forceUnicode(self._username)
 		self._password = forceUnicode(self._password)
 		if self._password:
@@ -732,6 +725,17 @@ class HTTPRepository(Repository):
 			self._host = proxyHost
 			self._port = proxyPort
 		
+		self._connectionPool = getSharedConnectionPool(
+			scheme         = self._protocol,
+			host           = self._host,
+			port           = self._port,
+			socketTimeout  = self._socketTimeout,
+			connectTimeout = self._connectTimeout,
+			retryTime      = self._retryTime,
+			maxsize        = self._connectionPoolSize,
+			block          = True
+		)
+		
 	def _preProcessPath(self, path):
 		path = forceUnicode(path)
 		if path.startswith('/'):
@@ -746,21 +750,14 @@ class HTTPRepository(Repository):
 		if path.endswith('/'):
 			path = path[:-1]
 		return urllib.quote(path.encode('utf-8'))
-		
-	def _connect(self):
-		logger.debug(u"HTTPRepository _connect()")
-		
-		if self._protocol.endswith('s'):
-			logger.info(u"Opening https connection to %s:%s" % (self._host, self._port))
-			self._connection = httplib.HTTPSConnection(self._host, self._port)
-			non_blocking_connect_https(self._connection, self._connectTimeout)
-		else:
-			logger.info(u"Opening http connection to %s:%s" % (self._host, self._port))
-			self._connection = httplib.HTTPConnection(self._host, self._port)
-			non_blocking_connect_http(self._connection, self._connectTimeout)
-		
-		self._connection.connect()
-		logger.info(u"Successfully connected to '%s:%s'" % (self._host, self._port))
+	
+	def _headers(self):
+		headers = { 'user-agent': self._application }
+		if self._cookie:
+			headers['cookie'] = self._cookie
+		if self._auth:
+			headers['authorization'] = self._auth
+		return headers
 	
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		'''
@@ -774,15 +771,7 @@ class HTTPRepository(Repository):
 		
 		dst = None
 		try:
-			if not self._connection:
-				self._connect()
-			self._connection.putrequest('GET', source)
-			self._connection.putheader('user-agent', self._application)
-			if self._cookie:
-				# Add cookie to header
-				self._connection.putheader('cookie', self._cookie)
-			if self._auth:
-				self._connection.putheader('authorization', self._auth)
+			headers = self._headers()
 			if (startByteNumber > -1) or (endByteNumber > -1):
 				sbn = startByteNumber
 				ebn = endByteNumber
@@ -790,10 +779,9 @@ class HTTPRepository(Repository):
 					sbn = 0
 				if (ebn <= -1):
 					reb = ''
-				self._connection.putheader('range', 'bytes=%s-%s' % (sbn, ebn))
-			self._connection.endheaders()
+				headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 			
-			response = self._connection.getresponse()
+			response = self._connectionPool.urlopen(method = 'GET', url = source, body = None, headers = headers, retry = True, redirect = True)
 			if response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
 				raise Exception(response.status)
 			
@@ -817,8 +805,8 @@ class HTTPRepository(Repository):
 		logger.debug2(u"HTTP download done")
 	
 	def disconnect(self):
-		if self._connection:
-			self._connection.close()
+		if self._connectionPool:
+			self._connectionPool.free()
 	
 class WebDAVRepository(HTTPRepository):
 	
@@ -869,23 +857,14 @@ class WebDAVRepository(HTTPRepository):
 				return self._contentCache[source]['content']
 		
 		content = []
-		if not self._connection:
-			self._connect()
 		
-		self._connection.putrequest('PROPFIND', source)
+		headers = self._headers()
 		depth = '1'
 		if recursive:
 			depth = 'infinity'
-		self._connection.putheader('depth', depth)
-		if self._cookie:
-			# Add cookie to header
-			self._connection.putheader('cookie', self._cookie)
-		self._connection.putheader('user-agent', self._application)
-		if self._auth:
-			self._connection.putheader('authorization', self._auth)
-		self._connection.endheaders()
+		headers['depth'] = depth
 		
-		response = self._connection.getresponse()
+		response = self._connectionPool.urlopen(method = 'PROPFIND', url = source, body = None, headers = headers, retry = True, redirect = True)
 		if (response.status != responsecode.MULTI_STATUS):
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
 		
@@ -895,7 +874,7 @@ class WebDAVRepository(HTTPRepository):
 			if (part.find('charset=') != -1):
 				encoding = part.split('=')[1].replace('"', '').strip()
 		
-		msr = davxml.WebDAVDocument.fromString(response.read())
+		msr = davxml.WebDAVDocument.fromString(response.data)
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
 			raise RepositoryError(u"Not a directory: '%s'" % source)
 		
@@ -932,31 +911,32 @@ class WebDAVRepository(HTTPRepository):
 		if progressSubject: progressSubject.setEnd(size)
 		
 		src = None
+		conn = None
 		try:
-			if not self._connection:
-				self._connect()
-			self._connection.putrequest('PUT', destination)
-			self._connection.putheader('user-agent', self._application)
-			if self._cookie:
-				# Add cookie to header
-				self._connection.putheader('cookie', self._cookie)
-			if self._auth:
-				self._connection.putheader('authorization', self._auth)
-			self._connection.putheader('content-length', size)
-			self._connection.endheaders()
+			headers = self._headers()
+			headers['content-length'] = size
+			
+			conn = self._connectionPool.getConnection()
+			conn.putrequest('PUT', destination)
+			for (k, v) in headers.items():
+				conn.putheader('content-length', size)
+			conn.endheaders()
 			
 			src = open(source, 'rb')
-			self._transferUp(src, self._connection, progressSubject)
+			self._transferUp(src, conn, progressSubject)
 			src.close()
 			
-			response = self._connection.getresponse()
+			response = self._connectionPool.endConnection(conn)
+			conn = None
 			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
 				raise Exception(response.status)
-			# We have to read the response!
-			response.read()
+			## Do we have to read the response?
+			#response.read()
 		except Exception, e:
 			logger.logException(e)
 			if src: src.close()
+			if conn:
+				self._connectionPool.endConnection(None)
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, e))
 		logger.debug2(u"WebDAV upload done")
 	
@@ -966,16 +946,8 @@ class WebDAVRepository(HTTPRepository):
 		
 		destination = self._preProcessPath(destination)
 		
-		self._connection.putrequest('DELETE', destination)
-		self._connection.putheader('user-agent', self._application)
-		if self._cookie:
-			# Add cookie to header
-			self._connection.putheader('cookie', self._cookie)
-		if self._auth:
-			self._connection.putheader('authorization', self._auth)
-		self._connection.endheaders()
-		
-		response = self._connection.getresponse()
+		headers = self._headers()
+		response = self._connectionPool.urlopen(method = 'DELETE', url = destination, body = None, headers = headers, retry = True, redirect = True)
 		if (response.status != responsecode.NO_CONTENT):
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
 		# We have to read the response!
@@ -1335,15 +1307,17 @@ if (__name__ == "__main__"):
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
 	
-	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxxxxx', mountOptions = { "iocharset": 'iso8859-1' })
-	dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
-	dtlds.synchronize()
+	#sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxxxxx', mountOptions = { "iocharset": 'iso8859-1' })
+	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
+	#dtlds.synchronize()
 	
 	#print rep.listdir()
 	#print rep.isdir('javavm')
 	
-	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	#print rep.listdir()
+	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	print rep.listdir()
+	rep.disconnect()
+	
 	#destination = os.path.join(tempDir, 'AdbeRdr930_de_DE.msi')
 	#rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, endByteNumber = 20000000)
 	#rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, startByteNumber = 20000001)
@@ -1353,7 +1327,7 @@ if (__name__ == "__main__"):
 	#print rep.isdir('javavm')
 	#
 	#sys.exit(0)
-	#tempFile = '/tmp/testfile.bin'
+	tempFile = '/tmp/testfile.bin'
 	#tempDir = '/tmp/testdir'
 	#tempDir2 = '/tmp/testdir2'
 	#if os.path.exists(tempFile):
@@ -1366,7 +1340,7 @@ if (__name__ == "__main__"):
 	#rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
 	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
 	#os.unlink(tempFile)
-	#
+	
 	#rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'')
 	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
 	#os.unlink(tempFile)

@@ -757,6 +757,12 @@ class OpsiBadRpcError(OpsiError):
 class OpsiRpcError(OpsiError):
 	ExceptionShortDescription = u"Opsi rpc error"
 
+class OpsiConnectionError(OpsiError):
+	ExceptionShortDescription = u"Opsi connection error"
+
+class OpsiTimeoutError(OpsiError):
+	ExceptionShortDescription = u"Opsi timeout error"
+
 class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 

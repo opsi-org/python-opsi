@@ -41,6 +41,8 @@ from Queue import Queue, Empty, Full
 from urllib import urlencode
 from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
 from socket import error as SocketError, timeout as SocketTimeout
+import socket, time
+from sys import version_info
 
 # OPSI imports
 from OPSI.Types import *
@@ -58,7 +60,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	while True:
 		try:
 			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
-				raise Exception(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(lastError)))
+				raise OpsiTimeoutError(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(lastError)))
 			sock.connect((self.host, self.port))
 			break
 		except socket.error, e:
@@ -154,7 +156,7 @@ class HTTPConnectionPool(object):
 	
 	def decreaseUsageCount(self):
 		self.usageCount -= 1
-		if (self.usageCount <= 0):
+		if (self.usageCount == 0):
 			destroyPool(self)
 	
 	free = decreaseUsageCount
@@ -163,18 +165,19 @@ class HTTPConnectionPool(object):
 		if self.pool:
 			while True:
 				try:
-					conn = self.pool.get(block = True, timeout = None)
+					conn = self.pool.get(block = False)
 					if conn:
 						try:
 							conn.close()
 						except:
 							pass
+					time.sleep(0.001)
 				except Empty, e:
 					break
 		
-	def adjustSize(self, size):
-		if (size < 1):
-			raise Exception(u"Connection pool size %d is invalid" % size)
+	def adjustSize(self, maxsize):
+		if (maxsize < 1):
+			raise Exception(u"Connection pool size %d is invalid" % maxsize)
 		self.maxsize = forceInt(maxsize)
 		self.delPool()
 		self.pool = Queue(self.maxsize)
@@ -188,12 +191,11 @@ class HTTPConnectionPool(object):
 		"""
 		Return a fresh HTTPConnection.
 		"""
-		self.num_connections += 1
-		logger.info(u"Starting new HTTP connection (%d): %s" % (self.num_connections, self.host))
-		
-		conn = HTTPConnection(host=self.host, port=self.port)
+		logger.info(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+		conn = HTTPSConnection(host=self.host, port=self.port)
 		non_blocking_connect_http(conn, self.connectTimeout)
 		logger.info(u"Connection established to: %s" % self.host)
+		self.num_connections += 1
 		return conn
 
 	def _get_conn(self, timeout=None):
@@ -224,6 +226,23 @@ class HTTPConnectionPool(object):
 	
 	def is_same_host(self, url):
 		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
+	
+	def getConnection(self):
+		conn = self._get_conn()
+		conn.sock.settimeout(self.socketTimeout)
+		return conn
+	
+	def getConnection(self):
+		return self._get_conn()
+	
+	def endConnection(self, conn):
+		if conn:
+			httplib_response = conn.getresponse()
+			response = HTTPResponse.from_httplib(httplib_response)
+			self._put_conn(conn)
+			return response
+		self._put_conn(None)
+		return None
 	
 	def urlopen(self, method, url, body=None, headers={}, retry=True, redirect=True, assert_same_host=True, firstTryTime=None):
 		"""
@@ -291,7 +310,10 @@ class HTTPConnectionPool(object):
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
 				raise
-		
+		except Exception:
+			self._put_conn(None)
+			raise
+			
 		# Handle redirection
 		if redirect and response.status in [301, 302, 303, 307] and 'location' in response.headers: # Redirect, retry
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
@@ -312,12 +334,11 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-		self.num_connections += 1
-		logger.info(u"Starting new HTTPS connection (%d): %s" % (self.num_connections, self.host))
-		
+		logger.info(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 		conn = HTTPSConnection(host=self.host, port=self.port)
 		non_blocking_connect_https(conn, self.connectTimeout)
 		logger.info(u"Connection established to: %s" % self.host)
+		self.num_connections += 1
 		return conn
 
 def urlsplit(url):
@@ -325,6 +346,8 @@ def urlsplit(url):
 	scheme = None
 	baseurl = u'/'
 	port = None
+	username = None
+	password = None
 	if (url.find('://') != -1):
 		(scheme, url) = url.split('://', 1)
 		sceme = scheme.lower()
@@ -335,8 +358,12 @@ def urlsplit(url):
 	if (host.find(':') != -1):
 		(host, port) = host.split(':', 1)
 		port = int(port)
-	return (scheme, host, port, baseurl)
-
+	if (host.find('@') != -1):
+		(username, host) = host.split('@', 1)
+		if (username.find(':') != -1):
+			(username, password) = username.split(':', 1)
+	return (scheme, host, port, baseurl, username, password)
+	
 def getSharedConnectionPoolFromUrl(url, **kw):
 	"""
 	Given a url, return an HTTP(S)ConnectionPool instance of its host.
@@ -347,7 +374,7 @@ def getSharedConnectionPoolFromUrl(url, **kw):
 	Passes on whatever kw arguments to the constructor of
 	HTTP(S)ConnectionPool. (e.g. timeout, maxsize, block)
 	"""
-	(scheme, host, port, baseurl) = urlsplit(url)
+	(scheme, host, port, baseurl, username, password) = urlsplit(url)
 	if not port:
 		if scheme in ('https', 'webdavs'):
 			port = 443
@@ -357,7 +384,7 @@ def getSharedConnectionPoolFromUrl(url, **kw):
 	
 def getSharedConnectionPool(scheme, host, port, **kw):
 	scheme = forceUnicodeLower(scheme)
-	host = forceUnicode(port)
+	host = forceUnicode(host)
 	port = forceInt(port)
 	global connectionPools
 	poolKey = u'%s:%d' % (host, port)

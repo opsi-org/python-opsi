@@ -269,6 +269,8 @@ class JSONRPCBackend(Backend):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
 			self._rpcQueue.join(20)
+		if self._connectionPool:
+			self._connectionPool.free()
 	
 	def setAsync(self, async):
 		if not self._connected:
@@ -322,7 +324,7 @@ class JSONRPCBackend(Backend):
 								break
 					except Exception, e:
 						logger.info(e)
-			except OpsiAuthenticationError:
+			except (OpsiAuthenticationError, OpsiTimeoutError):
 				raise
 			except Exception, e:
 				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
@@ -351,11 +353,11 @@ class JSONRPCBackend(Backend):
 	
 	def _processAddress(self, address):
 		self._protocol = 'https'
-		(scheme, host, port, baseurl) = urlsplit(address)
+		(scheme, host, port, baseurl, username, password) = urlsplit(address)
 		if scheme:
 			if not scheme in ('http', 'https'):
 				raise Exception(u"Protocol %s not supported" % scheme)
-				self._protocol = scheme
+			self._protocol = scheme
 		self._host = host
 		if port:
 			self._port = port
@@ -363,8 +365,9 @@ class JSONRPCBackend(Backend):
 			self._port = self._defaultHttpsPort
 		else:
 			self._port = self._defaultHttpPort
-		self._baseUrl = baseurl
-	
+		if baseurl and (baseurl != '/'):
+			self._baseUrl = baseurl
+		
 	def isOpsi35(self):
 		return not self._legacyOpsi
 	
