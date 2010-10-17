@@ -27,7 +27,7 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    
    @copyright:	uib GmbH <info@uib.de>
-   @author: Christian Kampka <j.schneider@uib.de>
+   @author: Christian Kampka <c.kampka@uib.de>, Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
 
@@ -54,11 +54,11 @@ logger = Logger()
 # =                                   CLASS MULTIPLEXBACKEND                                           =
 # ======================================================================================================
 class MultiplexBackend(object):
-	'''This backend acts as a dispatcher to multiplex commands received from one client
+	'''
+	This backend acts as a dispatcher to multiplex commands received from one client
 	onto multiple config servers. It relays all commands to all available servers, collects all results
 	and maps the results transparently back to the client.
 	'''
-	
 	
 	__serviceCache = {}
 	
@@ -137,7 +137,7 @@ class MultiplexBackend(object):
 			raise Exception(u"Disabling mmultiplex backend: modules file invalid")
 		logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 		
-		self._threadPool = getGlobalThreadPool()
+		self._threadPool = getGlobalThreadPool(size = len(self.__services.keys()))
 		self.connect()
 	
 	def _getDepotIds(self):
@@ -161,19 +161,20 @@ class MultiplexBackend(object):
 						logger.notice(u"Service not connected. Trying to connect: %s" % service)
 						service.connect()
 				while not self.isReady():
-					time.sleep(0.0001)
+					time.sleep(0.01)
 			finally:
 				self.__connectLock.release()
-	
+		
 	def isReady(self):
 		ready = True
 		for service in self.__services.values():
-			ready = ready and ( service.isConnected() or service.error is not None)
+			serviceReady = ( service.isConnected() or service.error is not None )
+			ready = ready and serviceReady
 		return ready
 	
 	def __getattr__(self, name):
 		interface = self.backend_getInterface()
-		if name in map((lambda x: x['name']),interface):
+		if name in map((lambda x: x['name']), interface):
 			func = functools.partial(self.dispatch, name)
 			setattr(self, name, func)
 			return func
@@ -202,17 +203,18 @@ class MultiplexBackend(object):
 		if not len(dispatcher):
 			dispatcher = self.__services.values()
 			
-		logger.info(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
+		logger.debug2(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
 		return dispatcher
 	
 	def dispatch(self, methodName, *args, **kwargs):
-		logger.debug(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
+		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
 		results = []
 		calls = 0
 		def pushResult(success, result, error):
 			results.append((success, result, error))
 		
 		dispatcher = self._getDispatcher(*args, **kwargs)
+		logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
 		for service in dispatcher:
 			if service.isConnected():
 				logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
@@ -242,6 +244,7 @@ class MultiplexBackend(object):
 	
 	def backend_exit(self):
 		logger.info(u"Shutting down multiplex backend.")
+		self.dispatch('backend_exit')
 		self._threadPool.free()
 		#for service in self.services:
 		#	if service.isConnected():
@@ -469,14 +472,14 @@ class Service(object):
 		self.licensePools = []
 		
 		self.isMaster = master
-		self.connected = False
+		self._connected = False
 		self.error = None
 	
 	def isMasterService(self):
 		return self.isMaster
 	
 	def isConnected(self):
-		return self.connected
+		return self._connected
 	
 	def connect(self):
 		pass
@@ -494,30 +497,22 @@ class RemoteService(Service, JSONRPCBackend):
 			address        = url,
 			connectOnInit  = False,
 			connectTimeout = self.timeout,
-			timeout        = self.timeout,
+			socketTimeout  = self.timeout,
 			username       = self.url.split('/')[2].split(':')[0],
 			password       = self.opsiHostKey,
 			application    = u'opsi multiplex backend %s' % __version__,
+			deflate        = True,
 			**kwargs
 		)
 		self.error = None
 	
-	def isConnected(self):
-		return self._connected
-	
 	def connect(self):
-		def _connect():
-			self._rpcLock.acquire()
-			try:
-				JSONRPCBackend._connect(self)
-				while not self.isConnected():
-					time.sleep(0.01)
-				self.refresh()
-			finally:
-				self._rpcLock.release()
+		def _connect(service):
+			JSONRPCBackend.connect(service)
+			service.refresh()
 		logger.debug(u"Connecting to service %s" %self.url )
 		
-		self.multiplexBackend._threadPool.addJob(_connect, self._onConnect)
+		self.multiplexBackend._threadPool.addJob(function = _connect, callback = self._onConnect, service = self)
 	
 	def _onConnect(self, success, result, error):
 		if success:
@@ -528,15 +523,21 @@ class RemoteService(Service, JSONRPCBackend):
 			logger.error(u"Failed to connect to service %s: %s (Thread: %s)" % (self.url, error, threading.currentThread()))
 	
 	def refresh(self):
-		self.clients = []
-		self.depots = []
-		for host in self.host_getObjects(attributes = ['id']):
-			if   host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
-				self.depots.append(host)
-			elif host.getType() in ('OpsiClient'):
-				self.clients.append(host)
-		self.licensePools = self.licensePool_getObjects()
-	
+		self.setAsync(True)
+		try:
+			self.clients = []
+			self.depots = []
+			jsonrpc1 = self.host_getObjects(attributes = ['id'])
+			jsonrpc2 = self.licensePool_getObjects()
+			for host in jsonrpc1.waitForResult():
+				if   host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+					self.depots.append(host)
+				elif host.getType() in ('OpsiClient'):
+					self.clients.append(host)
+			self.licensePools = jsonrpc2.waitForResult()
+		finally:
+			self.setAsync(False)
+		
 	def licensePool_getObjects(self, attributes=[], **filter):
 		self.licensePools = self._jsonRPC("licensePool_getObjects", [attributes, filter])
 		return self.licensePools

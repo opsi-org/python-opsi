@@ -42,8 +42,8 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-from OPSI.Util import fromJson, toJson
-from OPSI.Util.HTTP import non_blocking_connect_https, KillableThread
+from OPSI.Util import fromJson, toJson, KillableThread
+from OPSI.Util.HTTP import non_blocking_connect_https
 
 # Get logger instance
 logger = Logger()

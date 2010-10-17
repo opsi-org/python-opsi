@@ -220,10 +220,12 @@ class HTTPConnectionPool(object):
 		"""
 		try:
 			self.pool.put(conn, block=False)
+			if conn is None:
+				self.num_connections -= 1
 		except Full, e:
 			# This should never happen if self.block == True
 			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
-	
+		
 	def is_same_host(self, url):
 		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
 	

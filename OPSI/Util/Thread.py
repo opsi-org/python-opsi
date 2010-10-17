@@ -28,7 +28,7 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    
    @copyright:  uib GmbH <info@uib.de>
-   @author: Christian Kampka <c.kampka@uib.de>
+   @author: Christian Kampka <c.kampka@uib.de>, Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
 
@@ -44,12 +44,15 @@ from OPSI.Logger import *
 logger = Logger()
 
 GlobalPool = None
-def getGlobalThreadPool():
+def getGlobalThreadPool(*args, **kwargs):
 	global GlobalPool
 	if not GlobalPool:
-		GlobalPool = ThreadPool()
+		GlobalPool = ThreadPool(*args, **kwargs)
 	else:
+		size = kwargs.get('size', 0)
 		GlobalPool.increaseUsageCount()
+		if (GlobalPool.size < size):
+			GlobalPool.adjustSize(size)
 	return GlobalPool
 
 def _async_raise(tid, excobj):

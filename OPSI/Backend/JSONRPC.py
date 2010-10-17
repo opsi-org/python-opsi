@@ -36,6 +36,7 @@ __version__ = '4.0.1'
 
 # Imports
 import base64, new, stat, time, threading, zlib, threading
+from Queue import Queue, Empty, Full
 from twisted.conch.ssh import keys
 from sys import version_info
 if (version_info >= (2,6)):
@@ -68,17 +69,20 @@ class JSONRPC(threading.Thread):
 		self.error = None
 		self.finished = threading.Event()
 	
+	def waitForResult(self):
+		self.finished.wait()
+		#return (self.result, self.error)
+		if self.error:
+			raise self.error
+		return self.result
+		
 	def setCallback(self, callback):
 		self.callback = callback
 	
 	def execute(self):
 		gotCallback = bool(self.callback)
 		self.start()
-		if not gotCallback:
-			self.finished.wait()
-			if self.error:
-				raise self.error
-			return self.result
+		return self.waitForResult()
 	
 	def run(self):
 		self.process()
@@ -185,8 +189,24 @@ class RpcQueue(threading.Thread):
 			logger.debug2(u"jsonrpc: %s" % rpc)
 			
 			response = self.jsonrpcBackend._request(baseUrl = baseUrl, data = rpc, retry = retry)
-			for response in json.loads(response):
-				self.jsonrpcs[response['id']].processResult(response)
+			try:
+				response = json.loads(response)
+			except Exception, e:
+				raise Exception(u"Failed to json decode response %s: %s" % (response, e))
+			
+			for resp in response:
+				try:
+					id = resp['id']
+				except Exception, e:
+					raise Exception(u"Failed to get id from: %s (%s): %s" % (resp, response, e))
+				try:
+					jsonrpc = self.jsonrpcs[id]
+				except Exception, e:
+					raise Exception(u"Failed to get jsonrpc with id %s: %s" % (id, e))
+				try:
+					jsonrpc.processResult(resp)
+				except Exception, e:
+					raise Exception(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, e))
 		except Exception, e:
 			logger.logException(e)
 		self.jsonrpcs = {}
@@ -299,6 +319,8 @@ class JSONRPCBackend(Backend):
 			return
 		self._deflate = deflate
 	
+	def isConnected(self):
+		return self._connected
 	
 	def connect(self):
 		async = self._async
@@ -338,6 +360,7 @@ class JSONRPCBackend(Backend):
 			else:
 				self._createInstanceMethods(modules, mysqlBackend)
 			self._connected = True
+			logger.info(u"%s: Connected to service" % self)
 		finally:
 			self._async = async
 		
