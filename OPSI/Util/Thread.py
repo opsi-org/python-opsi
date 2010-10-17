@@ -125,34 +125,60 @@ class ThreadPool(object):
 			
 			self.size = size
 			if self.started:
-				while (len(self.worker) > self.size):
-					self.__deleteWorker()
-				while (len(self.worker) < self.size):
-					self.__createWorker()
+				if (len(self.worker) > self.size):
+					self.__deleteWorkers(num = len(self.worker) - self.size)
+				if (len(self.worker) < self.size):
+					self.__createWorkers(num = self.size - len(self.worker))
 		finally:
 			self.workerLock.release()
 		
 	def __deleteWorker(self, wait=False):
 		logger.debug(u"Deleting a worker")
-		for worker in self.worker:
-			if not worker.busy and not worker.stopped:
-				worker.stop()
-				if wait: worker.join(1)
-				self.worker.remove(worker)
-				return
-		for worker in self.worker:
-			if not worker.stopped:
-				worker.stop()
-				if wait: worker.join(60)
-				self.worker.remove(worker)
-				return
+		self.__deleteWorkers(1, wait = wait)
 	
+	def __deleteWorkers(self, num, wait=False):
+		logger.debug(u"Deleting %d workers" % num)
+		deleteWorkers = []
+		for worker in self.worker:
+			if not worker.busy and not worker in deleteWorkers:
+				deleteWorkers.append(worker)
+				worker.stop()
+				num -= 1
+				if (num == 0):
+					break
+		if (num > 0):
+			for worker in self.worker:
+				if not worker in deleteWorkers:
+					deleteWorkers.append(worker)
+					worker.stop()
+					num -= 1
+					if (num == 0):
+						break
+		
+		worker = []
+		for worker in self.worker:
+			if not worker in deleteWorkers:
+				worker.append(worker)
+		self.worker = worker
+		if wait:
+			for worker in deleteWorkers:
+				worker.join(60)
+		
 	def __createWorker(self):
 		logger.debug(u"Creating new worker %s" % (len(self.worker)+1))
-		worker = Worker(self, len(self.worker)+1)
-		self.worker.append(worker)
-		worker.duty.set()
-		
+		self.__createWorkers(1)
+	
+	def __createWorkers(self, num):
+		logger.debug(u"Creating %d new workers" % num)
+		newWorkers = []
+		while (num > 0):
+			worker = Worker(self, len(self.worker)+1)
+			self.worker.append(worker)
+			newWorkers.append(worker)
+			num -= 1
+		for worker in newWorkers:
+			worker.duty.set()
+	
 	def addJob(self, function, callback = None, *args, **kwargs):
 		logger.debug(u"New job added: %s(%s, %s)"% (callback, args, kwargs))
 		if not self.started:
@@ -168,8 +194,7 @@ class ThreadPool(object):
 		self.workerLock.acquire()
 		self.started = False
 		try:
-			for i in range(len(self.worker)):
-				self.__deleteWorker(wait = True)
+			self.__deleteWorkers(num = len(self.worker), wait = True)
 		finally:
 			self.workerLock.release()
 	

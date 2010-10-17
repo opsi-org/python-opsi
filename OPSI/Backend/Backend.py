@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import types, new, inspect, socket, base64, os
+import types, new, inspect, socket, base64, os, threading
 import copy as pycopy
 from twisted.conch.ssh import keys
 try:
@@ -108,6 +108,36 @@ def getArgAndCallString(method):
 	return (argString, callString)
 
 
+
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                      CLASS DEFERREDCALL                                            =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+class DeferredCall(object):
+	def __init__(self, callback = None):
+		self.error = None
+		self.result = None
+		self.finished = threading.Event()
+		self.callback = callback
+		self.callbackArgs = []
+		self.callbackKwargs = {}
+		
+	def waitForResult(self):
+		self.finished.wait()
+		#return (self.result, self.error)
+		if self.error:
+			raise self.error
+		return self.result
+		
+	def setCallback(self, callback, *args, **kwargs):
+		self.callback = callback
+		self.callbackArgs = args
+		self.callbackKwargs = kwargs
+	
+	def _gotResult(self):
+		self.finished.set()
+		if self.callback:
+			self.callback(self, *self.callbackArgs, **self.callbackKwargs)
+		
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                        CLASS BACKEND                                               =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''

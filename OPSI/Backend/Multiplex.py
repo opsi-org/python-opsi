@@ -206,12 +206,23 @@ class MultiplexBackend(object):
 		logger.debug2(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
 		return dispatcher
 	
-	def dispatch(self, methodName, *args, **kwargs):
+	def dispatch_threaded(self, methodName, *args, **kwargs):
 		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
 		results = []
 		calls = 0
 		def pushResult(success, result, error):
-			results.append((success, result, error))
+			if not success or not result:
+				results.append((success, result, error))
+			else:
+				jsonrpc = result
+				(success, result, error) = (None, None, None)
+				try:
+					result = jsonrpc.waitForResult()
+					success = True
+				except Exception, e:
+					error = e
+					success = False
+				results.append((success, result, error))
 		
 		dispatcher = self._getDispatcher(*args, **kwargs)
 		logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
@@ -242,14 +253,52 @@ class MultiplexBackend(object):
 			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
 		return r
 	
+	def dispatch(self, methodName, *args, **kwargs):
+		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
+		results = []
+		calls = 0
+		def pushResult(jsonrpc, results):
+			results.append((not jsonrpc.error, jsonrpc.result, jsonrpc.error))
+		
+		dispatcher = self._getDispatcher(*args, **kwargs)
+		logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
+		for service in dispatcher:
+			if service.isConnected():
+				logger.debug(u"Calling method %s of service %s" % (methodName, service.url))
+				meth = getattr(service, methodName)
+				res = meth(*args, **kwargs)
+				if isinstance(res, DeferredCall):
+					res.setCallback(pushResult, results)
+				else:
+					results.append((True, res, None))
+				calls +=1
+		while len(results) != calls:
+			time.sleep(0.1)
+		
+		r = None
+		errors = []
+		for (success, result, error) in results:
+			if success:
+				if   type(r) is list:
+					r.extend(forceList(result))
+				elif type(r) is dict:
+					r.update(forceDict(result))
+				elif type(r) in (str, unicode):
+					r = forceUnicode(r) + forceUnicode(result)
+				elif not r:
+					r = result
+			else:
+				errors.append(error)
+		if errors:
+			#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
+			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
+		return r
+	
 	def backend_exit(self):
 		logger.info(u"Shutting down multiplex backend.")
 		self.dispatch('backend_exit')
 		self._threadPool.free()
-		#for service in self.services:
-		#	if service.isConnected():
-		#		service.disconnect()
-	
+		
 	def backend_getOptions(self):
 		result = {}
 		for item in self.dispatch("backend_getOptions"):
@@ -518,25 +567,23 @@ class RemoteService(Service, JSONRPCBackend):
 		if success:
 			self.error = None
 			logger.notice(u"Successfully connected to service %s (Thread: %s)" % (self.url, threading.currentThread()))
+			self.setAsync(True)
 		else:
 			self.error = error
 			logger.error(u"Failed to connect to service %s: %s (Thread: %s)" % (self.url, error, threading.currentThread()))
 	
 	def refresh(self):
 		self.setAsync(True)
-		try:
-			self.clients = []
-			self.depots = []
-			jsonrpc1 = self.host_getObjects(attributes = ['id'])
-			jsonrpc2 = self.licensePool_getObjects()
-			for host in jsonrpc1.waitForResult():
-				if   host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
-					self.depots.append(host)
-				elif host.getType() in ('OpsiClient'):
-					self.clients.append(host)
-			self.licensePools = jsonrpc2.waitForResult()
-		finally:
-			self.setAsync(False)
+		self.clients = []
+		self.depots = []
+		jsonrpc1 = self.host_getObjects(attributes = ['id'])
+		jsonrpc2 = self.licensePool_getObjects()
+		for host in jsonrpc1.waitForResult():
+			if   host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+				self.depots.append(host)
+			elif host.getType() in ('OpsiClient'):
+				self.clients.append(host)
+		self.licensePools = jsonrpc2.waitForResult()
 		
 	def licensePool_getObjects(self, attributes=[], **filter):
 		self.licensePools = self._jsonRPC("licensePool_getObjects", [attributes, filter])
@@ -551,14 +598,14 @@ class RemoteService(Service, JSONRPCBackend):
 	def __repr__(self):
 		return self.__str__()
 	
-	def __del__(self):
-		try:
-			if self.isConnected():
-				self.disconnect()
-		finally:
-			try:
-				JSONRPCBackend.__del__(self)
-			except:
-				pass
+	#def __del__(self):
+	#	try:
+	#		if self.isConnected():
+	#			self.disconnect()
+	#	finally:
+	#		try:
+	#			JSONRPCBackend.__del__(self)
+	#		except:
+	#			pass
 	
 	

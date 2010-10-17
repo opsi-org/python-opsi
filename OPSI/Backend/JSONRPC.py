@@ -55,32 +55,18 @@ from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 # Get logger instance
 logger = Logger()
 	
-class JSONRPC(threading.Thread):
+class JSONRPC(DeferredCall, threading.Thread):
 	def __init__(self, jsonrpcBackend, baseUrl, method, params=[], retry = True, callback = None):
 		threading.Thread.__init__(self)
+		DeferredCall.__init__(self, callback = callback)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.baseUrl = baseUrl
 		self.id = self.jsonrpcBackend._getRpcId()
 		self.method = method
 		self.params = params
 		self.retry = retry
-		self.callback = callback
-		self.result = None
-		self.error = None
-		self.finished = threading.Event()
-	
-	def waitForResult(self):
-		self.finished.wait()
-		#return (self.result, self.error)
-		if self.error:
-			raise self.error
-		return self.result
 		
-	def setCallback(self, callback):
-		self.callback = callback
-	
 	def execute(self):
-		gotCallback = bool(self.callback)
 		self.start()
 		return self.waitForResult()
 	
@@ -115,9 +101,7 @@ class JSONRPC(threading.Thread):
 			self.result = deserialize(result.get('result'))
 		except Exception, e:
 			self.error = e
-		if self.callback:
-			self.callback(self)
-		self.finished.set()
+		self._gotResult()
 		
 	def process(self):
 		try:
@@ -125,17 +109,14 @@ class JSONRPC(threading.Thread):
 			
 			rpc = json.dumps(self.getRpc())
 			logger.debug2(u"jsonrpc: %s" % rpc)
-			
 			response = self.jsonrpcBackend._request(baseUrl = self.baseUrl, data = rpc, retry = self.retry)
 			self.processResult(json.loads(response))
 		except Exception, e:
 			if not self.method in ('backend_exit', 'exit'):
 				logger.logException(e, LOG_INFO)
 				self.error = e
-			if self.callback:
-				self.callback(self)
-			self.finished.set()
-
+			self._gotResult()
+		
 class RpcQueue(threading.Thread):
 	def __init__(self, jsonrpcBackend, size, poll = 0.2):
 		threading.Thread.__init__(self)
@@ -155,12 +136,9 @@ class RpcQueue(threading.Thread):
 	def run(self):
 		while not self.stopped or not self.queue.empty():
 			jsonrpcs = []
-			while True:
-				try:
-					jsonrpcs.append(self.queue.get(block = False))
-					if (len(jsonrpcs) >= self.size):
-						break
-				except Empty:
+			while not self.queue.empty():
+				jsonrpcs.append(self.queue.get(block = False))
+				if (len(jsonrpcs) >= self.size):
 					break
 			if jsonrpcs:
 				self.process(jsonrpcs = jsonrpcs)
@@ -172,12 +150,17 @@ class RpcQueue(threading.Thread):
 			self.jsonrpcs[jsonrpc.id] = jsonrpc
 		if not self.jsonrpcs:
 			return
-		logger.debug("Executing bunched jsonrpcs: %s" % self.jsonrpcs)
+		logger.info("Executing bunched jsonrpcs: %s" % self.jsonrpcs)
+		isExit = False
 		try:
 			retry = False
 			baseUrl = None
 			rpc = []
 			for jsonrpc in self.jsonrpcs.values():
+				if jsonrpc.method in ('backend_exit', 'exit'):
+					isExit = True
+				else:
+					isExit = False
 				if jsonrpc.retry:
 					retry = True
 				if not baseUrl:
@@ -190,7 +173,7 @@ class RpcQueue(threading.Thread):
 			
 			response = self.jsonrpcBackend._request(baseUrl = baseUrl, data = rpc, retry = retry)
 			try:
-				response = json.loads(response)
+				response = forceList(json.loads(response))
 			except Exception, e:
 				raise Exception(u"Failed to json decode response %s: %s" % (response, e))
 			
@@ -208,7 +191,8 @@ class RpcQueue(threading.Thread):
 				except Exception, e:
 					raise Exception(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, e))
 		except Exception, e:
-			logger.logException(e)
+			if not isExit:
+				logger.logException(e)
 		self.jsonrpcs = {}
 	
 # ======================================================================================================
@@ -285,14 +269,34 @@ class JSONRPCBackend(Backend):
 		if self._connectOnInit:
 			self.connect()
 	
-	def __del__(self):
+	def stopRpcQueue(self):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
 			self._rpcQueue.join(20)
+		self._async = False
+		
+	def __del__(self):
+		self.stopRpcQueue()
 		if self._connectionPool:
 			self._connectionPool.free()
-	
+		
+	def backend_exit(self):
+		res = None
+		if self._connected:
+			try:
+				if self._legacyOpsi:
+					res = self._jsonRPC('exit', retry = False)
+				else:
+					res = self._jsonRPC('backend_exit', retry = False)
+			except:
+				pass
+		if self._rpcQueue:
+			self._rpcQueue.stop()
+		return res
+		
 	def setAsync(self, async):
+		self.stopRpcQueue()
+		
 		if not self._connected:
 			raise Exception(u'Not connected')
 		
@@ -302,12 +306,7 @@ class JSONRPCBackend(Backend):
 				return
 			self._rpcQueue = RpcQueue(jsonrpcBackend = self, size = 20, poll = 0.2)
 			self._rpcQueue.start()
-			self._async = True
-		else:
-			self._async = False
-			if self._rpcQueue:
-				self._rpcQueue.stop()
-				self._rpcQueue.join(20)
+			self._async = True	
 	
 	def setDeflate(self, deflate):
 		if not self._connected:
@@ -402,17 +401,6 @@ class JSONRPCBackend(Backend):
 	
 	def jsonrpc_getSessionId(self):
 		return self._sessionId
-		
-	def backend_exit(self):
-		self.setAsync(False)
-		if self._connected:
-			try:
-				if self._legacyOpsi:
-					self._jsonRPC('exit', retry = False)
-				else:
-					self._jsonRPC('backend_exit', retry = False)
-			except:
-				pass
 	
 	def _createInstanceMethods34(self):
 		for method in self._interface:
@@ -494,7 +482,7 @@ class JSONRPCBackend(Backend):
 				keywords   = method['keywords']
 				defaults   = method['defaults']
 				
-				if methodName in ('backend_exit'):
+				if methodName in ('backend_exit', 'backend_getInterface'):
 					continue
 				
 				argString = u''
@@ -593,6 +581,9 @@ class JSONRPCBackend(Backend):
 		return response
 	
 	def getInterface(self):
+		return self.backend_getInterface()
+		
+	def backend_getInterface(self):
 		return self._interface
 	
 	
