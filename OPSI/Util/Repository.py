@@ -239,7 +239,7 @@ class Repository:
 		lastTime = lastAverageTime = transferStartTime = time.time()
 		buf = True
 		if not hasattr(self, '_bufferSize'):
-			self._bufferSize = 4092
+			self._bufferSize = 16384 #8192
 		self._averageSpeed = 0.0
 		self._currentSpeed = 0.0
 		
@@ -957,8 +957,8 @@ class WebDAVRepository(HTTPRepository):
 		self._processResponseHeaders(response)
 		if (response.status != responsecode.NO_CONTENT):
 			raise RepositoryError(u"Failed to delete '%s': %s" % (destination, response.status))
-		# We have to read the response!
-		response.read()
+		## Do we have to read the response?
+		#response.read()
 
 class CIFSRepository(FileRepository):
 	def __init__(self, url, **kwargs):

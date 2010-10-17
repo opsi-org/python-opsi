@@ -248,7 +248,7 @@ class MultiplexBackend(object):
 					r = result
 			else:
 				errors.append(error)
-		if errors:
+		if errors and methodName not in ('exit', 'backend_exit'):
 			#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
 			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
 		return r
@@ -272,6 +272,8 @@ class MultiplexBackend(object):
 				else:
 					results.append((True, res, None))
 				calls +=1
+				# Wait a little bit to avoid that all calls will start at once
+				time.sleep(0.01)
 		while len(results) != calls:
 			time.sleep(0.1)
 		
@@ -289,14 +291,16 @@ class MultiplexBackend(object):
 					r = result
 			else:
 				errors.append(error)
-		if errors:
+		logger.debug(u"Dispatching %s done" % methodName)
+		if errors and methodName not in ('exit', 'backend_exit'):
 			#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
 			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
 		return r
 	
 	def backend_exit(self):
-		logger.info(u"Shutting down multiplex backend.")
+		logger.info(u"Shutting down multiplex backend")
 		self.dispatch('backend_exit')
+		logger.info(u"Freeing thread pool")
 		self._threadPool.free()
 		
 	def backend_getOptions(self):

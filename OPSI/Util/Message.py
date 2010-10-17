@@ -285,8 +285,11 @@ class ProgressSubject(MessageSubject):
 			self._timeSpend = now - self._timeStarted
 			if self._timeSpend:
 				self._speed = int(float(self._state)/float(self._timeSpend))
-				if (self._speed > 0):
-					self._timeLeft = int((float(self._end)-float(self._state))/float(self._speed))
+				if (self._speed < 0):
+					self._speed = 0
+				elif (self._speed > 0):
+					self._timeLeft = int(((float(self._timeLeft)*2.0) + (float(self._end)-float(self._state))/float(self._speed))/3.0)
+					#self._timeLeft = int((float(self._end)-float(self._state))/float(self._speed))
 			
 			self._timeFired = now
 			self._notifyProgressChanged()

@@ -142,7 +142,7 @@ class DepotserverPackageManager(object):
 				tempDir = None
 			
 			if not os.path.isfile(filename):
-				raise BackendIOError(u"Package file '%s' not found" % filename)
+				raise BackendIOError(u"Package file '%s' does not exist or access denied" % filename)
 			if not os.access(filename, os.R_OK):
 				raise BackendIOError(u"Read access denied for package file '%s'" % filename)
 			

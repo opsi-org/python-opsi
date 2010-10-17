@@ -193,6 +193,9 @@ class RpcQueue(threading.Thread):
 		except Exception, e:
 			if not isExit:
 				logger.logException(e)
+			for jsonrpc in self.jsonrpcs.values():
+				jsonrpc.error = e
+				jsonrpc._gotResult()
 		self.jsonrpcs = {}
 	
 # ======================================================================================================
