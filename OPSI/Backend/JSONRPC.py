@@ -128,22 +128,32 @@ class RpcQueue(threading.Thread):
 		self.jsonrpcs = {}
 		
 	def add(self, jsonrpc):
+		logger.debug(u'Adding jsonrpc %s to queue (current queue size: %d)' % (jsonrpc, self.queue.qsize()))
 		self.queue.put(jsonrpc, block = True)
+		logger.debug2(u'Added jsonrpc %s to queue' % jsonrpc)
 		
 	def stop(self):
 		self.stopped = True
 		
 	def run(self):
+		logger.debug(u"RpcQueue started")
 		while not self.stopped or not self.queue.empty():
 			jsonrpcs = []
-			while not self.queue.empty():
-				jsonrpcs.append(self.queue.get(block = False))
-				if (len(jsonrpcs) >= self.size):
+			while True:
+				try:
+					jsonrpc = self.queue.get(block = False)
+					if jsonrpc:
+						logger.info(u'Got jsonrpc %s from queue' % jsonrpc)
+						jsonrpcs.append(jsonrpc)
+						if (len(jsonrpcs) >= self.size):
+							break
+				except Empty:
 					break
 			if jsonrpcs:
 				self.process(jsonrpcs = jsonrpcs)
 			time.sleep(self.poll)
-	
+		logger.debug(u"RpcQueue stopped (empty: %s, stopped: %s)" % (self.queue.empty(), self.stopped))
+		
 	def process(self, jsonrpcs):
 		self.jsonrpcs = {}
 		for jsonrpc in forceList(jsonrpcs):
@@ -276,7 +286,11 @@ class JSONRPCBackend(Backend):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
 			self._rpcQueue.join(20)
-		self._async = False
+		
+	def startRpcQueue(self):
+		if not self._rpcQueue or not self._rpcQueue.is_alive():
+			self._rpcQueue = RpcQueue(jsonrpcBackend = self, size = 20, poll = 0.2)
+			self._rpcQueue.start()
 		
 	def __del__(self):
 		self.stopRpcQueue()
@@ -298,8 +312,6 @@ class JSONRPCBackend(Backend):
 		return res
 		
 	def setAsync(self, async):
-		self.stopRpcQueue()
-		
 		if not self._connected:
 			raise Exception(u'Not connected')
 		
@@ -307,10 +319,12 @@ class JSONRPCBackend(Backend):
 			if self.isLegacyOpsi():
 				logger.error(u"Refusing to set async because we are connected to legacy opsi service")
 				return
-			self._rpcQueue = RpcQueue(jsonrpcBackend = self, size = 20, poll = 0.2)
-			self._rpcQueue.start()
-			self._async = True	
-	
+			self.startRpcQueue()
+			self._async = True
+		else:
+			self._async = False
+			self.stopRpcQueue()
+		
 	def setDeflate(self, deflate):
 		if not self._connected:
 			raise Exception(u'Not connected')
@@ -530,6 +544,7 @@ class JSONRPCBackend(Backend):
 	
 	def _jsonRPC(self, method, params=[], retry=True):
 		if self._async:
+			self.startRpcQueue()
 			jsonrpc = JSONRPC(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
 			self._rpcQueue.add(jsonrpc)
 			return jsonrpc

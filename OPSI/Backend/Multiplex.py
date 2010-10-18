@@ -274,8 +274,13 @@ class MultiplexBackend(object):
 				calls +=1
 				# Wait a little bit to avoid that all calls will start at once
 				time.sleep(0.01)
+		logTime = 0
 		while len(results) != calls:
+			if (logTime >= 1):
+				logTime = 0
+				logger.info(u'Waiting for results, got (%d/%d)' % (len(results), calls))
 			time.sleep(0.1)
+			logTime += 0.1
 		
 		r = None
 		errors = []
