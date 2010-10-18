@@ -125,7 +125,7 @@ class JSONRPCThread(JSONRPC, threading.Thread):
 		self.process()
 	
 class RpcQueue(threading.Thread):
-	def __init__(self, jsonrpcBackend, size, poll = 0.2):
+	def __init__(self, jsonrpcBackend, size, poll = 0.01):
 		threading.Thread.__init__(self)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.size = size
@@ -247,7 +247,7 @@ class JSONRPCBackend(Backend):
 		self._rpcIdLock           = threading.Lock()
 		self._async               = False
 		self._rpcQueue            = None
-		self._rpcQueuePollingTime = 0.2
+		self._rpcQueuePollingTime = 0.01
 		self._rpcQueueSize        = 10
 		
 		retry = True

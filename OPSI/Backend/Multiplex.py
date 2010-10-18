@@ -72,7 +72,7 @@ class MultiplexBackend(object):
 		self.__connectLock = threading.Lock()
 		self.__socketTimeout = None
 		self.__connectTimeout = 30
-		self.__maxConcurrentCalls = 25
+		self.__maxConcurrentCalls = 10
 		self.__rpcQueuePollingTime = 0.001
 		self.__timeBetweenCalls = 0.01
 		self._defaultDomain = u'opsi.org'
@@ -296,8 +296,8 @@ class MultiplexBackend(object):
 			if (logTime >= 1):
 				logTime = 0
 				logger.info(u'Waiting for results, got (%d/%d)' % (len(results), calls))
-			time.sleep(0.1)
-			logTime += 0.1
+			time.sleep(0.005)
+			logTime += 0.005
 		
 		r = None
 		errors = []
