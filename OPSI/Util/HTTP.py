@@ -43,6 +43,8 @@ from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
 from socket import error as SocketError, timeout as SocketTimeout
 import socket, time
 from sys import version_info
+if (version_info >= (2,6)):
+	import ssl as ssl_module
 
 # OPSI imports
 from OPSI.Types import *
@@ -50,6 +52,7 @@ from OPSI.Logger import *
 logger = Logger()
 
 connectionPools = {}
+totalRequests = 0
 
 def non_blocking_connect_http(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
@@ -77,8 +80,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 def non_blocking_connect_https(self, connectTimeout=0):
 	non_blocking_connect_http(self, connectTimeout)
 	if (version_info >= (2,6)):
-		import ssl
-		self.sock = ssl.wrap_socket(self.sock, self.key_file, self.cert_file)
+		self.sock = ssl_module.wrap_socket(self.sock, self.key_file, self.cert_file)
 	else:
 		ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
 		self.sock = FakeSocket(self.sock, ssl)
@@ -139,21 +141,22 @@ class HTTPConnectionPool(object):
 	scheme = 'http'
 	
 	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False):
-		self.host            = forceUnicode(host)
-		self.port            = forceInt(port)
-		self.socketTimeout   = None
+		self.host              = forceUnicode(host)
+		self.port              = forceInt(port)
+		self.socketTimeout = None
 		if not socketTimeout is None:
 			self.socketTimeout = forceInt(socketTimeout)
-		self.connectTimeout  = None
+		self.connectTimeout = None
 		if not connectTimeout is None:
 			self.connectTimeout = forceInt(connectTimeout)
-		self.retryTime       = forceInt(retryTime)
-		self.block           = forceBool(block)
-		self.pool            = None
-		self.usageCount      = 1
-		self.num_connections = 0
-		self.num_requests    = 0
-		self.reuseConnection = True
+		self.retryTime         = forceInt(retryTime)
+		self.block             = forceBool(block)
+		self.pool              = None
+		self.usageCount        = 1
+		self.num_connections   = 0
+		self.num_requests      = 0
+		self.reuseConnection   = True
+		self.httplibDebugLevel = 0
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):
@@ -197,7 +200,7 @@ class HTTPConnectionPool(object):
 		Return a fresh HTTPConnection.
 		"""
 		logger.info(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = HTTPSConnection(host=self.host, port=self.port)
+		conn = HTTPConnection(host=self.host, port=self.port)
 		non_blocking_connect_http(conn, self.connectTimeout)
 		logger.info(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
@@ -279,6 +282,7 @@ class HTTPConnectionPool(object):
 		if not firstTryTime:
 			firstTryTime = now
 		
+		conn = None
 		# Check host
 		if assert_same_host and not self.is_same_host(url):
 			host = "%s://%s" % (self.scheme, self.host)
@@ -290,8 +294,16 @@ class HTTPConnectionPool(object):
 			# Request a connection from the queue
 			conn = self._get_conn()
 			
+			if self.httplibDebugLevel:
+				conn.set_debuglevel(self.httplibDebugLevel)
+			
 			# Make the request
 			self.num_requests += 1
+			
+			global totalRequests
+			totalRequests += 1
+			#logger.essential("totalRequests: %d" % totalRequests)
+			
 			conn.request(method, url, body=body, headers=headers)
 			conn.sock.settimeout(self.socketTimeout)
 			httplib_response = conn.getresponse()
@@ -307,11 +319,19 @@ class HTTPConnectionPool(object):
 				self._put_conn(conn)
 			else:
 				self._put_conn(None)
+				try:
+					conn.close()
+				except:
+					pass
 		
 		except (SocketTimeout, Empty, HTTPException, SocketError), e:
 			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s, (%s)" \
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
 			self._put_conn(None)
+			try:
+				conn.close()
+			except:
+				pass
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, e))
 				time.sleep(0.01)
@@ -320,6 +340,10 @@ class HTTPConnectionPool(object):
 				raise
 		except Exception:
 			self._put_conn(None)
+			try:
+				conn.close()
+			except:
+				pass
 			raise
 			
 		# Handle redirection
@@ -327,6 +351,10 @@ class HTTPConnectionPool(object):
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
 			time.sleep(0.01)
 			self._put_conn(None)
+			try:
+				conn.close()
+			except:
+				pass
 			return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			
 		return response

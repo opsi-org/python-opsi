@@ -72,6 +72,9 @@ class MultiplexBackend(object):
 		self.__connectLock = threading.Lock()
 		self.__socketTimeout = None
 		self.__connectTimeout = 30
+		self.__maxConcurrentCalls = 25
+		self.__rpcQueuePollingTime = 0.001
+		self.__timeBetweenCalls = 0.01
 		self._defaultDomain = u'opsi.org'
 		self._defaultServiceType = u"remote"
 		self._ready = False
@@ -104,7 +107,13 @@ class MultiplexBackend(object):
 					logger.debug(u"Initializing service %s as type %s" % (service["url"], type))
 					
 					s = getattr(sys.modules[__name__], "%sService" % type.lower().capitalize())
-					self.__services[service['url']] = (s(socketTimeout = self.__socketTimeout, connectTimeout = self.__connectTimeout, multiplexBackend = self, **service ))
+					self.__services[service['url']] = (
+						s(	rpcQueuePollingTime = self.__rpcQueuePollingTime,
+							socketTimeout       = self.__socketTimeout,
+							connectTimeout      = self.__connectTimeout,
+							multiplexBackend    = self,
+							**service )
+					)
 				else:
 					logger.notice(u"Using cached service for %s" % service['url'])
 			del(kwargs['services'])
@@ -210,52 +219,52 @@ class MultiplexBackend(object):
 		logger.debug2(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
 		return dispatcher
 	
-	def dispatch_threaded(self, methodName, *args, **kwargs):
-		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
-		results = []
-		calls = 0
-		def pushResult(success, result, error):
-			if not success or not result:
-				results.append((success, result, error))
-			else:
-				jsonrpc = result
-				(success, result, error) = (None, None, None)
-				try:
-					result = jsonrpc.waitForResult()
-					success = True
-				except Exception, e:
-					error = e
-					success = False
-				results.append((success, result, error))
-		
-		dispatcher = self._getDispatcher(*args, **kwargs)
-		logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
-		for service in dispatcher:
-			if service.isConnected():
-				logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
-				self._threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
-				calls +=1
-		while len(results) != calls:
-			time.sleep(0.1)
-		
-		r = None
-		errors = []
-		for (success, result, error) in results:
-			if success:
-				if   type(r) is list:
-					r.extend(forceList(result))
-				elif type(r) is dict:
-					r.update(forceDict(result))
-				elif type(r) in (str, unicode):
-					r = forceUnicode(r) + forceUnicode(result)
-				elif not r:
-					r = result
-			else:
-				errors.append(error)
-		if errors and methodName not in ('exit', 'backend_exit'):
-			#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
-			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
-		return r
+	#def dispatch_threaded(self, methodName, *args, **kwargs):
+	#	logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
+	#	results = []
+	#	calls = 0
+	#	def pushResult(success, result, error):
+	#		if not success or not result:
+	#			results.append((success, result, error))
+	#		else:
+	#			jsonrpc = result
+	#			(success, result, error) = (None, None, None)
+	#			try:
+	#				result = jsonrpc.waitForResult()
+	#				success = True
+	#			except Exception, e:
+	#				error = e
+	#				success = False
+	#			results.append((success, result, error))
+	#	
+	#	dispatcher = self._getDispatcher(*args, **kwargs)
+	#	logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
+	#	for service in dispatcher:
+	#		if service.isConnected():
+	#			logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
+	#			self._threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
+	#			calls +=1
+	#	while len(results) != calls:
+	#		time.sleep(0.1)
+	#	
+	#	r = None
+	#	errors = []
+	#	for (success, result, error) in results:
+	#		if success:
+	#			if   type(r) is list:
+	#				r.extend(forceList(result))
+	#			elif type(r) is dict:
+	#				r.update(forceDict(result))
+	#			elif type(r) in (str, unicode):
+	#				r = forceUnicode(r) + forceUnicode(result)
+	#			elif not r:
+	#				r = result
+	#		else:
+	#			errors.append(error)
+	#	if errors and methodName not in ('exit', 'backend_exit'):
+	#		#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
+	#		raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
+	#	return r
 	
 	def dispatch(self, methodName, *args, **kwargs):
 		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
@@ -263,11 +272,6 @@ class MultiplexBackend(object):
 		calls = 0
 		def pushResult(jsonrpc, results):
 			results.append((not jsonrpc.error, jsonrpc.result, jsonrpc.error))
-		
-		#threads = []
-		#for thread in threading.enumerate():
-		#	threads.append(thread)
-		#logger.essential(u"%d threads running" % len(threads))
 		
 		dispatcher = self._getDispatcher(*args, **kwargs)
 		logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
@@ -282,7 +286,11 @@ class MultiplexBackend(object):
 					results.append((True, res, None))
 				calls +=1
 				# Wait a little bit to avoid that all calls will start at once
-				time.sleep(0.01)
+				# This colud lead to massive packet collisions
+				time.sleep(self.__timeBetweenCalls)
+			if self.__maxConcurrentCalls:
+				while (calls - len(results) >= self.__maxConcurrentCalls):
+					time.sleep(0.005)
 		logTime = 0
 		while len(results) != calls:
 			if (logTime >= 1):
@@ -552,7 +560,7 @@ class Service(object):
 		pass
 
 class RemoteService(Service, JSONRPCBackend):
-	def __init__(self, url, domain, opsiHostKey, socketTimeout, connectTimeout, multiplexBackend, **kwargs):
+	def __init__(self, url, domain, opsiHostKey, rpcQueuePollingTime, socketTimeout, connectTimeout, multiplexBackend, **kwargs):
 		self.url = url
 		self.domain = domain
 		self.opsiHostKey = opsiHostKey
@@ -562,14 +570,15 @@ class RemoteService(Service, JSONRPCBackend):
 		Service.__init__(self, **kwargs)
 		JSONRPCBackend.__init__(
 			self,
-			address        = url,
-			connectOnInit  = False,
-			connectTimeout = self.connectTimeout,
-			socketTimeout  = self.socketTimeout,
-			username       = self.url.split('/')[2].split(':')[0],
-			password       = self.opsiHostKey,
-			application    = u'opsi multiplex backend %s' % __version__,
-			deflate        = True,
+			address             = url,
+			connectOnInit       = False,
+			connectTimeout      = self.connectTimeout,
+			socketTimeout       = self.socketTimeout,
+			username            = self.url.split('/')[2].split(':')[0],
+			password            = self.opsiHostKey,
+			application         = u'opsi multiplex backend %s' % __version__,
+			deflate             = True,
+			rpcQueuePollingTime = rpcQueuePollingTime,
 			**kwargs
 		)
 		self.error = None

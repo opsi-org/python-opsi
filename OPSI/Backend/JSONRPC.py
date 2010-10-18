@@ -54,10 +54,9 @@ from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 
 # Get logger instance
 logger = Logger()
-	
-class JSONRPC(DeferredCall, threading.Thread):
+
+class JSONRPC(DeferredCall):
 	def __init__(self, jsonrpcBackend, baseUrl, method, params=[], retry = True, callback = None):
-		threading.Thread.__init__(self)
 		DeferredCall.__init__(self, callback = callback)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.baseUrl = baseUrl
@@ -67,10 +66,6 @@ class JSONRPC(DeferredCall, threading.Thread):
 		self.retry = retry
 		
 	def execute(self):
-		self.start()
-		return self.waitForResult()
-	
-	def run(self):
 		self.process()
 	
 	def getRpc(self):
@@ -116,7 +111,19 @@ class JSONRPC(DeferredCall, threading.Thread):
 				logger.logException(e, LOG_INFO)
 				self.error = e
 			self._gotResult()
-		
+
+class JSONRPCThread(JSONRPC, threading.Thread):
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=[], retry = True, callback = None):
+		threading.Thread.__init__(self)
+		JSONRPC.__init__(self, jsonrpcBackend = jsonrpcBackend, baseUrl = baseUrl, method = method, params = params, retry = retry, callback = callback)
+	
+	def execute(self):
+		self.start()
+		return self.waitForResult()
+	
+	def run(self):
+		self.process()
+	
 class RpcQueue(threading.Thread):
 	def __init__(self, jsonrpcBackend, size, poll = 0.2):
 		threading.Thread.__init__(self)
@@ -219,27 +226,29 @@ class JSONRPCBackend(Backend):
 		
 		Backend.__init__(self, **kwargs)
 		
-		self._application        = 'opsi jsonrpc module version %s' % __version__
-		self._sessionId          = None
-		self._deflate            = False
-		self._connectOnInit      = True
-		self._connected          = False
-		self._retryTime          = 5
-		self._defaultHttpPort    = 4444
-		self._defaultHttpsPort   = 4447
-		self._host               = None
-		self._port               = None
-		self._baseUrl            = u'/rpc'
-		self._protocol           = 'https'
-		self._socketTimeout      = None
-		self._connectTimeout     = 30
-		self._connectionPoolSize = 1
-		self._legacyOpsi         = False
-		self._interface          = None
-		self._rpcId              = 0
-		self._rpcIdLock          = threading.Lock()
-		self._async              = False
-		self._rpcQueue           = None
+		self._application         = 'opsi jsonrpc module version %s' % __version__
+		self._sessionId           = None
+		self._deflate             = False
+		self._connectOnInit       = True
+		self._connected           = False
+		self._retryTime           = 5
+		self._defaultHttpPort     = 4444
+		self._defaultHttpsPort    = 4447
+		self._host                = None
+		self._port                = None
+		self._baseUrl             = u'/rpc'
+		self._protocol            = 'https'
+		self._socketTimeout       = None
+		self._connectTimeout      = 30
+		self._connectionPoolSize  = 1
+		self._legacyOpsi          = False
+		self._interface           = None
+		self._rpcId               = 0
+		self._rpcIdLock           = threading.Lock()
+		self._async               = False
+		self._rpcQueue            = None
+		self._rpcQueuePollingTime = 0.2
+		self._rpcQueueSize        = 10
 		
 		retry = True
 		for (option, value) in kwargs.items():
@@ -262,6 +271,11 @@ class JSONRPCBackend(Backend):
 				retry = bool(value)
 			if option in ('retrytime',):
 				self._retryTime = forceInt(value)
+			if option in ('rpcqueuepollingtime',):
+				self._rpcQueuePollingTime = forceFloat(value)
+			if option in ('rpcqueuesize',):
+				self._rpcQueueSize = forceInt(value)
+		
 		if not retry:
 			self._retryTime = 0
 		
@@ -290,7 +304,7 @@ class JSONRPCBackend(Backend):
 		
 	def startRpcQueue(self):
 		if not self._rpcQueue or not self._rpcQueue.is_alive():
-			self._rpcQueue = RpcQueue(jsonrpcBackend = self, size = 20, poll = 0.2)
+			self._rpcQueue = RpcQueue(jsonrpcBackend = self, size = self._rpcQueueSize, poll = self._rpcQueuePollingTime)
 			self._rpcQueue.start()
 		
 	def __del__(self):
@@ -550,7 +564,7 @@ class JSONRPCBackend(Backend):
 			self._rpcQueue.add(jsonrpc)
 			return jsonrpc
 		else:
-			jsonrpc = JSONRPC(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
+			jsonrpc = JSONRPCThread(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
 			return jsonrpc.execute()
 	
 	def _request(self, baseUrl, data, retry = True):
