@@ -72,7 +72,7 @@ class MultiplexBackend(object):
 		self.__connectLock = threading.Lock()
 		self.__socketTimeout = None
 		self.__connectTimeout = 30
-		self.__maxConcurrentCalls = 10
+		self.__maxConcurrentCalls = 5
 		self.__rpcQueuePollingTime = 0.001
 		self.__timeBetweenCalls = 0.01
 		self._defaultDomain = u'opsi.org'

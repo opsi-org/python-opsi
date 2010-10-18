@@ -2007,7 +2007,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					objectId = objectId))
 	
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
-		addConfigStateDefaults = self._options['addConfigStateDefaults']
+		#addConfigStateDefaults = self._options['addConfigStateDefaults']
+		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		result = []
 		masterDepotIds = self.host_getIdents(type = 'OpsiDepotserver', isMasterDepot = True, id = depotIds)
 		clientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
@@ -2015,7 +2016,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return result
 		usedMasterDepotIds = []
 		try:
-			self._options['addConfigStateDefaults'] = True
+			#self._options['addConfigStateDefaults'] = True
+			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
 				#if not configState.objectId in knownClientIds:
 				#	logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
@@ -2030,7 +2032,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					usedMasterDepotIds.append(depotId)
 				result.append({ 'depotId': depotId, 'clientId': configState.objectId, 'slaveDepotIds': [] })
 		finally:
-			self._options['addConfigStateDefaults'] = addConfigStateDefaults
+			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
+			#self._options['addConfigStateDefaults'] = addConfigStateDefaults
 		if masterOnly:
 			return result
 		
