@@ -141,14 +141,19 @@ class HTTPConnectionPool(object):
 	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False):
 		self.host            = forceUnicode(host)
 		self.port            = forceInt(port)
-		self.socketTimeout   = forceInt(socketTimeout)
-		self.connectTimeout  = forceInt(connectTimeout)
+		self.socketTimeout   = None
+		if not socketTimeout is None:
+			self.socketTimeout = forceInt(socketTimeout)
+		self.connectTimeout  = None
+		if not connectTimeout is None:
+			self.connectTimeout = forceInt(connectTimeout)
 		self.retryTime       = forceInt(retryTime)
 		self.block           = forceBool(block)
 		self.pool            = None
 		self.usageCount      = 1
 		self.num_connections = 0
 		self.num_requests    = 0
+		self.reuseConnection = True
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):
@@ -241,7 +246,10 @@ class HTTPConnectionPool(object):
 		if conn:
 			httplib_response = conn.getresponse()
 			response = HTTPResponse.from_httplib(httplib_response)
-			self._put_conn(conn)
+			if self.reuseConnection:
+				self._put_conn(conn)
+			else:
+				self._put_conn(None)
 			return response
 		self._put_conn(None)
 		return None
@@ -295,15 +303,18 @@ class HTTPConnectionPool(object):
 			response = HTTPResponse.from_httplib(httplib_response)
 			
 			# Put the connection back to be reused
-			self._put_conn(conn)
+			if self.reuseConnection:
+				self._put_conn(conn)
+			else:
+				self._put_conn(None)
 		
 		except (SocketTimeout, Empty, HTTPException, SocketError), e:
 			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s, (%s)" \
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
+			self._put_conn(None)
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, e))
 				time.sleep(0.01)
-				self._put_conn(None)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
 				raise

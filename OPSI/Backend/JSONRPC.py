@@ -139,11 +139,11 @@ class RpcQueue(threading.Thread):
 		logger.debug(u"RpcQueue started")
 		while not self.stopped or not self.queue.empty():
 			jsonrpcs = []
-			while True:
+			while not self.queue.empty():
 				try:
 					jsonrpc = self.queue.get(block = False)
 					if jsonrpc:
-						logger.info(u'Got jsonrpc %s from queue' % jsonrpc)
+						logger.debug(u'Got jsonrpc %s from queue' % jsonrpc)
 						jsonrpcs.append(jsonrpc)
 						if (len(jsonrpcs) >= self.size):
 							break
@@ -182,6 +182,7 @@ class RpcQueue(threading.Thread):
 			logger.debug2(u"jsonrpc: %s" % rpc)
 			
 			response = self.jsonrpcBackend._request(baseUrl = baseUrl, data = rpc, retry = retry)
+			logger.debug(u"Got response from host %s" % self.jsonrpcBackend._host)
 			try:
 				response = forceList(json.loads(response))
 			except Exception, e:
@@ -231,7 +232,7 @@ class JSONRPCBackend(Backend):
 		self._baseUrl            = u'/rpc'
 		self._protocol           = 'https'
 		self._socketTimeout      = None
-		self._connectTimeout     = 20
+		self._connectTimeout     = 30
 		self._connectionPoolSize = 1
 		self._legacyOpsi         = False
 		self._interface          = None
@@ -251,11 +252,11 @@ class JSONRPCBackend(Backend):
 				self._deflate = bool(value)
 			if option in ('connectoninit',):
 				self._connectOnInit = bool(value)
-			if option in ('connecttimeout',):
+			if option in ('connecttimeout',) and not value is None:
 				self._connectTimeout = forceInt(value)
-			if option in ('connectionpoolsize',):
+			if option in ('connectionpoolsize',) and not value is None:
 				self._connectionPoolSize = forceInt(value)
-			if option in ('timeout', 'sockettimeout'):
+			if option in ('timeout', 'sockettimeout') and not value is None:
 				self._socketTimeout = forceInt(value)
 			if option in ('retry',):
 				retry = bool(value)
@@ -581,7 +582,7 @@ class JSONRPCBackend(Backend):
 		response = self._connectionPool.urlopen(method = 'POST', url = baseUrl, body = data, headers = headers, retry = retry)
 		
 		# Get cookie from header
-		cookie = response.getheader('Set-Cookie', None)
+		cookie = response.getheader('set-cookie', None)
 		if cookie:
 			# Store sessionId cookie
 			sessionId = cookie.split(';')[0].strip()

@@ -36,7 +36,7 @@ __version__ = '4.0'
 
 # imports
 import threading, ctypes, time
-from Queue import Queue
+from Queue import Queue, Empty
 
 # OPSI imports
 from OPSI.Logger import *
@@ -176,18 +176,12 @@ class ThreadPool(object):
 			self.worker.append(worker)
 			newWorkers.append(worker)
 			num -= 1
-		for worker in newWorkers:
-			worker.duty.set()
-	
+		
 	def addJob(self, function, callback = None, *args, **kwargs):
 		logger.debug(u"New job added: %s(%s, %s)"% (callback, args, kwargs))
 		if not self.started:
 			raise ThreadPoolException(u"Pool is not running.")
 		self.jobQueue.put( (function, callback, args, kwargs) )
-		for worker in self.worker:
-			if not worker.busy:
-				worker.duty.set()
-				break
 		
 	def stop(self):
 		logger.debug(u"Stopping ThreadPool")
@@ -205,18 +199,14 @@ class Worker(threading.Thread):
 		self.name = name
 		self.busy = False
 		self.stopped = False
-		self.duty = threading.Event()
 		self.start()
 	
 	def run(self):
 		while True:
 			if self.stopped:
 				break
-			self.duty.wait()
-			if self.stopped:
-				break
-			while not self.stopped and not self.threadPool.jobQueue.empty():
-				object = self.threadPool.jobQueue.get()
+			try:
+				object = self.threadPool.jobQueue.get(block = True, timeout = 1)
 				if object:
 					self.busy = True
 					(function, callback, args, kwargs) = object
@@ -234,10 +224,11 @@ class Worker(threading.Thread):
 						callback(success, result, errors)
 					self.threadPool.jobQueue.task_done()
 					self.busy = False
+			except Empty:
+				pass
 	
 	def stop(self):
 		self.stopped = True
-		self.duty.set()
 
 
 

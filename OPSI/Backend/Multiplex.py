@@ -70,7 +70,8 @@ class MultiplexBackend(object):
 		self.__services = self.__serviceCache
 		self.__possibleMethods = []
 		self.__connectLock = threading.Lock()
-		self.__serviceTimeout = 30
+		self.__socketTimeout = None
+		self.__connectTimeout = 30
 		self._defaultDomain = u'opsi.org'
 		self._defaultServiceType = u"remote"
 		self._ready = False
@@ -79,11 +80,14 @@ class MultiplexBackend(object):
 		
 		# Parse arguments
 		for (option, value) in dict(kwargs).items():
-			if   (option.lower() == 'servicetimeout'):
-				self.__serviceTimeout = value
+			if   (option.lower() == 'sockettimeout') and not value is None:
+				self.__socketTimeout = forceInt(value)
+				del(kwargs[option])
+			elif (option.lower() == 'connecttimeout') and not value is None:
+				self.__connectTimeout = forceInt(value)
 				del(kwargs[option])
 			elif (option.lower() == 'defaultdomain'):
-				self._defaultDomain = value
+				self._defaultDomain = forceUnicode(value)
 				del(kwargs[option])
 			elif (option.lower() == 'context'):
 				self._context = value
@@ -100,7 +104,7 @@ class MultiplexBackend(object):
 					logger.debug(u"Initializing service %s as type %s" % (service["url"], type))
 					
 					s = getattr(sys.modules[__name__], "%sService" % type.lower().capitalize())
-					self.__services[service['url']] = (s(timeout = self.__serviceTimeout, multiplexBackend = self, **service ))
+					self.__services[service['url']] = (s(socketTimeout = self.__socketTimeout, connectTimeout = self.__connectTimeout, multiplexBackend = self, **service ))
 				else:
 					logger.notice(u"Using cached service for %s" % service['url'])
 			del(kwargs['services'])
@@ -260,6 +264,11 @@ class MultiplexBackend(object):
 		def pushResult(jsonrpc, results):
 			results.append((not jsonrpc.error, jsonrpc.result, jsonrpc.error))
 		
+		#threads = []
+		#for thread in threading.enumerate():
+		#	threads.append(thread)
+		#logger.essential(u"%d threads running" % len(threads))
+		
 		dispatcher = self._getDispatcher(*args, **kwargs)
 		logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
 		for service in dispatcher:
@@ -308,11 +317,11 @@ class MultiplexBackend(object):
 		logger.info(u"Freeing thread pool")
 		self._threadPool.free()
 		
-	def backend_getOptions(self):
-		result = {}
-		for item in self.dispatch("backend_getOptions"):
-			result.update(item)
-		return result
+	#def backend_getOptions(self):
+	#	result = {}
+	#	for item in self.dispatch("backend_getOptions"):
+	#		result.update(item)
+	#	return result
 	
 	def backend_getInterface(self):
 		if len(self.__services.values()):
@@ -543,19 +552,20 @@ class Service(object):
 		pass
 
 class RemoteService(Service, JSONRPCBackend):
-	def __init__(self, url, domain, opsiHostKey, timeout, multiplexBackend, **kwargs):
+	def __init__(self, url, domain, opsiHostKey, socketTimeout, connectTimeout, multiplexBackend, **kwargs):
 		self.url = url
 		self.domain = domain
 		self.opsiHostKey = opsiHostKey
-		self.timeout = timeout
+		self.socketTimeout = socketTimeout
+		self.connectTimeout = connectTimeout
 		self.multiplexBackend = multiplexBackend
 		Service.__init__(self, **kwargs)
 		JSONRPCBackend.__init__(
 			self,
 			address        = url,
 			connectOnInit  = False,
-			connectTimeout = self.timeout,
-			socketTimeout  = self.timeout,
+			connectTimeout = self.connectTimeout,
+			socketTimeout  = self.socketTimeout,
 			username       = self.url.split('/')[2].split(':')[0],
 			password       = self.opsiHostKey,
 			application    = u'opsi multiplex backend %s' % __version__,
