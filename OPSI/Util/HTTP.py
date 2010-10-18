@@ -445,6 +445,82 @@ def destroyPool(pool):
 
 
 
+	
+if (__name__ == '__main__'):
+	import pycurl
+	
+	class CurlHTTPConnectionPool(HTTPConnectionPool):
+		
+		scheme = 'http'
+		
+		def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False):
+			HTTPConnectionPool.__init__(self, host, port, socketTimeout, connectTimeout, retryTime, maxsize, block)
+		
+		def _new_conn(self):
+			"""
+			Return a fresh HTTPConnection.
+			"""
+			#logger.info(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+			#conn = HTTPConnection(host=self.host, port=self.port)
+			#non_blocking_connect_http(conn, self.connectTimeout)
+			#logger.info(u"Connection established to: %s" % self.host)
+			conn = pycurl.Curl()
+			self.num_connections += 1
+			return conn
+		
+		def urlopen(self, method, url, body=None, headers={}, retry=True, redirect=True, assert_same_host=True, firstTryTime=None):
+			# Request a connection from the queue
+			conn = self._get_conn()
+			
+			# Make the request
+			self.num_requests += 1
+			
+			global totalRequests
+			totalRequests += 1
+			#logger.essential("totalRequests: %d" % totalRequests)
+			
+			import StringIO
+			b = StringIO.StringIO()
+			conn.setopt(pycurl.WRITEFUNCTION, b.write)
+			conn.setopt(conn.URL, (u'http://%s:%d%s' % (self.host, self.port, url)).encode('ascii', 'replace') )
+			h = []
+			for (k, v) in headers.items():
+				h.append((u"%s: %s" % (k, v)).encode('ascii', 'replace'))
+			conn.setopt(pycurl.HTTPHEADER, h)
+			conn.setopt(pycurl.CONNECTTIMEOUT, self.connectTimeout or 0)
+			conn.setopt(pycurl.TIMEOUT, self.socketTimeout or 0)
+			if redirect:
+				conn.setopt(pycurl.MAXREDIRS, 10)
+			else:
+				conn.setopt(pycurl.MAXREDIRS, 0)
+			conn.perform()
+			#c.close()
+			
+			return HTTPResponse(data = b.getvalue(), headers={}, status=0, version=0, reason=None, strict=0)
+			
+			#return b.getvalue()
+			#conn.request(method, url, body=body, headers=headers)
+			#conn.sock.settimeout(self.socketTimeout)
+			#httplib_response = conn.getresponse()
+			#logger.debug(u"\"%s %s %s\" %s %s" % (method, url, conn._http_vsn_str, httplib_response.status, httplib_response.length))
+			
+			# from_httplib will perform httplib_response.read() which will have
+			# the side effect of letting us use this connection for another
+			# request.
+			#response = HTTPResponse.from_httplib(httplib_response)
+			#
+			# Put the connection back to be reused
+			#if self.reuseConnection:
+			#	self._put_conn(conn)
+			#else:
+			#	self._put_conn(None)
+			#	try:
+			#		conn.close()
+			#	except:
+			#		pass
+	
+	pool = CurlHTTPConnectionPool(host = 'www.uib.de', port = 80)
+	pool.urlopen('GET', url = '/www/home/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 
 
 
