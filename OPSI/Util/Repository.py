@@ -672,7 +672,7 @@ class HTTPRepository(Repository):
 		
 		self._port = 80
 		self._path = u'/'
-		self._socketTimeout = 30
+		self._socketTimeout = None
 		self._connectTimeout = 30
 		self._retryTime = 5
 		self._connectionPoolSize = 1
@@ -929,6 +929,7 @@ class WebDAVRepository(HTTPRepository):
 			for (k, v) in headers.items():
 				conn.putheader(k, v)
 			conn.endheaders()
+			conn.sock.settimeout(self._socketTimeout)
 			
 			src = open(source, 'rb')
 			self._transferUp(src, conn, progressSubject)

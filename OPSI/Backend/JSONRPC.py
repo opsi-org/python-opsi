@@ -220,7 +220,7 @@ class JSONRPCBackend(Backend):
 		self._port               = None
 		self._baseUrl            = u'/rpc'
 		self._protocol           = 'https'
-		self._socketTimeout      = 3600
+		self._socketTimeout      = None
 		self._connectTimeout     = 20
 		self._connectionPoolSize = 1
 		self._legacyOpsi         = False

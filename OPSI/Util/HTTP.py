@@ -296,15 +296,10 @@ class HTTPConnectionPool(object):
 			
 			# Put the connection back to be reused
 			self._put_conn(conn)
-			
-
-		except (SocketTimeout, Empty), e:
-			# Timed out either by socket or queue
-			raise TimeoutError(u"Request timed out after %f seconds" % self.socketTimeout)
 		
-		except (HTTPException, SocketError), e:
-			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s (%s)" \
-					% (self.host, retry, firstTryTime, now, self.retryTime, e))
+		except (SocketTimeout, Empty, HTTPException, SocketError), e:
+			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s, (%s)" \
+					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, e))
 				time.sleep(0.01)
