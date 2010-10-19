@@ -149,7 +149,7 @@ class HostControlBackend(ExtendedBackend):
 						hostControlBackend = self,
 						hostId   = host.id,
 						address  = address,
-						username = host.id,
+						username = u'',
 						password = host.opsiHostKey,
 						method   = method,
 						params   = params))

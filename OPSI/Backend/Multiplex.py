@@ -72,7 +72,7 @@ class MultiplexBackend(object):
 		self.__connectLock = threading.Lock()
 		self.__socketTimeout = None
 		self.__connectTimeout = 30
-		self.__maxConcurrentCalls = 5
+		self.__maxConcurrentCalls = 50
 		self.__rpcQueuePollingTime = 0.001
 		self.__timeBetweenCalls = 0.01
 		self._defaultDomain = u'opsi.org'
@@ -286,7 +286,6 @@ class MultiplexBackend(object):
 					results.append((True, res, None))
 				calls +=1
 				# Wait a little bit to avoid that all calls will start at once
-				# This colud lead to massive packet collisions
 				time.sleep(self.__timeBetweenCalls)
 			if self.__maxConcurrentCalls:
 				while (calls - len(results) >= self.__maxConcurrentCalls):
