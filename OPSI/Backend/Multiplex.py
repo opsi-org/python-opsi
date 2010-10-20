@@ -289,14 +289,14 @@ class MultiplexBackend(object):
 				time.sleep(self.__timeBetweenCalls)
 			if self.__maxConcurrentCalls:
 				while (calls - len(results) >= self.__maxConcurrentCalls):
-					time.sleep(0.005)
+					time.sleep(0.05)
 		logTime = 0
 		while len(results) != calls:
 			if (logTime >= 1):
 				logTime = 0
 				logger.info(u'Waiting for results, got (%d/%d)' % (len(results), calls))
-			time.sleep(0.005)
-			logTime += 0.005
+			time.sleep(0.05)
+			logTime += 0.05
 		
 		r = None
 		errors = []
@@ -323,12 +323,12 @@ class MultiplexBackend(object):
 		self.dispatch('backend_exit')
 		logger.info(u"Freeing thread pool")
 		self._threadPool.free()
-		
-	#def backend_getOptions(self):
-	#	result = {}
-	#	for item in self.dispatch("backend_getOptions"):
-	#		result.update(item)
-	#	return result
+	
+	def auditHardware_getConfig(self, language=None):
+		for service in self.__services.values():
+			if service.isMasterService:
+				deferredCall = service.auditHardware_getConfig(language)
+				return deferredCall.waitForResult()
 	
 	def backend_getInterface(self):
 		if len(self.__services.values()):

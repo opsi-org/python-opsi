@@ -61,6 +61,8 @@ totalRequests = 0
 def non_blocking_connect_http(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	#sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+	#sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 	sock.settimeout(3.0)
 	started = time.time()
 	lastError = None
