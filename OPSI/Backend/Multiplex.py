@@ -73,7 +73,7 @@ class MultiplexBackend(object):
 		self.__socketTimeout = None
 		self.__connectTimeout = 30
 		self.__maxConcurrentCalls = 50
-		self.__rpcQueuePollingTime = 0.001
+		self.__rpcQueuePollingTime = 0.01
 		self.__timeBetweenCalls = 0.01
 		self._defaultDomain = u'opsi.org'
 		self._defaultServiceType = u"remote"
