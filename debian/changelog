@@ -2,9 +2,11 @@ python-opsi (4.0.0.8-1) stable; urgency=low
 
   * Added SQLite backend
   * New JSONRPCBackend
-  * Use ConnectionPool in HTTP/WebDAVRepository
+  * Use ConnectionPool in Util/WebDAVRepository
+  * Added Util/HTTP
+  * Fix package extraction order in Util/Product
 
- -- Jan Schneider <j.schneider@uib.de>  Sat, 16 Oct 2010 12:54:29 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 20 Oct 2010 17:03:55 +0200
 
 python-opsi (4.0.0.7-1) stable; urgency=low
 
