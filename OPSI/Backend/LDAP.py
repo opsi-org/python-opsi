@@ -842,14 +842,14 @@ class LDAPBackend(ConfigDataBackend):
 								# No objectclasses left
 								delete = True
 								break
-							
 						elif attribute in (	'opsiDescription', 'opsiNotes', 'opsiHardwareAddress', 'opsiIpAddress', 'opsiInventoryNumber', \
 									'opsiHostId', 'opsiCreatedTimestamp', 'opsiLastSeenTimestamp', 'opsiHostKey', \
-									'opsiDepotLocalUrl', 'opsiDepotRemoteUrl', 'opsiRepositoryLocalUrl', 'opsiRepositoryRemoteUrl', \
-									'opsiNetworkAddress', 'opsiMaximumBandwidth', 'opsiHostKey'):
+									'opsiDepotLocalUrl', 'opsiDepotRemoteUrl', 'opsiDepotWebdavUrl', 'opsiRepositoryLocalUrl', 'opsiRepositoryRemoteUrl', \
+									'opsiNetworkAddress', 'opsiMaximumBandwidth', 'opsiHostKey', 'opsiIsMasterDepot', 'opsiMasterDepotId'):
 							values = []
 						else:
 							continue
+						logger.error("attribute: %s, value: %s" % (attribute, values))
 						ldapObj.setAttribute(attribute, values)
 					if delete:
 						ldapObj.deleteFromDirectory(self._ldap, recursive = True)

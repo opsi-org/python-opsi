@@ -42,7 +42,7 @@ EXCLUDE_DIRS_ON_PACK          = u'^\.svn$'
 EXCLUDE_FILES_ON_PACK         = u'~$'
 
 # Imports
-import os, shutil
+import os, shutil, re
 
 if (os.name == 'posix'):
 	import pwd, grp
@@ -270,8 +270,11 @@ class ProductPackageFile(object):
 				raise Exception(u"More than two server-data archives found")
 			
 			# Sorting to unpack custom version data at last
-			clientDataArchives.sort()
-			serverDataArchives.sort()
+			def psort(name):
+				return re.sub('(\.tar|\.tar\.gz|\.cpio|\.cpio\.gz)$', '', name)
+			
+			clientDataArchives = sorted(clientDataArchives, key = psort)
+			serverDataArchives = sorted(serverDataArchives, key = psort)
 			
 			for serverDataArchive in serverDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
