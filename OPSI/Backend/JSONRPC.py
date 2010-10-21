@@ -133,6 +133,7 @@ class RpcQueue(threading.Thread):
 		self.poll = poll
 		self.stopped = False
 		self.jsonrpcs = {}
+		self.idle = threading.Event()
 		
 	def add(self, jsonrpc):
 		logger.debug(u'Adding jsonrpc %s to queue (current queue size: %d)' % (jsonrpc, self.queue.qsize()))
@@ -144,9 +145,12 @@ class RpcQueue(threading.Thread):
 		
 	def run(self):
 		logger.debug(u"RpcQueue started")
+		self.idle.set()
 		while not self.stopped or not self.queue.empty():
+			self.idle.wait()
 			jsonrpcs = []
 			while not self.queue.empty():
+				self.idle.clear()
 				try:
 					jsonrpc = self.queue.get(block = False)
 					if jsonrpc:
@@ -215,6 +219,7 @@ class RpcQueue(threading.Thread):
 				jsonrpc.error = e
 				jsonrpc._gotResult()
 		self.jsonrpcs = {}
+		self.idle.set()
 	
 # ======================================================================================================
 # =                                   CLASS JSONRPCBACKEND                                             =
