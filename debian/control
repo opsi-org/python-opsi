@@ -10,7 +10,7 @@ Package: python-opsi
 Section: opsi
 Architecture: all
 XB-Python-Version: ${python:Versions}
-Depends: lsb-release, python-twisted-web, python-twisted-conch, python-magic, python-crypto, python-ldap, python-simplejson, python-newt, python-pam, python-openssl | python-pyopenssl, python-support, python-mysqldb, python-sqlite2, python-apsw, python-sqlalchemy, iproute, duplicity, python-ldaptor, lshw, python(>=2.5), ${misc:Depends}, ${python:Depends}
+Depends: lsb-release, python-twisted-web, python-twisted-conch, python-magic, python-crypto, python-ldap, python-simplejson, python-newt, python-pam, python-openssl | python-pyopenssl, python-support, python-mysqldb, python-sqlalchemy, iproute, duplicity, python-ldaptor, lshw, python(>=2.5), ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
 Description: opsi python library
  This package contains the opsi python library.
