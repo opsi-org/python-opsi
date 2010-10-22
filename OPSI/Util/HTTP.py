@@ -336,7 +336,8 @@ class HTTPConnectionPool(object):
 			#logger.essential("totalRequests: %d" % totalRequests)
 			
 			conn.request(method, url, body=body, headers=headers)
-			conn.sock.settimeout(self.socketTimeout)
+			if isinstance(self, HTTPSConnectionPool):
+				conn.sock.settimeout(self.socketTimeout)
 			httplib_response = conn.getresponse()
 			#logger.debug(u"\"%s %s %s\" %s %s" % (method, url, conn._http_vsn_str, httplib_response.status, httplib_response.length))
 			
