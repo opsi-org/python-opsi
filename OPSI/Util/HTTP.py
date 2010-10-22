@@ -372,7 +372,8 @@ class HTTPConnectionPool(object):
 		except Exception:
 			self._put_conn(None)
 			try:
-				conn.close()
+				if conn:
+					conn.close()
 			except:
 				pass
 			raise
