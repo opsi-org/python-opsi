@@ -21,7 +21,7 @@ import opsidevtools.unittest.lib.unittest2
 
 test_cases = (	FileTestCase,
 		MySQLTestCase,
-		SQLiteTestCase,
+		#SQLiteTestCase,
 		#LdapTestCase
 		JSONRPCTestCase,
 		HostControlTestCase)
