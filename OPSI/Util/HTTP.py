@@ -360,7 +360,8 @@ class HTTPConnectionPool(object):
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
 			self._put_conn(None)
 			try:
-				conn.close()
+				if conn:
+					conn.close()
 			except:
 				pass
 			if retry and (now - firstTryTime < self.retryTime):
@@ -384,7 +385,8 @@ class HTTPConnectionPool(object):
 			time.sleep(0.01)
 			self._put_conn(None)
 			try:
-				conn.close()
+				if conn:
+					conn.close()
 			except:
 				pass
 			return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
