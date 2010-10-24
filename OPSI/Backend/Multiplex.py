@@ -279,7 +279,16 @@ class MultiplexBackend(object):
 			if service.isConnected():
 				logger.debug(u"Calling method %s of service %s" % (methodName, service.url))
 				meth = getattr(service, methodName)
-				res = meth(*args, **kwargs)
+				serviceKwargs = dict(kwargs)
+				for attribute in ('id', 'objectId', 'hostId', 'depotId', 'clientId'):
+					if serviceKwargs.has_key(attribute):
+						objectIds = []
+						for objectId in forceUnicodeList(serviceKwargs[attribute]):
+							if objectId in map((lambda x: x.id), service.clients) or objectId in map((lambda x: x.id), service.depots):
+								objectIds.append(objectId)
+						if objectIds:
+							serviceKwargs[attribute] = objectIds
+				res = meth(*args, **serviceKwargs)
 				if isinstance(res, DeferredCall):
 					res.setCallback(pushResult, results)
 				else:
