@@ -1075,6 +1075,8 @@ class DepotToLocalDirectorySychronizer(object):
 			source = forceUnicode(source)
 			(s, d) = (source + u'/' + f['name'], os.path.join(destination, f['name']))
 			relSource = s.split(u'/', 1)[1]
+			if (relSource == self._productId + u'.files'):
+				continue
 			if not self._fileInfo.has_key(relSource):
 				continue
 			if (f['type'] == 'dir'):

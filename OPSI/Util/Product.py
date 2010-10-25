@@ -362,14 +362,18 @@ class ProductPackageFile(object):
 			
 			productId = self.packageControlFile.getProduct().getId()
 			productClientDataDir = self.getProductClientDataDir()
-			packageContentFile = os.path.join(productClientDataDir, productId + u'.files')
+			packageContentFilename = productId + u'.files'
+			packageContentFile = os.path.join(productClientDataDir, packageContentFilename)
 			
 			packageContentFile = PackageContentFile(packageContentFile)
 			packageContentFile.setProductClientDataDir(productClientDataDir)
+			cdf = self.getClientDataFiles()
+			if packageContentFilename in cdf:
+				cdf.remove(packageContentFilename)
 			packageContentFile.setClientDataFiles(self.getClientDataFiles())
 			packageContentFile.generate()
-			
-			self.clientDataFiles.append(productId + u'.files')
+			if not packageContentFilename in self.clientDataFiles:
+				self.clientDataFiles.append(packageContentFilename)
 			
 		except Exception, e:
 			logger.logException(e)
