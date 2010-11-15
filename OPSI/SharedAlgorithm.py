@@ -200,9 +200,9 @@ def generateProductOnClientSequence_algorithm1(productOnClients, availableProduc
 	for priority in priorities:
 		productSequence.extend(priorityToProductIds[priority])
 	
-	logger.debug(u"Sequence of available products after priority sorting:")
+	logger.debug2(u"Sequence of available products after priority sorting:")
 	for i in range(len(productSequence)):
-		logger.debug(u"   [%2.0f] %s" % (i, productSequence[i]))
+		logger.debug2(u"   [%2.0f] %s" % (i, productSequence[i]))
 	
 	sortedProductOnClients = []
 	
@@ -236,23 +236,26 @@ def generateProductOnClientSequence_algorithm1(productOnClients, availableProduc
 			ppos = sequence.index(productId)
 			dpos = sequence.index(requiredProductId)
 			if (requirementType == 'before') and (ppos < dpos):
-				logger.debug("Requirement type is 'before', moving product '%s' up in sequence." % requiredProductId)
+				logger.debug("%s requires %s before, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, requiredProductId, productId))
 				#if (run == 2):
 				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
 				#					% (productId, requiredProductId))
 				sequence.remove(requiredProductId)
 				sequence.insert(ppos, requiredProductId)
 			elif (requirementType == 'after') and (dpos < ppos):
-				logger.debug("Requirement type is 'after', moving product '%s' down in sequence." % requiredProductId)
-				#if (run == 2):
-				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-				#					% (productId, requiredProductId))
-				sequence.remove(requiredProductId)
-				sequence.insert(ppos+1, requiredProductId)
-			
-		logger.debug(u"Sequence of available products after dependency sorting (client %s):" % clientId)
+				#logger.essential("%s requires %s after, moving product '%s' down in sequence." % (productId, requiredProductId, requiredProductId))
+				##if (run == 2):
+				##	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
+				##					% (productId, requiredProductId))
+				#sequence.remove(requiredProductId)
+				#sequence.insert(ppos+1, requiredProductId)
+				logger.debug("%s requires %s after, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, productId, requiredProductId))
+				sequence.remove(productId)
+				sequence.insert(dpos, productId)
+				
+		logger.debug2(u"Sequence of available products after dependency sorting (client %s):" % clientId)
 		for i in range(len(sequence)):
-			logger.debug(u"   [%2.0f] %s" % (i, sequence[i]))
+			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))
 			productOnClient = productOnClientByProductId[sequence[i]]
 			productOnClient.setActionSequence(i+1)
 			sortedProductOnClients.append(productOnClient)
