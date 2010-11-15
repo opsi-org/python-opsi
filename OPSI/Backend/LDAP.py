@@ -634,6 +634,10 @@ class LDAPBackend(ConfigDataBackend):
 		opsiObject = Class.fromHash(opsiObjectHash)
 		# Call setDefaults because LDAPBackend cannot distinguish between None and []
 		opsiObject.setDefaults()
+		if attributes:
+			for attribute in opsiObject.toHash().keys():
+				if not attribute in attributes:
+					setattr(opsiObject, attribute, None)
 		return opsiObject
 	
 	def _opsiObjectToLdapObject(self, opsiObject, dn):
