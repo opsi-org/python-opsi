@@ -88,6 +88,9 @@ class SQL(object):
 	def execute(self, query, conn=None, cursor=None):
 		return None
 	
+	def query(self, query, conn=None, cursor=None):
+		return self.execute(query)
+	
 	def getTableCreationOptions(self, table):
 		return u''
 	

@@ -3,7 +3,7 @@ python-opsi (4.0.0.10-1) stable; urgency=low
   * Product sort algorithm1: move product up in sequence if requirement type is "after"
   * Backend/LDAP: fix handling on attributes param in get methods
 
- -- Jan Schneider <j.schneider@uib.de>  Mon, 15 Nov 2010 14:35:17 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 16 Nov 2010 15:33:51 +0100
 
 python-opsi (4.0.0.9-1) stable; urgency=low
 
