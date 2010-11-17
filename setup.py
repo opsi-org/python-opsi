@@ -39,6 +39,15 @@ f = open("debian/changelog")
 VERSION = f.readline().split('(')[1].split('-')[0]
 f.close()
 
+cmdclass = {}
+
+try:
+	from opsidistutils.commands.osc_cmd import osc_publish as osc
+	cmdclass['osc'] = osc
+except ImportError, e:
+	print "osc integration is not available on this machine. please install ospi-distutils."
+
+
 if not VERSION:
     raise Exception(u"Failed to get version info")
 
@@ -82,7 +91,8 @@ setup(
 	description='The opsi python library',
 	#long-description='Long description goes here',
 	packages=find_packages(),
-	data_files=data_files
+	data_files=data_files,
+	cmdclass = cmdclass
 )
 
 
