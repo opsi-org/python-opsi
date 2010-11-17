@@ -108,7 +108,7 @@ class JSONRPC(DeferredCall):
 			self.processResult(json.loads(response))
 		except Exception, e:
 			if not self.method in ('backend_exit', 'exit'):
-				logger.logException(e, LOG_INFO)
+				logger.logException("Failed to process method '%s': %s" % (self.method, e), LOG_INFO)
 				self.error = e
 			self._gotResult()
 
