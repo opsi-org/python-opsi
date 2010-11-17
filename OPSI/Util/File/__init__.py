@@ -1483,9 +1483,6 @@ class DHCPDConfFile(TextFile):
 		if not self._parsed:
 			self.parse()
 		
-		logger.notice(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'" % \
-					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename) )
-		
 		existingHost = None
 		for block in self._globalBlock.getBlocks('host', recursive = True):
 			if (block.settings[1].lower() == hostname):
@@ -1499,6 +1496,9 @@ class DHCPDConfFile(TextFile):
 		if existingHost:
 			logger.info(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
 			self.deleteHost(hostname)
+		
+		logger.notice(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'" % \
+					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename) )
 		
 		for (key, value) in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
