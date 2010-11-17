@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.0.1'
+__version__ = '4.0.0.2'
 
 import os, codecs, re, ConfigParser
 
@@ -808,7 +808,7 @@ class PackageControlFile(TextFile):
 						for l in descLines[1:]:
 							self._lines.append( u' %s' % l )
 			if self._opsi3compatible:
-				if productProperty.getPossibleValues():
+				if productProperty.getPossibleValues() and not productProperty.getEditable():
 					self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
 				if productProperty.getDefaultValues():
 					self._lines.append( u'default: %s' % u', '.join(productProperty.getDefaultValues()) )
