@@ -726,14 +726,15 @@ class HTTPRepository(Repository):
 			self._port = proxyPort
 		
 		self._connectionPool = getSharedConnectionPool(
-			scheme         = self._protocol,
-			host           = self._host,
-			port           = self._port,
-			socketTimeout  = self._socketTimeout,
-			connectTimeout = self._connectTimeout,
-			retryTime      = self._retryTime,
-			maxsize        = self._connectionPoolSize,
-			block          = True
+			scheme          = self._protocol,
+			host            = self._host,
+			port            = self._port,
+			socketTimeout   = self._socketTimeout,
+			connectTimeout  = self._connectTimeout,
+			retryTime       = self._retryTime,
+			maxsize         = self._connectionPoolSize,
+			block           = True,
+			reuseConnection = False
 		)
 		
 	def _preProcessPath(self, path):
