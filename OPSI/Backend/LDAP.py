@@ -44,6 +44,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
+from OPSI import System
 
 # Get logger instance
 logger = Logger()
