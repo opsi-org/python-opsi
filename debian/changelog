@@ -1,3 +1,10 @@
+python-opsi (4.0.0.11-1) stable; urgency=low
+
+  * Backend/LDAP: fix execution of external commands
+  * Backend/DHCPD: fix deletion of hosts
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 19 Nov 2010 11:39:45 +0100
+
 python-opsi (4.0.0.10-1) stable; urgency=low
 
   * Product sort algorithm1: move product up in sequence if requirement type is "after"

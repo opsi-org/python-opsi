@@ -229,7 +229,7 @@ class DHCPDBackend(ConfigDataBackend):
 			for depot in self._context.host_getObjects(id = self._depotId):
 				if (depot.id != self._depotId):
 					self._getDepotConnection(depot.id).dhcpd_deleteHost(host.id)
-		self.dhcpd_deleteHost(host.id)
+		self.dhcpd_deleteHost(host)
 		
 	def dhcpd_deleteHost(self, host):
 		host = forceObjectClass(host, Host)
@@ -308,9 +308,9 @@ class DHCPDBackend(ConfigDataBackend):
 		for configState in configStates:
 			if (configState.configId != 'clientconfig.depot.id'):
 				continue
-		
-		for host in self._context.host_getObjects(id = configState.objectId):
-			self.host_updateObject(host)
+			
+			for host in self._context.host_getObjects(id = configState.objectId):
+				self.host_updateObject(host)
 		
 	
 	
