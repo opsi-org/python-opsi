@@ -175,7 +175,7 @@ class HTTPConnectionPool(object):
 	
 	scheme = 'http'
 	
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=True):
+	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False):
 		self.host              = forceUnicode(host)
 		self.port              = forceInt(port)
 		self.socketTimeout     = forceInt(socketTimeout or 0)
