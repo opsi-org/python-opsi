@@ -2540,6 +2540,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
 				
 			for clientId in clientIds:
+				if not productOnClientsByClient.get(clientId):
+					continue
 				productOnClients.extend(
 					function(
 						productOnClients    = productOnClientsByClient[clientId],
