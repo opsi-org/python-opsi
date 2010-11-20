@@ -46,7 +46,7 @@ from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
+from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 from OPSI.System import *
 
 # Get Logger instance
@@ -925,8 +925,9 @@ class WebDAVRepository(HTTPRepository):
 			headers = self._headers()
 			headers['content-length'] = size
 			
-			now = time.time()
+			trynum = 0
 			while True:
+				trynum += 1
 				conn = self._connectionPool.getConnection()
 				conn.putrequest('PUT', destination)
 				for (k, v) in headers.items():
@@ -937,24 +938,23 @@ class WebDAVRepository(HTTPRepository):
 				try:
 					src = open(source, 'rb')
 					self._transferUp(src, conn, progressSubject)
-				except Exception, e:
 					src.close()
-					if (time.time() - now > 3):
+					src = None
+					httplib_response = conn.getresponse()
+					response = HTTPResponse.from_httplib(httplib_response)
+				except Exception, e:
+					if src: src.close()
+					if (trynum > 2):
 						raise
 					logger.info(u"Error '%s' occured while uploading, retrying" % e)
 					conn = None
 					self._connectionPool.endConnection(conn)
 					continue
-				src.close()
-				response = self._connectionPool.endConnection(conn)
-				conn = None
 				break
 			
 			self._processResponseHeaders(response)
 			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
 				raise Exception(response.status)
-			## Do we have to read the response?
-			#response.read()
 		except Exception, e:
 			logger.logException(e)
 			if src: src.close()
