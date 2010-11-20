@@ -942,6 +942,7 @@ class WebDAVRepository(HTTPRepository):
 					src = None
 					httplib_response = conn.getresponse()
 					response = HTTPResponse.from_httplib(httplib_response)
+					self._connectionPool.endConnection(None)
 				except Exception, e:
 					if src: src.close()
 					if (trynum > 2):
