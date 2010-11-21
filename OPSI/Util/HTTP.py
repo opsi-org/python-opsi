@@ -516,18 +516,18 @@ def urlsplit(url):
 	password = None
 	if (url.find('://') != -1):
 		(scheme, url) = url.split('://', 1)
-		sceme = scheme.lower()
+		scheme = scheme.lower()
 	parts = url.split('/', 1)
 	host = parts[0]
 	if (len(parts) > 1):
 		baseurl += parts[1]
-	if (host.find(':') != -1):
-		(host, port) = host.split(':', 1)
-		port = int(port)
 	if (host.find('@') != -1):
 		(username, host) = host.split('@', 1)
 		if (username.find(':') != -1):
 			(username, password) = username.split(':', 1)
+	if (host.find(':') != -1):
+		(host, port) = host.split(':', 1)
+		port = int(port)
 	return (scheme, host, port, baseurl, username, password)
 	
 def getSharedConnectionPoolFromUrl(url, **kw):

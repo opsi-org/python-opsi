@@ -254,6 +254,8 @@ class JSONRPCBackend(Backend):
 		self._rpcQueue            = None
 		self._rpcQueuePollingTime = 0.01
 		self._rpcQueueSize        = 10
+		self._username            = u''
+		self._password            = u''
 		
 		retry = True
 		for (option, value) in kwargs.items():
@@ -426,6 +428,10 @@ class JSONRPCBackend(Backend):
 			self._port = self._defaultHttpPort
 		if baseurl and (baseurl != '/'):
 			self._baseUrl = baseurl
+		if not self._username and username:
+			self._username = username
+		if not self._password and password:
+			self._password = password
 		
 	def isOpsi35(self):
 		return not self._legacyOpsi
