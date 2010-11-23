@@ -230,11 +230,11 @@ class HTTPConnectionPool(object):
 		"""
 		Return a fresh HTTPConnection.
 		"""
+		self.num_connections += 1
 		logger.info(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 		conn = HTTPConnection(host=self.host, port=self.port)
 		non_blocking_connect_http(conn, self.connectTimeout)
 		logger.info(u"Connection established to: %s" % self.host)
-		self.num_connections += 1
 		return conn
 
 	def _get_conn(self, timeout=None):

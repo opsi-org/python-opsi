@@ -254,8 +254,11 @@ class JSONRPCBackend(Backend):
 		self._rpcQueue            = None
 		self._rpcQueuePollingTime = 0.01
 		self._rpcQueueSize        = 10
-		self._username            = u''
-		self._password            = u''
+		
+		if not self._username:
+			self._username = u''
+		if not self._password:
+			self._password = u''
 		
 		retry = True
 		for (option, value) in kwargs.items():
