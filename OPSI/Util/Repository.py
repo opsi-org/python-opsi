@@ -951,6 +951,7 @@ class WebDAVRepository(HTTPRepository):
 					conn = None
 					self._connectionPool.endConnection(conn)
 					continue
+				self._connectionPool.endConnection(conn)
 				break
 			
 			self._processResponseHeaders(response)
