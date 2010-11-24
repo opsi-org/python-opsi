@@ -1,3 +1,9 @@
+python-opsi (4.0.0.13-1) stable; urgency=low
+
+  * Backend/JSONRPC: fix username/password kwargs
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 24 Nov 2010 09:09:57 +0100
+
 python-opsi (4.0.0.12-1) stable; urgency=low
 
   * Util/HTTP
