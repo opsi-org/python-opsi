@@ -935,22 +935,23 @@ class WebDAVRepository(HTTPRepository):
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
 				
+				httplib_response = None
 				try:
 					src = open(source, 'rb')
 					self._transferUp(src, conn, progressSubject)
 					src.close()
 					src = None
 					httplib_response = conn.getresponse()
-					response = HTTPResponse.from_httplib(httplib_response)
-					self._connectionPool.endConnection(None)
 				except Exception, e:
+					conn = None
+					self._connectionPool.endConnection(conn)
 					if src: src.close()
 					if (trynum > 2):
 						raise
 					logger.info(u"Error '%s' occured while uploading, retrying" % e)
-					conn = None
-					self._connectionPool.endConnection(conn)
 					continue
+				response = HTTPResponse.from_httplib(httplib_response)
+				conn = None
 				self._connectionPool.endConnection(conn)
 				break
 			
