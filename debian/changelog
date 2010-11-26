@@ -1,3 +1,9 @@
+python-opsi (4.0.0.15-1) stable; urgency=low
+
+  * Move method getDepotSelectionAlgorithm into new config file 70_dynamic_depot.conf
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 26 Nov 2010 13:22:20 +0100
+
 python-opsi (4.0.0.14-1) stable; urgency=low
 
   * Util/Repository: fix upload
