@@ -2044,7 +2044,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					continue
 				if not depotId in usedMasterDepotIds:
 					usedMasterDepotIds.append(depotId)
-				result.append({ 'depotId': depotId, 'clientId': configState.objectId, 'slaveDepotIds': [] })
+				result.append({ 'depotId': depotId, 'clientId': configState.objectId, 'alternativeDepotIds': [] })
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
 			#self._options['addConfigStateDefaults'] = addConfigStateDefaults
@@ -2104,7 +2104,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			masterToSlave[masterDepotId] = synchronousSlaveDepotIds
 		
 		for i in range(len(result)):
-			result[i]['slaveDepotIds'] = masterToSlave[result[i]['depotId']]
+			result[i]['alternativeDepotIds'] = masterToSlave[result[i]['depotId']]
 		
 		return result
 		
