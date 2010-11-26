@@ -2021,6 +2021,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					objectId = objectId))
 	
 	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
+		depotIds = forceHostIdList(depotIds)
+		clientIds = forceHostIdList(clientIds)
+		masterOnly = forceBool(masterOnly)
+		productIds = forceProductIdList(productIds)
+		
 		#addConfigStateDefaults = self._options['addConfigStateDefaults']
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		result = []
