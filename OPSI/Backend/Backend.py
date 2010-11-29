@@ -192,32 +192,30 @@ class Backend:
 									break
 							continue
 						
-						if type(value) in (float, long, int):# or type(filterValue) in (float, long, int):
-							operator = '=='
-							v = filterValue
-							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue) #forceUnicode(filterValue))
-							if match:
-								operator = match.group(1)
-								v = match.group(2)
-								if operator == '=':
-									operator = '=='
-							try:
-								matched = eval('%s %s %s' % (value, operator, v))
-								if matched:
-									break
-							except:
-								pass
-							continue
-						
 						if type(value) is list:
 							if filterValue in value:
 								matched = True
 								break
 							continue
 						
-						#if type(filterValue) in (types.NoneType, types.BooleanType):
-						#	continue
 						if type(value) in (types.NoneType, types.BooleanType):
+							continue
+						
+						if type(value) in (float, long, int) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+							operator = '=='
+							v = forceUnicode(filterValue)
+							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
+							if match:
+								operator = match.group(1)
+								v = match.group(2)
+								if operator == '=':
+									operator = '=='
+							try:
+								matched = compareVersions(value, operator, v)
+								if matched:
+									break
+							except:
+								pass
 							continue
 						
 						if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):

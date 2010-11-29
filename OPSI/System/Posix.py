@@ -925,14 +925,20 @@ def getBlockDeviceContollerInfo(device):
 	storageControllers = {}
 	
 	for line in lines:
-		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{4})\:([a-fA-F0-9]{4})\]$', line)
+		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			storageControllers[match.group(1)] = {
+				vendorId = match.group(4)
+				while (len(vendorId) < 4):
+					vendorId = '0' + vendorId
+				deviceId = match.group(5)
+				while (len(deviceId) < 4):
+					deviceId = '0' + deviceId
 				'hwPath':      forceUnicode(match.group(1)),
 				'device':      forceUnicode(match.group(2)),
 				'description': forceUnicode(match.group(3)),
-				'vendorId':    forceHardwareVendorId(match.group(4)),
-				'deviceId':    forceHardwareDeviceId(match.group(5))
+				'vendorId':    forceHardwareVendorId(vendorId),
+				'deviceId':    forceHardwareDeviceId(deviceId)
 			}
 			continue
 		
