@@ -1,3 +1,9 @@
+python-opsi (4.0.0.15-2) stable; urgency=low
+
+  * new package version for build service
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 29 Nov 2010 18:08:50 +0100
+
 python-opsi (4.0.0.15-1) stable; urgency=low
 
   * Move method getDepotSelectionAlgorithm into new config file 70_dynamic_depot.conf
