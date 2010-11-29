@@ -927,13 +927,13 @@ def getBlockDeviceContollerInfo(device):
 	for line in lines:
 		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 		if match:
+			vendorId = match.group(4)
+			while (len(vendorId) < 4):
+				vendorId = '0' + vendorId
+			deviceId = match.group(5)
+			while (len(deviceId) < 4):
+				deviceId = '0' + deviceId
 			storageControllers[match.group(1)] = {
-				vendorId = match.group(4)
-				while (len(vendorId) < 4):
-					vendorId = '0' + vendorId
-				deviceId = match.group(5)
-				while (len(deviceId) < 4):
-					deviceId = '0' + deviceId
 				'hwPath':      forceUnicode(match.group(1)),
 				'device':      forceUnicode(match.group(2)),
 				'description': forceUnicode(match.group(3)),
