@@ -34,7 +34,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.1'
+__version__ = '4.0.2'
 
 # Imports
 from Queue import Queue, Empty, Full
@@ -319,7 +319,7 @@ class HTTPConnectionPool(object):
 			host = "%s://%s" % (self.scheme, self.host)
 			if self.port:
 				host = "%s:%d" % (host, self.port)
-			raise HostChangedError("Connection pool with host '%s' tried to open a foreign host: %s" % (host, url))
+			raise HostChangedError(u"Connection pool with host '%s' tried to open a foreign host: %s" % (host, url))
 		
 		try:
 			# Request a connection from the queue
@@ -359,8 +359,16 @@ class HTTPConnectionPool(object):
 					pass
 		
 		except (SocketTimeout, Empty, HTTPException, SocketError), e:
-			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s, (%s)" \
-					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
+			try:
+				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
+					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(e)))
+			except:
+				try:
+					logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s" \
+						% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout))
+				except:
+					pass
+			
 			self._put_conn(None)
 			try:
 				if conn:
@@ -368,7 +376,7 @@ class HTTPConnectionPool(object):
 			except:
 				pass
 			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, e))
+				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(e)))
 				time.sleep(0.01)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
