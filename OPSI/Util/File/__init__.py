@@ -1194,7 +1194,7 @@ class ZsyncFile(LockableFile):
 		for (k, v) in self._header.items():
 			if (k.lower() == 'mtime'):
 				continue
-			f.write('%s: %s\n' % (k, v)
+			f.write('%s: %s\n' % (k, v))
 		f.write('\n')
 		f.write(self._data)
 		f.close()
