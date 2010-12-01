@@ -1,3 +1,9 @@
+python-opsi (4.0.0.17-1) stable; urgency=low
+
+  * Util/File: ZsyncFile
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 01 Dec 2010 14:30:18 +0100
+
 python-opsi (4.0.0.16-1) testing; urgency=low
 
   * Fix LDAP.py: Don't delete HostObject on ucs-Servers, if deleteCommand is not set.

@@ -47,6 +47,7 @@ elif (os.name == 'nt'):
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.System import which, execute
 
 # Get logger instance
 logger = Logger()
@@ -1162,11 +1163,42 @@ class TxtSetupOemFile(ConfigFile):
 		self.writelines()
 		self.close()
 
-
-
-
-
-
+class ZsyncFile(LockableFile):
+	def __init__(self, filename, lockFailTimeout = 2000):
+		LockableFile.__init__(self, filename, lockFailTimeout)
+		self._header = {}
+		self._data = ''
+		self._parsed = False
+		
+	def parse(self, lines=None):
+		logger.debug(u"Parsing zsync file %s" % self._filename)
+		
+		self._parsed = False
+		
+		f = open(self._filename, 'rb')
+		while True:
+			line = f.readline().strip()
+			if not line:
+				break
+			(k, v) = line.split(':', 1)
+			self._header[k.strip()] = v.strip()
+		self._data = f.read()
+		f.close()
+		self._parsed = True
+		
+	def generate(self, dataFile=None):
+		if dataFile:
+			execute(u"%s -u '%s' -o '%s' '%s'" % (which('zsyncmake'), os.path.basename(dataFile), self._filename, dataFile))
+			self.parse()
+		f = open(self._filename, 'wb')
+		for (k, v) in self._header.items():
+			if (k.lower() == 'mtime'):
+				continue
+			f.write('%s: %s\n' % (k, v)
+		f.write('\n')
+		f.write(self._data)
+		f.close()
+	
 class DHCPDConf_Component(object):
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
