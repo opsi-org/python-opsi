@@ -440,6 +440,7 @@ def objectToHtml(obj, level=0):
 		html += forceUnicode(obj)\
 			.replace(u'\r', u'')\
 			.replace(u'\t', u'   ')\
+			.replace(u'&',  u'&amp;')\
 			.replace(u' ',  u'&#x202f;')\
 			.replace(u'<',  u'&lt;')\
 			.replace(u'>',  u'&gt;')\
