@@ -811,7 +811,6 @@ class HTTPRepository(Repository):
 					size = forceInt(httplib_response.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
 					if (startByteNumber > 0) and os.path.exists(destination):
-						# TODO: find correct position on retry
 						dst = open(destination, 'ab')
 					else:
 						dst = open(destination, 'wb')
