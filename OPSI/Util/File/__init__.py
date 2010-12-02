@@ -578,8 +578,12 @@ class InfFile(ConfigFile):
 		return self._devices
 	
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
-		vendorId = forceHardwareVendorId(vendorId)
-		deviceId = forceHardwareDeviceId(deviceId)
+		try:
+			vendorId = forceHardwareVendorId(vendorId)
+			deviceId = forceHardwareDeviceId(deviceId)
+		except Exception, e:
+			logger.error(e)
+			return False
 		if not self._parsed:
 			self.parse()
 		for d in self._devices:
