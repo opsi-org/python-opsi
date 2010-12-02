@@ -225,10 +225,10 @@ class Repository:
 			time.sleep(self._bandwidthSleepTime)
 	
 	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):
-		self._transfer('in', src, dst, progressSubject, bytes=bytes)
+		return self._transfer('in', src, dst, progressSubject, bytes=bytes)
 		
 	def _transferUp(self, src, dst, progressSubject=None):
-		self._transfer('out', src, dst, progressSubject)
+		return self._transfer('out', src, dst, progressSubject)
 	
 	
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
@@ -285,7 +285,8 @@ class Repository:
 			transferTime = 0.0000001
 		logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 			( (float(bytesTransfered)/1024), (float(transferTime)/60), (float(bytesTransfered)/transferTime)/1024) )
-	
+		return bytesTransfered
+		
 	def setMaxBandwidth(self, maxBandwidth):
 		''' maxBandwidth in byte/s'''
 		self._maxBandwidth = forceInt(maxBandwidth)
@@ -778,20 +779,23 @@ class HTTPRepository(Repository):
 		
 		dst = None
 		try:
-			headers = self._headers()
-			if (startByteNumber > -1) or (endByteNumber > -1):
-				sbn = startByteNumber
-				ebn = endByteNumber
-				if (sbn <= -1):
-					sbn = 0
-				if (ebn <= -1):
-					reb = ''
-				headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
-			
 			trynum = 0
+			bytesTransfered = 0
 			while True:
 				trynum += 1
 				conn = self._connectionPool.getConnection()
+				
+				headers = self._headers()
+				startByteNumber += bytesTransfered
+				if (startByteNumber > -1) or (endByteNumber > -1):
+					sbn = startByteNumber
+					ebn = endByteNumber
+					if (sbn <= -1):
+						sbn = 0
+					if (ebn <= -1):
+						reb = ''
+					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
+				
 				conn.putrequest('GET', source)
 				for (k, v) in headers.items():
 					conn.putheader(k, v)
@@ -811,7 +815,7 @@ class HTTPRepository(Repository):
 						dst = open(destination, 'ab')
 					else:
 						dst = open(destination, 'wb')
-					self._transferDown(httplib_response, dst, progressSubject)
+					bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
 					dst.close()
 				except Exception, e:
 					conn = None
