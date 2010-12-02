@@ -2024,91 +2024,59 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		masterOnly = forceBool(masterOnly)
 		productIds = forceProductIdList(productIds)
 		
-		#addConfigStateDefaults = self._options['addConfigStateDefaults']
-		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		result = []
-		masterDepotIds = self.host_getIdents(type = 'OpsiDepotserver', isMasterDepot = True, id = depotIds)
+		depotIds = self.host_getIdents(type = 'OpsiDepotserver', id = depotIds)
+		if not depotIds:
+			return result
 		clientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
 		if not clientIds:
 			return result
-		usedMasterDepotIds = []
+		usedDepotIds = []
+		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
-			#self._options['addConfigStateDefaults'] = True
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
-				#if not configState.objectId in knownClientIds:
-				#	logger.debug(u"Skipping objectId '%s': not a opsi client" % configState.objectId)
-				#	continue
 				if not configState.values or not configState.values[0]:
 					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
 					continue
 				depotId = configState.values[0]
-				if not depotId in masterDepotIds:
+				if not depotId in depotIds:
+					logger.error(u"Configured depot server '%s' client '%s' not found" % (depotId, configState.objectId))
 					continue
-				if not depotId in usedMasterDepotIds:
-					usedMasterDepotIds.append(depotId)
+				if not depotId in usedDepotIds:
+					usedDepotIds.append(depotId)
 				result.append({ 'depotId': depotId, 'clientId': configState.objectId, 'alternativeDepotIds': [] })
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
-			#self._options['addConfigStateDefaults'] = addConfigStateDefaults
 		if masterOnly:
 			return result
 		
-		masterDepotIds = usedMasterDepotIds
-		if not masterDepotIds:
-			raise BackendConfigurationError(u"No master depots found")
-		
-		depotIds = []
-		masterToSlave = {}
-		for masterDepotId in masterDepotIds:
-			depotIds.append(masterDepotId)
-			masterToSlave[masterDepotId] = []
-		
-		for depot in self.host_getObjects(type = 'OpsiDepotserver'):
-			if not depot.masterDepotId or not depot.masterDepotId in masterDepotIds:
-				continue
-			masterToSlave[depot.masterDepotId].append(depot.id)
-			if not depot.id in depotIds:
-				depotIds.append(depot.id)
-		
-		if (len(depotIds) <= 1):
-			return result
+		productOnDepotsByDepotIdAndProductId = {}
+		for pod in self.productOnDepot_getObjects(productId = productIds):
+			if not productOnDepotsByDepotIdAndProductId.has_key(pod.depotId):
+				productOnDepotsByDepotIdAndProductId[pod.depotId] = {}
+			productOnDepotsByDepotIdAndProductId[pod.depotId][pod.productId] = pod
 		
 		pHash = {}
-		for depotId in depotIds:
-			pHash[depotId] = []
+		for (depotId, productOnDepotsByProductId) in productOnDepotsByDepotIdAndProductId.items():
+			pHash[depotId] = u''
+			pids = productOnDepotsByProductId.keys()
+			pids.sort()
+			for productId in pids:
+				pHash[depotId] += u'|%s;%s;%s' % (
+					productId,
+					productOnDepotsByProductId[productId].productVersion,
+					productOnDepotsByProductId[productId].packageVersion)
 		
-		for pod in self.productOnDepot_getObjects(depotId = depotIds, productId = productIds):
-			if not pHash.has_key(pod.depotId):
-				continue
-			pHash[pod.depotId].append(u'%s;%s;%s' % (pod.productId, pod.productVersion, pod.packageVersion))
-		
-		if productIds:
-			for masterDepotId in masterDepotIds:
-				pIds = []
-				for p in pHash[masterDepotId]:
-					pIds.append(p.split(';')[0])
-				for productId in productIds:
-					if not productId in pIds:
-						raise ValueError(u"Product '%s' not found on master depot '%s'" % (productId, masterDepotId))
-		
-		for (masterDepotId, slaveDepotIds) in masterToSlave.items():
-			synchronousSlaveDepotIds = []
-			for slaveDepotId in slaveDepotIds:
-				if not pHash.has_key(slaveDepotId):
-					continue
-				synchronous = True
-				for product in pHash[masterDepotId]:
-					if not product in pHash[slaveDepotId]:
-						synchronous = False
-						break
-				if synchronous:
-					synchronousSlaveDepotIds.append(slaveDepotId)
-			masterToSlave[masterDepotId] = synchronousSlaveDepotIds
-		
-		for i in range(len(result)):
-			result[i]['alternativeDepotIds'] = masterToSlave[result[i]['depotId']]
-		
+		for usedDepotId in usedDepotIds:
+			alternativeDepotIds = []
+			pString = pHash.get(usedDepotId, u'')
+			for (depotId, ps) in pHash.items():
+				if (depotId != usedDepotId) and (pString == ps):
+					alternativeDepotIds.append(depotId)
+			for i in range(len(result)):
+				if (result[i]['depotId'] == usedDepotId):
+					result[i]['alternativeDepotIds'] = alternativeDepotIds
 		return result
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
