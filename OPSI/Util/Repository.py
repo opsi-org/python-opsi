@@ -788,22 +788,43 @@ class HTTPRepository(Repository):
 					reb = ''
 				headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 			
-			response = self._connectionPool.urlopen(method = 'GET', url = source, body = None, headers = headers, retry = True, redirect = True)
-			self._processResponseHeaders(response)
-			if response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
-				raise Exception(response.status)
-			
-			size = forceInt(response.getheader('content-length', 0))
-			logger.debug(u"Length of binary data to download: %d bytes" % size)
-			
-			if progressSubject: progressSubject.setEnd(size)
-			
-			if (startByteNumber > 0) and os.path.exists(destination):
-				dst = open(destination, 'ab')
-			else:
-				dst = open(destination, 'wb')
-			self._transferDown(response, dst, progressSubject)
-			dst.close()
+			trynum = 0
+			while True:
+				trynum += 1
+				conn = self._connectionPool.getConnection()
+				conn.putrequest('GET', source)
+				for (k, v) in headers.items():
+					conn.putheader(k, v)
+				conn.endheaders()
+				conn.sock.settimeout(self._socketTimeout)
+				
+				httplib_response = None
+				try:
+					httplib_response = conn.getresponse()
+					self._processResponseHeaders(httplib_response)
+					if httplib_response.status not in (responsecode.OK, responsecode.PARTIAL_CONTENT):
+						raise Exception(httplib_response.status)
+					size = forceInt(httplib_response.getheader('content-length', 0))
+					logger.debug(u"Length of binary data to download: %d bytes" % size)
+					if (startByteNumber > 0) and os.path.exists(destination):
+						# TODO: find correct position on retry
+						dst = open(destination, 'ab')
+					else:
+						dst = open(destination, 'wb')
+					self._transferDown(httplib_response, dst, progressSubject)
+					dst.close()
+				except Exception, e:
+					conn = None
+					self._connectionPool.endConnection(conn)
+					if dst: dst.close()
+					if (trynum > 2):
+						raise
+					logger.info(u"Error '%s' occured while downloading, retrying" % e)
+					continue
+				response = HTTPResponse.from_httplib(httplib_response)
+				conn = None
+				self._connectionPool.endConnection(conn)
+				break
 			
 		except Exception, e:
 			logger.logException(e)
@@ -1318,7 +1339,7 @@ class DepotToLocalDirectorySychronizer(object):
 
 if (__name__ == "__main__"):
 	#logger.setConsoleLevel(LOG_DEBUG2)
-	logger.setConsoleLevel(LOG_INFO)
+	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
 	
 	tempDir = '/tmp/testdir'
@@ -1341,12 +1362,12 @@ if (__name__ == "__main__"):
 	#print rep.isdir('javavm')
 	
 	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
-	print rep.listdir()
-	rep.disconnect()
+	#print rep.listdir()
+	#rep.disconnect()
 	
-	#destination = os.path.join(tempDir, 'AdbeRdr930_de_DE.msi')
-	#rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, endByteNumber = 20000000)
-	#rep.download('/acroread9/files/AdbeRdr930_de_DE.msi', destination, startByteNumber = 20000001)
+	destination = os.path.join(tempDir, 'AdbeRdr940_de_DE.msi')
+	rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, endByteNumber = 20000000)
+	rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, startByteNumber = 20000001)
 	
 	#rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
 	#print rep.listdir()
