@@ -535,6 +535,9 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	if (sys.getwindowsversion()[0]>= 6) and (sessionIds[0] == 0):
 		if (len(sessionIds) > 1):
 			return sessionIds[1]
+		activeConsoleSessionId = getActiveConsoleSessionId()
+		if (activeConsoleSessionId != 0):
+			return activeConsoleSessionId
 		return defaultSessionId
 	return sessionIds[0]
 	

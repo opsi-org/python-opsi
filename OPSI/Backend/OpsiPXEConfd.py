@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.0.1'
 
 # Imports
 import socket, threading, time
@@ -112,7 +112,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			if not self._opsiHostKey:
 				depots = self._context.host_getObjects(id = self._depotId)
 				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
+					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 			
 			try:
