@@ -391,6 +391,13 @@ class LDAPBackend(ConfigDataBackend):
 					'objectClasses': [ 'opsiHostGroup' ],
 					'attributes': [
 					]
+				},
+				{
+					'opsiClass':     'ProductGroup',
+					'opsiSuperClass': 'Group',
+					'objectClasses': [ 'opsiProductGroup' ],
+					'attributes': [
+					]
 				}
 				#,
 				#{
@@ -555,6 +562,7 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._configStateContainerDn)
 		self._createOrganizationalRole(self._groupsContainerDn)
 		self._createOrganizationalRole(u"cn=hostGroups,%s" % self._groupsContainerDn)
+		self._createOrganizationalRole(u"cn=productGroups,%s" % self._groupsContainerDn)
 		self._createOrganizationalRole(self._productsContainerDn)
 		self._createOrganizationalRole(self._productOnDepotsContainerDn)
 		self._createOrganizationalRole(self._productOnClientsContainerDn)
@@ -1303,6 +1311,8 @@ class LDAPBackend(ConfigDataBackend):
 		dn = None
 		if isinstance(group, HostGroup):
 			dn = u'cn=%s,cn=hostGroups,%s' % (group.id, self._groupsContainerDn)
+		elif isinstance(group, ProductGroup):
+			dn = u'cn=%s,cn=productGroups,%s' % (group.id, self._groupsContainerDn)
 		else:
 			dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 		
@@ -1321,6 +1331,8 @@ class LDAPBackend(ConfigDataBackend):
 		dn = None
 		if isinstance(group, HostGroup):
 			dn = u'cn=%s,cn=hostGroups,%s' % (group.id, self._groupsContainerDn)
+		elif isinstance(group, ProductGroup):
+			dn = u'cn=%s,cn=productGroups,%s' % (group.id, self._groupsContainerDn)
 		else:
 			dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 		
@@ -1335,7 +1347,7 @@ class LDAPBackend(ConfigDataBackend):
 		groups = []
 		
 		if not filter.get('type'):
-			filter['type'] = [ 'Group', 'HostGroup' ]
+			filter['type'] = [ 'Group', 'HostGroup', 'ProductGroup' ]
 		
 		dn = self._groupsContainerDn
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
@@ -1352,6 +1364,8 @@ class LDAPBackend(ConfigDataBackend):
 			dn = None
 			if isinstance(group, HostGroup):
 				dn = u'cn=%s,cn=hostGroups,%s' % (group.id, self._groupsContainerDn)
+			elif isinstance(group, ProductGroup):
+				dn = u'cn=%s,cn=productGroups,%s' % (group.id, self._groupsContainerDn)
 			else:
 				dn = u'cn=%s,%s' % (group.id, self._groupsContainerDn)
 			
@@ -1367,10 +1381,13 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		
 		dn = None
-		if not (objectToGroup.groupType == 'HostGroup'):
-			dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
-		else:
+		if (objectToGroup.groupType == 'HostGroup'):
 			dn = u'cn=%s,cn=hostGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+		elif (objectToGroup.groupType == 'ProductGroup'):
+			dn = u'cn=%s,cn=productGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+		else:
+			dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+			
 		logger.info(u"Creating objectToGroup in group: %s" % dn)
 		
 		ldapObject = LDAPObject(dn)
@@ -1398,10 +1415,13 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		
 		dn = None
-		if not (objectToGroup.groupType == 'HostGroup'):
-			dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
-		else:
+		if (objectToGroup.groupType == 'HostGroup'):
 			dn = u'cn=%s,cn=hostGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+		elif (objectToGroup.groupType == 'ProductGroup'):
+			dn = u'cn=%s,cn=productGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+		else:
+			dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
+			
 		logger.info(u"Updating objectToGroup in group: %s" % dn)
 		
 		ldapObject = LDAPObject(dn)
@@ -1425,7 +1445,7 @@ class LDAPBackend(ConfigDataBackend):
 		
 		groupFilter = dict(filter)
 		if not groupFilter.get('groupType'):
-			groupFilter['groupType'] = [ 'Group', 'HostGroup' ]
+			groupFilter['groupType'] = [ 'Group', 'HostGroup', 'ProductGroup' ]
 		
 		groupFilter['type'] = groupFilter['groupType']
 		del groupFilter['groupType']
@@ -1442,6 +1462,8 @@ class LDAPBackend(ConfigDataBackend):
 			groupType = None
 			if 'opsiHostGroup' in ldapObject.getObjectClasses():
 				groupType = 'HostGroup'
+			elif 'opsiProductGroup' in ldapObject.getObjectClasses():
+				groupType = 'ProductGroup'
 			else:
 				raise Exception(u"Unhandled GroupType %s" % groupType) 
 			for objectId in ldapObject.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
@@ -1476,6 +1498,8 @@ class LDAPBackend(ConfigDataBackend):
 				dn = None
 				if groupType == 'HostGroup':
 					dn = u'cn=%s,cn=hostGroups,%s' % (groupId, self._groupsContainerDn)
+				elif groupType == 'ProductGroup':
+					dn = u'cn=%s,cn=productGroups,%s' % (groupId, self._groupsContainerDn)
 				else:
 					dn = u'cn=%s,%s' % (groupId, self._groupsContainerDn)
 				ldapObj = LDAPObject(dn)

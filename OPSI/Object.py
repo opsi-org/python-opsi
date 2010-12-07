@@ -1750,6 +1750,26 @@ class HostGroup(Group):
 	
 Group.subClasses['HostGroup'] = HostGroup
 
+class ProductGroup(Group):
+	subClasses = {}
+	
+	def __init__(self, id, description=None, notes=None, parentGroupId=None):
+		Group.__init__(self, id, description, notes, parentGroupId)
+	
+	def setDefaults(self):
+		Group.setDefaults(self)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'ProductGroup'
+		return Group.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return fromJson(jsonString, 'ProductGroup')
+	
+Group.subClasses['ProductGroup'] = ProductGroup
+
 class ObjectToGroup(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'objectToGroup'

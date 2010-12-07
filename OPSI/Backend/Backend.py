@@ -700,6 +700,11 @@ class ConfigDataBackend(Backend):
 	def product_deleteObjects(self, products):
 		productByIdAndVersion = {}
 		for product in forceObjectClassList(products, Product):
+			# Remove from groups
+			self._context.objectToGroup_deleteObjects(
+				self._context.objectToGroup_getObjects(
+					groupType = 'ProductGroup',
+					objectId  = product.id ))
 			if not productByIdAndVersion.has_key(product.id):
 				productByIdAndVersion[product.id] = {}
 			if not productByIdAndVersion[product.id].has_key(product.productVersion):
@@ -2945,6 +2950,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return result
 	
 	def group_createHostGroup(self, id, description=None, notes=None, parentGroupId=None):
+		hash = locals()
+		del hash['self']
+		return self.group_createObjects(HostGroup.fromHash(hash))
+		
+	def group_createProductGroup(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
 		del hash['self']
 		return self.group_createObjects(HostGroup.fromHash(hash))
