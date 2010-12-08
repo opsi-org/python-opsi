@@ -711,12 +711,34 @@ class BackendTestCase(TestCase):
 		)
 		
 		self.group3 = HostGroup(
-			id            = u'host group 3',
-			description   = 'Group 3',
+			id            = u'group xxxxxx',
+			description   = 'HostGroup xxxxxx',
 			notes         = '',
 			parentGroupId = None
 		)
-		self.groups = [ self.group1, self.group2, self.group3 ]
+		
+		self.group4 = ProductGroup(
+			id            = u'product group 1',
+			description   = 'Product Group 1',
+			notes         = '----------- notes --------------',
+			parentGroupId = None
+		)
+		
+		self.group5 = ProductGroup(
+			id            = u'product group 2',
+			description   = 'Product Group 2',
+			notes         = None,
+			parentGroupId = u'product group 1',
+		)
+		
+		self.group6 = ProductGroup(
+			id            = u'group xxxxxx',
+			description   = 'ProductGroup xxxxxx',
+			notes         = '',
+			parentGroupId = None
+		)
+		
+		self.groups = [ self.group1, self.group2, self.group3, self.group4, self.group5, self.group6 ]
 		
 		# ObjectToGroups
 		self.objectToGroup1 = ObjectToGroup(
@@ -736,7 +758,26 @@ class BackendTestCase(TestCase):
 			groupId   = self.group2.getId(),
 			objectId  = self.client2.getId()
 		)
-		self.objectToGroups = [ self.objectToGroup1, self.objectToGroup2, self.objectToGroup3 ]
+		
+		self.objectToGroup4 = ObjectToGroup(
+			groupType = self.group4.getType(),
+			groupId   = self.group4.getId(),
+			objectId  = self.product1.getId()
+		)
+		
+		self.objectToGroup5 = ObjectToGroup(
+			groupType = self.group4.getType(),
+			groupId   = self.group4.getId(),
+			objectId  = self.product2.getId()
+		)
+		
+		self.objectToGroup6 = ObjectToGroup(
+			groupType = self.group6.getType(),
+			groupId   = self.group6.getId(),
+			objectId  = self.product3.getId()
+		)
+		
+		self.objectToGroups = [ self.objectToGroup1, self.objectToGroup2, self.objectToGroup3, self.objectToGroup4, self.objectToGroup5, self.objectToGroup6 ]
 		
 		# LicenseContracts
 		self.licenseContract1 = LicenseContract(

@@ -219,7 +219,7 @@ class FileBackend(ConfigDataBackend):
 			self._setRights(dirname)
 		
 		defaultTemplate = os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini')
-		for filename in (defaultTemplate, self.__configFile, self.__hostKeyFile, self.__clientGroupsFile):
+		for filename in (defaultTemplate, self.__configFile, self.__hostKeyFile, self.__clientGroupsFile, self.__productGroupsFile):
 			if not os.path.isfile(filename):
 				self._touch(filename)
 			self._setRights(filename)
@@ -319,7 +319,7 @@ class FileBackend(ConfigDataBackend):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
-			elif objType in ('Group', 'HostGroup', 'ProductGroup')
+			elif objType in ('Group', 'HostGroup', 'ProductGroup'):
 				if   objType in ('ProductGroup',) or (objType in ('Group',) and ident.get('type') in ('ProductGroup',)):
 					filename = os.path.join(self.__productGroupsFile)
 				elif objType in ('HostGroup',) or (objType in ('Group',) and ident.get('type') in ('HostGroup',)):
@@ -560,39 +560,59 @@ class FileBackend(ConfigDataBackend):
 								)
 		
 		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
-			filename = self._getConfigFile(objType, {}, 'ini') #TODO: {'groupType': '___'}
-			iniFile = IniFile(filename = filename, ignoreCase = False)
-			cp = iniFile.parse()
-			
-			for section in cp.sections():
-				if (objType == 'ObjectToGroup'):
-					for option in cp.options(section):
-						if option in ('description', 'notes', 'parentgroupid'):
-							continue
-						
-						try:
-							value = cp.get(section, option)
-							if not forceBool(value):
-								logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" \
-									% (option, section, value))
-								continue
-							if   (objType == 'HostGroup'):
-								option = forceHostId(option)
-							elif (objType == 'ProductGroup'):
-								option = forceProductId(option)
-							
-							objIdents.append(
-								{
-								'groupType': objType,
-								'groupId':   section,
-								'objectId':  option
-								}
-							)
-						except Exception, e:
-							logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
-								% (option, section, filename, e))
+			passes = []
+			if objType in ('ObjectToGroup',):
+				if filter.get('groupType'):
+					passes = [ {'filename': self._getConfigFile(objType, {'groupType': filter['groupType']}, 'ini'), 'groupType': filter['groupType']} ]
 				else:
-					objIdents.append({'id': section})
+					passes = [
+						{'filename': self._getConfigFile(objType, {'groupType': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
+						{'filename': self._getConfigFile(objType, {'groupType': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'}
+					]
+			else:
+				if objType in ('HostGroup', 'ProductGroup'):
+					passes = [ {'filename': self._getConfigFile(objType, {}, 'ini'), 'groupType': objType} ]
+				elif filter.get('type'):
+					passes = [ {'filename': self._getConfigFile(objType, {'type': filter['type']}, 'ini'), 'groupType': filter['groupType']} ]
+				else:
+					passes = [
+						{'filename': self._getConfigFile(objType, {'type': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
+						{'filename': self._getConfigFile(objType, {'type': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'}
+					]
+			for p in passes:
+				groupType = p['groupType']
+				iniFile = IniFile(filename = p['filename'], ignoreCase = False)
+				cp = iniFile.parse()
+				
+				for section in cp.sections():
+					if (objType == 'ObjectToGroup'):
+						for option in cp.options(section):
+							if option in ('description', 'notes', 'parentgroupid'):
+								continue
+							
+							try:
+								value = cp.get(section, option)
+								if not forceBool(value):
+									logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" \
+										% (option, section, value))
+									continue
+								if   (groupType == 'HostGroup'):
+									option = forceHostId(option)
+								elif (groupType == 'ProductGroup'):
+									option = forceProductId(option)
+								
+								objIdents.append(
+									{
+									'groupType': groupType,
+									'groupId':   section,
+									'objectId':  option
+									}
+								)
+							except Exception, e:
+								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
+									% (option, section, filename, e))
+					else:
+						objIdents.append({'id': section, 'type': groupType})
 		
 		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
 			filenames = []
@@ -698,9 +718,6 @@ class FileBackend(ConfigDataBackend):
 		return objHash
 	
 	def _read(self, objType, attributes, **filter):
-		if (objType == 'Group'): 
-			objType = 'HostGroup'
-		
 		if filter.get('type'):
 			match = False
 			for objectType in forceList(filter['type']):
@@ -901,9 +918,9 @@ class FileBackend(ConfigDataBackend):
 				
 				if (mode == 'create'):
 					removeSections = []
-					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
+					if   objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
 						removeSections = ['info', 'depotshare', 'repository']
-					elif   objType in ('Config', 'UnicodeConfig', 'BoolConfig', 'Group', 'HostGroup'):
+					elif objType in ('Config', 'UnicodeConfig', 'BoolConfig', 'Group', 'HostGroup', 'ProductGroup'):
 						removeSections = [obj.getId()]
 					elif objType in ('ProductOnDepot', 'ProductOnClient'):
 						removeSections = [obj.getProductId() + u'-state']
@@ -936,6 +953,9 @@ class FileBackend(ConfigDataBackend):
 						if match:
 							option = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
 						
+						if not cp.has_section(section):
+							cp.add_section(section)
+						
 						if objType in ('ProductOnClient',):
 							if attribute in ('installationStatus', 'actionRequest'):
 								(installationStatus, actionRequest) = (u'not_installed', u'none')
@@ -960,10 +980,6 @@ class FileBackend(ConfigDataBackend):
 								value = toJson(value)
 							elif ( isinstance(value, str) or isinstance(value, unicode) ):
 								value = self.__escape(value)
-							
-							
-							if not cp.has_section(section):
-								cp.add_section(section)
 							
 							cp.set(section, option, value)
 				
@@ -1170,31 +1186,40 @@ class FileBackend(ConfigDataBackend):
 				iniFile.generate(cp)
 		
 		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
-			filename = self._getConfigFile(objType, {}, 'ini')
-			iniFile = IniFile(filename = filename, ignoreCase = False)
-			cp = iniFile.parse()
-			
-			for obj in objList:
-				section = None
-				if (obj.getType() == 'ObjectToGroup'):
-					if not obj.groupType in ('HostGroup', 'ProductGroup'):
-						raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
-					section = obj.getGroupId()
-				else:
-					section = obj.getId()
+			passes = [
+				{'filename': self._getConfigFile('Group', {'type': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
+				{'filename': self._getConfigFile('Group', {'type': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'},
+			]
+			for p in passes:
+				groupType = p['groupType']
+				iniFile = IniFile(filename = p['filename'], ignoreCase = False)
+				cp = iniFile.parse()
 				
-				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
-				if (obj.getType() == 'ObjectToGroup'):
-					if cp.has_option(section, obj.getObjectId()):
-						cp.remove_option(section, obj.getObjectId())
-						logger.debug2(u"Removed option '%s' in section '%s'" \
-							% (obj.getObjectId(), section))
-				else:
-					if cp.has_section(section):
-						cp.remove_section(section)
-						logger.debug2(u"Removed section '%s'" % section)
-			
-			iniFile.generate(cp)
+				for obj in objList:
+					section = None
+					if (obj.getType() == 'ObjectToGroup'):
+						if not obj.groupType in ('HostGroup', 'ProductGroup'):
+							raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
+						if not (groupType == obj.groupType):
+							continue
+						section = obj.getGroupId()
+					else:
+						if not (groupType == obj.getType()):
+							continue
+						section = obj.getId()
+					
+					logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
+					if (obj.getType() == 'ObjectToGroup'):
+						if cp.has_option(section, obj.getObjectId()):
+							cp.remove_option(section, obj.getObjectId())
+							logger.debug2(u"Removed option '%s' in section '%s'" \
+								% (obj.getObjectId(), section))
+					else:
+						if cp.has_section(section):
+							cp.remove_section(section)
+							logger.debug2(u"Removed section '%s'" % section)
+				
+				iniFile.generate(cp)
 		
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s' object: %s" % (objType, objList[0]))
@@ -1501,7 +1526,7 @@ class FileBackend(ConfigDataBackend):
 		
 		logger.debug(u"Inserting group: '%s'" % group.getIdent())
 		self._write(group, mode = 'create')
-	
+		
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_updateObject(self, group)
