@@ -319,13 +319,13 @@ class FileBackend(ConfigDataBackend):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
-				elif objType in ('Group', 'HostGroup', 'ProductGroup')
-					if   objType in ('ProductGroup',) or (objType in ('Group',) and ident.get('type') in ('ProductGroup',)):
-						filename = os.path.join(self.__productGroupsFile)
-					elif objType in ('HostGroup',) or (objType in ('Group',) and ident.get('type') in ('HostGroup',)):
-						filename = os.path.join(self.__clientGroupsFile)
-					else:
-						raise Exception(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
+			elif objType in ('Group', 'HostGroup', 'ProductGroup')
+				if   objType in ('ProductGroup',) or (objType in ('Group',) and ident.get('type') in ('ProductGroup',)):
+					filename = os.path.join(self.__productGroupsFile)
+				elif objType in ('HostGroup',) or (objType in ('Group',) and ident.get('type') in ('HostGroup',)):
+					filename = os.path.join(self.__clientGroupsFile)
+				else:
+					raise Exception(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
 			elif objType in ('ObjectToGroup',):
 				if   ident.get('groupType') in ('ProductGroup',):
 					filename = os.path.join(self.__productGroupsFile)
