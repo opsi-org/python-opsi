@@ -580,7 +580,7 @@ class FileBackend(ConfigDataBackend):
 
 							objIdents.append(
 								{
-								'groupType': type
+								'groupType': type,
 								'groupId':  section,
 								'objectId': option
 								}
@@ -700,7 +700,7 @@ class FileBackend(ConfigDataBackend):
 	
 	def _read(self, objType, attributes, **filter):
 		if (objType == 'Group'): 
-			objType = ['HostGroup','ProductGroup']
+			objType = 'HostGroup'
 		
 		if filter.get('type'):
 			match = False

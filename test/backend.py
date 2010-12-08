@@ -705,7 +705,13 @@ class BackendTest(object):
 			notes         = '',
 			parentGroupId = None
 		)
-		self.groups = [ self.group1, self.group2, self.group3 ]
+		self.group4 = ProductGroup(
+			id            = u'products group 4',
+			description   = 'Group 4',
+			notes         = '',
+			parentGroupId = None
+		)
+		self.groups = [ self.group1, self.group2, self.group3, self.group4 ]
 		
 		# ObjectToGroups
 		self.objectToGroup1 = ObjectToGroup(
