@@ -1,4 +1,4 @@
-python-opsi (4.0.0.19) stable; urgency=low
+python-opsi (4.0.0.19-1) stable; urgency=low
 
   * Added ProductGroup Handling
 
