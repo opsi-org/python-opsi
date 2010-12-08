@@ -89,6 +89,7 @@ class FileBackend(ConfigDataBackend):
 		self.__auditDir          = os.path.join(self.__baseDir, u'audit')
 		self.__configFile        = os.path.join(self.__baseDir, u'config.ini')
 		self.__clientGroupsFile  = os.path.join(self.__baseDir, u'clientgroups.ini')
+		self.__productGroupsFile = os.path.join(self.__baseDir, u'productgroups.ini')
 		self.__clientTemplateDir = os.path.join(self.__baseDir, u'templates')
 		
 		self.__defaultClientTemplateName = u'pcproto'
@@ -205,6 +206,7 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty']    = self._mappings['ProductProperty']
 		self._mappings['HostGroup']              = self._mappings['Group']
+		self._mappings['ProductGroup']              = self._mappings['Group']
 		
 	def backend_exit(self):
 		pass
@@ -240,6 +242,8 @@ class FileBackend(ConfigDataBackend):
 			os.unlink(self.__hostKeyFile)
 		if os.path.exists(self.__clientGroupsFile):
 			os.unlink(self.__clientGroupsFile)
+		if os.path.exists(self.__productGroupsFile):
+			os.unlink(self.__productGroupsFile)
 	
 	def _setRights(self, path):
 		logger.debug(u"Setting rights for path '%s'" % (path))
@@ -315,8 +319,11 @@ class FileBackend(ConfigDataBackend):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
-			elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
-				filename = os.path.join(self.__clientGroupsFile) #TODO: {'groupType': '___'}
+			elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
+				if objType in ('ProductGroup'):
+					filename = os.path.join(self.__productGroupsFile)
+				else:
+					filename = os.path.join(self.__clientGroupsFile)
 		
 		elif (fileType == 'pro'):
 			pVer = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
@@ -543,11 +550,17 @@ class FileBackend(ConfigDataBackend):
 									}
 								)
 		
-		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
+		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini') #TODO: {'groupType': '___'}
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			
+			#Try to filter GroupType
+			if objType in ('ProductGroup'):
+				type = u'ProductGroup'
+			else:
+				type = u'HostGroup'
+				
 			for section in cp.sections():
 				if (objType == 'ObjectToGroup'):
 					for option in cp.options(section):
@@ -560,12 +573,16 @@ class FileBackend(ConfigDataBackend):
 								logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" \
 									% (option, section, value))
 								continue
-							
+							if type == 'HostGroup':
+								option = forceHostId(option)
+							elif type == 'ProductGroup':
+								option = forceProductId(option)
+
 							objIdents.append(
 								{
-								'groupType': u"HostGroup", #TODO: {'groupType': '___'}
+								'groupType': type
 								'groupId':  section,
-								'objectId': forceHostId(option)
+								'objectId': option
 								}
 							)
 						except Exception, e:
@@ -682,7 +699,8 @@ class FileBackend(ConfigDataBackend):
 		return objHash
 	
 	def _read(self, objType, attributes, **filter):
-		if (objType == 'Group'): objType = 'HostGroup' #TODO: zwischen den einzelnen gruppen unterscheiden ...
+		if (objType == 'Group'): 
+			objType = ['HostGroup','ProductGroup']
 		
 		if filter.get('type'):
 			match = False
@@ -1152,7 +1170,7 @@ class FileBackend(ConfigDataBackend):
 				
 				iniFile.generate(cp)
 		
-		elif objType in ('Group', 'HostGroup', 'ObjectToGroup'):
+		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
 			filename = self._getConfigFile(objType, {}, 'ini')
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
@@ -1160,7 +1178,7 @@ class FileBackend(ConfigDataBackend):
 			for obj in objList:
 				section = None
 				if (obj.getType() == 'ObjectToGroup'):
-					if (obj.groupType != 'HostGroup'):
+					if not (obj.groupType in ('HostGroup','ProductGroup')):
 						raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
 					section = obj.getGroupId()
 				else:

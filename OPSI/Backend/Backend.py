@@ -2957,7 +2957,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def group_createProductGroup(self, id, description=None, notes=None, parentGroupId=None):
 		hash = locals()
 		del hash['self']
-		return self.group_createObjects(HostGroup.fromHash(hash))
+		return self.group_createObjects(ProductGroup.fromHash(hash))
 	
 	def group_delete(self, id):
 		if id is None: id = []

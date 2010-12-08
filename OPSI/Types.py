@@ -472,6 +472,8 @@ def forceGroupType(var):
 	v = forceUnicodeLower(var)
 	if (v == 'hostgroup'):
 		var = u'HostGroup'
+	elif (v == 'productgroup'):
+		var = u'ProductGroup'
 	else:
 		raise ValueError(u"Unknown group type: '%s'" % var)
 	return var
