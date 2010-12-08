@@ -206,7 +206,7 @@ class FileBackend(ConfigDataBackend):
 		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
 		self._mappings['BoolProductProperty']    = self._mappings['ProductProperty']
 		self._mappings['HostGroup']              = self._mappings['Group']
-		self._mappings['ProductGroup']              = self._mappings['Group']
+		self._mappings['ProductGroup']           = self._mappings['Group']
 		
 	def backend_exit(self):
 		pass
@@ -320,7 +320,7 @@ class FileBackend(ConfigDataBackend):
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
-				if objType in ('ProductGroup'):
+				if objType in ('ProductGroup',):
 					filename = os.path.join(self.__productGroupsFile)
 				else:
 					filename = os.path.join(self.__clientGroupsFile)
@@ -555,12 +555,6 @@ class FileBackend(ConfigDataBackend):
 			iniFile = IniFile(filename = filename, ignoreCase = False)
 			cp = iniFile.parse()
 			
-			#Try to filter GroupType
-			if objType in ('ProductGroup'):
-				type = u'ProductGroup'
-			else:
-				type = u'HostGroup'
-				
 			for section in cp.sections():
 				if (objType == 'ObjectToGroup'):
 					for option in cp.options(section):
@@ -573,27 +567,23 @@ class FileBackend(ConfigDataBackend):
 								logger.debug(u"Skipping '%s' in section '%s' with False-value '%s'" \
 									% (option, section, value))
 								continue
-							if type == 'HostGroup':
+							if   (objType == 'HostGroup'):
 								option = forceHostId(option)
-							elif type == 'ProductGroup':
+							elif (objType == 'ProductGroup'):
 								option = forceProductId(option)
-
+							
 							objIdents.append(
 								{
-								'groupType': type,
-								'groupId':  section,
-								'objectId': option
+								'groupType': objType,
+								'groupId':   section,
+								'objectId':  option
 								}
 							)
 						except Exception, e:
 							logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
 								% (option, section, filename, e))
 				else:
-					objIdents.append(
-						{
-							'id': section
-						}
-					)
+					objIdents.append({'id': section})
 		
 		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
 			filenames = []
@@ -1178,7 +1168,7 @@ class FileBackend(ConfigDataBackend):
 			for obj in objList:
 				section = None
 				if (obj.getType() == 'ObjectToGroup'):
-					if not (obj.groupType in ('HostGroup','ProductGroup')):
+					if not obj.groupType in ('HostGroup', 'ProductGroup'):
 						raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
 					section = obj.getGroupId()
 				else:

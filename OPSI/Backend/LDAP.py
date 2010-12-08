@@ -1496,9 +1496,9 @@ class LDAPBackend(ConfigDataBackend):
 		for (groupType, byId) in byTypeAndId.items():
 			for (groupId, objectIds) in byId.items():
 				dn = None
-				if groupType == 'HostGroup':
+				if   (groupType == 'HostGroup'):
 					dn = u'cn=%s,cn=hostGroups,%s' % (groupId, self._groupsContainerDn)
-				elif groupType == 'ProductGroup':
+				elif (groupType == 'ProductGroup'):
 					dn = u'cn=%s,cn=productGroups,%s' % (groupId, self._groupsContainerDn)
 				else:
 					dn = u'cn=%s,%s' % (groupId, self._groupsContainerDn)
