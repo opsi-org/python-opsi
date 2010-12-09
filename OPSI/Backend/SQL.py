@@ -265,6 +265,8 @@ class SQLBackend(ConfigDataBackend):
 			#	where += u"`%s` is NULL" % key
 			else:
 				condition += u"`%s` = '%s'" % (arg, value.replace("\\", "\\\\").replace("'", "\\\'"))
+		if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
+			condition += u" and `type` = '%s'" % object.getType()
 		return condition
 	
 	def _objectExists(self, table, object):

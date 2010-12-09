@@ -450,7 +450,12 @@ class ObjectMethodsMixin(object):
 		self.backend.group_deleteObjects(self.group1)
 		groups = self.backend.group_getObjects()
 		self.assertEqual(len(groups), len(self.groups)-1, u"Expected %s groups, but found '%s' on backend" % (len(self.groups)-1, len(groups)))
-		
+	
+	def test_createGroup(self):
+		self.backend.group_createObjects(self.groups)
+		groups = self.backend.group_getObjects()
+		self.assertEqual(len(groups), len(self.groups), u"Expected %s groups, but found '%s' on backend" % (len(self.groups), len(groups)))
+	
 	def test_createDuplicateGroup(self):
 		self.backend.group_createObjects(self.group1)
 		groups = self.backend.group_getObjects()
