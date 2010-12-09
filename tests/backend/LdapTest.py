@@ -5,7 +5,7 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Object import *
 from opsidevtools.unittest.lib import unittest2 as unittest
 
-from BackendTest import BackendTestCase
+from BackendTest import *
 from BackendMixins.ObjectMethodsMixin import ObjectMethodsMixin
 from BackendMixins.NonObjectMethodsMixin import NonObjectMethodsMixin
 from BackendMixins.InventoryObjectMethodMixin import InventoryObjectMethodMixin
@@ -15,7 +15,7 @@ from BackendMixins.LicenseManagementObjectsMixin import LicenseManagementObjects
 class LdapTestCase(BackendTestCase,
 		    ObjectMethodsMixin,
 		    NonObjectMethodsMixin,
-		    MultithreadingMixin
+		    #MultithreadingMixin
 		):
 	
 	def createBackend(self):
@@ -23,9 +23,9 @@ class LdapTestCase(BackendTestCase,
 		ldapBackend = LDAPBackend(
 					username         = "cn=admin,%s" % baseDn,
 					password         = "linux123",
-					adress           = "localhost",
-					opsiBaseDn       = "cn=opsi,%s" % baseDn,
-					hostsContainerDn = u"cn=hosts,cn=opsi,%s" % baseDn
+					address           = "vmax19100",
+					opsiBaseDn       = "cn=opsi-test,%s" % baseDn,
+					hostsContainerDn = u"cn=hosts,cn=opsi-test,%s" % baseDn
 					)
 		
 		self.backend = ExtendedConfigDataBackend(ldapBackend)
