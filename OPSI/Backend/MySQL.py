@@ -36,6 +36,8 @@ __version__ = '4.0'
 
 # Imports
 import MySQLdb, warnings, time, threading
+from MySQLdb.constants import FIELD_TYPE
+from MySQLdb.converters import conversions
 from _mysql_exceptions import *
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
@@ -144,6 +146,9 @@ class MySQL(SQL):
 			try:
 				if self._pool:
 					self._pool.destroy()
+				conv = dict(conversions)
+				conv[FIELD_TYPE.DATETIME] = str
+				conv[FIELD_TYPE.TIMESTAMP] = str
 				self._pool = ConnectionPool(
 						host         = self._address,
 						user         = self._username,
@@ -153,7 +158,8 @@ class MySQL(SQL):
 						charset      = self._databaseCharset,
 						pool_size    = self._connectionPoolSize,
 						max_overflow = self._connectionPoolMaxOverflow,
-						timeout      = self._connectionPoolTimeout
+						timeout      = self._connectionPoolTimeout,
+						conv         = conv
 				)
 			except Exception, e:
 				logger.logException(e)

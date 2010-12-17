@@ -1866,13 +1866,16 @@ class SQLBackend(ConfigDataBackend):
 		where = self._uniqueCondition(auditSoftwareOnClient)
 		self._sql.update('SOFTWARE_CONFIG', where, data)
 	
+	def auditSoftwareOnClient_getHashes(self, attributes=[], **filter):
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes, filter)
+		return self._sql.getSet(self._createQuery('SOFTWARE_CONFIG', attributes, filter))
+	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting auditSoftwareOnClient, filter: %s" % filter)
 		auditSoftwareOnClients = []
-		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('SOFTWARE_CONFIG', attributes, filter)):
-			auditSoftwareOnClients.append(AuditSoftwareOnClient.fromHash(res))
+		for h in self.auditSoftwareOnClient_getHashes(attributes, **filter):
+			auditSoftwareOnClients.append(AuditSoftwareOnClient.fromHash(h))
 		return auditSoftwareOnClients
 	
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
