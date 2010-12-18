@@ -1796,13 +1796,16 @@ class SQLBackend(ConfigDataBackend):
 		where = self._uniqueCondition(auditSoftware)
 		self._sql.update('SOFTWARE', where, data)
 	
+	def auditSoftware_getHashes(self, attributes=[], **filter):
+		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes, filter)
+		return self._sql.getSet(self._createQuery('SOFTWARE', attributes, filter))
+	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting auditSoftware, filter: %s" % filter)
 		auditSoftwares = []
-		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('SOFTWARE', attributes, filter)):
-			auditSoftwares.append(AuditSoftware.fromHash(res))
+		for h in self.auditSoftware_getHashes(attributes, **filter):
+			auditSoftwares.append(AuditSoftware.fromHash(h))
 		return auditSoftwares
 	
 	def auditSoftware_deleteObjects(self, auditSoftwares):
@@ -1831,13 +1834,16 @@ class SQLBackend(ConfigDataBackend):
 		where = self._uniqueCondition(auditSoftwareToLicensePool)
 		self._sql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data)
 	
+	def auditSoftwareToLicensePool_getHashes(self, attributes=[], **filter):
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes, filter)
+		return self._sql.getSet(self._createQuery('AUDIT_SOFTWARE_TO_LICENSE_POOL', attributes, filter))
+	
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting auditSoftwareToLicensePool, filter: %s" % filter)
 		auditSoftwareToLicensePools = []
-		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('AUDIT_SOFTWARE_TO_LICENSE_POOL', attributes, filter)):
-			auditSoftwareToLicensePools.append(AuditSoftwareToLicensePool.fromHash(res))
+		for h in self.auditSoftwareToLicensePool_getHashes(attributes, **filter):
+			auditSoftwareToLicensePools.append(AuditSoftwareToLicensePool.fromHash(h))
 		return auditSoftwareToLicensePools
 	
 	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
@@ -1960,10 +1966,13 @@ class SQLBackend(ConfigDataBackend):
 		
 		logger.info(u"Getting auditHardwares, filter: %s" % filter)
 		auditHardwares = []
-		for res in self._auditHardware_search(returnHardwareIds = False, attributes = attributes, **filter):
-			auditHardwares.append( AuditHardware.fromHash(res) )
+		for h in self.auditHardware_getHashes(attributes, **filter):
+			auditHardwares.append(AuditHardware.fromHash(h))
 		return auditHardwares
-		
+	
+	def auditHardware_getHashes(self, attributes=[], **filter):
+		return self._auditHardware_search(returnHardwareIds = False, attributes = attributes, **filter)
+	
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
 		results = []
 		hardwareClasses = []
@@ -2147,13 +2156,9 @@ class SQLBackend(ConfigDataBackend):
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
 			self._sql.update('HARDWARE_CONFIG_%s' % auditHardwareOnHost.hardwareClass, where, update)
-		
-		
-	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
-		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
-		
-		logger.info(u"Getting auditHardwareOnHosts, filter: %s" % filter)
-		auditHardwareOnHosts = []
+	
+	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):
+		hashes = []
 		hardwareClasses = []
 		hardwareClass = filter.get('hardwareClass')
 		if not hardwareClass in ([], None):
@@ -2231,8 +2236,16 @@ class SQLBackend(ConfigDataBackend):
 				for attribute in self._auditHardwareConfig[hardwareClass].keys():
 					if not data.has_key(attribute):
 						data[attribute] = None
-				
-				auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(data))
+				hashes.append(data)
+		return hashes
+	
+	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
+		
+		logger.info(u"Getting auditHardwareOnHosts, filter: %s" % filter)
+		auditHardwareOnHosts = []
+		for h in self.auditHardwareOnHost_getHashes(attributes, **filter):
+			auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(h))
 		return auditHardwareOnHosts
 	
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):

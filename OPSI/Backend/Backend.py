@@ -583,11 +583,17 @@ class ConfigDataBackend(Backend):
 	
 	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
-		
+	
+	def host_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.host_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def host_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
 		return []
-		
+	
 	def host_deleteObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			# Remove from groups
@@ -646,6 +652,12 @@ class ConfigDataBackend(Backend):
 	def config_updateObject(self, config):
 		config = forceObjectClass(config, Config)
 	
+	def config_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.config_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def config_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
 		return []
@@ -676,6 +688,12 @@ class ConfigDataBackend(Backend):
 	def configState_updateObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
 	
+	def configState_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.configState_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def configState_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
 		return []
@@ -692,6 +710,12 @@ class ConfigDataBackend(Backend):
 		
 	def product_updateObject(self, product):
 		product = forceObjectClass(product, Product)
+	
+	def product_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.product_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def product_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
@@ -759,6 +783,12 @@ class ConfigDataBackend(Backend):
 	def productProperty_updateObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 	
+	def productProperty_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.productProperty_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
 		return []
@@ -783,6 +813,12 @@ class ConfigDataBackend(Backend):
 		
 	def productDependency_updateObject(self, productDependency):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
+	
+	def productDependency_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.productDependency_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def productDependency_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductDependency, attributes, **filter)
@@ -815,10 +851,16 @@ class ConfigDataBackend(Backend):
 			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
 				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 	
+	def productOnDepot_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.productOnDepot_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnDepot, attributes, **filter)
 		return []
-		
+	
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		pass
 	
@@ -839,7 +881,13 @@ class ConfigDataBackend(Backend):
 		
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
-		
+	
+	def productOnClient_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.productOnClient_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
 		return []
@@ -862,6 +910,12 @@ class ConfigDataBackend(Backend):
 	def productPropertyState_updateObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 	
+	def productPropertyState_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.productPropertyState_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
 		return []
@@ -880,6 +934,12 @@ class ConfigDataBackend(Backend):
 		
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
+	
+	def group_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.group_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def group_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Group, attributes, **filter)
@@ -902,6 +962,12 @@ class ConfigDataBackend(Backend):
 	def objectToGroup_updateObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 	
+	def objectToGroup_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.objectToGroup_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
 		return []
@@ -918,6 +984,12 @@ class ConfigDataBackend(Backend):
 	
 	def licenseContract_updateObject(self, licenseContract):
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
+	
+	def licenseContract_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.licenseContract_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def licenseContract_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseContract, attributes, **filter)
@@ -940,6 +1012,12 @@ class ConfigDataBackend(Backend):
 	def softwareLicense_updateObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 	
+	def softwareLicense_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.softwareLicense_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def softwareLicense_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicense, attributes, **filter)
 		return []
@@ -961,6 +1039,12 @@ class ConfigDataBackend(Backend):
 	
 	def licensePool_updateObject(self, licensePool):
 		licensePool = forceObjectClass(licensePool, LicensePool)
+	
+	def licensePool_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.licensePool_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def licensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicensePool, attributes, **filter)
@@ -998,6 +1082,12 @@ class ConfigDataBackend(Backend):
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 	
+	def softwareLicenseToLicensePool_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.softwareLicenseToLicensePool_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicenseToLicensePool, attributes, **filter)
 		return []
@@ -1021,6 +1111,12 @@ class ConfigDataBackend(Backend):
 	def licenseOnClient_updateObject(self, licenseOnClient):
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
 	
+	def licenseOnClient_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.licenseOnClient_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseOnClient, attributes, **filter)
 		return []
@@ -1037,6 +1133,12 @@ class ConfigDataBackend(Backend):
 	
 	def auditSoftware_updateObject(self, auditSoftware):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
+	
+	def auditSoftware_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.auditSoftware_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftware, attributes, **filter)
@@ -1055,6 +1157,12 @@ class ConfigDataBackend(Backend):
 	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
 		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
 	
+	def auditSoftwareToLicensePool_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.auditSoftwareToLicensePool_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareToLicensePool, attributes, **filter)
 		return []
@@ -1072,6 +1180,12 @@ class ConfigDataBackend(Backend):
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 	
+	def auditSoftwareOnClient_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.auditSoftwareOnClient_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareOnClient, attributes, **filter)
 		return []
@@ -1088,6 +1202,12 @@ class ConfigDataBackend(Backend):
 	
 	def auditHardware_updateObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
+	
+	def auditHardware_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.auditHardware_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		return []
@@ -1198,6 +1318,12 @@ class ConfigDataBackend(Backend):
 		
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
+	
+	def auditHardwareOnHost_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.auditHardwareOnHost_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
 	
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		return []
