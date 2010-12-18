@@ -1,6 +1,7 @@
 python-opsi (4.0.0.19-1) stable; urgency=low
 
   * Added ProductGroup Handling
+  * add ConfigDataBackend methods <objectclass>_getHashes
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 08 Dec 2010 00:29:18 +0100
 
