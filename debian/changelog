@@ -1,3 +1,9 @@
+python-opsi (4.0.0.20-1) stable; urgency=low
+
+  * Fix AccessControlBackend
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 22 Dec 2010 15:33:51 +0100
+
 python-opsi (4.0.0.19-1) stable; urgency=low
 
   * Added ProductGroup Handling

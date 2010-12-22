@@ -406,9 +406,10 @@ class ObjectMethodsMixin(object):
 						objectId   = 'kaputtesdepot.dom.local'
 						)
 			self.backend.productPropertyState_insertObject(pps0)
-			self.fail("Successfuly inserted faulty object into backend. This should not have happened.")
 		except Exception, e:
 			pass
+		else:
+			self.fail("Successfuly inserted faulty object into backend. This should not have happened.")
 
 	def test_getProductPropertyStatesFromBackend(self):
 		productPropertyStates = self.backend.productPropertyState_getObjects()

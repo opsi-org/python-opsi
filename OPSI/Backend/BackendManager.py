@@ -428,7 +428,7 @@ class BackendAccessControl(object):
 				self._context = value
 			
 		if not self._acl:
-			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'self': False, 'denyAttributes': [], 'allowAttributes': []} ] ] ]
+			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []} ] ] ]
 		if not self._username:
 			raise BackendAuthenticationError(u"No username specified")
 		if not self._password:
@@ -506,7 +506,7 @@ class BackendAccessControl(object):
 	
 	def _createInstanceMethods(self):
 		protectedMethods = []
-		for Class in (ConfigDataBackend, DepotserverBackend, HostControlBackend):
+		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_'):
@@ -730,13 +730,15 @@ class BackendAccessControl(object):
 		else:
 			logger.debug(u"Partial access to method '%s' granted to user '%s' by acls %s" % (methodName, self._username, acls))
 			try:
+				
 				newKwargs = self._filterParams(kwargs, acls)
+				if not newKwargs:
+					raise BackendPermissionDeniedError(u"No allowed param supplied")
 			except Exception, e:
 				logger.logException(e, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
-			
-		logger.debug2("kwargs:    %s" % kwargs)
-		logger.debug2("newKwargs: %s" % newKwargs)
+		
+		logger.debug("newKwargs: %s" % newKwargs)
 		
 		result = eval(u'self._backend.%s(**newKwargs)' % methodName)
 		
@@ -748,6 +750,7 @@ class BackendAccessControl(object):
 		
 	
 	def _filterParams(self, params, acls):
+		params = dict(params)
 		logger.debug(u"Filtering params: %s" % params)
 		for (key, value) in params.items():
 			isList = type(value) is list
@@ -810,8 +813,6 @@ class BackendAccessControl(object):
 						if not attribute in allowedAttributes:
 							allowedAttributes.append(attribute)
 			
-			logger.debug(u"Allowed attributes: %s" % allowedAttributes)
-			
 			if not allowedAttributes:
 				continue
 			
@@ -830,7 +831,6 @@ class BackendAccessControl(object):
 				newObjects.append(objHash)
 			else:
 				newObjects.append(obj.__class__.fromHash(objHash))
-			
 		return newObjects
 	
 	

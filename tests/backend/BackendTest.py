@@ -17,8 +17,7 @@ class BackendTestCase(TestCase):
 	def setUp(self):
 		self.serverId = socket.getfqdn()
 		self.failUnless(self.serverId.count('.') >= 2,
-				u"Failed to get fqdn: %s" % self.serverId)
-		
+			u"Failed to get fqdn: %s" % self.serverId)
 		
 		self.createBackend()
 		self.hwconf = self.backend.auditHardware_getConfig()
