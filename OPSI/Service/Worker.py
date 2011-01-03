@@ -68,13 +68,26 @@ class Worker:
 		if hasattr(self.service, 'getSessionHandler'):
 			return self.service.getSessionHandler()
 		return None
-		
+	
+	def _delayResult(self, seconds, result):
+		class DelayResult:
+			def __init__(self, seconds, result):
+				self.result = result
+				self.deferred = defer.Deferred()
+				reactor.callLater(seconds, self.returnResult)
+				
+			def returnResult(self):
+				self.deferred.callback(self.result)
+		return DelayResult(seconds, result).deferred
+	
 	def _errback(self, failure):
+		print "_errback FAILURE"
 		logger.debug2("%s._errback" % self.__class__.__name__)
 		
 		self._freeSession(failure)
 		
-		result = self._renderError(failure)
+		#result = self._renderError(failure)
+		#print "_renderError", result
 		result.code = responsecode.INTERNAL_SERVER_ERROR
 		result = self._setCookie(result)
 		try:
@@ -96,17 +109,6 @@ class Worker:
 		
 		return result
 	
-	def _delayResult(self, seconds, result):
-		class DelayResult:
-			def __init__(self, seconds, result):
-				self.result = result
-				self.deferred = defer.Deferred()
-				reactor.callLater(seconds, self.returnResult)
-				
-			def returnResult(self):
-				self.deferred.callback(self.result)
-		return DelayResult(seconds, result).deferred
-		
 	def _renderError(self, failure):
 		result = http.Response()
 		result.headers.setHeader('content-type', http_headers.MimeType("text", "html", {"charset": "utf-8"}))
@@ -146,28 +148,11 @@ class Worker:
 			except Exception, e:
 				logger.error(u"Bad Authorization header from '%s': %s" % (self.request.remoteAddr.host, e))
 		return (user, password)
-		
-	def _getSession(self, result):
-		''' This method restores a session or generates a new one. '''
-		self.session = None
-		
-		logger.confidential(u"Request headers: %s " % self.request.headers)
-		
-		# Get user agent
-		userAgent = None
-		try:
-			userAgent = self.request.headers.getHeader('user-agent')
-		except Exception, e:
-			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
-		if not userAgent:
-			userAgent = 'unknown'
-		
-		# Get session handler
-		sessionHandler = self._getSessionHandler()
-		
-		# Get authorization
-		(user, password) = self._getAuthorization()
-		
+	
+	def _getCredentials(self):
+		return self._getAuthorization()
+	
+	def _getSessionId(self):
 		# Get session id from cookie request header
 		sessionId = u''
 		try:
@@ -189,6 +174,28 @@ class Worker:
 			logger.notice(u"Application '%s' on client '%s' did not send cookie" % (userAgent, self.request.remoteAddr.host))
 			if not password:
 				raise OpsiAuthenticationError(u"Application '%s' on client '%s' did neither supply session id nor password" % (userAgent, self.request.remoteAddr.host))
+		return sessionId
+		
+	def _getSession(self, result):
+		''' This method restores a session or generates a new one. '''
+		self.session = None
+		
+		logger.confidential(u"Request headers: %s " % self.request.headers)
+		
+		# Get user agent
+		userAgent = None
+		try:
+			userAgent = self.request.headers.getHeader('user-agent')
+		except Exception, e:
+			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
+		if not userAgent:
+			userAgent = 'unknown'
+		
+		# Get session handler
+		sessionHandler = self._getSessionHandler()
+		
+		# Get session id from cookie request header
+		sessionId = self._getSessionId()
 		
 		# Get Session object
 		self.session = sessionHandler.getSession(sessionId, self.request.remoteAddr.host)
@@ -215,20 +222,6 @@ class Worker:
 		logger.confidential(u"Session id is '%s' for client '%s', application '%s'" \
 			% (self.session.uid, self.request.remoteAddr.host, self.session.userAgent))
 		
-		# Set user and password
-		if not self.session.password:
-			self.session.password = password
-		
-		if not self.session.user:
-			if not user:
-				raise Exception(u"No username from %s (application: %s)" % (self.session.ip, self.session.userAgent))
-			self.session.user = user
-			
-		# Set hostname
-		if not self.session.hostname and self.session.isHost:
-			logger.info(u"Storing hostname '%s' in session" % self.session.user)
-			self.session.hostname = self.session.user
-		
 		logger.confidential(u"Session content: %s" % self.session.__dict__)
 		return result
 	
@@ -246,6 +239,18 @@ class Worker:
 	def _authenticate(self, result):
 		''' This function tries to authenticate a user.
 		    Raises an exception on authentication failure. '''
+		if self.session.authenticated:
+			return result
+		
+		try:
+			# Get authorization
+			(self.session.user, self.session.password) = self._getCredentials()
+			self.session.authenticated = True
+		except Exception, e:
+			logger.logException(e, LOG_INFO)
+			self._freeSession(result)
+			self._getSessionHandler().deleteSession(self.session.uid)
+			raise OpsiAuthenticationError(u"Forbidden: %s" % e)
 		return result
 	
 	def _getQuery(self, result):
