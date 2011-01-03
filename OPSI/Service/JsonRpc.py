@@ -31,8 +31,12 @@
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
+
+import time
+
 from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Types import OpsiRpcError
+from OPSI.Object import serialize, deserialize
 
 logger = Logger()
 

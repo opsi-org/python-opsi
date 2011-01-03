@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
    = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Dummy     =
+   =   opsi python library - Service   =
    = = = = = = = = = = = = = = = = = = =
    
    This module is part of the desktop management solution opsi
@@ -31,3 +31,14 @@
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
+
+from OPSI.Service.Session import SessionHandler
+
+class OpsiService(object):
+	def __init__(self):
+		self._sessionHandler = SessionHandler(self)
+		
+	def getSessionHandler(self):
+		return self._sessionHandler
+	
+
