@@ -81,20 +81,17 @@ class Worker:
 		return DelayResult(seconds, result).deferred
 	
 	def _errback(self, failure):
-		print "_errback FAILURE"
 		logger.debug2("%s._errback" % self.__class__.__name__)
 		
 		self._freeSession(failure)
 		
-		#result = self._renderError(failure)
-		#print "_renderError", result
-		result.code = responsecode.INTERNAL_SERVER_ERROR
+		result = self._renderError(failure)
 		result = self._setCookie(result)
+		result.code = responsecode.INTERNAL_SERVER_ERROR
 		try:
 			failure.raiseException()
 		except AttributeError, e:
 			logger.debug(e)
-			result = http.Response()
 			result.code = responsecode.NOT_FOUND
 		except OpsiAuthenticationError, e:
 			logger.error(e)
@@ -106,7 +103,6 @@ class Worker:
 		except Exception, e:
 			# logger.logException(e)
 			logger.error(failure)
-		
 		return result
 	
 	def _renderError(self, failure):
@@ -117,7 +113,7 @@ class Worker:
 			failure.raiseException()
 		except Exception, e:
 			error = forceUnicode(e)
-		result.stream = stream.IByteStream(error.encode('utf-8'))
+		result.stream = stream.IByteStream(stream.IByteStream(error.encode('utf-8')))
 		return result
 	
 	def _freeSession(self, result):
@@ -152,8 +148,20 @@ class Worker:
 	def _getCredentials(self):
 		return self._getAuthorization()
 	
+	def _getUserAgent(self):
+		# Get user agent
+		userAgent = None
+		try:
+			userAgent = self.request.headers.getHeader('user-agent')
+		except Exception, e:
+			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
+		if not userAgent:
+			userAgent = 'unknown'
+		return userAgent
+		
 	def _getSessionId(self):
 		# Get session id from cookie request header
+		userAgent = self._getUserAgent()
 		sessionId = u''
 		try:
 			for (k, v) in self.request.headers.getAllRawHeaders():
@@ -172,6 +180,7 @@ class Worker:
 		
 		if not sessionId:
 			logger.notice(u"Application '%s' on client '%s' did not send cookie" % (userAgent, self.request.remoteAddr.host))
+			(user, password) = self._getAuthorization()
 			if not password:
 				raise OpsiAuthenticationError(u"Application '%s' on client '%s' did neither supply session id nor password" % (userAgent, self.request.remoteAddr.host))
 		return sessionId
@@ -182,14 +191,7 @@ class Worker:
 		
 		logger.confidential(u"Request headers: %s " % self.request.headers)
 		
-		# Get user agent
-		userAgent = None
-		try:
-			userAgent = self.request.headers.getHeader('user-agent')
-		except Exception, e:
-			logger.info(u"Client '%s' did not supply user-agent" % self.request.remoteAddr.host)
-		if not userAgent:
-			userAgent = 'unknown'
+		userAgent = self._getUserAgent()
 		
 		# Get session handler
 		sessionHandler = self._getSessionHandler()
