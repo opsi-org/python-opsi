@@ -32,13 +32,43 @@
    @license: GNU General Public License version 2
 """
 
+import os
+from OpenSSL import SSL
 from OPSI.Service.Session import SessionHandler
+
+from OPSI.Logger import *
+logger = Logger()
+
+class SSLContext(object):
+	def __init__(self, sslServerKeyFile, sslServerCertFile):
+		self._sslServerKeyFile  = sslServerKeyFile
+		self._sslServerCertFile = sslServerCertFile
+		
+	def getContext(self):
+		''' Create an SSL context. '''
+		
+		# Test if server certificate and key file exist.
+		if not os.path.isfile(self._sslServerKeyFile):
+			raise Exception(u"Server key file '%s' does not exist!" % self._sslServerKeyFile)
+			
+		if not os.path.isfile(self._sslServerCertFile):
+			raise Exception(u"Server certificate file '%s' does not exist!" % self._sslServerCertFile)
+		
+		context = SSL.Context(SSL.SSLv23_METHOD)
+		context.use_privatekey_file(self._sslServerKeyFile)
+		context.use_certificate_file(self._sslServerCertFile)
+		return context
 
 class OpsiService(object):
 	def __init__(self):
-		self._sessionHandler = SessionHandler(self)
+		self._sessionHandler = None
 		
 	def getSessionHandler(self):
+		if not self._sessionHandler:
+			self._sessionHandler = SessionHandler(self)
 		return self._sessionHandler
 	
+	def getInterface(self):
+		return {}
+
 
