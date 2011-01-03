@@ -2,8 +2,13 @@
 import time, sys, traceback
 from MySQLdb.constants.ER import DUP_ENTRY
 from MySQLdb import IntegrityError
-from apsw import ConstraintError
 from opsidevtools.unittest.lib import unittest2
+
+try:
+	from apsw import ConstraintError
+except ImportError, e:
+	class ConstraintError(BaseException):
+		result = 0
 
 class MultithreadingMixin(object):
 	
