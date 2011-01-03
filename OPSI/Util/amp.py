@@ -1,3 +1,34 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+   This module is part of the desktop management solution opsi
+   
+   (open pc server integration) http://www.opsi.org
+   
+   Copyright (C) 2010 Andrey Petrov
+   Copyright (C) 2010 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright:	uib GmbH <info@uib.de>
+   @author: Christian Kampka <c.kampka@uib.de>
+   @license: GNU General Public License version 2
+"""
 
 from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -74,7 +105,7 @@ class OpsiProcessProtocol(AMP):
 		method = getattr(self.factory._remote, method, None)
 		
 		if method is None:
-		 	raise RemoteProcessException("Daemon %s has no method %s" %(self.factory._remote, method.__name__))
+			raise RemoteProcessException(u"Daemon %s has no method %s" % (self.factory._remote, method.__name__))
 		
 		d = maybeDeferred(method, *args, **kwargs)
 		d.addCallback(lambda result: {"result":result})
@@ -106,7 +137,7 @@ class OpsiProcessProtocol(AMP):
 		
 		chunks = [argString[i:i + MAX_VALUE_LENGTH] for i in range(0, len(argString), MAX_VALUE_LENGTH)]
 
-		if len(chunks) > 1:			
+		if len(chunks) > 1:
 			for c in chunks[:-1]:
 				d.addCallback(lambda x: self.callRemote(commandType=ChunkedArgument, tag=tag, argString=c))
 
@@ -172,6 +203,8 @@ class OpsiProcessConnector(Connector):
 	
 	def disconnect(self):
 		if self._factory:
-	    		self._factory.stopTrying()
-	    	Connector.disconnect(self)
-	    	self._remote = None	
+			self._factory.stopTrying()
+		Connector.disconnect(self)
+		self._remote = None
+
+

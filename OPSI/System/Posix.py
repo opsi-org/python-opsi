@@ -674,6 +674,13 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 						if (e.errno != 11):
 							raise
 				
+				if (timeout > 0) and (time.time() - startTime >= timeout):
+					try:
+						proc.kill()
+					except:
+						pass
+					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)) )
+				
 				time.sleep(0.001)
 			
 			exitCode = ret
@@ -685,13 +692,6 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 						break
 					logger.debug(u'>>> %s' % line)
 					result.append(line)
-			
-			if (timeout > 0) and (time.time() - startTime >= timeout):
-				try:
-					proc.kill()
-				except:
-					pass
-				raise Exception(u"Command '%s' timed out atfer %d seconds" % (time.time() - startTime) )
 			
 	except (os.error, IOError), e:
 		# Some error occured during execution
