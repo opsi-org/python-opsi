@@ -234,7 +234,8 @@ class WorkerOpsi:
 		self.query     = u''
 		self.resource  = resource
 		self.session   = None
-	
+		self.authRealm = 'OPSI Service'
+		
 	def process(self):
 		logger.info(u"Worker %s started processing" % self)
 		deferred = defer.Deferred()
@@ -281,7 +282,7 @@ class WorkerOpsi:
 		except OpsiAuthenticationError, e:
 			logger.error(e)
 			result.code = responsecode.UNAUTHORIZED
-			result.headers.setHeader('www-authenticate', [('basic', { 'realm': 'OPSI Configuration Service' } )])
+			result.headers.setHeader('www-authenticate', [('basic', { 'realm': self.authRealm } )])
 		except OpsiBadRpcError, e:
 			logger.error(e)
 			result.code = responsecode.BAD_REQUEST
@@ -661,7 +662,7 @@ class WorkerOpsiDAV(WorkerOpsi):
 	
 	def _setResponse(self, result):
 		logger.debug(u"Client requests DAV operation: %s" % self.request)
-		if (not self.resource._authRequired or not self.session.isAdmin) and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
+		if not self.resource._authRequired and self.request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
 			logger.critical(u"Method '%s' not allowed (read only)" % self.request.method)
 			return http.Response(
 				code	= responsecode.FORBIDDEN,
@@ -669,14 +670,6 @@ class WorkerOpsiDAV(WorkerOpsi):
 		
 		return self.resource.renderHTTP_super(self.request, self)
 	
-	#def _setCookie(self, result):
-	#	if not self.session:
-	#		return result
-	#	
-	#	# Add cookie to headers
-	#	cookie = http_headers.Cookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
-	#	result.headers.setHeader('set-cookie', [ cookie ] )
-	#	return result
 	
 
 
