@@ -496,6 +496,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		self._rpcs = []
 	
 	def _getCallInstance(self, result):
+		logger.warning(u"Class %s should overwrite _getCallInstance" % self.__class__.__name__)
 		self._callInstance = None
 		self._callInterface = None
 		
