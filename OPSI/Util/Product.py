@@ -35,11 +35,12 @@
 __version__ = '4.0'
 
 # Globals
-DEFAULT_TMP_DIR               = u'/tmp'
-DEFAULT_CLIENT_DATA_USER      = u'opsiconfd'
-DEFAULT_CLIENT_DATA_GROUP     = u'pcpatch'
-EXCLUDE_DIRS_ON_PACK          = u'^\.svn$'
-EXCLUDE_FILES_ON_PACK         = u'~$'
+DEFAULT_TMP_DIR           = u'/tmp'
+DEFAULT_CLIENT_DATA_USER  = u'opsiconfd'
+DEFAULT_CLIENT_DATA_GROUP = u'pcpatch'
+EXCLUDE_DIRS_ON_PACK      = u'^\.svn$'
+EXCLUDE_FILES_ON_PACK     = u'~$'
+PACKAGE_SCRIPT_TIMEOUT    = 600
 
 # Imports
 import os, shutil, re
@@ -404,7 +405,7 @@ class ProductPackageFile(object):
 			for (k, v) in env.items():
 				os.putenv(k, v)
 			
-			return execute(script)
+			return execute(script, timeout = PACKAGE_SCRIPT_TIMEOUT)
 		except Exception, e:
 			logger.logException(e, LOG_ERROR)
 			self.cleanup()

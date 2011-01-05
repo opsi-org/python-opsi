@@ -49,7 +49,7 @@ interfacePage = u'''
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-	<title>opsi config interface</title>
+	<title>%(title)s</title>
 	<style>
 	a:link 	      { color: #555555; text-decoration: none; }
 	a:visited     { color: #555555; text-decoration: none; }
@@ -58,7 +58,7 @@ interfacePage = u'''
 	body          { font-family: verdana, arial; font-size: 12px; }
 	#title        { padding: 10px; color: #6276a0; font-size: 20px; letter-spacing: 5px; }
 	input, select { background-color: #fafafa; border: 1px #abb1ef solid; width: 430px; font-family: verdana, arial; }
-	.json         { color: #555555; width: 95%; float: left; clear: both; margin: 30px; padding: 20px; background-color: #fafafa; border: 1px #abb1ef dashed; font-size: 11px; }
+	.json         { color: #555555; width: 95%%; float: left; clear: both; margin: 30px; padding: 20px; background-color: #fafafa; border: 1px #abb1ef dashed; font-size: 11px; }
 	.json_key     { color: #9e445a; }
 	.json_label   { color: #abb1ef; margin-top: 20px; margin-bottom: 5px; font-size: 11px; }
 	.title        { color: #555555; font-size: 20px; font-weight: bolder; letter-spacing: 5px; }
@@ -72,7 +72,7 @@ interfacePage = u'''
 		var method = '';
 		var params = '';
 		var id = '"id": 1';
-		%javascript%
+		%(javascript)s
 		
 		function createElement(element) {
 			if (typeof document.createElementNS != 'undefined') {
@@ -189,7 +189,7 @@ interfacePage = u'''
 					<td style="width: 150px;">Path:</td>
 					<td style="width: 440px;">
 						<select id="path_select" onchange="selectPath(this)" name="path">
-							%select_path%
+							%(select_path)s
 						</select>
 					</td>
 				</tr>
@@ -197,7 +197,7 @@ interfacePage = u'''
 					<td style="width: 150px;">Method:</td>
 					<td style="width: 440px;">
 						<select id="method_select" onchange="selectMethod(this)" name="method">
-							%select_method%
+							%(select_method)s
 						</select>
 					</td>
 				</tr>
@@ -222,7 +222,7 @@ interfacePage = u'''
 		</table>
 	</form>
 	<div class="json_label" style="padding-left: 30px">json-rpc result</div>
-	%result%
+	%(result)s
 </body>
 </html>
 '''
@@ -241,7 +241,7 @@ class WorkerOpsi:
 		deferred.addCallback(self._getSession)
 		deferred.addCallback(self._authenticate)
 		deferred.addCallback(self._getQuery)
-		deferred.addCallback(self._decodeQuery)
+		deferred.addCallback(self._processQuery)
 		deferred.addCallback(self._setResponse)
 		deferred.addCallback(self._setCookie)
 		deferred.addCallback(self._freeSession)
@@ -456,7 +456,7 @@ class WorkerOpsi:
 	def _handlePostData(self, chunk):
 		#logger.debug2(u"_handlePostData %s" % unicode(chunk, 'utf-8', 'replace'))
 		self.query += chunk
-		
+	
 	def _decodeQuery(self, result):
 		try:
 			if (self.request.method == 'POST'):
@@ -472,6 +472,9 @@ class WorkerOpsi:
 		logger.debug2(u"query: %s" % self.query)
 		return result
 	
+	def _processQuery(self, result):
+		return self._decodeQuery(result)
+		
 	def _generateResponse(self, result):
 		if not isinstance(result, http.Response):
 			result = http.Response()
@@ -490,23 +493,6 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		self._callInstance = None
 		self._callInterface = None
 		self._rpcs = []
-	
-	def process(self):
-		logger.info("Worker %s started processing" % self)
-		deferred = defer.Deferred()
-		deferred.addCallback(self._getSession)
-		deferred.addCallback(self._authenticate)
-		deferred.addCallback(self._getCallInstance)
-		deferred.addCallback(self._getQuery)
-		deferred.addCallback(self._decodeQuery)
-		deferred.addCallback(self._getRpcs)
-		deferred.addCallback(self._executeRpcs)
-		deferred.addCallback(self._setResponse)
-		deferred.addCallback(self._setCookie)
-		deferred.addCallback(self._freeSession)
-		deferred.addErrback(self._errback)
-		deferred.callback(None)
-		return deferred
 	
 	def _getCallInstance(self, result):
 		self._callInstance = None
@@ -543,6 +529,16 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		deferred = defer.Deferred()
 		for rpc in self._rpcs:
 			deferred.addCallback(self._executeRpc, rpc)
+		deferred.addErrback(self._errback)
+		deferred.callback(None)
+		return deferred
+	
+	def _processQuery(self, result):
+		deferred = defer.Deferred()
+		deferred.addCallback(self._decodeQuery)
+		deferred.addCallback(self._getCallInstance)
+		deferred.addCallback(self._getRpcs)
+		deferred.addCallback(self._executeRpcs)
 		deferred.addErrback(self._errback)
 		deferred.callback(None)
 		return deferred
@@ -600,72 +596,50 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	def __init__(self, service, request, resource):
 		WorkerOpsiJsonRpc.__init__(self, service, request, resource)
 	
-	#def _generateResponse(self, result):
-	#	logger.info(u"Creating opsiconfd interface page")
-	#	
-	#	javascript  = u"var currentParams = new Array();\n"
-	#	javascript += u"var currentMethod = null;\n"
-	#	currentMethod = u''
-	#	if self._rpcs:
-	#		currentMethod = self._rpcs[0].getMethodName()
-	#		javascript += u"currentMethod = '%s';\n" % currentMethod
-	#		for i in range(len(self._rpcs[0].params)):
-	#			param = self._rpcs[0].params[i]
-	#			javascript += u"currentParams[%d] = '%s';\n" % (i, toJson(param))
-	#	
-	#	currentPath = u'interface'
-	#	selected = u' selected="selected"'
-	#	for pp in self.request.postpath:
-	#		currentPath += u'/%s' % pp
-	#		selected = u''
-	#	javascript += u"path = '%s';\n" % currentPath
-	#	
-	#	selectPath = u'<option%s>interface</option>' % selected
-	#	for name in self.service.getBackend().dispatcher_getBackendNames():
-	#		selected = u''
-	#		path = u'interface/backend/%s' % name
-	#		if (path == currentPath):
-	#			selected = u' selected="selected"'
-	#		selectPath += '<option%s>%s</option>' % (selected, path)
-	#	
-	#	for name in os.listdir(self.service.config['extensionConfigDir']):
-	#		if not os.path.isdir(os.path.join(self.service.config['extensionConfigDir'], name)):
-	#			continue
-	#		selected = u''
-	#		path = u'interface/extend/%s' % name
-	#		if (path == currentPath):
-	#			selected = u' selected="selected"'
-	#		selectPath += '<option%s>%s</option>' % (selected, path)
-	#	
-	#	selectMethod = u''
-	#	for method in self.session.interface:
-	#		javascript += u"parameters['%s'] = new Array();\n" % (method['name'])
-	#		for param in range(len(method['params'])):
-	#			javascript += u"parameters['%s'][%s]='%s';\n" % (method['name'], param, method['params'][param])
-	#		selected = u''
-	#		if (method['name'] == currentMethod):
-	#			selected = u' selected="selected"'
-	#		selectMethod += u'<option%s>%s</option>' % (selected, method['name'])
-	#	
-	#	resultDiv = u'<div id="result">'
-	#	for rpc in self._rpcs:
-	#		resultDiv += '<div class="json">'
-	#		resultDiv += objectToHtml(serialize(rpc.getResponse()))
-	#		resultDiv += u'</div>'
-	#	resultDiv += u'</div>'
-	#	
-	#	html = interfacePage
-	#	html = html.replace(u'%javascript%', javascript)
-	#	html = html.replace(u'%select_path%', selectPath)
-	#	html = html.replace(u'%select_method%', selectMethod)
-	#	html = html.replace(u'%result%', resultDiv)
-	#	
-	#	if not isinstance(result, http.Response):
-	#		result = http.Response()
-	#	result.code = responsecode.OK
-	#	result.stream = stream.IByteStream(html.encode('utf-8').strip())
-	#	
-	#	return result
+	def _generateResponse(self, result):
+		logger.info(u"Creating interface page")
+		
+		javascript  = u"var currentParams = new Array();\n"
+		javascript += u"var currentMethod = null;\n"
+		currentMethod = u''
+		if self._rpcs:
+			currentMethod = self._rpcs[0].getMethodName()
+			javascript += u"currentMethod = '%s';\n" % currentMethod
+			for i in range(len(self._rpcs[0].params)):
+				param = self._rpcs[0].params[i]
+				javascript += u"currentParams[%d] = '%s';\n" % (i, toJson(param))
+		
+		selectMethod = u''
+		for method in self._callInterface:
+			javascript += u"parameters['%s'] = new Array();\n" % (method['name'])
+			for param in range(len(method['params'])):
+				javascript += u"parameters['%s'][%s]='%s';\n" % (method['name'], param, method['params'][param])
+			selected = u''
+			if (method['name'] == currentMethod):
+				selected = u' selected="selected"'
+			selectMethod += u'<option%s>%s</option>' % (selected, method['name'])
+		
+		resultDiv = u'<div id="result">'
+		for rpc in self._rpcs:
+			resultDiv += u'<div class="json">'
+			resultDiv += objectToHtml(serialize(rpc.getResponse()))
+			resultDiv += u'</div>'
+		resultDiv += u'</div>'
+		
+		html = interfacePage % {
+			'title':         u'opsi interface page',
+			'javascript':    javascript,
+			'select_path':   u'<option "selected">/</option>',
+			'select_method': selectMethod,
+			'result':        resultDiv
+		}
+		
+		if not isinstance(result, http.Response):
+			result = http.Response()
+		result.code = responsecode.OK
+		result.stream = stream.IByteStream(html.encode('utf-8').strip())
+		
+		return result
 
 class WorkerOpsiDAV(WorkerOpsi):
 	def __init__(self, service, request, resource):
