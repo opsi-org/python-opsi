@@ -42,15 +42,16 @@ logger = Logger()
 
 class JsonRpc(object):
 	def __init__(self, instance, interface, rpc):
-		self._instance = instance
+		self._instance  = instance
 		self._interface = interface
-		self.started   = None
-		self.ended     = None
-		self.type      = rpc.get('type')
-		self.tid       = rpc.get('tid', rpc.get('id'))
-		self.action    = rpc.get('action')
-		self.method    = rpc.get('method')
-		self.params    = rpc.get('params', rpc.get('data'))
+		self.started    = None
+		self.ended      = None
+		self.type       = rpc.get('type')
+		self.rpcVersion = rpc.get('jsonrpc', None)
+		self.tid        = rpc.get('tid', rpc.get('id'))
+		self.action     = rpc.get('action')
+		self.method     = rpc.get('method')
+		self.params     = rpc.get('params', rpc.get('data'))
 		if not self.params:
 			self.params = []
 		self.result    = None
@@ -154,8 +155,13 @@ class JsonRpc(object):
 				response['result'] = self.result
 		else:
 			response['id'] = self.tid
+			if (self.rpcVersion == '2.0'):
+				response['jsonrpc'] = '2.0'
 			if self.exception:
-				response['error']  = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
+				if (self.rpcVersion == '2.0'):
+					response['error']  = { 'code': -1, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
+				else:
+					response['error']  = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
 				response['result'] = None
 			else:
 				response['error']  = None
