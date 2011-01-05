@@ -63,7 +63,7 @@ class OpsiService(object):
 	def __init__(self):
 		self._sessionHandler = None
 		
-	def getSessionHandler(self):
+	def _getSessionHandler(self):
 		if not self._sessionHandler:
 			self._sessionHandler = SessionHandler(self)
 		return self._sessionHandler
