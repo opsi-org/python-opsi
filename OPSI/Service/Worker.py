@@ -474,6 +474,7 @@ class WorkerOpsi:
 		return result
 	
 	def _processQuery(self, result):
+		logger.warning(u"Class %s should overwrite _processQuery" % self.__class__.__name__)
 		return self._decodeQuery(result)
 		
 	def _generateResponse(self, result):
