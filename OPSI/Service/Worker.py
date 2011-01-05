@@ -632,7 +632,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 		html = interfacePage % {
 			'title':         u'opsi interface page',
 			'javascript':    javascript,
-			'select_path':   u'<option "selected">/</option>',
+			'select_path':   u'<option selected="selected">/</option>',
 			'select_method': selectMethod,
 			'result':        resultDiv
 		}
