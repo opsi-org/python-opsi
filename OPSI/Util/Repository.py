@@ -1182,7 +1182,9 @@ class DepotToLocalDirectorySychronizer(object):
 					self._sourceDepot.download(s, d, progressSubject = progressSubject)
 				md5s = md5sum(d)
 				if (md5s != self._fileInfo[relSource]['md5sum']):
-					raise Exception(u"Download error: MD5sum mismatch (%s != %s)" % (md5s, self._fileInfo[relSource]['md5sum']))
+					error = u"Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (f['name'], md5s, self._fileInfo[relSource]['md5sum'])
+					logger.error(error)
+					raise Exception(error)
 				#if progressSubject: progressSubject.addToState(size)
 				
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
