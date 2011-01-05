@@ -357,7 +357,7 @@ class WorkerOpsi:
 							if (c.find('=') == -1):
 								continue
 							(name, value) = c.split('=', 1)
-							if (name.strip() == self.service.config['sessionName']):
+							if (name.strip() == self._getSessionHandler().sessionName):
 								sessionId = forceUnicode(value.strip())
 								break
 					break
