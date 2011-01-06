@@ -288,7 +288,6 @@ class BackendReplicator:
 					self.__currentProgressSubject.setEnd(len(objs))
 					for obj in objs:
 						try:
-							logger.notice('==== Calling %s on %s' % (meth, wb))
 							meth = getattr(wb, meth)
 							meth(obj)
 						except Exception, e:
