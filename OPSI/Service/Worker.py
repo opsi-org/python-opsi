@@ -287,8 +287,8 @@ class WorkerOpsi:
 			logger.error(e)
 			result.code = responsecode.BAD_REQUEST
 		except Exception, e:
-			logger.logException(e, LOG_INFO)
-			logger.error(failure)
+			logger.logException(e, LOG_ERROR)
+			#logger.error(failure)
 		return result
 	
 	def _renderError(self, failure):
