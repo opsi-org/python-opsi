@@ -50,6 +50,7 @@ class CacheBackend(ConfigDataBackend):
 		self._serviceBackend = None
 		self._clientId = None
 		self._depotId = None
+		self._backendInfo = {}
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -77,6 +78,7 @@ class CacheBackend(ConfigDataBackend):
 	def _replicateServiceToWorkBackend(self):
 		if not self._serviceBackend:
 			raise Exception(u"Service backend undefined")
+		self._backendInfo self._serviceBackend.backend_getInfo()
 		br = BackendReplicator(readBackend = self._serviceBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
@@ -89,7 +91,7 @@ class CacheBackend(ConfigDataBackend):
 	def _createInstanceMethods(self):
 		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
 			methodName = member[0]
-			if methodName.startswith('_'):
+			if methodName.startswith('_') or (methodName == 'backend_info'):
 				continue
 			
 			(argString, callString) = getArgAndCallString(member[1])
@@ -102,7 +104,10 @@ class CacheBackend(ConfigDataBackend):
 		logger.info(u"Executing method '%s' on work backend" % methodName)
 		meth = getattr(self._workBackend, methodName)
 		return meth(**kwargs)
-
+	
+	def backend_info(self):
+		return self._backendInfo
+	
 
 if (__name__ == '__main__'):
 	from OPSI.Backend.SQLite import SQLiteBackend
