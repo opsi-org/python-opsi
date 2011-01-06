@@ -239,7 +239,7 @@ class BackendReplicator:
 				else:
 					meth = '%s_getObjects' % Class.backendMethodPrefix
 					meth = getattr(rb, meth)
-					objs = method(**filter)
+					objs = meth(**filter)
 				
 				self.__currentProgressSubject.addToState(1)
 				if (objClass == 'Group'):
