@@ -80,7 +80,7 @@ class CacheBackend(ConfigDataBackend):
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
-		self._backendInfo = self._masterBackend.backend_getInfo()
+		self._backendInfo = self._masterBackend.backend_info()
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
