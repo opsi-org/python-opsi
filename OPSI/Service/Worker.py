@@ -180,7 +180,7 @@ interfacePage = u'''
 <body onload="selectMethod(document.getElementById('method_select'))">
 	<span id="title">
 		<img src="/opsi_logo.png" />
-		<span sytle="padding: 1px">opsi config interface</span>
+		<span sytle="padding: 1px">%(title)s</span>
 	</span>
 	<form method="post" onsubmit="return onSubmit()">
 		<table class="box">

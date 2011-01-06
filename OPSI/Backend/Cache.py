@@ -71,6 +71,9 @@ class CacheBackend(ConfigDataBackend):
 		
 		self._createInstanceMethods()
 	
+	def _setServiceBackend(self, serviceBackend):
+		self._serviceBackend = serviceBackend
+	
 	def _replicateServiceToWorkBackend(self):
 		if not self._serviceBackend:
 			raise Exception(u"Service backend undefined")
