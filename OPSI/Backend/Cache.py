@@ -136,23 +136,27 @@ if (__name__ == '__main__'):
 	logger.setConsoleColor(True)
 	logger.setConsoleLevel(LOG_NOTICE)
 	
-	workBackend = SQLiteBackend(database = ':memory:')
+	#workBackend = SQLiteBackend(database = ':memory:')
+	workBackend = SQLiteBackend(database = '/tmp/opsi-cache.sqlite')
 	
 	serviceBackend = JSONRPCBackend(
 		address  = 'https://bonifax.uib.local:4447/rpc',
 		username = 'cachetest.uib.local',
 		password = '12c1e40a6d3038d3eb2b4d489e978973')
+	
 	cb = CacheBackend(
-		workBackend    = workBackend,
-		serviceBackend = serviceBackend,
-		depotId        = 'bonifax.uib.local',
-		clientId       = 'cachetest.uib.local'
+		workBackend   = workBackend,
+		masterBackend = serviceBackend,
+		depotId       = 'bonifax.uib.local',
+		clientId      = 'cachetest.uib.local'
 	)
-	cb._replicateServiceToWorkBackend()
+	
+	#workBackend._sql.execute('PRAGMA synchronous=OFF')
+	cb._replicateMasterToWorkBackend()
 	
 	#cb.host_insertObject( OpsiClient(id = 'test1.uib.local', description = 'description') )
 	print cb.host_getObjects()
-	#print cb._workBackend._sql.getSet('select * from HOST')
+	print workBackend._sql.getSet('select * from HOST')
 	
 	
 	

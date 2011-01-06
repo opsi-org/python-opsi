@@ -76,9 +76,9 @@ class SQLite(SQL):
 				filename           = self._database,
 				flags              = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
 				vfs                = None,
-				statementcachesize = 100,
+				statementcachesize = 100
 			)
-		
+			
 		def rowtrace(cursor, row):
 			valueSet = {}
 			names = cursor.getdescription()

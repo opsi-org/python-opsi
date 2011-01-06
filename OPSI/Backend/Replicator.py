@@ -334,7 +334,7 @@ class BackendReplicator:
 						else:
 							newDepots.append( OpsiDepotserver.fromHash(hash) )
 					wb.host_createObjects(newDepots)
-		finally	:
+		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 		
 
