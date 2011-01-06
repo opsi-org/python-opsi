@@ -113,6 +113,17 @@ class BackendReplicator:
 		productIds = forceList(productIds)
 		audit      = forceBool(audit)
 		
+		hostIds = []
+		for serverId in serverIds:
+			if not serverId in hostIds:
+				hostIds.append(serverId)
+		for depotId in depotIds:
+			if not depotId in hostIds:
+				hostIds.append(depotId)
+		for clientId in clientIds:
+			if not clientId in hostIds:
+				hostIds.append(clientId)
+		
 		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, audit: %s" \
 				% (serverIds, depotIds, clientIds, groupIds, productIds, audit))
 		
@@ -140,9 +151,30 @@ class BackendReplicator:
 			for objClass in classSequence:
 				Class = eval(objClass)
 				self.__currentProgressSubject.addToState(1)
-				eval('wb.%s_deleteObjects(wb.%s_getObjects())' % (Class.backendMethodPrefix, Class.backendMethodPrefix))
+				meth1 = '%s_deleteObjects' % Class.backendMethodPrefix
+				meth1 = getattr(wb, meth1)
+				meth2 = '%s_getObjects' % Class.backendMethodPrefix
+				meth2 = getattr(wb, meth2)
+				meth1(meth2())
 			self.__overallProgressSubject.setMessage(u"Cleanup done!")
 			self.__overallProgressSubject.addToState(1)
+		
+		productOnDepots = []
+		if depotIds:
+			productOnDepots = rb.productOnDepot_getObjects(depotId = depotIds, productId = productIds)
+			productIdsOnDepot = []
+			for productOnDepot in productOnDepots:
+				if not productOnDepot.productId in productIdsOnDepot:
+					productIdsOnDepot.append(productOnDepot.productId)
+			if productIdsOnDepot:
+				if not productIds:
+					productIds = productIdsOnDepot
+				else:
+					newProductIds = []
+					for productId in productIds:
+						if productId in productIdsOnDepot:
+							newProductIds.append(productId)
+					productIds = newProductIds
 		
 		configServer = None
 		depotServers = []
@@ -160,17 +192,37 @@ class BackendReplicator:
 			self.__overallProgressSubject.setMessage(u"Replicating %s" % objClass)
 			self.__currentProgressSubject.setTitle(u"Replicating %s" % objClass)
 			for subClass in subClasses:
+				filter = {}
 				if   (subClass == 'OpsiConfigserver'):
-					ids = serverIds
+					filter = { 'type': subClass, 'id': serverIds }
 				elif (subClass == 'OpsiDepotserver'):
-					ids = depotIds
+					filter = { 'type': subClass, 'id': depotIds }
 				elif (subClass == 'OpsiClient'):
-					ids = clientIds
+					filter = { 'type': subClass, 'id': clientIds }
 				elif (objClass == 'Group'):
-					ids = groupIds
+					filter = { 'type': subClass, 'id': groupIds }
 				elif (objClass == 'Product'):
-					ids = productIds
+					filter = { 'type': subClass, 'id': productIds }
+				elif (objClass == 'ProductOnClient'):
+					filter = { 'productId': productIds, 'clientId': clientIds }
+				elif (objClass == 'ProductOnDepot'):
+					filter = { 'productId': productIds, 'depotId': depotIds }
+				elif (objClass == 'ProductDependency'):
+					filter = { 'productId': productIds }
+				elif (objClass == 'ProductProperty'):
+					filter = { 'productId': productIds }
+				elif (objClass == 'ProductPropertyState'):
+					filter = { 'productId': productIds, 'objectId': hostIds }
+				elif (objClass == 'ConfigState'):
+					filter = { 'objectId': hostIds }
+				elif (objClass == 'ObjectToGroup'):
+					objectIds = []
+					if productIds and hostIds:
+						objectIds.extend(productIds)
+						objectIds.extend(hostIds)
+					filter = { 'objectId': objectIds }
 				
+				logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
 				if not subClass:
 					subClass = objClass
 				Class = eval(subClass)
@@ -179,12 +231,15 @@ class BackendReplicator:
 				self.__currentProgressSubject.setMessage(u"Reading objects")
 				self.__currentProgressSubject.setEnd(1)
 				objs = []
-				if ids:
-					objs = eval('rb.%s_getObjects(type = subClass, id = ids)' % Class.backendMethodPrefix)
-				else:
-					objs = eval('rb.%s_getObjects(type = subClass)' % Class.backendMethodPrefix)
-				self.__currentProgressSubject.addToState(1)
 				
+				if (objClass == 'ProductOnDepot') and productOnDepots:
+					objs = productOnDepots
+				else:
+					method = '%s_getObjects' % Class.backendMethodPrefix
+					method = getattr(rb, method)
+					objs = method(**filter)
+				
+				self.__currentProgressSubject.addToState(1)
 				if (objClass == 'Group'):
 					# Sort groups
 					sortedObjs = []
@@ -221,13 +276,17 @@ class BackendReplicator:
 				
 				if self.__strict:
 					self.__currentProgressSubject.setEnd(1)
-					exec('wb.%s_createObjects(objs)' % Class.backendMethodPrefix)
+					meth = '%s_createObjects' % Class.backendMethodPrefix
+					meth = getattr(wb, meth)
+					meth(objs)
 					self.__currentProgressSubject.addToState(1)
 				else:
 					self.__currentProgressSubject.setEnd(len(objs))
 					for obj in objs:
 						try:
-							exec('wb.%s_insertObject(obj)' % Class.backendMethodPrefix)
+							meth = '%s_insertObject' % Class.backendMethodPrefix
+							meth = getattr(wb, meth)
+							meth(obj)
 						except Exception, e:
 							logger.logException(e, LOG_DEBUG)
 							logger.error(u"Failed to replicate object %s: %s" % (obj, e))

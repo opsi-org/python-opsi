@@ -144,9 +144,9 @@ class SQLite(SQL):
 				elif type(value) in (float, long, int):
 					values += u"%s, " % value
 				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
+					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "''")
 				else:
-					values += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
+					values += u"\'%s\', " % (u'%s' % value).replace("'", "''")
 				
 			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 			logger.debug2(u"insert: %s" % query)

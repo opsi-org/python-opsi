@@ -830,7 +830,7 @@ class SQLBackend(ConfigDataBackend):
 			type.append('OpsiConfigserver')
 			filter['type'] = type
 		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
-		for res in  self._sql.getSet(self._createQuery('HOST', attributes, filter)):
+		for res in self._sql.getSet(self._createQuery('HOST', attributes, filter)):
 			self._adjustResult(Host, res)
 			hosts.append(Host.fromHash(res))
 		return hosts

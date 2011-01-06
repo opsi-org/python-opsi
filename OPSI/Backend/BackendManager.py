@@ -305,8 +305,8 @@ class BackendDispatcher(Backend):
 		result = None
 		objectIdents = []
 		for methodBackend in methodBackends:
-			#res = eval(u'self._backends[methodBackend]["instance"]._realcall_%s(**kwargs)' % methodName)
-			res = eval(u'self._backends[methodBackend]["instance"].%s(**kwargs)' % methodName)
+			meth = getattr(self._backends[methodBackend]["instance"], methodName)
+			res =  meth(**kwargs)
 			if type(res) is types.ListType:
 				# Remove duplicates
 				newRes = []
@@ -675,7 +675,8 @@ class BackendAccessControl(object):
 		return False
 	
 	def _executeMethod(self, methodName, **kwargs):
-		return eval(u'self._backend.%s(**kwargs)' % methodName)
+		meth = getattr(self._backend, methodName)
+		return meth(**kwargs)
 	
 	def _executeMethodProtected(self, methodName, **kwargs):
 		granted = False
@@ -740,7 +741,8 @@ class BackendAccessControl(object):
 		
 		logger.debug("newKwargs: %s" % newKwargs)
 		
-		result = eval(u'self._backend.%s(**newKwargs)' % methodName)
+		meth = getattr(self._backend, methodName)
+		result = meth(**newKwargs)
 		
 		if granted is True:
 			return result
