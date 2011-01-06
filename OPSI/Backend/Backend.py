@@ -418,6 +418,13 @@ class ConfigDataBackend(Backend):
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if   option in ('audithardwareconfigfile',):
+				self._auditHardwareConfigFile = forceFilename(value)
+			elif option in ('audithardwareconfiglocalesdir',):
+				self._auditHardwareConfigLocalesDir = forceFilename(value)
+		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
 			attributes = []
@@ -1304,7 +1311,7 @@ class ConfigDataBackend(Backend):
 				except Exception, e:
 					logger.error(u"Error in config file '%s': %s" % (self._auditHardwareConfigFile, e))
 		except Exception, e:
-			raise Exception(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
+			logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 		
 		return classes
 	
