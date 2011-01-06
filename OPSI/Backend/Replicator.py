@@ -147,8 +147,8 @@ class BackendReplicator:
 			for objClass in self.OBJECT_CLASSES:
 				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
 					continue
-				if not license and objClass in ('SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
-								'LicenseOnClient', 'AuditSoftwareToLicensePool', 'LicenseContract'):
+				if not license and objClass in ('LicenseContract', 'SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
+								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
 					continue
 				end += 1
 			if self.__cleanupFirst:
