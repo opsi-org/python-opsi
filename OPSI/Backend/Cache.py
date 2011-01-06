@@ -47,7 +47,7 @@ class CacheBackend(ConfigDataBackend):
 	def __init__(self, **kwargs):
 		
 		self._workBackend = None
-		self._serviceBackend = None
+		self._masterBackend = None
 		self._clientId = None
 		self._depotId = None
 		self._backendInfo = {}
@@ -56,12 +56,14 @@ class CacheBackend(ConfigDataBackend):
 			option = option.lower()
 			if   option in ('workbackend',):
 				self._workBackend = value
-			elif option in ('servicebackend',):
-				self._serviceBackend = value
+			elif option in ('masterbackend',):
+				self._masterBackend = value
 			elif option in ('clientid',):
 				self._clientId = forceHostId(value)
 			elif option in ('depotid',):
 				self._depotId = forceHostId(value)
+			elif option in ('backendinfo',):
+				self._backendInfo = value
 			
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
@@ -72,21 +74,21 @@ class CacheBackend(ConfigDataBackend):
 		
 		self._createInstanceMethods()
 	
-	def _setServiceBackend(self, serviceBackend):
-		self._serviceBackend = serviceBackend
+	def _setMasterBackend(self, masterBackend):
+		self._masterBackend = masterBackend
 	
-	def _replicateServiceToWorkBackend(self):
-		if not self._serviceBackend:
-			raise Exception(u"Service backend undefined")
-		self._backendInfo = self._serviceBackend.backend_getInfo()
-		br = BackendReplicator(readBackend = self._serviceBackend, writeBackend = self._workBackend)
+	def _replicateMasterToWorkBackend(self):
+		if not self._masterBackend:
+			raise Exception(u"Master backend undefined")
+		self._backendInfo = self._masterBackend.backend_getInfo()
+		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
 			depotIds   = [ self._depotId ],
 			clientIds  = [ self._clientId ],
 			groupIds   = [ ],
 			productIds = [ ],
-			audit = False)
+			audit      = False)
 		
 	def _createInstanceMethods(self):
 		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
