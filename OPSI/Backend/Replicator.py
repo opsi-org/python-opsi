@@ -289,6 +289,7 @@ class BackendReplicator:
 					for obj in objs:
 						try:
 							meth = '%s_insertObject' % Class.backendMethodPrefix
+							logger.notice(u"== Calling %s on %s" % (meth, wb))
 							meth = getattr(wb, meth)
 							meth(obj)
 						except Exception, e:
