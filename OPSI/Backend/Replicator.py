@@ -287,8 +287,10 @@ class BackendReplicator:
 					for obj in objs:
 						try:
 							meth = '%s_insertObject' % Class.backendMethodPrefix
+							logger.notice('==== Calling %s on %s' % (meth, wb))
 							meth = getattr(wb, meth)
 							meth(obj)
+							logger.notice('==== Done')
 						except Exception, e:
 							logger.logException(e, LOG_DEBUG)
 							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
