@@ -288,6 +288,7 @@ class BackendReplicator:
 					self.__currentProgressSubject.setEnd(len(objs))
 					for obj in objs:
 						try:
+							meth = '%s_insertObject' % Class.backendMethodPrefix
 							meth = getattr(wb, meth)
 							meth(obj)
 						except Exception, e:
