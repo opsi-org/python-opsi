@@ -45,6 +45,7 @@ logger = Logger()
 class CacheBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._workBackend = None
 		self._masterBackend = None
@@ -92,16 +93,17 @@ class CacheBackend(ConfigDataBackend):
 			audit      = False)
 		
 	def _createInstanceMethods(self):
-		for member in inspect.getmembers(ConfigDataBackend, inspect.ismethod):
-			methodName = member[0]
-			if methodName.startswith('_') or (methodName == 'backend_info'):
-				continue
-			
-			(argString, callString) = getArgAndCallString(member[1])
-			
-			logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
-			exec(u'def %s(self, %s): return self._executeOnWorkBackend("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+		for Class in (Backend, ConfigDataBackend):
+			for member in inspect.getmembers(Class, inspect.ismethod):
+				methodName = member[0]
+				if methodName.startswith('_') or (methodName == 'backend_info'):
+					continue
+				
+				(argString, callString) = getArgAndCallString(member[1])
+				
+				logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
+				exec(u'def %s(self, %s): return self._executeOnWorkBackend("%s", %s)' % (methodName, argString, methodName, callString))
+				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
 	def _executeOnWorkBackend(self, methodName, **kwargs):
 		logger.info(u"Executing method '%s' on work backend" % methodName)
