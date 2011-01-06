@@ -1142,7 +1142,7 @@ class DepotToLocalDirectorySychronizer(object):
 				
 				if progressSubject: progressSubject.setMessage( _(u"Downloading file '%s'") % f['name'] )
 				if exists and (localSize < size):
-					partialEndFile = d + '.endpart'
+					partialEndFile = d + u'.endpart'
 					# First byte needed is byte number <localSize>
 					logger.info(u"Downloading file '%s' starting at byte number %d" % (f['name'], localSize))
 					if os.path.exists(partialEndFile):
@@ -1159,7 +1159,7 @@ class DepotToLocalDirectorySychronizer(object):
 					md5s = md5sum(d)
 					if (md5s != self._fileInfo[relSource]['md5sum']):
 						logger.warning(u"MD5sum of composed file differs")
-						partialStartFile = d + '.startpart'
+						partialStartFile = d + u'.startpart'
 						if os.path.exists(partialStartFile):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
@@ -1178,6 +1178,8 @@ class DepotToLocalDirectorySychronizer(object):
 						os.rename(partialStartFile, d)
 					os.remove(partialEndFile)
 				else:
+					if exists:
+						os.remove(d)
 					logger.info(u"Downloading file '%s'" % f['name'])
 					self._sourceDepot.download(s, d, progressSubject = progressSubject)
 				md5s = md5sum(d)
