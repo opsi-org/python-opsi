@@ -67,7 +67,7 @@ interfacePage = u'''
 	</style>
 	<script type="text/javascript">
 	<![CDATA[
-		var path = 'interface';
+		var path = '%(path)s';
 		var parameters = new Array();
 		var method = '';
 		var params = '';
@@ -232,6 +232,7 @@ class WorkerOpsi:
 		self.service   = service
 		self.request   = request
 		self.query     = u''
+		self.path      = u''
 		self.resource  = resource
 		self.session   = None
 		self.authRealm = 'OPSI Service'
@@ -630,9 +631,10 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 		resultDiv += u'</div>'
 		
 		html = interfacePage % {
+			'path':          self.path,
 			'title':         u'opsi interface page',
 			'javascript':    javascript,
-			'select_path':   u'<option selected="selected">/</option>',
+			'select_path':   u'<option selected="selected">%s</option>' % path,
 			'select_method': selectMethod,
 			'result':        resultDiv
 		}
