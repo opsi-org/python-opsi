@@ -130,8 +130,6 @@ class BackendReplicator:
 		rb = self._extendedReadBackend
 		wb = self._extendedWriteBackend
 		
-		wb.backend_createBase()
-		
 		self.__overallProgressSubject.reset()
 		end = 0
 		for objClass in self.OBJECT_CLASSES:
@@ -142,22 +140,26 @@ class BackendReplicator:
 			end += 1
 		self.__overallProgressSubject.setEnd(end)
 		
+		#wb.backend_createBase()
 		if self.__cleanupFirst:
-			classSequence = list(self.OBJECT_CLASSES)
-			classSequence.reverse()
-			self.__currentProgressSubject.reset()
-			self.__currentProgressSubject.setTitle(u"Cleaning up")
-			self.__currentProgressSubject.setEnd(len(self.OBJECT_CLASSES))
-			for objClass in classSequence:
-				Class = eval(objClass)
-				self.__currentProgressSubject.addToState(1)
-				meth1 = '%s_deleteObjects' % Class.backendMethodPrefix
-				meth1 = getattr(wb, meth1)
-				meth2 = '%s_getObjects' % Class.backendMethodPrefix
-				meth2 = getattr(wb, meth2)
-				meth1(meth2())
-			self.__overallProgressSubject.setMessage(u"Cleanup done!")
-			self.__overallProgressSubject.addToState(1)
+			#classSequence = list(self.OBJECT_CLASSES)
+			#classSequence.reverse()
+			#self.__currentProgressSubject.reset()
+			#self.__currentProgressSubject.setTitle(u"Cleaning up")
+			#self.__currentProgressSubject.setEnd(len(self.OBJECT_CLASSES))
+			#for objClass in classSequence:
+			#	Class = eval(objClass)
+			#	self.__currentProgressSubject.addToState(1)
+			#	meth1 = '%s_deleteObjects' % Class.backendMethodPrefix
+			#	meth1 = getattr(wb, meth1)
+			#	meth2 = '%s_getObjects' % Class.backendMethodPrefix
+			#	meth2 = getattr(wb, meth2)
+			#	meth1(meth2())
+			#self.__overallProgressSubject.setMessage(u"Cleanup done!")
+			#self.__overallProgressSubject.addToState(1)
+			wb.backend_deleteBase()
+		
+		wb.backend_createBase()
 		
 		productOnDepots = []
 		if depotIds:
