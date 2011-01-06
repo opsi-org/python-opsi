@@ -2137,6 +2137,7 @@ Entity.subClasses['LicensePool'] = LicensePool
 
 class AuditSoftwareToLicensePool(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'auditSoftwareToLicensePool'
 	
 	def __init__(self, name, version, subVersion, language, architecture, licensePoolId):
 		self.setName(name)
@@ -2211,6 +2212,7 @@ Relationship.subClasses['AuditSoftwareToLicensePool'] = AuditSoftwareToLicensePo
 
 class SoftwareLicenseToLicensePool(Relationship):
 	subClasses = {}
+	backendMethodPrefix = 'softwareLicenseToLicensePool'
 	
 	def __init__(self, softwareLicenseId, licensePoolId, licenseKey = None):
 		self.licenseKey = None
@@ -2441,6 +2443,7 @@ Entity.subClasses['AuditSoftware'] = AuditSoftware
 class AuditSoftwareOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditSoftwareOnClient'
+	
 	def __init__(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None, licenseKey=None):
 		self.uninstallString = None
 		self.binaryName = None
