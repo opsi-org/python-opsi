@@ -78,7 +78,7 @@ class CacheBackend(ConfigDataBackend):
 	def _replicateServiceToWorkBackend(self):
 		if not self._serviceBackend:
 			raise Exception(u"Service backend undefined")
-		self._backendInfo self._serviceBackend.backend_getInfo()
+		self._backendInfo = self._serviceBackend.backend_getInfo()
 		br = BackendReplicator(readBackend = self._serviceBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
