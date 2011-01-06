@@ -276,9 +276,9 @@ class WorkerOpsi:
 		result.code = responsecode.INTERNAL_SERVER_ERROR
 		try:
 			failure.raiseException()
-		except AttributeError, e:
-			logger.debug(e)
-			result.code = responsecode.NOT_FOUND
+		#except AttributeError, e:
+		#	logger.debug(e)
+		#	result.code = responsecode.NOT_FOUND
 		except OpsiAuthenticationError, e:
 			logger.error(e)
 			result.code = responsecode.UNAUTHORIZED
@@ -287,7 +287,7 @@ class WorkerOpsi:
 			logger.error(e)
 			result.code = responsecode.BAD_REQUEST
 		except Exception, e:
-			# logger.logException(e)
+			logger.logException(e, LOG_INFO)
 			logger.error(failure)
 		return result
 	
