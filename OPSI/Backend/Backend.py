@@ -432,6 +432,8 @@ class ConfigDataBackend(Backend):
 			elif option in ('audithardwareconfiglocalesdir',):
 				self._auditHardwareConfigLocalesDir = forceFilename(value)
 		
+		self._options['additionalReferentialIntegrityChecks'] = True
+		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
 			attributes = []
@@ -693,11 +695,12 @@ class ConfigDataBackend(Backend):
 		configState = forceObjectClass(configState, ConfigState)
 		configState.setDefaults()
 		
-		configIds = []
-		for config in self._context.config_getObjects(attributes = ['id']):
-			configIds.append(config.id)
-		if configState.configId not in configIds:
-			raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
+		if self._options['additionalReferentialIntegrityChecks']:
+			configIds = []
+			for config in self._context.config_getObjects(attributes = ['id']):
+				configIds.append(config.id)
+			if configState.configId not in configIds:
+				raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
 		
 	def configState_updateObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
@@ -787,13 +790,14 @@ class ConfigDataBackend(Backend):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		productProperty.setDefaults()
 		
-		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-				id             = productProperty.productId,
-				productVersion = productProperty.productVersion,
-				packageVersion = productProperty.packageVersion):
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-				% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
-		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+					id             = productProperty.productId,
+					productVersion = productProperty.productVersion,
+					packageVersion = productProperty.packageVersion):
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+					% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
+			
 	def productProperty_updateObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 	
@@ -818,13 +822,14 @@ class ConfigDataBackend(Backend):
 		productDependency.setDefaults()
 		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
 			raise BackendBadValueError(u"Either a required action or a required installation status must be given")
-		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-				id                = productDependency.productId,
-				productVersion    = productDependency.productVersion,
-				packageVersion    = productDependency.packageVersion):
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-				% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion))
-		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+					id                = productDependency.productId,
+					productVersion    = productDependency.productVersion,
+					packageVersion    = productDependency.packageVersion):
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+					% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion))
+			
 	def productDependency_updateObject(self, productDependency):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 	
@@ -847,24 +852,28 @@ class ConfigDataBackend(Backend):
 	def productOnDepot_insertObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		productOnDepot.setDefaults()
-		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-			id = productOnDepot.productId,
-			productVersion = productOnDepot.productVersion,
-			packageVersion = productOnDepot.packageVersion):
-			
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+				id = productOnDepot.productId,
+				productVersion = productOnDepot.productVersion,
+				packageVersion = productOnDepot.packageVersion):
+				
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+			
 	def productOnDepot_updateObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
-		if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-			id = productOnDepot.productId,
-			productVersion = productOnDepot.productVersion,
-			packageVersion = productOnDepot.packageVersion):
-			
-			raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-				% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
-	
+		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
+				id = productOnDepot.productId,
+				productVersion = productOnDepot.productVersion,
+				packageVersion = productOnDepot.packageVersion):
+				
+				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
+					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+		
 	def productOnDepot_getHashes(self, attributes = [], **filter):
 		hashes = []
 		for obj in self.productOnDepot_getObjects(attributes, **filter):
@@ -915,12 +924,14 @@ class ConfigDataBackend(Backend):
 	def productPropertyState_insertObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		productPropertyState.setDefaults()
-		if not self._context.productProperty_getObjects(attributes = ['productId', 'propertyId'],
-					productId  = productPropertyState.productId,
-					propertyId = productPropertyState.propertyId):
-			raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
-				% (productPropertyState.propertyId, productPropertyState.productId))
-	
+		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.productProperty_getObjects(attributes = ['productId', 'propertyId'],
+						productId  = productPropertyState.productId,
+						propertyId = productPropertyState.propertyId):
+				raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
+					% (productPropertyState.propertyId, productPropertyState.productId))
+		
 	def productPropertyState_updateObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 	
@@ -943,9 +954,11 @@ class ConfigDataBackend(Backend):
 	def group_insertObject(self, group):
 		group = forceObjectClass(group, Group)
 		group.setDefaults()
-		if group.parentGroupId and not self._context.group_getObjects(attributes = ['id'], id = group.parentGroupId):
-			raise BackendReferentialIntegrityError(u"Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))
 		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if group.parentGroupId and not self._context.group_getObjects(attributes = ['id'], id = group.parentGroupId):
+				raise BackendReferentialIntegrityError(u"Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))
+			
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
 	
@@ -1020,9 +1033,11 @@ class ConfigDataBackend(Backend):
 		softwareLicense.setDefaults()
 		if not softwareLicense.licenseContractId:
 			raise BackendBadValueError(u"License contract missing")
-		if not self._context.licenseContract_getObjects(attributes = ['id'], id = softwareLicense.licenseContractId):
-			raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
 		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.licenseContract_getObjects(attributes = ['id'], id = softwareLicense.licenseContractId):
+				raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
+			
 	def softwareLicense_updateObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 	
@@ -1088,11 +1103,13 @@ class ConfigDataBackend(Backend):
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 		softwareLicenseToLicensePool.setDefaults()
-		if not self._context.softwareLicense_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.softwareLicenseId):
-			raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
-		if not self._context.licensePool_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.licensePoolId):
-			raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
 		
+		if self._options['additionalReferentialIntegrityChecks']:
+			if not self._context.softwareLicense_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.softwareLicenseId):
+				raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
+			if not self._context.licensePool_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.licensePoolId):
+				raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
+			
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 	

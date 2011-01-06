@@ -89,7 +89,8 @@ class CacheBackend(ConfigDataBackend):
 			clientIds  = [ self._clientId ],
 			groupIds   = [ ],
 			productIds = [ ],
-			audit      = False)
+			audit      = False
+			license    = False)
 		
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):

@@ -57,6 +57,9 @@ class BackendReplicator:
 		'Product',
 		'Config',
 		'Group',
+		'LicenseContract',
+		'LicensePool',
+		'SoftwareLicense',
 		'AuditHardware',
 		'AuditSoftware',
 		'ProductDependency',
@@ -68,6 +71,9 @@ class BackendReplicator:
 		'ObjectToGroup',
 		'AuditHardwareOnHost',
 		'AuditSoftwareOnClient',
+		'SoftwareLicenseToLicensePool',
+		'LicenseOnClient',
+		'AuditSoftwareToLicensePool'
 	]
 	
 	def __init__(self, readBackend, writeBackend, newServerId=None, oldServerId=None, cleanupFirst=True):
@@ -100,7 +106,7 @@ class BackendReplicator:
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 	
-	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], audit=True):
+	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], audit=True, license=True):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
@@ -112,6 +118,7 @@ class BackendReplicator:
 		groupIds   = forceList(serverIds)
 		productIds = forceList(productIds)
 		audit      = forceBool(audit)
+		license    = forceBool(license)
 		
 		hostIds = []
 		for serverId in serverIds:
@@ -124,207 +131,212 @@ class BackendReplicator:
 			if not clientId in hostIds:
 				hostIds.append(clientId)
 		
-		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, audit: %s" \
-				% (serverIds, depotIds, clientIds, groupIds, productIds, audit))
+		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, audit: %s, license: %s" \
+				% (serverIds, depotIds, clientIds, groupIds, productIds, audit, license))
 		
 		rb = self._extendedReadBackend
 		wb = self.__writeBackend
+		aric = wb.backend_getOptions().get('additionalReferentialIntegrityChecks', True)
 		if self.__strict:
 			wb = self._extendedWriteBackend
-		
-		self.__overallProgressSubject.reset()
-		end = 0
-		for objClass in self.OBJECT_CLASSES:
-			if not audit and objClass.lower().startswith('audit'):
-				continue
-			end += 1
-		if self.__cleanupFirst:
-			end += 1
-		self.__overallProgressSubject.setEnd(end)
-		
-		#wb.backend_createBase()
-		if self.__cleanupFirst:
-			#classSequence = list(self.OBJECT_CLASSES)
-			#classSequence.reverse()
-			#self.__currentProgressSubject.reset()
-			#self.__currentProgressSubject.setTitle(u"Cleaning up")
-			#self.__currentProgressSubject.setEnd(len(self.OBJECT_CLASSES))
-			#for objClass in classSequence:
-			#	Class = eval(objClass)
-			#	self.__currentProgressSubject.addToState(1)
-			#	meth1 = '%s_deleteObjects' % Class.backendMethodPrefix
-			#	meth1 = getattr(wb, meth1)
-			#	meth2 = '%s_getObjects' % Class.backendMethodPrefix
-			#	meth2 = getattr(wb, meth2)
-			#	meth1(meth2())
-			#self.__overallProgressSubject.setMessage(u"Cleanup done!")
-			#self.__overallProgressSubject.addToState(1)
-			wb.backend_deleteBase()
-		
-		wb.backend_createBase()
-		
-		productOnDepots = []
-		if depotIds:
-			productOnDepots = rb.productOnDepot_getObjects(depotId = depotIds, productId = productIds)
-			productIdsOnDepot = []
-			for productOnDepot in productOnDepots:
-				if not productOnDepot.productId in productIdsOnDepot:
-					productIdsOnDepot.append(productOnDepot.productId)
-			if productIdsOnDepot:
-				if not productIds:
-					productIds = productIdsOnDepot
-				else:
-					newProductIds = []
-					for productId in productIds:
-						if productId in productIdsOnDepot:
-							newProductIds.append(productId)
-					productIds = newProductIds
-		
-		configServer = None
-		depotServers = []
-		for objClass in self.OBJECT_CLASSES:
-			if not audit and objClass.lower().startswith('audit'):
-				continue
+		else:
+			wb.backend_setOptions({'additionalReferentialIntegrityChecks': False})
+		try:
+			self.__overallProgressSubject.reset()
+			end = 0
+			for objClass in self.OBJECT_CLASSES:
+				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient')
+					continue
+				if not license and objClass in ('SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
+								'LicenseOnClient', 'AuditSoftwareToLicensePool', 'LicenseContract')
+					continue
+				end += 1
+			if self.__cleanupFirst:
+				end += 1
+			self.__overallProgressSubject.setEnd(end)
 			
-			subClasses = [ None ]
-			ids = []
-			if (objClass == 'Host'):
-				subClasses = [ 'OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient' ]
+			#wb.backend_createBase()
+			if self.__cleanupFirst:
+				#classSequence = list(self.OBJECT_CLASSES)
+				#classSequence.reverse()
+				#self.__currentProgressSubject.reset()
+				#self.__currentProgressSubject.setTitle(u"Cleaning up")
+				#self.__currentProgressSubject.setEnd(len(self.OBJECT_CLASSES))
+				#for objClass in classSequence:
+				#	Class = eval(objClass)
+				#	self.__currentProgressSubject.addToState(1)
+				#	meth1 = '%s_deleteObjects' % Class.backendMethodPrefix
+				#	meth1 = getattr(wb, meth1)
+				#	meth2 = '%s_getObjects' % Class.backendMethodPrefix
+				#	meth2 = getattr(wb, meth2)
+				#	meth1(meth2())
+				#self.__overallProgressSubject.setMessage(u"Cleanup done!")
+				#self.__overallProgressSubject.addToState(1)
+				wb.backend_deleteBase()
 			
-			methodPrefix = eval("%s.backendMethodPrefix" % objClass)
+			wb.backend_createBase()
 			
-			self.__overallProgressSubject.setMessage(u"Replicating %s" % objClass)
-			self.__currentProgressSubject.setTitle(u"Replicating %s" % objClass)
-			for subClass in subClasses:
-				filter = {}
-				if   (subClass == 'OpsiConfigserver'):
-					filter = { 'type': subClass, 'id': serverIds }
-				elif (subClass == 'OpsiDepotserver'):
-					filter = { 'type': subClass, 'id': depotIds }
-				elif (subClass == 'OpsiClient'):
-					filter = { 'type': subClass, 'id': clientIds }
-				elif (objClass == 'Group'):
-					filter = { 'type': subClass, 'id': groupIds }
-				elif (objClass == 'Product'):
-					filter = { 'type': subClass, 'id': productIds }
-				elif (objClass == 'ProductOnClient'):
-					filter = { 'productId': productIds, 'clientId': clientIds }
-				elif (objClass == 'ProductOnDepot'):
-					filter = { 'productId': productIds, 'depotId': depotIds }
-				elif (objClass == 'ProductDependency'):
-					filter = { 'productId': productIds }
-				elif (objClass == 'ProductProperty'):
-					filter = { 'productId': productIds }
-				elif (objClass == 'ProductPropertyState'):
-					filter = { 'productId': productIds, 'objectId': hostIds }
-				elif (objClass == 'ConfigState'):
-					filter = { 'objectId': hostIds }
-				elif (objClass == 'ObjectToGroup'):
-					objectIds = []
-					if productIds and hostIds:
-						objectIds.extend(productIds)
-						objectIds.extend(hostIds)
-					filter = { 'objectId': objectIds }
-				
-				logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
-				if not subClass:
-					subClass = objClass
-				Class = eval(subClass)
-				
-				self.__currentProgressSubject.reset()
-				self.__currentProgressSubject.setMessage(u"Reading objects")
-				self.__currentProgressSubject.setEnd(1)
-				objs = []
-				
-				if (objClass == 'ProductOnDepot') and productOnDepots:
-					objs = productOnDepots
-				else:
-					meth = '%s_getObjects' % Class.backendMethodPrefix
-					meth = getattr(rb, meth)
-					objs = meth(**filter)
-				
-				self.__currentProgressSubject.addToState(1)
-				if (objClass == 'Group'):
-					# Sort groups
-					sortedObjs = []
-					groupIds = []
-					while True:
-						notAddedObjs = []
-						for obj in objs:
-							if not obj.getParentGroupId() or obj.getParentGroupId() in groupIds:
-								if not obj.getParentGroupId():
-									logger.debug(u"Adding group '%s' without parent group set" % obj)
-								else:
-									logger.debug(u"Adding group '%s' with parent group '%s' already added" % (obj, obj.getParentGroupId()))
-								sortedObjs.append(obj)
-								groupIds.append(obj.getId())
-							else:
-								logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
-								notAddedObjs.append(obj)
-						if not notAddedObjs:
-							break
-						if len(notAddedObjs) == len(objs):
-							for obj in notAddedObjs:
-								logger.error(u"Failed to add group: %s" % obj)
-							break
-						objs = notAddedObjs
-					objs = sortedObjs
-				
-				self.__currentProgressSubject.reset()
-				self.__currentProgressSubject.setMessage(u"Writing objects")
-				if (subClass == 'OpsiConfigserver') and objs:
-					configServer = objs[0]
-					depotServers.extend(objs)
-				if (subClass == 'OpsiDepotserver'):
-					depotServers.extend(objs)
-				
-				if self.__strict:
-					self.__currentProgressSubject.setEnd(1)
-					meth = '%s_createObjects' % Class.backendMethodPrefix
-					meth = getattr(wb, meth)
-					meth(objs)
-					self.__currentProgressSubject.addToState(1)
-				else:
-					self.__currentProgressSubject.setEnd(len(objs))
-					for obj in objs:
-						try:
-							meth = '%s_insertObject' % Class.backendMethodPrefix
-							logger.notice(u"== Calling %s on %s" % (meth, wb))
-							meth = getattr(wb, meth)
-							meth(obj)
-						except Exception, e:
-							logger.logException(e, LOG_DEBUG)
-							logger.error(u"Failed to replicate object %s: %s" % (obj, e))
-						self.__currentProgressSubject.addToState(1)
-				self.__currentProgressSubject.setState(len(objs))
-				
-			self.__overallProgressSubject.addToState(1)
-		
-		if self.__newServerId:
-			if not self.__oldServerId:
-				if configServer:
-					self.__oldServerId = configServer.id
-				elif depotServers:
-					self.__oldServerId = depotServers[0].id
-				else:
-					logger.error(u"No config/depot servers found")
-			
-			if self.__oldServerId and (self.__oldServerId != self.__newServerId):
-				logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
-				wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
-				
-				newDepots = []
-				for depot in wb.host_getObjects(type = 'OpsiDepotserver'):
-					hash = depot.toHash()
-					del hash['type']
-					if (depot.id == self.__newServerId):
-						newDepots.append( OpsiConfigserver.fromHash(hash) )
+			productOnDepots = []
+			if depotIds:
+				productOnDepots = rb.productOnDepot_getObjects(depotId = depotIds, productId = productIds)
+				productIdsOnDepot = []
+				for productOnDepot in productOnDepots:
+					if not productOnDepot.productId in productIdsOnDepot:
+						productIdsOnDepot.append(productOnDepot.productId)
+				if productIdsOnDepot:
+					if not productIds:
+						productIds = productIdsOnDepot
 					else:
-						newDepots.append( OpsiDepotserver.fromHash(hash) )
-				wb.host_createObjects(newDepots)
+						newProductIds = []
+						for productId in productIds:
+							if productId in productIdsOnDepot:
+								newProductIds.append(productId)
+						productIds = newProductIds
+			
+			configServer = None
+			depotServers = []
+			for objClass in self.OBJECT_CLASSES:
+				if not audit and objClass.lower().startswith('audit'):
+					continue
 				
-	
-	
+				subClasses = [ None ]
+				ids = []
+				if (objClass == 'Host'):
+					subClasses = [ 'OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient' ]
+				
+				methodPrefix = eval("%s.backendMethodPrefix" % objClass)
+				
+				self.__overallProgressSubject.setMessage(u"Replicating %s" % objClass)
+				self.__currentProgressSubject.setTitle(u"Replicating %s" % objClass)
+				for subClass in subClasses:
+					filter = {}
+					if   (subClass == 'OpsiConfigserver'):
+						filter = { 'type': subClass, 'id': serverIds }
+					elif (subClass == 'OpsiDepotserver'):
+						filter = { 'type': subClass, 'id': depotIds }
+					elif (subClass == 'OpsiClient'):
+						filter = { 'type': subClass, 'id': clientIds }
+					elif (objClass == 'Group'):
+						filter = { 'type': subClass, 'id': groupIds }
+					elif (objClass == 'Product'):
+						filter = { 'type': subClass, 'id': productIds }
+					elif (objClass == 'ProductOnClient'):
+						filter = { 'productId': productIds, 'clientId': clientIds }
+					elif (objClass == 'ProductOnDepot'):
+						filter = { 'productId': productIds, 'depotId': depotIds }
+					elif (objClass == 'ProductDependency'):
+						filter = { 'productId': productIds }
+					elif (objClass == 'ProductProperty'):
+						filter = { 'productId': productIds }
+					elif (objClass == 'ProductPropertyState'):
+						filter = { 'productId': productIds, 'objectId': hostIds }
+					elif (objClass == 'ConfigState'):
+						filter = { 'objectId': hostIds }
+					elif (objClass == 'ObjectToGroup'):
+						objectIds = []
+						if productIds and hostIds:
+							objectIds.extend(productIds)
+							objectIds.extend(hostIds)
+						filter = { 'objectId': objectIds }
+					
+					logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
+					if not subClass:
+						subClass = objClass
+					Class = eval(subClass)
+					
+					self.__currentProgressSubject.reset()
+					self.__currentProgressSubject.setMessage(u"Reading objects")
+					self.__currentProgressSubject.setEnd(1)
+					objs = []
+					
+					if (objClass == 'ProductOnDepot') and productOnDepots:
+						objs = productOnDepots
+					else:
+						meth = '%s_getObjects' % Class.backendMethodPrefix
+						meth = getattr(rb, meth)
+						objs = meth(**filter)
+					
+					self.__currentProgressSubject.addToState(1)
+					if (objClass == 'Group'):
+						# Sort groups
+						sortedObjs = []
+						groupIds = []
+						while True:
+							notAddedObjs = []
+							for obj in objs:
+								if not obj.getParentGroupId() or obj.getParentGroupId() in groupIds:
+									if not obj.getParentGroupId():
+										logger.debug(u"Adding group '%s' without parent group set" % obj)
+									else:
+										logger.debug(u"Adding group '%s' with parent group '%s' already added" % (obj, obj.getParentGroupId()))
+									sortedObjs.append(obj)
+									groupIds.append(obj.getId())
+								else:
+									logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
+									notAddedObjs.append(obj)
+							if not notAddedObjs:
+								break
+							if len(notAddedObjs) == len(objs):
+								for obj in notAddedObjs:
+									logger.error(u"Failed to add group: %s" % obj)
+								break
+							objs = notAddedObjs
+						objs = sortedObjs
+					
+					self.__currentProgressSubject.reset()
+					self.__currentProgressSubject.setMessage(u"Writing objects")
+					if (subClass == 'OpsiConfigserver') and objs:
+						configServer = objs[0]
+						depotServers.extend(objs)
+					if (subClass == 'OpsiDepotserver'):
+						depotServers.extend(objs)
+					
+					if self.__strict:
+						self.__currentProgressSubject.setEnd(1)
+						meth = '%s_createObjects' % Class.backendMethodPrefix
+						meth = getattr(wb, meth)
+						meth(objs)
+						self.__currentProgressSubject.addToState(1)
+					else:
+						self.__currentProgressSubject.setEnd(len(objs))
+						for obj in objs:
+							try:
+								meth = '%s_insertObject' % Class.backendMethodPrefix
+								meth = getattr(wb, meth)
+								meth(obj)
+							except Exception, e:
+								logger.logException(e, LOG_DEBUG)
+								logger.error(u"Failed to replicate object %s: %s" % (obj, e))
+							self.__currentProgressSubject.addToState(1)
+					self.__currentProgressSubject.setState(len(objs))
+					
+				self.__overallProgressSubject.addToState(1)
+			
+			if self.__newServerId:
+				if not self.__oldServerId:
+					if configServer:
+						self.__oldServerId = configServer.id
+					elif depotServers:
+						self.__oldServerId = depotServers[0].id
+					else:
+						logger.error(u"No config/depot servers found")
+				
+				if self.__oldServerId and (self.__oldServerId != self.__newServerId):
+					logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
+					wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
+					
+					newDepots = []
+					for depot in wb.host_getObjects(type = 'OpsiDepotserver'):
+						hash = depot.toHash()
+						del hash['type']
+						if (depot.id == self.__newServerId):
+							newDepots.append( OpsiConfigserver.fromHash(hash) )
+						else:
+							newDepots.append( OpsiDepotserver.fromHash(hash) )
+					wb.host_createObjects(newDepots)
+		finally	:
+			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
+		
 
 
 
