@@ -125,7 +125,7 @@ class CacheBackend(ConfigDataBackend):
 		f.write('signature = %s\n' % modules.get('signature', ''))
 		f.close()
 		f = codecs.open(self._opsiVersionFile, 'w', 'utf-8')
-		f.write(backendInfo.get('opsiVersion')
+		f.write(backendInfo.get('opsiVersion', '').strip())
 		f.close()
 	
 if (__name__ == '__main__'):
