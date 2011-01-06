@@ -372,8 +372,8 @@ class ExtendedBackend(Backend):
 		self._createInstanceMethods()
 		
 	def _createInstanceMethods(self):
-		#logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
-		logger.notice(u"%s is creating instance methods" % self.__class__.__name__)
+		#logger.debug(u"%s is creating instance methods" % self)
+		logger.notice(u"%s is creating instance methods" % self)
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
