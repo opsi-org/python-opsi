@@ -145,10 +145,10 @@ class BackendReplicator:
 			self.__overallProgressSubject.reset()
 			end = 0
 			for objClass in self.OBJECT_CLASSES:
-				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient')
+				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
 					continue
 				if not license and objClass in ('SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
-								'LicenseOnClient', 'AuditSoftwareToLicensePool', 'LicenseContract')
+								'LicenseOnClient', 'AuditSoftwareToLicensePool', 'LicenseContract'):
 					continue
 				end += 1
 			if self.__cleanupFirst:
