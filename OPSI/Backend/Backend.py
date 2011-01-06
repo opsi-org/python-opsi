@@ -372,15 +372,13 @@ class ExtendedBackend(Backend):
 		self._createInstanceMethods()
 		
 	def _createInstanceMethods(self):
-		#logger.debug(u"%s is creating instance methods" % self)
-		logger.notice(u"%s is creating instance methods" % self)
+		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			#logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
-			logger.notice(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
+			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
 			#if hasattr(self.__class__, methodName):
 			if hasattr(self, methodName):
 				if self._overwrite:
