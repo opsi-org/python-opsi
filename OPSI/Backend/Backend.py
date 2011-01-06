@@ -149,6 +149,9 @@ class Backend:
 		self._password = None
 		self._context = self
 		
+		self._opsiVersionFile = OPSI_VERSION_FILE
+		self._opsiModulesFile = OPSI_MODULES_FILE
+		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('name',):
@@ -291,20 +294,20 @@ class Backend:
 	def backend_info(self):
 		opsiVersion = 'unknown'
 		try:
-			f = codecs.open(OPSI_VERSION_FILE, 'r', 'utf-8')
+			f = codecs.open(self._opsiVersionFile, 'r', 'utf-8')
 			opsiVersion = f.readline().strip()
 			f.close()
 		except Exception, e:
-			logger.error(u"Failed to read version info from file '%s': %s" % (OPSI_VERSION_FILE, e))
+			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
 		
 		modules = {}
 		try:
 			modules['valid'] = False
-			f = codecs.open(OPSI_MODULES_FILE, 'r', 'utf-8')
+			f = codecs.open(self._opsiModulesFile, 'r', 'utf-8')
 			for line in f.readlines():
 				line = line.strip()
 				if (line.find('=') == -1):
-					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, OPSI_MODULES_FILE))
+					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 					continue
 				(module, state) = line.split('=', 1)
 				module = module.strip().lower()
@@ -314,7 +317,7 @@ class Backend:
 					continue
 				state = state.lower()
 				if not state in ('yes', 'no'):
-					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, OPSI_MODULES_FILE))
+					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 					continue
 				modules[module] = (state == 'yes')
 			f.close()
@@ -340,7 +343,7 @@ class Backend:
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
 		except Exception, e:
-			logger.warning(u"Failed to read opsi modules file '%s': %s" % (OPSI_MODULES_FILE, e))
+			logger.warning(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, e))
 		
 		return {
 			"opsiVersion": opsiVersion,

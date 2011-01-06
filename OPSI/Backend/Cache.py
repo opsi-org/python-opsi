@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-import inspect
+import inspect, time
 
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -51,7 +51,6 @@ class CacheBackend(ConfigDataBackend):
 		self._masterBackend = None
 		self._clientId = None
 		self._depotId = None
-		self._backendInfo = {}
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -65,6 +64,8 @@ class CacheBackend(ConfigDataBackend):
 				self._depotId = forceHostId(value)
 			elif option in ('backendinfo',):
 				self._backendInfo = value
+			elif option in ('opsimodulesfile',):
+				self._opsiModulesFile = value
 			
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
@@ -82,7 +83,7 @@ class CacheBackend(ConfigDataBackend):
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
-		self._backendInfo = self._masterBackend.backend_info()
+		self._writeModulesFile(self._masterBackend.backend_info())
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
@@ -104,16 +105,28 @@ class CacheBackend(ConfigDataBackend):
 				logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
 				exec(u'def %s(self, %s): return self._executeOnWorkBackend("%s", %s)' % (methodName, argString, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
+		
 	def _executeOnWorkBackend(self, methodName, **kwargs):
 		logger.info(u"Executing method '%s' on work backend" % methodName)
 		meth = getattr(self._workBackend, methodName)
 		return meth(**kwargs)
 	
-	def backend_info(self):
-		return self._backendInfo
+	def _writeModulesFile(self, backendInfo):
+		f = open(self._opsiModulesFile, 'w')
+		modules = backendInfo['modules']
+		for (module, state) in modules.items():
+			if module in ('customer', 'expires'):
+				continue
+			if state:
+				state = 'yes'
+			else:
+				state = 'no'
+			f.write('%s = %s\r\n' % (module.lower(), state))
+		f.write('customer = %s\r\n' % modules.get('customer', ''))
+		f.write('expires = %s\r\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))
+		f.write('signature = %s\r\n' % modules.get('signature', ''))
+		f.close()
 	
-
 if (__name__ == '__main__'):
 	from OPSI.Backend.SQLite import SQLiteBackend
 	from OPSI.Backend.JSONRPC import JSONRPCBackend

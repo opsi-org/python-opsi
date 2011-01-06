@@ -634,7 +634,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			'path':          self.path,
 			'title':         u'opsi interface page',
 			'javascript':    javascript,
-			'select_path':   u'<option selected="selected">%s</option>' % path,
+			'select_path':   u'<option selected="selected">%s</option>' % self.path,
 			'select_method': selectMethod,
 			'result':        resultDiv
 		}
