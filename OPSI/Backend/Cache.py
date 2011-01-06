@@ -72,8 +72,9 @@ class CacheBackend(ConfigDataBackend):
 		if not self._depotId:
 			raise Exception(u"Depot id undefined")
 		
+		self._workBackend._setContext(self)
 		self._createInstanceMethods()
-	
+		
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
