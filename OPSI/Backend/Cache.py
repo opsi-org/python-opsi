@@ -53,13 +53,13 @@ class CacheBackend(ConfigDataBackend):
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('workbackend',):
+			if   option in ('workbackend',):
 				self._workBackend = value
-			if option in ('servicebackend',):
+			elif option in ('servicebackend',):
 				self._serviceBackend = value
-			if option in ('clientid',):
+			elif option in ('clientid',):
 				self._clientId = forceHostId(value)
-			if option in ('depotid',):
+			elif option in ('depotid',):
 				self._depotId = forceHostId(value)
 			
 		if not self._workBackend:
