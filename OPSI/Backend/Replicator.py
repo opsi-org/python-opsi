@@ -237,8 +237,8 @@ class BackendReplicator:
 				if (objClass == 'ProductOnDepot') and productOnDepots:
 					objs = productOnDepots
 				else:
-					method = '%s_getObjects' % Class.backendMethodPrefix
-					method = getattr(rb, method)
+					meth = '%s_getObjects' % Class.backendMethodPrefix
+					meth = getattr(rb, meth)
 					objs = method(**filter)
 				
 				self.__currentProgressSubject.addToState(1)

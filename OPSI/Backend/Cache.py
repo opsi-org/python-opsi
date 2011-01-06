@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-import inspect, time
+import inspect, time, codecs
 
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -64,9 +64,7 @@ class CacheBackend(ConfigDataBackend):
 				self._depotId = forceHostId(value)
 			elif option in ('backendinfo',):
 				self._backendInfo = value
-			elif option in ('opsimodulesfile',):
-				self._opsiModulesFile = value
-			
+		
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
 		if not self._clientId:
@@ -83,7 +81,7 @@ class CacheBackend(ConfigDataBackend):
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
-		self._writeModulesFile(self._masterBackend.backend_info())
+		self._cacheBackendInfo(self._masterBackend.backend_info())
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
@@ -107,12 +105,12 @@ class CacheBackend(ConfigDataBackend):
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 		
 	def _executeOnWorkBackend(self, methodName, **kwargs):
-		logger.info(u"Executing method '%s' on work backend" % methodName)
+		logger.info(u"Executing method '%s' on work backend %s" % (methodName, self._workBackend))
 		meth = getattr(self._workBackend, methodName)
 		return meth(**kwargs)
 	
-	def _writeModulesFile(self, backendInfo):
-		f = open(self._opsiModulesFile, 'w')
+	def _cacheBackendInfo(self, backendInfo):
+		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')
 		modules = backendInfo['modules']
 		for (module, state) in modules.items():
 			if module in ('customer', 'expires'):
@@ -125,6 +123,9 @@ class CacheBackend(ConfigDataBackend):
 		f.write('customer = %s\n' % modules.get('customer', ''))
 		f.write('expires = %s\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))
 		f.write('signature = %s\n' % modules.get('signature', ''))
+		f.close()
+		f = codecs.open(self._opsiVersionFile, 'w', 'utf-8')
+		f.write(backendInfo.get('opsiVersion')
 		f.close()
 	
 if (__name__ == '__main__'):
