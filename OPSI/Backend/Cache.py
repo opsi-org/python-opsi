@@ -121,10 +121,10 @@ class CacheBackend(ConfigDataBackend):
 				state = 'yes'
 			else:
 				state = 'no'
-			f.write('%s = %s\r\n' % (module.lower(), state))
-		f.write('customer = %s\r\n' % modules.get('customer', ''))
-		f.write('expires = %s\r\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))
-		f.write('signature = %s\r\n' % modules.get('signature', ''))
+			f.write('%s = %s\n' % (module.lower(), state))
+		f.write('customer = %s\n' % modules.get('customer', ''))
+		f.write('expires = %s\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))
+		f.write('signature = %s\n' % modules.get('signature', ''))
 		f.close()
 	
 if (__name__ == '__main__'):
