@@ -484,7 +484,7 @@ class ConfigDataBackend(Backend):
 		f.close()
 		os.chmod(logFile, 0640)
 		
-	def log_read(self, logType, objectId=None, maxSize=0):
+	def log_read(self, logType, objectId=None, maxSize=5000000):
 		logType = forceUnicode(logType)
 		if not objectId:
 			objectId = None
