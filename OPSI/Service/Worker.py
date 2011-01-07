@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-import base64, urllib, zlib
+import base64, urllib, zlib, copy
 from twisted.internet import defer, reactor, threads
 from OPSI.web2 import responsecode, http_headers, http, stream
 
@@ -277,15 +277,17 @@ class WorkerOpsi:
 		result.code = responsecode.INTERNAL_SERVER_ERROR
 		try:
 			failure.raiseException()
+
 		#except AttributeError, e:
 		#	logger.debug(e)
 		#	result.code = responsecode.NOT_FOUND
+
 		except OpsiAuthenticationError, e:
-			logger.error(e)
+			logger.logException(e)
 			result.code = responsecode.UNAUTHORIZED
 			result.headers.setHeader('www-authenticate', [('basic', { 'realm': self.authRealm } )])
 		except OpsiBadRpcError, e:
-			logger.error(e)
+			logger.logException(e)
 			result.code = responsecode.BAD_REQUEST
 		except Exception, e:
 			logger.logException(e, LOG_ERROR)
@@ -568,6 +570,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 		
 		response = []
+
 		for rpc in self._rpcs:
 			response.append(serialize(rpc.getResponse()))
 		if (len(response) == 1):
@@ -595,6 +598,37 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			error = toJson({"id": None, "result": None, "error": error})
 		result.stream = stream.IByteStream(error.encode('utf-8'))
 		return result
+
+
+
+class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
+	
+	def _processQuery(self, result):
+		
+		logger.debug("Using multiprocessing to handle rpc.")
+		
+		request = copy.copy(self.request)
+		request.resources = []
+		request.site = None
+		request.chanRequest = None
+
+		dr = defer.Deferred()
+		
+		def processResult(r):
+			self._rpcs = r
+			dr.callback(r)
+		
+		def makeInstanceCall():
+			d = self._callInstance.processRequest(request)
+			d.addCallback(processResult)
+			return d
+			
+		
+		deferred = self._getCallInstance(None)
+		deferred.addCallback(lambda x: makeInstanceCall())
+		deferred.addErrback(self._errback)
+
+		return dr
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	def __init__(self, service, request, resource):

@@ -34,7 +34,7 @@ from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import DeferredList, maybeDeferred, Deferred
 from twisted.internet.unix import Connector
-from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP, MAX_VALUE_LENGTH
+from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP
 
 from pickle import dumps, loads
 from types import StringType
@@ -45,6 +45,8 @@ try:
 	import cStringIO as StringIO
 except ImportError:
 	import StringIO
+
+
 
 class RemoteArgument(Argument):
 	
@@ -59,7 +61,7 @@ class RemoteProcessException(Exception):
 
 class RemoteProcessCall(Command):
 	
-	arguments = [	('method', String()),
+	arguments = [	('name', String()),
 			('argString', String()),
 			('tag', Integer())]
 	
@@ -82,6 +84,8 @@ class ChunkedArgument(Command):
 	
 class OpsiProcessProtocol(AMP):
 	
+	_MAX_VALUE_LENGTH = 0xffffffff
+	
 	def __init__(self):
 		AMP.__init__(self)
 		self.tag = 1
@@ -92,7 +96,7 @@ class OpsiProcessProtocol(AMP):
 		return self.tag
 
 	@RemoteProcessCall.responder
-	def remoteProcessCallReceived(self, tag, method, argString):
+	def remoteProcessCallReceived(self, tag, name, argString):
 
 		args = self.buffer.pop(tag, argString)
 		
@@ -101,11 +105,12 @@ class OpsiProcessProtocol(AMP):
 			args, closed = args.getvalue(), args.close()
 				
 		args, kwargs = loads(args)
+
+		method = getattr(self.factory._remote, name, None)
 		
-		method = getattr(self.factory._remote, method, None)
-		
+
 		if method is None:
-			raise RemoteProcessException(u"Daemon %s has no method %s" % (self.factory._remote, method.__name__))
+			raise RemoteProcessException(u"Daemon has no method %s" % (name))
 		
 		d = maybeDeferred(method, *args, **kwargs)
 		d.addCallback(lambda result: {"result":result})
@@ -114,7 +119,7 @@ class OpsiProcessProtocol(AMP):
 
 	@ChunkedArgument.responder
 	def chunkReceived(self, tag, argString):
-		self.buffer.setdefault(tag, StringIO.StringIO()).write(args)
+		self.buffer.setdefault(tag, StringIO.StringIO()).write(argString)
 		return tag
 	
 	def _callRemote(self, command, **kwargs):
@@ -135,13 +140,13 @@ class OpsiProcessProtocol(AMP):
 		argString = dumps((args,kwargs))
 		tag = self.getNextTag()
 		
-		chunks = [argString[i:i + MAX_VALUE_LENGTH] for i in range(0, len(argString), MAX_VALUE_LENGTH)]
+		chunks = [argString[i:i + self._MAX_VALUE_LENGTH] for i in range(0, len(argString), self._MAX_VALUE_LENGTH)]
 
 		if len(chunks) > 1:
 			for c in chunks[:-1]:
 				d.addCallback(lambda x: self.callRemote(commandType=ChunkedArgument, tag=tag, argString=c))
 
-		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, method=method, tag=tag, argString=chunks[-1]))
+		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
 		d.callback(None)
 		return d
 	
@@ -154,8 +159,6 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 	
 	def __init__(self, remote=None):
 		self._remote = remote
-
-
 	
 class RemoteDaemonProxy(object):
 	

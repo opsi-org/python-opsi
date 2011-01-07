@@ -347,6 +347,17 @@ class LoggerImplementation:
 	def getConsoleLevel(self):
 		return self.__consoleLevel
 	
+	def getFileLevel(self):
+		return self.__fileLevel
+	
+	def getLogFile(self, currentThread=False, object=None):
+		if currentThread:
+			return self._getCurrentThreadLog()
+		elif object:
+			return self._getObjectLog(id(object))
+		
+		return self.__logFile
+	
 	def setLogFile(self, logFile, currentThread=False, object=None):
 		''' Set the filename of logfile. '''
 		if currentThread:

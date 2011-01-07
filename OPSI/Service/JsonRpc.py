@@ -32,12 +32,16 @@
    @license: GNU General Public License version 2
 """
 
-import time
+import time, zlib, urllib, copy
 
+from twisted.internet.defer import maybeDeferred, Deferred, succeed
+from twisted.internet import threads
+
+from OPSI.Util import objectToHtml, toJson, fromJson
 from OPSI.Logger import *
-from OPSI.Types import OpsiRpcError
+from OPSI.Types import *
 from OPSI.Object import serialize, deserialize
-
+from OPSI.web2 import stream
 logger = Logger()
 
 class JsonRpc(object):
@@ -168,6 +172,100 @@ class JsonRpc(object):
 				response['result'] = self.result
 		return response
 
+	def __getstate__(self):
+		state = self.__dict__
+		state['_instance'] = None
+		state['_interface'] = None
+		return state
+		
+	
+	
+class JsonRpcRequestProcessor(object):
+	
+	def __init__(self, request, callInstance, callInterface=None):
+		self.request = request
+		self.callInstance = callInstance
+		if callInterface is None:
+			self.callInterface = callInstance.backend_getInterface()
+		else:
+			self.callInterface = callInterface
+		self.query = None
+		self.rpcs = []
+	
+		d = self.getQuery()
+	
+	
+	def getQuery(self):
+		self.query = ''
+		if   (self.request.method == 'GET'):
+			self.query = urllib.unquote( self.request.querystring )
+			return succeed(self.query)
+		elif (self.request.method == 'POST'):
+			# Returning deferred needed for chaining
+			def handlePostData(chunk):
+				self.query += chunk
+			d = stream.readStream(self.request.stream, handlePostData)
+			return d
+		else:
+			raise ValueError(u"Unhandled method '%s'" % self.request.method)
 
-
+	
+	def decodeQuery(self):
+		try:
+			if (self.request.method == 'POST'):
+				contentType = self.request.headers.getHeader('content-type')
+				logger.debug(u"Content-Type: %s" % contentType)
+				if contentType and contentType.mediaType.startswith('gzip'):
+					logger.debug(u"Expecting compressed data from client")
+					self.query = zlib.decompress(self.query)
+			self.query = unicode(self.query, 'utf-8')
+		except (UnicodeError, UnicodeEncodeError), e:
+			self.service.statistics().addEncodingError('query', self.session.ip, self.session.userAgent, unicode(e))
+			self.query = unicode(self.query, 'utf-8', 'replace')
+		logger.debug2(u"query: %s" % self.query)
+		return self.query
+	
+	
+	def buildRpcs(self):
+		if not self.query:
+			return None
+		if not self.callInstance:
+			raise Exception(u"Call instance not defined in %s" % self)
+		if not self.callInterface:
+			raise Exception(u"Call interface not defined in %s" % self)
+		
+		rpcs = []
+		try:
+			rpcs = fromJson(self.query, preventObjectCreation = True)
+			if not rpcs:
+				raise Exception(u"Got no rpcs")
+		
+		except Exception, e:
+			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
+		
+		for rpc in forceList(rpcs):
+			rpc = JsonRpc(instance = self.callInstance, interface = self.callInterface, rpc = rpc)
+			self.rpcs.append(rpc)
+		
+		return self.rpcs
+	
+	def _executeRpc(self, rpc, thread=True):
+		if thread:
+			deferred = threads.deferToThread(rpc.execute)
+		else:
+			deferred = maybeDeferred(rpc.execute)
+		return deferred
+		
+	def executeRpcs(self, thread=True):
+		deferred = Deferred()
+		for rpc in self.rpcs:
+			deferred.addCallback(lambda x: self._executeRpc(rpc, thread))
+		deferred.callback(None)
+		return deferred
+	
+	def getResults(self):
+		if len(self.rpcs) == 0:
+			raise ValueError("No rpcs to generate results from.")
+		return self.rpcs
+			
 

@@ -834,7 +834,50 @@ class BackendAccessControl(object):
 			else:
 				newObjects.append(obj.__class__.fromHash(objHash))
 		return newObjects
-	
+
+
+
+def getBackend(user, password, dispatchConfigFile, backendConfigDir,
+				extensionConfigDir, aclFile, depotId, postpath, context):
+	backendManager = None
+	if   (len(postpath) == 2) and (postpath[0] == 'backend'):
+		backendManager = BackendManager(
+			backend              = postpath[1],
+			accessControlContext = context,
+			backendConfigDir     = backendConfigDir,
+			aclFile              = aclFile,
+			username             = user,
+			password             = password
+		)
+	elif (len(postpath) == 2) and (postpath[0] == 'extend'):
+		extendPath = self.request.postpath[1]
+		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
+			raise ValueError(u"Extension config path '%s' refused" % extendPath)
+		backendManager = BackendManager(
+			dispatchConfigFile   = dispatchConfigFile,
+			backendConfigDir     = backendConfigDir,
+			extensionConfigDir   = os.path.join(extensionConfigDir, extendPath),
+			aclFile              = aclFile,
+			accessControlContext = context,
+			depotBackend         = bool(int(depotId)),
+			hostControlBackend   = True,
+			username             = user,
+			password             = password
+		)
+	else:
+		backendManager = BackendManager(
+			dispatchConfigFile   = dispatchConfigFile,
+			backendConfigDir     = backendConfigDir,
+			extensionConfigDir   = extensionConfigDir,
+			aclFile              = aclFile,
+			accessControlContext = context,
+			depotBackend         = bool(depotId),
+			hostControlBackend   = True,
+			username             = user,
+			password             = password
+		)
+
+	return backendManager
 	
 	
 	
