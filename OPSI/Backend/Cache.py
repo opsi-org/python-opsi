@@ -42,7 +42,7 @@ from OPSI.Backend.Replicator import BackendReplicator
 
 logger = Logger()
 
-class CacheBackend(ConfigDataBackend):
+class ClientCacheBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
@@ -91,7 +91,22 @@ class CacheBackend(ConfigDataBackend):
 			productIds = [ ],
 			audit      = False,
 			license    = False)
-		
+		for productOnClient in cb.productOnClient_getObjects(clientId = self._clientId):
+			if productOnClient.actionRequest in (None, 'none'):
+				continue
+			if not self._masterBackend.licensePool_getObjects(productIds = [ productOnClient.productId ]):
+				continue
+			print productOnClient.toHash()
+			try:
+				licenseOnClient = self._masterBackend.licenseOnClient_getOrCreateObject(clientId = self._clientId, productId = productOnClient.productId)
+				for licensePool in self._masterBackend.licensePool_getObjects(id = licenseOnClient.licensePoolId):
+					self._workBackend.licensePool_insertObject(licensePool)
+				for softwareLicense in self._masterBackend.softwareLicense_getObjects(id = licenseOnClient.softwareLicenseId):
+					self._workBackend.softwareLicense_insertObject(softwareLicense)
+				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
+			except Exception, e:
+				logger.error(e)
+			
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
@@ -136,15 +151,15 @@ if (__name__ == '__main__'):
 	logger.setConsoleColor(True)
 	logger.setConsoleLevel(LOG_NOTICE)
 	
-	#workBackend = SQLiteBackend(database = ':memory:')
-	workBackend = SQLiteBackend(database = '/tmp/opsi-cache.sqlite')
+	workBackend = SQLiteBackend(database = ':memory:')
+	#workBackend = SQLiteBackend(database = '/tmp/opsi-cache.sqlite')
 	
 	serviceBackend = JSONRPCBackend(
 		address  = 'https://bonifax.uib.local:4447/rpc',
 		username = 'cachetest.uib.local',
 		password = '12c1e40a6d3038d3eb2b4d489e978973')
 	
-	cb = CacheBackend(
+	cb = ClientCacheBackend(
 		workBackend   = workBackend,
 		masterBackend = serviceBackend,
 		depotId       = 'bonifax.uib.local',
@@ -154,12 +169,17 @@ if (__name__ == '__main__'):
 	#workBackend._sql.execute('PRAGMA synchronous=OFF')
 	cb._replicateMasterToWorkBackend()
 	
-	#cb.host_insertObject( OpsiClient(id = 'test1.uib.local', description = 'description') )
-	print cb.host_getObjects()
-	print workBackend._sql.getSet('select * from HOST')
+	be = ExtendedConfigDataBackend(cb)
 	
+	#cb.host_insertObject( OpsiClient(id = 'cachetest.uib.local', description = 'description') )
+	#print cb.host_getObjects()
+	#print workBackend._sql.getSet('select * from HOST')
+	#for productPropertyState in cb.productPropertyState_getObjects(objectId = 'cachetest.uib.local'):
+	#	print productPropertyState.toHash()
+	#for productOnClient in cb.productOnClient_getObjects(clientId = 'cachetest.uib.local'):
+	#	print productOnClient.toHash()
 	
-	
+	print be.licenseOnClient_getOrCreateObject(clientId = 'cachetest.uib.local', productId = 'license-test-oem')
 	
 	
 	

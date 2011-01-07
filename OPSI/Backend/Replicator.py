@@ -120,17 +120,6 @@ class BackendReplicator:
 		audit      = forceBool(audit)
 		license    = forceBool(license)
 		
-		hostIds = []
-		for serverId in serverIds:
-			if not serverId in hostIds:
-				hostIds.append(serverId)
-		for depotId in depotIds:
-			if not depotId in hostIds:
-				hostIds.append(depotId)
-		for clientId in clientIds:
-			if not clientId in hostIds:
-				hostIds.append(clientId)
-		
 		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, audit: %s, license: %s" \
 				% (serverIds, depotIds, clientIds, groupIds, productIds, audit, license))
 		
@@ -142,6 +131,24 @@ class BackendReplicator:
 		else:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': False})
 		try:
+			if serverIds or depotIds or clientIds:
+				if not serverIds:
+					serverIds = rb.host_getIdents(type = 'OpsiConfigserver', returnType = list)
+				if not depotIds:
+					depotIds  = rb.host_getIdents(type = 'OpsiDepotserver', returnType = list)
+				if not clientIds:
+					clientIds = rb.host_getIdents(type = 'OpsiClient', returnType = list)
+			hostIds = []
+			for serverId in serverIds:
+				if not serverId in hostIds:
+					hostIds.append(serverId)
+			for depotId in depotIds:
+				if not depotId in hostIds:
+					hostIds.append(depotId)
+			for clientId in clientIds:
+				if not clientId in hostIds:
+					hostIds.append(clientId)
+			
 			self.__overallProgressSubject.reset()
 			end = 0
 			for objClass in self.OBJECT_CLASSES:

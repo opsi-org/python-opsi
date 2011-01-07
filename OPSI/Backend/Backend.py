@@ -3497,7 +3497,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		
 		softwareLicenseToLicensePools = self._backend.softwareLicenseToLicensePool_getObjects(licensePoolId = licensePoolId)
 		if not softwareLicenseToLicensePools:
-			raise LicenseMissingError(u"No license available")
+			raise LicenseMissingError(u"No licenses in pool '%s'" % licensePoolId)
 		
 		softwareLicenseIds = []
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
@@ -3523,10 +3523,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					break
 			
 			if softwareLicenseId:
-				logger.info(u"Found available license: %s" % softwareLicenseId)
+				logger.info(u"Found available license for pool '%s' and client '%s': %s" % (licensePoolId, clientId, softwareLicenseId))
 			
 		if not softwareLicenseId:
-			raise LicenseMissingError(u"No license available")
+			raise LicenseMissingError(u"No license available for pool '%s' and client '%s'" % (licensePoolId, clientId))
 		
 		licenseKeys = []
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:

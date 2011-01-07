@@ -82,6 +82,8 @@ class BackendManager(ExtendedBackend):
 		self._overwrite = True
 		self._context = self
 		
+		Backend.__init__(self, **kwargs)
+		
 		username = None
 		password = None
 		dispatch = False
@@ -176,7 +178,7 @@ class BackendManager(ExtendedBackend):
 	
 class BackendDispatcher(Backend):
 	def __init__(self, **kwargs):
-		#ExtendedConfigDataBackend.__init__(self, **kwargs)
+		Backend.__init__(self, **kwargs)
 		
 		self._dispatchConfigFile = None
 		self._dispatchConfig = None
@@ -198,7 +200,7 @@ class BackendDispatcher(Backend):
 				self._backendConfigDir = value
 			elif option in ('context',):
 				self._context = value
-			
+		
 		if self._dispatchConfigFile:
 			logger.info(u"Loading dispatch config file '%s'" % self._dispatchConfigFile)
 			self.__loadDispatchConfig()
