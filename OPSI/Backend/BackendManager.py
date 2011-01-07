@@ -839,7 +839,7 @@ class BackendAccessControl(object):
 
 
 
-def getBackend(user, password, dispatchConfigFile, backendConfigDir,
+def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 				extensionConfigDir, aclFile, depotId, postpath, context):
 	backendManager = None
 	if   (len(postpath) == 2) and (postpath[0] == 'backend'):

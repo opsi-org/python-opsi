@@ -39,7 +39,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
-from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
 from OPSI.Util.Configuration import BaseConfiguration
 from OPSI.Util.amp import OpsiProcessProtocolFactory
@@ -100,49 +100,23 @@ class OpsiBackendService(Service):
 		self.password = password
 		
 		self._backend = BackendManager(
-					dispatchConfigFile = dispatchConfigFile,
-					backendConfigDir   = backendConfigDir,
-					extensionConfigDir = extensionConfigDir,
-					depotBackend       = bool(depotId)
-					)
+			dispatchConfigFile = dispatchConfigFile,
+			backendConfigDir   = backendConfigDir,
+			extensionConfigDir = extensionConfigDir,
+			depotBackend       = bool(depotId)
+		)
 		
-		if   (len(postpath) == 2) and (postpath[0] == 'backend'):
-			self._backendManager = BackendManager(
-				backend              = self.postpath[1],
-				accessControlContext = self._backend,
-				backendConfigDir     = backendConfigDir,
-				aclFile              = aclFile,
-				username             = self.user,
-				password             = self.password
-			)
-		elif (len(postpath) == 2) and (postpath[0] == 'extend'):
-			extendPath = self.request.postpath[1]
-			if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
-				raise ValueError(u"Extension config path '%s' refused" % extendPath)
-			self._backendManager = BackendManager(
-				dispatchConfigFile   = dispatchConfigFile,
-				backendConfigDir     = backendConfigDir,
-				extensionConfigDir   = os.path.join(extensionConfigDir, extendPath),
-				aclFile              = aclFile,
-				accessControlContext = self._backend,
-				depotBackend         = bool(int(depotId)),
-				hostControlBackend   = True,
-				username             = self.user,
-				password             = self.password
-			)
-		else:
-			self._backendManager = BackendManager(
-				dispatchConfigFile   = dispatchConfigFile,
-				backendConfigDir     = backendConfigDir,
-				extensionConfigDir   = extensionConfigDir,
-				aclFile              = aclFile,
-				accessControlContext = self._backend,
-				depotBackend         = bool(depotId),
-				hostControlBackend   = True,
-				username             = self.user,
-				password             = self.password
-			)
-		return True
+		self._backendManager = backendManagerFactory(
+			user               = user,
+			password           = password,
+			dispatchConfigFile = dispatchConfigFile,
+			backendConfigDir   = backendConfigDir,
+			extensionConfigDir = extensionConfigDir,
+			aclFile            = aclFile,
+			depotId            = depotId,
+			postpath           = postpath,
+			context            = self._backend
+		)
 	
 	def stopService(self):
 		self._check.stop()
