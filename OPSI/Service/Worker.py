@@ -291,7 +291,7 @@ class WorkerOpsi:
 			result.code = responsecode.BAD_REQUEST
 		except Exception, e:
 			logger.logException(e, LOG_ERROR)
-			#logger.error(failure)
+			logger.error(failure)
 		return result
 	
 	def _renderError(self, failure):
@@ -622,7 +622,6 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 			d = self._callInstance.processRequest(request)
 			d.addCallback(processResult)
 			return d
-			
 		
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())

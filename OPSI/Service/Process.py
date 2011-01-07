@@ -1,6 +1,6 @@
 
 
-import sys, os, pwd, signal
+import sys, os, pwd, signal, re
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed, fail, DeferredList
 from twisted.internet.protocol import ProcessProtocol
@@ -18,9 +18,9 @@ class SupervisionProtocol(ProcessProtocol):
 	def __init__(self, daemon):
 		self.daemon = daemon
 		self.pid = None
-
 		self.defer = None
-
+		self.logRegex = re.compile('^\[([0-9])\]\s*(.*)')
+		
 	def connectionMade(self):
 		self.pid = self.transport.pid
 		
@@ -40,8 +40,17 @@ class SupervisionProtocol(ProcessProtocol):
 		logger.debug2(data)
 
 	def errReceived(self, data):
-		logger.error(data)
-			
+		match = self.logRegex.search(data)
+		if match:
+			try:
+				logLevel = int(match.group(1))
+				logMessage = match.group(2)
+				logger.log(logLevel, '[worker %s] %s' % (self.pid, logMessage))
+				return
+			except Exception, e:
+				logger.error(e)
+		logger.warning(data)
+		
 	def processEnded(self, reason):
 		if self.daemon.allowRestart:
 			self.daemon.start()
@@ -144,6 +153,7 @@ def runOpsiService(serviceClass, configurationClass, reactorModule):
 	logger = Logger()
 	logger.setConsoleLevel(LOG_WARNING)
 	logger.setFileLevel(LOG_WARNING)
+	logger.setLogFormat('[%l] %M (%F|%N)')
 	
 	def probeReactor():
 		from twisted.application.reactors import getReactorTypes, installReactor
@@ -197,3 +207,10 @@ runOpsiService(sys.argv[-1],sys.argv[-2], sys.argv[-3])
 	
 	def getSocket(self):
 		return self.socket
+
+
+
+
+
+
+

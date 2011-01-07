@@ -47,6 +47,8 @@ from OPSI.Service.JsonRpc import JsonRpcRequestProcessor
 from OPSI.Logger import *
 logger = Logger()
 
+STOP_SIGNAL = '__STOP_SIGNAL__'
+
 class BackendProcessConfiguration(BaseConfiguration):
 	
 	def _makeParser(self):
@@ -81,7 +83,6 @@ class OpsiBackendService(Service):
 	def setLogging(self, console=LOG_WARNING, file=LOG_WARNING):
 		logger.setConsoleLevel(console)
 		logger.setFileLevel(file)
-		
 	
 	def startService(self):
 		logger.setLogFile(self._config.logFile)
@@ -121,7 +122,9 @@ class OpsiBackendService(Service):
 	def stopService(self):
 		self._check.stop()
 		
-		if self._backendManager is not None:
+		if self._backend:
+			self._backend.backend_exit()
+		if self._backendManager:
 			self._backendManager.backend_exit()
 		if self._socket is not None:
 			d = self._socket.stopListening()
@@ -130,9 +133,6 @@ class OpsiBackendService(Service):
 	def _cleanup(self):
 		if os.path.exists(self._socket):
 			os.unlink(self._socket)
-		
-		
-		
 	
 	def processRequest(self, request):
 		decoder = JsonRpcRequestProcessor(request, self._backendManager)
@@ -141,6 +141,10 @@ class OpsiBackendService(Service):
 		d = decoder.executeRpcs(False)
 		d.addCallback(lambda x: decoder.getResults())
 		return d
+	
+	def backend_exit(self):
+		
+		return STOP_SIGNAL
 	
 	def isRunning(self):
 		self._lastPingReceived = time.time()
@@ -152,17 +156,18 @@ class OpsiBackendService(Service):
 		
 class OpsiBackendProcess(OpsiPyDaemon):
 	
-	user = "opsiconfd"	
+	user = "opsiconfd"
 	serviceClass = OpsiBackendService
 	configurationClass = BackendProcessConfiguration
 	
 	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
 		
 		args.extend(["--socket", socket, "--logFile", logFile])
-		OpsiPyDaemon.__init__(self,socket=socket,args=args,reactor=reactor)
+		OpsiPyDaemon.__init__(self, socket = socket, args = args, reactor = reactor)
 		self.check = LoopingCall(self.checkRunning)
 	
 	def start(self):
+		logger.info(u"Starting new backend worker process")
 		OpsiPyDaemon.start(self)
 		reactor.callLater(2, self.check.start, 10, True)
 	
@@ -176,12 +181,29 @@ class OpsiBackendProcess(OpsiPyDaemon):
 			d.addCallback(lambda x: self.start)
 	
 	def processRequest(self, request):
-		return self.callRemote("processRequest", request)
-	
-	def backend_exit(self):
-		d = self.callRemote("backend_exit")
-		d.addCallback(lambda x: self.stop())
+		d = self.callRemote("processRequest", request)
+		d.addCallback(self.maybeStopped)
 		return d
 	
+	def maybeStopped(self, result):
+		for jsonrpc in result:
+			if (jsonrpc.method == 'backend_exit'):
+				self.stop()
+		return result
+	
+	def stop(self):
+		logger.info(u"Stopping backend worker process (pid: %s)" % self._process.pid)
+		if self.check.running:
+			self.check.stop()
+		OpsiPyDaemon.stop(self)
+	
+	def callRemote(self, method, *args, **kwargs):
+		return OpsiPyDaemon.callRemote(self, method, *args, **kwargs)
+		
 	def __getattr__(self, name):
 		return functools.partial(self.callRemote, name)
+
+
+
+
+

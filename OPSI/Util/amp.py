@@ -31,7 +31,7 @@
 """
 
 from twisted.internet import reactor
-from twisted.internet.protocol import ReconnectingClientFactory
+from twisted.internet.protocol import ClientFactory
 from twisted.internet.defer import DeferredList, maybeDeferred, Deferred
 from twisted.internet.unix import Connector
 from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP
@@ -153,7 +153,7 @@ class OpsiProcessProtocol(AMP):
 	def processFailure(self, failure):
 		raise RemoteProcessException(failure.getErrorMessage())
 	
-class OpsiProcessProtocolFactory(ReconnectingClientFactory):
+class OpsiProcessProtocolFactory(ClientFactory):
 	
 	protocol = OpsiProcessProtocol
 	
@@ -176,8 +176,6 @@ class RemoteDaemonProxy(object):
 			d.addCallback(lambda response: result.callback(response["result"]))
 			return result
 		return callRemote
-
-	
 
 class OpsiProcessConnector(Connector):
 	
