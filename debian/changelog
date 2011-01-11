@@ -1,8 +1,10 @@
 python-opsi (4.0.0.20-1) stable; urgency=low
 
   * Fix AccessControlBackend
+  * Add OPSI/Service
+  * Fix getNetworkDeviceConfig Posix.py
 
- -- Jan Schneider <j.schneider@uib.de>  Wed, 22 Dec 2010 15:33:51 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 11 Jan 2011 11:03:28 +0100
 
 python-opsi (4.0.0.19-1) stable; urgency=low
 
