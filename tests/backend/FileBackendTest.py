@@ -9,7 +9,7 @@ from BackendMixins.ObjectMethodsMixin import ObjectMethodsMixin
 from BackendMixins.NonObjectMethodsMixin import NonObjectMethodsMixin
 from BackendMixins.InventoryObjectMethodMixin import InventoryObjectMethodMixin
 
-class FileTestCase(BackendTestCase,
+class FileBackendTestCase(BackendTestCase,
 		   ObjectMethodsMixin,
 		   NonObjectMethodsMixin,
 		   InventoryObjectMethodMixin

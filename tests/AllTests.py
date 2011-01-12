@@ -1,7 +1,7 @@
 
 __unittest = True
 
-from backend.FileTest import FileTestCase
+from backend.FileBackendTest import FileBackendTestCase
 from backend.MySQLTest import MySQLTestCase
 from backend.SQLiteTest import SQLiteTestCase
 from backend.LdapTest import LdapTestCase
@@ -19,7 +19,7 @@ from opsidevtools.unittest.lib.unittest2.suite import TestSuite
 from opsidevtools.unittest.lib.unittest2.case import TestCase
 import opsidevtools.unittest.lib.unittest2
 
-test_cases = (	FileTestCase,
+test_cases = (	FileBackendTestCase,
 		MySQLTestCase,
 		#SQLiteTestCase,
 		LdapTestCase,
