@@ -347,7 +347,7 @@ class WorkerOpsi:
 		if not userAgent:
 			userAgent = 'unknown'
 		return userAgent
-		
+	
 	def _getSessionId(self):
 		# Get session id from cookie request header
 		userAgent = self._getUserAgent()
@@ -366,12 +366,6 @@ class WorkerOpsi:
 					break
 		except Exception, e:
 			logger.error(u"Failed to get cookie from header: %s" % e)
-		
-		if not sessionId:
-			logger.notice(u"Application '%s' on client '%s' did not send cookie" % (userAgent, self.request.remoteAddr.host))
-			(user, password) = self._getAuthorization()
-			if not password:
-				raise OpsiAuthenticationError(u"Application '%s' on client '%s' did neither supply session id nor password" % (userAgent, self.request.remoteAddr.host))
 		return sessionId
 		
 	def _getSession(self, result):
