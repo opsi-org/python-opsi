@@ -35,11 +35,9 @@ class SupervisionProtocol(ProcessProtocol):
 	def kill(self):
 		if self.transport.pid:
 			self.transport.signalProcess(signal.SIGKILL)
-			
-	def outReceived(self, data):
-		logger.debug2(data)
 
 	def errReceived(self, data):
+		data = data.strip()
 		match = self.logRegex.search(data)
 		if match:
 			try:
@@ -95,7 +93,8 @@ class OpsiDaemon(object):
 		
 		args = [script]
 
-		args.extend(self._args)
+		args.extend([str(arg) for arg in self._args])
+		
 		self._reactor.spawnProcess(self._process, script, args=args,
 					env=self._env, uid=self._uid, gid=self._gid, 
 					childFDs=self._childFDs)
