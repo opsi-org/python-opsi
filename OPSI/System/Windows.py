@@ -41,7 +41,7 @@ import re, os, time, socket, sys, locale
 from ctypes import *
 import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
 import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
-import win32pdhutil, win32pdh
+import win32pdhutil, win32pdh, win32pipe, msvcrt
 
 # OPSI imports
 from OPSI.Logger import *
@@ -803,9 +803,62 @@ def addUserToWindowStation(winsta, userSid):
 def which(cmd):
 	raise NotImplementedError(u"which() not implemented on windows")
 
-def execute(cmd, nowait=False, getHandle=False, logLevel=LOG_DEBUG, exitOnErr=False, capturestderr=True):
-	raise NotImplementedError(u"execute() not implemented on windows")
-
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
+	command = forceUnicode(cmd)
+	
+	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS|win32con.CREATE_NEW_CONSOLE
+	s = win32process.STARTUPINFO()
+	s.dwFlags = win32process.STARTF_USESTDHANDLES
+	
+	sAttrs = win32security.SECURITY_ATTRIBUTES()
+	sAttrs.bInheritHandle = 1
+	(stdinRead,  stdinWrite)  = win32pipe.CreatePipe(sAttrs, 0)
+	(stdoutRead, stdoutWrite) = win32pipe.CreatePipe(sAttrs, 0)
+	(stderrRead, stderrWrite) = win32pipe.CreatePipe(sAttrs, 0)
+	pid = win32api.GetCurrentProcess()
+	def ReplaceHandle(handle):
+		tmp = win32api.DuplicateHandle(pid, handle, pid, 0, 0, win32con.DUPLICATE_SAME_ACCESS)
+		win32file.CloseHandle(handle)
+		return tmp
+	stdinWrite = ReplaceHandle(stdinWrite)
+	stdoutRead = ReplaceHandle(stdoutRead)
+	stderrRead = ReplaceHandle(stderrRead)
+	s.hStdInput  = stdinRead
+	s.hStdOutput = stdoutWrite
+	s.hStdError  = stderrWrite
+	
+	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcess(None, command, None, None, 1, dwCreationFlags, None, None, s)
+	
+	win32file.CloseHandle(stderrWrite)
+	win32file.CloseHandle(stdoutWrite)
+	win32file.CloseHandle(stdinRead)
+	stdout = os.fdopen(msvcrt.open_osfhandle(stdoutRead, 0), "rb")
+	stderr = os.fdopen(msvcrt.open_osfhandle(stderrRead, 0), "rb")
+	
+	logger.info(u"Process startet, pid: %d" % dwProcessId)
+	output = []
+	encoding = stdout.encoding
+	if not encoding or (encoding == 'ascii'):
+		encoding = 'mbcs'
+	while True:
+		done = True
+		if captureStderr:
+			line = stderr.readline()
+			if line:
+				output.append(line.decode(encoding))
+				done = False
+		line = stdout.readline()
+		if line:
+			output.append(line.decode(encoding))
+			done = False
+		logger.essential(output)
+		if done:
+			break
+	win32event.WaitForSingleObject(hProcess, 0)
+	exitCode = win32process.GetExitCodeProcess(hProcess)
+	logger.notice(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
+	return output
+	
 def getPids(process, sessionId = None):
 	process = forceUnicode(process)
 	if not sessionId is None:
@@ -957,7 +1010,7 @@ def getUserToken(sessionId = None, duplicateFrom = u"winlogon.exe"):
 	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
 	
 	return hUserTokenDup
-
+	
 def runCommandInSession(command, sessionId = None, desktop = u"default", duplicateFrom = u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	command = forceUnicode(command)
 	if not sessionId is None:
@@ -976,23 +1029,16 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	
 	userToken = getUserToken(sessionId, duplicateFrom)
 	
-	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS|win32con.CREATE_NEW_CONSOLE
+	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS#|win32con.CREATE_NEW_CONSOLE
 	
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
 	#s.wShowWindow = win32con.SW_MAXIMIZE
 	s.dwFlags = win32process.STARTF_USESTDHANDLES
-	(stdin, stdout, stderr) = (None, None, None)
-	if waitForProcessEnding:
-		stdin = win32api.GetStdHandle(win32api.STD_INPUT_HANDLE)
-		s.hStdInput = stdin
-		stdout = win32api.GetStdHandle(win32api.STD_OUTPUT_HANDLE)
-		s.hStdOutput = stdout
-		stderr = win32api.GetStdHandle(win32api.STD_ERROR_HANDLE)
-		s.hStdError = stderr
 	
 	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'" % (command, sessionId, desktop))
-	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 0, dwCreationFlags, None, None, s)
+	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 1, dwCreationFlags, None, None, s)
+	
 	logger.info(u"Process startet, pid: %d" % dwProcessId)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
@@ -1008,8 +1054,6 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	exitCode = win32process.GetExitCodeProcess(hProcess)
 	logger.notice(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
 	return (None, None, None, None)
-	
-	
 	
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                     USER / GROUP HANDLING                                         -
