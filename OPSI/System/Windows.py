@@ -981,6 +981,15 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
 	#s.wShowWindow = win32con.SW_MAXIMIZE
+	s.dwFlags = win32process.STARTF_USESTDHANDLES
+	(stdin, stdout, stderr) = (None, None, None)
+	if waitForProcessEnding:
+		stdin = win32api.GetStdHandle(win32api.STD_INPUT_HANDLE)
+		s.hStdInput = stdin
+		stdout = win32api.GetStdHandle(win32api.STD_OUTPUT_HANDLE)
+		s.hStdOutput = stdout
+		stderr = win32api.GetStdHandle(win32api.STD_ERROR_HANDLE)
+		s.hStdError = stderr
 	
 	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'" % (command, sessionId, desktop))
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 0, dwCreationFlags, None, None, s)
