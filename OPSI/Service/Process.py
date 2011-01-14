@@ -101,9 +101,18 @@ class OpsiDaemon(object):
 					childFDs=self._childFDs)
 
 	def stop(self):
+		
+		def disconnect(result):
+			logger.essential("disconnecting")
+			self._connector.disconnect()
+			return result
+		
 		if not self._process:
-			return succeed(None)
-		return self._process.stop()
+			d =  succeed(None)
+		else:
+			d = self._process.stop()
+		d.addCallback(disconnect)
+		return d
 
 	def findScript(self):
 		if self.script is None:
@@ -116,11 +125,10 @@ class OpsiDaemon(object):
 		return script
 
 	def callRemote(self, method, *args, **kwargs):
-		def disconnect(result):
-			self._connector.disconnect()
-			return result
+
 
 		def failure(failure):
+			logger.essential(method)
 			logger.error(failure.getErrorMessage())
 			logger.logTraceback(failure.getTracebackObject())
 			return failure
@@ -130,7 +138,7 @@ class OpsiDaemon(object):
 			connection.addCallback(lambda remote: getattr(remote, method)(*args, **kwargs))
 		else:
 			connection = getattr(self._connector._remote,method)(*args, **kwargs)
-		#connection.addCallback(disconnect)
+
 		connection.addErrback(failure)
 		return connection
 

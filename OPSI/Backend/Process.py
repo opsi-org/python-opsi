@@ -36,18 +36,17 @@ import re, os, time, functools
 
 from twisted.application.service import Service
 from twisted.internet.protocol import Protocol
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 
 from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
 from OPSI.Util.Configuration import BaseConfiguration
-from OPSI.Util.amp import OpsiProcessProtocolFactory
+from OPSI.Util.amp import OpsiProcessProtocolFactory, RemoteDaemonProxy, OpsiProcessConnector, USE_BUFFERED_RESPONSE
 from OPSI.Service.JsonRpc import JsonRpcRequestProcessor
 from OPSI.Logger import *
 logger = Logger()
 
-STOP_SIGNAL = '__STOP_SIGNAL__'
 
 class BackendProcessConfiguration(BaseConfiguration):
 	
@@ -85,13 +84,14 @@ class OpsiBackendService(Service):
 		logger.setFileLevel(file)
 	
 	def startService(self):
+		logger.warning( "Starting opsi backend Service")
 		logger.setLogFile(self._config.logFile)
 
 		if not os.path.exists(os.path.dirname(self._config.socket)):
 			os.makedirs(os.path.dirname(self._config.socket))
 		
-		logger.notice("Opening socket %s for interprocess communication." % self._config.socket)
-		self._socket = reactor.listenUNIX(self._config.socket, OpsiProcessProtocolFactory(self))
+		logger.warning("Opening socket %s for interprocess communication." % self._config.socket)
+		self._socket = reactor.listenUNIX(self._config.socket, OpsiProcessProtocolFactory(self, "%s.dataport" % self._config.socket))
 		self._check.start(10)
 
 	def initialize(self, user, password, dispatchConfigFile, backendConfigDir,
@@ -133,6 +133,7 @@ class OpsiBackendService(Service):
 	def _cleanup(self):
 		if os.path.exists(self._socket):
 			os.unlink(self._socket)
+			logger.essential(os.path.exists(self._socket))
 	
 	def processRequest(self, request):
 		decoder = JsonRpcRequestProcessor(request, self._backendManager)
@@ -142,10 +143,6 @@ class OpsiBackendService(Service):
 		d.addCallback(lambda x: decoder.getResults())
 		return d
 	
-	def backend_exit(self):
-		
-		return STOP_SIGNAL
-	
 	def isRunning(self):
 		self._lastPingReceived = time.time()
 		return True
@@ -153,23 +150,27 @@ class OpsiBackendService(Service):
 	def __getattr__(self, name):
 		if self._backendManager is not None:
 			return getattr(self._backendManager, name, None)
-		
+	
+	
 class OpsiBackendProcess(OpsiPyDaemon):
 	
 	user = "opsiconfd"
 	serviceClass = OpsiBackendService
 	configurationClass = BackendProcessConfiguration
+	allowRestart = False
 	
 	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
 		
 		args.extend(["--socket", socket, "--logFile", logFile])
 		OpsiPyDaemon.__init__(self, socket = socket, args = args, reactor = reactor)
+		self._uid, self._gid = None, None
+		
 		self.check = LoopingCall(self.checkRunning)
 	
 	def start(self):
 		logger.info(u"Starting new backend worker process")
 		OpsiPyDaemon.start(self)
-		reactor.callLater(2, self.check.start, 10, True)
+		self.check.start(10, False)
 	
 	def checkRunning(self):
 		d = self.isRunning()
@@ -186,24 +187,26 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		return d
 	
 	def maybeStopped(self, result):
-		for jsonrpc in result:
-			if (jsonrpc.method == 'backend_exit'):
-				self.stop()
-		return result
+		print result
+		r = defer.Deferred()
+		if 'backend_exit' in map((lambda x: x.method), result):
+				d = self.stop()
+				d.addCallback(lambda x: r.callback(result))
+		else:
+			r.callback(result)
+		return r
 	
 	def stop(self):
 		logger.info(u"Stopping backend worker process (pid: %s)" % self._process.pid)
-		if self.check.running:
+		try:
 			self.check.stop()
-		OpsiPyDaemon.stop(self)
+		except Exception, e:
+			logger.error(e)
+		d = self.dataport.stopListening()
+		d.addCallback(lambda x: OpsiPyDaemon.stop(self))
+		return d
 	
-	def callRemote(self, method, *args, **kwargs):
-		return OpsiPyDaemon.callRemote(self, method, *args, **kwargs)
-		
 	def __getattr__(self, name):
 		return functools.partial(self.callRemote, name)
-
-
-
 
 

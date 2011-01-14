@@ -222,7 +222,6 @@ class JsonRpcRequestProcessor(object):
 		except (UnicodeError, UnicodeEncodeError), e:
 			self.service.statistics().addEncodingError('query', self.session.ip, self.session.userAgent, unicode(e))
 			self.query = unicode(self.query, 'utf-8', 'replace')
-		logger.debug2(u"query: %s" % self.query)
 		return self.query
 	
 	
@@ -264,8 +263,8 @@ class JsonRpcRequestProcessor(object):
 		return deferred
 	
 	def getResults(self):
-		if len(self.rpcs) == 0:
-			raise ValueError("No rpcs to generate results from.")
+		#if len(self.rpcs) == 0:
+		#	raise ValueError("No rpcs to generate results from.")
 		return self.rpcs
 			
 
