@@ -103,7 +103,6 @@ class OpsiDaemon(object):
 	def stop(self):
 		
 		def disconnect(result):
-			logger.essential("disconnecting")
 			self._connector.disconnect()
 			return result
 		
@@ -126,14 +125,12 @@ class OpsiDaemon(object):
 
 	def callRemote(self, method, *args, **kwargs):
 
-
 		def failure(failure):
-			logger.essential(method)
 			logger.error(failure.getErrorMessage())
 			logger.logTraceback(failure.getTracebackObject())
 			return failure
 
-		if self._connector.state is "disconnected":
+		if self._connector.state is "disconnected":	#FIXME: This seams wrong
 			connection = self._connector.connect()
 			connection.addCallback(lambda remote: getattr(remote, method)(*args, **kwargs))
 		else:
@@ -157,21 +154,22 @@ class OpsiDaemon(object):
 
 def runOpsiService(serviceClass, configurationClass, reactorModule):
 	import sys
-	from OPSI.Logger import Logger
-	logger = Logger()
-	logger.setConsoleLevel(LOG_WARNING)
-	logger.setFileLevel(LOG_WARNING)
-	logger.setLogFormat('[%l] %M (%F|%N)')
-	
+
 	def probeReactor():
 		from twisted.application.reactors import getReactorTypes, installReactor
 
 		for r in getReactorTypes():
 			if reactorModule == r.moduleName:
 				installReactor(r.shortName)
-				
+				return
 
-#	probeReactor()
+	#probeReactor()		#TODO: make this work
+
+	from OPSI.Logger import Logger
+	logger = Logger()
+	logger.setConsoleLevel(LOG_WARNING)
+	logger.setFileLevel(LOG_WARNING)
+	logger.setLogFormat('[%l] %M (%F|%N)')
 	
 	from twisted.application.service import Application, Service
 	from twisted.application.app import startApplication

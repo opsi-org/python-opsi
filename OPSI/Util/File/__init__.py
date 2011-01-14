@@ -34,7 +34,7 @@
 
 __version__ = "4.0.2"
 
-import os, codecs, re, ConfigParser, cStringIO, locale, base64
+import os, codecs, re, ConfigParser, StringIO, locale, base64
 
 if (os.name == 'posix'):
 	import fcntl, grp, pwd
@@ -227,25 +227,23 @@ class LockableFile(File):
 class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
-		self._buffer = None
-		self._lineSeperator = "\n"
+		self._lines = []
+		self._lineSeperator = u'\n'
 		
 	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
 		#self._fileHandle = LockableFile.open(mode, encoding, errors)
 		#self._lockFile(mode)
 		#return self._fileHandle
-		self._buffer = cStringIO.StringIO()
 		return LockableFile.open(self, mode, encoding, errors)
 		
 	def write(self, str):
 		if not self._fileHandle:
 			raise IOError("File not opened")
 		str = forceUnicode(str)
-		self._buffer.write(str)
 		self._fileHandle.write(str)
 	
 	def readlines(self):
-		None, self._buffer = self._buffer.close(), cStringIO.StringIO()
+		self._lines = []
 		if not self._fileHandle:
 			for encoding in ('utf-8', 'utf-16', 'latin_1', 'cp1252', 'replace'):
 				errors = 'strict'
@@ -255,49 +253,25 @@ class TextFile(LockableFile):
 				
 				self.open(encoding = encoding, errors = errors)
 				try:
-					self._buffer.writelines(self._fileHandle.readlines())
+					self._lines = self._fileHandle.readlines()
 					self.close()
 					break
 				except ValueError, e:
 					self.close()
 					continue
-		return self._buffer.readlines()
+		return self._lines
 	
 	def getLines(self):
-		self._buffer.seek(0)
-		return self._buffer.readlines()
+		return self._lines
 	
 	def writelines(self, sequence=[]):
 		if not self._fileHandle:
 			raise IOError("File not opened")
 		if sequence:
-			s = forceUnicodeList(sequence)
+			self._lines = forceUnicodeList(sequence)
 		for i in range(len(self._lines)):
 			self._lines[i] += self._lineSeperator
-		self._buffer.writelines(s)
-		self._fileHandle.writelines(s)
-		
-	def seek(self, position):
-		self._buffer.seek(position)
-		LockableFile.seek(position)
-		
-	def close(self):
-		self._buffer.close()
-		LockableFile.close(self)
-		
-	def __str__(self):
-		return self._buffer.getvalue()
-	
-	def __getState__(self):
-		state = LockableFile.__getstate__(self)
-		state['fileContent'] = base64.standard_b64encode(self)
-		return state
-	
-	def __setState__(self, state):
-		LockableFile.__setState__(self, state)
-		self._buffer.close()
-		self._buffer = cStringIO.StringIO()
-		self._buffer.writelines(state['fileContent'])
+		self._fileHandle.writelines(self._lines)
 
 class ChangelogFile(TextFile):
 	'''

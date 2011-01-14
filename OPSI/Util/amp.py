@@ -31,12 +31,14 @@
 """
 
 from twisted.internet import reactor
+from twisted.internet.task import deferLater
 from twisted.internet.protocol import ReconnectingClientFactory, ClientCreator
 from twisted.internet.defer import DeferredList, maybeDeferred, Deferred, succeed
 from twisted.internet.unix import Connector
 from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP, MAX_VALUE_LENGTH
 
-from cPickle import dumps, loads, load
+import base64, hashlib
+from pickle import dumps, loads, HIGHEST_PROTOCOL
 from types import StringType
 from OPSI.Logger import *
 logger = Logger()
@@ -53,7 +55,7 @@ USE_BUFFERED_RESPONSE = "__USE_BUFFERED_RESPONSE__"
 class RemoteArgument(Argument):
 	
 	def toString(self, obj):
-		return dumps(obj)
+		return dumps(obj, HIGHEST_PROTOCOL)
 	
 	def fromString(self, str):
 		return loads(str)
@@ -88,7 +90,7 @@ class ChunkedArgument(Command):
 class ResponseBufferPush(Command):
 	
 	arguments = [	('tag', Integer()),
-			('argString', String())]
+			('chunk', String())]
 
 	response = [('result', Integer())]
 	
@@ -127,32 +129,34 @@ class OpsiQueryingProtocol(AMP):
 		d = Deferred()
 		result = Deferred()
 		
-		argString = dumps((args,kwargs))
+		argString = dumps((args,kwargs), HIGHEST_PROTOCOL)
 		tag = self.getNextTag()
 		
-		chunks = [argString[i:i + MAX_VALUE_LENGTH] for i in range(0, len(argString), MAX_VALUE_LENGTH)]
+		chunks = [argString[i:i + MAX_VALUE_LENGTH] for i in xrange(0, len(argString), MAX_VALUE_LENGTH)]
 
 		if len(chunks) > 1:
-			for c in chunks[:-1]:
-				d.addCallback(lambda x: self.callRemote(commandType=ChunkedArgument, tag=tag, argString=c))
-
+			for chunk in chunks[:-1]:
+				def sendChunk(tag, chunk):
+					deferedSend = lambda x: self.dataport.callRemote(
+							commandType=ResponseBufferPush, tag=tag, chunk=chunk)
+					return deferedSend
+					
+				d.addCallback(sendChunk(tag=tag, argString=chunk))
 		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
 		d.callback(None)
 		return d
 
 	
 	@ResponseBufferPush.responder
-	def chunkedResponseReceived(self, tag, argString):
-		print "YYYYYYYYYYYYYYYYYYYy"
-		buffer = self.responseBuffer.setdefault(tag, StringIO.StringIO())
-		buffer.write(argString)
-		buffer.flush()
+	def chunkedResponseReceived(self, tag, chunk):
+		self.responseBuffer.setdefault(tag, StringIO.StringIO()).write(chunk) #
+		
 		return {'result': tag}
 	
 
 	def getResponseBuffer(self,tag):
 		return self.dataSink.factory._protocol.responseBuffer.pop(tag)
-		
+	
 class OpsiResponseProtocol(AMP):
 	
 	def __init__(self):
@@ -182,41 +186,37 @@ class OpsiResponseProtocol(AMP):
 		rd = Deferred()
 		d = maybeDeferred(method, *args, **kwargs)
 		
-		def processResult(result):
-			r = dumps(result)
-			chunks = [r[i:i + MAX_VALUE_LENGTH] for i in range(0, len(r), MAX_VALUE_LENGTH)]
-			
-			dd = Deferred()
-			
-			def sendChunks():
-				scd = Deferred()
-				logger.essential(len(chunks))
-				for chunk in chunks:
-					logger.essential("XXXXXXXXXXXXXXXXXXXXXx")
-					scd.addCallback(lambda x: self.dataport.callRemote(commandType=ResponseBufferPush, tag=tag, argString=chunk))
-				scd.callback(None)
-				return scd
-				
-			if len(chunks) > 1:	#FIXME: Must be > 1
-				pd = None
-				if self.dataport is None:
-					pd = ClientCreator(reactor, OpsiResponseProtocol).connectUNIX(self.factory._dataport)
-					pd.addCallback(self.assignDataPort)
-				else:
-					pd = succeed(None)
-					
-				pd.addCallback(lambda x: sendChunks())
-				
-				pd.addCallback(lambda x: dd.callback({"tag": tag, "result": USE_BUFFERED_RESPONSE}))
-				
-			else:
-				dd.callback({"tag": tag, "result":result})
-			return dd
-		
-		d.addCallback(processResult)
+		d.addCallback(lambda result: self.processResult(result, tag))
 		d.addErrback(self.processFailure)
 		d.addCallback(rd.callback)
 		return rd
+	
+	def processResult(self, result, tag):
+
+		r = dumps(result, HIGHEST_PROTOCOL)
+		chunks = [r[i:i + MAX_VALUE_LENGTH] for i in xrange(0, len(r), MAX_VALUE_LENGTH)]
+		dd = Deferred()
+		
+		if len(chunks) > 1:
+			if self.dataport is None:
+				dd.addCallback(lambda x: ClientCreator(reactor, AMP).connectUNIX(self.factory._dataport))
+				dd.addCallback(self.assignDataPort)
+			else:
+				dd = succeed(None)
+			
+			for chunk in chunks:
+				def sendChunk(tag, chunk):
+					deferedSend = lambda x: self.dataport.callRemote(
+							commandType=ResponseBufferPush, tag=tag, chunk=chunk)
+					return deferedSend
+				dd.addCallback(sendChunk(tag, chunk))
+			
+			dd.addCallback(lambda x: {"tag": tag, "result": USE_BUFFERED_RESPONSE})
+			
+		else:
+			dd.addCallback(lambda x: {"tag": tag, "result":result})
+		dd.callback(None)
+		return dd
 
 	@ChunkedArgument.responder
 	def chunkReceived(self, tag, argString):
@@ -266,8 +266,6 @@ class RemoteDaemonProxy(object):
 				r = response["result"]
 				if r == USE_BUFFERED_RESPONSE:
 					buffer = self._protocol.getResponseBuffer(response["tag"])
-					x = buffer.getvalue()
-					chunks = [x[i:i + MAX_VALUE_LENGTH] for i in range(0, len(x), MAX_VALUE_LENGTH)]
 					
 					if buffer is None:
 						raise Exception("Expected a buffered response but no response buffer was found for tag %s" % r["tag"])
@@ -275,7 +273,10 @@ class RemoteDaemonProxy(object):
 					s = buffer.getvalue()
 					
 					buffer.close()
-					result.callback(loads(s))
+					
+					obj = loads(s)
+
+					result.callback(obj)
 				else:
 					result.callback(r)
 

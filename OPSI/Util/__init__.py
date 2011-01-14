@@ -97,6 +97,13 @@ class KillableThread(threading.Thread):
 		self.raise_exc(SystemExit)
 
 
+class PickleString(str):
+	
+	def __getstate__(self):
+		return base64.standard_b64encode(self)
+	
+	def __setstate__(self, state):
+		self = base64.standard_b64decode(state)
 
 #def non_blocking_connect_http_OLD(self, connectTimeout=0):
 #	''' Non blocking connect, needed for KillableThread '''

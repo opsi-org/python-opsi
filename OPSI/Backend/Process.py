@@ -32,12 +32,14 @@
    @license: GNU General Public License version 2
 """
 
-import re, os, time, functools
+import re, os, time, functools, base64
+from hashlib import md5
 
 from twisted.application.service import Service
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
+from twisted.conch.ssh import keys
 
 from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
@@ -107,6 +109,21 @@ class OpsiBackendService(Service):
 			depotBackend       = bool(depotId)
 		)
 		
+		modules = self._backend.backend_info()['modules']
+		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''; mks = modules.keys(); mks.sort()
+		for module in mks:
+			if module in ('valid', 'signature'):
+				continue
+			val = modules[module]
+			if (val == False): val = 'no'
+			if (val == True):  val = 'yes'
+			data += u'%s = %s\r\n' % (module.lower().strip(), val)
+		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])) or \
+			not modules.get('multiprocessing'):
+			raise Exception(u"Failed to verify modules signature")
+		
+		
 		self._backendManager = backendManagerFactory(
 			user               = user,
 			password           = password,
@@ -133,7 +150,6 @@ class OpsiBackendService(Service):
 	def _cleanup(self):
 		if os.path.exists(self._socket):
 			os.unlink(self._socket)
-			logger.essential(os.path.exists(self._socket))
 	
 	def processRequest(self, request):
 		decoder = JsonRpcRequestProcessor(request, self._backendManager)
@@ -187,7 +203,7 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		return d
 	
 	def maybeStopped(self, result):
-		print result
+
 		r = defer.Deferred()
 		if 'backend_exit' in map((lambda x: x.method), result):
 				d = self.stop()
