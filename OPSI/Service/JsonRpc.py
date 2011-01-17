@@ -166,8 +166,8 @@ class JsonRpc(object):
 					code = 0
 					try:
 						code = int(getattr(e, 'errno'))
-					except:
-						pass
+					except Exception, e2:
+						logger.debug(e2)
 					response['error']  = { 'code': code, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
 				else:
 					response['error']  = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
