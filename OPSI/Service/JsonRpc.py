@@ -165,7 +165,6 @@ class JsonRpc(object):
 				if (self.rpcVersion == '2.0'):
 					code = 0
 					try:
-					if hasattr(e, 'errno'):
 						code = int(getattr(e, 'errno'))
 					except:
 						pass
