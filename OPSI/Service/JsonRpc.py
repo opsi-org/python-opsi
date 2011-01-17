@@ -163,7 +163,13 @@ class JsonRpc(object):
 				response['jsonrpc'] = '2.0'
 			if self.exception:
 				if (self.rpcVersion == '2.0'):
-					response['error']  = { 'code': -1, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
+					code = 0
+					try:
+					if hasattr(e, 'errno'):
+						code = int(getattr(e, 'errno'))
+					except:
+						pass
+					response['error']  = { 'code': code, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
 				else:
 					response['error']  = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
 				response['result'] = None

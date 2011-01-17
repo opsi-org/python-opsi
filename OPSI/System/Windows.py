@@ -35,7 +35,7 @@
 __version__ = '4.0.1'
 
 # Imports
-import re, os, time, socket, sys, locale
+import re, os, time, socket, sys, locale, subprocess
 
 # Win32 imports
 from ctypes import *
@@ -803,61 +803,104 @@ def addUserToWindowStation(winsta, userSid):
 def which(cmd):
 	raise NotImplementedError(u"which() not implemented on windows")
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
-	command = forceUnicode(cmd)
+def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
+	cmd             = forceUnicode(cmd)
+	waitForEnding   = forceBool(waitForEnding)
+	getHandle       = forceBool(getHandle)
+	exitOnStderr    = forceBool(exitOnStderr)
+	captureStderr   = forceBool(captureStderr)
+	timeout         = forceInt(timeout)
 	
-	dwCreationFlags = win32con.NORMAL_PRIORITY_CLASS|win32con.CREATE_NEW_CONSOLE
-	s = win32process.STARTUPINFO()
-	s.dwFlags = win32process.STARTF_USESTDHANDLES
+	exitCode = 0
+	result = []
 	
-	sAttrs = win32security.SECURITY_ATTRIBUTES()
-	sAttrs.bInheritHandle = 1
-	(stdinRead,  stdinWrite)  = win32pipe.CreatePipe(sAttrs, 0)
-	(stdoutRead, stdoutWrite) = win32pipe.CreatePipe(sAttrs, 0)
-	(stderrRead, stderrWrite) = win32pipe.CreatePipe(sAttrs, 0)
-	pid = win32api.GetCurrentProcess()
-	def ReplaceHandle(handle):
-		tmp = win32api.DuplicateHandle(pid, handle, pid, 0, 0, win32con.DUPLICATE_SAME_ACCESS)
-		win32file.CloseHandle(handle)
-		return tmp
-	stdinWrite = ReplaceHandle(stdinWrite)
-	stdoutRead = ReplaceHandle(stdoutRead)
-	stderrRead = ReplaceHandle(stderrRead)
-	s.hStdInput  = stdinRead
-	s.hStdOutput = stdoutWrite
-	s.hStdError  = stderrWrite
+	startTime = time.time()
+	try:
+		logger.info(u"Executing: %s" % cmd)
+		if getHandle:
+			if captureStderr:
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
+			else:
+				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
+		else:
+			data = ''
+			stderr = None
+			if captureStderr:
+				stderr	= subprocess.PIPE
+			proc = subprocess.Popen(
+				cmd,
+				shell	= True,
+				stdin	= subprocess.PIPE,
+				stdout	= subprocess.PIPE,
+				stderr	= stderr,
+			)
+			if not encoding:
+				encoding = proc.stdin.encoding
+				if (encoding == 'ascii'): encoding = 'cp850'
+			if not encoding:
+				encoding = sys.stdout.encoding
+				if (encoding == 'ascii'): encoding = 'cp850'
+			if not encoding:
+				encoding = locale.getpreferredencoding()
+				if (encoding == 'ascii'): encoding = 'cp850'
+			
+			logger.info(u"Using encoding '%s'" % encoding)
+			
+			ret = None
+			while ret is None:
+				ret = proc.poll()
+				try:
+					chunk = proc.stdout.read()
+					if (len(chunk) > 0):
+						data += chunk
+				except IOError, e:
+					if (e.errno != 11):
+						raise
+				
+				if captureStderr:
+					try:
+						chunk = proc.stderr.read()
+						if (len(chunk) > 0):
+							if exitOnStderr:
+								raise IOError(exitCode, u"Command '%s' failed: %s" % (cmd, chunk) )
+							data += chunk
+					except IOError, e:
+						if (e.errno != 11):
+							raise
+				
+				if (timeout > 0) and (time.time() - startTime >= timeout):
+					try:
+						proc.kill()
+					except:
+						pass
+					raise IOError(exitCode, u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)) )
+				
+				time.sleep(0.001)
+			
+			exitCode = ret
+			if data:
+				lines = data.split('\n')
+				for i in range(len(lines)):
+					line = lines[i].decode(encoding, 'replace').replace('\r', '')
+					if (i == len(lines) - 1) and not line:
+						break
+					logger.debug(u'>>> %s' % line)
+					result.append(line)
+		
+	except (os.error, IOError), e:
+		# Some error occured during execution
+		raise IOError(e.errno, u"Command '%s' failed:\n%s" % (cmd, e) )
 	
-	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcess(None, command, None, None, 1, dwCreationFlags, None, None, s)
-	
-	win32file.CloseHandle(stderrWrite)
-	win32file.CloseHandle(stdoutWrite)
-	win32file.CloseHandle(stdinRead)
-	stdout = os.fdopen(msvcrt.open_osfhandle(stdoutRead, 0), "rb")
-	stderr = os.fdopen(msvcrt.open_osfhandle(stderrRead, 0), "rb")
-	
-	logger.info(u"Process startet, pid: %d" % dwProcessId)
-	output = []
-	encoding = stdout.encoding
-	if not encoding or (encoding == 'ascii'):
-		encoding = 'mbcs'
-	while True:
-		done = True
-		if captureStderr:
-			line = stderr.readline()
-			if line:
-				output.append(line.decode(encoding))
-				done = False
-		line = stdout.readline()
-		if line:
-			output.append(line.decode(encoding))
-			done = False
-		logger.essential(output)
-		if done:
-			break
-	win32event.WaitForSingleObject(hProcess, 0)
-	exitCode = win32process.GetExitCodeProcess(hProcess)
-	logger.notice(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
-	return output
+	logger.debug(u"Exit code: %s" % exitCode)
+	if exitCode:
+		if   type(ignoreExitCode) is bool and ignoreExitCode:
+			pass
+		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
+			pass
+		else:
+			raise IOError(exitCode, u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
+	return result
+		
 	
 def getPids(process, sessionId = None):
 	process = forceUnicode(process)
@@ -1034,7 +1077,7 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
 	#s.wShowWindow = win32con.SW_MAXIMIZE
-	s.dwFlags = win32process.STARTF_USESTDHANDLES
+	#s.dwFlags = win32process.STARTF_USESTDHANDLES
 	
 	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'" % (command, sessionId, desktop))
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 1, dwCreationFlags, None, None, s)
@@ -1054,7 +1097,7 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	exitCode = win32process.GetExitCodeProcess(hProcess)
 	logger.notice(u"Process %d ended with exit code %d" % (dwProcessId, exitCode))
 	return (None, None, None, None)
-	
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                     USER / GROUP HANDLING                                         -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
