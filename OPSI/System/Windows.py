@@ -836,12 +836,15 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 			)
 			if not encoding:
 				encoding = proc.stdin.encoding
+				logger.debug(u"proc.stdin.encoding: %s" % encoding)
 				if (encoding == 'ascii'): encoding = 'cp850'
 			if not encoding:
 				encoding = sys.stdout.encoding
+				logger.debug(u"sys.stdout.encoding: %s" % encoding)
 				if (encoding == 'ascii'): encoding = 'cp850'
 			if not encoding:
 				encoding = locale.getpreferredencoding()
+				logger.debug(u"locale.getpreferredencoding(): %s" % encoding)
 				if (encoding == 'ascii'): encoding = 'cp850'
 			
 			logger.info(u"Using encoding '%s'" % encoding)
