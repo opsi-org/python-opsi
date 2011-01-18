@@ -91,7 +91,7 @@ class ClientCacheBackend(ConfigDataBackend):
 			productIds = [ ],
 			audit      = False,
 			license    = False)
-		for productOnClient in cb.productOnClient_getObjects(clientId = self._clientId):
+		for productOnClient in self._workBackend.productOnClient_getObjects(clientId = self._clientId):
 			if productOnClient.actionRequest in (None, 'none'):
 				continue
 			if not self._masterBackend.licensePool_getObjects(productIds = [ productOnClient.productId ]):
