@@ -89,6 +89,7 @@ class BackendManager(ExtendedBackend):
 		dispatch = False
 		extend = False
 		extensionConfigDir = None
+		extensionObject = None
 		accessControl = False
 		depotBackend = False
 		hostControlBackend = False
@@ -116,6 +117,9 @@ class BackendManager(ExtendedBackend):
 				hostControlBackend = forceBool(value)
 			elif option in ('extensionconfigdir',) and value:
 				extensionConfigDir = value
+				extend = True
+			elif option in ('extensionobject',):
+				extensionObject = value
 				extend = True
 			elif option in ('extend',):
 				extend = forceBool(value)
@@ -148,7 +152,7 @@ class BackendManager(ExtendedBackend):
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
-		if extensionConfigDir:
+		if extensionConfigDir or extensionObject:
 			logger.info(u"* BackendManager is creating BackendExtender")
 			self._backend = BackendExtender(self._backend, **kwargs)
 		
@@ -357,42 +361,54 @@ class BackendExtender(ExtendedBackend):
 		
 		ExtendedBackend.__init__(self, backend, overwrite = True)
 		
-		self._extensionConfigDir = u'/etc/opsi/backendManager/compose.d'
+		self._extensionConfigDir = None
+		self._extensionObject = None
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if (option == 'extensionconfigdir'):
 				self._extensionConfigDir = value
+			if (option == 'extensionobject'):
+				self._extensionObject = value
 		
-		self.__loadExtensionConf()
+		self.__createExtensions()
 	
-	def __loadExtensionConf(self):
-		if not self._extensionConfigDir:
-			logger.info(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
-			return
-		try:
-			confFiles = []
-			files = os.listdir(self._extensionConfigDir)
-			files.sort()
-			for f in files:
-				if not f.endswith('.conf'):
+	def __createExtensions(self):
+		if self._extensionObject:
+			for member in inspect.getmembers(self._extensionObject, inspect.ismethod):
+				methodName = member[0]
+				if methodName.startswith('_'):
 					continue
-				confFiles.append( os.path.join(self._extensionConfigDir, f) )
-			
-			for confFile in confFiles:
-				try:
-					logger.info(u"Reading config file '%s'" % confFile)
-					execfile(confFile)
-				except Exception, e:
-					logger.logException(e)
-					raise Exception(u"Error reading file '%s': %s" % (confFile, e))
+				logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, methodName))
+				setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
 				
-				for (key, val) in locals().items():
-					if ( type(val) == types.FunctionType ):
-						logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
-						setattr( self, key, new.instancemethod(val, self, self.__class__) )
-		except Exception, e:
-			raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
+		if self._extensionConfigDir:
+			if not os.path.exists(self._extensionConfigDir):
+				logger.error(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
+				return
+			try:
+				confFiles = []
+				files = os.listdir(self._extensionConfigDir)
+				files.sort()
+				for f in files:
+					if not f.endswith('.conf'):
+						continue
+					confFiles.append( os.path.join(self._extensionConfigDir, f) )
+				
+				for confFile in confFiles:
+					try:
+						logger.info(u"Reading config file '%s'" % confFile)
+						execfile(confFile)
+					except Exception, e:
+						logger.logException(e)
+						raise Exception(u"Error reading file '%s': %s" % (confFile, e))
+					
+					for (key, val) in locals().items():
+						if ( type(val) == types.FunctionType ):
+							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
+							setattr( self, key, new.instancemethod(val, self, self.__class__) )
+			except Exception, e:
+				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 
 class BackendAccessControl(object):
 	
