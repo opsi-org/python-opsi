@@ -143,11 +143,11 @@ class SQLBackend(ConfigDataBackend):
 						value = match.group(2)
 						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
 					else:
-						value = value.replace("\\*", u'\ufffd')
+						value = value.replace("\\*", u'\uffff')
 						if (value.find('*') != -1):
 							operator = 'LIKE'
 							value = value.replace("%", "\\%").replace("_", "\\_").replace('*', '%')
-						value = value.replace(u'\ufffd', "\\*")
+						value = value.replace(u'\uffff', "\\*")
 						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
 				where += u' or '
 			where = where[:-4] + u')'
