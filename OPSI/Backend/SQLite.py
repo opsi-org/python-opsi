@@ -209,7 +209,7 @@ class SQLite(SQL):
 			needClose = True
 		try:
 			query = forceUnicode(query)
-			logger.debug(u"SQL query: %s" % query)
+			logger.debug2(u"SQL query: %s" % query)
 			res = cursor.execute(query)
 		finally:
 			if needClose:
@@ -221,10 +221,10 @@ class SQLite(SQL):
 		logger.debug(u"Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
 			tableName = i.values()[0]
-			logger.debug(u" [ %s ]" % tableName)
+			logger.debug2(u" [ %s ]" % tableName)
 			tables[tableName] = []
 			for j in self.getSet('PRAGMA table_info(`%s`);' % tableName):
-				logger.debug(u"      %s" % j)
+				logger.debug2(u"      %s" % j)
 				tables[tableName].append(j['name'])
 		return tables
 	

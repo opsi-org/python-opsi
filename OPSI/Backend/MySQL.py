@@ -339,7 +339,7 @@ class MySQL(SQL):
 			needClose = True
 		try:
 			query = forceUnicode(query)
-			logger.debug(u"SQL query: %s" % query)
+			logger.debug2(u"SQL query: %s" % query)
 			res = cursor.execute(query)
 			conn.commit()
 		finally:
@@ -353,10 +353,10 @@ class MySQL(SQL):
 		logger.debug(u"Current tables:")
 		for i in self.getSet(u'SHOW TABLES;'):
 			tableName = i.values()[0]
-			logger.debug(u" [ %s ]" % tableName)
+			logger.debug2(u" [ %s ]" % tableName)
 			tables[tableName] = []
 			for j in self.getSet(u'SHOW COLUMNS FROM `%s`' % tableName):
-				logger.debug(u"      %s" % j)
+				logger.debug2(u"      %s" % j)
 				tables[tableName].append(j['Field'])
 		return tables
 	
