@@ -58,16 +58,19 @@ class SQLite(SQL):
 	
 	def __init__(self, **kwargs):
 		self._database = ":memory:"
+		self._synchronous = True
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option in ('database',):
 				self._database = forceFilename(value)
+			if option in ('synchronous',):
+				self._synchronous = forceBool(value)
 		
 		self._connection = None
 		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
-		
+	
 	def connect(self):
 		#self._transactionLock.acquire()
 		logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
@@ -78,6 +81,8 @@ class SQLite(SQL):
 				vfs                = None,
 				statementcachesize = 100
 			)
+			if not self._synchronous:
+				self._connection.cursor().execute('PRAGMA synchronous=OFF')
 			
 		def rowtrace(cursor, row):
 			valueSet = {}
@@ -237,13 +242,6 @@ class SQLiteBackend(SQLBackend):
 		self._name = 'sqlite'
 		
 		SQLBackend.__init__(self, **kwargs)
-		
-		self._database = ":memory:"
-		
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option in ('database',):
-				self._database = forceFilename(value)
 		
 		self._sql = SQLite(**kwargs)
 		
