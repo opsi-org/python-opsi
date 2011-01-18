@@ -203,7 +203,10 @@ class BackendReplicator:
 			configServer = None
 			depotServers = []
 			for objClass in self.OBJECT_CLASSES:
-				if not audit and objClass.lower().startswith('audit'):
+				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
+					continue
+				if not license and objClass in ('LicenseContract', 'SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
+								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
 					continue
 				
 				subClasses = [ None ]
@@ -245,6 +248,8 @@ class BackendReplicator:
 							objectIds.extend(productIds)
 							objectIds.extend(hostIds)
 						filter = { 'objectId': objectIds }
+					elif (objClass == 'LicenseOnClient'):
+						filter = { 'clientId': clientIds }
 					
 					logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
 					if not subClass:
