@@ -74,7 +74,10 @@ class ClientCacheBackend(ConfigDataBackend):
 		
 		self._workBackend._setContext(self)
 		self._createInstanceMethods()
-		
+	
+	def accessControl_authenticated(self):
+		return True
+	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
@@ -119,7 +122,7 @@ class ClientCacheBackend(ConfigDataBackend):
 				logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
 				exec(u'def %s(self, %s): return self._executeOnWorkBackend("%s", %s)' % (methodName, argString, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-		
+	
 	def _executeOnWorkBackend(self, methodName, **kwargs):
 		logger.info(u"Executing method '%s' on work backend %s" % (methodName, self._workBackend))
 		meth = getattr(self._workBackend, methodName)
