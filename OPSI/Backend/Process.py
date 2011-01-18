@@ -120,7 +120,7 @@ class OpsiBackendService(Service):
 			if (val == True):  val = 'yes'
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
 		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])) or \
-			not modules.get('multiprocessing'):
+			not modules.get('high_availability'):
 			raise Exception(u"Failed to verify modules signature")
 		
 		
