@@ -89,7 +89,7 @@ class BackendManager(ExtendedBackend):
 		dispatch = False
 		extend = False
 		extensionConfigDir = None
-		extensionObject = None
+		extensionClass = None
 		accessControl = False
 		depotBackend = False
 		hostControlBackend = False
@@ -118,8 +118,8 @@ class BackendManager(ExtendedBackend):
 			elif option in ('extensionconfigdir',) and value:
 				extensionConfigDir = value
 				extend = True
-			elif option in ('extensionobject',):
-				extensionObject = value
+			elif option in ('extensionclass',):
+				extensionClass = value
 				extend = True
 			elif option in ('extend',):
 				extend = forceBool(value)
@@ -152,7 +152,7 @@ class BackendManager(ExtendedBackend):
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
-		if extensionConfigDir or extensionObject:
+		if extensionConfigDir or extensionClass:
 			logger.info(u"* BackendManager is creating BackendExtender")
 			self._backend = BackendExtender(self._backend, **kwargs)
 		
@@ -362,25 +362,29 @@ class BackendExtender(ExtendedBackend):
 		ExtendedBackend.__init__(self, backend, overwrite = True)
 		
 		self._extensionConfigDir = None
-		self._extensionObject = None
+		self._extensionClass = None
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if (option == 'extensionconfigdir'):
 				self._extensionConfigDir = value
-			if (option == 'extensionobject'):
-				self._extensionObject = value
+			if (option == 'extensionclass'):
+				self._extensionClass = value
 		
 		self.__createExtensions()
 	
 	def __createExtensions(self):
-		if self._extensionObject:
-			for member in inspect.getmembers(self._extensionObject, inspect.ismethod):
+		if self._extensionClass:
+			for member in inspect.getmembers(self._extensionClass, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_'):
 					continue
 				logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, methodName))
-				setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
+				new_function = new.function( member[1].func_code, member[1].func_globals, member[1].func_code.co_name )
+				new_method = new.instancemethod( new_function, self, self.__class__ )
+				setattr( self, methodName, new_method )
+				#setattr( sldworks.ISldWorks, 'OpenDoc6', new_method )
+				#setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
 				
 		if self._extensionConfigDir:
 			if not os.path.exists(self._extensionConfigDir):
@@ -899,9 +903,17 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 	
 	
 	
-	
-	
-	
+if (__name__ == '__main__'):
+	cdb = ConfigDataBackend()
+	class TestClass(object):
+		def testMethod(self, y):
+			print "test", y, self
+		def testMethod2(self):
+			print self.backend_getOptions()
+		
+	bm = BackendManager( backend = cdb, extensionClass = TestClass )
+	bm.testMethod('yyyyyyyy')
+	bm.testMethod2()
 	
 	
 	
