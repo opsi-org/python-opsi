@@ -109,7 +109,10 @@ class ClientCacheBackend(ConfigDataBackend):
 				logger.error(e)
 		self.user_setCredentials(
 			username = 'pcpatch',
-			password = blowfishDecrypt(self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password'])
+			password = blowfishDecrypt(
+				self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password'],
+				self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
+			)
 		)
 		
 	def _createInstanceMethods(self):
