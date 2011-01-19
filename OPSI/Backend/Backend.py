@@ -583,10 +583,11 @@ class ConfigDataBackend(Backend):
 		cf = ConfigFile(filename = self._opsiPasswdFile)
 		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
-		for line in cf.readlines():
-			match = lineRegex.search(line)
-			if not match or (match.group(1) != username):
-				lines.append(line.rstrip())
+		if os.path.exists(self._opsiPasswdFile):
+			for line in cf.readlines():
+				match = lineRegex.search(line)
+				if not match or (match.group(1) != username):
+					lines.append(line.rstrip())
 		lines.append(u'%s:%s' % (username, encodedPassword))
 		cf.open('w')
 		cf.writelines(lines)
