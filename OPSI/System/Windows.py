@@ -491,8 +491,10 @@ def getActiveSessionIds():
 	#for s in win32ts.WTSEnumerateSessions():
 	#	logger.debug(u"   Found session: %s" % s)
 	#	sessionIds.append(forceInt(s['SessionId']))
-	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
+	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
+		if not forceInt(sessionData['LogonType']) in (2, 10):
+			continue
 		logger.debug(u"   Found session: %s" % sessionData)
 		sessionId = forceInt(sessionData['Session'])
 		if not sessionId in sessionIds:
@@ -505,7 +507,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 		defaultSessionId = 1
 	sessionIds = []
 	newest = None
-	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
+	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		logger.debug(u"   Found session: %s" % sessionData)
 		if not forceInt(sessionData['LogonType']) in (2, 10):
@@ -562,7 +564,7 @@ def getSessionInformation(sessionId):
 	'LogonDomain': u'COMPUTERNAME',
 	'LogonTime': <PyTime:19.04.2010 16:33:07>}
 	"""
-	for s in win32security.LsaEnumerateLogonSessions()[:-5]:
+	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		if (forceInt(sessionData['Session']) == sessionId):
 			return sessionData
