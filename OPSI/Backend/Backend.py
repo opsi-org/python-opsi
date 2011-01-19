@@ -424,6 +424,7 @@ class ConfigDataBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
+		self._opsiPasswdFile                = OPSI_PASSWD_FILE
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -431,7 +432,9 @@ class ConfigDataBackend(Backend):
 				self._auditHardwareConfigFile = forceFilename(value)
 			elif option in ('audithardwareconfiglocalesdir',):
 				self._auditHardwareConfigLocalesDir = forceFilename(value)
-		
+			elif option in ('opsipasswdfile',):
+				self._opsiPasswdFile = forceFilename(value)
+			
 		self._options['additionalReferentialIntegrityChecks'] = True
 		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
@@ -525,7 +528,7 @@ class ConfigDataBackend(Backend):
 		
 		result = { 'password': u'', 'rsaPrivateKey': u'' }
 		
-		cf = ConfigFile(filename = OPSI_PASSWD_FILE)
+		cf = ConfigFile(filename = self._opsiPasswdFile)
 		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
@@ -535,7 +538,7 @@ class ConfigDataBackend(Backend):
 				result['password'] = match.group(2)
 				break
 		if not result['password']:
-			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, OPSI_PASSWD_FILE))
+			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, self._opsiPasswdFile))
 		
 		depot = self.host_getObjects(id = depotId)
 		if not depot:
@@ -577,7 +580,7 @@ class ConfigDataBackend(Backend):
 		
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 		
-		cf = ConfigFile(filename = OPSI_PASSWD_FILE)
+		cf = ConfigFile(filename = self._opsiPasswdFile)
 		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
 		for line in cf.readlines():

@@ -39,6 +39,7 @@ from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Backend.Replicator import BackendReplicator
+from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
@@ -106,7 +107,11 @@ class ClientCacheBackend(ConfigDataBackend):
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 			except Exception, e:
 				logger.error(e)
-			
+		self.user_setCredentials(
+			username = 'pcpatch',
+			password = blowfishDecrypt(self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password'])
+		)
+		
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
@@ -143,7 +148,7 @@ class ClientCacheBackend(ConfigDataBackend):
 		f = codecs.open(self._opsiVersionFile, 'w', 'utf-8')
 		f.write(backendInfo.get('opsiVersion', '').strip())
 		f.close()
-	
+		
 if (__name__ == '__main__'):
 	from OPSI.Backend.SQLite import SQLiteBackend
 	from OPSI.Backend.JSONRPC import JSONRPCBackend
