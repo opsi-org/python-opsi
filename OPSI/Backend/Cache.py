@@ -75,12 +75,6 @@ class ClientCacheBackend(ConfigDataBackend):
 		self._workBackend._setContext(self)
 		self._createInstanceMethods()
 	
-	def accessControl_authenticated(self):
-		return True
-	
-	def user_getCredentials(self, username = u'pcpatch', hostId = None):
-		return {'password': u'<password>', 'rsaPrivateKey': u'' }
-	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
