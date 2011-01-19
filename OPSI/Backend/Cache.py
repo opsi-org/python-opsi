@@ -107,12 +107,11 @@ class ClientCacheBackend(ConfigDataBackend):
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 			except Exception, e:
 				logger.error(e)
+		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
+		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
 		self.user_setCredentials(
 			username = 'pcpatch',
-			password = blowfishDecrypt(
-				self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password'],
-				self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
-			)
+			password = blowfishDecrypt(opsiHostKey, password)
 		)
 		
 	def _createInstanceMethods(self):
