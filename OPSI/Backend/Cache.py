@@ -109,6 +109,7 @@ class ClientCacheBackend(ConfigDataBackend):
 				logger.error(e)
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
 		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
+		logger.notice(u"Creating opsi passwd file '%s'" % self._opsiPasswdFile)
 		self.user_setCredentials(
 			username = 'pcpatch',
 			password = blowfishDecrypt(opsiHostKey, password)
