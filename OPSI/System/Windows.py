@@ -495,8 +495,11 @@ def getActiveSessionIds():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		if not forceInt(sessionData['LogonType']) in (2, 10):
 			continue
-		logger.debug(u"   Found session: %s" % sessionData)
 		sessionId = forceInt(sessionData['Session'])
+		if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
+			# Service session
+			continue
+		logger.debug(u"   Found session: %s" % sessionData)
 		if not sessionId in sessionIds:
 			sessionIds.append(sessionId)
 	return sessionIds
@@ -509,14 +512,14 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	newest = None
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
-		logger.debug(u"   Found session: %s" % sessionData)
 		if not forceInt(sessionData['LogonType']) in (2, 10):
 			continue
-		
 		sessionId = forceInt(sessionData['Session'])
 		if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
 			# Service session
 			continue
+		
+		logger.debug(u"   Found session: %s" % sessionData)
 		
 		if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
 			continue
