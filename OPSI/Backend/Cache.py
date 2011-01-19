@@ -119,7 +119,8 @@ class ClientCacheBackend(ConfigDataBackend):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
-				if methodName.startswith('_') or methodName in ('backend_info', 'accessControl_authenticated', 'user_getCredentials'):
+				# 'accessControl_authenticated'
+				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials'):
 					continue
 				
 				(argString, callString) = getArgAndCallString(member[1])
