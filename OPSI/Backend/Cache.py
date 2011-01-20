@@ -88,6 +88,7 @@ class ClientCacheBackend(ConfigDataBackend):
 	def _updateMasterFromWorkBackend(self):
 		auditHardwareOnHosts = self._workBackend.auditHardwareOnHost_getObjects()
 		if auditHardwareOnHosts:
+			self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
 			self._masterBackend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
 		
 	def _replicateMasterToWorkBackend(self):
