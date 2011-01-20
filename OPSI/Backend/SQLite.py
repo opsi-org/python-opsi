@@ -251,6 +251,45 @@ class SQLiteBackend(SQLBackend):
 		
 		logger.debug(u'SQLiteBackend created: %s' % self)
 	
+	def _filterToSql(self, filter={}):
+		where = u''
+		for (key, values) in filter.items():
+			if values is None:
+				continue
+			values = forceList(values)
+			if not values:
+				continue
+			if where:
+				where += u' and '
+			where += u'('
+			for value in values:
+				operator = '='
+				if type(value) is bool:
+					if value:
+						where += u"`%s` %s %s" % (key, operator, 1)
+					else:
+						where += u"`%s` %s %s" % (key, operator, 0)
+				elif type(value) in (float, long, int):
+					where += u"`%s` %s %s" % (key, operator, value)
+				elif value is None:
+					where += u"`%s` is NULL" % key
+				else:
+					value = value.replace("'", "\\\'")
+					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
+					if match:
+						operator = match.group(1)
+						value = match.group(2)
+						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
+					else:
+						value = value.replace("\\*", u'\uffff')
+						if (value.find('*') != -1):
+							operator = 'LIKE'
+							value = value.replace("%", "\\%").replace("_", "\\_").replace('*', '%')
+						value = value.replace(u'\uffff', "\\*")
+						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
+				where += u' or '
+			where = where[:-4] + u')'
+		return where
 	
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
