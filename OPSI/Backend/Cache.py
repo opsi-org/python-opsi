@@ -33,6 +33,10 @@
 """
 
 import inspect, time, codecs
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
 
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -66,6 +70,7 @@ class ClientCacheBackend(ConfigDataBackend):
 			elif option in ('backendinfo',):
 				self._backendInfo = value
 		
+		
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
 		if not self._clientId:
@@ -77,8 +82,13 @@ class ClientCacheBackend(ConfigDataBackend):
 		self._createInstanceMethods()
 	
 	def auditHardware_getConfig(self, language=None):
-		logger.notice(u"=================================================================== auditHardware_getConfig")
-		return {}
+		if not os.path.exists(self._auditHardwareConfigFile):
+			logger.error(u"Audit hardware config file '%s' not found" % self._auditHardwareConfigFile)
+			return []
+		f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
+		result = json.reads(f.read())
+		f.close()
+		return result
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -118,6 +128,9 @@ class ClientCacheBackend(ConfigDataBackend):
 			username = 'pcpatch',
 			password = blowfishDecrypt(opsiHostKey, password)
 		)
+		f = codecs.open(self._auditHardwareConfigFile, 'w', 'utf8')
+		result = f.write(json.dumps(self._masterBackend.auditHardware_getConfig()))
+		f.close()
 	
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
