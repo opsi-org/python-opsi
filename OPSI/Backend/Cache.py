@@ -85,6 +85,11 @@ class ClientCacheBackend(ConfigDataBackend):
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
+	def _updateMasterFromWorkBackend(self):
+		auditHardwareOnHosts = self._workBackend.auditHardwareOnHost_getObjects()
+		if auditHardwareOnHosts:
+			self._masterBackend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
+		
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
