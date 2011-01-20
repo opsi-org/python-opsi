@@ -87,7 +87,7 @@ class ClientCacheBackend(ConfigDataBackend):
 			logger.error(u"Audit hardware config file '%s' not found" % self._auditHardwareConfigFile)
 			return []
 		f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
-		result = json.reads(f.read())
+		result = json.loads(f.read())
 		f.close()
 		return result
 	
