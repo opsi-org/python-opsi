@@ -66,6 +66,8 @@ class ClientCacheBackend(ConfigDataBackend):
 			elif option in ('backendinfo',):
 				self._backendInfo = value
 		
+		logger.essential(u"_opsiModulesFile %s, _opsiVersionFile %s, kwargs %s" % (self._opsiModulesFile, self._opsiVersionFile, kwargs))
+		
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
 		if not self._clientId:
