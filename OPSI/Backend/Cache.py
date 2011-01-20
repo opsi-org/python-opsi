@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-import inspect, time, codecs
+import inspect, time, codecs, threading
 from sys import version_info
 if (version_info >= (2,6)):
 	import json
@@ -48,6 +48,19 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
+class BackendChangeListener(object):
+	def objectInserted(self, backend, obj):
+		pass
+	
+	def objectUpdated(self, backend, obj):
+		pass
+	
+	def objectDeleted(self, backend, obj):
+		pass
+	
+	def backendChanged(self, backend):
+		pass
+	
 class ClientCacheBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
@@ -57,6 +70,7 @@ class ClientCacheBackend(ConfigDataBackend):
 		self._masterBackend = None
 		self._clientId = None
 		self._depotId = None
+		self._backendChangeListeners = []
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -71,7 +85,6 @@ class ClientCacheBackend(ConfigDataBackend):
 			elif option in ('backendinfo',):
 				self._backendInfo = value
 		
-		
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
 		if not self._clientId:
@@ -81,6 +94,34 @@ class ClientCacheBackend(ConfigDataBackend):
 		
 		self._workBackend._setContext(self)
 		self._createInstanceMethods()
+	
+	def addBackendChangeListener(self, backendChangeListener):
+		if backendChangeListener in self._backendChangeListeners:
+			return
+		self._backendChangeListeners.append(backendChangeListener)
+		
+	def removeBackendChangeListener(self, backendChangeListener):
+		if not backendChangeListener in self._backendChangeListeners:
+			return
+		self._backendChangeListeners.remove(backendChangeListener)
+	
+	def _fireBackendChangedEvent(self):
+		class FireEventThread(threading.Thread):
+			def __init__(self, listener, method, kwargs = {}):
+				threading.Thread.__init__(self)
+				self._listener = listener
+				self._method = method
+				self._kwargs = kwargs
+				
+			def run(self):
+				try:
+					meth = getattr(self._listener, self._method)
+					meth(**self._kwargs)
+				except Exception, e:
+					logger.logException(e)
+		
+		for bcl in self._backendChangeListeners:
+			FireEventThread(bcl, 'backendChanged').start()
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -152,7 +193,10 @@ class ClientCacheBackend(ConfigDataBackend):
 	def _executeOnWorkBackend(self, methodName, **kwargs):
 		logger.info(u"Executing method '%s' on work backend %s" % (methodName, self._workBackend))
 		meth = getattr(self._workBackend, methodName)
-		return meth(**kwargs)
+		result = meth(**kwargs)
+		if (methodName.find('_') != -1) and methodName.split('_', 1)[1] in ('insertObject', 'updateObject', 'deleteObjects'):
+			self._fireBackendChangedEvent()
+		return result
 	
 	def _cacheBackendInfo(self, backendInfo):
 		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')
