@@ -66,8 +66,6 @@ class ClientCacheBackend(ConfigDataBackend):
 			elif option in ('backendinfo',):
 				self._backendInfo = value
 		
-		logger.essential(u"_opsiModulesFile %s, _opsiVersionFile %s, kwargs %s" % (self._opsiModulesFile, self._opsiVersionFile, kwargs))
-		
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
 		if not self._clientId:
@@ -77,6 +75,10 @@ class ClientCacheBackend(ConfigDataBackend):
 		
 		self._workBackend._setContext(self)
 		self._createInstanceMethods()
+	
+	def auditHardware_getConfig(self, language=None):
+		logger.notice(u"=================================================================== auditHardware_getConfig")
+		return {}
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -116,13 +118,13 @@ class ClientCacheBackend(ConfigDataBackend):
 			username = 'pcpatch',
 			password = blowfishDecrypt(opsiHostKey, password)
 		)
-		
+	
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				# 'accessControl_authenticated'
-				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials'):
+				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig'):
 					continue
 				
 				(argString, callString) = getArgAndCallString(member[1])
