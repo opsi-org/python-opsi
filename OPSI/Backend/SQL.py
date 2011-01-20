@@ -102,12 +102,15 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._sql = None
-		
 		self._auditHardwareConfig = {}
-		for config in self.auditHardware_getConfig():
-			hwClass = config['Class']['Opsi']
+		self._setAuditHardwareConfig(self.auditHardware_getConfig())
+		
+	def _setAuditHardwareConfig(config)
+		self._auditHardwareConfig = {}
+		for conf in config:
+			hwClass = conf['Class']['Opsi']
 			self._auditHardwareConfig[hwClass] = {}
-			for value in config['Values']:
+			for value in conf['Values']:
 				self._auditHardwareConfig[hwClass][value['Opsi']] = {
 					'Type':  value["Type"],
 					'Scope': value["Scope"]

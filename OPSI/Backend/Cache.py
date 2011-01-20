@@ -120,10 +120,13 @@ class ClientCacheBackend(ConfigDataBackend):
 			username = 'pcpatch',
 			password = blowfishDecrypt(opsiHostKey, password)
 		)
+		auditHardwareConfig = self._masterBackend.auditHardware_getConfig()
 		f = codecs.open(self._auditHardwareConfigFile, 'w', 'utf8')
-		result = f.write(json.dumps(self._masterBackend.auditHardware_getConfig()))
+		result = f.write(json.dumps(auditHardwareConfig))
 		f.close()
-	
+		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
+		self._workBackend.backend_createBase()
+		
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
