@@ -33,6 +33,7 @@
 """
 
 import inspect, time, codecs
+from sys import version_info
 if (version_info >= (2,6)):
 	import json
 else:
