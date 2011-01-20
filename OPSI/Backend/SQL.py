@@ -96,6 +96,8 @@ class SQL(object):
 	
 class SQLBackend(ConfigDataBackend):
 	
+	ESCAPE_BACKSLASH = True
+	
 	def __init__(self, **kwargs):
 		self._name = 'sql'
 		
@@ -139,7 +141,9 @@ class SQLBackend(ConfigDataBackend):
 				elif value is None:
 					where += u"`%s` is NULL" % key
 				else:
-					value = value.replace("\\", "\\\\").replace("'", "\\\'")
+					if self.ESCAPE_BACKSLASH:
+						value = value.replace("\\", "\\\\")
+					value = value.replace("'", "\\\'")
 					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
 					if match:
 						operator = match.group(1)

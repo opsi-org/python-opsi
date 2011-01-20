@@ -371,6 +371,8 @@ class MySQL(SQL):
 # ======================================================================================================
 class MySQLBackend(SQLBackend):
 	
+	ESCAPE_BACKSLASH = True
+	
 	def __init__(self, **kwargs):
 		self._name = 'mysql'
 		
