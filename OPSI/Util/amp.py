@@ -149,8 +149,7 @@ class OpsiQueryingProtocol(AMP):
 	
 	@ResponseBufferPush.responder
 	def chunkedResponseReceived(self, tag, chunk):
-		self.responseBuffer.setdefault(tag, StringIO.StringIO()).write(chunk) #
-		
+		self.responseBuffer.setdefault(tag, StringIO.StringIO()).write(chunk)
 		return {'result': tag}
 	
 
@@ -187,8 +186,9 @@ class OpsiResponseProtocol(AMP):
 		d = maybeDeferred(method, *args, **kwargs)
 		
 		d.addCallback(lambda result: self.processResult(result, tag))
-		d.addErrback(self.processFailure)
 		d.addCallback(rd.callback)
+		d.addErrback(self.processFailure)
+		d.addErrback(rd.errback)
 		return rd
 	
 	def processResult(self, result, tag):
@@ -227,7 +227,7 @@ class OpsiResponseProtocol(AMP):
 
 	def processFailure(self, failure):
 		logger.error(failure)
-		raise RemoteProcessException(failure.getErrorMessage())
+		raise RemoteProcessException(failure.value)
 
 
 class OpsiProcessProtocol(OpsiQueryingProtocol, OpsiResponseProtocol):
@@ -281,11 +281,14 @@ class RemoteDaemonProxy(object):
 					result.callback(r)
 
 			
-			
+			def processFailure(failure):
+				logger.error(failure.getErrorMessage())
+				result.errback(failure)
 			d = self._protocol.sendRemoteCall(	method=method,
 								args=args,
 								kwargs=kwargs)
 			d.addCallback(processResponse)
+			d.addErrback(processFailure)
 			return result
 		return callRemote
 	

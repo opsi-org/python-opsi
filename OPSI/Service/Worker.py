@@ -496,7 +496,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		logger.warning(u"Class %s should overwrite _getCallInstance" % self.__class__.__name__)
 		self._callInstance = None
 		self._callInterface = None
-		
+
 	def _getRpcs(self, result):
 		if not self.query:
 			return result
@@ -609,7 +609,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		def processResult(r):
 			self._rpcs = r
-			dr.callback(r)
+			return r
 		
 		def makeInstanceCall():
 			d = self._callInstance.processRequest(request)
@@ -619,7 +619,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())
 		deferred.addErrback(self._errback)
-
+		deferred.addCallback(dr.callback)
 		return dr
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
