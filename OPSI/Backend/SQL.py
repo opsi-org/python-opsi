@@ -105,7 +105,7 @@ class SQLBackend(ConfigDataBackend):
 		self._auditHardwareConfig = {}
 		self._setAuditHardwareConfig(self.auditHardware_getConfig())
 		
-	def _setAuditHardwareConfig(config):
+	def _setAuditHardwareConfig(self, config):
 		self._auditHardwareConfig = {}
 		for conf in config:
 			hwClass = conf['Class']['Opsi']
