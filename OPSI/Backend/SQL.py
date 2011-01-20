@@ -2169,7 +2169,7 @@ class SQLBackend(ConfigDataBackend):
 						if not key in hardwareClasses:
 							hardwareClasses.append(key)
 			if not hardwareClasses:
-				return auditHardwareOnHosts
+				return hashes
 		if not hardwareClasses:
 			for key in self._auditHardwareConfig.keys():
 				hardwareClasses.append(key)

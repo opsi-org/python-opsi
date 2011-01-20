@@ -82,15 +82,6 @@ class ClientCacheBackend(ConfigDataBackend):
 		self._workBackend._setContext(self)
 		self._createInstanceMethods()
 	
-	def auditHardware_getConfig(self, language=None):
-		if not os.path.exists(self._auditHardwareConfigFile):
-			logger.error(u"Audit hardware config file '%s' not found" % self._auditHardwareConfigFile)
-			return []
-		f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
-		result = json.loads(f.read())
-		f.close()
-		return result
-	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	

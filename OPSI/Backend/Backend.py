@@ -42,6 +42,11 @@ try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
 
 if (os.name == 'posix'):
 	from ldaptor.protocols import pureldap
@@ -1256,6 +1261,12 @@ class ConfigDataBackend(Backend):
 		pass
 	
 	def auditHardware_getConfig(self, language=None):
+		if self._auditHardwareConfigFile.endswith('.json'):
+			f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
+			result = json.loads(f.read())
+			f.close()
+			return result
+		
 		if not language:
 			language = 'en_US'
 		language = forceLanguageCode(language).replace('-', '_')
