@@ -207,6 +207,7 @@ class HTTPConnectionPool(object):
 					conn = self.pool.get(block = False)
 					if conn:
 						try:
+							conn.sock.close()
 							conn.close()
 						except:
 							pass
@@ -352,8 +353,10 @@ class HTTPConnectionPool(object):
 			if self.reuseConnection:
 				self._put_conn(conn)
 			else:
+				logger.debug(u"Closing connection: %s" % conn)
 				self._put_conn(None)
 				try:
+					conn.sock.close()
 					conn.close()
 				except:
 					pass
@@ -372,6 +375,7 @@ class HTTPConnectionPool(object):
 			self._put_conn(None)
 			try:
 				if conn:
+					conn.sock.close()
 					conn.close()
 			except:
 				pass
@@ -385,6 +389,7 @@ class HTTPConnectionPool(object):
 			self._put_conn(None)
 			try:
 				if conn:
+					conn.sock.close()
 					conn.close()
 			except:
 				pass
@@ -397,6 +402,7 @@ class HTTPConnectionPool(object):
 			self._put_conn(None)
 			try:
 				if conn:
+					conn.sock.close()
 					conn.close()
 			except:
 				pass
@@ -486,6 +492,7 @@ class CurlHTTPConnectionPool(HTTPConnectionPool):
 			# Put the connection back to be reused
 			self._put_conn(None)
 			try:
+				conn.sock.close()
 				conn.close()
 			except:
 				pass
@@ -495,6 +502,7 @@ class CurlHTTPConnectionPool(HTTPConnectionPool):
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
 			self._put_conn(None)
 			try:
+				conn.sock.close()
 				conn.close()
 			except:
 				pass
@@ -601,10 +609,15 @@ def destroyPool(pool):
 
 	
 if (__name__ == '__main__'):
-	
-	pool = CurlHTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5)
+	logger.setConsoleLevel(LOG_DEBUG2)
+	logger.setConsoleColor(True)
+	pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5)
 	resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	print resp.data
+	time.sleep(5)
+	#pool = CurlHTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5)
+	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
+	#print resp.data
 	#pool = CurlHTTPConnectionPool(host = 'www.uib.de', port = 80, socketTimeout=None, connectTimeout=5, reuseConnection=True)
 	#resp = pool.urlopen('GET', url = '/www/home/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	#print resp.headers
