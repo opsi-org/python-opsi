@@ -399,6 +399,11 @@ class ExtendedBackend(Backend):
 		logger.debug(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
 		return eval(u'self._backend.%s(**kwargs)' % methodName)
 	
+	def backend_info(self, options):
+		if self._backend:
+			return self._backend.backend_info()
+		return Backend.backend_info()
+	
 	def backend_setOptions(self, options):
 		Backend.backend_setOptions(self, options)
 		if self._backend:
