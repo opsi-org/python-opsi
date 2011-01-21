@@ -782,7 +782,7 @@ class BackendAccessControl(object):
 			if (len(valueList) == 0):
 				continue
 			if issubclass(valueList[0].__class__, BaseObject) or type(valueList[0]) is types.DictType:
-				valueList = self._filterObjects(valueList, acls, raiseOnTruncate = False)
+				valueList = self._filterObjects(valueList, acls, exceptionOnTruncate = False)
 				if isList:
 					params[key] = valueList
 				else:
@@ -797,7 +797,7 @@ class BackendAccessControl(object):
 			isList = type(result) is list
 			resultList = forceList(result)
 			if issubclass(resultList[0].__class__, BaseObject) or type(resultList[0]) is types.DictType:
-				resultList = self._filterObjects(result, acls, raiseOnTruncate = False)
+				resultList = self._filterObjects(result, acls, exceptionOnTruncate = False, exceptionIfAllRemoved = False)
 				if isList:
 					return resultList
 				else:
@@ -807,7 +807,7 @@ class BackendAccessControl(object):
 						return None
 		return result
 	
-	def _filterObjects(self, objects, acls, raiseOnTruncate=True):
+	def _filterObjects(self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True):
 		logger.info(u"Filtering objects by acls")
 		newObjects = []
 		for obj in forceList(objects):
@@ -848,13 +848,19 @@ class BackendAccessControl(object):
 						allowedAttributes.append(attribute)
 			for key in objHash.keys():
 				if not key in allowedAttributes:
-					if raiseOnTruncate:
+					if exceptionOnTruncate:
 						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
 					del objHash[key]
 			if isDict:
 				newObjects.append(objHash)
 			else:
 				newObjects.append(obj.__class__.fromHash(objHash))
+		orilen = len(objects)
+		newlen = len(newObjects)
+		if (newlen < orilen):
+			logger.warning(u"%d objects removed by acl, %d objects left" % (orilen-newlen, newlen))
+			if (newlen == 0) and exceptionIfAllRemoved:
+				raise BackendPermissionDeniedError(u"Access denied")
 		return newObjects
 
 

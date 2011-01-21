@@ -48,17 +48,17 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
-class BackendChangeListener(object):
+class BackendModificationListener(object):
 	def objectInserted(self, backend, obj):
 		pass
 	
 	def objectUpdated(self, backend, obj):
 		pass
 	
-	def objectDeleted(self, backend, obj):
+	def objectsDeleted(self, backend, objs):
 		pass
 	
-	def backendChanged(self, backend):
+	def backendModified(self, backend):
 		pass
 	
 class ClientCacheBackend(ConfigDataBackend):
@@ -105,23 +105,23 @@ class ClientCacheBackend(ConfigDataBackend):
 			return
 		self._backendChangeListeners.remove(backendChangeListener)
 	
-	def _fireBackendChangedEvent(self):
+	def _fireEvent(self, event, *args)
 		class FireEventThread(threading.Thread):
-			def __init__(self, listener, method, kwargs = {}):
+			def __init__(self, listener, method, *args):
 				threading.Thread.__init__(self)
 				self._listener = listener
 				self._method = method
-				self._kwargs = kwargs
+				self._args = args
 				
 			def run(self):
 				try:
 					meth = getattr(self._listener, self._method)
-					meth(**self._kwargs)
+					meth(*self._args)
 				except Exception, e:
 					logger.logException(e)
 		
 		for bcl in self._backendChangeListeners:
-			FireEventThread(bcl, 'backendChanged').start()
+			FireEventThread(bcl, event, *args).start()
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -194,8 +194,17 @@ class ClientCacheBackend(ConfigDataBackend):
 		logger.info(u"Executing method '%s' on work backend %s" % (methodName, self._workBackend))
 		meth = getattr(self._workBackend, methodName)
 		result = meth(**kwargs)
-		if (methodName.find('_') != -1) and methodName.split('_', 1)[1] in ('insertObject', 'updateObject', 'deleteObjects'):
-			self._fireBackendChangedEvent()
+		action = None
+		if (methodName.find('_') != -1):
+			action = methodName.split('_', 1)[1]
+		if action in ('insertObject', 'updateObject', 'deleteObjects'):
+			if (action == 'insertObject'):
+				self._fireEvent('objectInserted', kwargs.values()[0])
+			if (action == 'updateObject'):
+				self._fireEvent('objectUpdated', kwargs.values()[0])
+			if (action == 'deleteObjects'):
+				self._fireEvent('objectsDeleted', kwargs.values()[0])
+			self._fireEvent('backendModified')
 		return result
 	
 	def _cacheBackendInfo(self, backendInfo):
