@@ -3879,9 +3879,20 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			auditHardwareOnHosts[i].setState(0)
 			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
 	
+
+class BackendModificationListener(object):
+	def objectInserted(self, backend, obj):
+		pass
 	
+	def objectUpdated(self, backend, obj):
+		pass
 	
+	def objectsDeleted(self, backend, objs):
+		pass
 	
+	def backendModified(self, backend):
+		pass
+
 	
 	
 	

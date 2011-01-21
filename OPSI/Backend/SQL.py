@@ -93,6 +93,56 @@ class SQL(object):
 	
 	def getTableCreationOptions(self, table):
 		return u''
+
+class SQLBackendObjectModificationTracker(BackendModificationListener):
+	def __init__(self):
+		BackendModificationListener.__init__(self)
+		self._sql = None
+	
+	def _createTables(self):
+		tables = self._sql.getTables()
+		# Host table
+		if not 'OBJECT_MODIFICATION_TRACKER' in tables.keys():
+			logger.debug(u'Creating table OBJECT_MODIFICATION_TRACKER')
+			table = u'''CREATE TABLE `OBJECT_MODIFICATION_TRACKER` (
+					`id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+					`command` varchar(6) NOT NULL,
+					`objectClass` varchar(128) NOT NULL,
+					`ident` varchar(1024) NOT NULL,
+					`date` TIMESTAMP,
+					PRIMARY KEY (`id`)
+				) %s;
+				''' % self._sql.getTableCreationOptions('OBJECT_MODIFICATION_TRACKER')
+			logger.debug(table)
+			self._sql.execute(table)
+			self._sql.execute('CREATE INDEX `objectClass` on `OBJECT_MODIFICATION_TRACKER` (`objectClass`);')
+			self._sql.execute('CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);')
+			self._sql.execute('CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);')
+			
+	def _trackModification(self, command, obj):
+		command = forceUnicodeLower(command)
+		if not command in ('insert', 'update', 'delete')
+			raise Exception(u"Unhandled command '%s'" % command)
+		data = {
+			'command':     command,
+			'objectClass': obj.__class__.__name__,
+			'ident':       obj.getIdent(),
+			'date':        timestamp()
+		}
+		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
+	
+	def getModifications(self, sinceDate = 0):
+		return self._sql.getSet("WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
+	
+	def objectInserted(self, backend, obj):
+		self._trackModification('insert', obj)
+	
+	def objectUpdated(self, backend, obj):
+		self._trackModification('insert', obj)
+	
+	def objectsDeleted(self, backend, objs):
+		for obj in forceList(objs):
+			self._trackModification('delete', obj)
 	
 class SQLBackend(ConfigDataBackend):
 	

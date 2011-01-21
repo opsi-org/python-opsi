@@ -366,9 +366,12 @@ class MySQL(SQL):
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 	
 
-# ======================================================================================================
-# =                                    CLASS MYSQLBACKEND                                              =
-# ======================================================================================================
+class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
+	def __init__(self, **kwargs):
+		SQLBackendObjectModificationTracker.__init__(self)
+		self._sql = MySQL(**kwargs)
+		self._createTables()
+	
 class MySQLBackend(SQLBackend):
 	
 	ESCAPE_BACKSLASH = True

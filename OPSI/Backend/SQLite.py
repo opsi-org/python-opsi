@@ -235,6 +235,13 @@ class SQLite(SQL):
 	
 	def getTableCreationOptions(self, table):
 		return u''
+
+
+class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
+	def __init__(self, **kwargs):
+		SQLBackendObjectModificationTracker.__init__(self)
+		self._sql = SQLite(**kwargs)
+		self._createTables()
 	
 class SQLiteBackend(SQLBackend):
 	

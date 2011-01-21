@@ -48,19 +48,6 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
-class BackendModificationListener(object):
-	def objectInserted(self, backend, obj):
-		pass
-	
-	def objectUpdated(self, backend, obj):
-		pass
-	
-	def objectsDeleted(self, backend, objs):
-		pass
-	
-	def backendModified(self, backend):
-		pass
-	
 class ClientCacheBackend(ConfigDataBackend):
 	
 	def __init__(self, **kwargs):
