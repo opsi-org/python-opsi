@@ -216,6 +216,7 @@ class SQLite(SQL):
 			query = forceUnicode(query)
 			logger.debug2(u"SQL query: %s" % query)
 			res = cursor.execute(query)
+			#cursor.execute("commit")
 		finally:
 			if needClose:
 				self.close(conn, cursor)

@@ -402,7 +402,8 @@ class ExtendedBackend(Backend):
 		
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
-		return eval(u'self._backend.%s(**kwargs)' % methodName)
+		meth = getattr(self._backend, methodName)
+		return meth(**kwargs)
 	
 	def backend_info(self):
 		if self._backend:
@@ -3880,6 +3881,59 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
 	
 
+class ModificationTrackingBackend(ExtendedBackend):
+	
+	def __init__(self, backend, overwrite = True):
+		ExtendedBackend.__init__(self, backend, overwrite = overwrite)
+		self._createInstanceMethods()
+		self._backendChangeListeners = []
+		
+	def addBackendChangeListener(self, backendChangeListener):
+		if backendChangeListener in self._backendChangeListeners:
+			return
+		self._backendChangeListeners.append(backendChangeListener)
+		
+	def removeBackendChangeListener(self, backendChangeListener):
+		if not backendChangeListener in self._backendChangeListeners:
+			return
+		self._backendChangeListeners.remove(backendChangeListener)
+	
+	def _fireEvent(self, event, *args):
+		class FireEventThread(threading.Thread):
+			def __init__(self, listener, backend, method, *args):
+				threading.Thread.__init__(self)
+				self._backend = backend
+				self._listener = listener
+				self._method = method
+				self._args = args
+				
+			def run(self):
+				try:
+					meth = getattr(self._listener, self._method)
+					meth(self._backend, *self._args)
+				except Exception, e:
+					logger.logException(e)
+		
+		for bcl in self._backendChangeListeners:
+			FireEventThread(bcl, self, event, *args).start()
+	
+	def _executeMethod(self, methodName, **kwargs):
+		logger.debug(u"ModificationTrackingBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
+		meth = getattr(self._backend, methodName)
+		result = meth(**kwargs)
+		action = None
+		if (methodName.find('_') != -1):
+			action = methodName.split('_', 1)[1]
+		if action in ('insertObject', 'updateObject', 'deleteObjects'):
+			if (action == 'insertObject'):
+				self._fireEvent('objectInserted', kwargs.values()[0])
+			if (action == 'updateObject'):
+				self._fireEvent('objectUpdated', kwargs.values()[0])
+			if (action == 'deleteObjects'):
+				self._fireEvent('objectsDeleted', kwargs.values()[0])
+			self._fireEvent('backendModified')
+		return result
+	
 class BackendModificationListener(object):
 	def objectInserted(self, backend, obj):
 		pass

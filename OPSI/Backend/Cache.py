@@ -48,7 +48,7 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
-class ClientCacheBackend(ConfigDataBackend):
+class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
@@ -80,35 +80,8 @@ class ClientCacheBackend(ConfigDataBackend):
 			raise Exception(u"Depot id undefined")
 		
 		self._workBackend._setContext(self)
+		self._backend = self._workBackend
 		self._createInstanceMethods()
-	
-	def addBackendChangeListener(self, backendChangeListener):
-		if backendChangeListener in self._backendChangeListeners:
-			return
-		self._backendChangeListeners.append(backendChangeListener)
-		
-	def removeBackendChangeListener(self, backendChangeListener):
-		if not backendChangeListener in self._backendChangeListeners:
-			return
-		self._backendChangeListeners.remove(backendChangeListener)
-	
-	def _fireEvent(self, event, *args)
-		class FireEventThread(threading.Thread):
-			def __init__(self, listener, method, *args):
-				threading.Thread.__init__(self)
-				self._listener = listener
-				self._method = method
-				self._args = args
-				
-			def run(self):
-				try:
-					meth = getattr(self._listener, self._method)
-					meth(*self._args)
-				except Exception, e:
-					logger.logException(e)
-		
-		for bcl in self._backendChangeListeners:
-			FireEventThread(bcl, event, *args).start()
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -174,25 +147,8 @@ class ClientCacheBackend(ConfigDataBackend):
 				(argString, callString) = getArgAndCallString(member[1])
 				
 				logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
-				exec(u'def %s(self, %s): return self._executeOnWorkBackend("%s", %s)' % (methodName, argString, methodName, callString))
+				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
-	def _executeOnWorkBackend(self, methodName, **kwargs):
-		logger.info(u"Executing method '%s' on work backend %s" % (methodName, self._workBackend))
-		meth = getattr(self._workBackend, methodName)
-		result = meth(**kwargs)
-		action = None
-		if (methodName.find('_') != -1):
-			action = methodName.split('_', 1)[1]
-		if action in ('insertObject', 'updateObject', 'deleteObjects'):
-			if (action == 'insertObject'):
-				self._fireEvent('objectInserted', kwargs.values()[0])
-			if (action == 'updateObject'):
-				self._fireEvent('objectUpdated', kwargs.values()[0])
-			if (action == 'deleteObjects'):
-				self._fireEvent('objectsDeleted', kwargs.values()[0])
-			self._fireEvent('backendModified')
-		return result
 	
 	def _cacheBackendInfo(self, backendInfo):
 		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')

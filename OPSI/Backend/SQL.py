@@ -118,10 +118,10 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			self._sql.execute('CREATE INDEX `objectClass` on `OBJECT_MODIFICATION_TRACKER` (`objectClass`);')
 			self._sql.execute('CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);')
 			self._sql.execute('CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);')
-			
+	
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
-		if not command in ('insert', 'update', 'delete')
+		if not command in ('insert', 'update', 'delete'):
 			raise Exception(u"Unhandled command '%s'" % command)
 		data = {
 			'command':     command,
@@ -130,15 +130,18 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'date':        timestamp()
 		}
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
-	
+		
 	def getModifications(self, sinceDate = 0):
-		return self._sql.getSet("WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
+		return self._sql.getSet("SELECT * FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
 	
+	def clearModifications(self, sinceDate = 0):
+		self._sql.execute("DELETE FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
+		
 	def objectInserted(self, backend, obj):
 		self._trackModification('insert', obj)
 	
 	def objectUpdated(self, backend, obj):
-		self._trackModification('insert', obj)
+		self._trackModification('update', obj)
 	
 	def objectsDeleted(self, backend, objs):
 		for obj in forceList(objs):
