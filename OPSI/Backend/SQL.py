@@ -141,8 +141,11 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def getModifications(self, sinceDate = 0):
 		return self._sql.getSet("SELECT * FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
 	
-	def clearModifications(self, sinceDate = 0):
-		self._sql.execute("DELETE FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
+	def clearModifications(self, objectClass = None, sinceDate = 0):
+		where ="`date` > '%s'" % forceOpsiTimestamp(sinceDate)
+		if objectClass:
+			where += ' AND `objectClass` = "%s"' % objectClass
+		self._sql.execute("DELETE FROM `OBJECT_MODIFICATION_TRACKER` WHERE %s" % where)
 		
 	def objectInserted(self, backend, obj):
 		self._trackModification('insert', obj)

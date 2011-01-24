@@ -118,7 +118,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			for mo in modifiedObjects['AuditHardwareOnHost']:
 				objects.append(mo['object'])
 			self._masterBackend.auditHardwareOnHost_updateObjects(objects)
-		
+			
 		if modifiedObjects.has_key('AuditSoftware'):
 			objects = []
 			for mo in modifiedObjects['AuditSoftware']:
