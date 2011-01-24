@@ -67,7 +67,7 @@ class BaseConfiguration(object):
 		option = self._parser.get_option("--" + name.replace("_", "-"))
 		
 		if option is not None:
-			value = self._options[name] if name in self._options.keys() else None
+			value = self._options.get(name)
 			if isinstance(value, basestring):
 				return option.convert_value(name, value)
 		else:
