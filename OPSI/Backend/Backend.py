@@ -1263,10 +1263,14 @@ class ConfigDataBackend(Backend):
 	
 	def auditHardware_getConfig(self, language=None):
 		if self._auditHardwareConfigFile.endswith('.json'):
-			f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
-			result = json.loads(f.read())
-			f.close()
-			return result
+			try:
+				f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
+				result = json.loads(f.read())
+				f.close()
+				return result
+			except Exception, e:
+				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
+				return
 		
 		if not language:
 			language = 'en_US'
