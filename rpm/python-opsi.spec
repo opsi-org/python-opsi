@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.4 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw cabextract
+Requires:       python >= 2.4 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw cabextract
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
@@ -17,6 +17,11 @@ Requires:       pwdutils
 Requires:       python-ctypes pyOpenSSL newt-python
 %else
 Requires:       python-openssl lsb-release python-newt
+%endif
+%if 0%{?rhel_version} > 599
+Requires:       python-twisted >= 8.2 python-twisted-web >= 8.2 python-twisted-conch >= 8.2
+%else
+Requires:       python-twisted-web >= 8.2 python-twisted-conch >= 8.2
 %endif
 Url:            http://www.opsi.org
 License:        GPL v2 or later
