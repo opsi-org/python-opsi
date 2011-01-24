@@ -150,17 +150,20 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					deleteObjects.append(mo['object'])
 				
 				elif mo['command'].lower() in ('update', 'insert'):
+					logger.debug(u"Modified object: %s" % mo['object'].toHash())
 					updateObj = mo['object'].clone(identOnly = True)
 					updateObj.installationStatus = mo['object'].installationStatus
 					updateObj.actionProgress     = mo['object'].actionProgress
 					updateObj.actionResult       = mo['object'].actionResult
 					updateObj.actionRequest      = mo['object'].actionRequest
 					if serviceObj:
+						logger.debug(u"Service object: %s" % serviceObj.toHash())
 						snapshotObj = self._snapshotBackend.productOnClient_getObjects(**(updateObj.getIdent(returnType = 'dict')))
 						if snapshotObj:
 							snapshotObj = snapshotObj[0]
+							logger.debug(u"Snapshot object: %s" % snapshotObj.toHash())
 							if (snapshotObj.actionRequest != serviceObj.actionRequest):
-								logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % obj)
+								logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
 								updateObj.actionRequest = None
 					updateObjects.append(updateObj)
 			if deleteObjects:
