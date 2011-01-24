@@ -176,6 +176,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
+		
+		self._cacheBackendInfo(self._masterBackend.backend_info())
+		
 		self._workBackend.backend_deleteBase()
 		self._workBackend.backend_createBase()
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
@@ -193,7 +196,6 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		br = BackendReplicator(readBackend = self._workBackend, writeBackend = self._snapshotBackend)
 		br.replicate()
 		
-		self._cacheBackendInfo(self._masterBackend.backend_info())
 		for productOnClient in self._workBackend.productOnClient_getObjects(clientId = self._clientId):
 			if productOnClient.actionRequest in (None, 'none'):
 				continue
