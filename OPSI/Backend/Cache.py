@@ -99,7 +99,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					modifiedObjects[modification['objectClass']] = []
 				ObjectClass = eval(modification['objectClass'])
 				identValues = modification['ident'].split(ObjectClass.identSeparator)
-				identAttributes = ObjectClass.getIdentAttributes()
+				identAttributes = getIdentAttributes(ObjectClass)
 				filter = {}
 				for i in range(len(identAttributes)):
 					if (i >= len(identValues)):
