@@ -139,13 +139,13 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			for obj in self._masterBackend.productOnClient_getObjects(clientId = self._clientId):
 				serviceObjects[obj.getIdent()] = obj
 			for mo in modifiedObjects['ProductOnClient']:
-				serviceObj = serviceObjects.get(obj.getIdent())
+				serviceObj = serviceObjects.get(mo['object'].getIdent())
 				if (mo['command'].lower() == 'delete'):
 					if not serviceObj:
-						logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % obj)
+						logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
 						continue
 					if objectsDiffer(mo['object'], serviceObj, excludeAttributes = ['modificationTime']):
-						logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % obj)
+						logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
 						continue
 					deleteObjects.append(mo['object'])
 				
