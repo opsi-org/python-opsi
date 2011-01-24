@@ -1270,7 +1270,7 @@ class ConfigDataBackend(Backend):
 				return result
 			except Exception, e:
 				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
-				return
+				return []
 		
 		if not language:
 			language = 'en_US'
