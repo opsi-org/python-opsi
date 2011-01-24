@@ -1,3 +1,10 @@
+python-opsi (4.0.1-1) stable; urgency=low
+
+  * Add new serivce lib
+  * Close socket in HTTP
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 24 Jan 2011 10:08:02 +0100
+
 python-opsi (4.0.0.20-1) stable; urgency=low
 
   * Fix AccessControlBackend
