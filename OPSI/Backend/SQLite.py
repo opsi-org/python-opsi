@@ -237,13 +237,6 @@ class SQLite(SQL):
 	def getTableCreationOptions(self, table):
 		return u''
 
-
-class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
-	def __init__(self, **kwargs):
-		SQLBackendObjectModificationTracker.__init__(self)
-		self._sql = SQLite(**kwargs)
-		self._createTables()
-	
 class SQLiteBackend(SQLBackend):
 	
 	ESCAPE_BACKSLASH = False
@@ -259,7 +252,14 @@ class SQLiteBackend(SQLBackend):
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
 		logger.debug(u'SQLiteBackend created: %s' % self)
-	
+
+class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
+	def __init__(self, **kwargs):
+		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
+		self._sql = SQLite(**kwargs)
+		self._createTables()
+
+
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)

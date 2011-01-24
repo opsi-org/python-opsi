@@ -95,10 +95,15 @@ class SQL(object):
 		return u''
 
 class SQLBackendObjectModificationTracker(BackendModificationListener):
-	def __init__(self):
+	def __init__(self, lastModificationOnly = False):
 		BackendModificationListener.__init__(self)
 		self._sql = None
-	
+		self._lastModificationOnly = False
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option in ('lastmodificationonly',):
+				self._lastModificationOnly = forceBool(value)
+
 	def _createTables(self):
 		tables = self._sql.getTables()
 		# Host table
@@ -129,6 +134,8 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'ident':       obj.getIdent(),
 			'date':        timestamp()
 		}
+		if self._lastModificationOnly:
+			self._sql.delete('OBJECT_MODIFICATION_TRACKER', '`objectClass` = "%{objectClass}s" AND `ident` = "%{ident}s"' % data)
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		
 	def getModifications(self, sinceDate = 0):

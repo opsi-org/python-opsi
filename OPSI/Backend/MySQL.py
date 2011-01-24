@@ -364,14 +364,7 @@ class MySQL(SQL):
 		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith('HARDWARE_DEVICE_') or table.startswith('HARDWARE_CONFIG_'):
 			return u'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
-	
 
-class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
-	def __init__(self, **kwargs):
-		SQLBackendObjectModificationTracker.__init__(self)
-		self._sql = MySQL(**kwargs)
-		self._createTables()
-	
 class MySQLBackend(SQLBackend):
 	
 	ESCAPE_BACKSLASH = True
@@ -433,4 +426,10 @@ class MySQLBackend(SQLBackend):
 		else:
 			logger.warning(message)
 	
+
+class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
+	def __init__(self, **kwargs):
+		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
+		self._sql = MySQL(**kwargs)
+		self._createTables()
 
