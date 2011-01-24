@@ -135,7 +135,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'date':        timestamp()
 		}
 		if self._lastModificationOnly:
-			self._sql.delete('OBJECT_MODIFICATION_TRACKER', '`objectClass` = "%{objectClass}s" AND `ident` = "%{ident}s"' % data)
+			self._sql.delete('OBJECT_MODIFICATION_TRACKER', '`objectClass` = "%(objectClass)s" AND `ident` = "%(ident)s"' % data)
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		
 	def getModifications(self, sinceDate = 0):
