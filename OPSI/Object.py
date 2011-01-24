@@ -99,6 +99,35 @@ def decodeIdent(Class, hash):
 		del hash['ident']
 		hash.update(ident)
 	return hash
+
+def objectsDiffer(obj1, obj2, excludeAttributes = []):
+	excludeAttributes = forceUnicodeList(excludeAttributes)
+	if (obj1 != obj2):
+		return True
+	obj1 = obj1.toHash()
+	obj2 = obj2.toHash()
+	for (attribute, value1) in obj1.items():
+		if attribute in excludeAttributes:
+			continue
+		value2 = obj2.get(attribute)
+		if not type(value1) is type(value2):
+			return True
+		if type(value1) is dict:
+			for (k, v) in value1.items():
+				if (value2.get(k) != v):
+					return True
+		elif type(value1) is list:
+			if (len(value1) != len(value2)):
+				for v in value1:
+					if not v in value2:
+						return True
+				for v in value2:
+					if not v in value1:
+						return True
+		else:
+			if (value != value2):
+				return True
+	return False
 	
 class BaseObject(object):
 	subClasses = {}

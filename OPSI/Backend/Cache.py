@@ -55,6 +55,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		
 		self._workBackend = None
 		self._masterBackend = None
+		self._snapshotBackend = None
 		self._clientId = None
 		self._depotId = None
 		self._backendChangeListeners = []
@@ -63,6 +64,8 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			option = option.lower()
 			if   option in ('workbackend',):
 				self._workBackend = value
+			elif option in ('snapshotbackend',):
+				self._snapshotBackend = value
 			elif option in ('masterbackend',):
 				self._masterBackend = value
 			elif option in ('clientid',):
@@ -74,6 +77,8 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
+		if not self._snapshotBackend:
+			raise Exception(u"Snapshot backend undefined")
 		if not self._clientId:
 			raise Exception(u"Client id undefined")
 		if not self._depotId:
@@ -86,18 +91,93 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
-	def _updateMasterFromWorkBackend(self):
-		auditHardwareOnHosts = self._workBackend.auditHardwareOnHost_getObjects()
-		if auditHardwareOnHosts:
+	def _updateMasterFromWorkBackend(self, modifications = []):
+		modifiedObjects = {}
+		for modification in modifications:
+			try:
+				if not modifiedObjects.has_key(modification['objectClass']):
+					modifiedObjects[modification['objectClass']] = []
+				ObjectClass = eval(modification['objectClass'])
+				identValues = modification['ident'].split(ObjectClass.identSeparator)
+				identAttributes = ObjectClass.getIdentAttributes()
+				filter = {}
+				for i in range(len(identAttributes)):
+					if (i >= len(identValues)):
+						raise Exception(u"Bad ident '%s' for objectClass '%s'" % (identValues, modification['objectClass']))
+					filter[identAttributes[i]] = identValues[i]
+				meth = getattr(self._workBackend, ObjectClass.backendMethodPrefix + '_getObjects')
+				modification['object'] = meth(**filter)[0]
+				modifiedObjects[modification['objectClass']].append(modification)
+			except Exception, e:
+				logger.error(u"Failed to sync backend modification %s: %s" % (modification, e))
+				continue
+		
+		if modifiedObjects.has_key('AuditHardwareOnHost'):
 			self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
-			self._masterBackend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
+			objects = []
+			for mo in modifiedObjects['AuditHardwareOnHost']:
+				objects.append(mo['object'])
+			self._masterBackend.auditHardwareOnHost_updateObjects(objects)
+		
+		if modifiedObjects.has_key('AuditSoftware'):
+			objects = []
+			for mo in modifiedObjects['AuditSoftware']:
+				objects.append(mo['object'])
+			self._masterBackend.auditSoftware_updateObjects(objects)
+		
+		if modifiedObjects.has_key('AuditSoftwareOnClient'):
+			self._masterBackend.auditSoftwareOnClient_setObsolete(self._clientId)
+			objects = []
+			for mo in modifiedObjects['AuditSoftwareOnClient']:
+				objects.append(mo['object'])
+			self._masterBackend.auditSoftwareOnClient_updateObjects(objects)
+		
+		if modifiedObjects.has_key('ProductOnClient'):
+			serviceObjects = {}
+			deleteObjects = []
+			updateObjects = []
+			for obj in self._masterBackend.productOnClient_getObjects(clientId = self._clientId):
+				serviceObjects[obj.getIdent()] = obj
+			for mo in modifiedObjects['ProductOnClient']:
+				serviceObj = serviceObjects.get(obj.getIdent())
+				if (mo['command'].lower() == 'delete'):
+					if not serviceObj:
+						logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % obj)
+						continue
+					if objectsDiffer(mo['object'], serviceObj, excludeAttributes = ['modificationTime']):
+						logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % obj)
+						continue
+					deleteObjects.append(mo['object'])
+				
+				elif mo['command'].lower() in ('update', 'insert'):
+					updateObj = mo['object'].clone(identOnly = True)
+					updateObj.installationStatus = mo['object'].installationStatus
+					updateObj.actionProgress     = mo['object'].actionProgress
+					updateObj.actionResult       = mo['object'].actionResult
+					updateObj.actionRequest      = mo['object'].actionRequest
+					if serviceObj:
+						snapshotObj = self._snapshotBackend.productOnClient_getObjects(**(updateObj.getIdent(returnType = 'dict')))
+						if snapshotObj:
+							snapshotObj = snapshotObj[0]
+							if (snapshotObj.actionRequest != serviceObj.actionRequest):
+								logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % obj)
+								updateObj.actionRequest = None
+					updateObjects.append(updateObj)
+			if deleteObjects:
+				self._masterBackend.productOnClient_deleteObjects(deleteObjects)
+			if updateObjects:
+				self._masterBackend.productOnClient_updateObjects(updateObjects)
+		
+		#auditHardwareOnHosts = self._workBackend.auditHardwareOnHost_getObjects()
+		#if auditHardwareOnHosts:
+		#	self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
+		#	self._masterBackend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
 		
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
 		self._workBackend.backend_deleteBase()
 		self._workBackend.backend_createBase()
-		self._cacheBackendInfo(self._masterBackend.backend_info())
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
 		br.replicate(
 			serverIds  = [ ],
@@ -107,12 +187,18 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			productIds = [ ],
 			audit      = False,
 			license    = False)
+		
+		self._snapshotBackend.backend_deleteBase()
+		self._snapshotBackend.backend_createBase()
+		br = BackendReplicator(readBackend = self._workBackend, writeBackend = self._snapshotBackend)
+		br.replicate()
+		
+		self._cacheBackendInfo(self._masterBackend.backend_info())
 		for productOnClient in self._workBackend.productOnClient_getObjects(clientId = self._clientId):
 			if productOnClient.actionRequest in (None, 'none'):
 				continue
 			if not self._masterBackend.licensePool_getObjects(productIds = [ productOnClient.productId ]):
 				continue
-			print productOnClient.toHash()
 			try:
 				licenseOnClient = self._masterBackend.licenseOnClient_getOrCreateObject(clientId = self._clientId, productId = productOnClient.productId)
 				for licensePool in self._masterBackend.licensePool_getObjects(id = licenseOnClient.licensePoolId):
@@ -135,6 +221,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		f.close()
 		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
 		self._workBackend.backend_createBase()
+		self._snapshotBackend._cloneFrom(self._workBackend)
 		
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):

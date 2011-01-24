@@ -252,7 +252,8 @@ class SQLiteBackend(SQLBackend):
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
 		logger.debug(u'SQLiteBackend created: %s' % self)
-
+	
+	
 class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
 	def __init__(self, **kwargs):
 		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
