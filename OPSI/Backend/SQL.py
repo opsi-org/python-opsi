@@ -95,7 +95,7 @@ class SQL(object):
 		return u''
 
 class SQLBackendObjectModificationTracker(BackendModificationListener):
-	def __init__(self, lastModificationOnly = False):
+	def __init__(self, **kwargs):
 		BackendModificationListener.__init__(self)
 		self._sql = None
 		self._lastModificationOnly = False
