@@ -221,7 +221,6 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		f.close()
 		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
 		self._workBackend.backend_createBase()
-		self._snapshotBackend._cloneFrom(self._workBackend)
 		
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
