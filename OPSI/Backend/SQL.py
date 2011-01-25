@@ -121,9 +121,9 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 				''' % self._sql.getTableCreationOptions('OBJECT_MODIFICATION_TRACKER')
 			logger.debug(table)
 			self._sql.execute(table)
-			self._sql.execute('CREATE INDEX `objectClass` on `OBJECT_MODIFICATION_TRACKER` (`objectClass`);')
-			self._sql.execute('CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);')
-			self._sql.execute('CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);')
+			#self._sql.execute('CREATE INDEX `objectClass` on `OBJECT_MODIFICATION_TRACKER` (`objectClass`);')
+			#self._sql.execute('CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);')
+			#self._sql.execute('CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);')
 	
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
@@ -135,9 +135,9 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'ident':       obj.getIdent(),
 			'date':        timestamp()
 		}
-		start = time.time()
 		if self._lastModificationOnly:
 			self._sql.delete('OBJECT_MODIFICATION_TRACKER', '`objectClass` = "%(objectClass)s" AND `ident` = "%(ident)s"' % data)
+		start = time.time()
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		logger.essential(u"Took %0.2f seconds to track modification" % (time.time() - start))
 		
