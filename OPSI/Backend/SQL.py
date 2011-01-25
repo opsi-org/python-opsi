@@ -34,6 +34,7 @@
 
 __version__ = '4.0'
 
+import time
 from twisted.conch.ssh import keys
 from sys import version_info
 if (version_info >= (2,6)):
@@ -134,9 +135,11 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'ident':       obj.getIdent(),
 			'date':        timestamp()
 		}
+		start = time.time()
 		if self._lastModificationOnly:
 			self._sql.delete('OBJECT_MODIFICATION_TRACKER', '`objectClass` = "%(objectClass)s" AND `ident` = "%(ident)s"' % data)
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
+		logger.essential(u"Took %0.2f seconds to track modification" % (time.time() - start))
 		
 	def getModifications(self, sinceDate = 0):
 		return self._sql.getSet("SELECT * FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
@@ -2018,9 +2021,7 @@ class SQLBackend(ConfigDataBackend):
 		del data['hardwareClass']
 		del data['type']
 		
-		start = time.time()
 		self._sql.insert(table, data)
-		logger.essential(u"Took %0.2f seconds to write audithardware to database" % (time.time() - start))
 		
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
@@ -2041,7 +2042,6 @@ class SQLBackend(ConfigDataBackend):
 		start = time.time()
 		for h in self.auditHardware_getHashes(attributes, **filter):
 			auditHardwares.append(AuditHardware.fromHash(h))
-		logger.essential(u"Took %0.2f seconds to get audithardware result for filter %s" % ((time.time() - start), filter))
 		return auditHardwares
 	
 	def auditHardware_getHashes(self, attributes=[], **filter):

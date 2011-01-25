@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import types, new, inspect, socket, base64, os, threading, time
+import types, new, inspect, socket, base64, os, threading
 import copy as pycopy
 from twisted.conch.ssh import keys
 try:
@@ -1370,16 +1370,8 @@ class ConfigDataBackend(Backend):
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		auditHardwareOnHost.setDefaults()
-		start = time.time()
-		ah = auditHardwareOnHost.toHash()
-		logger.essential(u"Took %0.2f seconds to convert auditHardwareOnHost to hash" % (time.time() - start))
-		start = time.time()
-		ah = AuditHardware.fromHash(ah)
-		logger.essential(u"Took %0.2f seconds to create auditHardware from hash" % (time.time() - start))
-		start = time.time()
-		self._context.auditHardware_insertObject( ah )
-		logger.essential(u"Took %0.2f seconds to insert auditHardware" % (time.time() - start))
-	
+		self._context.auditHardware_insertObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
+		
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 	
@@ -3846,7 +3838,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
 		for auditHardwareOnHost in auditHardwareOnHosts:
-			start = time.time()
 			filter = {}
 			for (attribute, value) in auditHardwareOnHost.toHash().items():
 				if attribute in ('firstseen', 'lastseen', 'state'):
@@ -3856,13 +3847,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					filter[attribute] = value
 			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
-				logger.essential(u"Took %0.2f seconds to get auditHardwareOnHosts" % (time.time() - start))
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
-				logger.essential(u"Took %0.2f seconds to get auditHardwareOnHosts" % (time.time() - start))
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
-			logger.essential(u"Took %0.2f seconds to update auditHardwareOnHost" % (time.time() - start))
 		return result
 	
 	def auditHardwareOnHost_create(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
