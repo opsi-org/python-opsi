@@ -3851,6 +3851,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.essential(u"Took %0.2f seconds to get auditHardwareOnHosts" % (time.time() - start))
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
+				logger.essential(u"Took %0.2f seconds to get auditHardwareOnHosts" % (time.time() - start))
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
 			logger.essential(u"Took %0.2f seconds to update auditHardwareOnHost" % (time.time() - start))
