@@ -70,37 +70,46 @@ class SQLite(SQL):
 				self._databaseCharset = str(value)
 			
 		self._connection = None
+		self._cursor = None
 		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
 	
 	def connect(self):
-		#self._transactionLock.acquire()
-		logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
-		if not self._connection:
-			self._connection = Connection(
-				filename           = self._database,
-				flags              = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
-				vfs                = None,
-				statementcachesize = 100
-			)
-		def rowtrace(cursor, row):
-			valueSet = {}
-			names = cursor.getdescription()
-			for i in range(len(row)):
-				valueSet[names[i][0]] = row[i]
-			return valueSet
+		self._transactionLock.acquire()
+		try:
+			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
+			if not self._connection:
+				self._connection = Connection(
+					filename           = self._database,
+					flags              = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
+					vfs                = None,
+					statementcachesize = 100
+				)
+			if not self._cursor:
+				def rowtrace(cursor, row):
+					valueSet = {}
+					names = cursor.getdescription()
+					for i in range(len(row)):
+						valueSet[names[i][0]] = row[i]
+					return valueSet
+				
+				self._cursor = self._connection.cursor()
+				if not self._synchronous:
+					self._cursor.execute('PRAGMA synchronous=OFF')
+				if (self._databaseCharset == 'utf8'):
+					self._cursor.execute('PRAGMA encoding="UTF-8"')
+				self._cursor.setrowtrace(rowtrace)
+			return (self._connection, self._cursor)
+		except:
+			self._transactionLock.release()
+			raise
 		
-		cursor = self._connection.cursor()
-		if not self._synchronous:
-			cursor.execute('PRAGMA synchronous=OFF')
-		if (self._databaseCharset == 'utf8'):
-			cursor.execute('PRAGMA encoding="UTF-8"')
-		cursor.setrowtrace(rowtrace)
-		return (self._connection, cursor)
-	
 	def close(self, conn, cursor):
+		try:
+			self._transactionLock.release()
+		except:
+			pass
 		#cursor.close()
-		pass
 	
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
@@ -139,33 +148,32 @@ class SQLite(SQL):
 		(conn, cursor) = self.connect()
 		result = -1
 		try:
-			#sql="insert into example values(?, ?)"
-			#cursor.execute(sql, ("string", 8390823904))
-			#
-			## You can also use dictionaries
-			#sql="insert into example values(:title, :isbn)"
-			#cursor.execute(sql, {"title": "string", "isbn": 8390823904})
-
-			colNames = values = u''
+			#colNames = values = u''
+			#for (key, value) in valueHash.items():
+			#	colNames += u"`%s`, " % key
+			#	if value is None:
+			#		values += u"NULL, "
+			#	elif type(value) is bool:
+			#		if value:
+			#			values += u"1, "
+			#		else:
+			#			values += u"0, "
+			#	elif type(value) in (float, long, int):
+			#		values += u"%s, " % value
+			#	elif type(value) is str:
+			#		values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "''")
+			#	else:
+			#		values += u"\'%s\', " % (u'%s' % value).replace("'", "''")
+			#	
+			#query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			#logger.debug2(u"insert: %s" % query)
+			
+			query = u'INSERT INTO `%s` VALUES ('
 			for (key, value) in valueHash.items():
-				colNames += u"`%s`, " % key
-				if value is None:
-					values += u"NULL, "
-				elif type(value) is bool:
-					if value:
-						values += u"1, "
-					else:
-						values += u"0, "
-				elif type(value) in (float, long, int):
-					values += u"%s, " % value
-				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "''")
-				else:
-					values += u"\'%s\', " % (u'%s' % value).replace("'", "''")
-				
-			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
-			logger.debug2(u"insert: %s" % query)
-			self.execute(query, conn, cursor)
+				query += u":%s, " % key
+			query = query[:-2] + ');'
+			
+			self.execute((query, valueHash), conn, cursor)
 			result = conn.changes()
 		finally:
 			self.close(conn, cursor)
@@ -223,8 +231,8 @@ class SQLite(SQL):
 			(conn, cursor) = self.connect()
 			needClose = True
 		try:
-			query = forceUnicode(query)
-			logger.debug2(u"SQL query: %s" % query)
+			#query = forceUnicode(query)
+			logger.debug2(u"SQL query: %s" % forceUnicode(query))
 			res = cursor.execute(query)
 			#cursor.execute("commit")
 		finally:
