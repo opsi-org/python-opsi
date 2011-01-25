@@ -1371,7 +1371,13 @@ class ConfigDataBackend(Backend):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		auditHardwareOnHost.setDefaults()
 		start = time.time()
-		self._context.auditHardware_insertObject( AuditHardware.fromHash(auditHardwareOnHost.toHash()) )
+		ah = auditHardwareOnHost.toHash()
+		logger.essential(u"Took %0.2f seconds to convert auditHardwareOnHost to hash" % (time.time() - start))
+		start = time.time()
+		ah = AuditHardware.fromHash(ah)
+		logger.essential(u"Took %0.2f seconds to create auditHardware from hash" % (time.time() - start))
+		start = time.time()
+		self._context.auditHardware_insertObject( ah )
 		logger.essential(u"Took %0.2f seconds to insert auditHardware" % (time.time() - start))
 	
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
