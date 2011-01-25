@@ -148,32 +148,27 @@ class SQLite(SQL):
 		(conn, cursor) = self.connect()
 		result = -1
 		try:
-			#colNames = values = u''
-			#for (key, value) in valueHash.items():
-			#	colNames += u"`%s`, " % key
-			#	if value is None:
-			#		values += u"NULL, "
-			#	elif type(value) is bool:
-			#		if value:
-			#			values += u"1, "
-			#		else:
-			#			values += u"0, "
-			#	elif type(value) in (float, long, int):
-			#		values += u"%s, " % value
-			#	elif type(value) is str:
-			#		values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "''")
-			#	else:
-			#		values += u"\'%s\', " % (u'%s' % value).replace("'", "''")
-			#	
-			#query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
-			#logger.debug2(u"insert: %s" % query)
-			
-			query = u'INSERT INTO `%s` VALUES ('
+			colNames = values = u''
 			for (key, value) in valueHash.items():
-				query += u":%s, " % key
-			query = query[:-2] + ');'
+				colNames += u"`%s`, " % key
+				if value is None:
+					values += u"NULL, "
+				elif type(value) is bool:
+					if value:
+						values += u"1, "
+					else:
+						values += u"0, "
+				elif type(value) in (float, long, int):
+					values += u"%s, " % value
+				elif type(value) is str:
+					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "''")
+				else:
+					values += u"\'%s\', " % (u'%s' % value).replace("'", "''")
+				
+			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			logger.debug2(u"insert: %s" % query)
 			
-			self.execute((query, valueHash), conn, cursor)
+			self.execute(query, conn, cursor)
 			result = conn.changes()
 		finally:
 			self.close(conn, cursor)
