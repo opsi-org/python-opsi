@@ -96,6 +96,7 @@ class SQLite(SQL):
 				self._cursor = self._connection.cursor()
 				if not self._synchronous:
 					self._cursor.execute('PRAGMA synchronous=OFF')
+					self._cursor.execute('PRAGMA temp_store=MEMORY')
 				if (self._databaseCharset == 'utf8'):
 					self._cursor.execute('PRAGMA encoding="UTF-8"')
 				self._cursor.setrowtrace(rowtrace)
