@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import types, new, inspect, socket, base64, os, threading
+import types, new, inspect, socket, base64, os, threading, time
 import copy as pycopy
 from twisted.conch.ssh import keys
 try:
@@ -3838,6 +3838,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		auditHardwareOnHosts = forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost)
 		for auditHardwareOnHost in auditHardwareOnHosts:
+			start = time.time()
 			filter = {}
 			for (attribute, value) in auditHardwareOnHost.toHash().items():
 				if attribute in ('firstseen', 'lastseen', 'state'):
@@ -3851,6 +3852,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
+			logger.essential(u"Took %0.2f seconds to update auditHardwareOnHost" % (time.time() - start))
 		return result
 	
 	def auditHardwareOnHost_create(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
