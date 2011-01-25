@@ -88,6 +88,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		self._backend = self._workBackend
 		self._createInstanceMethods()
 	
+	def log_write(self, logType, data, objectId=None, append=False):
+		pass
+	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
@@ -232,7 +235,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				# 'accessControl_authenticated'
-				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig'):
+				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
 					continue
 				
 				(argString, callString) = getArgAndCallString(member[1])

@@ -810,6 +810,9 @@ class HTTPRepository(Repository):
 						raise Exception(httplib_response.status)
 					size = forceInt(httplib_response.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
+					
+					if progressSubject: progressSubject.setEnd(size)
+					
 					if (startByteNumber > 0) and os.path.exists(destination):
 						dst = open(destination, 'ab')
 					else:
