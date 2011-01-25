@@ -94,7 +94,7 @@ class SQLite(SQL):
 		if not self._synchronous:
 			cursor.execute('PRAGMA synchronous=OFF')
 		if (self._databaseCharset == 'utf8'):
-			cursor.execute('PRAGMA encoding=UTF-8')
+			cursor.execute('PRAGMA encoding="UTF-8"')
 		cursor.setrowtrace(rowtrace)
 		return (self._connection, cursor)
 	
@@ -139,6 +139,13 @@ class SQLite(SQL):
 		(conn, cursor) = self.connect()
 		result = -1
 		try:
+			#sql="insert into example values(?, ?)"
+			#cursor.execute(sql, ("string", 8390823904))
+			#
+			## You can also use dictionaries
+			#sql="insert into example values(:title, :isbn)"
+			#cursor.execute(sql, {"title": "string", "isbn": 8390823904})
+
 			colNames = values = u''
 			for (key, value) in valueHash.items():
 				colNames += u"`%s`, " % key
