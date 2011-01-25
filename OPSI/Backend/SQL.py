@@ -107,7 +107,6 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 	def _createTables(self):
 		tables = self._sql.getTables()
-		# Host table
 		if not 'OBJECT_MODIFICATION_TRACKER' in tables.keys():
 			logger.debug(u'Creating table OBJECT_MODIFICATION_TRACKER')
 			table = u'''CREATE TABLE `OBJECT_MODIFICATION_TRACKER` (

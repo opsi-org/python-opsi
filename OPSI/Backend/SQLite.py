@@ -75,7 +75,7 @@ class SQLite(SQL):
 		logger.debug(u'SQLite created: %s' % self)
 	
 	def connect(self):
-		self._transactionLock.acquire()
+		#self._transactionLock.acquire()
 		try:
 			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
 			if not self._connection:
@@ -103,14 +103,15 @@ class SQLite(SQL):
 				self._cursor.setrowtrace(rowtrace)
 			return (self._connection, self._cursor)
 		except:
-			self._transactionLock.release()
+			#self._transactionLock.release()
 			raise
 		
 	def close(self, conn, cursor):
-		try:
-			self._transactionLock.release()
-		except:
-			pass
+		pass
+		#try:
+		#	self._transactionLock.release()
+		#except:
+		#	pass
 		#cursor.close()
 	
 	def getSet(self, query):
