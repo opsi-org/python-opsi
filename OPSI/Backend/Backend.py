@@ -3848,6 +3848,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					filter[attribute] = value
 			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
+				logger.essential(u"Took %0.2f seconds to get auditHardwareOnHosts" % (time.time() - start))
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
