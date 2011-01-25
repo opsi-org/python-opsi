@@ -2036,8 +2036,10 @@ class SQLBackend(ConfigDataBackend):
 		
 		logger.info(u"Getting auditHardwares, filter: %s" % filter)
 		auditHardwares = []
+		start = time.time()
 		for h in self.auditHardware_getHashes(attributes, **filter):
 			auditHardwares.append(AuditHardware.fromHash(h))
+		logger.essential(u"Took %0.2f seconds to get audithardware result for filter %s" % filter)
 		return auditHardwares
 	
 	def auditHardware_getHashes(self, attributes=[], **filter):
