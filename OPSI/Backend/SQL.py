@@ -2018,7 +2018,9 @@ class SQLBackend(ConfigDataBackend):
 		del data['hardwareClass']
 		del data['type']
 		
+		start = time.time()
 		self._sql.insert(table, data)
+		logger.essential(u"Took %0.2f seconds to write audithardware to database" % (time.time() - start))
 		
 	def auditHardware_updateObject(self, auditHardware):
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
