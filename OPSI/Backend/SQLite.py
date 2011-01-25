@@ -57,16 +57,18 @@ class SQLite(SQL):
 	ALTER_TABLE_CHANGE_SUPPORTED = False
 	
 	def __init__(self, **kwargs):
-		self._database = ":memory:"
-		self._synchronous = True
-		
+		self._database        = ":memory:"
+		self._synchronous     = True
+		self._databaseCharset = 'utf8'
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('database',):
+			if   option in ('database',):
 				self._database = forceFilename(value)
-			if option in ('synchronous',):
+			elif option in ('synchronous',):
 				self._synchronous = forceBool(value)
-		
+			elif option in ('databasecharset',):
+				self._databaseCharset = str(value)
+			
 		self._connection = None
 		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
@@ -81,9 +83,6 @@ class SQLite(SQL):
 				vfs                = None,
 				statementcachesize = 100
 			)
-			if not self._synchronous:
-				self._connection.cursor().execute('PRAGMA synchronous=OFF')
-			
 		def rowtrace(cursor, row):
 			valueSet = {}
 			names = cursor.getdescription()
@@ -92,11 +91,15 @@ class SQLite(SQL):
 			return valueSet
 		
 		cursor = self._connection.cursor()
+		if not self._synchronous:
+			cursor.execute('PRAGMA synchronous=OFF')
+		if (self._databaseCharset == 'utf8'):
+			cursor.execute('PRAGMA encoding=UTF-8')
 		cursor.setrowtrace(rowtrace)
 		return (self._connection, cursor)
 	
 	def close(self, conn, cursor):
-		#self._transactionLock.release()
+		#cursor.close()
 		pass
 	
 	def getSet(self, query):
