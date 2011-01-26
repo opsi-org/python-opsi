@@ -94,6 +94,45 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
+	def _syncObjectToMaster(objectClass, modifiedObjects, clientId, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction):
+		masterObjects = {}
+		deleteObjects = []
+		updateObjects = []
+		meth = getattr(self._masterBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
+		for obj in meth(clientId = clientId):
+			masterObjects[obj.getIdent()] = obj
+		for mo in modifiedObjects:
+			masterObj = masterObjects.get(mo['object'].getIdent())
+			if (mo['command'].lower() == 'delete'):
+				if not masterObj:
+					logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
+					continue
+				if objectsDifferFunction(mo['object'], masterObj):
+					logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
+					continue
+				deleteObjects.append(mo['object'])
+			
+			elif mo['command'].lower() in ('update', 'insert'):
+				logger.debug(u"Modified object: %s" % mo['object'].toHash())
+				updateObj = createUpdateObjectFunction(mo['object'])
+				
+				if masterObj:
+					logger.debug(u"Master object: %s" % masterObj.toHash())
+					meth = getattr(self._snapshotBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
+					snapshotObj = meth(**(updateObj.getIdent(returnType = 'dict')))
+					if snapshotObj:
+						snapshotObj = snapshotObj[0]
+						logger.debug(u"Snapshot object: %s" % snapshotObj.toHash())
+						updateObj = mergeObjectsFunction(snapshotObj, updateObj, masterObj)
+				if updateObj:
+					updateObjects.append(updateObj)
+		if deleteObjects:
+			meth = getattr(self._masterBackend, '%s_deleteObjects' % objectClass.backendMethodPrefix)
+			meth(deleteObjects)
+		if updateObjects:
+			meth = getattr(self._masterBackend, '%s_updateObjects' % objectClass.backendMethodPrefix)
+			meth(updateObjects)
+		
 	def _updateMasterFromWorkBackend(self, modifications = []):
 		modifiedObjects = {}
 		for modification in modifications:
@@ -136,48 +175,81 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			self._masterBackend.auditSoftwareOnClient_updateObjects(objects)
 		
 		if modifiedObjects.has_key('ProductOnClient'):
-			serviceObjects = {}
-			deleteObjects = []
-			updateObjects = []
-			for obj in self._masterBackend.productOnClient_getObjects(clientId = self._clientId):
-				serviceObjects[obj.getIdent()] = obj
-			for mo in modifiedObjects['ProductOnClient']:
-				serviceObj = serviceObjects.get(mo['object'].getIdent())
-				if (mo['command'].lower() == 'delete'):
-					if not serviceObj:
-						logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
-						continue
-					if objectsDiffer(mo['object'], serviceObj, excludeAttributes = ['modificationTime']):
-						logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
-						continue
-					deleteObjects.append(mo['object'])
+			def objectsDifferFunction(modifiedObj, masterObj):
+				return objectsDiffer(modifiedObj, masterObj, excludeAttributes = ['modificationTime'])
+			
+			def createUpdateObjectFunction(modifiedObj):
+				updateObj = modifiedObj.clone(identOnly = True)
+				updateObj.installationStatus = modifiedObj.installationStatus
+				updateObj.actionProgress     = modifiedObj.actionProgress
+				updateObj.actionResult       = modifiedObj.actionResult
+				updateObj.actionRequest      = modifiedObj.actionRequest
+				return updateObj
+			
+			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
+				if (snapshotObj.actionRequest != masterObj.actionRequest):
+					logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
+					updateObj.actionRequest = None
+				return updateObj
 				
-				elif mo['command'].lower() in ('update', 'insert'):
-					logger.debug(u"Modified object: %s" % mo['object'].toHash())
-					updateObj = mo['object'].clone(identOnly = True)
-					updateObj.installationStatus = mo['object'].installationStatus
-					updateObj.actionProgress     = mo['object'].actionProgress
-					updateObj.actionResult       = mo['object'].actionResult
-					updateObj.actionRequest      = mo['object'].actionRequest
-					if serviceObj:
-						logger.debug(u"Service object: %s" % serviceObj.toHash())
-						snapshotObj = self._snapshotBackend.productOnClient_getObjects(**(updateObj.getIdent(returnType = 'dict')))
-						if snapshotObj:
-							snapshotObj = snapshotObj[0]
-							logger.debug(u"Snapshot object: %s" % snapshotObj.toHash())
-							if (snapshotObj.actionRequest != serviceObj.actionRequest):
-								logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
-								updateObj.actionRequest = None
-					updateObjects.append(updateObj)
-			if deleteObjects:
-				self._masterBackend.productOnClient_deleteObjects(deleteObjects)
-			if updateObjects:
-				self._masterBackend.productOnClient_updateObjects(updateObjects)
+			self._syncObjectToMaster(ProductOnClient, modifiedObjects['ProductOnClient'], self._clientId, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
-		#auditHardwareOnHosts = self._workBackend.auditHardwareOnHost_getObjects()
-		#if auditHardwareOnHosts:
-		#	self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
-		#	self._masterBackend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
+		for objectClassName in ('ProductPropertyState', 'ConfigState'):
+			def objectsDifferFunction(modifiedObj, masterObj):
+				return objectsDiffer(modifiedObj, masterObj)
+			
+			def createUpdateObjectFunction(modifiedObj):
+				return modifiedObj.clone()
+			
+			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
+				if (snapshotObj.actionRequest != masterObj.actionRequest):
+					logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
+					return None
+				return updateObj
+			
+			if modifiedObjects.has_key(objectClassName):
+				self._syncObjectToMaster(eval(objectClassName), modifiedObjects[objectClassName], self._clientId, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+		
+		#if modifiedObjects.has_key('ProductOnClient'):
+		#	masterObjects = {}
+		#	deleteObjects = []
+		#	updateObjects = []
+		#	for obj in self._masterBackend.productOnClient_getObjects(clientId = self._clientId):
+		#		masterObjects[obj.getIdent()] = obj
+		#	for mo in modifiedObjects['ProductOnClient']:
+		#		masterObj = masterObjects.get(mo['object'].getIdent())
+		#		if (mo['command'].lower() == 'delete'):
+		#			if not masterObj:
+		#				logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
+		#				continue
+		#			if objectsDiffer(mo['object'], masterObj, excludeAttributes = ['modificationTime']):
+		#				logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
+		#				continue
+		#			deleteObjects.append(mo['object'])
+		#		
+		#		elif mo['command'].lower() in ('update', 'insert'):
+		#			logger.debug(u"Modified object: %s" % mo['object'].toHash())
+		#			updateObj = mo['object'].clone(identOnly = True)
+		#			updateObj.installationStatus = mo['object'].installationStatus
+		#			updateObj.actionProgress     = mo['object'].actionProgress
+		#			updateObj.actionResult       = mo['object'].actionResult
+		#			updateObj.actionRequest      = mo['object'].actionRequest
+		#			if masterObj:
+		#				logger.debug(u"Master object: %s" % masterObj.toHash())
+		#				snapshotObj = self._snapshotBackend.productOnClient_getObjects(**(updateObj.getIdent(returnType = 'dict')))
+		#				if snapshotObj:
+		#					snapshotObj = snapshotObj[0]
+		#					logger.debug(u"Snapshot object: %s" % snapshotObj.toHash())
+		#					if (snapshotObj.actionRequest != masterObj.actionRequest):
+		#						logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
+		#						updateObj.actionRequest = None
+		#			updateObjects.append(updateObj)
+		#	if deleteObjects:
+		#		self._masterBackend.productOnClient_deleteObjects(deleteObjects)
+		#	if updateObjects:
+		#		self._masterBackend.productOnClient_updateObjects(updateObjects)
+		#
+		
 		
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
