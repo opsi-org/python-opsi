@@ -3903,23 +3903,12 @@ class ModificationTrackingBackend(ExtendedBackend):
 		self._backendChangeListeners.remove(backendChangeListener)
 	
 	def _fireEvent(self, event, *args):
-		class FireEventThread(threading.Thread):
-			def __init__(self, listener, backend, method, *args):
-				threading.Thread.__init__(self)
-				self._backend = backend
-				self._listener = listener
-				self._method = method
-				self._args = args
-				
-			def run(self):
-				try:
-					meth = getattr(self._listener, self._method)
-					meth(self._backend, *self._args)
-				except Exception, e:
-					logger.logException(e)
-		
 		for bcl in self._backendChangeListeners:
-			FireEventThread(bcl, self, event, *args).start()
+			try:
+				meth = getattr(bcl, event)
+				meth(self, *args)
+			except Exception, e:
+				logger.error(e)
 	
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(u"ModificationTrackingBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
@@ -3940,15 +3929,19 @@ class ModificationTrackingBackend(ExtendedBackend):
 	
 class BackendModificationListener(object):
 	def objectInserted(self, backend, obj):
+		# Should return immediately!
 		pass
 	
 	def objectUpdated(self, backend, obj):
+		# Should return immediately!
 		pass
 	
 	def objectsDeleted(self, backend, objs):
+		# Should return immediately!
 		pass
 	
 	def backendModified(self, backend):
+		# Should return immediately!
 		pass
 
 	
