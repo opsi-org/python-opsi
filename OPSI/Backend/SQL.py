@@ -787,7 +787,7 @@ class SQLBackend(ConfigDataBackend):
 			
 		# Hardware audit tables
 		for (hwClass, values) in self._auditHardwareConfig.items():
-			logger.info(u"Processing hardware class '%s'" % hwClass)
+			logger.debug(u"Processing hardware class '%s'" % hwClass)
 			hardwareDeviceTableName = u'HARDWARE_DEVICE_' + hwClass
 			hardwareConfigTableName = u'HARDWARE_CONFIG_' + hwClass
 			
