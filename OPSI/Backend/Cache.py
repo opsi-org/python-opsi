@@ -94,12 +94,12 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
-	def _syncObjectToMaster(objectClass, modifiedObjects, clientId, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction):
+	def _syncObjectToMaster(self, objectClass, modifiedObjects, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction):
 		masterObjects = {}
 		deleteObjects = []
 		updateObjects = []
 		meth = getattr(self._masterBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
-		for obj in meth(clientId = clientId):
+		for obj in meth(clientId = self._clientId):
 			masterObjects[obj.getIdent()] = obj
 		for mo in modifiedObjects:
 			masterObj = masterObjects.get(mo['object'].getIdent())
@@ -192,7 +192,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					updateObj.actionRequest = None
 				return updateObj
 				
-			self._syncObjectToMaster(ProductOnClient, modifiedObjects['ProductOnClient'], self._clientId, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+			self._syncObjectToMaster(ProductOnClient, modifiedObjects['ProductOnClient'], objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 		for objectClassName in ('ProductPropertyState', 'ConfigState'):
 			def objectsDifferFunction(modifiedObj, masterObj):
@@ -208,7 +208,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return updateObj
 			
 			if modifiedObjects.has_key(objectClassName):
-				self._syncObjectToMaster(eval(objectClassName), modifiedObjects[objectClassName], self._clientId, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+				self._syncObjectToMaster(eval(objectClassName), modifiedObjects[objectClassName], objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 		#if modifiedObjects.has_key('ProductOnClient'):
 		#	masterObjects = {}
