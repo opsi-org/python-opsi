@@ -94,12 +94,12 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
-	def _syncObjectToMaster(self, objectClass, modifiedObjects, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction):
+	def _syncModifiedObjectsWithMaster(self, objectClass, modifiedObjects, getFilter, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction):
 		masterObjects = {}
 		deleteObjects = []
 		updateObjects = []
 		meth = getattr(self._masterBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
-		for obj in meth(clientId = self._clientId):
+		for obj in meth(**getFilter):
 			masterObjects[obj.getIdent()] = obj
 		for mo in modifiedObjects:
 			masterObj = masterObjects.get(mo['object'].getIdent())
@@ -192,7 +192,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					updateObj.actionRequest = None
 				return updateObj
 				
-			self._syncObjectToMaster(ProductOnClient, modifiedObjects['ProductOnClient'], objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {clientId = self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 		for objectClassName in ('ProductPropertyState', 'ConfigState'):
 			def objectsDifferFunction(modifiedObj, masterObj):
@@ -208,48 +208,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return updateObj
 			
 			if modifiedObjects.has_key(objectClassName):
-				self._syncObjectToMaster(eval(objectClassName), modifiedObjects[objectClassName], objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
-		
-		#if modifiedObjects.has_key('ProductOnClient'):
-		#	masterObjects = {}
-		#	deleteObjects = []
-		#	updateObjects = []
-		#	for obj in self._masterBackend.productOnClient_getObjects(clientId = self._clientId):
-		#		masterObjects[obj.getIdent()] = obj
-		#	for mo in modifiedObjects['ProductOnClient']:
-		#		masterObj = masterObjects.get(mo['object'].getIdent())
-		#		if (mo['command'].lower() == 'delete'):
-		#			if not masterObj:
-		#				logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
-		#				continue
-		#			if objectsDiffer(mo['object'], masterObj, excludeAttributes = ['modificationTime']):
-		#				logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
-		#				continue
-		#			deleteObjects.append(mo['object'])
-		#		
-		#		elif mo['command'].lower() in ('update', 'insert'):
-		#			logger.debug(u"Modified object: %s" % mo['object'].toHash())
-		#			updateObj = mo['object'].clone(identOnly = True)
-		#			updateObj.installationStatus = mo['object'].installationStatus
-		#			updateObj.actionProgress     = mo['object'].actionProgress
-		#			updateObj.actionResult       = mo['object'].actionResult
-		#			updateObj.actionRequest      = mo['object'].actionRequest
-		#			if masterObj:
-		#				logger.debug(u"Master object: %s" % masterObj.toHash())
-		#				snapshotObj = self._snapshotBackend.productOnClient_getObjects(**(updateObj.getIdent(returnType = 'dict')))
-		#				if snapshotObj:
-		#					snapshotObj = snapshotObj[0]
-		#					logger.debug(u"Snapshot object: %s" % snapshotObj.toHash())
-		#					if (snapshotObj.actionRequest != masterObj.actionRequest):
-		#						logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
-		#						updateObj.actionRequest = None
-		#			updateObjects.append(updateObj)
-		#	if deleteObjects:
-		#		self._masterBackend.productOnClient_deleteObjects(deleteObjects)
-		#	if updateObjects:
-		#		self._masterBackend.productOnClient_updateObjects(updateObjects)
-		#
-		
+				self._syncModifiedObjectsWithMaster(eval(objectClassName), modifiedObjects[objectClassName], {objectId = self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
