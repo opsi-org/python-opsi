@@ -202,9 +202,19 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return modifiedObj.clone()
 			
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
-				if (snapshotObj.actionRequest != masterObj.actionRequest):
+				if (len(snapshotObj.values) != len(masterObj.values)):
 					logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
 					return None
+				if snapshotObj.values:
+					for v in snapshotObj.values:
+						if not v in masterObj.values:
+							logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
+							return None
+				if masterObj.values:
+					for v in masterObj.values:
+						if not v in snapshotObj.values:
+							logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
+							return None
 				return updateObj
 			
 			if modifiedObjects.has_key(objectClassName):
