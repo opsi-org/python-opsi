@@ -192,7 +192,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					updateObj.actionRequest = None
 				return updateObj
 				
-			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {clientId = self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 		for objectClassName in ('ProductPropertyState', 'ConfigState'):
 			def objectsDifferFunction(modifiedObj, masterObj):
@@ -208,7 +208,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return updateObj
 			
 			if modifiedObjects.has_key(objectClassName):
-				self._syncModifiedObjectsWithMaster(eval(objectClassName), modifiedObjects[objectClassName], {objectId = self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+				self._syncModifiedObjectsWithMaster(eval(objectClassName), modifiedObjects[objectClassName], {"objectId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
