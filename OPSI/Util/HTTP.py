@@ -232,10 +232,10 @@ class HTTPConnectionPool(object):
 		Return a fresh HTTPConnection.
 		"""
 		self.num_connections += 1
-		logger.info(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+		logger.debug(u"Starting new HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 		conn = HTTPConnection(host=self.host, port=self.port)
 		non_blocking_connect_http(conn, self.connectTimeout)
-		logger.info(u"Connection established to: %s" % self.host)
+		logger.debug(u"Connection established to: %s" % self.host)
 		return conn
 
 	def _get_conn(self, timeout=None):
@@ -421,10 +421,10 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		Return a fresh HTTPSConnection.
 		"""
-		logger.info(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+		logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 		conn = HTTPSConnection(host=self.host, port=self.port)
 		non_blocking_connect_https(conn, self.connectTimeout)
-		logger.info(u"Connection established to: %s" % self.host)
+		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
 		return conn
 
@@ -438,7 +438,7 @@ class CurlHTTPConnectionPool(HTTPConnectionPool):
 		HTTPConnectionPool.__init__(self, host, port, socketTimeout, connectTimeout, retryTime, maxsize, block, reuseConnection)
 		
 	def _new_conn(self):
-		logger.info(u"Creating new curl HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
+		logger.debug(u"Creating new curl HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 		conn = pycurl.Curl()
 		self.num_connections += 1
 		return conn
