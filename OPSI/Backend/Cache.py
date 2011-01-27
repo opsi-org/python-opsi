@@ -277,7 +277,27 @@ class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, Modificat
 		f.close()
 		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
 		self._workBackend.backend_createBase()
-		
+	
+	def _createInstanceMethods(self):
+		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
+		for member in inspect.getmembers(self._backend, inspect.ismethod):
+			methodName = member[0]
+			if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write'):
+				# Not a public method
+				continue
+			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
+			#if hasattr(self.__class__, methodName):
+			if hasattr(self, methodName):
+				if self._overwrite:
+					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+					continue
+				else:
+					logger.debug(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+			(argString, callString) = getArgAndCallString(member[1])
+			
+			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+	
 	#def _createInstanceMethods(self):
 	#	for Class in (Backend, ConfigDataBackend):
 	#		for member in inspect.getmembers(Class, inspect.ismethod):
