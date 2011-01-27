@@ -230,6 +230,9 @@ class BaseObject(object):
 		logger.essential("============================ %s %s" % (self.getIdent(), other.getIdent()))
 		return (self.getIdent() == other.getIdent())
 	
+	def __ne__(self, other):
+		return not self.__eq__(other)
+	
 	def __unicode__(self):
 		return u"<%s>" % (self.getType())
 	
