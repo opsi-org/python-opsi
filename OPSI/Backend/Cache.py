@@ -190,8 +190,8 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			self._masterBackend.auditSoftwareOnClient_updateObjects(objects)
 		
 		if modifiedObjects.has_key('ProductOnClient'):
-			def objectsDifferFunction(modifiedObj, masterObj):
-				return objectsDiffer(modifiedObj, masterObj, excludeAttributes = ['modificationTime'])
+			def objectsDifferFunction(snapshotObj, masterObj):
+				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime'])
 			
 			def createUpdateObjectFunction(modifiedObj):
 				updateObj = modifiedObj.clone(identOnly = True)
@@ -210,9 +210,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 		if modifiedObjects.has_key('LicenseOnClient'):
-			def objectsDifferFunction(modifiedObj, masterObj):
-				result = objectsDiffer(modifiedObj, masterObj)
-				logger.essential(u"objectsDiffer %s %s: %s" % (modifiedObj.toHash(), masterObj.toHash(), result))
+			def objectsDifferFunction(snapshotObj, masterObj):
+				result = objectsDiffer(snapshotObj, masterObj)
+				logger.essential(u"objectsDiffer %s %s: %s" % (snapshotObj.toHash(), masterObj.toHash(), result))
 				return result
 			
 			def createUpdateObjectFunction(modifiedObj):
@@ -225,8 +225,8 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			self._syncModifiedObjectsWithMaster(LicenseOnClient, modifiedObjects['LicenseOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
 		for objectClassName in ('ProductPropertyState', 'ConfigState'):
-			def objectsDifferFunction(modifiedObj, masterObj):
-				return objectsDiffer(modifiedObj, masterObj)
+			def objectsDifferFunction(snapshotObj, masterObj):
+				return objectsDiffer(snapshotObj, masterObj)
 			
 			def createUpdateObjectFunction(modifiedObj):
 				return modifiedObj.clone()

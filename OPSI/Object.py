@@ -103,6 +103,7 @@ def decodeIdent(Class, hash):
 def objectsDiffer(obj1, obj2, excludeAttributes = []):
 	excludeAttributes = forceUnicodeList(excludeAttributes)
 	if (obj1 != obj2):
+		logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> obj1 != obj2")
 		return True
 	obj1 = obj1.toHash()
 	obj2 = obj2.toHash()
@@ -111,21 +112,31 @@ def objectsDiffer(obj1, obj2, excludeAttributes = []):
 			continue
 		value2 = obj2.get(attribute)
 		if not type(value1) is type(value2):
+			logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> type(value1) != type(value2)")
 			return True
 		if type(value1) is dict:
+			if (len(value1.keys()) != len(value2.keys())):
+				logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> len(value1.keys()) != len(value2.keys())")
+				return True
 			for (k, v) in value1.items():
 				if (value2.get(k) != v):
+					logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> value2.get(k) != v")
 					return True
 		elif type(value1) is list:
 			if (len(value1) != len(value2)):
-				for v in value1:
-					if not v in value2:
-						return True
-				for v in value2:
-					if not v in value1:
-						return True
+				logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> len(value1) != len(value2)")
+				return True
+			for v in value1:
+				if not v in value2:
+					logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> not v in value2")
+					return True
+			for v in value2:
+				if not v in value1:
+					logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> not v in value1")
+					return True
 		else:
 			if (value != value2):
+				logger.essential("================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> value != value2")
 				return True
 	return False
 	
