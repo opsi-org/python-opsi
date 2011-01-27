@@ -128,7 +128,7 @@ def objectsDiffer(obj1, obj2, excludeAttributes = []):
 				if not v in value1:
 					return True
 		else:
-			if (value != value2):
+			if (value1 != value2):
 				return True
 	return False
 	
