@@ -48,7 +48,7 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
-class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend):
+class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, ModificationTrackingBackend):
 	
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
