@@ -2221,6 +2221,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		usedDepotIds = []
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
+			logger.essential(u"Calling backend_setOptions on %s" % self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
 			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
 				if not configState.values or not configState.values[0]:

@@ -89,18 +89,6 @@ class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, Modificat
 		
 		#self._createInstanceMethods()
 	
-	def backend_info(self):
-		return ConfigDataBackend.backend_info(self)
-	
-	def backend_setOptions(self, options):
-		return ConfigDataBackend.backend_setOptions(self, options)
-		
-	def backend_getOptions(self):
-		return ConfigDataBackend.backend_getOptions(self)
-		
-	def backend_exit(self):
-		return ConfigDataBackend.backend_exit(self)
-	
 	def log_write(self, logType, data, objectId=None, append=False):
 		pass
 	
