@@ -91,6 +91,10 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def log_write(self, logType, data, objectId=None, append=False):
 		pass
 	
+	def licenseOnClient_getObjects(self, attributes=[], **filter):
+		logger.essential(u"==================== licenseOnClient_getObjects %s" % filter)
+		return self._workBackend.licenseOnClient_getObjects(attributes, **filter)
+	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
@@ -243,15 +247,26 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		br = BackendReplicator(readBackend = self._workBackend, writeBackend = self._snapshotBackend)
 		br.replicate()
 		
+		licenseOnClients = self._masterBackend.licenseOnClient_getObjects(clientId = self._clientId)
 		for productOnClient in self._workBackend.productOnClient_getObjects(clientId = self._clientId):
 			if productOnClient.actionRequest in (None, 'none'):
 				continue
-			if not self._masterBackend.licensePool_getObjects(productIds = [ productOnClient.productId ]):
+			licensePools = self._masterBackend.licensePool_getObjects(productIds = [ productOnClient.productId ])
+			if not licensePools:
 				logger.debug(u"No license pool found for product '%s'" % productOnClient.productId)
 				continue
+			licensePool = licensePools[0]
 			try:
-				logger.notice(u"Acquiring license for product '%s'" % productOnClient.productId)
-				licenseOnClient = self._masterBackend.licenseOnClient_getOrCreateObject(clientId = self._clientId, productId = productOnClient.productId)
+				licenseOnClient = None
+				for loc in licenseOnClients:
+					if (licenseOnClient.licensePoolId == licensePool.id):
+						licenseOnClient = loc
+						break
+				if licenseOnClient:
+					logger.notice(u"Reusing existing licenseOnClient '%s'" % licenseOnClient)
+				else:
+					logger.notice(u"Acquiring license for product '%s'" % productOnClient.productId)
+					licenseOnClient = self._masterBackend.licenseOnClient_getOrCreateObject(clientId = self._clientId, productId = productOnClient.productId)
 				for licensePool in self._masterBackend.licensePool_getObjects(id = licenseOnClient.licensePoolId):
 					self._workBackend.licensePool_insertObject(licensePool)
 				for softwareLicense in self._masterBackend.softwareLicense_getObjects(id = licenseOnClient.softwareLicenseId):
@@ -279,7 +294,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
-				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write'):
+				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write', 'licenseOnClient_getObjects'):
 				#if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
 					continue
 				
