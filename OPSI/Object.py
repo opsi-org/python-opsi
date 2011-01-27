@@ -222,12 +222,9 @@ class BaseObject(object):
 	
 	def __eq__(self, other):
 		if not isinstance(other, self.__class__):
-			logger.essential("============================ NOT THE SAME CLASS!!!!!!!")
 			return False
 		if self.isGeneratedDefault() or other.isGeneratedDefault():
-			logger.essential("============================ isGeneratedDefault!!!!!!!")
 			return False
-		logger.essential("============================ %s %s" % (self.getIdent(), other.getIdent()))
 		return (self.getIdent() == other.getIdent())
 	
 	def __ne__(self, other):

@@ -92,7 +92,6 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		pass
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
-		logger.essential(u"==================== licenseOnClient_getObjects %s" % filter)
 		licenseOnClients = self._workBackend.licenseOnClient_getObjects(attributes, **filter)
 		for licenseOnClient in licenseOnClients:
 			# Recreate for later sync to server
@@ -125,6 +124,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				if objectsDifferFunction(snapshotObj, masterObj):
 					logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
 					continue
+				logger.debug(u"Object %s marked for deletion" % mo['object'])
 				deleteObjects.append(mo['object'])
 			
 			elif mo['command'].lower() in ('update', 'insert'):
@@ -140,6 +140,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 						logger.debug(u"Snapshot object: %s" % snapshotObj.toHash())
 						updateObj = mergeObjectsFunction(snapshotObj, updateObj, masterObj)
 				if updateObj:
+					logger.debug(u"Object %s marked for update" % mo['object'])
 					updateObjects.append(updateObj)
 		if deleteObjects:
 			meth = getattr(self._masterBackend, '%s_deleteObjects' % objectClass.backendMethodPrefix)
@@ -212,7 +213,6 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		if modifiedObjects.has_key('LicenseOnClient'):
 			def objectsDifferFunction(snapshotObj, masterObj):
 				result = objectsDiffer(snapshotObj, masterObj)
-				logger.essential(u"objectsDiffer %s %s: %s" % (snapshotObj.toHash(), masterObj.toHash(), result))
 				return result
 			
 			def createUpdateObjectFunction(modifiedObj):
