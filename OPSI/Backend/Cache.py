@@ -247,9 +247,6 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			license    = False)
 		
 		self._snapshotBackend.backend_deleteBase()
-		self._snapshotBackend.backend_createBase()
-		br = BackendReplicator(readBackend = self._workBackend, writeBackend = self._snapshotBackend)
-		br.replicate()
 		
 		licenseOnClients = self._masterBackend.licenseOnClient_getObjects(clientId = self._clientId)
 		for productOnClient in self._workBackend.productOnClient_getObjects(clientId = self._clientId):
@@ -263,7 +260,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			try:
 				licenseOnClient = None
 				for loc in licenseOnClients:
-					if (licenseOnClient.licensePoolId == licensePool.id):
+					if (loc.licensePoolId == licensePool.id):
 						licenseOnClient = loc
 						break
 				if licenseOnClient:
@@ -284,6 +281,11 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				
 			except Exception, e:
 				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
+		
+		self._snapshotBackend.backend_createBase()
+		br = BackendReplicator(readBackend = self._workBackend, writeBackend = self._snapshotBackend)
+		br.replicate()
+		
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
 		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
 		logger.notice(u"Creating opsi passwd file '%s'" % self._opsiPasswdFile)
