@@ -401,7 +401,8 @@ class ExtendedBackend(Backend):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 		
 	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
+		#################### logger.debug(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
+		logger.essential(u"ExtendedBackend %s: executing '%s' on backend '%s'" % (self, methodName, self._backend))
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 	
