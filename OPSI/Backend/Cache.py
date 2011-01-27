@@ -48,10 +48,10 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
-class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
+class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend):
 	
 	def __init__(self, **kwargs):
-		ConfigDataBackend.__init__(self, **kwargs)
+		ExtendedConfigDataBackend.__init__(self, **kwargs)
 		
 		self._workBackend = None
 		self._masterBackend = None
@@ -90,6 +90,10 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	
 	def log_write(self, logType, data, objectId=None, append=False):
 		pass
+	
+	def licenseOnClient_getOrCreateObject(self, clientId, licensePoolId = None, productId = None, windowsSoftwareId = None):
+		logger.essential("===================licenseOnClient_getOrCreateObject===============================")
+		return ExtendedConfigDataBackend.licenseOnClient_getOrCreateObject(self, clientId, licensePoolId, productId, windowsSoftwareId)
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -247,8 +251,10 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			if productOnClient.actionRequest in (None, 'none'):
 				continue
 			if not self._masterBackend.licensePool_getObjects(productIds = [ productOnClient.productId ]):
+				logger.debug(u"No license pool found for product '%s'" % productOnClient.productId)
 				continue
 			try:
+				logger.notice(u"Acquiring license for product '%s'" % productOnClient.productId)
 				licenseOnClient = self._masterBackend.licenseOnClient_getOrCreateObject(clientId = self._clientId, productId = productOnClient.productId)
 				for licensePool in self._masterBackend.licensePool_getObjects(id = licenseOnClient.licensePoolId):
 					self._workBackend.licensePool_insertObject(licensePool)
@@ -256,7 +262,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					self._workBackend.softwareLicense_insertObject(softwareLicense)
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 			except Exception, e:
-				logger.error(e)
+				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
 		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
 		logger.notice(u"Creating opsi passwd file '%s'" % self._opsiPasswdFile)
@@ -275,8 +281,8 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
-				# 'accessControl_authenticated'
-				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
+				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write'):
+				#if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
 					continue
 				
 				(argString, callString) = getArgAndCallString(member[1])
