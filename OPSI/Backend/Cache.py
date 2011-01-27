@@ -255,6 +255,8 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				for licensePool in self._masterBackend.licensePool_getObjects(id = licenseOnClient.licensePoolId):
 					self._workBackend.licensePool_insertObject(licensePool)
 				for softwareLicense in self._masterBackend.softwareLicense_getObjects(id = licenseOnClient.softwareLicenseId):
+					for licenseContract in self._masterBackend.licenseContract_getObjects(licenseContractId = softwareLicense.licenseContractId):
+						self._workBackend.licenseContract_insertObject(licenseContract)
 					self._workBackend.softwareLicense_insertObject(softwareLicense)
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 			except Exception, e:
