@@ -294,10 +294,10 @@ class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend,
 			#if hasattr(self.__class__, methodName):
 			if hasattr(self, methodName):
 				if self._overwrite:
-					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+					logger.essential(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
 					continue
 				else:
-					logger.debug(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+					logger.essential(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
 			(argString, callString) = getArgAndCallString(member[1])
 			
 			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
