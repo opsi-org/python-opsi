@@ -586,7 +586,7 @@ class ConfigDataBackend(Backend):
 		
 		depot = self._context.host_getObjects(id = depotId)
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % depotId)
+			raise Exception(u"Depot '%s' not found in backend %s" % (depotId, self._context))
 		depot = depot[0]
 		
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
