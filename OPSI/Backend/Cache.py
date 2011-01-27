@@ -117,7 +117,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
 					continue
 				meth = getattr(self._snapshotBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
-				snapshotObj = meth(**(updateObj.getIdent(returnType = 'dict')))
+				snapshotObj = meth(**(mo['object'].getIdent(returnType = 'dict')))
 				if not snapshotObj:
 					logger.info(u"Deletion of object %s prevented because object has been created on server since last sync" % mo['object'])
 					continue
