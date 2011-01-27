@@ -48,9 +48,11 @@ from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
 
-class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend, ConfigDataBackend):
+class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	
 	def __init__(self, **kwargs):
+		ConfigDataBackend.__init__(self, **kwargs)
+		
 		self._workBackend = None
 		self._masterBackend = None
 		self._snapshotBackend = None
@@ -82,19 +84,12 @@ class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend,
 		if not self._depotId:
 			raise Exception(u"Depot id undefined")
 		
-		ExtendedConfigDataBackend.__init__(self, self._workBackend)
-		ConfigDataBackend.__init__(self, **kwargs)
-		logger.essential(u"================================================ self._opsiModulesFile %s" % self._opsiModulesFile)
 		self._workBackend._setContext(self)
-		
-		#self._createInstanceMethods()
+		self._backend = self._workBackend
+		self._createInstanceMethods()
 	
 	def log_write(self, logType, data, objectId=None, append=False):
 		pass
-	
-	def licenseOnClient_getOrCreateObject(self, clientId, licensePoolId = None, productId = None, windowsSoftwareId = None):
-		logger.essential("===================licenseOnClient_getOrCreateObject===============================")
-		return ExtendedConfigDataBackend.licenseOnClient_getOrCreateObject(self, clientId, licensePoolId, productId, windowsSoftwareId)
 	
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
@@ -264,11 +259,6 @@ class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend,
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 			except Exception, e:
 				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
-		logger.essential(u"============================ _backend %s" % self._backend)
-		logger.essential(u"============================ _workBackend %s" % self._workBackend)
-		logger.essential(u"============================ _backend host_getObjects %s" % self._backend.host_getObjects())
-		logger.essential(u"============================ _workBackend host_getObjects %s" % self._workBackend.host_getObjects())
-		logger.essential(u"============================ host_getObjects %s" % self.host_getObjects())
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
 		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
 		logger.notice(u"Creating opsi passwd file '%s'" % self._opsiPasswdFile)
@@ -282,40 +272,20 @@ class ClientCacheBackend(ExtendedConfigDataBackend, ModificationTrackingBackend,
 		f.close()
 		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
 		self._workBackend.backend_createBase()
-	
+		
 	def _createInstanceMethods(self):
-		logger.debug(u"%s is creating instance methods" % self.__class__.__name__)
-		for member in inspect.getmembers(self._backend, inspect.ismethod):
-			methodName = member[0]
-			if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write'):
-				# Not a public method
-				continue
-			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
-			#if hasattr(self.__class__, methodName):
-			if hasattr(self, methodName):
-				if self._overwrite:
-					logger.essential(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
+		for Class in (Backend, ConfigDataBackend):
+			for member in inspect.getmembers(Class, inspect.ismethod):
+				methodName = member[0]
+				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write'):
+				#if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
 					continue
-				else:
-					logger.essential(u"%s: not overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
-			(argString, callString) = getArgAndCallString(member[1])
-			
-			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
-	#def _createInstanceMethods(self):
-	#	for Class in (Backend, ConfigDataBackend):
-	#		for member in inspect.getmembers(Class, inspect.ismethod):
-	#			methodName = member[0]
-	#			if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write'):
-	#			#if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
-	#				continue
-	#			
-	#			(argString, callString) = getArgAndCallString(member[1])
-	#			
-	#			logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
-	#			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-	#			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				
+				(argString, callString) = getArgAndCallString(member[1])
+				
+				logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
+				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
+				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 	
 	def _cacheBackendInfo(self, backendInfo):
 		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')
