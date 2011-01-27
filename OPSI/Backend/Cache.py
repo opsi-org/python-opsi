@@ -212,7 +212,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		if modifiedObjects.has_key('LicenseOnClient'):
 			def objectsDifferFunction(modifiedObj, masterObj):
 				result = objectsDiffer(modifiedObj, masterObj)
-				logger.essential(u"objectsDiffer %s %s: %s" % ())
+				logger.essential(u"objectsDiffer %s %s: %s" % (modifiedObj.toHash(), masterObj.toHash(), result))
 				return result
 			
 			def createUpdateObjectFunction(modifiedObj):
