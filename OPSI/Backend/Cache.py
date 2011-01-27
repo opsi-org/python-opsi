@@ -202,6 +202,19 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				
 			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 		
+		if modifiedObjects.has_key('LicenseOnClient'):
+			def objectsDifferFunction(modifiedObj, masterObj):
+				return objectsDiffer(modifiedObj, masterObj)
+			
+			def createUpdateObjectFunction(modifiedObj):
+				updateObj = modifiedObj.clone(identOnly = False)
+				return updateObj
+			
+			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
+				return updateObj
+				
+			self._syncModifiedObjectsWithMaster(LicenseOnClient, modifiedObjects['LicenseOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
+		
 		for objectClassName in ('ProductPropertyState', 'ConfigState'):
 			def objectsDifferFunction(modifiedObj, masterObj):
 				return objectsDiffer(modifiedObj, masterObj)
