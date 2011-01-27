@@ -264,6 +264,11 @@ class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, Modificat
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 			except Exception, e:
 				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
+		logger.essential(u"============================ _backend %s" % self._backend)
+		logger.essential(u"============================ _workBackend %s" % self._workBackend)
+		logger.essential(u"============================ _backend host_getObjects %s" % self._backend.host_getObjects())
+		logger.essential(u"============================ _workBackend host_getObjects %s" % self._workBackend.host_getObjects())
+		logger.essential(u"============================ host_getObjects %s" % self.host_getObjects())
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
 		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
 		logger.notice(u"Creating opsi passwd file '%s'" % self._opsiPasswdFile)
