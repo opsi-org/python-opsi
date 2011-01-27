@@ -84,7 +84,7 @@ class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, Modificat
 		
 		ExtendedConfigDataBackend.__init__(self, self._workBackend)
 		ConfigDataBackend.__init__(self, **kwargs)
-		
+		logger.essential(u"================================================ self._opsiModulesFile %s" % self._opsiModulesFile)
 		self._workBackend._setContext(self)
 		
 		#self._createInstanceMethods()
