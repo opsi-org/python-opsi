@@ -93,8 +93,12 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		logger.essential(u"==================== licenseOnClient_getObjects %s" % filter)
-		return self._workBackend.licenseOnClient_getObjects(attributes, **filter)
-	
+		licenseOnClients = self._workBackend.licenseOnClient_getObjects(attributes, **filter)
+		for licenseOnClient in licenseOnClients:
+			# Recreate for later sync to server
+			self.licenseOnClient_insertObject(licenseOnClient)
+		return licenseOnClients
+		
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
 	
@@ -267,6 +271,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				else:
 					logger.notice(u"Acquiring license for product '%s'" % productOnClient.productId)
 					licenseOnClient = self._masterBackend.licenseOnClient_getOrCreateObject(clientId = self._clientId, productId = productOnClient.productId)
+					# Fake deletion for later sync to server
+					self._fireEvent('objectsDeleted', [ licenseOnClient ])
+					self._fireEvent('backendModified')
 				for licensePool in self._masterBackend.licensePool_getObjects(id = licenseOnClient.licensePoolId):
 					self._workBackend.licensePool_insertObject(licensePool)
 				for softwareLicense in self._masterBackend.softwareLicense_getObjects(id = licenseOnClient.softwareLicenseId):
@@ -274,6 +281,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 						self._workBackend.licenseContract_insertObject(licenseContract)
 					self._workBackend.softwareLicense_insertObject(softwareLicense)
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
+				
 			except Exception, e:
 				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
