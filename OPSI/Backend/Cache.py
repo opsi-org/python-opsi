@@ -51,8 +51,6 @@ logger = Logger()
 class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, ModificationTrackingBackend):
 	
 	def __init__(self, **kwargs):
-		ConfigDataBackend.__init__(self, **kwargs)
-		
 		self._workBackend = None
 		self._masterBackend = None
 		self._snapshotBackend = None
@@ -85,6 +83,7 @@ class ClientCacheBackend(ConfigDataBackend, ExtendedConfigDataBackend, Modificat
 			raise Exception(u"Depot id undefined")
 		
 		ExtendedConfigDataBackend.__init__(self, self._workBackend)
+		ConfigDataBackend.__init__(self, **kwargs)
 		
 		self._workBackend._setContext(self)
 		
