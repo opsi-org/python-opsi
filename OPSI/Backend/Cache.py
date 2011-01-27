@@ -111,11 +111,18 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			masterObjects[obj.getIdent()] = obj
 		for mo in modifiedObjects:
 			masterObj = masterObjects.get(mo['object'].getIdent())
+			
 			if (mo['command'].lower() == 'delete'):
 				if not masterObj:
 					logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
 					continue
-				if objectsDifferFunction(mo['object'], masterObj):
+				meth = getattr(self._snapshotBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
+				snapshotObj = meth(**(updateObj.getIdent(returnType = 'dict')))
+				if not snapshotObj:
+					logger.info(u"Deletion of object %s prevented because object has been created on server since last sync" % mo['object'])
+					continue
+				snapshotObj = snapshotObj[0]
+				if objectsDifferFunction(snapshotObj, masterObj):
 					logger.info(u"Deletion of object %s prevented because object has been modified on server since last sync" % mo['object'])
 					continue
 				deleteObjects.append(mo['object'])
@@ -204,7 +211,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		
 		if modifiedObjects.has_key('LicenseOnClient'):
 			def objectsDifferFunction(modifiedObj, masterObj):
-				return objectsDiffer(modifiedObj, masterObj)
+				result = objectsDiffer(modifiedObj, masterObj)
+				logger.essential(u"objectsDiffer %s %s: %s" % ())
+				return result
 			
 			def createUpdateObjectFunction(modifiedObj):
 				updateObj = modifiedObj.clone(identOnly = False)
