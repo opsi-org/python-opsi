@@ -226,7 +226,7 @@ class OpsiResponseProtocol(AMP):
 	
 
 	def processFailure(self, failure):
-		logger.error(failure)
+		logger.logFailure(failure)
 		raise RemoteProcessException(failure.value)
 
 
