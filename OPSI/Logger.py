@@ -721,7 +721,12 @@ class LoggerImplementation:
 		self.logTraceback(sys.exc_info()[2], logLevel)
 		message = forceUnicode(e)
 		self.log(logLevel, u'     ==>>> %s' % message)
-		
+	
+	def logFailure(self, failure, logLevel=LOG_CRITICAL):
+		self.logTraceback(failure.getTracebackObject(), logLevel)
+		message = forceUnicode(failure.getErrorMessage())
+		self.log(logLevel, u'     ==>>> %s' % message)
+	
 	def logTraceback(self, tb, logLevel=LOG_CRITICAL):
 		''' Log an exception. '''
 		self.log(logLevel, u'Traceback:')
