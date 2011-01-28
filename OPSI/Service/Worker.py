@@ -232,6 +232,7 @@ class WorkerOpsi:
 		self.service   = service
 		self.request   = request
 		self.query     = u''
+		self.gzip      = False
 		self.path      = u''
 		self.resource  = resource
 		self.session   = None
@@ -463,7 +464,9 @@ class WorkerOpsi:
 				if contentType and contentType.mediaType.startswith('gzip'):
 					logger.debug(u"Expecting compressed data from client")
 					self.query = zlib.decompress(self.query)
+					self.gzip = True
 			self.query = unicode(self.query, 'utf-8')
+			
 		except (UnicodeError, UnicodeEncodeError), e:
 			self.query = unicode(self.query, 'utf-8', 'replace')
 		logger.debug2(u"query: %s" % self.query)
@@ -488,6 +491,7 @@ class WorkerOpsi:
 class WorkerOpsiJsonRpc(WorkerOpsi):
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
+		
 		self._callInstance = None
 		self._callInterface = None
 		self._rpcs = []
@@ -600,11 +604,6 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		logger.debug("Using multiprocessing to handle rpc.")
 		
-		request = copy.copy(self.request)
-		request.resources = []
-		request.site = None
-		request.chanRequest = None
-
 		dr = defer.Deferred()
 		
 		def processResult(r):
@@ -612,7 +611,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 			return r
 		
 		def makeInstanceCall():
-			d = self._callInstance.processRequest(request)
+			d = self._callInstance.processQuery(self.query, self.gzip)
 			d.addCallback(processResult)
 			return d
 		

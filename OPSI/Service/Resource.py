@@ -92,7 +92,7 @@ class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):
 
 
 class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
-	
+
 	def __init__(self, service, path, readOnly=True, defaultType="text/plain", indexNames=None, authRequired=True):
 		path = forceUnicode(path).encode('utf-8')
 		OPSI.web2.dav.static.DAVFile.__init__(self, path, defaultType, indexNames)

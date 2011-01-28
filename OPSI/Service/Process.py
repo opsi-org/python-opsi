@@ -34,6 +34,7 @@ class SupervisionProtocol(ProcessProtocol):
 
 	def kill(self):
 		if self.transport.pid:
+			logger.warning("Process %s did not stop cleanly, killing it." %self.transport.pid )
 			self.transport.signalProcess(signal.SIGKILL)
 
 	def errReceived(self, data):
@@ -53,7 +54,7 @@ class SupervisionProtocol(ProcessProtocol):
 		if self.daemon.allowRestart:
 			self.daemon.start()
 		elif self.defer is not None:
-				self.defer.callback(None)
+			self.defer.callback(None)
 
 class OpsiDaemon(object):
 
@@ -129,13 +130,16 @@ class OpsiDaemon(object):
 			logger.logTraceback(failure.getTracebackObject())
 			return failure
 
-		if self._connector.state is "disconnected":	#FIXME: This seams wrong
-			connection = self._connector.connect()
-			connection.addCallback(lambda remote: getattr(remote, method)(*args, **kwargs))
-		else:
-			connection = getattr(self._connector._remote,method)(*args, **kwargs)
+		def disconnect(result):
+			self._connector.disconnect()
+			return result
 
+		connection = self._connector.connect()
+		connection.addCallback(lambda remote: getattr(remote, method)(*args, **kwargs))
+		connection.addCallback(disconnect)
+		
 		connection.addErrback(failure)
+		
 		return connection
 
 	def isRunning(self):
@@ -201,7 +205,6 @@ runOpsiService(sys.argv[-1],sys.argv[-2], sys.argv[-3])
 		
 		args.extend([reactor.__module__, reflect.qual(self.configurationClass), reflect.qual(self.serviceClass)])
 		self.socket = socket
-		#self._childFDs={0:"w", 1:"r", 2:"r", 3:"w", 4:"r"}
 		
 		OpsiDaemon.__init__(	self,
 					args=["-c", self.MAIN] + args,

@@ -36,7 +36,7 @@ import time, zlib, urllib, copy
 
 from twisted.internet.defer import maybeDeferred, Deferred, succeed
 from twisted.internet import threads
-
+from twisted.python.failure import Failure
 from OPSI.Util import objectToHtml, toJson, fromJson
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -188,42 +188,22 @@ class JsonRpc(object):
 	
 class JsonRpcRequestProcessor(object):
 	
-	def __init__(self, request, callInstance, callInterface=None):
-		self.request = request
+	def __init__(self, query, callInstance, callInterface=None, gzip=False):
 		self.callInstance = callInstance
+		self.gzip = gzip
 		if callInterface is None:
 			self.callInterface = callInstance.backend_getInterface()
 		else:
 			self.callInterface = callInterface
-		self.query = None
+		self.query = query
 		self.rpcs = []
-	
-		d = self.getQuery()
-	
-	
-	def getQuery(self):
-		self.query = ''
-		if   (self.request.method == 'GET'):
-			self.query = urllib.unquote( self.request.querystring )
-			return succeed(self.query)
-		elif (self.request.method == 'POST'):
-			# Returning deferred needed for chaining
-			def handlePostData(chunk):
-				self.query += chunk
-			d = stream.readStream(self.request.stream, handlePostData)
-			return d
-		else:
-			raise ValueError(u"Unhandled method '%s'" % self.request.method)
 
 	
 	def decodeQuery(self):
 		try:
-			if (self.request.method == 'POST'):
-				contentType = self.request.headers.getHeader('content-type')
-				logger.debug(u"Content-Type: %s" % contentType)
-				if contentType and contentType.mediaType.startswith('gzip'):
-					logger.debug(u"Expecting compressed data from client")
-					self.query = zlib.decompress(self.query)
+			if self.gzip:
+				logger.debug(u"Expecting compressed data from client")
+				self.query = zlib.decompress(self.query)
 			self.query = unicode(self.query, 'utf-8')
 		except (UnicodeError, UnicodeEncodeError), e:
 			self.service.statistics().addEncodingError('query', self.session.ip, self.session.userAgent, unicode(e))
@@ -246,7 +226,7 @@ class JsonRpcRequestProcessor(object):
 				raise Exception(u"Got no rpcs")
 		
 		except Exception, e:
-			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
+			raise OpsiBadRpcError(u"Failed to decode rpc: %s." % e )
 		
 		for rpc in forceList(rpcs):
 			rpc = JsonRpc(instance = self.callInstance, interface = self.callInterface, rpc = rpc)

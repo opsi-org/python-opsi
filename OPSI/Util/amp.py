@@ -113,6 +113,11 @@ class OpsiQueryingProtocol(AMP):
 	def openDataSink(self):
 		
 		self.dataSink = reactor.listenUNIX("%s.dataport" % self.addr.name, OpsiProcessProtocolFactory(self))
+	
+	def closeDataSink(self):
+		
+		self.dataSink.factory.stopTrying()
+		self.dataSink.transport.loseConnection()
 		
 	def _callRemote(self, command, **kwargs):
 		
@@ -166,6 +171,12 @@ class OpsiResponseProtocol(AMP):
 	def assignDataPort(self, protocol):
 		self.dataport = protocol
 
+	def closeDataPort(self, result=None):
+		if self.dataport is not None:
+			self.dataport.transport.loseConnection()
+			self.dataport = None
+		return result
+		
 	@RemoteProcessCall.responder
 	def remoteProcessCallReceived(self, tag, name, argString):
 
@@ -215,6 +226,7 @@ class OpsiResponseProtocol(AMP):
 			
 		else:
 			dd.addCallback(lambda x: {"tag": tag, "result":result})
+		dd.addCallback(self.closeDataPort)
 		dd.callback(None)
 		return dd
 
@@ -240,17 +252,45 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 	
 	protocol = OpsiProcessProtocol
 	
-	def __init__(self, remote=None, dataport = None):
+	def __init__(self, remote=None, dataport = None, reactor=reactor):
 		self._remote = remote
 		self._dataport = dataport
 		self._protocol = None
+		self._notifiers = []
+		self._reactor = reactor
 		
 	def buildProtocol(self, addr):
 		p = ReconnectingClientFactory.buildProtocol(self, addr)
 		p.addr = addr
 		self._protocol = p
+		self.notifySuccess(p)
 		return p
 	
+	def addNotifier(self, callback, errback=None):
+		self._notifiers.append((callback, errback))
+	
+	def removeNotifier(self, callback, errback=None):
+		self._notifiers.remove((callback, errback))
+	
+	def notifySuccess(self, *args, **kwargs):
+		for callback, errback in self._notifiers:
+			self._reactor.callLater(0, callback, *args, **kwargs)
+	
+	def notifyFailure(self, failure):
+		for callback, errback in self._notifiers:
+			if errback is not None:
+				self._reactor.callLater(0, errback, failure)
+				
+	def clientConnectionFailed(self, connector, reason):
+		ReconnectingClientFactory.clientConnectionFailed(self, connector,
+							 reason)
+		if self.maxRetries is not None and (self.retries > self.maxRetries):
+			self.notifyFailure(reason) # Give up
+
+	def shutdown(self):
+		if self._protocol is not None:
+			self._protocol.transport.loseConnection()
+
 class RemoteDaemonProxy(object):
 	
 	def __init__(self, protocol):
@@ -292,7 +332,7 @@ class RemoteDaemonProxy(object):
 			return result
 		return callRemote
 	
-class OpsiProcessConnector(Connector):
+class OpsiProcessConnector(object):
 	
 	factory = OpsiProcessProtocolFactory
 	remote = RemoteDaemonProxy
@@ -300,20 +340,30 @@ class OpsiProcessConnector(Connector):
 	def __init__(self, socket, timeout=None, reactor=reactor):
 		self._factory = OpsiProcessProtocolFactory()
 		self._connected = None
-		Connector.__init__(self, address=socket, factory=self._factory, timeout=timeout,reactor=reactor,checkPID=0)
-		
+		self._socket = socket
+		self._timeout = timeout
+		self._reactor = reactor
+		self._protocol = None
+
 	def connect(self):
-		Connector.connect(self)
 		self._connected = Deferred()
+		
+		def success(result):
+			self._factory.removeNotifier(success, failure)
+			self._protocol = result
+			self._remote = self.remote(self._protocol)
+			self._connected.callback(self._remote)
+		
+		def failure(fail):
+			self._factory.removeNotifier(success, failure)
+			self._connected.errback(fail)
+		
+		self._factory = self.factory(reactor = self._reactor)
+		self._reactor.connectUNIX(self._socket, self._factory)
+		self._factory.addNotifier(success, failure)
+		
 		return self._connected
 	
-	def buildProtocol(self, addr):
-		p = Connector.buildProtocol(self,addr)
-		p.openDataSink()
-		self._remote = self.remote(p)
-		reactor.callLater(0.1, self._connected.callback, self._remote) # dirty hack, needs to be delayed until boxsender is set up
-		return p
-			
 	def connectionFailed(self, reason):
 		Connector.connectionFailed(self, reason)
 		self._connected.errback(reason)
@@ -321,7 +371,8 @@ class OpsiProcessConnector(Connector):
 	def disconnect(self):
 		if self._factory:
 			self._factory.stopTrying()
-		Connector.disconnect(self)
-		self._remote = None
-
+		if self.remote:
+			if self._remote._protocol.transport:
+				self._remote._protocol.transport.loseConnection()
+			self._remote = None
 

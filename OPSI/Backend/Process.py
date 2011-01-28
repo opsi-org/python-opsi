@@ -40,6 +40,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 from twisted.conch.ssh import keys
+from twisted.python.failure import Failure
 
 from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
@@ -144,15 +145,15 @@ class OpsiBackendService(Service):
 		if self._backendManager:
 			self._backendManager.backend_exit()
 		if self._socket is not None:
-			d = self._socket.stopListening()
+			d = self._socket.shutdown()
 			d.addCallback(lambda x: self._cleanup)
 			
 	def _cleanup(self):
 		if os.path.exists(self._socket):
 			os.unlink(self._socket)
 	
-	def processRequest(self, request):
-		decoder = JsonRpcRequestProcessor(request, self._backendManager)
+	def processQuery(self, query, gzip=False):
+		decoder = JsonRpcRequestProcessor(query, self._backendManager, gzip=gzip)
 		decoder.decodeQuery()
 		decoder.buildRpcs()
 		d = decoder.executeRpcs(False)
@@ -197,13 +198,12 @@ class OpsiBackendProcess(OpsiPyDaemon):
 			d = self.stop()
 			d.addCallback(lambda x: self.start)
 	
-	def processRequest(self, request):
-		d = self.callRemote("processRequest", request)
+	def processQuery(self, request, gzip=False):
+		d = self.callRemote("processQuery", request, gzip=gzip)
 		d.addCallback(self.maybeStopped)
 		return d
 	
 	def maybeStopped(self, result):
-
 		r = defer.Deferred()
 		if 'backend_exit' in map((lambda x: x.method), result):
 				d = self.stop()
@@ -214,15 +214,25 @@ class OpsiBackendProcess(OpsiPyDaemon):
 	
 	def stop(self):
 		logger.info(u"Stopping backend worker process (pid: %s)" % self._process.pid)
+		result = defer.Deferred()
 		try:
 			self.check.stop()
 		except Exception, e:
 			logger.error(e)
-		d = self.dataport.stopListening()
-		d.addCallback(lambda x: OpsiPyDaemon.stop(self))
+			result.errback(Failure())
+		
+		d = OpsiPyDaemon.stop(self)
+		d.addCallback(result.callback, result.errback)
+		return result
+	
+	def backend_exit(self):
+		print "BACKEND_EXIT"
+		d = self.callRemote("backend_exit")
+		d.addCallback(lambda x: self.stop())
 		return d
 	
 	def __getattr__(self, name):
+		logger.debug("Generating method '%s' on the fly." % name)
 		return functools.partial(self.callRemote, name)
 
 
