@@ -878,7 +878,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			password             = password
 		)
 	elif (len(postpath) == 2) and (postpath[0] == 'extend'):
-		extendPath = self.request.postpath[1]
+		extendPath = postpath[1]
 		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
 			raise ValueError(u"Extension config path '%s' refused" % extendPath)
 		backendManager = BackendManager(
@@ -887,7 +887,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			extensionConfigDir   = os.path.join(extensionConfigDir, extendPath),
 			aclFile              = aclFile,
 			accessControlContext = context,
-			depotBackend         = bool(int(depotId)),
+			depotBackend         = bool(depotId),
 			hostControlBackend   = True,
 			username             = user,
 			password             = password
