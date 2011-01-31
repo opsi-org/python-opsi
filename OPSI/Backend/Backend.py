@@ -2328,7 +2328,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if packageVersion is None: packageVersion = []
 		return self._backend.product_deleteObjects(
 				self._backend.product_getObjects(
-					productId      = productId,
+					id             = productId,
 					productVersion = productVersion,
 					packageVersion = packageVersion))
 	
