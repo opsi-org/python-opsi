@@ -319,10 +319,9 @@ class RemoteDaemonProxy(object):
 					result.callback(obj)
 				else:
 					result.callback(r)
-
 			
 			def processFailure(failure):
-				logger.error(failure.getErrorMessage())
+				logger.logFailure(failure, logLevel=LOG_ERROR)
 				result.errback(failure)
 			d = self._protocol.sendRemoteCall(	method=method,
 								args=args,

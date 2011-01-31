@@ -87,13 +87,13 @@ class OpsiBackendService(Service):
 		logger.setFileLevel(file)
 	
 	def startService(self):
-		logger.warning( "Starting opsi backend Service")
+		logger.info(u"Starting opsi backend Service")
 		logger.setLogFile(self._config.logFile)
 
 		if not os.path.exists(os.path.dirname(self._config.socket)):
 			os.makedirs(os.path.dirname(self._config.socket))
 		
-		logger.warning("Opening socket %s for interprocess communication." % self._config.socket)
+		logger.info(u"Opening socket %s for interprocess communication." % self._config.socket)
 		self._socket = reactor.listenUNIX(self._config.socket, OpsiProcessProtocolFactory(self, "%s.dataport" % self._config.socket))
 		self._check.start(10)
 
@@ -145,7 +145,7 @@ class OpsiBackendService(Service):
 		if self._backendManager:
 			self._backendManager.backend_exit()
 		if self._socket is not None:
-			d = self._socket.shutdown()
+			d = self._socket.stopListening()
 			d.addCallback(lambda x: self._cleanup)
 			
 	def _cleanup(self):
