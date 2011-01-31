@@ -192,7 +192,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		
 		if modifiedObjects.has_key('ProductOnClient'):
 			def objectsDifferFunction(snapshotObj, masterObj):
-				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime'])
+				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult'])
 			
 			def createUpdateObjectFunction(modifiedObj):
 				updateObj = modifiedObj.clone(identOnly = True)
