@@ -436,6 +436,7 @@ class ConfigDataBackend(Backend):
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._opsiPasswdFile                = OPSI_PASSWD_FILE
+		self._depotId                       = socket.getfqdn()
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -445,7 +446,11 @@ class ConfigDataBackend(Backend):
 				self._auditHardwareConfigLocalesDir = forceFilename(value)
 			elif option in ('opsipasswdfile',):
 				self._opsiPasswdFile = forceFilename(value)
+			elif option in ('depotid', 'serverid'):
+				self._depotId = value
 			
+		self._depotId = forceHostId(self._depotId)
+		
 		self._options['additionalReferentialIntegrityChecks'] = True
 		
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
@@ -535,7 +540,6 @@ class ConfigDataBackend(Backend):
 		username = forceUnicodeLower(username)
 		if hostId:
 			hostId = forceHostId(hostId)
-		depotId = forceHostId(socket.getfqdn())
 		
 		result = { 'password': u'', 'rsaPrivateKey': u'' }
 		
@@ -551,12 +555,12 @@ class ConfigDataBackend(Backend):
 		if not result['password']:
 			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, self._opsiPasswdFile))
 		
-		depot = self.host_getObjects(id = depotId)
+		depot = self.host_getObjects(id = self._depotId)
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend" % depotId)
+			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
 		depot = depot[0]
 		if not depot.opsiHostKey:
-			raise Exception(u"Host key for depot '%s' not found" % depotId)
+			raise Exception(u"Host key for depot '%s' not found" % self._depotId)
 		
 		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
 		
@@ -582,11 +586,10 @@ class ConfigDataBackend(Backend):
 	def user_setCredentials(self, username, password):
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
-		depotId = forceHostId(socket.getfqdn())
 		
-		depot = self._context.host_getObjects(id = depotId)
+		depot = self._context.host_getObjects(id = self._depotId)
 		if not depot:
-			raise Exception(u"Depot '%s' not found in backend %s" % (depotId, self._context))
+			raise Exception(u"Depot '%s' not found in backend %s" % (self._depotId, self._context))
 		depot = depot[0]
 		
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
