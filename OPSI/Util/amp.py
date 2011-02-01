@@ -213,9 +213,14 @@ class OpsiResponseProtocol(AMP):
 		chunks = [r[i:i + MAX_VALUE_LENGTH] for i in xrange(0, len(r), MAX_VALUE_LENGTH)]
 		dd = Deferred()
 		
+		def handleConnectionFailure(fail):
+			logger.error("Failed to connect to socket %s: %s" %(self.factory._dataport, fail.getErrorMessage()))
+			return fail
+		
 		if len(chunks) > 1:
 			if self.dataport is None:
 				dd.addCallback(lambda x: ClientCreator(reactor, AMP).connectUNIX(self.factory._dataport))
+				dd.addErrback(handleConnectionFailure)
 				dd.addCallback(self.assignDataPort)
 			else:
 				dd = succeed(None)
