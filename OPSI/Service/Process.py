@@ -28,7 +28,7 @@ class SupervisionProtocol(ProcessProtocol):
 		if self.transport.pid:
 			self.defer = Deferred()
 			self.transport.signalProcess(signal.SIGTERM)
-			reactor.callLater(10, self.kill)
+			reactor.callLater(15, self.kill)
 			return self.defer
 		return succeed(None)
 
@@ -101,16 +101,11 @@ class OpsiDaemon(object):
 					childFDs=self._childFDs)
 
 	def stop(self):
-		
-		def disconnect(result):
-			self._connector.disconnect()
-			return result
-		
 		if not self._process:
 			d =  succeed(None)
 		else:
 			d = self._process.stop()
-		d.addCallback(disconnect)
+
 		return d
 
 	def findScript(self):

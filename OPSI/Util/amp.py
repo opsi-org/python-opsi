@@ -36,6 +36,8 @@ from twisted.internet.protocol import ReconnectingClientFactory, ClientCreator
 from twisted.internet.defer import DeferredList, maybeDeferred, Deferred, succeed
 from twisted.internet.unix import Connector
 from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP, MAX_VALUE_LENGTH
+from twisted.python.failure import Failure
+
 
 import base64, hashlib
 from pickle import dumps, loads, HIGHEST_PROTOCOL
@@ -111,8 +113,11 @@ class OpsiQueryingProtocol(AMP):
 		return self.tag
 	
 	def openDataSink(self):
-		
-		self.dataSink = reactor.listenUNIX("%s.dataport" % self.addr.name, OpsiProcessProtocolFactory(self))
+		try:
+			self.dataSink = reactor.listenUNIX("%s.dataport" % self.addr.name, OpsiProcessProtocolFactory(self))
+		except Exception, e:
+			logger.error("Could not open data socket %s: %s" ("%s.dataport" % self.addr.name, e))
+			raise e
 	
 	def closeDataSink(self):
 		
@@ -358,8 +363,12 @@ class OpsiProcessConnector(object):
 			self._connected.errback(fail)
 		
 		self._factory = self.factory(reactor = self._reactor)
-		self._reactor.connectUNIX(self._socket, self._factory)
-		self._factory.addNotifier(success, failure)
+		try:
+			self._reactor.connectUNIX(self._socket, self._factory)
+			self._factory.addNotifier(success, failure)
+		except Exception, e:
+			logger.error("Failed to connect to socket %s: %s"(self._socket,e))
+			self._connected.errback(Failure())
 		
 		return self._connected
 	
@@ -370,7 +379,7 @@ class OpsiProcessConnector(object):
 	def disconnect(self):
 		if self._factory:
 			self._factory.stopTrying()
-		if self.remote:
+		if self._remote:
 			if self._remote._protocol.transport:
 				self._remote._protocol.transport.loseConnection()
 			self._remote = None

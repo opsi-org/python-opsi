@@ -385,7 +385,7 @@ class BackendExtender(ExtendedBackend):
 				setattr( self, methodName, new_method )
 				#setattr( sldworks.ISldWorks, 'OpenDoc6', new_method )
 				#setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
-				
+
 		if self._extensionConfigDir:
 			if not os.path.exists(self._extensionConfigDir):
 				logger.error(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
@@ -403,9 +403,11 @@ class BackendExtender(ExtendedBackend):
 					try:
 						logger.info(u"Reading config file '%s'" % confFile)
 						execfile(confFile)
+						
 					except Exception, e:
 						logger.logException(e)
 						raise Exception(u"Error reading file '%s': %s" % (confFile, e))
+					
 					
 					for (key, val) in locals().items():
 						if ( type(val) == types.FunctionType ):

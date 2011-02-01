@@ -191,6 +191,7 @@ class JsonRpcRequestProcessor(object):
 	def __init__(self, query, callInstance, callInterface=None, gzip=False):
 		self.callInstance = callInstance
 		self.gzip = gzip
+		
 		if callInterface is None:
 			self.callInterface = callInstance.backend_getInterface()
 		else:

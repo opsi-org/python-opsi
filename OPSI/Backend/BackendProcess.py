@@ -87,15 +87,20 @@ class OpsiBackendService(Service):
 		logger.setFileLevel(file)
 	
 	def startService(self):
-		logger.info(u"Starting opsi backend Service")
+		logger.warning(u"Starting opsi backend Service")
 		logger.setLogFile(self._config.logFile)
 
 		if not os.path.exists(os.path.dirname(self._config.socket)):
 			os.makedirs(os.path.dirname(self._config.socket))
 		
-		logger.info(u"Opening socket %s for interprocess communication." % self._config.socket)
-		self._socket = reactor.listenUNIX(self._config.socket, OpsiProcessProtocolFactory(self, "%s.dataport" % self._config.socket))
+		self.factory = OpsiProcessProtocolFactory(self, "%s.dataport" % self._config.socket)
+		logger.warning(u"Opening socket %s for interprocess communication." % self._config.socket)
+		try:
+			self._socket = reactor.listenUNIX(self._config.socket, self.factory)
+		except Exception, e:
+			logger.error("Could not connect to socket %s from worker." % self._config.socket)
 		self._check.start(10)
+
 
 	def initialize(self, user, password, dispatchConfigFile, backendConfigDir,
 				extensionConfigDir, aclFile, depotId, postpath):
@@ -145,8 +150,11 @@ class OpsiBackendService(Service):
 		if self._backendManager:
 			self._backendManager.backend_exit()
 		if self._socket is not None:
-			d = self._socket.stopListening()
+			d = defer.Deferred()
+			if self.factory is not None:
+				d.addCallback(lambda x: self.factory.shutdown())
 			d.addCallback(lambda x: self._cleanup)
+			d.callback(None)
 			
 	def _cleanup(self):
 		if os.path.exists(self._socket):
@@ -226,7 +234,6 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		return result
 	
 	def backend_exit(self):
-		print "BACKEND_EXIT"
 		d = self.callRemote("backend_exit")
 		d.addCallback(lambda x: self.stop())
 		return d
@@ -235,4 +242,8 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		logger.debug("Generating method '%s' on the fly." % name)
 		return functools.partial(self.callRemote, name)
 
+	def __str__(self):
+		return "<OpsiBackendProcess (Socket: %s)>" % self.socket
 
+	def __unicode__(self):
+		return unicode(str(self))
