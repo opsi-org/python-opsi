@@ -153,16 +153,20 @@ class OpsiQueryingProtocol(AMP):
 					
 				d.addCallback(sendChunk(tag=tag, argString=chunk))
 		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
-		
-		def logFailure(fail):
-			logger.error("Failed to send a remote call over socket :%s (Datasink: %s)" %(fail.getErrorMessage(), self.dataSink))
-			return fail
-		
-		d.addErrback(logFailure)
+
 		d.callback(None)
 		return d
 
-	
+	def makeConnection(self, transport):
+		try:
+
+			logger.essential("Transport Host: %s" % transport.getHost())
+			logger.essential("Transport Peer: %s" % transport.getPeer())
+			AMP.makeConnection(self, transport)
+		except Exception,e:
+			logger.error("Failed to make connecton with host %s and peer %s" % ( transport.getHost(), transport.getPeer()))
+			raise e
+
 	@ResponseBufferPush.responder
 	def chunkedResponseReceived(self, tag, chunk):
 		self.responseBuffer.setdefault(tag, StringIO.StringIO()).write(chunk)
@@ -305,7 +309,8 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 
 	def shutdown(self):
 		if self._protocol is not None:
-			self._protocol.transport.loseConnection()
+			if self._protocol.transport is not None:
+				self._protocol.transport.loseConnection()
 
 class RemoteDaemonProxy(object):
 	
