@@ -192,7 +192,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		
 		if modifiedObjects.has_key('ProductOnClient'):
 			def objectsDifferFunction(snapshotObj, masterObj):
-				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult'])
+				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult', 'lastAction'])
 			
 			def createUpdateObjectFunction(modifiedObj):
 				updateObj = modifiedObj.clone(identOnly = False)
@@ -202,6 +202,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				if (snapshotObj.actionRequest != masterObj.actionRequest):
 					logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
 					updateObj.actionRequest = None
+					updateObj.targetConfiguration = None
 				return updateObj
 				
 			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
