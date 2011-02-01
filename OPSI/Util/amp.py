@@ -153,6 +153,12 @@ class OpsiQueryingProtocol(AMP):
 					
 				d.addCallback(sendChunk(tag=tag, argString=chunk))
 		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
+		
+		def logFailure(fail):
+			logger.error("Failed to send a remote call over socket :%s (Datasink: %s)" %(fail.getErrorMessage(), self.dataSink))
+			return fail
+		
+		d.addErrback(logFailure)
 		d.callback(None)
 		return d
 
