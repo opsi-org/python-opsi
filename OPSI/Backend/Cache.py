@@ -195,11 +195,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult'])
 			
 			def createUpdateObjectFunction(modifiedObj):
-				updateObj = modifiedObj.clone(identOnly = True)
-				updateObj.installationStatus = modifiedObj.installationStatus
-				updateObj.actionProgress     = modifiedObj.actionProgress
-				updateObj.actionResult       = modifiedObj.actionResult
-				updateObj.actionRequest      = modifiedObj.actionRequest
+				updateObj = modifiedObj.clone(identOnly = False)
 				return updateObj
 			
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
