@@ -554,9 +554,9 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		if not type(clients) is list:
 			clients = [ clients ]
 		if not clients:
-			logger.info(u"cannot send notification '%s', no client connected" % name)
+			logger.debug(u"cannot send notification '%s', no client connected" % name)
 			return
-		logger.info(u"sending notification '%s' to clients" % name)
+		logger.debug(u"sending notification '%s' to clients" % name)
 		for client in clients:
 			# json-rpc: notifications have id null
 			jsonString = json.dumps( {"id": None, "method": name, "params": params } )
