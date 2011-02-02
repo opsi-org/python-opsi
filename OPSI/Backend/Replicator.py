@@ -106,22 +106,23 @@ class BackendReplicator:
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 	
-	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], audit=True, license=True):
+	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], productTypes = [], audit=True, license=True):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
 		None as the only element of a list means: replicate none
 		'''
-		serverIds  = forceList(serverIds)
-		depotIds   = forceList(depotIds)
-		clientIds  = forceList(clientIds)
-		groupIds   = forceList(serverIds)
-		productIds = forceList(productIds)
-		audit      = forceBool(audit)
-		license    = forceBool(license)
+		serverIds    = forceList(serverIds)
+		depotIds     = forceList(depotIds)
+		clientIds    = forceList(clientIds)
+		groupIds     = forceList(serverIds)
+		productIds   = forceList(productIds)
+		productTypes = forceList(productTypes)
+		audit        = forceBool(audit)
+		license      = forceBool(license)
 		
-		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, audit: %s, license: %s" \
-				% (serverIds, depotIds, clientIds, groupIds, productIds, audit, license))
+		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, productTypes=%s, audit: %s, license: %s" \
+				% (serverIds, depotIds, clientIds, groupIds, productIds, productTypes, audit, license))
 		
 		rb = self._extendedReadBackend
 		wb = self.__writeBackend
@@ -185,7 +186,7 @@ class BackendReplicator:
 			
 			productOnDepots = []
 			if depotIds:
-				productOnDepots = rb.productOnDepot_getObjects(depotId = depotIds, productId = productIds)
+				productOnDepots = rb.productOnDepot_getObjects(depotId = depotIds, productId = productIds, productType = productTypes)
 				productIdsOnDepot = []
 				for productOnDepot in productOnDepots:
 					if not productOnDepot.productId in productIdsOnDepot:
@@ -231,9 +232,9 @@ class BackendReplicator:
 					elif (objClass == 'Product'):
 						filter = { 'type': subClass, 'id': productIds }
 					elif (objClass == 'ProductOnClient'):
-						filter = { 'productId': productIds, 'clientId': clientIds }
+						filter = { 'productType': productTypes, 'productId': productIds, 'clientId': clientIds }
 					elif (objClass == 'ProductOnDepot'):
-						filter = { 'productId': productIds, 'depotId': depotIds }
+						filter = { 'productType': productTypes, 'productId': productIds, 'depotId': depotIds }
 					elif (objClass == 'ProductDependency'):
 						filter = { 'productId': productIds }
 					elif (objClass == 'ProductProperty'):

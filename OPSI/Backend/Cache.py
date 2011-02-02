@@ -257,13 +257,14 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		self._workBackend.backend_createBase()
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
 		br.replicate(
-			serverIds  = [ ],
-			depotIds   = [ self._depotId ],
-			clientIds  = [ self._clientId ],
-			groupIds   = [ ],
-			productIds = [ ],
-			audit      = False,
-			license    = False)
+			serverIds    = [ ],
+			depotIds     = [ self._depotId ],
+			clientIds    = [ self._clientId ],
+			groupIds     = [ ],
+			productIds   = [ ],
+			productTypes = [ 'LocalbootProduct' ],
+			audit        = False,
+			license      = False)
 		
 		self._snapshotBackend.backend_deleteBase()
 		
