@@ -379,7 +379,6 @@ class OpsiProcessConnector(object):
 		return self._connected
 	
 	def connectionFailed(self, reason):
-		Connector.connectionFailed(self, reason)
 		self._connected.errback(reason)
 	
 	def disconnect(self):
