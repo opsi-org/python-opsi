@@ -255,16 +255,31 @@ class NetworkPerformanceCounter(object):
 						None,
 						-1,
 						win32pdhutil.find_pdh_counter_localized_name('Bytes Out/sec') ) )
-		self._inCounterHandle  = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
-		self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
+		try:
+			self._inCounterHandle  = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
+		except Exception, e:
+			raise Exception(u"Failed to add inCounterHandle %s->%s: %s" % (
+				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
+				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec')
+			))
+		try:
+			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
+		except Exception, e:
+			raise Exception(u"Failed to add outCounterHandle %s->%s: %s" % (
+				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
+				win32pdhutil.find_pdh_counter_localized_name('Bytes Out/sec')
+			))
 	
 	def __del__(self):
 		self.stop()
 	
 	def stop(self):
-		win32pdh.RemoveCounter(self._inCounterHandle)
-		win32pdh.RemoveCounter(self._outCounterHandle)
-		win32pdh.CloseQuery(self._queryHandle)
+		if self._inCounterHandle:
+			win32pdh.RemoveCounter(self._inCounterHandle)
+		if self._outCounterHandle:
+			win32pdh.RemoveCounter(self._outCounterHandle)
+		if self._queryHandle:
+			win32pdh.CloseQuery(self._queryHandle)
 		
 	def getBytesInPerSecond(self):
 		win32pdh.CollectQueryData(self._queryHandle)
