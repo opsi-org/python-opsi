@@ -153,7 +153,6 @@ class OpsiQueryingProtocol(AMP):
 					
 				d.addCallback(sendChunk(tag=tag, argString=chunk))
 		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
-		d.addCallback(lambda x: )
 		d.callback(None)
 		return d
 
