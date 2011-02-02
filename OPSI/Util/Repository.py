@@ -88,25 +88,21 @@ class Repository:
 		'''
 		maxBandwith must be in byte/s
 		'''
-		self._url              = forceUnicode(url)
-		self._maxBandwidth     = forceInt(kwargs.get('maxBandwidth', 0))
-		self._dynamicBandwidth = forceBool(kwargs.get('dynamicBandwidth', False))
-		self._path             = u''
-		
-		if (self._maxBandwidth < 0):
-			self._maxBandwidth = 0
-		
-		self._dynamicBandwidthLimit = 0.0
-		self._dynamicBandwidthLimitTime = None
+		self._url                         = forceUnicode(url)
+		self._path                        = u''
+		self._maxBandwidth                = 0
+		self._dynamicBandwidth            = False
+		self._dynamicBandwidthLimit       = 0.0
+		self._dynamicBandwidthLimitTime   = None
 		self._dynamicBandwidthNoLimitTime = None
-		self._lastUnlimitedSpeed = 0.0
-		self._bandwidthSleepTime = 0.0
-		
-		self._networkPerformanceCounter = None
-		if self._dynamicBandwidth:
-			from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
-			self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
-		self._hooks = []
+		self._lastUnlimitedSpeed          = 0.0
+		self._bandwidthSleepTime          = 0.0
+		self._networkPerformanceCounter   = None
+		self._hooks                       = []
+		self.setBandwidth(
+			kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
+			kwargs.get('maxBandwidth', self._maxBandwidth),
+		)
 		
 	def __del__(self):
 		if self._networkPerformanceCounter:
@@ -114,7 +110,28 @@ class Repository:
 				self._networkPerformanceCounter.stop()
 			except:
 				pass
+	
+	def setBandwidth(self, dynamicBandwidth = False, maxBandwidth = 0):
+		''' maxBandwidth in byte/s'''
+		self._dynamicBandwidth = forceBool(dynamicBandwidth)
+		self._maxBandwidth = forceInt(maxBandwidth)
+		if (self._maxBandwidth < 0):
+			self._maxBandwidth = 0
 		
+		if self._dynamicBandwidth:
+			if not self._networkPerformanceCounter:
+				from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
+				self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
+		elif self._networkPerformanceCounter:
+			try:
+				self._networkPerformanceCounter.stop()
+			except Exception, e:
+				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % e)
+	
+		
+	def setMaxBandwidth(self, maxBandwidth):
+		self.setBandwidth(dynamicBandwidth = self._dynamicBandwidth, maxBandwidth = maxBandwidth)
+	
 	def __unicode__(self):
 		return u'<%s %s>' % (self.__class__.__name__, self._url)
 	
@@ -287,12 +304,6 @@ class Repository:
 		logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 			( (float(bytesTransfered)/1024), (float(transferTime)/60), (float(bytesTransfered)/transferTime)/1024) )
 		return bytesTransfered
-		
-	def setMaxBandwidth(self, maxBandwidth):
-		''' maxBandwidth in byte/s'''
-		self._maxBandwidth = forceInt(maxBandwidth)
-		if (self._maxBandwidth < 0):
-			self._maxBandwidth = 0
 	
 	def _preProcessPath(self, path):
 		return path
@@ -1089,11 +1100,10 @@ class DepotToLocalDirectorySychronizer(object):
 		self._sourceDepot          = sourceDepot
 		self._destinationDirectory = forceUnicode(destinationDirectory)
 		self._productIds           = forceUnicodeList(productIds)
-		self._maxBandwidth         = forceInt(maxBandwidth)
-		self._dynamicBandwidth     = forceBool(dynamicBandwidth)
 		if not os.path.isdir(self._destinationDirectory):
 			os.mkdir(self._destinationDirectory)
-	
+		self._sourceDepot.setBandwidth(dynamicBandwidth = dynamicBandwidth, maxBandwidth = maxBandwidth)
+		
 	def _synchronizeDirectories(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = forceUnicode(destination)
