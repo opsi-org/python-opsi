@@ -1,9 +1,9 @@
-python-opsi (4.0.1-1) stable; urgency=low
+python-opsi (4.0.0.99-1) testing; urgency=low
 
   * Add new serivce lib
   * Close socket in HTTP
 
- -- Jan Schneider <j.schneider@uib.de>  Mon, 24 Jan 2011 10:08:02 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 02 Feb 2011 12:32:59 +0100
 
 python-opsi (4.0.0.20-1) stable; urgency=low
 
