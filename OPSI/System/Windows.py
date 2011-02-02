@@ -248,7 +248,7 @@ class NetworkPerformanceCounter(object):
 						self.interface,
 						None,
 						-1,
-						win32pdhutil.find_pdh_counter_localized_name('Bytes Received/sec') ) )
+						win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec') ) )
 		self.bytesOutPerSecondCounter = win32pdh.MakeCounterPath( (
 						None,
 						win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
@@ -271,7 +271,7 @@ class NetworkPerformanceCounter(object):
 			self._outCounterHandle = None
 			raise Exception(u"Failed to add outCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
-				win32pdhutil.find_pdh_counter_localized_name('Bytes Out/sec'),
+				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
 				e
 			))
 	
