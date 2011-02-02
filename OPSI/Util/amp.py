@@ -153,19 +153,9 @@ class OpsiQueryingProtocol(AMP):
 					
 				d.addCallback(sendChunk(tag=tag, argString=chunk))
 		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
-
+		d.addCallback(lambda x: )
 		d.callback(None)
 		return d
-
-	def makeConnection(self, transport):
-		try:
-
-			logger.essential("Transport Host: %s" % transport.getHost())
-			logger.essential("Transport Peer: %s" % transport.getPeer())
-			AMP.makeConnection(self, transport)
-		except Exception,e:
-			logger.error("Failed to make connecton with host %s and peer %s" % ( transport.getHost(), transport.getPeer()))
-			raise e
 
 	@ResponseBufferPush.responder
 	def chunkedResponseReceived(self, tag, chunk):
@@ -282,6 +272,7 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 	def buildProtocol(self, addr):
 		p = ReconnectingClientFactory.buildProtocol(self, addr)
 		p.addr = addr
+		p.openDataSink()
 		self._protocol = p
 		self.notifySuccess(p)
 		return p
