@@ -236,7 +236,7 @@ class NetworkPerformanceCounter(object):
 				self.interface = instance
 		if not self.interface:
 			raise Exception(u"Interface '%s' not found" % interface)
-		logger.info(u"NetworkPerformanceCounter: using interface '%s'" % self.interface)
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' with available counters: %s" % (self.interface, items))
 		
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
