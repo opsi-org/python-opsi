@@ -260,14 +260,16 @@ class NetworkPerformanceCounter(object):
 		except Exception, e:
 			raise Exception(u"Failed to add inCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
-				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec')
+				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec'),
+				e
 			))
 		try:
 			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
 		except Exception, e:
 			raise Exception(u"Failed to add outCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
-				win32pdhutil.find_pdh_counter_localized_name('Bytes Out/sec')
+				win32pdhutil.find_pdh_counter_localized_name('Bytes Out/sec'),
+				e
 			))
 	
 	def __del__(self):
