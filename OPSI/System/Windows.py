@@ -248,7 +248,7 @@ class NetworkPerformanceCounter(object):
 						self.interface,
 						None,
 						-1,
-						win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec') ) )
+						win32pdhutil.find_pdh_counter_localized_name('Bytes Received/sec') ) )
 		self.bytesOutPerSecondCounter = win32pdh.MakeCounterPath( (
 						None,
 						win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
