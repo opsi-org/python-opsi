@@ -640,6 +640,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 				reactor.stop()
 			except Exception, e:
 				logger.error(u"Failed to stop reactor: %s" % e)
+		logger.info(u"Notification server stopped")
 
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
