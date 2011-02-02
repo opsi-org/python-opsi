@@ -232,6 +232,7 @@ class Repository:
 	
 	
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
+		logger.info(u"Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s" % (transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth))
 		self._transferDirection = transferDirection
 		bytesTransfered = 0
 		lastBytes = 0
