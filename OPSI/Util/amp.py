@@ -112,17 +112,19 @@ class OpsiQueryingProtocol(AMP):
 		self.tag += 1
 		return self.tag
 	
-	def openDataSink(self):
+	def openDataSink(self, address):
 		try:
-			self.dataSink = reactor.listenUNIX("%s.dataport" % self.addr.name, OpsiProcessProtocolFactory(self))
+			if not self.dataSink:
+				self.dataSink = reactor.listenUNIX("%s.dataport" % address, OpsiProcessProtocolFactory(self))
 		except Exception, e:
-			logger.error("Could not open data socket %s: %s" ("%s.dataport" % self.addr.name, e))
+			logger.error("Could not open data socket %s: %s" % ("%s.dataport" % address, e))
 			raise e
 	
 	def closeDataSink(self):
 		
 		self.dataSink.factory.stopTrying()
-		self.dataSink.transport.loseConnection()
+		if self.dataSink is not None:
+			self.dataSink.loseConnection()
 		
 	def _callRemote(self, command, **kwargs):
 		
@@ -177,7 +179,8 @@ class OpsiResponseProtocol(AMP):
 
 	def closeDataPort(self, result=None):
 		if self.dataport is not None:
-			self.dataport.transport.loseConnection()
+			if self.dataport.transport is not None:
+				self.dataport.transport.loseConnection()
 			self.dataport = None
 		return result
 		
@@ -218,6 +221,7 @@ class OpsiResponseProtocol(AMP):
 		
 		if len(chunks) > 1:
 			if self.dataport is None:
+				logger.info("Connecting do data port %s" % self.factory._dataport)
 				dd.addCallback(lambda x: ClientCreator(reactor, AMP).connectUNIX(self.factory._dataport))
 				dd.addErrback(handleConnectionFailure)
 				dd.addCallback(self.assignDataPort)
@@ -270,8 +274,7 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 		
 	def buildProtocol(self, addr):
 		p = ReconnectingClientFactory.buildProtocol(self, addr)
-		p.addr = addr
-		p.openDataSink()
+		p.address = addr
 		self._protocol = p
 		self.notifySuccess(p)
 		return p
@@ -298,9 +301,14 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 			self.notifyFailure(reason) # Give up
 
 	def shutdown(self):
+		self.stopTrying()
 		if self._protocol is not None:
 			if self._protocol.transport is not None:
 				self._protocol.transport.loseConnection()
+			if self._protocol.dataport:
+				self._protocol.closeDataPort()
+			if self._protocol.dataSink:
+				self._protocol.closeDataSink()
 
 class RemoteDaemonProxy(object):
 	
@@ -361,6 +369,7 @@ class OpsiProcessConnector(object):
 		def success(result):
 			self._factory.removeNotifier(success, failure)
 			self._protocol = result
+			self._protocol.openDataSink(self._socket)
 			self._remote = self.remote(self._protocol)
 			self._connected.callback(self._remote)
 		
@@ -383,7 +392,7 @@ class OpsiProcessConnector(object):
 	
 	def disconnect(self):
 		if self._factory:
-			self._factory.stopTrying()
+			self._factory.shutdown()
 		if self._remote:
 			if self._remote._protocol.transport:
 				self._remote._protocol.transport.loseConnection()

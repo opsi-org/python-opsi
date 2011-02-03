@@ -92,7 +92,7 @@ class OpsiBackendService(Service):
 
 		if not os.path.exists(os.path.dirname(self._config.socket)):
 			os.makedirs(os.path.dirname(self._config.socket))
-		
+
 		self.factory = OpsiProcessProtocolFactory(self, "%s.dataport" % self._config.socket)
 		logger.warning(u"Opening socket %s for interprocess communication." % self._config.socket)
 		try:
@@ -141,7 +141,7 @@ class OpsiBackendService(Service):
 			postpath           = postpath,
 			context            = self._backend
 		)
-	
+
 	def stopService(self):
 		self._check.stop()
 		
