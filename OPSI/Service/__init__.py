@@ -65,7 +65,7 @@ class OpsiService(object):
 		
 	def _getSessionHandler(self):
 		if not self._sessionHandler:
-			self._sessionHandler = SessionHandler(self)
+			self._sessionHandler = SessionHandler()
 		return self._sessionHandler
 	
 	def getInterface(self):
