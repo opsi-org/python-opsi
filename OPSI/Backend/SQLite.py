@@ -173,7 +173,7 @@ class SQLite(SQL):
 			
 			self.execute(query, conn, cursor)
 			#result = conn.changes()
-			result = cursor.lastrowid
+			result = cursor.last_insert_rowid()
 		finally:
 			self.close(conn, cursor)
 		return result
