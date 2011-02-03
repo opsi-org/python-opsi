@@ -416,6 +416,11 @@ class WorkerOpsi:
 			return result
 		
 		# Add cookie to headers
+		logger.essential(u"========================================================================")
+		logger.essential(u"Add cookie")
+		logger.essential(self.session)
+		logger.essential(self.session.name)
+		logger.essential(self.session.uid)
 		cookie = http_headers.Cookie(self.session.name.encode('ascii', 'replace'), self.session.uid.encode('ascii', 'replace'), path='/')
 		if not isinstance(result, http.Response):
 			result = http.Response()
