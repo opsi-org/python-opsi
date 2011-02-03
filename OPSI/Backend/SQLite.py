@@ -172,7 +172,8 @@ class SQLite(SQL):
 			logger.debug2(u"insert: %s" % query)
 			
 			self.execute(query, conn, cursor)
-			result = conn.changes()
+			#result = conn.changes()
+			result = cursor.lastrowid
 		finally:
 			self.close(conn, cursor)
 		return result
