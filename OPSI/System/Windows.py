@@ -222,13 +222,17 @@ def getDefaultNetworkInterfaceName():
 class NetworkPerformanceCounter(object):
 	def __init__(self, interface):
 		self.interface = None
+		self._queryHandle = None
+		self._inCounterHandle = None
+		self._outCounterHandle = None
+		
 		(items, instances) = win32pdh.EnumObjectItems(
 						None,
 						None,
 						win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 						win32pdh.PERF_DETAIL_WIZARD)
 		for instance in instances:
-			logger.debug(u"NetworkPerformanceCounter: searching for interface '%s', found interface '%s'" % (instance, instance))
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', found interface '%s'" % (instance, instance))
 			if (instance == interface):
 				self.interface = instance
 				break
@@ -240,7 +244,6 @@ class NetworkPerformanceCounter(object):
 		
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
-		self._queryHandle = None
 		self._queryHandle = win32pdh.OpenQuery()
 		self.bytesInPerSecondCounter = win32pdh.MakeCounterPath( (
 						None,
@@ -259,7 +262,6 @@ class NetworkPerformanceCounter(object):
 		try:
 			self._inCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
 		except Exception, e:
-			self._inCounterHandle = None
 			raise Exception(u"Failed to add inCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec'),
@@ -268,7 +270,6 @@ class NetworkPerformanceCounter(object):
 		try:
 			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
 		except Exception, e:
-			self._outCounterHandle = None
 			raise Exception(u"Failed to add outCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
