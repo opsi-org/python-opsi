@@ -234,7 +234,7 @@ class NetworkPerformanceCounter(object):
 		bestRatio = 0.0
 		for instance in instances:
 			ratio = difflib.SequenceMatcher(None, instance, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', found interface '%s', match ratio: %s" % (instance, instance))
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance, ratio))
 			if (ratio > bestRatio):
 				bestRatio = ratio
 				self.interface = instance
