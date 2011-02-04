@@ -35,7 +35,7 @@
 __version__ = '4.0.1'
 
 # Imports
-import re, os, time, socket, sys, locale, subprocess
+import re, os, time, socket, sys, locale, subprocess, difflib
 
 # Win32 imports
 from ctypes import *
@@ -231,16 +231,14 @@ class NetworkPerformanceCounter(object):
 						None,
 						win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 						win32pdh.PERF_DETAIL_WIZARD)
+		bestRatio = 0.0
 		for instance in instances:
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', found interface '%s'" % (instance, instance))
-			if (instance == interface):
+			ratio = difflib.SequenceMatcher(None, instance, interface).ratio()
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', found interface '%s', match ratio: %s" % (instance, instance))
+			if (ratio > bestRatio):
+				bestRatio = ratio
 				self.interface = instance
-				break
-			elif (instance.find(interface) != -1):
-				self.interface = instance
-		if not self.interface:
-			raise Exception(u"Interface '%s' not found" % interface)
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' with available counters: %s" % (self.interface, items))
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%d) with available counters: %s" % (self.interface, bestRatio, items))
 		
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
