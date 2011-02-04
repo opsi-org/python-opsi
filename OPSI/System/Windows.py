@@ -238,7 +238,7 @@ class NetworkPerformanceCounter(object):
 			if (ratio > bestRatio):
 				bestRatio = ratio
 				self.interface = instance
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%d) with available counters: %s" % (self.interface, bestRatio, items))
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s" % (self.interface, bestRatio, items))
 		
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib

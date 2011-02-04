@@ -82,7 +82,11 @@ class RepositoryHook(object):
 	
 	def error_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):
 		pass
-	
+
+class RepositoryObserver(object):
+	def dynamicBandwidthLimitChanged(self, bandwidth):
+		pass
+
 class Repository:
 	def __init__(self, url, **kwargs):
 		'''
@@ -99,6 +103,7 @@ class Repository:
 		self._bandwidthSleepTime          = 0.0
 		self._networkPerformanceCounter   = None
 		self._hooks                       = []
+		self._observers                   = []
 		self.setBandwidth(
 			kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
 			kwargs.get('maxBandwidth', self._maxBandwidth),
@@ -158,6 +163,22 @@ class Repository:
 		if hook in self._hooks:
 			self._hooks.remove(hook)
 	
+	def attachObserver(self, observer):
+		if not observer in self._observers:
+			self._observers.append(observer)
+	
+	def detachObserver(self, observer):
+		if observer in self._observers:
+			self._observers.remove(observer)
+	
+	def _fireEvent(self, event, *args):
+		for obs in self._observers:
+			try:
+				meth = getattr(obs, event)
+				meth(self, *args)
+			except Exception, e:
+				logger.error(e)
+	
 	def _sleepForBandwidth(self):
 		bwlimit = 0.0
 		
@@ -189,6 +210,7 @@ class Repository:
 								# Use 100%
 								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
 								bwlimit = self._dynamicBandwidthLimit = 0.0
+								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 								self._bandwidthSleepTime = 0
 								self._lastUnlimitedSpeed = 0
 						else:
@@ -204,6 +226,7 @@ class Repository:
 								# Use 5% only
 								self._lastUnlimitedSpeed = self._averageSpeed
 								bwlimit = self._dynamicBandwidthLimit = self._averageSpeed*0.05
+								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 								logger.info(u"Other traffic detected, dynamically limiting bandwidth to 5%% of last average to %0.2f kByte/s" \
 									% (bwlimit/1024))
 								# For faster limiting:
