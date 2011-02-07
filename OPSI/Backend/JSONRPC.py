@@ -639,17 +639,22 @@ if (__name__ == '__main__'):
 	import threading
 	
 	#logger.setConsoleLevel(LOG_ERROR)
-	logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_DEBUG2)
+	logger.setConsoleLevel(LOG_INFO)
 	logger.setConsoleColor(True)
 	
 	
+	be = JSONRPCBackend(address = '192.168.105.1', username = 'exp-40-wks-001.uib.local', password = '352360038fb824baf836a6b448845745')
+	print be.backend_info()
+	print be.backend_info()
+	print be.backend_info()
 	#be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c')
-	be = JSONRPCBackend(address = '192.168.1.14', username = 'someone', password = '123')
-	print be.authenticated()
-	
-	def callback(jsonrpc):
-		print jsonrpc.result
-	
+	#be = JSONRPCBackend(address = '192.168.1.14', username = 'someone', password = '123')
+	#print be.authenticated()
+	#
+	#def callback(jsonrpc):
+	#	print jsonrpc.result
+	#
 	#class Thread(threading.Thread):
 	#	def __init__(self, be):
 	#		threading.Thread.__init__(self)
@@ -696,7 +701,7 @@ if (__name__ == '__main__'):
 	#be.setAsync(False)
 	#print "===", be.host_getIdents()
 	
-	be.backend_exit()
+	#be.backend_exit()
 	
 	#mult = MultiJSONRPC(be, [jsonrpc1, jsonrpc2, jsonrpc3])
 	#mult.process()

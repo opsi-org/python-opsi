@@ -225,9 +225,6 @@ class HostControlBackend(ExtendedBackend):
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception, e:
 				result[host.id] = {"result": None, "error": e}
-				#errors.append(forceUnicode(e))
-		#if errors:
-		#	raise Exception(u', '.join(errors))
 		return result
 	
 	def hostControl_shutdown(self, hostIds=[]):
