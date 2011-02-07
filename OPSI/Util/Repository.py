@@ -84,7 +84,7 @@ class RepositoryHook(object):
 		pass
 
 class RepositoryObserver(object):
-	def dynamicBandwidthLimitChanged(self, bandwidth):
+	def dynamicBandwidthLimitChanged(self, repository, bandwidth):
 		pass
 
 class Repository:
