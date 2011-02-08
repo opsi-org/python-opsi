@@ -96,12 +96,11 @@ class Repository:
 		self._path                        = u''
 		self._maxBandwidth                = 0
 		self._dynamicBandwidth            = False
-		self._dynamicBandwidthLimit       = 0.0
-		self._dynamicBandwidthLimitTime   = None
-		self._dynamicBandwidthNoLimitTime = None
-		self._lastUnlimitedSpeed          = 0.0
-		self._bandwidthSleepTime          = 0.0
 		self._networkPerformanceCounter   = None
+		self._bufferSize                  = 16384
+		self._bytesTransfered             = 0
+		self._currentSpeed                = 0
+		self._bandwidthSleepTime          = 0.0
 		self._hooks                       = []
 		self._observers                   = []
 		self.setBandwidth(
@@ -138,7 +137,6 @@ class Repository:
 			except Exception, e:
 				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % e)
 	
-		
 	def setMaxBandwidth(self, maxBandwidth):
 		self.setBandwidth(dynamicBandwidth = self._dynamicBandwidth, maxBandwidth = maxBandwidth)
 	
@@ -179,127 +177,98 @@ class Repository:
 			except Exception, e:
 				logger.error(e)
 	
-	def _sleepForBandwidth(self):
-		bwlimit = 0.0
-		
-		if (self._averageSpeed == 0):
-			return
-		if not (self._dynamicBandwidth and self._networkPerformanceCounter) and not self._maxBandwidth:
-			return
-		
-		if self._dynamicBandwidth and self._networkPerformanceCounter:
-			now = time.time()
-			networkUsage = 0
-			if (self._transferDirection == 'out'):
-				networkUsage = self._networkPerformanceCounter.getBytesOutPerSecond()
-			else:
-				networkUsage = self._networkPerformanceCounter.getBytesInPerSecond()
-			
-			if (networkUsage > 0):
-				usage = float(self._currentSpeed)/float(networkUsage)
-				logger.debug2("Current %0.2f kByte/s, average %0.2f kByte/s, total network usage %0.2f kByte/s, using %0.2f%% of total bandwidth" \
-					% ((self._currentSpeed/1024), (self._averageSpeed/1024), (networkUsage/1024), usage*100))
-				
-				if self._dynamicBandwidthLimit:
-					bwlimit = self._dynamicBandwidthLimit
-					if (usage >= 0.90) or ((usage >= 0.70) and (self._lastUnlimitedSpeed/networkUsage > 2)):
-						self._dynamicBandwidthLimitTime = None
-						if self._dynamicBandwidthNoLimitTime:
-							delta = (now - self._dynamicBandwidthNoLimitTime)
-							if (delta >= 5):
-								# Use 100%
-								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
-								bwlimit = self._dynamicBandwidthLimit = 0.0
-								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-								self._bandwidthSleepTime = 0
-								self._lastUnlimitedSpeed = 0
-						else:
-							self._dynamicBandwidthNoLimitTime = now
-					else:
-						self._dynamicBandwidthNoLimitTime = None
-				else:
-					if (usage <= 0.90):
-						self._dynamicBandwidthNoLimitTime = None
-						if self._dynamicBandwidthLimitTime:
-							delta = (now - self._dynamicBandwidthLimitTime)
-							if (delta >= 1.0):
-								# Use 5% only
-								self._lastUnlimitedSpeed = self._averageSpeed
-								bwlimit = self._dynamicBandwidthLimit = self._averageSpeed*0.05
-								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-								logger.info(u"Other traffic detected, dynamically limiting bandwidth to 5%% of last average to %0.2f kByte/s" \
-									% (bwlimit/1024))
-								# For faster limiting:
-								self._bandwidthSleepTime = 0.1
-						else:
-							self._dynamicBandwidthLimitTime = now
-					else:
-						self._dynamicBandwidthLimitTime = None
-		
-		if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
-			bwlimit = float(self._maxBandwidth)
-		
-		if (bwlimit == 0):
-			return
-		
-		if (self._averageSpeed > bwlimit):
-			# To fast
-			factor = float(self._averageSpeed)/float(bwlimit)
-			logger.debug2(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
-				% ((self._averageSpeed/1024), (bwlimit/1024), factor))
-			self._bandwidthSleepTime += (0.003 * (factor*factor))
-			
-			if (self._bandwidthSleepTime <= 0.0):
-				self._bandwidthSleepTime = 0.0001
-			#elif (self._bandwidthSleepTime > 0.5):
-			#	self._bandwidthSleepTime = 0.5
-			elif (self._bandwidthSleepTime > 0.4):
-				self._bandwidthSleepTime = 0.4
-		else:
-			# To slow
-			factor = float(bwlimit)/float(self._averageSpeed)
-			logger.debug2(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
-				% ((self._averageSpeed/1024), (bwlimit/1024), factor))
-			
-			self._bandwidthSleepTime -= (0.001 * (factor*factor))
-			if (self._bandwidthSleepTime <= 0.0):
-				self._bandwidthSleepTime = 0
-			
-		if (self._bandwidthSleepTime > 0):
-			logger.debug2(u"Sleeping %f seconds to correct bandwidth" % self._bandwidthSleepTime)
-			time.sleep(self._bandwidthSleepTime)
-	
 	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):
 		return self._transfer('in', src, dst, progressSubject, bytes=bytes)
 		
 	def _transferUp(self, src, dst, progressSubject=None):
 		return self._transfer('out', src, dst, progressSubject)
 	
+	def _getNetworkUsage(self):
+		networkUsage = 0.0
+		if self._networkPerformanceCounter:
+			if (self._transferDirection == 'out'):
+				networkUsage = self._networkPerformanceCounter.getBytesOutPerSecond()
+			else:
+				networkUsage = self._networkPerformanceCounter.getBytesInPerSecond()
+		return networkUsage
 	
+	def _calcSpeed(self, read):
+		now = time.time()
+		if not hasattr(self, '_lastSpeedCalcBytes'):
+			self._lastSpeedCalcBytes = 0
+		self._lastSpeedCalcBytes += read
+		if hasattr(self, '_lastSpeedCalcTime'):
+			delta = now - self._lastSpeedCalcTime
+			#if (delta < 1):
+			#	return
+			self._currentSpeed = self._lastSpeedCalcBytes/delta
+			self._lastSpeedCalcBytes = 0
+		self._lastSpeedCalcTime = now
+		
+	def _bandwidthLimit(self):
+		if not (self._dynamicBandwidth and self._networkPerformanceCounter) and not self._maxBandwidth:
+			return
+		
+		now = time.time()
+		if hasattr(self, '_lastLimitCalcTime'):
+			delta = now - self._lastLimitCalcTime
+			self._lastLimitCalcTime = time.time()
+			newBufferSize = self._bufferSize
+			bwlimit = 0.0
+			if self._dynamicBandwidth and self._networkPerformanceCounter:
+				totalNetworkUsage = self._getNetworkUsage()
+				
+			if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
+				bwlimit = float(self._maxBandwidth)
+			
+			if (bwlimit > 0):
+				speed = self._currentSpeed
+				factor = 1.0
+				if (speed > bwlimit):
+					# To fast
+					factor = float(speed)/float(bwlimit)
+					logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
+						% ((speed/1024), (bwlimit/1024), factor))
+					bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
+					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime)/2
+				elif (speed > 0):
+					# To slow
+					factor = float(bwlimit)/float(speed)
+					logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
+						% ((speed/1024), (bwlimit/1024), factor))
+					bandwidthSleepTime = self._bandwidthSleepTime - (0.002 * factor)
+					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime)/2
+				if (self._bandwidthSleepTime <= 0.0):
+					self._bandwidthSleepTime = 0.000001
+				if (self._bandwidthSleepTime <= 0.2):
+					self._bufferSize = int(float(self._bufferSize)*1.2)
+				elif (self._bandwidthSleepTime > 0.3):
+					self._bufferSize = int(float(self._bufferSize)/1.5)
+					self._bandwidthSleepTime = 0.3
+				if (self._bufferSize > 131072):
+					self._bufferSize = 131072
+				elif (self._bufferSize < 1):
+					self._bufferSize = 1
+				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
+					% (speed/1024, bwlimit/1024, self._bandwidthSleepTime, self._bufferSize))
+		else:
+			self._lastLimitCalcTime = time.time()
+		time.sleep(self._bandwidthSleepTime)
+		
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
 		logger.debug(u"Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s" % (transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth))
 		self._transferDirection = transferDirection
-		bytesTransfered = 0
-		lastBytes = 0
-		lastAverageBytes = 0
-		lastTime = lastAverageTime = transferStartTime = time.time()
+		self._bytesTransfered = 0
+		transferStartTime = time.time()
 		buf = True
-		if not hasattr(self, '_bufferSize'):
-			self._bufferSize = 16384 #8192
-		self._averageSpeed = 0.0
-		self._currentSpeed = 0.0
-		
 		while buf and ( (bytes < 0) or (bytesTransfered < bytes) ):
 			buf = src.read(self._bufferSize)
 			read = len(buf)
 			if (read > 0):
-				if (bytes >= 0):
-					if ((bytesTransfered + read) > bytes):
-						buf = buf[:bytes-bytesTransfered]
-						read = len(buf)
-				lastAverageBytes += read
-				lastBytes += read
-				bytesTransfered += read
+				if (bytes >= 0) and ((bytesTransfered + read) > bytes):
+					buf = buf[:bytes-bytesTransfered]
+					read = len(buf)
+				self._bytesTransfered += read
 				if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
 					dst.send(buf)
 				else:
@@ -308,30 +277,18 @@ class Repository:
 				if progressSubject:
 					progressSubject.addToState(read)
 				
-				now = time.time()
+				self._calcSpeed(read)
+				if (self._dynamicBandwidth or self._maxBandwidth):
+					self._bandwidthLimit()
+				elif (self._currentSpeed > 1000000):
+					self._bufferSize = 262144
 				
-				delta = (now-lastTime)
-				if (delta >= 1):
-					self._currentSpeed = lastBytes/delta
-					lastBytes = 0
-					lastTime = now
-				delta = (now-lastAverageTime)
-				if (delta > 2):
-					self._averageSpeed = lastAverageBytes/delta
-					lastAverageTime = time.time() - 1
-					lastAverageBytes = self._averageSpeed
-					if (self._averageSpeed > 1000000):
-						self._bufferSize = 131072
-					
-				if (bytesTransfered > self._bufferSize) and (self._maxBandwidth or self._dynamicBandwidth):
-					self._sleepForBandwidth()
-		
 		transferTime = time.time() - transferStartTime
 		if (transferTime == 0):
 			transferTime = 0.0000001
 		logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
-			( (float(bytesTransfered)/1024), (float(transferTime)/60), (float(bytesTransfered)/transferTime)/1024) )
-		return bytesTransfered
+			( (float(self._bytesTransfered)/1024), (float(transferTime)/60), (float(self._bytesTransfered)/transferTime)/1024) )
+		return self._bytesTransfered
 	
 	def _preProcessPath(self, path):
 		return path
@@ -1387,6 +1344,7 @@ class DepotToLocalDirectorySychronizer(object):
 #		
 
 if (__name__ == "__main__"):
+	import sys
 	#logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
@@ -1397,8 +1355,19 @@ if (__name__ == "__main__"):
 	if not os.path.exists(tempDir):
 		os.mkdir(tempDir)
 	
-	##rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)
-	##rep.download(u'opsi3.4-client-boot-cd_20091028.iso', '/tmp/opsi3.4-client-boot-cd_20091028.iso', progressSubject=None)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 10000)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 100000)
+	rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000000)
+	rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 100)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000000)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 10000000)
+	#rep.download(u'mshotfix-vista-win2008-x64-glb_201101-1.opsi', '/tmp/mshotfix-vista-win2008-x64-glb_201101-1.opsi', progressSubject=None)
+	
+	sys.exit(0)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
