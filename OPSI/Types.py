@@ -694,6 +694,24 @@ class OpsiError(Exception):
 		def set(self, message):
 			self._message = forceUnicode(message)
 		return property(get, set)
+
+class OpsiAuthenticationError(OpsiError):
+	ExceptionShortDescription = u"Opsi authentication error"
+
+class OpsiBadRpcError(OpsiError):
+	ExceptionShortDescription = u"Opsi bad rpc error"
+
+class OpsiRpcError(OpsiError):
+	ExceptionShortDescription = u"Opsi rpc error"
+
+class OpsiConnectionError(OpsiError):
+	ExceptionShortDescription = u"Opsi connection error"
+
+class OpsiTimeoutError(OpsiError):
+	ExceptionShortDescription = u"Opsi timeout error"
+
+class OpsiProductOrderingError(OpsiError):
+	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 	
 class BackendError(OpsiError):
 	""" Exception raised if there is an error in the backend. """
@@ -719,7 +737,7 @@ class BackendMissingDataError(OpsiError):
 	""" Exception raised if expected data not found. """
 	ExceptionShortDescription = u"Backend missing data error"
 
-class BackendAuthenticationError(OpsiError):
+class BackendAuthenticationError(OpsiAuthenticationError):
 	""" Exception raised if authentication failes. """
 	ExceptionShortDescription = u"Backend authentication error"
 
@@ -749,24 +767,6 @@ class LicenseMissingError(OpsiError):
 
 class RepositoryError(OpsiError):
 	ExceptionShortDescription = u"Repository error"
-
-class OpsiAuthenticationError(OpsiError):
-	ExceptionShortDescription = u"Opsi authentication error"
-
-class OpsiBadRpcError(OpsiError):
-	ExceptionShortDescription = u"Opsi bad rpc error"
-
-class OpsiRpcError(OpsiError):
-	ExceptionShortDescription = u"Opsi rpc error"
-
-class OpsiConnectionError(OpsiError):
-	ExceptionShortDescription = u"Opsi connection error"
-
-class OpsiTimeoutError(OpsiError):
-	ExceptionShortDescription = u"Opsi timeout error"
-
-class OpsiProductOrderingError(OpsiError):
-	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
 class CanceledException(Exception):
 	ExceptionShortDescription = u"CanceledException"

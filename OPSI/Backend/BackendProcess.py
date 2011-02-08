@@ -193,9 +193,18 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		self.check = LoopingCall(self.checkRunning)
 	
 	def start(self):
+		
+		d = defer.Deferred()
+		d.addCallback(lambda x: self.check.start(5, False))
+		
 		logger.info(u"Starting new backend worker process")
 		OpsiPyDaemon.start(self)
-		self.check.start(10, False)
+		
+		
+		delay = int(os.getloadavg()[0])+2
+		self._reactor.callLater(delay, d.callback, None)
+
+		return d
 	
 	def checkRunning(self):
 		d = self.isRunning()

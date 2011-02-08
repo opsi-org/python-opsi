@@ -485,6 +485,7 @@ class WorkerOpsi:
 		return result
 	
 	def _setResponse(self, result):
+		logger.essential(result)
 		return self._generateResponse(result)
 
 
@@ -617,7 +618,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())
-		deferred.addErrback(self._errback)
+		deferred.addErrback(dr.errback)
 		deferred.addCallback(dr.callback)
 		return dr
 

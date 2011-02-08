@@ -1,6 +1,6 @@
 
 
-import sys, os, pwd, signal, re
+import sys, os, pwd, signal, re, os
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed, fail, DeferredList
 from twisted.internet.protocol import ProcessProtocol
@@ -99,7 +99,6 @@ class OpsiDaemon(object):
 		self._reactor.spawnProcess(self._process, script, args=args,
 					env=self._env, uid=self._uid, gid=self._gid, 
 					childFDs=self._childFDs)
-
 	def stop(self):
 		if not self._process:
 			d =  succeed(None)
@@ -131,9 +130,9 @@ class OpsiDaemon(object):
 
 		connection = self._connector.connect()
 		connection.addCallback(lambda remote: getattr(remote, method)(*args, **kwargs))
-		connection.addCallback(disconnect)
 		
 		connection.addErrback(failure)
+		connection.addBoth(disconnect)
 		
 		return connection
 

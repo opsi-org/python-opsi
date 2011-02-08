@@ -41,7 +41,7 @@ from twisted.python.failure import Failure
 
 import base64, hashlib
 from pickle import dumps, loads, HIGHEST_PROTOCOL
-from types import StringType
+from types import StringType, StringTypes
 from OPSI.Logger import *
 logger = Logger()
 
@@ -62,9 +62,24 @@ class RemoteArgument(Argument):
 	def fromString(self, str):
 		return loads(str)
 
-class RemoteProcessException(Exception):
+class RemoteExecutionException(Exception):
 	pass
 
+class OpsiProcessException(Exception):
+	
+	def __init__(self, failure):
+		self.failure = failure
+
+	def __str__(self):
+		return str(self.failure)
+
+	def __getstate__(self):
+		return self.failure.__getstate__()
+	
+	def __setstate__(self, state):
+		self.failure = Failure()
+		self.failure.__setstate__(state)
+	
 class RemoteProcessCall(Command):
 	
 	arguments = [	('name', String()),
@@ -74,7 +89,8 @@ class RemoteProcessCall(Command):
 	response = [	('tag', Integer()),
 			('result', RemoteArgument())]
 
-	errors = {RemoteProcessException: 'RemoteProcessError'}
+	errors = {	RemoteExecutionException: 'RemoteExecutionError',
+			OpsiProcessException: 'OpsiProcessError'}
 	
 	requiresAnswer = True
 	
@@ -85,7 +101,8 @@ class ChunkedArgument(Command):
 
 	response = [('result', Integer())]
 	
-	errors = {RemoteProcessException: 'RemoteProcessError'}
+	errors = {	RemoteExecutionException: 'RemoteExecutionError',
+			OpsiProcessException: 'OpsiProcessError'}
 	
 	requiresAnswer = True
 
@@ -96,7 +113,8 @@ class ResponseBufferPush(Command):
 
 	response = [('result', Integer())]
 	
-	errors = {RemoteProcessException: 'RemoteProcessError'}
+	errors = {	RemoteExecutionException: 'RemoteExecutionError',
+			OpsiProcessException: 'OpsiProcessError'}
 	
 	requiresAnswer = True
 	
@@ -199,7 +217,7 @@ class OpsiResponseProtocol(AMP):
 		
 
 		if method is None:
-			raise RemoteProcessException(u"Daemon has no method %s" % (name))
+			raise RemoteExecutionException(u"Daemon has no method %s" % (name))
 		rd = Deferred()
 		d = maybeDeferred(method, *args, **kwargs)
 		
@@ -251,8 +269,9 @@ class OpsiResponseProtocol(AMP):
 	
 
 	def processFailure(self, failure):
-		logger.logFailure(failure)
-		raise RemoteProcessException(failure.value)
+		logger.logFailure(failure, logLevel=LOG_DEBUG)
+		raise OpsiProcessException(failure)
+
 
 
 class OpsiProcessProtocol(OpsiQueryingProtocol, OpsiResponseProtocol):
@@ -340,8 +359,19 @@ class RemoteDaemonProxy(object):
 					result.callback(r)
 			
 			def processFailure(failure):
-				logger.logFailure(failure, logLevel=LOG_ERROR)
-				result.errback(failure)
+				logger.logFailure(failure, logLevel=LOG_DEBUG)
+				if failure.type == OpsiProcessException:
+					try:
+						failure.raiseException()
+					except OpsiProcessException, e:
+						result.errback(e.failure)
+					except Exception, e:
+						raise e
+					else:
+						logger.error("This should not happen!")
+						result.errback(failure)
+				else:
+					result.errback(failure)
 			d = self._protocol.sendRemoteCall(	method=method,
 								args=args,
 								kwargs=kwargs)
