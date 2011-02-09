@@ -99,7 +99,13 @@ class Repository:
 		self._networkPerformanceCounter   = None
 		self._bufferSize                  = 16384
 		self._bytesTransfered             = 0
-		self._currentSpeed                = 0
+		self._networkUsageAverage         = 0.0
+		self._currentSpeed                = 0.0
+		self._averageSpeed                = 0.0
+		self._dynamicBandwidthLimit       = 0.0
+		self._dynamicBandwidthLimitTime   = 0
+		self._dynamicBandwidthNoLimitTime = 0
+		self._lastUnlimitedSpeed          = 0.0
 		self._bandwidthSleepTime          = 0.0
 		self._hooks                       = []
 		self._observers                   = []
@@ -196,13 +202,23 @@ class Repository:
 		now = time.time()
 		if not hasattr(self, '_lastSpeedCalcBytes'):
 			self._lastSpeedCalcBytes = 0
+		if not hasattr(self, '_lastAverageSpeedCalcBytes'):
+			self._lastAverageSpeedCalcBytes = 0
 		self._lastSpeedCalcBytes += read
+		self._lastAverageSpeedCalcBytes += read
 		if hasattr(self, '_lastSpeedCalcTime'):
 			delta = now - self._lastSpeedCalcTime
-			#if (delta < 1):
-			#	return
-			self._currentSpeed = self._lastSpeedCalcBytes/delta
+			self._currentSpeed = float(self._lastSpeedCalcBytes)/float(delta)
 			self._lastSpeedCalcBytes = 0
+		if not hasattr(self, '_lastAverageSpeedCalcTime'):
+			self._lastAverageSpeedCalcTime = now
+			self._averageSpeed = self._currentSpeed
+		else:
+			delta = now - self._lastAverageSpeedCalcTime
+			if (delta > 1):
+				self._averageSpeed = float(self._lastAverageSpeedCalcBytes)/float(delta)
+				self._lastAverageSpeedCalcBytes = 0
+				self._lastAverageSpeedCalcTime = now
 		self._lastSpeedCalcTime = now
 		
 	def _bandwidthLimit(self):
@@ -216,37 +232,93 @@ class Repository:
 			newBufferSize = self._bufferSize
 			bwlimit = 0.0
 			if self._dynamicBandwidth and self._networkPerformanceCounter:
+				bwlimit = self._dynamicBandwidthLimit
 				totalNetworkUsage = self._getNetworkUsage()
-				
+				if (totalNetworkUsage > 0):
+					if not hasattr(self, '_networkUsageData'):
+						self._networkUsageData = []
+					usage = (float(self._averageSpeed)/float(totalNetworkUsage)) * 1.03
+					if (usage > 1):
+						usage = 1.0
+					#print totalNetworkUsage/1024, usage
+					self._networkUsageData.append([now, usage])
+					if self._networkUsageData and ((now - self._networkUsageData[0][0]) >= 3):
+						usage = 0.0
+						count = 0.0
+						index = -1
+						data = []
+						for i in range(len(self._networkUsageData)):
+							if (now - self._networkUsageData[i][0] <= 3):
+								if (index == -1):
+									index = i
+							if (now - self._networkUsageData[i][0] <= 1.0):
+								usage += self._networkUsageData[i][1]
+								count += 1.0
+								data.append(self._networkUsageData[i][1])
+						usage = usage/count
+						#usage = max(data)
+						if (index > 1):
+							self._networkUsageData = self._networkUsageData[index-1:]
+						if self._dynamicBandwidthLimit:
+							if (usage >= 0.95):
+								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
+								bwlimit = self._dynamicBandwidthLimit = 0.0
+								self._networkUsageData = []
+								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+						else:
+							if (usage <= 0.8):
+								if (self._averageSpeed < 10000):
+									self._dynamicBandwidthLimit = bwlimit = 0.0
+									logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
+								else:
+									self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*0.1
+									logger.info(u"Other traffic detected, dynamically limiting bandwidth to 10%% of last average to %0.2f kByte/s" % (bwlimit/1024))
+									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+								self._networkUsageData = []
+						
 			if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
 				bwlimit = float(self._maxBandwidth)
 			
-			if (bwlimit > 0):
-				speed = self._currentSpeed
+			speed = self._currentSpeed
+			if (bwlimit > 0) and (speed > 0):
 				factor = 1.0
 				if (speed > bwlimit):
 					# To fast
 					factor = float(speed)/float(bwlimit)
 					logger.debug(u"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f" \
 						% ((speed/1024), (bwlimit/1024), factor))
-					bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
+					if (factor < 1.001):
+						bandwidthSleepTime = self._bandwidthSleepTime + (0.00007 * factor)
+					elif (factor < 1.01):
+						bandwidthSleepTime = self._bandwidthSleepTime + (0.0007 * factor)
+					else:
+						bandwidthSleepTime = self._bandwidthSleepTime + (0.007 * factor)
 					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime)/2
-				elif (speed > 0):
+				else:
 					# To slow
 					factor = float(bwlimit)/float(speed)
 					logger.debug(u"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f" \
 						% ((speed/1024), (bwlimit/1024), factor))
-					bandwidthSleepTime = self._bandwidthSleepTime - (0.002 * factor)
+					if (factor < 1.001):
+						bandwidthSleepTime = self._bandwidthSleepTime - (0.00006 * factor)
+					elif (factor < 1.01):
+						bandwidthSleepTime = self._bandwidthSleepTime - (0.0006 * factor)
+					else:
+						bandwidthSleepTime = self._bandwidthSleepTime - (0.006 * factor)
 					self._bandwidthSleepTime = (bandwidthSleepTime + self._bandwidthSleepTime)/2
+				if (factor > 2):
+					self._networkUsageData = []
 				if (self._bandwidthSleepTime <= 0.0):
 					self._bandwidthSleepTime = 0.000001
 				if (self._bandwidthSleepTime <= 0.2):
-					self._bufferSize = int(float(self._bufferSize)*1.2)
+					self._bufferSize = int(float(self._bufferSize)*1.03)
+					self._networkUsageData = []
 				elif (self._bandwidthSleepTime > 0.3):
-					self._bufferSize = int(float(self._bufferSize)/1.5)
+					self._bufferSize = int(float(self._bufferSize)/1.1)
 					self._bandwidthSleepTime = 0.3
-				if (self._bufferSize > 131072):
-					self._bufferSize = 131072
+					self._networkUsageData = []
+				if (self._bufferSize > 262144):
+					self._bufferSize = 262144
 				elif (self._bufferSize < 1):
 					self._bufferSize = 1
 				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
@@ -1359,13 +1431,15 @@ if (__name__ == "__main__"):
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 10000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 100000)
-	rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000000)
-	rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000000)
+	#rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 100)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 10000000)
-	#rep.download(u'mshotfix-vista-win2008-x64-glb_201101-1.opsi', '/tmp/mshotfix-vista-win2008-x64-glb_201101-1.opsi', progressSubject=None)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 1000)
+	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 100000)
+	rep.download(u'mshotfix-vista-win2008-x64-glb_201101-1.opsi', '/tmp/mshotfix-vista-win2008-x64-glb_201101-1.opsi', progressSubject=None)
 	
 	sys.exit(0)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
