@@ -1183,11 +1183,24 @@ class DepotToLocalDirectorySychronizer(object):
 			if self._fileInfo.has_key(relSource):
 				continue
 			
-			logger.info(u"Deleting '%s'" % relSource)
 			path = os.path.join(destination, f)
 			if os.path.isdir(path) and not os.path.islink(path):
+				logger.info(u"Deleting '%s'" % relSource)
 				shutil.rmtree(path)
 			else:
+				if path.endswith(u'.opsi_sync_endpart'):
+					oPath = path[:-1*len(".opsi_sync_endpart")]
+					if os.path.isfile(oPath):
+						logger.info(u"Appending '%s' to '%s'" % (path, oPath))
+						(f1, f2) = (None, None)
+						try:
+							f1 = open(oPath, 'ab')
+							f2 = open(path, 'rb')
+							f1.write(f2.read())
+						finally:
+							if f1: f1.close(); f1 = None
+							if f2: f2.close(); f2 = None
+				logger.info(u"Deleting '%s'" % relSource)
 				os.remove(path)
 			
 		for f in self._sourceDepot.content(source):
@@ -1221,7 +1234,7 @@ class DepotToLocalDirectorySychronizer(object):
 				
 				if progressSubject: progressSubject.setMessage( _(u"Downloading file '%s'") % f['name'] )
 				if exists and (localSize < size):
-					partialEndFile = d + u'.endpart'
+					partialEndFile = d + u'.opsi_sync_endpart'
 					# First byte needed is byte number <localSize>
 					logger.info(u"Downloading file '%s' starting at byte number %d" % (f['name'], localSize))
 					if os.path.exists(partialEndFile):
@@ -1238,7 +1251,7 @@ class DepotToLocalDirectorySychronizer(object):
 					md5s = md5sum(d)
 					if (md5s != self._fileInfo[relSource]['md5sum']):
 						logger.warning(u"MD5sum of composed file differs")
-						partialStartFile = d + u'.startpart'
+						partialStartFile = d + u'.opsi_sync_startpart'
 						if os.path.exists(partialStartFile):
 							os.remove(partialStartFile)
 						# Last byte needed is byte number <localSize> - 1
