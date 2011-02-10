@@ -329,9 +329,8 @@ class Repository:
 				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
 					% (speed/1024, bwlimit/1024, self._bandwidthSleepTime, self._bufferSize))
 			else:
-                                self._bandwidthSleepTime = 0.000001
-                                self._bufferSize = 16384
-                                
+				self._bandwidthSleepTime = 0.000001
+				self._bufferSize = 16384
 		else:
 			self._lastLimitCalcTime = time.time()
 		time.sleep(self._bandwidthSleepTime)
