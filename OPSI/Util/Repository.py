@@ -208,8 +208,9 @@ class Repository:
 		self._lastAverageSpeedCalcBytes += read
 		if hasattr(self, '_lastSpeedCalcTime'):
 			delta = now - self._lastSpeedCalcTime
-			self._currentSpeed = float(self._lastSpeedCalcBytes)/float(delta)
-			self._lastSpeedCalcBytes = 0
+			if (delta > 0):
+				self._currentSpeed = float(self._lastSpeedCalcBytes)/float(delta)
+				self._lastSpeedCalcBytes = 0
 		if not hasattr(self, '_lastAverageSpeedCalcTime'):
 			self._lastAverageSpeedCalcTime = now
 			self._averageSpeed = self._currentSpeed
