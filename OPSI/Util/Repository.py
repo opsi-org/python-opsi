@@ -103,9 +103,9 @@ class Repository:
 		self._currentSpeed                     = 0.0
 		self._averageSpeed                     = 0.0
 		self._dynamicBandwidthLimit            = 0.0
-		self._dynamicBandwidthThresholdLimit   = 0.95
-		self._dynamicBandwidthThresholdNoLimit = 0.8
-		self._dynamicBandwidthLimitRate        = 0.3
+		self._dynamicBandwidthThresholdLimit   = 0.8
+		self._dynamicBandwidthThresholdNoLimit = 0.95
+		self._dynamicBandwidthLimitRate        = 0.2
 		self._bandwidthSleepTime               = 0.0
 		self._hooks                            = []
 		self._observers                        = []
@@ -264,13 +264,13 @@ class Repository:
 							if (index > 1):
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
-								if (usage >= self._dynamicBandwidthThresholdLimit):
+								if (usage >= self._dynamicBandwidthThresholdNoLimit):
 									logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
 									bwlimit = self._dynamicBandwidthLimit = 0.0
 									self._networkUsageData = []
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 							else:
-								if (usage <= self._dynamicBandwidthThresholdNoLimit):
+								if (usage <= self._dynamicBandwidthThresholdLimit):
 									if (self._averageSpeed < 10000):
 										self._dynamicBandwidthLimit = bwlimit = 0.0
 										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
