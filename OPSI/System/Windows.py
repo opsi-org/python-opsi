@@ -35,7 +35,7 @@
 __version__ = '4.0.1'
 
 # Imports
-import re, os, time, socket, sys, locale, subprocess, difflib
+import re, os, time, socket, sys, locale, subprocess, difflib, threading
 
 # Win32 imports
 from ctypes import *
@@ -219,12 +219,18 @@ def getDefaultNetworkInterfaceName():
 			return interface.description
 	return None
 
-class NetworkPerformanceCounter(object):
+class NetworkPerformanceCounter(threading.Thread):
 	def __init__(self, interface):
+		threading.Thread.__init__(self)
 		self.interface = None
 		self._queryHandle = None
 		self._inCounterHandle = None
 		self._outCounterHandle = None
+		self._bytesInPerSecond = 0
+		self._bytesOutPerSecond = 0
+		self._running = False
+		self._stopped = False
+		self._lastTime = None
 		
 		(items, instances) = win32pdh.EnumObjectItems(
 						None,
@@ -273,11 +279,19 @@ class NetworkPerformanceCounter(object):
 				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
 				e
 			))
-	
+		self.start()
+		
 	def __del__(self):
 		self.stop()
 	
 	def stop(self):
+		self._stopped = True
+	
+	def run(self):
+		self._running = True
+		while not self._stopped:
+			self._getStatistics()
+			time.sleep(1)
 		if self._inCounterHandle:
 			win32pdh.RemoveCounter(self._inCounterHandle)
 		if self._outCounterHandle:
@@ -285,15 +299,17 @@ class NetworkPerformanceCounter(object):
 		if self._queryHandle:
 			win32pdh.CloseQuery(self._queryHandle)
 		
-	def getBytesInPerSecond(self):
+	def _getStatistics(self):
 		win32pdh.CollectQueryData(self._queryHandle)
-		(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
-		return val
+		(tp, self._bytesInPerSecond) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
+		win32pdh.CollectQueryData(self._queryHandle)
+		(tp, self._bytesOutPerSecond) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
+	
+	def getBytesInPerSecond(self):
+		return self._bytesInPerSecond
 	
 	def getBytesOutPerSecond(self):
-		win32pdh.CollectQueryData(self._queryHandle)
-		(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
-		return val
+		return self._bytesOutPerSecond
 	
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            HELPERS                                                -
