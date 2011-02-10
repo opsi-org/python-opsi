@@ -92,23 +92,23 @@ class Repository:
 		'''
 		maxBandwith must be in byte/s
 		'''
-		self._url                         = forceUnicode(url)
-		self._path                        = u''
-		self._maxBandwidth                = 0
-		self._dynamicBandwidth            = False
-		self._networkPerformanceCounter   = None
-		self._bufferSize                  = 16384
-		self._bytesTransfered             = 0
-		self._networkUsageAverage         = 0.0
-		self._currentSpeed                = 0.0
-		self._averageSpeed                = 0.0
-		self._dynamicBandwidthLimit       = 0.0
-		self._dynamicBandwidthLimitTime   = 0
-		self._dynamicBandwidthNoLimitTime = 0
-		self._lastUnlimitedSpeed          = 0.0
-		self._bandwidthSleepTime          = 0.0
-		self._hooks                       = []
-		self._observers                   = []
+		self._url                              = forceUnicode(url)
+		self._path                             = u''
+		self._maxBandwidth                     = 0
+		self._dynamicBandwidth                 = False
+		self._networkPerformanceCounter        = None
+		self._bufferSize                       = 16384
+		self._bytesTransfered                  = 0
+		self._networkUsageAverage              = 0.0
+		self._currentSpeed                     = 0.0
+		self._averageSpeed                     = 0.0
+		self._dynamicBandwidthLimit            = 0.0
+		self._dynamicBandwidthThresholdLimit   = 0.95
+		self._dynamicBandwidthThresholdNoLimit = 0.8
+		self._dynamicBandwidthLimitRate        = 0.3
+		self._bandwidthSleepTime               = 0.0
+		self._hooks                            = []
+		self._observers                        = []
 		self.setBandwidth(
 			kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
 			kwargs.get('maxBandwidth', self._maxBandwidth),
@@ -260,23 +260,24 @@ class Repository:
 							usage = usage/count
 							#usage = max(data)
 							logger.debug(u"Total network usage %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
-                                                                % ((totalNetworkUsage/1024), usage, bwlimit/1024))
+									% ((totalNetworkUsage/1024), usage, bwlimit/1024))
 							if (index > 1):
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
-								if (usage >= 0.95):
+								if (usage >= self._dynamicBandwidthThresholdLimit):
 									logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
 									bwlimit = self._dynamicBandwidthLimit = 0.0
 									self._networkUsageData = []
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 							else:
-								if (usage <= 0.8):
+								if (usage <= self._dynamicBandwidthThresholdNoLimit):
 									if (self._averageSpeed < 10000):
 										self._dynamicBandwidthLimit = bwlimit = 0.0
 										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
 									else:
-										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*0.1
-										logger.info(u"Other traffic detected, dynamically limiting bandwidth to 10%% of last average to %0.2f kByte/s" % (bwlimit/1024))
+										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
+											% (self._dynamicBandwidthLimitRate*100, bwlimit/1024))
 										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 									self._networkUsageData = []
 							
