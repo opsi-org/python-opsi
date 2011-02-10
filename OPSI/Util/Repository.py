@@ -243,22 +243,24 @@ class Repository:
 						usage = 1.0
 					#print totalNetworkUsage/1024, usage
 					self._networkUsageData.append([now, usage])
-					if self._networkUsageData and ((now - self._networkUsageData[0][0]) >= 3):
+					if self._networkUsageData and ((now - self._networkUsageData[0][0]) >= 5):
 						usage = 0.0
 						count = 0.0
 						index = -1
 						#data = []
 						for i in range(len(self._networkUsageData)):
-							if (now - self._networkUsageData[i][0] <= 3):
+							if (now - self._networkUsageData[i][0] <= 5):
 								if (index == -1):
 									index = i
-							if (now - self._networkUsageData[i][0] <= 1.0):
+							if (now - self._networkUsageData[i][0] <= 2.0):
 								usage += self._networkUsageData[i][1]
 								count += 1.0
 								#data.append(self._networkUsageData[i][1])
 						if (count > 0):
 							usage = usage/count
 							#usage = max(data)
+							logger.debug(u"Total network usage %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
+                                                                % ((totalNetworkUsage/1024), usage, bwlimit/1024))
 							if (index > 1):
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
@@ -273,8 +275,8 @@ class Repository:
 										self._dynamicBandwidthLimit = bwlimit = 0.0
 										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
 									else:
-										self._dynamicBandwidthLimit = bwlimit = totalNetworkUsage*0.1
-										logger.info(u"Other traffic detected, dynamically limiting bandwidth to 10%% of last total network usage to %0.2f kByte/s" % (bwlimit/1024))
+										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*0.1
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to 10%% of last average to %0.2f kByte/s" % (bwlimit/1024))
 										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 									self._networkUsageData = []
 							
@@ -325,6 +327,10 @@ class Repository:
 					self._bufferSize = 1
 				logger.debug(u"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %s" \
 					% (speed/1024, bwlimit/1024, self._bandwidthSleepTime, self._bufferSize))
+			else:
+                                self._bandwidthSleepTime = 0.000001
+                                self._bufferSize = 16384
+                                
 		else:
 			self._lastLimitCalcTime = time.time()
 		time.sleep(self._bandwidthSleepTime)
@@ -1429,19 +1435,19 @@ if (__name__ == "__main__"):
 	if not os.path.exists(tempDir):
 		os.mkdir(tempDir)
 	
-	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)
+	rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)#, maxBandwidth = 100000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 10000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 100000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000000)
-	#rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
+	rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 100)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 10000000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 1000)
-	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 100000)
-	rep.download(u'mshotfix-vista-win2008-x64-glb_201101-1.opsi', '/tmp/mshotfix-vista-win2008-x64-glb_201101-1.opsi', progressSubject=None)
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 100000)
+	#rep.download(u'ooffice3_3.3-2.opsi', '/tmp/ooffice3_3.3-2.opsi', progressSubject=None)
 	
 	sys.exit(0)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
