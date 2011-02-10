@@ -246,7 +246,7 @@ class Repository:
 						usage = 0.0
 						count = 0.0
 						index = -1
-						data = []
+						#data = []
 						for i in range(len(self._networkUsageData)):
 							if (now - self._networkUsageData[i][0] <= 3):
 								if (index == -1):
@@ -254,28 +254,29 @@ class Repository:
 							if (now - self._networkUsageData[i][0] <= 1.0):
 								usage += self._networkUsageData[i][1]
 								count += 1.0
-								data.append(self._networkUsageData[i][1])
-						usage = usage/count
-						#usage = max(data)
-						if (index > 1):
-							self._networkUsageData = self._networkUsageData[index-1:]
-						if self._dynamicBandwidthLimit:
-							if (usage >= 0.95):
-								logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
-								bwlimit = self._dynamicBandwidthLimit = 0.0
-								self._networkUsageData = []
-								self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-						else:
-							if (usage <= 0.8):
-								if (self._averageSpeed < 10000):
-									self._dynamicBandwidthLimit = bwlimit = 0.0
-									logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
-								else:
-									self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*0.1
-									logger.info(u"Other traffic detected, dynamically limiting bandwidth to 10%% of last average to %0.2f kByte/s" % (bwlimit/1024))
+								#data.append(self._networkUsageData[i][1])
+						if (count > 0):
+							usage = usage/count
+							#usage = max(data)
+							if (index > 1):
+								self._networkUsageData = self._networkUsageData[index-1:]
+							if self._dynamicBandwidthLimit:
+								if (usage >= 0.95):
+									logger.info(u"No other traffic detected, resetting dynamically limited bandwidth, using 100%")
+									bwlimit = self._dynamicBandwidthLimit = 0.0
+									self._networkUsageData = []
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
-								self._networkUsageData = []
-						
+							else:
+								if (usage <= 0.8):
+									if (self._averageSpeed < 10000):
+										self._dynamicBandwidthLimit = bwlimit = 0.0
+										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
+									else:
+										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*0.1
+										logger.info(u"Other traffic detected, dynamically limiting bandwidth to 10%% of last average to %0.2f kByte/s" % (bwlimit/1024))
+										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
+									self._networkUsageData = []
+							
 			if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
 				bwlimit = float(self._maxBandwidth)
 			
