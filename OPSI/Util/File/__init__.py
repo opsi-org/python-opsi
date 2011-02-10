@@ -467,7 +467,7 @@ class ConfigFile(TextFile):
 		return lines
 
 class IniFile(ConfigFile):
-	optionMatch = re.compile('^([^\:\=]+)([\:\=].*)$')
+	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
 	
 	def __init__(self, filename, lockFailTimeout = 2000, ignoreCase = True, raw = True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
@@ -479,24 +479,74 @@ class IniFile(ConfigFile):
 	
 	def setSectionSequence(self, sectionSequence):
 		self._sectionSequence = forceUnicodeList(sectionSequence)
-		
-	def parse(self, lines=None):
-		self._parsed = False
+	
+	def parse(self, lines=None, returnComments=False):
 		logger.debug(u"Parsing ini file '%s'" % self._filename)
 		start = time.time()
-		lines = ConfigFile.parse(self, lines)
+		if lines:
+			self._lines = forceUnicodeList(lines)
+		else:
+			self.readlines()
 		self._parsed = False
-		if self._ignoreCase:
-			for i in range(len(lines)):
-				lines[i] = lines[i].strip()
-				if lines[i].startswith('['):
-					lines[i] = lines[i].lower()
-				
-				match = self.optionMatch.search(lines[i])
-				if not match:
-					continue
-				lines[i] = match.group(1).lower() + match.group(2)
 		
+		lines = []
+		currentSection = None
+		comments = {}
+		currentComments = []
+		for line in self._lines:
+			line = line.strip()
+			if not line:
+				if returnComments:
+					currentComments.append(u'')
+				continue
+			if line.startswith('['):
+				currentSection = line.split('[',1)[1].split(']',1)[0].strip()
+				if returnComments:
+					comments[currentSection] = {'[]': currentComments}
+					currentComments = []
+				if self._ignoreCase:
+					line = line.lower()
+			if line[0] in self._commentChars and not returnComments:
+				continue
+			comment = None
+			for cc in self._commentChars:
+				index = line.find(cc)
+				parts = line.split(cc)
+				quote = 0
+				doublequote = 0
+				if (index == -1):
+					continue
+				cut = -1
+				for i in range(len(parts)):
+					quote += parts[i].count("'")
+					doublequote += parts[i].count('"')
+					if (len(parts[i]) > 0) and (parts[i][-1] == '\\'):
+						# escaped comment
+						continue
+					if (i == len(parts)-1):
+						break
+					if not (quote % 2) and not (doublequote % 2):
+						cut = i
+						break
+				if (cut > -1):
+					line = cc.join(parts[:cut+1])
+					if returnComments:
+						comment = cc + cc.join(parts[cut+1:])
+			if self._ignoreCase or comment:
+				match = self.optionMatch.search(line)
+				if match:
+					option = match.group(1)
+					if self._ignoreCase:
+						option = option.lower()
+						line = option + match.group(2)
+					if currentComments and currentSection:
+						comments[currentSection][option.strip()] = currentComments
+						currentComments = []
+			if comment:
+				currentComments.append(comment)
+			if not line:
+				continue
+			lines.append(line)
 		self._configParser = None
 		if self._raw:
 			self._configParser = ConfigParser.RawConfigParser()
@@ -510,9 +560,11 @@ class IniFile(ConfigFile):
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
 		
 		self._parsed = True
+		if returnComments:
+			return (self._configParser, comments)
 		return self._configParser
-	
-	def generate(self, configParser):
+		
+	def generate(self, configParser, comments={}):
 		self._configParser = configParser
 		self._lines = []
 		
@@ -532,53 +584,20 @@ class IniFile(ConfigFile):
 		logger.debug2(u"Section sequence: %s" % sections)
 		
 		for section in sections:
-			self._lines.append(u'[%s]' % forceUnicode(section))
+			section = forceUnicode(section)
+			if comments:
+				for l in comments.get(section, {}).get('[]', []):
+					self._lines.append(forceUnicode(l))
+			self._lines.append(u'[%s]' % section)
 			options = self._configParser.options(section)
 			options.sort()
 			for option in options:
-				self._lines.append(u'%s = %s' % (forceUnicode(option), forceUnicode(self._configParser.get(section, option))))
-			self._lines.append(u'')
-			
-		self.open('w')
-		self.writelines()
-		self.close()
-	
-	def generate_old(self, configParser):
-		self._configParser = configParser
-		
-		if not self._configParser:
-			raise Exception(u"Got no data to write")
-		
-		sections = {}
-		for section in self._configParser.sections():
-			if type(section) is unicode:
-				section = section.encode('utf-8')
-			sections[section] = {}
-			for (option, value) in self._configParser.items(section):
-				if type(option) is unicode:
-					option = option.encode('utf-8')
-				if type(value) is unicode:
-					value = value.encode('utf-8')
-				sections[section][option] = value
-			self._configParser.remove_section(section)
-		
-		sectionNames = sections.keys()
-		sectionNames.sort()
-		
-		# Move section 'info' to first place
-		if ( 'info' in sectionNames ):
-			sectionNames.insert(0, sectionNames.pop(sectionNames.index('info')))
-		
-		for section in sectionNames:
-			self._configParser.add_section(section)
-			options = sections[section].keys()
-			options.sort()
-			for option in options:
-				self._configParser.set(section, option, sections[section][option])
-		
-		data = StringIO.StringIO()
-		self._configParser.write(data)
-		self._lines = data.getvalue().decode('utf-8').replace('\r', '').split('\n')
+				option = forceUnicode(option)
+				if comments:
+					for l in comments.get(section, {}).get(option, []):
+						self._lines.append(forceUnicode(l))
+				self._lines.append(u'%s = %s' % (option, forceUnicode(self._configParser.get(section, option))))
+		self._lines.append(u'')
 		self.open('w')
 		self.writelines()
 		self.close()
