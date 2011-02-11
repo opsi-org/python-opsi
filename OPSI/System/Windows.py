@@ -239,13 +239,14 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._stopped = True
 	
 	def run(self):
+		interface = self.interface
 		self._running = True
 		import pythoncom, wmi
 		pythoncom.CoInitialize()
 		self.wmi = wmi.WMI()
 		bestRatio = 0.0
 		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
-			ratio = difflib.SequenceMatcher(None, instance.Name, self.interface).ratio()
+			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
 			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
 			if (ratio > bestRatio):
 				bestRatio = ratio
