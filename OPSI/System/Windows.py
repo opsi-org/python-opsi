@@ -290,11 +290,17 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._running = True
 		
 		while not self._stopped:
+			inbytes = 0.0
+			outbytes = 0.0
 			for i in range(10):
 				win32pdh.CollectQueryData(self._queryHandle)
+				(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
+				inbytes += val
+				(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
+				outbytes += val
 				time.sleep(0.1)
-			(tp, self._bytesInPerSecond) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
-			(tp, self._bytesOutPerSecond) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
+			self._bytesInPerSecond = inbytes/10.0
+			self._bytesOutPerSecond = outbytes/10.0
 		if self._inCounterHandle:
 			win32pdh.RemoveCounter(self._inCounterHandle)
 		if self._outCounterHandle:
