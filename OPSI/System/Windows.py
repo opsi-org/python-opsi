@@ -222,7 +222,7 @@ def getDefaultNetworkInterfaceName():
 class NetworkPerformanceCounter(threading.Thread):
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
-		self.interface = None
+		self.interface = interface
 		self._lastBytesIn = 0
 		self._lastBytesOut = 0
 		self._lastTime = None
@@ -245,7 +245,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		self.wmi = wmi.WMI()
 		bestRatio = 0.0
 		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
-			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
+			ratio = difflib.SequenceMatcher(None, instance.Name, self.interface).ratio()
 			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
 			if (ratio > bestRatio):
 				bestRatio = ratio
