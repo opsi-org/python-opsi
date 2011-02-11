@@ -99,7 +99,7 @@ class Repository:
 		self._networkPerformanceCounter        = None
 		self._bufferSize                       = 16384
 		self._bytesTransfered                  = 0
-		self._networkUsageAverage              = 0.0
+		self._networkBandwidth                 = 0.0
 		self._currentSpeed                     = 0.0
 		self._averageSpeed                     = 0.0
 		self._dynamicBandwidthLimit            = 0.0
@@ -236,6 +236,8 @@ class Repository:
 				bwlimit = self._dynamicBandwidthLimit
 				totalNetworkUsage = self._getNetworkUsage()
 				if (totalNetworkUsage > 0):
+					if not self._dynamicBandwidthLimit:
+						self._networkBandwidth = totalNetworkUsage
 					if not hasattr(self, '_networkUsageData'):
 						self._networkUsageData = []
 					usage = (float(self._averageSpeed)/float(totalNetworkUsage)) * 1.03
@@ -259,8 +261,8 @@ class Repository:
 						if (count > 0):
 							usage = usage/count
 							#usage = max(data)
-							logger.debug(u"Total network usage %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
-									% ((totalNetworkUsage/1024), usage, bwlimit/1024))
+							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
+									% ((totalNetworkUsage/1024), (self._networkBandwidth/1024) usage, bwlimit/1024))
 							if (index > 1):
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
