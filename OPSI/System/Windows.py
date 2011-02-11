@@ -238,7 +238,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		bestRatio = 0.0
 		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
 			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance, ratio))
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
 			if (ratio > bestRatio):
 				bestRatio = ratio
 				self.interface = instance.Name
@@ -264,9 +264,14 @@ class NetworkPerformanceCounter(threading.Thread):
 		
 	def _getStatistics(self):
 		now = time.time()
-		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface(["BytesReceivedPersec", "BytesSentPersec"], Name = self.interface):
-			bytesIn = instance.BytesReceivedPersec
-			bytesOut = instance.BytesSentPersec
+		#for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface(["BytesReceivedPersec", "BytesSentPersec"], Name = self.interface):
+		#	bytesIn = instance.BytesReceivedPersec
+		#	bytesOut = instance.BytesSentPersec
+		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
+			if (instance.Name == self.interface):
+				bytesIn = instance.BytesReceivedPersec
+				bytesOut = instance.BytesSentPersec
+				break
 		timeDiff = 1
 		if self._lastTime:
 			timeDiff = now - self._lastTime
