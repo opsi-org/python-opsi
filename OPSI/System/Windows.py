@@ -302,10 +302,10 @@ class NetworkPerformanceCounter(threading.Thread):
 	def _getStatistics(self):
 		win32pdh.CollectQueryData(self._queryHandle)
 		(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
-		self._bytesInPerSecond = (val + self._bytesInPerSecond)/2
+		self._bytesInPerSecond = val
 		win32pdh.CollectQueryData(self._queryHandle)
 		(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
-		self._bytesOutPerSecond = (val + self._bytesOutPerSecond)/2
+		self._bytesOutPerSecond = val
 		
 	def getBytesInPerSecond(self):
 		return self._bytesInPerSecond
