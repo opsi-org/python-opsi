@@ -2453,7 +2453,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					productId      = productId,
 					productVersion = productVersion,
 					packageVersion = packageVersion,
-					propertyIds    = propertyId))
+					propertyId     = propertyId))
 	
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies                                                                       -
