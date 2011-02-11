@@ -2448,8 +2448,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if productVersion is None: productVersion = []
 		if packageVersion is None: packageVersion = []
 		if propertyId is None:     propertyId     = []
-		return self._backend.productOnDepot_deleteObjects(
-				self._backend.productOnDepot_getObjects(
+		return self._backend.productProperty_deleteObjects(
+				self._backend.productProperty_getObjects(
 					productId      = productId,
 					productVersion = productVersion,
 					packageVersion = packageVersion,
