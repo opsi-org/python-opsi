@@ -113,13 +113,6 @@ class Repository:
 			kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
 			kwargs.get('maxBandwidth', self._maxBandwidth),
 		)
-		
-	def __del__(self):
-		if self._networkPerformanceCounter:
-			try:
-				self._networkPerformanceCounter.stop()
-			except:
-				pass
 	
 	def setBandwidth(self, dynamicBandwidth = False, maxBandwidth = 0):
 		''' maxBandwidth in byte/s'''
@@ -573,7 +566,11 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 	
 	def disconnect(self):
-		raise RepositoryError(u"Not implemented")
+		if self._networkPerformanceCounter:
+			try:
+				self._networkPerformanceCounter.stop()
+			except:
+				pass
 	
 	def __del__(self):
 		try:
@@ -737,9 +734,6 @@ class FileRepository(Repository):
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
 	
-	def disconnect(self):
-		pass
-
 class HTTPRepository(Repository):
 	
 	def __init__(self, url, **kwargs):
@@ -918,6 +912,7 @@ class HTTPRepository(Repository):
 		logger.debug2(u"HTTP download done")
 	
 	def disconnect(self):
+		Repository.disconnect(self)
 		if self._connectionPool:
 			self._connectionPool.free()
 	
@@ -1160,6 +1155,7 @@ class CIFSRepository(FileRepository):
 			os.rmdir(self._mountPoint)
 	
 	def disconnect(self):
+		FileRepository.disconnect(self)
 		self._umount()
 	
 class DepotToLocalDirectorySychronizer(object):
