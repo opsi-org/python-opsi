@@ -242,7 +242,7 @@ class NetworkPerformanceCounter(threading.Thread):
 			if (ratio > bestRatio):
 				bestRatio = ratio
 				self.interface = instance
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s" % (self.interface.Name, bestRatio, items))
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface.Name, bestRatio))
 		
 		self.start()
 		
