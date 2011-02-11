@@ -226,11 +226,10 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._queryHandle = None
 		self._inCounterHandle = None
 		self._outCounterHandle = None
-		self._bytesInPerSecond = 0
-		self._bytesOutPerSecond = 0
 		self._running = False
 		self._stopped = False
-		self._lastTime = None
+		self._inData = []
+		self._outData = []
 		
 		(items, instances) = win32pdh.EnumObjectItems(
 						None,
@@ -289,9 +288,18 @@ class NetworkPerformanceCounter(threading.Thread):
 	
 	def run(self):
 		self._running = True
+		
 		while not self._stopped:
-			self._getStatistics()
-			time.sleep(1)
+			win32pdh.CollectQueryData(self._queryHandle)
+			(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
+			self._inData.append(val)
+			if (len(self._inData) > 3):
+				self._inData.remove(0)
+			(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
+			self._outData.append(val)
+			if (len(self._outData) > 3):
+				self._outData.remove(0)
+			time.sleep(0.3)
 		if self._inCounterHandle:
 			win32pdh.RemoveCounter(self._inCounterHandle)
 		if self._outCounterHandle:
@@ -299,20 +307,25 @@ class NetworkPerformanceCounter(threading.Thread):
 		if self._queryHandle:
 			win32pdh.CloseQuery(self._queryHandle)
 		
-	def _getStatistics(self):
-		win32pdh.CollectQueryData(self._queryHandle)
-		#time.sleep(0.01)
-		#win32pdh.CollectQueryData(self._queryHandle)
-		(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
-		self._bytesInPerSecond = val
-		(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
-		self._bytesOutPerSecond = val
-		
 	def getBytesInPerSecond(self):
-		return self._bytesInPerSecond
+		data = 0.0
+		if not self._inData:
+			return data
+		count = 0.0
+		for d in self._inData:
+			data += d
+			count += 1.0
+		return data/count
 	
 	def getBytesOutPerSecond(self):
-		return self._bytesOutPerSecond
+		data = 0.0
+		if not self._outData:
+			return data
+		count = 0.0
+		for d in self._outData:
+			data += d
+			count += 1.0
+		return data/count
 	
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            HELPERS                                                -
