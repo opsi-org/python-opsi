@@ -264,7 +264,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		
 	def _getStatistics(self):
 		now = time.time()
-		for instance in c.Win32_LogicalDisk(["BytesReceivedPersec", "BytesSentPersec"], Name = self.interface):
+		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface(["BytesReceivedPersec", "BytesSentPersec"], Name = self.interface):
 			bytesIn = instance.BytesReceivedPersec
 			bytesOut = instance.BytesSentPersec
 		timeDiff = 1
