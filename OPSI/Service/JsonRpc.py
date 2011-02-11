@@ -207,7 +207,6 @@ class JsonRpcRequestProcessor(object):
 				self.query = zlib.decompress(self.query)
 			self.query = unicode(self.query, 'utf-8')
 		except (UnicodeError, UnicodeEncodeError), e:
-			self.service.statistics().addEncodingError('query', self.session.ip, self.session.userAgent, unicode(e))
 			self.query = unicode(self.query, 'utf-8', 'replace')
 		return self.query
 	

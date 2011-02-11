@@ -594,6 +594,7 @@ class JSONRPCBackend(Backend):
 		logger.debug2(u"Request to host '%s', baseUrl: %s, query '%s'" % (self._host, baseUrl, data))
 		
 		if self._deflate:
+			# FIXME: use correct encoding headers
 			logger.debug2(u"Compressing data")
 			headers['Accept'] += ', gzip-application/json-rpc'
 			headers['content-type'] = 'gzip-application/json-rpc'

@@ -118,7 +118,6 @@ class OpsiDaemon(object):
 		return script
 
 	def callRemote(self, method, *args, **kwargs):
-
 		def failure(failure):
 			logger.error(failure.getErrorMessage())
 			logger.logTraceback(failure.getTracebackObject())
@@ -137,7 +136,9 @@ class OpsiDaemon(object):
 		return connection
 
 	def isRunning(self):
-		return self.callRemote("isRunning")
+		# FIXME: why is this called out of loop?
+		pass
+		#return self.callRemote("isRunning")
 
 	def sendSignal(self, sig):
 		def _sendSignal(s):

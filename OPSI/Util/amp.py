@@ -143,6 +143,7 @@ class OpsiQueryingProtocol(AMP):
 		self.dataSink.factory.stopTrying()
 		if self.dataSink is not None:
 			self.dataSink.loseConnection()
+			self.dataSink = None
 		
 	def _callRemote(self, command, **kwargs):
 		
@@ -257,7 +258,7 @@ class OpsiResponseProtocol(AMP):
 			
 		else:
 			dd.addCallback(lambda x: {"tag": tag, "result":result})
-		dd.addCallback(self.closeDataPort)
+		dd.addBoth(self.closeDataPort)
 		dd.callback(None)
 		return dd
 
@@ -405,7 +406,8 @@ class OpsiProcessConnector(object):
 		
 		def failure(fail):
 			self._factory.removeNotifier(success, failure)
-			self._connected.errback(fail)
+			d, self._connected = self._connected, None
+			d.errback(fail)
 		
 		self._factory = self.factory(reactor = self._reactor)
 		try:
@@ -418,7 +420,8 @@ class OpsiProcessConnector(object):
 		return self._connected
 	
 	def connectionFailed(self, reason):
-		self._connected.errback(reason)
+		d, self._connected = self._connected, None
+		d.errback(reason)
 	
 	def disconnect(self):
 		if self._factory:
@@ -427,4 +430,5 @@ class OpsiProcessConnector(object):
 			if self._remote._protocol.transport:
 				self._remote._protocol.transport.loseConnection()
 			self._remote = None
-
+		if self._connected:
+			self._connected = None
