@@ -262,7 +262,7 @@ class Repository:
 							usage = usage/count
 							#usage = max(data)
 							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
-									% ((totalNetworkUsage/1024), (self._networkBandwidth/1024) usage, bwlimit/1024))
+									% ((totalNetworkUsage/1024), (self._networkBandwidth/1024), usage, bwlimit/1024))
 							if (index > 1):
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
