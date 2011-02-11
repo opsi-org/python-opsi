@@ -223,6 +223,73 @@ class NetworkPerformanceCounter(threading.Thread):
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
 		self.interface = None
+		self._lastBytesIn = 0
+		self._lastBytesOut = 0
+		self._lastTime = None
+		self._bytesInPerSecond = 0
+		self._bytesOutPerSecond = 0
+		self._running = False
+		self._stopped = False
+		
+		import pythoncom, wmi
+		pythoncom.CoInitialize()
+		self.wmi = wmi.WMI()
+		
+		bestRatio = 0.0
+		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
+			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance, ratio))
+			if (ratio > bestRatio):
+				bestRatio = ratio
+				self.interface = instance
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s" % (self.interface.Name, bestRatio, items))
+		
+		self.start()
+		
+	def __del__(self):
+		self.stop()
+	
+	def stop(self):
+		self._stopped = True
+	
+	def run(self):
+		self._running = True
+		try:
+			while not self._stopped:
+				self._getStatistics()
+				time.sleep(1)
+		finally:
+			pythoncom.CoUninitialize()
+	
+	def _getStatistics(self):
+		now = time.time()
+		bytesIn = self.interface.BytesReceivedPersec
+		bytesOut = self.interface.BytesSentPersec
+		timeDiff = 1
+		if self._lastTime:
+			timeDiff = now - self._lastTime
+		if self._lastBytesIn:
+			self._bytesInPerSecond = (bytesIn - self._lastBytesIn)/timeDiff
+			if (self._bytesInPerSecond < 0):
+				self._bytesInPerSecond = 0
+		if self._lastBytesOut:
+			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut)/timeDiff
+			if (self._bytesOutPerSecond < 0):
+				self._bytesOutPerSecond = 0
+		self._lastBytesIn = bytesIn
+		self._lastBytesOut = bytesOut
+		self._lastTime = now
+		
+	def getBytesInPerSecond(self):
+		return self._bytesInPerSecond
+	
+	def getBytesOutPerSecond(self):
+		return self._bytesOutPerSecond
+	
+class NetworkPerformanceCounterPDH(threading.Thread):
+	def __init__(self, interface):
+		threading.Thread.__init__(self)
+		self.interface = None
 		self._queryHandle = None
 		self._inCounterHandle = None
 		self._outCounterHandle = None
