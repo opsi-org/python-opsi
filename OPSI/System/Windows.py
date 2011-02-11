@@ -230,20 +230,6 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._bytesOutPerSecond = 0
 		self._running = False
 		self._stopped = False
-		
-		import pythoncom, wmi
-		pythoncom.CoInitialize()
-		self.wmi = wmi.WMI()
-		
-		bestRatio = 0.0
-		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
-			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
-			if (ratio > bestRatio):
-				bestRatio = ratio
-				self.interface = instance.Name
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
-		
 		self.start()
 		
 	def __del__(self):
@@ -254,6 +240,17 @@ class NetworkPerformanceCounter(threading.Thread):
 	
 	def run(self):
 		self._running = True
+		import pythoncom, wmi
+		pythoncom.CoInitialize()
+		self.wmi = wmi.WMI()
+		bestRatio = 0.0
+		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
+			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
+			if (ratio > bestRatio):
+				bestRatio = ratio
+				self.interface = instance.Name
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
 		try:
 			while not self._stopped:
 				self._getStatistics()
