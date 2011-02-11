@@ -294,11 +294,11 @@ class NetworkPerformanceCounter(threading.Thread):
 			(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
 			self._inData.append(val)
 			if (len(self._inData) > 3):
-				self._inData.remove(0)
+				self._inData.pop(0)
 			(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
 			self._outData.append(val)
 			if (len(self._outData) > 3):
-				self._outData.remove(0)
+				self._outData.pop(0)
 			time.sleep(0.3)
 		if self._inCounterHandle:
 			win32pdh.RemoveCounter(self._inCounterHandle)
