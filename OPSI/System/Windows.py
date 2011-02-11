@@ -241,8 +241,8 @@ class NetworkPerformanceCounter(threading.Thread):
 			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance, ratio))
 			if (ratio > bestRatio):
 				bestRatio = ratio
-				self.interface = instance
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface.Name, bestRatio))
+				self.interface = instance.Name
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
 		
 		self.start()
 		
@@ -259,12 +259,14 @@ class NetworkPerformanceCounter(threading.Thread):
 				self._getStatistics()
 				time.sleep(1)
 		finally:
+			import pythoncom
 			pythoncom.CoUninitialize()
-	
+		
 	def _getStatistics(self):
 		now = time.time()
-		bytesIn = self.interface.BytesReceivedPersec
-		bytesOut = self.interface.BytesSentPersec
+		for instance in c.Win32_LogicalDisk(["BytesReceivedPersec", "BytesSentPersec"], Name = self.interface):
+			bytesIn = instance.BytesReceivedPersec
+			bytesOut = instance.BytesSentPersec
 		timeDiff = 1
 		if self._lastTime:
 			timeDiff = now - self._lastTime
