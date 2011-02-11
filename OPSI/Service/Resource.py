@@ -92,7 +92,8 @@ class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):
 
 
 class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
-
+	WorkerClass = WorkerOpsiDAV
+	
 	def __init__(self, service, path, readOnly=True, defaultType="text/plain", indexNames=None, authRequired=True):
 		path = forceUnicode(path).encode('utf-8')
 		OPSI.web2.dav.static.DAVFile.__init__(self, path, defaultType, indexNames)
@@ -110,7 +111,7 @@ class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
 				return http.Response(
 					code	= responsecode.FORBIDDEN,
 					stream	= "Readonly!" )
-			worker = WorkerOpsiDAV(self._service, request, self)
+			worker = self.WorkerClass(self._service, request, self)
 			return worker.process()
 		except Exception, e:
 			logger.logException(e)
