@@ -412,6 +412,7 @@ class WorkerOpsi:
 		return result
 	
 	def _setCookie(self, result):
+		logger.debug(u"%s._setCookie" % self)
 		if not self.session:
 			return result
 		
@@ -485,7 +486,6 @@ class WorkerOpsi:
 		return result
 	
 	def _setResponse(self, result):
-		logger.essential(result)
 		return self._generateResponse(result)
 
 
@@ -605,8 +605,6 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		logger.debug("Using multiprocessing to handle rpc.")
 		
-		dr = defer.Deferred()
-		
 		def processResult(r):
 			self._rpcs = r
 			return r
@@ -614,13 +612,14 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		def makeInstanceCall():
 			d = self._callInstance.processQuery(self.query, self.gzip)
 			d.addCallback(processResult)
+			d.addErrback(self._errback)
 			return d
 		
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())
-		deferred.addErrback(dr.errback)
-		deferred.addCallback(dr.callback)
-		return dr
+		deferred.addErrback(self._errback)
+		#deferred.addCallback(None)
+		return deferred
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 	def __init__(self, service, request, resource):
