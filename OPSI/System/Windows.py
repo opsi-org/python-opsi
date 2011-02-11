@@ -271,11 +271,6 @@ class NetworkPerformanceCounter(threading.Thread):
 		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface(["BytesReceivedPersec", "BytesSentPersec"], Name = self.interface):
 			bytesIn = instance.BytesReceivedPersec
 			bytesOut = instance.BytesSentPersec
-		#for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
-		#	if (instance.Name == self.interface):
-		#		bytesIn = instance.BytesReceivedPersec
-		#		bytesOut = instance.BytesSentPersec
-		#		break
 		timeDiff = 1
 		if self._lastTime:
 			timeDiff = now - self._lastTime

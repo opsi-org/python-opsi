@@ -103,7 +103,7 @@ class Repository:
 		self._currentSpeed                     = 0.0
 		self._averageSpeed                     = 0.0
 		self._dynamicBandwidthLimit            = 0.0
-		self._dynamicBandwidthThresholdLimit   = 0.8
+		self._dynamicBandwidthThresholdLimit   = 0.75
 		self._dynamicBandwidthThresholdNoLimit = 0.95
 		self._dynamicBandwidthLimitRate        = 0.2
 		self._bandwidthSleepTime               = 0.0
