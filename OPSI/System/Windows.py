@@ -239,26 +239,32 @@ class NetworkPerformanceCounter(threading.Thread):
 		self._stopped = True
 	
 	def run(self):
-		interface = self.interface
-		self._running = True
-		import pythoncom, wmi
-		pythoncom.CoInitialize()
-		self.wmi = wmi.WMI()
-		bestRatio = 0.0
-		for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
-			ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
-			if (ratio > bestRatio):
-				bestRatio = ratio
-				self.interface = instance.Name
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
+		try:
+			interface = self.interface
+			self._running = True
+			import pythoncom, wmi
+			pythoncom.CoInitialize()
+			self.wmi = wmi.WMI()
+			bestRatio = 0.0
+			for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
+				ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
+				logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, instance.Name, ratio))
+				if (ratio > bestRatio):
+					bestRatio = ratio
+					self.interface = instance.Name
+			logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
+		except Exception, e:
+			logger.logException(e)
 		try:
 			while not self._stopped:
 				self._getStatistics()
 				time.sleep(1)
 		finally:
-			import pythoncom
-			pythoncom.CoUninitialize()
+			try:
+				import pythoncom
+				pythoncom.CoUninitialize()
+			except:
+				pass
 		
 	def _getStatistics(self):
 		now = time.time()
