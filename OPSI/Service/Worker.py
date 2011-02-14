@@ -610,15 +610,14 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 			return r
 		
 		def makeInstanceCall():
-			d = self._callInstance.processQuery(self.query, self.gzip)
+			contentType = self.request.headers.getHeader('content-type')
+			
+			d = self._callInstance.processQuery(self.query, contentType and contentType.mediaType.startswith('gzip'))
 			d.addCallback(processResult)
-			d.addErrback(self._errback)
 			return d
 		
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())
-		deferred.addErrback(self._errback)
-		#deferred.addCallback(None)
 		return deferred
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
