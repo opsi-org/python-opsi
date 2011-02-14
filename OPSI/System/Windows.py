@@ -56,17 +56,56 @@ HKEY_LOCAL_MACHINE = _winreg.HKEY_LOCAL_MACHINE
 
 TH32CS_SNAPPROCESS = 0x00000002
 class PROCESSENTRY32(Structure):
-     _fields_ = [("dwSize", c_ulong),
-                 ("cntUsage", c_ulong),
-                 ("th32ProcessID", c_ulong),
-                 ("th32DefaultHeapID", c_ulong),
-                 ("th32ModuleID", c_ulong),
-                 ("cntThreads", c_ulong),
-                 ("th32ParentProcessID", c_ulong),
-                 ("pcPriClassBase", c_ulong),
-                 ("dwFlags", c_ulong),
-                 ("szExeFile", c_char * 260)]
+	_fields_ = [
+		("dwSize", c_ulong),
+		("cntUsage", c_ulong),
+		("th32ProcessID", c_ulong),
+		("th32DefaultHeapID", c_ulong),
+		("th32ModuleID", c_ulong),
+		("cntThreads", c_ulong),
+		("th32ParentProcessID", c_ulong),
+		("pcPriClassBase", c_ulong),
+		("dwFlags", c_ulong),
+		("szExeFile", c_char * 260)
+	]
 
+MAX_INTERFACE_NAME_LEN = 256
+MAXLEN_IFDESCR = 256
+MAXLEN_PHYSADDR = 8
+class MIB_IFROW(Structure):
+	_fields_ = [
+		("wszName", c_wchar * MAX_INTERFACE_NAME_LEN),
+		("dwIndex", c_uint),
+		("dwType", c_uint),
+		("dwMtu", c_uint),
+		("dwSpeed", c_uint),
+		("dwPhysAddrLen", c_uint),
+		("bPhysAddr", c_char * MAXLEN_PHYSADDR),
+		("dwAdminStatus", c_uint),
+		("dwOperStatus", c_uint),
+		("dwLastChange", c_uint),
+		("dwInOctets", c_uint),
+		("dwInUcastPkts", c_uint),
+		("dwInNUcastPkts", c_uint),
+		("dwInDiscards", c_uint),
+		("dwInErrors", c_uint),
+		("dwInUnknownProtos", c_uint),
+		("dwOutOctets", c_uint),
+		("dwOutUcastPkts", c_uint),
+		("dwOutNUcastPkts", c_uint),
+		("dwOutDiscards", c_uint),
+		("dwOutErrors", c_uint),
+		("dwOutQLen", c_uint),
+		("dwDescrLen", c_uint),
+		("bDescr", c_char * MAXLEN_IFDESCR),
+	]
+
+MAX_INTERFACES = 32
+class MIB_IFTABLE(Structure):
+	_fields_ = [
+		("dwNumEntries", c_uint),
+		("table", MIB_IFROW * MAX_INTERFACES),
+	]
 
 class SystemSpecificHook(object):
 	def __init__(self):
@@ -220,6 +259,75 @@ def getDefaultNetworkInterfaceName():
 	return None
 
 class NetworkPerformanceCounter(threading.Thread):
+	def __init__(self, interface):
+		threading.Thread.__init__(self)
+		self._lastBytesIn = 0
+		self._lastBytesOut = 0
+		self._lastTime = None
+		self._bytesInPerSecond = 0
+		self._bytesOutPerSecond = 0
+		self._running = False
+		self._stopped = False
+		
+		iftable = MIB_IFTABLE()
+		iftable_size = c_ulong(sizeof(iftable))
+		iftable.dwNumEntries = 0
+		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
+		bestRatio = 0.0
+		for i in range(iftable.dwNumEntries):
+			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
+			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, iftable.table[i].bDescr, ratio))
+			if (ratio > bestRatio):
+				bestRatio = ratio
+				self.interface = iftable.table[i].bDescr
+		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
+		self.start()
+		
+	def __del__(self):
+		self.stop()
+	
+	def stop(self):
+		self._stopped = True
+	
+	def run(self):
+		while not self._stopped:
+			self._getStatistics()
+			time.sleep(1)
+		
+	def _getStatistics(self):
+		now = time.time()
+		(bytesIn, bytesOut) = (0, 0)
+		iftable = MIB_IFTABLE()
+		iftable_size = c_ulong(sizeof(iftable))
+		iftable.dwNumEntries = 0
+		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
+		for i in range(iftable.dwNumEntries):
+			if (iftable.table[i].bDescr == self.interface):
+				bytesIn = iftable.table[i].dwInOctets
+				bytesOut = iftable.table[i].dwOutOctets
+				break
+		timeDiff = 1
+		if self._lastTime:
+			timeDiff = now - self._lastTime
+		if self._lastBytesIn:
+			self._bytesInPerSecond = (bytesIn - self._lastBytesIn)/timeDiff
+			if (self._bytesInPerSecond < 0):
+				self._bytesInPerSecond = 0
+		if self._lastBytesOut:
+			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut)/timeDiff
+			if (self._bytesOutPerSecond < 0):
+				self._bytesOutPerSecond = 0
+		self._lastBytesIn = bytesIn
+		self._lastBytesOut = bytesOut
+		self._lastTime = now
+		
+	def getBytesInPerSecond(self):
+		return self._bytesInPerSecond
+	
+	def getBytesOutPerSecond(self):
+		return self._bytesOutPerSecond
+
+class NetworkPerformanceCounterWMI(threading.Thread):
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
 		self.interface = interface
