@@ -266,13 +266,17 @@ class Repository:
 									self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 							else:
 								if (usage <= self._dynamicBandwidthThresholdLimit):
-									if (self._averageSpeed < 10000):
+									if (self._averageSpeed < 20000):
 										self._dynamicBandwidthLimit = bwlimit = 0.0
 										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
 									else:
 										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
-										logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
-											% (self._dynamicBandwidthLimitRate*100, bwlimit/1024))
+										if (self._dynamicBandwidthLimit < 10000):
+											self._dynamicBandwidthLimit = bwlimit = 10000
+											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % bwlimit/1024)
+										else:
+											logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
+												% (self._dynamicBandwidthLimitRate*100, bwlimit/1024))
 										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 									self._networkUsageData = []
 							
