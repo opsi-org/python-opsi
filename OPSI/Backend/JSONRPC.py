@@ -640,8 +640,8 @@ if (__name__ == '__main__'):
 	import threading
 	
 	#logger.setConsoleLevel(LOG_ERROR)
-	#logger.setConsoleLevel(LOG_DEBUG2)
-	logger.setConsoleLevel(LOG_INFO)
+	logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_INFO)
 	logger.setConsoleColor(True)
 	
 	

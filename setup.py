@@ -68,6 +68,7 @@ data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default'
 				     'data/backends/mysql.conf',
 				     'data/backends/sqlite.conf',
 				     'data/backends/multiplex.conf',
+				     'data/backends/hostcontrol.conf',
 				     'data/backends/opsipxeconfd.conf']),
 	    ('/etc/opsi/', ['data/version']),
 	    ('/etc/opsi/hwaudit/', ['data/hwaudit/opsihwaudit.conf']),

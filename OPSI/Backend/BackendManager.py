@@ -148,7 +148,12 @@ class BackendManager(ExtendedBackend):
 			self._backend = DepotserverBackend(self._backend)
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
-			self._backend = HostControlBackend(self._backend)
+			hcc = {}
+			try:
+				hcc = self.__loadBackendConfig('hostcontrol')['config']
+			except Exception, e:
+				logger.error(e)
+			self._backend = HostControlBackend(self._backend, **hcc)
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
@@ -157,8 +162,8 @@ class BackendManager(ExtendedBackend):
 			self._backend = BackendExtender(self._backend, **kwargs)
 		
 		self._createInstanceMethods()
-		
-	def __loadBackend(self, name):
+	
+	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
@@ -172,13 +177,17 @@ class BackendManager(ExtendedBackend):
 		
 		l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
 		execfile(backendConfigFile, l)
-		if not l['module']:
+		return l
+		
+	def __loadBackend(self, name):
+		config = self.__loadBackendConfig(name)
+		if not config['module']:
 			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
-		if not type(l['config']) is dict:
+		if not type(config['config']) is dict:
 			raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
-		l['config']['name'] = name
-		exec(u'from %s import %sBackend' % (l['module'], l['module']))
-		return eval(u'%sBackend(**l["config"])' % l['module'])
+		config['config']['name'] = name
+		exec(u'from %s import %sBackend' % (config['module'], config['module']))
+		return eval(u'%sBackend(**config["config"])' % config['module'])
 	
 class BackendDispatcher(Backend):
 	def __init__(self, **kwargs):

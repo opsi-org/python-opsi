@@ -70,7 +70,7 @@ class RpcThread(KillableThread):
 	def run(self):
 		try:
 			self.started = time.time()
-			timeout = self.hostControlBackend._hostRpcTimeout - 5
+			timeout = self.hostControlBackend._hostRpcTimeout
 			if (timeout < 0):
 				timeout = 0
 			
@@ -107,7 +107,7 @@ class HostControlBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		self._name = 'hostcontrol'
 		
-		ExtendedBackend.__init__(self, backend, **kwargs)
+		ExtendedBackend.__init__(self, backend)
 		
 		self._opsiclientdPort = 4441
 		self._hostRpcTimeout  = 15
