@@ -1,3 +1,9 @@
+python-opsi (4.0.0.99-2) testing; urgency=low
+
+  * Add config file for HostControlBackend
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 16 Feb 2011 16:57:01 +0100
+
 python-opsi (4.0.0.99-1) testing; urgency=low
 
   * Add new serivce lib
