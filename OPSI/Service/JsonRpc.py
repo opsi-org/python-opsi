@@ -169,12 +169,14 @@ class JsonRpc(object):
 					except Exception, e:
 						#logger.debug(e)
 						pass
-					response['error']  = { 'code': code, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
+					response['error'] = { 'code': code, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
 				else:
-					response['error']  = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
-				response['result'] = None
+					response['error'] = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
+				if (self.rpcVersion != '2.0'):
+					response['result'] = None
 			else:
-				response['error']  = None
+				if (self.rpcVersion != '2.0'):
+					response['error'] = None
 				response['result'] = self.result
 		return response
 
