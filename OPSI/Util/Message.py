@@ -541,10 +541,10 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			param.append(subject.serializable())
 		self.notify( name = u"subjectsChanged", params = [ param ] )
 	
-	def requestEndConnections(self):
+	def requestEndConnections(self, clientIds=[]):
 		if not self.clients:
 			return
-		self.notify( name = u"endConnection", params = [] )
+		self.notify( name = u"endConnection", params = [ clientIds ] )
 	
 	def notify(self, name, params, clients = []):
 		if not type(params) is list:
@@ -595,10 +595,10 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def getSubjects(self):
 		return self._factory.getSubjects()
 	
-	def requestEndConnections(self):
+	def requestEndConnections(self, clientIds=[]):
 		if self._factory:
-			self._factory.requestEndConnections()
-		
+			self._factory.requestEndConnections(clientIds)
+	
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
@@ -667,12 +667,6 @@ class NotificationClientFactory(ClientFactory):
 		self._rpcs = {}
 		self._timeout = 5
 	
-	#def clientConnectionFailed(self, connector, reason):
-	#	logger.error("client connection failed")
-	
-	#def clientConnectionLost(self, connector, reason):
-	#	pass
-	
 	def connectionLost(self, reason):
 		logger.info(u"server connection lost")
 	
@@ -702,7 +696,8 @@ class NotificationClientFactory(ClientFactory):
 				params = rpc['params']
 				if (method == 'endConnection'):
 					logger.info(u"Server requested connection end")
-					self._notificationClient.endConnectionRequested()
+					if not params or not params[0] or not self._notificationClient.getId() or self._notificationClient.getId() in forceList(params[0]):
+						self._notificationClient.endConnectionRequested()
 				else:
 					logger.debug( "self._observer.%s(*params)" % method )
 					eval( "self._observer.%s(*params)" % method )
@@ -727,15 +722,19 @@ class NotificationClientFactory(ClientFactory):
 		self.sendLine(json.dumps(rpc))
 
 class NotificationClient(threading.Thread):
-	def __init__(self, address, port, observer):
+	def __init__(self, address, port, observer, clientId = None):
 		threading.Thread.__init__(self)
 		self._address = address
 		self._port = port
 		self._observer = observer
+		self._id = clientId
 		self._factory = NotificationClientFactory(self, self._observer)
 		self._client = None
 		self._endConnectionRequestedCallbacks = []
-	
+		
+	def getId(self):
+		return self._id
+		
 	def addEndConnectionRequestedCallback(self, endConnectionRequestedCallback):
 		if not endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
 			self._endConnectionRequestedCallbacks.append(endConnectionRequestedCallback)
