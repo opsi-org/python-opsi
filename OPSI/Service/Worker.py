@@ -66,6 +66,7 @@ interfacePage = u'''
 	.box          { background-color: #fafafa; border: 1px #555555 solid; padding: 20px; margin-left: 30px; margin-top: 50px;}
 	</style>
 	<script type="text/javascript">
+	/* <![CDATA[ */
 		var path = '%(path)s';
 		var parameters = new Array();
 		var method = '';
@@ -173,6 +174,7 @@ interfacePage = u'''
 			}
 			span.appendChild(document.createTextNode(params + ']'));
 		}
+	/* ]]> */
 	</script>
 </head>
 <body onload="selectMethod(document.getElementById('method_select'))">
