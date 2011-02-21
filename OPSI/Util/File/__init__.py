@@ -476,10 +476,14 @@ class IniFile(ConfigFile):
 		self._configParser = None
 		self._parsed = False
 		self._sectionSequence = []
-	
+		self._keepOrdering = False
+		
 	def setSectionSequence(self, sectionSequence):
 		self._sectionSequence = forceUnicodeList(sectionSequence)
 	
+	def setKeepOrdering(self, keepOrdering):
+		self._keepOrdering = forceBool(keepOrdering)
+		
 	def parse(self, lines=None, returnComments=False):
 		logger.debug(u"Parsing ini file '%s'" % self._filename)
 		start = time.time()
@@ -566,23 +570,39 @@ class IniFile(ConfigFile):
 		
 	def generate(self, configParser, comments={}):
 		self._configParser = configParser
-		self._lines = []
 		
 		if not self._configParser:
 			raise Exception(u"Got no data to write")
 		
+		sectionSequence = []
+		optionSequence = {}
+		if self._keepOrdering and os.path.exists(self._filename):
+			for line in self.readlines():
+				line = line.strip()
+				if not line or line[0] in self._commentChars:
+					continue
+				if line.startswith('['):
+					section = line.split('[',1)[1].split(']',1)[0].strip()
+					sectionSequence.append(section)
+				elif (line.find('=') != -1):
+					option = line.split('=')[0].strip()
+					if not optionSequence.has_key(sectionSequence[-1]):
+						optionSequence[sectionSequence[-1]] = []
+					optionSequence[sectionSequence[-1]].append(option)
+		else:
+			sectionSequence = list(self._sectionSequence)
+			sectionSequence.reverse()
+		
 		sections = self._configParser.sections()
 		sections.sort()
-		
-		sequence = list(self._sectionSequence)
-		sequence.reverse()
-		for section in sequence:
+		for section in sectionSequence:
 			if section in sections:
 				logger.debug2(u"Moving section %s to top" % section)
 				sections.remove(section)
 				sections.insert(0, section)
-		logger.debug2(u"Section sequence: %s" % sections)
+			logger.debug2(u"Section sequence: %s" % sections)
 		
+		self._lines = []
 		for section in sections:
 			section = forceUnicode(section)
 			if comments:
@@ -591,8 +611,13 @@ class IniFile(ConfigFile):
 			self._lines.append(u'[%s]' % section)
 			options = self._configParser.options(section)
 			options.sort()
+			for i in range(len(options)):
+				options[i] = forceUnicode(options[i])
+			if option in optionSequence.get(section, []):
+				if option in options:
+					options.remove(option)
+					options.insert(0, option)
 			for option in options:
-				option = forceUnicode(option)
 				if comments:
 					for l in comments.get(section, {}).get(option, []):
 						self._lines.append(forceUnicode(l))

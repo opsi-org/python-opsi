@@ -448,6 +448,8 @@ def objectToHtml(obj, level=0):
 			.replace(u'\r', u'')\
 			.replace(u'\t', u'   ')\
 			.replace(u'&',  u'&amp;')\
+			.replace(u'"',  u'&quot;')\
+			.replace(u"'",  u'&apos;')\
 			.replace(u' ',  u'&#x202f;')\
 			.replace(u'<',  u'&lt;')\
 			.replace(u'>',  u'&gt;')\
