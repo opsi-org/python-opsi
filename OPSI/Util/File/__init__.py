@@ -591,8 +591,8 @@ class IniFile(ConfigFile):
 					optionSequence[sectionSequence[-1]].append(option)
 		else:
 			sectionSequence = list(self._sectionSequence)
-			sectionSequence.reverse()
 		
+		sectionSequence.reverse()
 		sections = self._configParser.sections()
 		sections.sort()
 		for section in sectionSequence:
@@ -613,10 +613,13 @@ class IniFile(ConfigFile):
 			options.sort()
 			for i in range(len(options)):
 				options[i] = forceUnicode(options[i])
-			if option in optionSequence.get(section, []):
-				if option in options:
-					options.remove(option)
-					options.insert(0, option)
+			optseq = optionSequence.get(section, [])
+			if optseq:
+				optseq.reverse()
+				for option in optseq:
+					if option in options:
+						options.remove(option)
+						options.insert(0, option)
 			for option in options:
 				if comments:
 					for l in comments.get(section, {}).get(option, []):
