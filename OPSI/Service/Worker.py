@@ -178,10 +178,10 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 	</script>
 </head>
 <body onload="selectMethod(document.getElementById('method_select'))">
-	<span id="title">
+	<p id="title">
 		<img src="/opsi_logo.png" />
-		<span sytle="padding: 1px">%(title)s</span>
-	</span>
+		<span style="padding: 1px">%(title)s</span>
+	</p>
 	<form method="post" onsubmit="return onSubmit()">
 		<table class="box">
 			<tbody id="tbody">
