@@ -252,10 +252,10 @@ class Repository:
 								count += 1.0
 								#data.append(self._networkUsageData[i][1])
 						if (count > 0):
-							usage = usage/count
+							usage = float(usage)/float(count)
 							#usage = max(data)
 							logger.debug(u"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, usage: %0.5f, dynamic limit: %0.2f kByte/s" \
-									% ((totalNetworkUsage/1024), (self._networkBandwidth/1024), usage, bwlimit/1024))
+									% ((float(totalNetworkUsage)/1024), (float(self._networkBandwidth)/1024), usage, float(bwlimit)/1024))
 							if (index > 1):
 								self._networkUsageData = self._networkUsageData[index-1:]
 							if self._dynamicBandwidthLimit:
@@ -268,22 +268,22 @@ class Repository:
 								if (usage <= self._dynamicBandwidthThresholdLimit):
 									if (self._averageSpeed < 20000):
 										self._dynamicBandwidthLimit = bwlimit = 0.0
-										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (self._averageSpeed/1024))
+										logger.debug(u"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s" % (float(self._averageSpeed)/1024))
 									else:
 										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
 										if (self._dynamicBandwidthLimit < 10000):
 											self._dynamicBandwidthLimit = bwlimit = 10000
-											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % bwlimit/1024)
+											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % float(bwlimit)/1024)
 										else:
 											logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
-												% (self._dynamicBandwidthLimitRate*100, bwlimit/1024))
+												% (float(self._dynamicBandwidthLimitRate)*100, float(bwlimit)/1024))
 										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 									self._networkUsageData = []
 							
 			if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
 				bwlimit = float(self._maxBandwidth)
 			
-			speed = self._currentSpeed
+			speed = float(self._currentSpeed)
 			if (bwlimit > 0) and (speed > 0):
 				factor = 1.0
 				if (speed > bwlimit):
@@ -336,39 +336,43 @@ class Repository:
 		
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
 		logger.debug(u"Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s" % (transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth))
-		self._transferDirection = transferDirection
-		self._bytesTransfered = 0
-		transferStartTime = time.time()
-		buf = True
-		while buf and ( (bytes < 0) or (bytesTransfered < bytes) ):
-			buf = src.read(self._bufferSize)
-			read = len(buf)
-			if (read > 0):
-				if (bytes >= 0) and ((bytesTransfered + read) > bytes):
-					buf = buf[:bytes-bytesTransfered]
-					read = len(buf)
-				self._bytesTransfered += read
-				if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
-					dst.send(buf)
-				else:
-					dst.write(buf)
-				
-				if progressSubject:
-					progressSubject.addToState(read)
-				
-				self._calcSpeed(read)
-				if (self._dynamicBandwidth or self._maxBandwidth):
-					self._bandwidthLimit()
-				elif (self._currentSpeed > 1000000):
-					self._bufferSize = 262144
-				
-		transferTime = time.time() - transferStartTime
-		if (transferTime == 0):
-			transferTime = 0.0000001
-		logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
-			( (float(self._bytesTransfered)/1024), (float(transferTime)/60), (float(self._bytesTransfered)/transferTime)/1024) )
-		return self._bytesTransfered
-	
+		try:
+			self._transferDirection = transferDirection
+			self._bytesTransfered = 0
+			transferStartTime = time.time()
+			buf = True
+			while buf and ( (bytes < 0) or (bytesTransfered < bytes) ):
+				buf = src.read(self._bufferSize)
+				read = len(buf)
+				if (read > 0):
+					if (bytes >= 0) and ((bytesTransfered + read) > bytes):
+						buf = buf[:bytes-bytesTransfered]
+						read = len(buf)
+					self._bytesTransfered += read
+					if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
+						dst.send(buf)
+					else:
+						dst.write(buf)
+					
+					if progressSubject:
+						progressSubject.addToState(read)
+					
+					self._calcSpeed(read)
+					if (self._dynamicBandwidth or self._maxBandwidth):
+						self._bandwidthLimit()
+					elif (self._currentSpeed > 1000000):
+						self._bufferSize = 262144
+					
+			transferTime = time.time() - transferStartTime
+			if (transferTime == 0):
+				transferTime = 0.0000001
+			logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
+				( (float(self._bytesTransfered)/1024), (float(transferTime)/60), (float(self._bytesTransfered)/transferTime)/1024) )
+			return self._bytesTransfered
+		except Exception, e:
+			logger.logException(e, LOG_INFO)
+			raise
+		
 	def _preProcessPath(self, path):
 		return path
 	
