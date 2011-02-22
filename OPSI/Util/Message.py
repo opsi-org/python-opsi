@@ -576,7 +576,14 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		self._factory.setSubjects(subjects)
 		self._server = None
 		self._listening = False
-		
+		self._error = None
+	
+	def isListening(self):
+		return self._listening
+	
+	def errorOccurred(self):
+		return self._error
+	
 	def getFactory(self):
 		return self._factory
 	
@@ -611,6 +618,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 				reactor.run(installSignalHandlers=0)
 			self._listening = True
 		except Exception, e:
+			self._error = forceUnicode(e)
 			logger.logException(e)
 	
 	def _stopListeningCompleted(self, result):
