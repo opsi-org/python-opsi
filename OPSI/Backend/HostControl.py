@@ -135,7 +135,6 @@ class HostControlBackend(ExtendedBackend):
 		params  = forceList(params)
 		
 		result = {}
-		errors = []
 		rpcts = []
 		for host in self._context.host_getObjects(id = hostIds):
 			try:
@@ -144,6 +143,8 @@ class HostControlBackend(ExtendedBackend):
 					address = socket.gethostbyname(host.id)
 				if not address:
 					address = host.ipAddress
+				if not address:
+					address = socket.gethostbyname(host.id)
 				if not address:
 					raise Exception(u"Failed to get ip address for host '%s'" % host.id)
 				rpcts.append(
@@ -156,7 +157,7 @@ class HostControlBackend(ExtendedBackend):
 						method   = method,
 						params   = params))
 			except Exception, e:
-				errors.append(forceUnicode(e))
+				result[host.id] = {"result": None, "error": forceUnicode(e)}
 		
 		runningThreads = 0
 		while rpcts:
@@ -165,7 +166,6 @@ class HostControlBackend(ExtendedBackend):
 				if rpct.ended:
 					if rpct.error:
 						logger.error(u"Rpc to host %s failed, error: %s" % (rpct.hostId, rpct.error))
-						#errors.append(u"%s: %s" % (rpct.hostId, rpct.error))
 						result[rpct.hostId] = {"result": None, "error": rpct.error}
 					else:
 						logger.info(u"Rpc to host %s successful, result: %s" % (rpct.hostId, rpct.result))
@@ -181,7 +181,6 @@ class HostControlBackend(ExtendedBackend):
 					timeRunning = time.time() - rpct.started
 					if (timeRunning >= self._hostRpcTimeout):
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
-						#errors.append(u"%s: timed out after %0.2f seconds" % (rpct.hostId, timeRunning))
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
 						try:
 							rpct.terminate()
@@ -193,8 +192,6 @@ class HostControlBackend(ExtendedBackend):
 			rpcts = newRpcts
 			time.sleep(0.1)
 		
-		#if errors:
-		#	raise Exception(u', '.join(errors))
 		return result
 		
 	def hostControl_start(self, hostIds=[]):
