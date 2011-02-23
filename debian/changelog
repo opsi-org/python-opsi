@@ -1,3 +1,9 @@
+python-opsi (4.0.1-4) testing; urgency=low
+
+  * HostControl: support for directed broadcasts
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 23 Feb 2011 16:34:00 +0100
+
 python-opsi (4.0.1-3) testing; urgency=low
 
   * HostControl: resolve if ip address not known
