@@ -1,8 +1,8 @@
-python-opsi (4.0.1-1) testing; urgency=low
+python-opsi (4.0.1-2) testing; urgency=low
 
   * testing release
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 22 Feb 2011 16:16:07 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 23 Feb 2011 11:15:04 +0100
 
 python-opsi (4.0.0.99-2) testing; urgency=low
 
