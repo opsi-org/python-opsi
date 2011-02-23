@@ -575,7 +575,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			
 		if deflate:
 			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-			result.headers.setHeader('content-encoding', 'gzip')
+			result.headers.setHeader('content-encoding', ['gzip'])
 		else:
 			result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 		
