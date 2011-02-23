@@ -113,6 +113,7 @@ class HostControlBackend(ExtendedBackend):
 		self._hostRpcTimeout  = 15
 		self._resolveHostAddress = False
 		self._maxConnections = 20
+		self._broadcastAddresses = ["255.255.255.255"]
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -125,6 +126,8 @@ class HostControlBackend(ExtendedBackend):
 				self._resolveHostAddress = forceBool(value)
 			elif option in ('maxconnections',):
 				self._maxConnections = forceInt(value)
+			elif option in ('broadcastaddresses',):
+				self._broadcastAddresses = forceUnicodeList(value)
 			
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
@@ -215,12 +218,13 @@ class HostControlBackend(ExtendedBackend):
 						send_data,
 						struct.pack('B', int(data[i: i + 2], 16)) ])
 				
-				logger.debug(u"Sending data to network broadcast [%s]" % data)
-				# Broadcast it to the LAN.
-				sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-				sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-				sock.sendto(send_data, ('<broadcast>', 12287))
-				sock.close()
+				for broadcastAddress in self._broadcastAddresses:
+					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
+					# Broadcast it to the LAN.
+					sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+					sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+					sock.sendto(send_data, (broadcastAddress, 12287))
+					sock.close()
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception, e:
 				result[host.id] = {"result": None, "error": e}
