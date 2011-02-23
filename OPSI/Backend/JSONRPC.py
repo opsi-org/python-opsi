@@ -594,10 +594,11 @@ class JSONRPCBackend(Backend):
 		logger.debug2(u"Request to host '%s', baseUrl: %s, query '%s'" % (self._host, baseUrl, data))
 		
 		if self._deflate:
-			# FIXME: use correct encoding headers
 			logger.debug2(u"Compressing data")
 			headers['Accept'] += ', gzip-application/json-rpc'
 			headers['content-type'] = 'gzip-application/json-rpc'
+			headers['Accept-Encoding'] = 'gzip'
+			headers['Content-Encoding'] = 'gzip'
 			level = 1
 			data = zlib.compress(data, level)
 		else:
@@ -620,10 +621,11 @@ class JSONRPCBackend(Backend):
 				self._sessionId = sessionId
 		
 		contentType = response.getheader('content-type', '')
-		logger.debug(u"Content-Type: %s" % contentType)
+		contentEncoding = response.getheader('content-encoding', '')
+		logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
 		
 		response = response.data
-		if contentType.lower().startswith('gzip'):
+		if (contentEncoding.lower() == 'gzip') or contentType.lower().startswith('gzip'):
 			logger.debug(u"Expecting compressed data from server")
 			response = zlib.decompress(response)
 		logger.debug2(response)
