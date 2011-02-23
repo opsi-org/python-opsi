@@ -461,8 +461,9 @@ class WorkerOpsi:
 		try:
 			if (self.request.method == 'POST'):
 				contentType = self.request.headers.getHeader('content-type')
-				logger.debug(u"Content-Type: %s" % contentType)
-				if contentType and contentType.mediaType.startswith('gzip'):
+				contentEncoding = self.request.headers.getHeader('content-encoding')
+				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
+				if (contentEncoding and contentEncoding.lower() == "gzip") or (contentType and contentType.mediaType.startswith('gzip'))
 					logger.debug(u"Expecting compressed data from client")
 					self.query = zlib.decompress(self.query)
 					self.gzip = True
@@ -554,7 +555,12 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		
 		deflate = False
 		try:
-			if self.request.headers.getHeader('Accept'):
+			if self.request.headers.getHeader('Accept-Encoding'):
+				for accept in self.request.headers.getHeader('Accept-Encoding').keys():
+					if (accept == 'gzip'):
+						deflate = True
+						break
+			if not deflate and self.request.headers.getHeader('Accept'):
 				for accept in self.request.headers.getHeader('Accept').keys():
 					if accept.mediaType.startswith('gzip'):
 						deflate = True
@@ -564,6 +570,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		
 		if deflate:
 			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
+			result.headers.setHeader('content-encoding', 'gzip')
 		else:
 			result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 		
@@ -611,8 +618,9 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		def makeInstanceCall():
 			contentType = self.request.headers.getHeader('content-type')
-			
-			d = self._callInstance.processQuery(self.query, contentType and contentType.mediaType.startswith('gzip'))
+			contentEncoding = self.request.headers.getHeader('content-encoding')
+			d = self._callInstance.processQuery(self.query,
+				(contentEncoding.lower() and contentEncoding == "gzip") or (contentType and contentType.mediaType.startswith('gzip')))
 			d.addCallback(processResult)
 			return d
 		
