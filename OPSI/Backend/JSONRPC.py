@@ -621,11 +621,11 @@ class JSONRPCBackend(Backend):
 				self._sessionId = sessionId
 		
 		contentType = response.getheader('content-type', '')
-		contentEncoding = response.getheader('content-encoding', '')
+		contentEncoding = response.getheader('content-encoding', '').lower()
 		logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
 		
 		response = response.data
-		if (contentEncoding.lower() == 'gzip') or contentType.lower().startswith('gzip'):
+		if (contentEncoding == 'gzip') or contentType.lower().startswith('gzip'):
 			logger.debug(u"Expecting compressed data from server")
 			response = zlib.decompress(response)
 		logger.debug2(response)

@@ -461,9 +461,13 @@ class WorkerOpsi:
 		try:
 			if (self.request.method == 'POST'):
 				contentType = self.request.headers.getHeader('content-type')
-				contentEncoding = self.request.headers.getHeader('content-encoding')
+				contentEncoding = None
+				try:
+					contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
+				except:
+					pass
 				logger.debug(u"Content-Type: %s, Content-Encoding: %s" % (contentType, contentEncoding))
-				if (contentEncoding and "gzip" in contentEncoding) or (contentType and contentType.mediaType.startswith('gzip')):
+				if (contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip')):
 					logger.debug(u"Expecting compressed data from client")
 					self.query = zlib.decompress(self.query)
 					self.gzip = True
@@ -555,19 +559,20 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		
 		deflate = False
 		try:
-			if self.request.headers.getHeader('Accept-Encoding'):
-				for accept in self.request.headers.getHeader('Accept-Encoding').keys():
-					if (accept == 'gzip'):
-						deflate = True
-						break
-			if not deflate and self.request.headers.getHeader('Accept'):
-				for accept in self.request.headers.getHeader('Accept').keys():
-					if accept.mediaType.startswith('gzip'):
-						deflate = True
-						break
+			if ('gzip' in self.request.headers.getHeader('Accept-Encoding')):
+				deflate = True
 		except Exception, e:
-			logger.error(u"Failed to get accepted mime types from header: %s" % e)
-		
+			pass
+		if not deflate:
+			try:
+				if self.request.headers.getHeader('Accept'):
+					for accept in self.request.headers.getHeader('Accept').keys():
+						if accept.mediaType.startswith('gzip'):
+							deflate = True
+							break
+			except Exception, e:
+				logger.error(u"Failed to get accepted mime types from header: %s" % e)
+			
 		if deflate:
 			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
 			result.headers.setHeader('content-encoding', 'gzip')
@@ -618,9 +623,13 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		def makeInstanceCall():
 			contentType = self.request.headers.getHeader('content-type')
-			contentEncoding = self.request.headers.getHeader('content-encoding')
+			contentEncoding = None
+			try:
+				contentEncoding = self.request.headers.getHeader('content-encoding')[0].lower()
+			except:
+				pass
 			d = self._callInstance.processQuery(self.query,
-				(contentEncoding.lower() and contentEncoding == "gzip") or (contentType and contentType.mediaType.startswith('gzip')))
+				(contentEncoding == 'gzip') or (contentType and contentType.mediaType.startswith('gzip')))
 			d.addCallback(processResult)
 			return d
 		
