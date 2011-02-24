@@ -573,7 +573,7 @@ class FileBackend(ConfigDataBackend):
 				if objType in ('HostGroup', 'ProductGroup'):
 					passes = [ {'filename': self._getConfigFile(objType, {}, 'ini'), 'groupType': objType} ]
 				elif filter.get('type'):
-					passes = [ {'filename': self._getConfigFile(objType, {'type': filter['type']}, 'ini'), 'groupType': filter['groupType']} ]
+					passes = [ {'filename': self._getConfigFile(objType, {'type': filter['type']}, 'ini'), 'groupType': filter['type']} ]
 				else:
 					passes = [
 						{'filename': self._getConfigFile(objType, {'type': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
