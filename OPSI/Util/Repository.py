@@ -273,7 +273,7 @@ class Repository:
 										self._dynamicBandwidthLimit = bwlimit = self._averageSpeed*self._dynamicBandwidthLimitRate
 										if (self._dynamicBandwidthLimit < 10000):
 											self._dynamicBandwidthLimit = bwlimit = 10000
-											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % float(bwlimit)/1024)
+											logger.info(u"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s" % (float(bwlimit)/1024))
 										else:
 											logger.info(u"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s" \
 												% (float(self._dynamicBandwidthLimitRate)*100, float(bwlimit)/1024))
