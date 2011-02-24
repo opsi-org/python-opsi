@@ -43,15 +43,12 @@ from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Util import fromJson, toJson, KillableThread
-from OPSI.Util.HTTP import non_blocking_connect_https
+from OPSI.Util.HTTP import non_blocking_connect_https, HTTPSConnection
 
 # Get logger instance
 logger = Logger()
 
 
-# ======================================================================================================
-# =                                      CLASS RPCTHREAD                                               =
-# ======================================================================================================
 class RpcThread(KillableThread):
 	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[]):
 		KillableThread.__init__(self)
@@ -99,9 +96,33 @@ class RpcThread(KillableThread):
 			self.error = forceUnicode(e)
 		self.ended = time.time()
 
-# ======================================================================================================
-# =                                  CLASS HOSTCONTROLBACKEND                                          =
-# ======================================================================================================
+class ConnectionThread(KillableThread):
+	def __init__(self, hostControlBackend, hostId, address):
+		KillableThread.__init__(self)
+		self.hostControlBackend = hostControlBackend
+		self.hostId   = forceHostId(hostId)
+		self.address  = forceIpAddress(address)
+		self.result   = False
+		self.started  = 0
+		self.ended    = 0
+	
+	def run(self):
+		try:
+			self.started = time.time()
+			logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
+			conn = HTTPSConnection(host = self.address, port = self.hostControlBackend._opsiclientdPort)
+			non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
+			if conn:
+				self.result = True
+				try:
+					conn.sock.close()
+					conn.close()
+				except:
+					pass
+		except Exception, e:
+			logger.debug(e)
+		self.ended = time.time()
+
 class HostControlBackend(ExtendedBackend):
 	
 	def __init__(self, backend, **kwargs):
@@ -109,11 +130,12 @@ class HostControlBackend(ExtendedBackend):
 		
 		ExtendedBackend.__init__(self, backend)
 		
-		self._opsiclientdPort = 4441
-		self._hostRpcTimeout  = 15
-		self._resolveHostAddress = False
-		self._maxConnections = 20
-		self._broadcastAddresses = ["255.255.255.255"]
+		self._opsiclientdPort      = 4441
+		self._hostRpcTimeout       = 15
+		self._hostReachableTimeout = 3
+		self._resolveHostAddress   = False
+		self._maxConnections       = 50
+		self._broadcastAddresses   = ["255.255.255.255"]
 		
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -131,7 +153,19 @@ class HostControlBackend(ExtendedBackend):
 			
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
-		
+	
+	def _getHostAddress(self, host):
+		address = None
+		if self._resolveHostAddress:
+			address = socket.gethostbyname(host.id)
+		if not address:
+			address = host.ipAddress
+		if not address:
+			address = socket.gethostbyname(host.id)
+		if not address:
+			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
+		return address
+	
 	def _opsiclientdRpc(self, hostIds, method, params=[]):
 		hostIds = forceHostIdList(hostIds)
 		method  = forceUnicode(method)
@@ -141,15 +175,7 @@ class HostControlBackend(ExtendedBackend):
 		rpcts = []
 		for host in self._context.host_getObjects(id = hostIds):
 			try:
-				address = None
-				if self._resolveHostAddress:
-					address = socket.gethostbyname(host.id)
-				if not address:
-					address = host.ipAddress
-				if not address:
-					address = socket.gethostbyname(host.id)
-				if not address:
-					raise Exception(u"Failed to get ip address for host '%s'" % host.id)
+				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(
 						hostControlBackend = self,
@@ -242,7 +268,7 @@ class HostControlBackend(ExtendedBackend):
 		event = forceUnicode(event)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
-		
+	
 	def hostControl_showPopup(self, message, hostIds=[]):
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
@@ -251,6 +277,33 @@ class HostControlBackend(ExtendedBackend):
 	def hostControl_uptime(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
+	
+	def hostControl_reachable(self, hostIds=[]):
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		result = {}
+		threads = []
+		for host in self._context.host_getObjects(id = hostIds):
+			try:
+				address = self._getHostAddress(host)
+				thread = ConnectionThread(
+						hostControlBackend = self,
+						hostId             = host.id,
+						address            = address)
+				thread.start()
+				threads.append(thread)
+			except Exception, e:
+				result[host.id] = False
+		
+		while threads:
+			newThreads = []
+			for thread in threads:
+				if thread.ended:
+					result[thread.hostId] = thread.result
+					continue
+				newThreads.append(thread)
+			threads = newThreads
+			time.sleep(0.1)
+		return result
 	
 	
 	
