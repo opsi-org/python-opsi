@@ -738,7 +738,8 @@ class FileBackend(ConfigDataBackend):
 					break
 			
 			if not match:
-				raise BackendBadValueError(u"Object type '%s' does not match filter %s" % (objType, filter))
+				logger.debug(u"Object type '%s' does not match filter %s" % (objType, filter))
+				return []
 		
 		if not self._mappings.has_key(objType):
 			raise Exception(u"Mapping not found for object type '%s'" % objType)
