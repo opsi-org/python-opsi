@@ -75,11 +75,11 @@ class OpsiBackendService(Service):
 		
 		self._backendManager = None
 		self._socket = None
-		self._lastPingReceived = time.time()
+		self._lastContact = time.time()
 		self._check = LoopingCall(self.checkConnected)
 	
 	def checkConnected(self):
-		if ((time.time() - self._lastPingReceived) > 30):
+		if ((time.time() - self._lastContact) > 30):
 			reactor.stop()
 	
 	def setLogging(self, console=LOG_WARNING, file=LOG_WARNING):
@@ -161,6 +161,7 @@ class OpsiBackendService(Service):
 			os.unlink(self._socket)
 	
 	def processQuery(self, query, gzip=False):
+		self.isRunning()
 		decoder = JsonRpcRequestProcessor(query, self._backendManager, gzip=gzip)
 		decoder.decodeQuery()
 		decoder.buildRpcs()
@@ -169,7 +170,7 @@ class OpsiBackendService(Service):
 		return d
 	
 	def isRunning(self):
-		self._lastPingReceived = time.time()
+		self._lastContact = time.time()
 		return True
 	
 	def __getattr__(self, name):
@@ -243,6 +244,7 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		return result
 	
 	def backend_exit(self):
+		
 		d = self.callRemote("backend_exit")
 		d.addCallback(lambda x: self.stop())
 		return d
