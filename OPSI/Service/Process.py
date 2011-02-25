@@ -8,7 +8,7 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.python import reflect
 from twisted.internet.task import LoopingCall
 
-from OPSI.Util.amp import OpsiProcessProtocolFactory, OpsiProcessConnector
+from OPSI.Util.AMP import OpsiProcessProtocolFactory, OpsiProcessConnector
 
 from OPSI.Logger import *
 logger = Logger()
@@ -137,8 +137,7 @@ class OpsiDaemon(object):
 
 	def isRunning(self):
 		# FIXME: why is this called out of loop?
-		pass
-		#return self.callRemote("isRunning")
+		return self.callRemote("isRunning")
 
 	def sendSignal(self, sig):
 		def _sendSignal(s):

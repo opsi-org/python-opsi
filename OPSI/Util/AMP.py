@@ -35,14 +35,15 @@ from twisted.internet.task import deferLater
 from twisted.internet.protocol import ReconnectingClientFactory, ClientCreator
 from twisted.internet.defer import DeferredList, maybeDeferred, Deferred, succeed
 from twisted.internet.unix import Connector
+from twisted.internet.address import UNIXAddress
 from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP, MAX_VALUE_LENGTH
 from twisted.python.failure import Failure
 
-
-import base64, hashlib
+import base64, hashlib, os
 from pickle import dumps, loads, HIGHEST_PROTOCOL
 from types import StringType, StringTypes
 from OPSI.Logger import *
+from OPSI.Util import randomString
 logger = Logger()
 
 try:
@@ -117,7 +118,23 @@ class ResponseBufferPush(Command):
 			OpsiProcessException: 'OpsiProcessError'}
 	
 	requiresAnswer = True
+
+class OpsiProcessAddress(UNIXAddress):
 	
+	def __init__(self, name):
+		assert name.endswith(".socket")
+		UNIXAddress.__init__(self, name)
+		self.dir, name = self.name.rsplit("/", 1)
+		self._name = name.rsplit(".", 1)[0]
+		
+	@property
+	def name(self):
+		return os.path.join(self.dir, self._name+".socket")
+	
+	def generateUniqueName(self):
+		return os.path.join(self.dir, "%s-%s.socket" %(self._name, randomString(32)))
+
+
 class OpsiQueryingProtocol(AMP):
 	
 	def __init__(self):
@@ -335,7 +352,9 @@ class RemoteDaemonProxy(object):
 	def __init__(self, protocol):
 		
 		self._protocol = protocol
-	
+		
+		self._dataport = None
+		
 	def __getattr__(self, method):
 		
 		def callRemote(*args, **kwargs):
@@ -344,7 +363,7 @@ class RemoteDaemonProxy(object):
 			def processResponse(response):
 				r = response["result"]
 				if r == USE_BUFFERED_RESPONSE:
-					buffer = self._protocol.getResponseBuffer(response["tag"])
+					buffer = self._dataport.getResponseBuffer(response["tag"])
 					
 					if buffer is None:
 						raise Exception("Expected a buffered response but no response buffer was found for tag %s" % r["tag"])
@@ -381,6 +400,9 @@ class RemoteDaemonProxy(object):
 			return result
 		return callRemote
 	
+	def attacheDataPort(self, dataport):
+		self.dataport = dataport
+		
 class OpsiProcessConnector(object):
 	
 	factory = OpsiProcessProtocolFactory
@@ -400,9 +422,10 @@ class OpsiProcessConnector(object):
 		def success(result):
 			self._factory.removeNotifier(success, failure)
 			self._protocol = result
-			self._protocol.openDataSink(self._socket)
+			#self._protocol.openDataSink(self._socket)
 			self._remote = self.remote(self._protocol)
-			self._connected.callback(self._remote)
+			d, self._connected = self._connected, None
+			d.callback(self._remote)
 		
 		def failure(fail):
 			self._factory.removeNotifier(success, failure)

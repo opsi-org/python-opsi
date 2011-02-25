@@ -45,7 +45,7 @@ from twisted.python.failure import Failure
 from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
 from OPSI.Util.Configuration import BaseConfiguration
-from OPSI.Util.amp import OpsiProcessProtocolFactory, RemoteDaemonProxy, OpsiProcessConnector, USE_BUFFERED_RESPONSE
+from OPSI.Util.AMP import OpsiProcessProtocolFactory, RemoteDaemonProxy, OpsiProcessConnector, USE_BUFFERED_RESPONSE
 from OPSI.Service.JsonRpc import JsonRpcRequestProcessor
 from OPSI.Logger import *
 logger = Logger()
@@ -107,6 +107,12 @@ class OpsiBackendService(Service):
 		
 		self.user = user
 		self.password = password
+		self.dispatchConfigFile = dispatchConfigFile
+		self.backendConfigDir = backendConfigDir
+		self.extensionConfigDir = extensionConfigDir
+		self.aclFile = aclFile
+		self.depotId = depotId
+		self.postpath = postpath
 		
 		self._backend = BackendManager(
 			dispatchConfigFile = dispatchConfigFile,
@@ -171,21 +177,43 @@ class OpsiBackendService(Service):
 	
 	def isRunning(self):
 		self._lastContact = time.time()
+		if self._check.running:
+			self._check._reschedule()
 		return True
 	
 	def __getattr__(self, name):
 		if self._backendManager is not None:
 			return getattr(self._backendManager, name, None)
+
+class OpsiBackendProcessConnector(OpsiProcessConnector):
 	
+	def __init__(self, socket, timeout=None, reactor=reactor):
+		OpsiProcessConnector.__init__(self, socket=socket, timeout=timeout, reactor=reactor)
+		self._dataport = None
 	
+	def connect(self):
+		def connected(remote):
+			remote.attacheDataPort(self._dataport)
+			return remote
+		
+		d = OpsiProcessConnector.connect(self)
+		d.addCallback(connected)
+		return d
+	
+	def assignDataPort(self, dataport):
+		self._dataport = dataport
+
 class OpsiBackendProcess(OpsiPyDaemon):
 	
 	user = "opsiconfd"
 	serviceClass = OpsiBackendService
 	configurationClass = BackendProcessConfiguration
+	connector = OpsiBackendProcessConnector
 	allowRestart = False
 	
 	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
+		
+		self._socket = socket
 		
 		args.extend(["--socket", socket, "--logFile", logFile])
 		OpsiPyDaemon.__init__(self, socket = socket, args = args, reactor = reactor)
@@ -197,16 +225,20 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		
 		d = defer.Deferred()
 		d.addCallback(lambda x: self.check.start(5, False))
-		
+		d.addCallback(self.openDataport)
 		logger.info(u"Starting new backend worker process")
 		OpsiPyDaemon.start(self)
 		
 		
 		delay = int(os.getloadavg()[0])+2
 		self._reactor.callLater(delay, d.callback, None)
-
+		
 		return d
-	
+
+	def openDataport(self):
+		self._dataport = self._reactor.listenUNIX("%s.dataport" % self._socket, OpsiProcessProtocolFactory())
+		self._connector.assignDataPort(self._dataport)
+
 	def checkRunning(self):
 		d = self.isRunning()
 		d.addCallback(self.restart)

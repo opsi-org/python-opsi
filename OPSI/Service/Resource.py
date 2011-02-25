@@ -35,12 +35,15 @@
 from twisted.internet import defer
 from OPSI.web2 import resource, server
 import OPSI.web2.dav.static
+
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface, WorkerOpsiDAV
 
 from OPSI.Logger import *
 
 logger = Logger()
 
+
+		
 class ResourceOpsi(resource.Resource):
 	WorkerClass = WorkerOpsi
 	isLeaf = True
@@ -121,7 +124,4 @@ class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
 		if isinstance(deferred, defer.Deferred):
 			deferred.addErrback(worker._errback)
 		return deferred
-	
-
-
 
