@@ -391,7 +391,14 @@ class File(StaticRenderMixin):
                     standin = self.createSimilarFile(ifp.path)
                 else:
                     # Render from a DirectoryLister
-                    standin = self.directoryListing()
+                    #standin = self.directoryListing()
+                    standin = dirlist.DirectoryLister(
+                        self.fp.path,
+                        self.listChildren(),
+                        self.contentTypes,
+                        self.contentEncodings,
+                        self.defaultType
+                    )
                 return standin.render(req)
 
         try:
