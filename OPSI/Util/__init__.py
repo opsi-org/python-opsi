@@ -581,8 +581,16 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	f = open(filename, 'r')
 	try:
 		cert = M2Crypto.X509.load_cert_string(f.read())
-		rsa = m2cert.get_pubkey().get_rsa()
-		return rsa.public_encrypt(data = data, padding = M2Crypto.RSA.pkcs1_oaep_padding)
+		rsa = cert.get_pubkey().get_rsa()
+		enc = ''
+		chunks = []
+		while (len(data) > 16):
+			chunks.append(data[:16])
+			data = data[16:]
+		chunks.append(data)
+		for chunk in chunks:
+			enc += rsa.public_encrypt(data = chunk, padding = M2Crypto.RSA.pkcs1_oaep_padding)
+		return enc
 	finally:
 		f.close()
 	

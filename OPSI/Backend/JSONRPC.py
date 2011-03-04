@@ -617,11 +617,13 @@ class JSONRPCBackend(Backend):
 		randomKey = None
 		if self._protocol.lower().endswith('s') and self._verifyServerCert and not self._serverVerified:
 			try:
-				randomKey = randomString(32)
+				logger.info(u"Encoding authorization")
+				randomKey = randomString(32).encode('latin-1')
 				encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(auth + randomKey, self._serverCertFile)
 			except Exception, e:
-				logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self._verifyServerCert, e))
-		
+				logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self._serverCertFile, e))
+				randomKey = None
+			
 		if encodedAuth:
 			headers['Authorization'] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
 		else:
@@ -633,13 +635,14 @@ class JSONRPCBackend(Backend):
 		
 		if randomKey:
 			try:
-				key = response.getheader('opsi-service-verification-key', None)
+				key = response.getheader('X-opsi-service-verification-key', None)
 				if not key:
-					raise Exception(u"HTTP header 'opsi-service-verification-key' missing")
+					raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
 				if (key.strip() != randomKey.strip()):
 					raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 				self._serverVerified = True
 			except Exception, e:
+				logger.error(u"Server verification failed: %s" % e)
 				self._connectionPool.free()
 				self._connectionPool = None
 				raise Exception(u"Server verification failed: %s" % e)
@@ -682,16 +685,17 @@ if (__name__ == '__main__'):
 	import threading
 	
 	#logger.setConsoleLevel(LOG_ERROR)
-	logger.setConsoleLevel(LOG_DEBUG2)
-	#logger.setConsoleLevel(LOG_INFO)
+	#logger.setConsoleLevel(LOG_DEBUG2)
+	logger.setConsoleLevel(LOG_INFO)
 	logger.setConsoleColor(True)
 	
 	
-	be = JSONRPCBackend(address = '192.168.105.1', username = 'exp-40-wks-001.uib.local', password = '352360038fb824baf836a6b448845745')
-	print be.backend_info()
-	print be.backend_info()
-	print be.backend_info()
-	#be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c')
+	#be = JSONRPCBackend(address = '192.168.105.1', username = 'exp-40-wks-001.uib.local', password = '352360038fb824baf836a6b448845745')
+	#print be.backend_info()
+	#print be.backend_info()
+	#print be.backend_info()
+	be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c', serverCertFile = '/tmp/server-cert.pem', verifyServerCert = True)
+	
 	#be = JSONRPCBackend(address = '192.168.1.14', username = 'someone', password = '123')
 	#print be.authenticated()
 	#
