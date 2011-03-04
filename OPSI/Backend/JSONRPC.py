@@ -49,7 +49,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from Backend import *
 from OPSI import Object
-from OPSI.Util import serialize, deserialize
+from OPSI.Util import serialize, deserialize, encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 
 # Get logger instance
@@ -255,6 +255,9 @@ class JSONRPCBackend(Backend):
 		self._rpcQueue            = None
 		self._rpcQueuePollingTime = 0.01
 		self._rpcQueueSize        = 10
+		self._serverCertFile      = None
+		self._verifyServerCert    = False
+		self._serverVerified      = False
 		
 		if not self._username:
 			self._username = u''
@@ -286,7 +289,10 @@ class JSONRPCBackend(Backend):
 				self._rpcQueuePollingTime = forceFloat(value)
 			if option in ('rpcqueuesize',):
 				self._rpcQueueSize = forceInt(value)
-		
+			if option in ('servercertfile',):
+				self._serverCertFile = forceFilename(value)
+			if option in ('verifyservercert',):
+				self._verifyServerCert = bool(value)
 		if not retry:
 			self._retryTime = 0
 		
@@ -606,12 +612,46 @@ class JSONRPCBackend(Backend):
 		
 		headers['content-length'] = len(data)
 		
-		headers['Authorization'] = 'Basic '+ base64.encodestring((self._username + u':' + self._password).encode('latin-1')).strip()
+		auth = (self._username + u':' + self._password).encode('latin-1')
+		encodedAuth = None
+		randomKey = None
+		if self._protocol.lower().endswith('s') and self._verifyServerCert and not self._serverVerified:
+			try:
+				randomKey = randomString(32)
+				encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(auth + randomKey, self._serverCertFile)
+			except Exception, e:
+				logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self._verifyServerCert, e))
+		
+		if encodedAuth:
+			headers['Authorization'] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
+		else:
+			headers['Authorization'] = 'Basic ' + base64.encodestring(auth).strip()
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
 		
 		response = self._connectionPool.urlopen(method = 'POST', url = baseUrl, body = data, headers = headers, retry = retry)
 		
+		if randomKey:
+			try:
+				key = response.getheader('opsi-service-verification-key', None)
+				if not key:
+					raise Exception(u"HTTP header 'opsi-service-verification-key' missing")
+				if (key.strip() != randomKey.strip()):
+					raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
+				self._serverVerified = True
+			except Exception, e:
+				self._connectionPool.free()
+				self._connectionPool = None
+				raise Exception(u"Server verification failed: %s" % e)
+		
+		if self._serverCertFile and not os.path.exists(self._serverCertFile) and self._connectionPool.peerCertificate:
+			try:
+				f = open(self._serverCertFile, 'w')
+				f.write(self._connectionPool.peerCertificate)
+				f.close()
+			except Exception, e:
+				logger.error(u"Failed to create server cert file '%s': %s" % (self._serverCertFile, e))
+			
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
 		if cookie:

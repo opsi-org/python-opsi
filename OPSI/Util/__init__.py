@@ -59,6 +59,7 @@ if (os.name == 'nt'):
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
+from OPSI.Util.HTTP import non_blocking_connect_http, non_blocking_connect_https
 
 # Get logger instance
 logger = Logger()
@@ -96,7 +97,6 @@ class KillableThread(threading.Thread):
 		# due to a bug in PyThreadState_SetAsyncExc
 		self.raise_exc(SystemExit)
 
-
 class PickleString(str):
 	
 	def __getstate__(self):
@@ -104,62 +104,6 @@ class PickleString(str):
 	
 	def __setstate__(self, state):
 		self = base64.standard_b64decode(state)
-
-#def non_blocking_connect_http_OLD(self, connectTimeout=0):
-#	''' Non blocking connect, needed for KillableThread '''
-#	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#	sock.setblocking(0)
-#	started = time.time()
-#	while True:
-#		try:
-#			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
-#				raise socket.timeout(u"Timed out after %d seconds" % connectTimeout)
-#			sock.connect((self.host, self.port))
-#		except socket.error, e:
-#			if e[0] in (106, 10056):
-#				# Transport endpoint is already connected
-#				break
-#			if e[0] not in (111, 114, 115, 10022, 10035):
-#				# 111   = posix: Connection refused
-#				# 10022 = nt: Invalid argument
-#				if sock:
-#					sock.close()
-#				raise
-#			time.sleep(0.5)
-#	sock.setblocking(1)
-#	self.sock = sock
-
-def non_blocking_connect_http(self, connectTimeout=0):
-	''' Non blocking connect, needed for KillableThread '''
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.settimeout(3.0)
-	started = time.time()
-	lastError = None
-	while True:
-		try:
-			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
-				raise Exception(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(lastError)))
-			sock.connect((self.host, self.port))
-			break
-		except socket.error, e:
-			logger.debug(e)
-			if e[0] in (106, 10056):
-				# Transport endpoint is already connected
-				break
-			if e[0] not in (114, ) or not lastError:
-				lastError = e
-			time.sleep(0.5)
-	sock.settimeout(None)
-	self.sock = sock
-	
-def non_blocking_connect_https(self, connectTimeout=0):
-	non_blocking_connect_http(self, connectTimeout)
-	if (version_info >= (2,6)):
-		import ssl
-		self.sock = ssl.wrap_socket(self.sock, self.key_file, self.cert_file)
-	else:
-		ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
-		self.sock = httplib.FakeSocket(self.sock, ssl)
 
 
 def deserialize(obj, preventObjectCreation=False):
@@ -610,7 +554,7 @@ def blowfishEncrypt(key, cleartext):
 	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
 	crypt = blowfish.encrypt(cleartext)
 	return unicode(crypt.encode("hex"))
-	
+
 def blowfishDecrypt(key, crypt):
 	''' Takes hex-encoded, blowfish-encrypted string, 
 	    returns cleartext string '''
@@ -631,6 +575,16 @@ def blowfishDecrypt(key, crypt):
 	except Exception, e:
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
+
+def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
+	import M2Crypto
+	f = open(filename, 'r')
+	try:
+		cert = M2Crypto.X509.load_cert_string(f.read())
+		rsa = m2cert.get_pubkey().get_rsa()
+		return rsa.public_encrypt(data = data, padding = M2Crypto.RSA.pkcs1_oaep_padding)
+	finally:
+		f.close()
 	
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)

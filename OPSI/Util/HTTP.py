@@ -45,11 +45,9 @@ import socket, time
 from sys import version_info
 if (version_info >= (2,6)):
 	import ssl as ssl_module
-#try:
-#	#import pycurl
-#except:
-#	pycurl = None
-	
+
+from OpenSSL import crypto
+
 # OPSI imports
 from OPSI.Types import *
 from OPSI.Logger import *
@@ -91,6 +89,14 @@ def non_blocking_connect_https(self, connectTimeout=0):
 		ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
 		self.sock = FakeSocket(self.sock, ssl)
 
+def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM = True):
+	sock = httpsConnectionOrSSLSocket
+	if hasattr(sock, 'sock'):
+		sock = sock.sock
+	cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form = True))
+	if not asPEM:
+		return cert
+	return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
 class HTTPError(Exception):
 	"Base exception used by this module."
@@ -188,6 +194,7 @@ class HTTPConnectionPool(object):
 		self.num_connections   = 0
 		self.num_requests      = 0
 		self.httplibDebugLevel = 0
+		self.peerCertificate   = None
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):
@@ -426,8 +433,10 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		non_blocking_connect_https(conn, self.connectTimeout)
 		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
+		if not self.peerCertificate:
+			self.peerCertificate = getPeerCertificate(conn, asPEM = True)
 		return conn
-
+	
 class CurlHTTPConnectionPool(HTTPConnectionPool):
 	
 	scheme = 'http'
