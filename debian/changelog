@@ -1,3 +1,9 @@
+python-opsi (4.0.1-8) testing; urgency=low
+
+  * Add dependency to m2crypto
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 08 Mar 2011 22:25:46 +0100
+
 python-opsi (4.0.1-7) testing; urgency=low
 
   * Fix group type filter in file backend

@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.4 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
+Requires:       python >= 2.4 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity python-ldaptor python-m2crypto lshw
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
@@ -135,6 +135,7 @@ chmod 660 /etc/opsi/passwd
 # configfiles
 %config(noreplace) /etc/opsi/backends/dhcpd.conf
 %config(noreplace) /etc/opsi/backends/file.conf
+%config(noreplace) /etc/opsi/backends/hostcontrol.conf
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
 %config(noreplace) /etc/opsi/backends/ldap.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
