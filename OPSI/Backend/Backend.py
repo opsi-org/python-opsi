@@ -56,7 +56,7 @@ if (os.name == 'posix'):
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
-from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt, PickleString
+from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 

@@ -619,7 +619,7 @@ class JSONRPCBackend(Backend):
 			try:
 				logger.info(u"Encoding authorization")
 				randomKey = randomString(32).encode('latin-1')
-				encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(auth, self._serverCertFile)
+				encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self._serverCertFile)
 				headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
 				encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(auth, self._serverCertFile)
 			except Exception, e:
@@ -637,12 +637,13 @@ class JSONRPCBackend(Backend):
 		
 		if randomKey:
 			try:
-				key = response.getheader('X-opsi-service-verification-key', None)
+				key = response.getheader('x-opsi-service-verification-key', None)
 				if not key:
 					raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
 				if (key.strip() != randomKey.strip()):
 					raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 				self._serverVerified = True
+				logger.error(u"Server verified by opsi-service-verification-key")
 			except Exception, e:
 				logger.error(u"Server verification failed: %s" % e)
 				self._connectionPool.free()
