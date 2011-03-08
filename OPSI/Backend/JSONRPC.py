@@ -619,7 +619,9 @@ class JSONRPCBackend(Backend):
 			try:
 				logger.info(u"Encoding authorization")
 				randomKey = randomString(32).encode('latin-1')
-				encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(auth + randomKey, self._serverCertFile)
+				encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(auth, self._serverCertFile)
+				headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
+				encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(auth, self._serverCertFile)
 			except Exception, e:
 				logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self._serverCertFile, e))
 				randomKey = None

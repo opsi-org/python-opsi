@@ -593,7 +593,20 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 		return enc
 	finally:
 		f.close()
-	
+
+def decryptWithPrivateKeyFromPEMFile(data, filename):
+	import M2Crypto
+	privateKey = M2Crypto.RSA.load_key(filename)
+	chunks = []
+	while (len(data) > 128):
+		chunks.append(data[:128])
+		data = data[128:]
+	chunks.append(data)
+	res = ''
+	for chunk in chunks:
+		res += privateKey.private_decrypt(data = chunk, padding = M2Crypto.RSA.pkcs1_oaep_padding)
+	return res
+
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
