@@ -698,6 +698,9 @@ class OpsiError(Exception):
 class OpsiAuthenticationError(OpsiError):
 	ExceptionShortDescription = u"Opsi authentication error"
 
+class OpsiServiceVerificationError(OpsiError):
+	ExceptionShortDescription = u"Opsi service verification error"
+
 class OpsiBadRpcError(OpsiError):
 	ExceptionShortDescription = u"Opsi bad rpc error"
 

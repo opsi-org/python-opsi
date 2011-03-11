@@ -394,7 +394,7 @@ class JSONRPCBackend(Backend):
 								break
 					except Exception, e:
 						logger.info(e)
-			except (OpsiAuthenticationError, OpsiTimeoutError):
+			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError):
 				raise
 			except Exception, e:
 				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
@@ -643,12 +643,10 @@ class JSONRPCBackend(Backend):
 				if (key.strip() != randomKey.strip()):
 					raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 				self._serverVerified = True
-				logger.error(u"Server verified by opsi-service-verification-key")
+				logger.error(u"Service verified by opsi-service-verification-key")
 			except Exception, e:
-				logger.error(u"Server verification failed: %s" % e)
-				self._connectionPool.free()
-				self._connectionPool = None
-				raise Exception(u"Server verification failed: %s" % e)
+				logger.error(u"Service verification failed: %s" % e)
+				raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
 		
 		if self._serverCertFile and not os.path.exists(self._serverCertFile) and self._connectionPool.peerCertificate:
 			try:
