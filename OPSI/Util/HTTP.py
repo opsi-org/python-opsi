@@ -280,10 +280,10 @@ class HTTPConnectionPool(object):
 	def is_same_host(self, url):
 		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
 	
-	def getConnection(self):
-		conn = self._get_conn()
-		conn.sock.settimeout(self.socketTimeout)
-		return conn
+	#def getConnection(self):
+	#	conn = self._get_conn()
+	#	conn.sock.settimeout(self.socketTimeout)
+	#	return conn
 	
 	def getConnection(self):
 		return self._get_conn()
