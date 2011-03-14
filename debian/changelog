@@ -1,4 +1,4 @@
-python-opsi (4.0.1-9) testing; urgency=low
+python-opsi (4.0.1-10) testing; urgency=low
 
   * Add OPSI.Util.Ping
 
