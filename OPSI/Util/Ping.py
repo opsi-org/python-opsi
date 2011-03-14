@@ -122,16 +122,24 @@ def receive_one_ping(my_socket, ID, timeout):
     """
     timeLeft = timeout
     while True:
-        startedSelect = time.time()
+        startedSelect = None
         if (os.name == 'nt'):
             startedSelect = time.clock()
+        else:
+            startedSelect = time.time()
         whatReady = select.select([my_socket], [], [], timeLeft)
-        howLongInSelect = (time.time() - startedSelect)
+        howLongInSelect = None
+        if (os.name == 'nt'):
+            howLongInSelect = (time.clock() - startedSelect)
+        else:
+            howLongInSelect = (time.time() - startedSelect)
         if whatReady[0] == []: # Timeout
             return
  
-        timeReceived = time.time()
+        timeReceived = None
         if (os.name == 'nt'):
+            timeReceived = time.clock()
+        else:
             timeReceived = time.time()
         recPacket, addr = my_socket.recvfrom(1024)
         icmpHeader = recPacket[20:28]
