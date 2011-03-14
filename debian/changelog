@@ -1,8 +1,8 @@
 python-opsi (4.0.1-9) testing; urgency=low
 
-  * New version of 30_configed.conf
+  * Add OPSI.Util.Ping
 
- -- Jan Schneider <j.schneider@uib.de>  Fri, 11 Mar 2011 12:41:48 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 14 Mar 2011 14:40:10 +0100
 
 python-opsi (4.0.1-8) testing; urgency=low
 
