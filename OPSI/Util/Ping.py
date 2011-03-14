@@ -123,12 +123,16 @@ def receive_one_ping(my_socket, ID, timeout):
     timeLeft = timeout
     while True:
         startedSelect = time.time()
+        if (os.name == 'nt'):
+            startedSelect = time.clock()
         whatReady = select.select([my_socket], [], [], timeLeft)
         howLongInSelect = (time.time() - startedSelect)
         if whatReady[0] == []: # Timeout
             return
  
         timeReceived = time.time()
+        if (os.name == 'nt'):
+            timeReceived = time.time()
         recPacket, addr = my_socket.recvfrom(1024)
         icmpHeader = recPacket[20:28]
         type, code, checksum, packetID, sequence = struct.unpack(
@@ -157,7 +161,10 @@ def send_one_ping(my_socket, dest_addr, ID):
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, my_checksum, ID, 1)
     bytesInDouble = struct.calcsize("d")
     data = (192 - bytesInDouble) * "Q"
-    data = struct.pack("d", time.time()) + data
+    if (os.name == 'nt'):
+        data = struct.pack("d", time.clock()) + data
+    else:
+        data = struct.pack("d", time.time()) + data
  
     # Calculate the checksum on the data and the dummy header.
     my_checksum = checksum(header + data)
@@ -188,7 +195,7 @@ def ping(dest_addr, timeout = 2):
             raise socket.error(msg)
         raise # raise the original error
  
-    my_ID = os.getpid() & 0xFFFF
+    my_ID = int(time.time() * 100000) & 0xFFFF
  
     send_one_ping(my_socket, dest_addr, my_ID)
     delay = receive_one_ping(my_socket, my_ID, timeout)
