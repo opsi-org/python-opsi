@@ -926,6 +926,10 @@ class SQLBackend(ConfigDataBackend):
 		data = self._objectToDatabaseHash(config)
 		possibleValues = data['possibleValues']
 		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
 		del data['possibleValues']
 		del data['defaultValues']
 		
@@ -951,6 +955,10 @@ class SQLBackend(ConfigDataBackend):
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
 		possibleValues = data['possibleValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
 		defaultValues = data['defaultValues']
 		del data['possibleValues']
 		del data['defaultValues']
@@ -1166,6 +1174,10 @@ class SQLBackend(ConfigDataBackend):
 		data = self._objectToDatabaseHash(productProperty)
 		possibleValues = data['possibleValues']
 		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
 		del data['possibleValues']
 		del data['defaultValues']
 		
@@ -1196,6 +1208,10 @@ class SQLBackend(ConfigDataBackend):
 		where = self._uniqueCondition(productProperty)
 		possibleValues = data['possibleValues']
 		defaultValues = data['defaultValues']
+		if possibleValues is None:
+			possibleValues = []
+		if defaultValues is None:
+			defaultValues = []
 		del data['possibleValues']
 		del data['defaultValues']
 		self._sql.update('PRODUCT_PROPERTY', where, data)

@@ -1,3 +1,9 @@
+python-opsi (4.0.1-11) testing; urgency=low
+
+  * SQL: Fix config_updateObject/productProperty_updateObject
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 15 Mar 2011 11:14:58 +0100
+
 python-opsi (4.0.1-10) testing; urgency=low
 
   * Add OPSI.Util.Ping

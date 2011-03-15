@@ -172,7 +172,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					
 					def run(self):
 						while (self._delay > 0):
-							time.sleep(0.2)
+							try:
+								time.sleep(0.2)
+							except:
+								pass
 							self._delay -= 0.2
 						
 						self._opsiPXEConfdBackend._updateThreadsLock.acquire()
