@@ -341,12 +341,12 @@ class Repository:
 			self._bytesTransfered = 0
 			transferStartTime = time.time()
 			buf = True
-			while buf and ( (bytes < 0) or (bytesTransfered < bytes) ):
+			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
 				buf = src.read(self._bufferSize)
 				read = len(buf)
 				if (read > 0):
-					if (bytes >= 0) and ((bytesTransfered + read) > bytes):
-						buf = buf[:bytes-bytesTransfered]
+					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):
+						buf = buf[:bytes-self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
 					if isinstance(dst, httplib.HTTPConnection) or isinstance(dst, httplib.HTTPSConnection):
