@@ -211,10 +211,11 @@ class HostControlBackend(ExtendedBackend):
 					if (timeRunning >= self._hostRpcTimeout):
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
-						try:
-							rpct.terminate()
-						except Exception, e:
-							logger.error(u"Failed to terminate rpc thread: %s" % e)
+						if not rpct.ended:
+							try:
+								rpct.terminate()
+							except Exception, e:
+								logger.error(u"Failed to terminate rpc thread: %s" % e)
 						runningThreads -= 1
 						continue
 				newRpcts.append(rpct)
