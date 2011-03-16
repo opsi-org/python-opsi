@@ -1,3 +1,9 @@
+python-opsi (4.0.1-13) testing; urgency=low
+
+  * Fix _transfer in Repository
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 16 Mar 2011 14:15:25 +0100
+
 python-opsi (4.0.1-12) testing; urgency=low
 
   * Fix SQL
