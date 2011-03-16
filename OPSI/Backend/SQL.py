@@ -955,11 +955,11 @@ class SQLBackend(ConfigDataBackend):
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
 		possibleValues = data['possibleValues']
+		defaultValues = data['defaultValues']
 		if possibleValues is None:
 			possibleValues = []
 		if defaultValues is None:
 			defaultValues = []
-		defaultValues = data['defaultValues']
 		del data['possibleValues']
 		del data['defaultValues']
 		
