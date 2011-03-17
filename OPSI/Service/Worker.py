@@ -34,6 +34,8 @@
 
 import base64, urllib, zlib, copy
 from twisted.internet import defer, reactor, threads
+from twisted.python import failure
+
 from OPSI.web2 import responsecode, http_headers, http, stream
 
 from OPSI.Logger import *
@@ -66,7 +68,7 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 	.box          { background-color: #fafafa; border: 1px #555555 solid; padding: 20px; margin-left: 30px; margin-top: 50px;}
 	</style>
 	<script type="text/javascript">
-	/* <![CDATA[ */
+	// <![CDATA[
 		var path = '%(path)s';
 		var parameters = new Array();
 		var method = '';
@@ -174,7 +176,7 @@ interfacePage = u'''<?xml version="1.0" encoding="UTF-8"?>
 			}
 			span.appendChild(document.createTextNode(params + ']'));
 		}
-	/* ]]> */
+	// ]]>
 	</script>
 </head>
 <body onload="selectMethod(document.getElementById('method_select'))">
@@ -447,7 +449,7 @@ class WorkerOpsi:
 		elif (self.request.method == 'POST'):
 			# Returning deferred needed for chaining
 			d = stream.readStream(self.request.stream, self._handlePostData)
-			d.addErrback(self._errback)
+			#d.addErrback(self._errback)
 			return d
 		else:
 			raise ValueError(u"Unhandled method '%s'" % self.request.method)
@@ -538,7 +540,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		deferred = defer.Deferred()
 		for rpc in self._rpcs:
 			deferred.addCallback(self._executeRpc, rpc)
-		deferred.addErrback(self._errback)
+		#deferred.addErrback(self._errback)
 		deferred.callback(None)
 		return deferred
 	
@@ -548,7 +550,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		deferred.addCallback(self._getCallInstance)
 		deferred.addCallback(self._getRpcs)
 		deferred.addCallback(self._executeRpcs)
-		deferred.addErrback(self._errback)
+		#deferred.addErrback(self._errback)
 		deferred.callback(None)
 		return deferred
 		
@@ -665,10 +667,21 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			selectMethod += u'<option%s>%s</option>' % (selected, method['name'])
 		
 		resultDiv = u'<div id="result">'
-		for rpc in self._rpcs:
+		if isinstance(result, failure.Failure):
+			error = u'Unknown error'
+			try:
+				result.raiseException()
+			except Exception, e:
+				error = {'class': e.__class__.__name__, 'message': unicode(e)}
+				error = toJson({"id": None, "result": None, "error": error})
 			resultDiv += u'<div class="json">'
-			resultDiv += objectToHtml(serialize(rpc.getResponse()))
+			resultDiv += objectToHtml(error)
 			resultDiv += u'</div>'
+		else:
+			for rpc in self._rpcs:
+				resultDiv += u'<div class="json">'
+				resultDiv += objectToHtml(serialize(rpc.getResponse()))
+				resultDiv += u'</div>'
 		resultDiv += u'</div>'
 		
 		html = interfacePage % {
@@ -686,13 +699,16 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 		result.stream = stream.IByteStream(html.encode('utf-8').strip())
 		
 		return result
-
+	
+	def _renderError(self, failure):
+		return self._generateResponse(failure)
+	
 class WorkerOpsiDAV(WorkerOpsi):
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
 	
 	def process(self):
-		logger.debug("Worker %s started processing" % self)
+		logger.debug(u"Worker %s started processing" % self)
 		deferred = defer.Deferred()
 		if self.resource._authRequired:
 			deferred.addCallback(self._getSession)

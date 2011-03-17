@@ -60,42 +60,12 @@ if (os.name == 'nt'):
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Util.HTTP import non_blocking_connect_http, non_blocking_connect_https
+from OPSI.Util.Thread import KillableThread
 
 # Get logger instance
 logger = Logger()
 
 RANDOM_DEVICE = '/dev/urandom'
-
-def _async_raise(tid, excobj):
-	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
-	if (res == 0):
-		logger.error(u"_async_raise: nonexistent thread id")
-		raise ValueError(u"nonexistent thread id")
-	elif (res > 1):
-		# if it returns a number greater than one, you're in trouble,
-		# and you should call it again with exc=NULL to revert the effect
-		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
-		logger.error(u"_async_raise: PyThreadState_SetAsyncExc failed")
-		raise SystemError(u"PyThreadState_SetAsyncExc failed")
-
-class KillableThread(threading.Thread):
-	def raise_exc(self, excobj):
-		if not self.isAlive():
-			logger.error(u"Cannot terminate, thread must be started")
-			return
-		for tid, tobj in threading._active.items():
-			if tobj is self:
-				_async_raise(tid, excobj)
-				return
-	
-	# the thread was alive when we entered the loop, but was not found 
-	# in the dict, hence it must have been already terminated. should we raise
-	# an exception here? silently ignore?
-	
-	def terminate(self):
-		# must raise the SystemExit type, instead of a SystemExit() instance
-		# due to a bug in PyThreadState_SetAsyncExc
-		self.raise_exc(SystemExit)
 
 class PickleString(str):
 	

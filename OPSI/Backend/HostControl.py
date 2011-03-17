@@ -42,7 +42,8 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-from OPSI.Util import fromJson, toJson, KillableThread
+from OPSI.Util import fromJson, toJson
+from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https, HTTPSConnection
 
 # Get logger instance
@@ -208,7 +209,8 @@ class HostControlBackend(ExtendedBackend):
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - rpct.started
-					if (timeRunning >= self._hostRpcTimeout):
+					if (timeRunning >= self._hostRpcTimeout + 5):
+						# thread still alive 5 seconds after timeout => kill
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
 						if not rpct.ended:
