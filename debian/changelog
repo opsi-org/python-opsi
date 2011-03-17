@@ -1,3 +1,10 @@
+python-opsi (4.0.1-14) testing; urgency=low
+
+  * Rework KillableThread
+  * HostControlBackend: wait 5 seconds before killing threads
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 17 Mar 2011 16:47:07 +0100
+
 python-opsi (4.0.1-13) testing; urgency=low
 
   * Fix _transfer in Repository
