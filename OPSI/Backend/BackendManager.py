@@ -632,7 +632,7 @@ class BackendAccessControl(object):
 					elif (type == PAM.PAM_PROMPT_ECHO_OFF):
 						response.append((_.password, 0))
 					elif (type == PAM.PAM_ERROR_MSG) or (type == PAM.PAM_TEXT_INFO):
-						response.append(('', 0));
+						response.append(('', 0))
 					else:
 						return None
 				return response
