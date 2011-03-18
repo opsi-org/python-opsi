@@ -665,45 +665,6 @@ def mount(dev, mountpoint, **options):
 					0
 				)
 				
-				#subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, ntsecuritycon.DOMAIN_ALIAS_RID_ADMINS
-				#sidAdmins = win32security.SID(ntsecuritycon.SECURITY_NT_AUTHORITY, subAuths)
-				#groupName = forceUnicode(win32security.LookupAccountSid(None, sidAdmins)[0])
-				
-				
-				#(everyone, domain, type) = win32security.LookupAccountName("", "Everyone")
-				#(admins,   domain, type) = win32security.LookupAccountName("", "Administrators")
-				(user,     domain, type) = win32security.LookupAccountName("", win32api.GetUserName())
-				
-				dacl = win32security.ACL()
-				dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, user)
-				#dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE, user)
-				#dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, admins)
-				
-				sd = win32security.GetFileSecurity(mountpoint, win32security.DACL_SECURITY_INFORMATION)
-				sd.SetSecurityDescriptorDacl(1, dacl, 0)
-				win32security.SetFileSecurity(mountpoint, win32security.DACL_SECURITY_INFORMATION, sd)
-				
-				#info = win32security.DACL_SECURITY_INFORMATION
-				#sd = win32security.GetFileSecurity(mountpoint)
-				#acl = sd.GetSecurityDescriptorDacl(info)
-				#sidUser = win32security.LookupAccountName(None, USER)[0]
-				#acl.AddAccessAllowedAce(win32file.FILE_ALL_ACCESS, sidUser)
-				#sd.SetSecurityDescriptorDacl(True, acl, False)
-				#win32security.SetFileSecurity(mountpoint, info, sd)
-				
-				#allSecurityInfo = win32security.DACL_SECURITY_INFORMATION | win32security.OWNER_SECURITY_INFORMATION | win32security.GROUP_SECURITY_INFORMATION
-				#currentSecurity = win32security.GetFileSecurity(mountpoint, allSecurityInfo)
-				
-				#securityDescriptor = pywintypes.SECURITY_DESCRIPTOR()
-				#sid = win32security.LookupAccountName('','EveryOne')[0]
-				#acl = pywintypes.ACL()
-				#acl.AddAccessAllowedAce(1, win32con.GENERIC_READ, sid)
-				#acl.AddAccessAllowedAce(1, ntsecuritycon.FILE_APPEND_DATA, sid)
-				#acl.AddAccessAllowedAce(1, win32con.GENERIC_WRITE, sid)
-				#acl.AddAccessAllowedAce(1, ntsecuritycon.FILE_ALL_ACCESS, sid)
-				#securityDescriptor.SetSecurityDescriptorDacl(True, acl, False)
-				#win32security.SetFileSecurity(mountpoint, win32security.DACL_SECURITY_INFORMATION, securityDescriptor)
-				
 			except Exception, e:
 				logger.error(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
 				raise Exception(u"Failed to mount '%s': %s" % (dev, forceUnicode(e)))
