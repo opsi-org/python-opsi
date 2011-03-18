@@ -1116,29 +1116,17 @@ class CIFSRepository(FileRepository):
 		self._mountOptions = kwargs.get('mountOptions', {})
 
 		if self._mountShare:
-                        self._path = self._mountPoint
+			self._path = self._mountPoint
 		parts = match.group(2).split('/')
 		if (len(parts) > 2):
 			self._path += u'/' + u'/'.join(parts[2:])
 		if self._path.endswith('/'):
 			self._path = self._path[:-1]
 		if self._mountShare:
-                        self._mount()
-                else:
-                        parts = self._url.split('/')
-                        self._path = u'\\\\%s\\%s%s' % (parts[2], parts[3], self._path.replace('/', '\\'))
-                
-	def _preProcessPath(self, path):
-		return FileRepository._preProcessPath(self, path)
-		print "========", self._path
-		if self._mountShare:
-                        return path
-                
-                parts = self._url.split('/')        
-		print path
-		print self._url
-		#return '\\%s\%s\%s' % (parts[2], parts[3], path)
-		#return '\\\\bonifax\\opt_pcbin\\install'
+			self._mount()
+		else:
+			parts = self._url.split('/')
+			self._path = u'\\\\%s\\%s%s' % (parts[2], parts[3], self._path.replace('/', '\\'))
 	
 	def getMountPoint(self):
 		return self._mountPoint
