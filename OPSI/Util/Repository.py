@@ -1096,7 +1096,8 @@ class CIFSRepository(FileRepository):
 		
 		if not os.name in ('posix', 'nt'):
 			raise NotImplementedError(u"CIFSRepository not yet avaliable on os '%s'" % os.name)
-		
+
+		self._mountShare = forceBool(kwargs.get('mount', True))
 		self._mounted = False
 		self._mountPointCreated = False
 		
@@ -1113,15 +1114,31 @@ class CIFSRepository(FileRepository):
 			logger.addConfidentialString(self._password)
 		
 		self._mountOptions = kwargs.get('mountOptions', {})
-		
-		self._path = self._mountPoint
+
+		if self._mountShare:
+                        self._path = self._mountPoint
 		parts = match.group(2).split('/')
 		if (len(parts) > 2):
 			self._path += u'/' + u'/'.join(parts[2:])
 		if self._path.endswith('/'):
 			self._path = self._path[:-1]
-		
-		self._mount()
+		if self._mountShare:
+                        self._mount()
+                else:
+                        parts = self._url.split('/')
+                        self._path = u'\\\\%s\\%s%s' % (parts[2], parts[3], self._path.replace('/', '\\'))
+                
+	def _preProcessPath(self, path):
+		return FileRepository._preProcessPath(self, path)
+		print "========", self._path
+		if self._mountShare:
+                        return path
+                
+                parts = self._url.split('/')        
+		print path
+		print self._url
+		#return '\\%s\%s\%s' % (parts[2], parts[3], path)
+		#return '\\\\bonifax\\opt_pcbin\\install'
 	
 	def getMountPoint(self):
 		return self._mountPoint
@@ -1453,13 +1470,17 @@ if (__name__ == "__main__"):
 	#	shutil.rmtree(tempDir)
 	if not os.path.exists(tempDir):
 		os.mkdir(tempDir)
+
+	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxx', mount = False)
+	#sourceDepot.listdir()
+	print sourceDepot.listdir()
 	
-	rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)#, maxBandwidth = 100000)
+        #rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)#, maxBandwidth = 100000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 10000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 100000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000000)
-	rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
+	#rep.download(u'opsi4.0-client-boot-cd_20100927.iso', '/tmp/opsi4.0-client-boot-cd_20100927.iso', progressSubject=None)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 100)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', maxBandwidth = 1000000)
@@ -1468,7 +1489,7 @@ if (__name__ == "__main__"):
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 100000)
 	#rep.download(u'ooffice3_3.3-2.opsi', '/tmp/ooffice3_3.3-2.opsi', progressSubject=None)
 	
-	sys.exit(0)
+	#sys.exit(0)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
@@ -1480,20 +1501,20 @@ if (__name__ == "__main__"):
 	#print rep.listdir()
 	#print rep.isdir('javavm')
 	
-	rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
+	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#print rep.listdir()
 	#rep.disconnect()
 	
-	destination = os.path.join(tempDir, 'AdbeRdr940_de_DE.msi')
-	rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, endByteNumber = 20000000)
-	rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, startByteNumber = 20000001)
+	#destination = os.path.join(tempDir, 'AdbeRdr940_de_DE.msi')
+	#rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, endByteNumber = 20000000)
+	#rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, startByteNumber = 20000001)
 	
 	#rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
 	#print rep.listdir()
 	#print rep.isdir('javavm')
 	#
 	#sys.exit(0)
-	tempFile = '/tmp/testfile.bin'
+	#tempFile = '/tmp/testfile.bin'
 	#tempDir = '/tmp/testdir'
 	#tempDir2 = '/tmp/testdir2'
 	#if os.path.exists(tempFile):
