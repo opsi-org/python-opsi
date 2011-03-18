@@ -675,9 +675,9 @@ def mount(dev, mountpoint, **options):
 				(user,     domain, type) = win32security.LookupAccountName("", win32api.GetUserName())
 				
 				dacl = win32security.ACL()
-				dacl.AddAccessAllowedAce(win32security.ACL_REVISION, con.FILE_ALL_ACCESS, user)
-				#dacl.AddAccessAllowedAce(win32security.ACL_REVISION, con.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE, user)
-				#dacl.AddAccessAllowedAce(win32security.ACL_REVISION, con.FILE_ALL_ACCESS, admins)
+				dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, user)
+				#dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE, user)
+				#dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, admins)
 				
 				sd = win32security.GetFileSecurity(mountpoint, win32security.DACL_SECURITY_INFORMATION)
 				sd.SetSecurityDescriptorDacl(1, dacl, 0)
