@@ -326,16 +326,16 @@ class ChangelogFile(TextFile):
 					if not currentEntry or currentEntry['date']:
 						raise Exception(u"found trailer out of release")
 					
-					(maintainer, date) = line[3:].strip().split('  ', 1)
+					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
 					if (maintainer.find('<') != -1):
-						(maintainer, email) = maintainer.split('<', 1)
+						(maintainer, email) = maintainer.split(u'<', 1)
 						maintainer = maintainer.strip()
-						email = email.strip().replace('<', '').replace('>', '')
+						email = email.strip().replace(u'<', u'').replace(u'>', u'')
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
-					if (date.find('+') != -1):
-						date = date.split('+')[0]
+					if (date.find(u'+') != -1):
+						date = date.split(u'+')[0]
 					currentEntry['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
 					changelog = []
 					buf = []
