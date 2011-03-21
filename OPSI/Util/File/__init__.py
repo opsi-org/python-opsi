@@ -343,12 +343,12 @@ class ChangelogFile(TextFile):
 						if not changelog and not l.strip():
 							continue
 						if not l.strip():
-							buf.append(l)
+							buf.append(forceUnicode(l))
 						else:
 							changelog.extend(buf)
 							buf = []
-							changelog.append(l)
-					currentEntry['changelog'] = changelog
+							changelog.append(forceUnicode(l))
+					currentEntry['changelog'] = forceUnicodeList(changelog)
 					
 				else:
 					if not currentEntry and line.strip():
