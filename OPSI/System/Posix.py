@@ -49,9 +49,10 @@ from OPSI.Util import objectToBeautifiedText, removeUnit
 logger = Logger()
 
 # Constants
-GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'
-BIN_WHICH        = '/usr/bin/which'
-WHICH_CACHE      = {}
+GEO_OVERWRITE_SO     = '/usr/local/lib/geo_override.so'
+BIN_WHICH            = '/usr/bin/which'
+WHICH_CACHE          = {}
+DHCLIENT_LEASES_FILE = '/var/lib/dhcp3/dhclient.leases'
 
 class SystemSpecificHook(object):
 	def __init__(self):
@@ -490,6 +491,7 @@ class NetworkPerformanceCounter(threading.Thread):
 	def getBytesOutPerSecond(self):
 		return self._bytesOutPerSecond
 
+
 def getDHCPResult(device):
 	"""
 	Reads DHCP result from pump
@@ -501,25 +503,68 @@ def getDHCPResult(device):
 		raise Exception(u"No device given")
 	
 	dhcpResult = {}
-	try:
-		for line in execute( u'%s -s -i %s' % (which('pump'), device) ):
-			line = line.strip()
-			keyValue = line.split(u":")
-			if ( len(keyValue) < 2 ):
-				# No ":" in pump output after "boot server" and "next server"
-				if line.lstrip().startswith(u'Boot server'):
-					keyValue[0] = u'Boot server'
-					keyValue.append(line.split()[2])
-				elif line.lstrip().startswith(u'Next server'):
-					keyValue[0] = u'Next server'
-					keyValue.append(line.split()[2])
-				else:
+	if os.path.exists(DHCLIENT_LEASES_FILE):
+		f = None
+		try:
+			f = open(DHCLIENT_LEASES_FILE)
+			currentInterface = None
+			for line in f.readlines():
+				line = line.strip()
+				if line.endswith(';'):
+					line = line[:-1].strip()
+				if line.startswith('interface '):
+					currentInterface = line.split('"')[1]
+				if (device != currentInterface):
 					continue
-			# Some DHCP-Servers are returning multiple domain names seperated by whitespace,
-			# so we split all values at whitespace and take the first element
-			dhcpResult[keyValue[0].replace(u' ',u'').lower()] = keyValue[1].strip().split()[0]
-	except Exception, e:
-		logger.warning(e)
+				if line.startswith('filename '):
+					dhcpResult['bootfile'] = dhcpResult['filename'] = line.split('"')[1].strip()
+				elif line.startswith('option domain-name '):
+					dhcpResult['domain'] = dhcpResult['domain-name'] = line.split('"')[1].strip()
+				elif line.startswith('option domain-name-servers '):
+					dhcpResult['nameservers'] = dhcpResult['domain-name-servers'] = line.split(' ', 2)[-1]
+				elif line.startswith('fixed-address '):
+					dhcpResult['ip'] = dhcpResult['fixed-address'] = line.split(' ', 1)[-1]
+				elif line.startswith('option host-name '):
+					dhcpResult['hostname'] = dhcpResult['host-name'] = line.split('"')[1].strip()
+				elif line.startswith('option subnet-mask '):
+					dhcpResult['netmask'] = dhcpResult['subnet-mask'] = line.split(' ', 2)[-1]
+				elif line.startswith('option routers '):
+					dhcpResult['gateways'] = dhcpResult['routers'] = line.split(' ', 2)[-1]
+				elif line.startswith('option netbios-name-servers '):
+					dhcpResult['netbios-name-servers'] = line.split(' ', 2)[-1]
+				elif line.startswith('option dhcp-server-identifier '):
+					dhcpResult['bootserver'] = dhcpResult['dhcp-server-identifier'] = line.split(' ', 2)[-1]
+				elif line.startswith('renew '):
+					dhcpResult['renew'] = line.split(' ', 1)[-1]
+				elif line.startswith('renew '):
+					dhcpResult['rebind'] = line.split(' ', 1)[-1]
+				elif line.startswith('expire '):
+					dhcpResult['expire'] = line.split(' ', 1)[-1]
+		except Exception, e:
+			logger.warning(e)
+		if f:
+			f.close()
+	else:
+		# Try pump
+		try:
+			for line in execute( u'%s -s -i %s' % (which('pump'), device) ):
+				line = line.strip()
+				keyValue = line.split(u":")
+				if ( len(keyValue) < 2 ):
+					# No ":" in pump output after "boot server" and "next server"
+					if line.lstrip().startswith(u'Boot server'):
+						keyValue[0] = u'Boot server'
+						keyValue.append(line.split()[2])
+					elif line.lstrip().startswith(u'Next server'):
+						keyValue[0] = u'Next server'
+						keyValue.append(line.split()[2])
+					else:
+						continue
+				# Some DHCP-Servers are returning multiple domain names seperated by whitespace,
+				# so we split all values at whitespace and take the first element
+				dhcpResult[keyValue[0].replace(u' ',u'').lower()] = keyValue[1].strip().split()[0]
+		except Exception, e:
+			logger.warning(e)
 	return dhcpResult
 	
 def ifconfig(device, address, netmask=None):
