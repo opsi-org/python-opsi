@@ -1,3 +1,9 @@
+python-opsi (4.0.1-15) testing; urgency=low
+
+  * Posix.py: get dhcp config from dhclient
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 22 Mar 2011 14:08:04 +0100
+
 python-opsi (4.0.1-14) testing; urgency=low
 
   * Rework KillableThread
