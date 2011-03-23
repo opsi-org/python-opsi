@@ -796,7 +796,7 @@ class PackageControlFile(TextFile):
 			if not self._opsi3compatible:
 				self._lines.append( u'type: %s' % productPropertyType )
 			self._lines.append( u'name: %s' % productProperty.getPropertyId() )
-			if not self._opsi3compatible and not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
+			if not self._opsi3compatible and not isinstance(productProperty, BoolProductProperty):
 				self._lines.append( u'multivalue: %s' % productProperty.getMultiValue() )
 				self._lines.append( u'editable: %s' % productProperty.getEditable() )
 			if productProperty.getDescription():
