@@ -503,6 +503,12 @@ class PackageControlFile(TextFile):
 							if not value.strip().startswith('{') and not value.strip().startswith('['):
 								raise Exception(u'Not trying to read json string because value does not start with { or [')
 							value = fromJson(value.strip())
+							# Remove duplicates
+							tmp = []
+							for v in forceList(value):
+								if not v in tmp:
+									tmp.append(v)
+							value = tmp
 					   	except Exception, e:
 					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
@@ -514,12 +520,12 @@ class PackageControlFile(TextFile):
 									v = v.strip()
 									newV.append(v)
 								value = newV
-						# Remove duplicates
-						tmp = []
-						for v in forceList(value):
-							if not v in ('', None) and v not in tmp:
-								tmp.append(v)
-						value = tmp
+							# Remove duplicates
+							tmp = []
+							for v in forceList(value):
+								if not v in ('', None) and v not in tmp:
+									tmp.append(v)
+							value = tmp
 						
 					if type(value) is unicode:
 						value = value.rstrip()
