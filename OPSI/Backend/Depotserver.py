@@ -324,10 +324,25 @@ class DepotserverPackageManager(object):
 							changed = False
 							newValues = []
 							for v in productPropertyState.values:
-								if v in productPropertiesToCleanup[productPropertyState.propertyId].possibleValues:
+								productProperty = productPropertiesToCleanup[productPropertyState.propertyId]
+								if v in productProperty.possibleValues:
 									newValues.append(v)
-								else:
+									continue
+								if (productProperty.getType() == 'BoolProductProperty') and forceBool(v) in productProperty.possibleValues:
+									newValues.append(forceBool(v))
 									changed = True
+									continue
+								if (productProperty.getType() == 'UnicodeProductProperty'):
+									newValue = None
+									for pv in productProperty.possibleValues:
+										if (forceUnicodeLower(pv) == forceUnicodeLower(v)):
+											newValue = pv
+											break
+									if newValue:
+										newValues.append(newValue)
+										changed = True
+										continue
+								changed = True
 							if changed:
 								if not newValues:
 									logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)

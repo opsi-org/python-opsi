@@ -2376,8 +2376,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			for v in productPropertyState.values:
 				if v in productProperty.possibleValues:
 					newValues.append(v)
-				else:
+					continue
+				if (productProperty.getType() == 'BoolProductProperty') and forceBool(v) in productProperty.possibleValues:
+					newValues.append(forceBool(v))
 					changed = True
+					continue
+				if (productProperty.getType() == 'UnicodeProductProperty'):
+					newValue = None
+					for pv in productProperty.possibleValues:
+						if (forceUnicodeLower(pv) == forceUnicodeLower(v)):
+							newValue = pv
+							break
+					if newValue:
+						newValues.append(newValue)
+						changed = True
+						continue
+				changed = True
 			if changed:
 				if not newValues:
 					logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)
@@ -2386,6 +2400,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					productPropertyState.setValues(newValues)
 					logger.debug(u"Properties changed: marking productPropertyState %s for update" % productPropertyState)
 					updateProductPropertyStates.append(productPropertyState)
+			
 		if deleteProductPropertyStates:
 			self.productPropertyState_deleteObjects(deleteProductPropertyStates)
 		if updateProductPropertyStates:
