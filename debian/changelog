@@ -1,8 +1,9 @@
 python-opsi (4.0.1-16) testing; urgency=low
 
   * PackageControlFile: fix generation of productproperty with empty values
+  * DepotserverBackend: cleanup product property states on package installation
 
- -- Jan Schneider <j.schneider@uib.de>  Wed, 23 Mar 2011 16:39:02 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 23 Mar 2011 18:46:19 +0100
 
 python-opsi (4.0.1-15) testing; urgency=low
 

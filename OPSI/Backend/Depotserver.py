@@ -303,6 +303,44 @@ class DepotserverPackageManager(object):
 				if deleteProducts:
 					self._depotBackend._context.product_deleteObjects(deleteProducts)
 				
+				# Clean up productPropertyStates
+				productPropertiesToCleanup = {}
+				for productProperty in productProperties:
+					if productProperty.editable or not productProperty.possibleValues:
+						continue
+					productPropertiesToCleanup[productProperty.propertyId] = productProperty
+				if productPropertiesToCleanup:
+					clientIds = []
+					for clientToDepot in self._depotBackend._context.configState_getClientToDepotserver(depotIds = depotId):
+						if not clientToDepot['clientId'] in clientIds:
+							clientIds.append(clientToDepot['clientId'])
+					if clientIds:
+						deleteProductPropertyStates = []
+						updateProductPropertyStates = []
+						for productPropertyState in self._depotBackend._context.productPropertyState_getObjects(
+										objectId   = clientIds,
+										productId  = productOnDepot.getProductId(),
+										propertyId = productPropertiesToCleanup.keys()):
+							changed = False
+							newValues = []
+							for v in productPropertyState.values:
+								if v in productPropertiesToCleanup[productPropertyState.propertyId].possibleValues:
+									newValues.append(v)
+								else:
+									changed = True
+							if changed:
+								if not newValues:
+									logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)
+									deleteProductPropertyStates.append(productPropertyState)
+								else:
+									productPropertyState.setValues(newValues)
+									logger.debug(u"Properties changed: marking productPropertyState %s for update" % productPropertyState)
+									updateProductPropertyStates.append(productPropertyState)
+						if deleteProductPropertyStates:
+							self._depotBackend._context.productPropertyState_deleteObjects(deleteProductPropertyStates)
+						if updateProductPropertyStates:
+							self._depotBackend._context.productPropertyState_updateObjects(updateProductPropertyStates)
+					
 			except Exception, e:
 				try:
 					ppf.cleanup()

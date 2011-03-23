@@ -2232,7 +2232,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					continue
 				depotId = configState.values[0]
 				if not depotId in depotIds:
-					logger.error(u"Configured depot server '%s' client '%s' not found" % (depotId, configState.objectId))
 					continue
 				if not depotId in usedDepotIds:
 					usedDepotIds.append(depotId)
@@ -2363,10 +2362,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for clientToDepot in self.configState_getClientToDepotserver(depotIds = depotIds):
 			if not clientToDepot['clientId'] in clientIds:
 				clientIds.append(clientToDepot['clientId'])
-		deleteProductPropertyStates = []
 		objectIds = depotIds
 		objectIds.extend(clientIds)
 		
+		deleteProductPropertyStates = []
+		updateProductPropertyStates = []
 		for productPropertyState in self.productPropertyState_getObjects(
 					objectId   = objectIds,
 					productId  = productProperty.productId,
@@ -2379,11 +2379,18 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					changed = True
 			if changed:
-				productPropertyState.setValues(newValues)
-				deleteProductPropertyStates.append(productPropertyState)
+				if not newValues:
+					logger.debug(u"Properties changed: marking productPropertyState %s for deletion" % productPropertyState)
+					deleteProductPropertyStates.append(productPropertyState)
+				else:
+					productPropertyState.setValues(newValues)
+					logger.debug(u"Properties changed: marking productPropertyState %s for update" % productPropertyState)
+					updateProductPropertyStates.append(productPropertyState)
 		if deleteProductPropertyStates:
 			self.productPropertyState_deleteObjects(deleteProductPropertyStates)
-	
+		if updateProductPropertyStates:
+			self.productPropertyState_updateObjects(updateProductPropertyStates)
+		
 	def productProperty_createObjects(self, productProperties):
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
