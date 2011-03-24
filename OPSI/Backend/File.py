@@ -924,10 +924,15 @@ class FileBackend(ConfigDataBackend):
 				
 				if (mode == 'create'):
 					removeSections = []
+					removeOptions = {}
 					if   objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
 						removeSections = ['info', 'depotshare', 'repository']
-					elif objType in ('Config', 'UnicodeConfig', 'BoolConfig', 'Group', 'HostGroup', 'ProductGroup'):
+					elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 						removeSections = [obj.getId()]
+					elif objType in ('Group', 'HostGroup', 'ProductGroup'):
+						removeOptions[obj.getId()] = []
+						for m in mapping.values():
+							removeOptions[obj.getId()].append(m['option'])
 					elif objType in ('ProductOnDepot', 'ProductOnClient'):
 						removeSections = [obj.getProductId() + u'-state']
 					elif objType in ('ProductPropertyState',):
@@ -936,7 +941,12 @@ class FileBackend(ConfigDataBackend):
 					for section in removeSections:
 						if cp.has_section(section):
 							cp.remove_section(section)
-				
+					for (section, options) in removeOptions.items():
+						if cp.has_section(section):
+							for option in options:
+								if cp.has_option(section, option):
+									cp.remove_option(section, option)
+					
 				objHash = obj.toHash()
 				
 				for (attribute, value) in objHash.items():
