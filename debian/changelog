@@ -1,3 +1,9 @@
+python-opsi (4.0.1-17) testing; urgency=low
+
+  * LDAP: Fix productPropertyState_updateObject 
+
+ -- Jan Schneider <j.schneider@uib.de>  Sat, 26 Mar 2011 13:26:47 +0100
+
 python-opsi (4.0.1-16) testing; urgency=low
 
   * PackageControlFile: fix generation of productproperty with empty values

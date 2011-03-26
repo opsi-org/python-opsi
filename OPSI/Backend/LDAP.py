@@ -1274,7 +1274,7 @@ class LDAPBackend(ConfigDataBackend):
 		dn = u'cn=%s,cn=%s,cn=%s,%s' % (productPropertyState.propertyId, productPropertyState.productId, productPropertyState.objectId, self._productPropertyStatesContainerDn)
 		logger.info(u"Updating ProductPropertyState: %s" % dn)
 		ldapObject = LDAPObject(dn)
-		self._updateLdapObject(ldapObject, productOnClient)
+		self._updateLdapObject(ldapObject, productPropertyState)
 	
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
