@@ -59,7 +59,6 @@ if (os.name == 'nt'):
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Util.HTTP import non_blocking_connect_http, non_blocking_connect_https
 from OPSI.Util.Thread import KillableThread
 
 # Get logger instance

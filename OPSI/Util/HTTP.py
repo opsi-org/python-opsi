@@ -402,13 +402,6 @@ class HTTPConnectionPool(object):
 					logger.error(u"Service verification failed: %s" % e)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
 			
-			certDir = config.get('global', 'cert_dir')
-			verifyServerCert = config.get('global', 'verify_cert')
-			if not os.path.exists(certDir):
-				os.makedirs(certDir)
-			
-			(scheme, host, port, baseurl, username, password) = urlsplit(self._configServiceUrl)
-			serverCertFile = os.path.join(certDir, host + '.pem')
 			if self.serverCertFile and not os.path.exists(self.serverCertFile) and self.peerCertificate:
 				try:
 					certDir = os.path.dirname(self.serverCertFile)
