@@ -413,7 +413,7 @@ class HTTPConnectionPool(object):
 					if not os.path.exists(certDir):
 						os.makedirs(certDir)
 					f = open(self.serverCertFile, 'w')
-					f.write(self.connectionPool.peerCertificate)
+					f.write(self.peerCertificate)
 					f.close()
 				except Exception, e:
 					logger.error(u"Failed to create server cert file '%s': %s" % (self.serverCertFile, e))
