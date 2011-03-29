@@ -374,8 +374,8 @@ class HTTPConnectionPool(object):
 							if value.lower().startswith('basic'):
 								value = value[5:].strip()
 							value = base64.decodestring(value).strip()
-						encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
-						headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
+							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
+							headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
 				except Exception, e:
 					logger.logException(e, LOG_INFO)
 					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, e))
