@@ -1,3 +1,9 @@
+python-opsi (4.0.1-18) testing; urgency=low
+
+  * move server verification into HTTP module
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 29 Mar 2011 16:13:03 +0200
+
 python-opsi (4.0.1-17) testing; urgency=low
 
   * LDAP: Fix productPropertyState_updateObject 
