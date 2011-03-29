@@ -747,11 +747,9 @@ class HTTPRepository(Repository):
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
 		
-		self._application = str(kwargs.get('application', 'opsi repository module version %s' % __version__))
-		self._username = forceUnicode(kwargs.get('username', ''))
-		self._password = forceUnicode(kwargs.get('password', ''))
-		proxy = kwargs.get('proxy')
-		
+		self._application = 'opsi repository module version %s' % __version__
+		self._username = u''
+		self._password = u''
 		self._port = 80
 		self._path = u'/'
 		self._socketTimeout = None
@@ -759,6 +757,24 @@ class HTTPRepository(Repository):
 		self._retryTime = 5
 		self._connectionPoolSize = 1
 		self._cookie = ''
+		proxy = None
+		serverCertFile = None
+		verifyServerCert = False
+		
+		for (key, value) in kwargs.items():
+			key = key.lower()
+			if   (key == 'application'):
+				self._application = str(value)
+			elif (key == 'username'):
+				self._username = forceUnicode(value)
+			elif (key == 'password'):
+				self._password = forceUnicode(value)
+			elif (key == 'proxy'):
+				proxy = forceUnicode(value)
+			elif (key == 'servercertfile'):
+				serverCertFile = forceFilename(value)
+			elif (key == 'verifyservercert'):
+				verifyServerCert = forceBool(value)
 		
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
 		
@@ -808,14 +824,16 @@ class HTTPRepository(Repository):
 			self._port = proxyPort
 		
 		self._connectionPool = getSharedConnectionPool(
-			scheme         = self._protocol,
-			host           = self._host,
-			port           = self._port,
-			socketTimeout  = self._socketTimeout,
-			connectTimeout = self._connectTimeout,
-			retryTime      = self._retryTime,
-			maxsize        = self._connectionPoolSize,
-			block          = True
+			scheme           = self._protocol,
+			host             = self._host,
+			port             = self._port,
+			socketTimeout    = self._socketTimeout,
+			connectTimeout   = self._connectTimeout,
+			retryTime        = self._retryTime,
+			maxsize          = self._connectionPoolSize,
+			block            = True,
+			serverCertFile   = serverCertFile,
+			verifyServerCert = verifyServerCert
 		)
 		
 	def _preProcessPath(self, path):

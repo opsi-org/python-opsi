@@ -41,7 +41,7 @@ from Queue import Queue, Empty, Full
 from urllib import urlencode
 from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
 from socket import error as SocketError, timeout as SocketTimeout
-import socket, time, base64
+import socket, time, base64, os
 from sys import version_info
 if (version_info >= (2,6)):
 	import ssl as ssl_module
@@ -402,8 +402,18 @@ class HTTPConnectionPool(object):
 					logger.error(u"Service verification failed: %s" % e)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
 			
+			certDir = config.get('global', 'cert_dir')
+			verifyServerCert = config.get('global', 'verify_cert')
+			if not os.path.exists(certDir):
+				os.makedirs(certDir)
+			
+			(scheme, host, port, baseurl, username, password) = urlsplit(self._configServiceUrl)
+			serverCertFile = os.path.join(certDir, host + '.pem')
 			if self.serverCertFile and not os.path.exists(self.serverCertFile) and self.peerCertificate:
 				try:
+					certDir = os.path.dirname(self.serverCertFile)
+					if not os.path.exists(certDir):
+						os.makedirs(certDir)
 					f = open(self.serverCertFile, 'w')
 					f.write(self.connectionPool.peerCertificate)
 					f.close()
