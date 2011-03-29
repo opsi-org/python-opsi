@@ -301,14 +301,16 @@ class JSONRPCBackend(Backend):
 		
 		self._processAddress(address)
 		self._connectionPool = getSharedConnectionPool(
-			scheme         = self._protocol,
-			host           = self._host,
-			port           = self._port,
-			socketTimeout  = self._socketTimeout,
-			connectTimeout = self._connectTimeout,
-			retryTime      = self._retryTime,
-			maxsize        = self._connectionPoolSize,
-			block          = True
+			scheme           = self._protocol,
+			host             = self._host,
+			port             = self._port,
+			socketTimeout    = self._socketTimeout,
+			connectTimeout   = self._connectTimeout,
+			retryTime        = self._retryTime,
+			maxsize          = self._connectionPoolSize,
+			block            = True,
+			verifyServerCert = self._verifyServerCert,
+			serverCertFile   = self._serverCertFile
 		)
 		
 		if self._connectOnInit:
@@ -613,49 +615,13 @@ class JSONRPCBackend(Backend):
 		headers['content-length'] = len(data)
 		
 		auth = (self._username + u':' + self._password).encode('latin-1')
-		encodedAuth = None
-		randomKey = None
-		if self._protocol.lower().endswith('s') and self._verifyServerCert and not self._serverVerified:
-			try:
-				logger.info(u"Encoding authorization")
-				randomKey = randomString(32).encode('latin-1')
-				encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self._serverCertFile)
-				headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
-				encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(auth, self._serverCertFile)
-			except Exception, e:
-				logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self._serverCertFile, e))
-				randomKey = None
-			
-		if encodedAuth:
-			headers['Authorization'] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
-		else:
-			headers['Authorization'] = 'Basic ' + base64.encodestring(auth).strip()
+		headers['Authorization'] = 'Basic ' + base64.encodestring(auth).strip()
+		
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
 		
 		response = self._connectionPool.urlopen(method = 'POST', url = baseUrl, body = data, headers = headers, retry = retry)
 		
-		if randomKey:
-			try:
-				key = response.getheader('x-opsi-service-verification-key', None)
-				if not key:
-					raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
-				if (key.strip() != randomKey.strip()):
-					raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
-				self._serverVerified = True
-				logger.error(u"Service verified by opsi-service-verification-key")
-			except Exception, e:
-				logger.error(u"Service verification failed: %s" % e)
-				raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
-		
-		if self._serverCertFile and not os.path.exists(self._serverCertFile) and self._connectionPool.peerCertificate:
-			try:
-				f = open(self._serverCertFile, 'w')
-				f.write(self._connectionPool.peerCertificate)
-				f.close()
-			except Exception, e:
-				logger.error(u"Failed to create server cert file '%s': %s" % (self._serverCertFile, e))
-			
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
 		if cookie:

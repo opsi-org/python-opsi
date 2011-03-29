@@ -41,7 +41,7 @@ from Queue import Queue, Empty, Full
 from urllib import urlencode
 from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
 from socket import error as SocketError, timeout as SocketTimeout
-import socket, time
+import socket, time, base64
 from sys import version_info
 if (version_info >= (2,6)):
 	import ssl as ssl_module
@@ -51,6 +51,7 @@ from OpenSSL import crypto
 # OPSI imports
 from OPSI.Types import *
 from OPSI.Logger import *
+from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 logger = Logger()
 
 connectionPools = {}
@@ -185,7 +186,7 @@ class HTTPConnectionPool(object):
 	
 	scheme = 'http'
 	
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False):
+	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False, verifyServerCert=False, serverCertFile=None):
 		self.host              = forceUnicode(host)
 		self.port              = forceInt(port)
 		self.socketTimeout     = forceInt(socketTimeout or 0)
@@ -199,6 +200,13 @@ class HTTPConnectionPool(object):
 		self.num_requests      = 0
 		self.httplibDebugLevel = 0
 		self.peerCertificate   = None
+		self.serverVerified    = False
+		self.verifyServerCert  = forceBool(verifyServerCert)
+		self.serverCertFile    = None
+		if serverCertFile:
+			self._serverCertFile = forceFilename(serverCertFile)
+		elif verifyServerCert:
+			raise Exception(u"Server verfication enabled but no server cert file given")
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):
@@ -237,6 +245,9 @@ class HTTPConnectionPool(object):
 		
 	def __del__(self):
 		self.delPool()
+	
+	def _verifyServer(self):
+		pass
 	
 	def _new_conn(self):
 		"""
@@ -347,6 +358,24 @@ class HTTPConnectionPool(object):
 			totalRequests += 1
 			#logger.essential("totalRequests: %d" % totalRequests)
 			
+			randomKey = None
+			if isinstance(self, HTTPConnectionPool) and self.verifyServerCert and not self.serverVerified:
+				try:
+					logger.info(u"Encoding authorization")
+					randomKey = randomString(32).encode('latin-1')
+					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
+					headers['X-opsi-service-verification-key'] = base64.encodestring(encryptedKey)
+					for (key, value) in headers.items():
+						if (key.lower() == 'authorization'):
+							if value.lower().startswith('basic'):
+								value = value[5:].strip()
+							value = base64.decodestring(value).strip()
+						encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
+						headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
+				except Exception, e:
+					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, e))
+					randomKey = None
+			
 			conn.request(method, url, body=body, headers=headers)
 			if self.socketTimeout:
 				conn.sock.settimeout(self.socketTimeout)
@@ -360,6 +389,27 @@ class HTTPConnectionPool(object):
 			# request.
 			response = HTTPResponse.from_httplib(httplib_response)
 			
+			if randomKey:
+				try:
+					key = response.getheader('x-opsi-service-verification-key', None)
+					if not key:
+						raise Exception(u"HTTP header 'X-opsi-service-verification-key' missing")
+					if (key.strip() != randomKey.strip()):
+						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
+					self.serverVerified = True
+					logger.error(u"Service verified by opsi-service-verification-key")
+				except Exception, e:
+					logger.error(u"Service verification failed: %s" % e)
+					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
+			
+			if self.serverCertFile and not os.path.exists(self.serverCertFile) and self.peerCertificate:
+				try:
+					f = open(self.serverCertFile, 'w')
+					f.write(self.connectionPool.peerCertificate)
+					f.close()
+				except Exception, e:
+					logger.error(u"Failed to create server cert file '%s': %s" % (self.serverCertFile, e))
+			
 			# Put the connection back to be reused
 			if self.reuseConnection:
 				self._put_conn(conn)
@@ -371,7 +421,7 @@ class HTTPConnectionPool(object):
 					conn.close()
 				except:
 					pass
-		
+				
 		except (SocketTimeout, Empty, HTTPException, SocketError), e:
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \

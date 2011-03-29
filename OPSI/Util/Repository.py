@@ -932,32 +932,6 @@ class WebDAVRepository(HTTPRepository):
 		if (len(parts) < 3) or parts[0].lower() not in ('webdav:', 'webdavs:'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		self._contentCache = {}
-		
-	def _connect(self):
-		HTTPRepository._connect(self)
-		
-		#self._connection.putrequest('PROPFIND', self._preProcessPath('/'))
-		#self._connection.putheader('user-agent', self._application)
-		#if self._cookie:
-		#	# Add cookie to header
-		#	self._connection.putheader('cookie', self._cookie)
-		#if self._auth:
-		#	self._connection.putheader('authorization', self._auth)
-		#self._connection.putheader('depth', '0')
-		#self._connection.endheaders()
-		#
-		#response = self._connection.getresponse()
-		#if (response.status != responsecode.MULTI_STATUS):
-		#	raise RepositoryError(u"Failed to connect to '%s://%s:%s': %s" \
-		#		% (self._protocol, self._host, self._port, response.status))
-		## We have to read the response!
-		#response.read()
-		#
-		## Get cookie from header
-		#cookie = response.getheader('set-cookie', None)
-		#if cookie:
-		#	# Store cookie
-		#	self._cookie = cookie.split(';')[0].strip()
 	
 	def content(self, source='', recursive=False):
 		source = forceUnicode(source)
