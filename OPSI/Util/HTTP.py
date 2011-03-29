@@ -203,7 +203,7 @@ class HTTPConnectionPool(object):
 		self.serverVerified    = False
 		self.verifyServerCert  = False
 		self.serverCertFile    = None
-		if isinstance(self, HTTPSConnection):
+		if isinstance(self, HTTPSConnectionPool):
 			self.verifyServerCert = forceBool(verifyServerCert)
 			if serverCertFile:
 				self.serverCertFile = forceFilename(serverCertFile)
@@ -363,7 +363,7 @@ class HTTPConnectionPool(object):
 			#logger.essential("totalRequests: %d" % totalRequests)
 			
 			randomKey = None
-			if isinstance(self, HTTPConnectionPool) and self.verifyServerCert and not self.serverVerified:
+			if isinstance(self, HTTPSConnectionPool) and self.verifyServerCert and not self.serverVerified:
 				try:
 					logger.info(u"Encoding authorization")
 					randomKey = randomString(32).encode('latin-1')

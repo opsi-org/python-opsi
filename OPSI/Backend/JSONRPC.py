@@ -272,9 +272,9 @@ class JSONRPCBackend(Backend):
 			if option in ('sessionid',):
 				self._sessionId = str(value)
 			if option in ('deflate',):
-				self._deflate = bool(value)
+				self._deflate = forceBool(value)
 			if option in ('connectoninit',):
-				self._connectOnInit = bool(value)
+				self._connectOnInit = forceBool(value)
 			if option in ('connecttimeout',) and not value is None:
 				self._connectTimeout = forceInt(value)
 			if option in ('connectionpoolsize',) and not value is None:
@@ -282,7 +282,7 @@ class JSONRPCBackend(Backend):
 			if option in ('timeout', 'sockettimeout') and not value is None:
 				self._socketTimeout = forceInt(value)
 			if option in ('retry',):
-				retry = bool(value)
+				retry = forceBool(value)
 			if option in ('retrytime',):
 				self._retryTime = forceInt(value)
 			if option in ('rpcqueuepollingtime',):
@@ -292,7 +292,7 @@ class JSONRPCBackend(Backend):
 			if option in ('servercertfile',):
 				self._serverCertFile = forceFilename(value)
 			if option in ('verifyservercert',):
-				self._verifyServerCert = bool(value)
+				self._verifyServerCert = forceBool(value)
 		if not retry:
 			self._retryTime = 0
 		
