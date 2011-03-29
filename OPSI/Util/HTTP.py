@@ -201,12 +201,16 @@ class HTTPConnectionPool(object):
 		self.httplibDebugLevel = 0
 		self.peerCertificate   = None
 		self.serverVerified    = False
-		self.verifyServerCert  = forceBool(verifyServerCert)
+		self.verifyServerCert  = False
 		self.serverCertFile    = None
-		if serverCertFile:
-			self._serverCertFile = forceFilename(serverCertFile)
-		elif verifyServerCert:
-			raise Exception(u"Server verfication enabled but no server cert file given")
+		if isinstance(self, HTTPSConnection):
+			self.verifyServerCert = forceBool(verifyServerCert)
+			if serverCertFile:
+				self.serverCertFile = forceFilename(serverCertFile)
+			if self.verifyServerCert:
+				if not self.serverCertFile:
+					raise Exception(u"Server verfication enabled but no server cert file given")
+				logger.info(u"Server verfication enabled for host '%s'" % host)
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):
@@ -397,7 +401,7 @@ class HTTPConnectionPool(object):
 					if (key.strip() != randomKey.strip()):
 						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 					self.serverVerified = True
-					logger.error(u"Service verified by opsi-service-verification-key")
+					logger.notice(u"Service verified by opsi-service-verification-key")
 				except Exception, e:
 					logger.error(u"Service verification failed: %s" % e)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
