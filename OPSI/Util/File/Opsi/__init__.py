@@ -815,9 +815,9 @@ class PackageControlFile(TextFile):
 							self._lines.append( u' %s' % l )
 			if self._opsi3compatible:
 				if productProperty.getPossibleValues() and not productProperty.getEditable():
-					self._lines.append( u'values: %s' % u', '.join(productProperty.getPossibleValues()) )
+					self._lines.append( u'values: %s' % u', '.join(forceUnicodeList(productProperty.getPossibleValues())) )
 				if productProperty.getDefaultValues():
-					self._lines.append( u'default: %s' % u', '.join(productProperty.getDefaultValues()) )
+					self._lines.append( u'default: %s' % u', '.join(forceUnicodeList(productProperty.getDefaultValues())) )
 			else:
 				if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues():
 					self._lines.append( u'values: %s' % toJson(productProperty.getPossibleValues()) )
