@@ -615,6 +615,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 				self._server = reactor.listenTCP(self._port, self._factory, interface = self._address)
 			
 			if not reactor.running:
+				logger.info(u"Starting reactor")
 				reactor.run(installSignalHandlers=0)
 			self._listening = True
 		except Exception, e:
