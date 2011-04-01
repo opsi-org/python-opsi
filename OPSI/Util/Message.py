@@ -614,10 +614,10 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			else:
 				self._server = reactor.listenTCP(self._port, self._factory, interface = self._address)
 			
+			self._listening = True
 			if not reactor.running:
 				logger.info(u"Starting reactor")
 				reactor.run(installSignalHandlers=0)
-			self._listening = True
 		except Exception, e:
 			self._error = forceUnicode(e)
 			logger.logException(e)
