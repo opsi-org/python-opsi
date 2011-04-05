@@ -13,6 +13,10 @@ BuildRequires:  pwdutils
 Requires:       pwdutils
 %{py_requires}
 %endif
+%if 0%{?suse_version} == 1140
+# This is a twisted dependency that SUSE screwed up in 11.4... 
+Requires:       python-asn1
+%endif
 %if 0%{?rhel_version} || 0%{?centos_version}
 Requires:       m2crypto python-ctypes pyOpenSSL newt-python
 %else
