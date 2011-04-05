@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.4 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
+Requires:       python >= 2.4 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity python-ldaptor lshw
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
@@ -32,9 +32,9 @@ License:        GPL v2 or later
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
 Version:        4.0.1
-Release:        16
+Release:        20
 Summary:        opsi python library
-Source:         python-opsi_4.0.1-16.tar.gz
+Source:         python-opsi_4.0.1-20.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
