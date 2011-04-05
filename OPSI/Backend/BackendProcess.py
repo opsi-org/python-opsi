@@ -32,8 +32,16 @@
    @license: GNU General Public License version 2
 """
 
-import re, os, time, functools, base64
-from hashlib import md5
+import re, os, sys, time, base64
+
+if sys.version_info >= (2,5):
+	import functools
+	from hashlib import md5
+else:
+	from md5 import md5
+
+
+
 
 from twisted.application.service import Service
 from twisted.internet.protocol import Protocol
@@ -212,6 +220,10 @@ class OpsiBackendProcess(OpsiPyDaemon):
 	allowRestart = False
 	
 	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
+		
+		# FIXME
+		if sys.version_info < (2,5):
+			raise Exception("Multiprocessing is currently unsupported in python 2.4. Please set 'multiprocessing = no' in your opsiconfd.conf")
 		
 		self._socket = socket
 		

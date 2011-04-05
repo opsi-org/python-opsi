@@ -39,7 +39,7 @@ from twisted.internet.address import UNIXAddress
 from twisted.protocols.amp import Argument, String, Integer, Boolean, Command, AMP, MAX_VALUE_LENGTH
 from twisted.python.failure import Failure
 
-import base64, hashlib, os
+import os
 from pickle import dumps, loads, HIGHEST_PROTOCOL
 from types import StringType, StringTypes
 from OPSI.Logger import *
