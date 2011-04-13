@@ -84,7 +84,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		
 		setActionRequestToNone = False
 		if not availableProductsByProductId.has_key(dependency.requiredProductId):
-			logger.warning(u"   product '%s' defines dependency to product '%s', which is not avaliable" \
+			logger.warning(u"   product '%s' defines dependency to product '%s', which is not avaliable on depot" \
 								% (productId, dependency.requiredProductId))
 			setActionRequestToNone = True
 		
@@ -213,46 +213,45 @@ def generateProductOnClientSequence_algorithm1(productOnClients, availableProduc
 			if productId in productOnClientByProductId.keys():
 				sequence.append(productId)
 		
-		#for run in (1, 2):
-		for productId in productOnClientByProductId.keys():
-			if (productOnClientByProductId[productId].actionRequest == 'none') or not productDependenciesByProductId.get(productId):
-				continue
-			
-			requiredProductId = None
-			requirementType = None
-			for dependency in productDependenciesByProductId[productId]:
-				if not productOnClientByProductId.get(dependency.requiredProductId):
-					continue
-				if (dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest):
+		run = 0
+		sequenceChanged = True
+		while sequenceChanged:
+			if (run > 5):
+				raise BackendUnaccomplishableError(u"Cannot resolve sequence for products %s after %d runs" \
+					% (productOnClientByProductId.keys(), run))
+			run += 1
+			sequenceChanged = False
+			for productId in productOnClientByProductId.keys():
+				if (productOnClientByProductId[productId].actionRequest == 'none') or not productDependenciesByProductId.get(productId):
 					continue
 				
-				requiredProductId = dependency.requiredProductId
-				requirementType = dependency.requirementType
-				break
-			
-			if not requirementType in ('before', 'after'):
-				continue
-			
-			ppos = sequence.index(productId)
-			dpos = sequence.index(requiredProductId)
-			if (requirementType == 'before') and (ppos < dpos):
-				logger.debug("%s requires %s before, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, requiredProductId, productId))
-				#if (run == 2):
-				#	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-				#					% (productId, requiredProductId))
-				sequence.remove(requiredProductId)
-				sequence.insert(ppos, requiredProductId)
-			elif (requirementType == 'after') and (dpos < ppos):
-				#logger.essential("%s requires %s after, moving product '%s' down in sequence." % (productId, requiredProductId, requiredProductId))
-				##if (run == 2):
-				##	raise BackendUnaccomplishableError(u"Cannot resolve sequence for products '%s', '%s'" \
-				##					% (productId, requiredProductId))
-				#sequence.remove(requiredProductId)
-				#sequence.insert(ppos+1, requiredProductId)
-				logger.debug("%s requires %s after, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, productId, requiredProductId))
-				sequence.remove(productId)
-				sequence.insert(dpos, productId)
-				
+				requiredProductId = None
+				requirementType = None
+				for dependency in productDependenciesByProductId[productId]:
+					if not productOnClientByProductId.get(dependency.requiredProductId):
+						continue
+					if (dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest):
+						continue
+					
+					requiredProductId = dependency.requiredProductId
+					requirementType = dependency.requirementType
+						
+					if not requirementType in ('before', 'after'):
+						continue
+					
+					ppos = sequence.index(productId)
+					dpos = sequence.index(requiredProductId)
+					if (requirementType == 'before') and (ppos < dpos):
+						sequence.remove(requiredProductId)
+						sequence.insert(ppos, requiredProductId)
+						sequenceChanged = True
+					elif (requirementType == 'after') and (dpos < ppos):
+						logger.info("%s requires %s after, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, productId, requiredProductId))
+						sequence.remove(productId)
+						sequence.insert(dpos, productId)
+						sequenceChanged = True
+					else:
+						logger.debug("%s requires %s %s => no sequence change required." % (productId, requiredProductId, requirementType))
 		logger.debug2(u"Sequence of available products after dependency sorting (client %s):" % clientId)
 		for i in range(len(sequence)):
 			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))

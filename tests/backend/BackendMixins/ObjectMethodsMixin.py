@@ -332,7 +332,7 @@ class ObjectMethodsMixin(object):
 		for productDependency in productDependencies:
 			if productDependency.getIdent() == self.productDependency2.getIdent():
 				self.assertEqual(productDependency.getRequiredProductVersion(), u"2.0", u"Expected required version to be %s but got %s." % (u"2.0", productDependency.getRequiredProductVersion()))
-				self.assertEqual(productDependency.getRequirementType(),'after', u"Expected requirement type to be '%s' but got '%s.'" % ('after',productDependency.getRequirementType()))
+				self.assertEqual(productDependency.getRequirementType(),'before', u"Expected requirement type to be '%s' but got '%s.'" % ('before',productDependency.getRequirementType()))
 
 	def test_deleteProductDependency(self):
 		self.backend.productDependency_deleteObjects(self.productDependency2)
@@ -346,14 +346,18 @@ class ObjectMethodsMixin(object):
 	
 	
 	def test_processProductOnClientSequence(self):
-		
 		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
 		self.backend.productOnClient_deleteObjects(productOnClients)
 		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
-		self.assertEqual(0, len(productOnClients), u"Expected %s product on clients, but got %s from backend." % (0, len(productOnClients)))
 		
+		# setup of product2 requires product3 setup before
 		# setup of product2 requires product4 installed before
 		# setup of product4 requires product5 installed before
+		# resulting sequence:
+		#  (product3 (setup))
+		#  product5 (setup)
+		#  product4 (setup)
+		#  product2 (setup)
 		
 		productOnClient1 = ProductOnClient(
 			productId          = self.product2.getId(),
@@ -362,25 +366,28 @@ class ObjectMethodsMixin(object):
 			installationStatus = 'not_installed',
 			actionRequest      = 'setup'
 		)
-		productOnClient2 = ProductOnClient(
-			productId          = self.product4.getId(),
-			productType        = self.product4.getType(),
-			clientId           = self.client1.getId(),
-			installationStatus = 'not_installed',
-			actionRequest      = 'none'
-		)
-		productOnClient3 = ProductOnClient(
-			productId          = self.product5.getId(),
-			productType        = self.product5.getType(),
-			clientId           = self.client1.getId(),
-			installationStatus = 'not_installed',
-			actionRequest      = 'none'
-		)
 		self.backend.backend_setOptions({'processProductOnClientSequence': True, 'addDependentProductOnClients': True})
-		self.backend.productOnClient_createObjects([productOnClient1, productOnClient2, productOnClient3])
+		self.backend.productOnClient_createObjects([productOnClient1])
 		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
-		self.assertEqual(3, len(productOnClients), u"Expected %s product on clients, but got %s from backend." % (3, len(productOnClients)))
-		raise Exception("TODO")
+		posProduct2 = -1
+		posProduct3 = -1
+		posProduct4 = -1
+		posProduct5 = -1
+		for productOnClient in productOnClients:
+			if (productOnClient.productId == self.product2.getId()):
+				posProduct2 = productOnClient.actionSequence
+			elif (productOnClient.productId == self.product3.getId()):
+				posProduct3 = productOnClient.actionSequence
+			elif (productOnClient.productId == self.product4.getId()):
+				posProduct4 = productOnClient.actionSequence
+			elif (productOnClient.productId == self.product5.getId()):
+				posProduct5 = productOnClient.actionSequence
+		if (posProduct2 == -1) or (posProduct3 == -1) or (posProduct4 == -1) or (posProduct5 == -1):
+			raise Exception(u"Processing of product on client sequence failed")
+		self.assertGreater(posProduct2, posProduct3, u"Wrong sequence: product3 not before product2")
+		self.assertGreater(posProduct2, posProduct4, u"Wrong sequence: product4 not before product2")
+		self.assertGreater(posProduct2, posProduct5, u"Wrong sequence: product5 not before product2")
+		self.assertGreater(posProduct4, posProduct5, u"Wrong sequence: product5 not before product4")
 		
 	def test_getProductOnDepotsFromBackend(self):
 		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['productId'] )

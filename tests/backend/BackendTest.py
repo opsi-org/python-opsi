@@ -175,7 +175,14 @@ class BackendTestCase(TestCase):
 			defaultValues  = ['opsi']
 		)
 		
-		self.configs = [ self.config1, self.config2, self.config3, self.config4, self.config5, self.config6 ]
+		self.config7 = UnicodeConfig(
+			id             = u'product_sort_algorithm',
+			description    = u'product_sort_algorithm',
+			possibleValues = ["algorithm1", "algorithm2"],
+			defaultValues  = ['algorithm1'],
+			editable       = False
+		)
+		self.configs = [ self.config1, self.config2, self.config3, self.config4, self.config5, self.config6, self.config7 ]
 		
 		# ConfigStates
 		self.configState1 = ConfigState(
@@ -544,6 +551,14 @@ class BackendTestCase(TestCase):
 			locked         = False
 		)
 		
+		self.productOnDepot4 = ProductOnDepot(
+			productId      = self.product3.getId(),
+			productType    = self.product3.getType(),
+			productVersion = self.product3.getProductVersion(),
+			packageVersion = self.product3.getPackageVersion(),
+			depotId        = self.configserver1.getId(),
+			locked         = False
+		)
 		self.productOnDepot5 = ProductOnDepot(
 			productId      = self.product5.getId(),
 			productType    = self.product5.getType(),
@@ -607,9 +622,45 @@ class BackendTestCase(TestCase):
 			locked         = False
 		)
 		
+		self.productOnDepot12 = ProductOnDepot(
+			productId      = self.product4.getId(),
+			productType    = self.product4.getType(),
+			productVersion = self.product4.getProductVersion(),
+			packageVersion = self.product4.getPackageVersion(),
+			depotId        = self.configserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot13 = ProductOnDepot(
+			productId      = self.product4.getId(),
+			productType    = self.product4.getType(),
+			productVersion = self.product4.getProductVersion(),
+			packageVersion = self.product4.getPackageVersion(),
+			depotId        = self.depotserver1.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot14 = ProductOnDepot(
+			productId      = self.product4.getId(),
+			productType    = self.product4.getType(),
+			productVersion = self.product4.getProductVersion(),
+			packageVersion = self.product4.getPackageVersion(),
+			depotId        = self.depotserver2.getId(),
+			locked         = False
+		)
+		
+		self.productOnDepot15 = ProductOnDepot(
+			productId      = self.product5.getId(),
+			productType    = self.product5.getType(),
+			productVersion = self.product5.getProductVersion(),
+			packageVersion = self.product5.getPackageVersion(),
+			depotId        = self.depotserver1.getId(),
+			locked         = False
+		)
+		
 		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3, self.productOnDepot4, self.productOnDepot5,
 					 self.productOnDepot6, self.productOnDepot7, self.productOnDepot8, self.productOnDepot9, self.productOnDepot10,
-					 self.productOnDepot11 ]
+					 self.productOnDepot11, self.productOnDepot12, self.productOnDepot13, self.productOnDepot14, self.productOnDepot15 ]
 		
 		# ProductOnClients
 		self.productOnClient1 = ProductOnClient(
