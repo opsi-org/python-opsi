@@ -29,7 +29,7 @@ class ObjectMethodsMixin(object):
 					h2['isMasterDepot'] = None
 					self.assertEqual(h1, h2 , u"Expected host to be %s, got %s" % (h1, h2))
 
-	def test_createDeposserverOnBackend(self):
+	def test_createDepotserverOnBackend(self):
 		hosts = self.backend.host_getObjects(type = 'OpsiConfigserver')
 		self.assertEqual(len(hosts), len(self.configservers), u"Expected '%s' depotserver, but found '%s' on backend." % (len(self.hosts), len(hosts)))
 
@@ -339,11 +339,49 @@ class ObjectMethodsMixin(object):
 		productDependencies = self.backend.productDependency_getObjects()
 		self.assertEqual(len(productDependencies), len(self.productDependencies) - 1, u"Expected %s product dependencies but got %s from backend." % (len(self.productDependencies) - 1, len(productDependencies)))
 		
-	def test_createDuplucateProductDependency(self):
+	def test_createDuplicateProductDependency(self):
 		self.backend.productDependency_createObjects(self.productDependencies)
 		productDependencies = self.backend.productDependency_getObjects()
 		self.assertEqual(len(productDependencies), len(self.productDependencies), u"Expected %s product dependencies but got %s from backend." % (len(self.productDependencies), len(productDependencies)))
 	
+	
+	def test_processProductOnClientSequence(self):
+		
+		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
+		self.backend.productOnClient_deleteObjects(productOnClients)
+		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
+		self.assertEqual(0, len(productOnClients), u"Expected %s product on clients, but got %s from backend." % (0, len(productOnClients)))
+		
+		# setup of product2 requires product4 installed before
+		# setup of product4 requires product5 installed before
+		
+		productOnClient1 = ProductOnClient(
+			productId          = self.product2.getId(),
+			productType        = self.product2.getType(),
+			clientId           = self.client1.getId(),
+			installationStatus = 'not_installed',
+			actionRequest      = 'setup'
+		)
+		productOnClient2 = ProductOnClient(
+			productId          = self.product4.getId(),
+			productType        = self.product4.getType(),
+			clientId           = self.client1.getId(),
+			installationStatus = 'not_installed',
+			actionRequest      = 'none'
+		)
+		productOnClient3 = ProductOnClient(
+			productId          = self.product5.getId(),
+			productType        = self.product5.getType(),
+			clientId           = self.client1.getId(),
+			installationStatus = 'not_installed',
+			actionRequest      = 'none'
+		)
+		self.backend.backend_setOptions({'processProductOnClientSequence': True, 'addDependentProductOnClients': True})
+		self.backend.productOnClient_createObjects([productOnClient1, productOnClient2, productOnClient3])
+		productOnClients = self.backend.productOnClient_getObjects(clientId = self.client1.getId())
+		self.assertEqual(3, len(productOnClients), u"Expected %s product on clients, but got %s from backend." % (3, len(productOnClients)))
+		raise Exception("TODO")
+		
 	def test_getProductOnDepotsFromBackend(self):
 		productOnDepots = self.backend.productOnDepot_getObjects( attributes = ['productId'] )
 		self.assertEqual(len(productOnDepots), len(self.productOnDepots), u"Expected %s products on depots, but got %s from backend." % (len(self.productOnDepots), len(productOnDepots)))

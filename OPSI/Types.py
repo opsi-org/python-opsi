@@ -449,9 +449,9 @@ def forceObjectClass(var, objectClass):
 		
 	if not isinstance(var, objectClass):
 		if exception:
-			raise ValueError(u"Not a %s: '%s': %s" % (objectClass.__name__, var, exception))
+			raise ValueError(u"Not a %s: '%s': %s" % (objectClass, var, exception))
 		else:
-			raise ValueError(u"Not a %s: '%s'" % (objectClass.__name__, var))
+			raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
 	return var
 	
 def forceObjectClassList(var, objectClass):

@@ -463,10 +463,23 @@ class BackendTestCase(TestCase):
 			requiredPackageVersion     = None,
 			requiredAction             = None,
 			requiredInstallationStatus = 'installed',
-			requirementType            = 'after'
+			requirementType            = 'before'
 		)
 		
 		self.productDependency3 = ProductDependency(
+			productId                  = self.product4.id,
+			productVersion             = self.product4.productVersion,
+			packageVersion             = self.product4.packageVersion,
+			productAction              = 'setup',
+			requiredProductId          = self.product5.id,
+			requiredProductVersion     = None,
+			requiredPackageVersion     = None,
+			requiredAction             = None,
+			requiredInstallationStatus = 'installed',
+			requirementType            = 'before'
+		)
+		
+		self.productDependency4 = ProductDependency(
 			productId                  = self.product6.id,
 			productVersion             = self.product6.productVersion,
 			packageVersion             = self.product6.packageVersion,
@@ -479,7 +492,7 @@ class BackendTestCase(TestCase):
 			requirementType            = 'after'
 		)
 		
-		self.productDependency4 = ProductDependency(
+		self.productDependency5 = ProductDependency(
 			productId                  = self.product7.id,
 			productVersion             = self.product7.productVersion,
 			packageVersion             = self.product7.packageVersion,
@@ -492,7 +505,7 @@ class BackendTestCase(TestCase):
 			requirementType            = 'after'
 		)
 		
-		self.productDependencies = [ self.productDependency1, self.productDependency2, self.productDependency3, self.productDependency4 ]
+		self.productDependencies = [ self.productDependency1, self.productDependency2, self.productDependency3, self.productDependency4, self.productDependency5 ]
 		
 		# ProductOnDepots
 		self.productOnDepot1 = ProductOnDepot(
@@ -1184,7 +1197,7 @@ class BackendTestCase(TestCase):
 			self.backend.licensePool_createObjects(self.licensePools)
 			self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
 			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
-
+	
 	def setBackendOptions(self):
 		self.backend.backend_setOptions({
 			'processProductPriorities':            False,

@@ -1,10 +1,12 @@
+!!! Erst in das Verzeichnis tests wechseln !!!
+
 Tests ausführen:
 
   - Alle Tests:
       opsi-devtools test --failfast --catch
 
   - Einzeltests:
-     opsi-devtools test --failfast --catch --suite=tests.backend.FileTest
+     opsi-devtools test --failfast --catch --suite=backend.FileTest
 
   - Nützliche Flags:
       opsi-devtools test --catch		# Testlauf kann mit strg+c abgebrochen werden

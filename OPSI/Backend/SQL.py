@@ -1402,8 +1402,10 @@ class SQLBackend(ConfigDataBackend):
 		return productOnClients
 	
 	def productOnClient_deleteObjects(self, productOnClients):
+		print "1 DELETING =======================", productOnClients
 		if not self._sqlBackendModule:
 			raise Exception(u"SQL backend module disabled")
+		print "2 DELETING =======================", productOnClients
 		
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
