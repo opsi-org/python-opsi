@@ -47,9 +47,9 @@ from OPSI.Types import *
 
 logger = Logger()
 
-def getFileTye(filename):
+def getFileType(filename):
 	if (os.name == 'nt'):
-		raise NotImplementedError(u"getFileTye() not implemented on windows")
+		raise NotImplementedError(u"getFileType() not implemented on windows")
 	
 	filename = forceFilename(filename)
 	ms = magic.open(magic.MAGIC_NONE)
@@ -69,7 +69,7 @@ class BaseArchive(object):
 				raise Exception(u"Compression '%s' not supported" % compression)
 			self._compression = compression
 		elif os.path.exists(self._filename):
-			fileType = getFileTye(self._filename)
+			fileType = getFileType(self._filename)
 			if   fileType.lower().startswith('gzip compressed data'):
 				self._compression = u'gzip'
 			elif fileType.lower().startswith('bzip2 compressed data'):
@@ -417,7 +417,7 @@ def Archive(filename, format = None, compression = None, progressSubject=None):
 			Class = CpioArchive
 		
 	elif os.path.exists(filename):
-		fileType = getFileTye(filename)
+		fileType = getFileType(filename)
 		if   (fileType.lower().find('tar archive') != -1):
 			Class = TarArchive
 		elif (fileType.lower().find('cpio archive') != -1):
