@@ -353,6 +353,8 @@ def objectToHtml(obj, level=0):
 				i+=1
 			html += u'</div>'
 		html += u'}'
+	elif type(obj) is types.BooleanType:
+		html += str(obj).lower()
 	else:
 		isStr = type(obj) in (str, unicode)
 		if isStr:
