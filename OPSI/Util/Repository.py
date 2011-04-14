@@ -708,7 +708,7 @@ class FileRepository(Repository):
 			if src: src.close()
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
-						% (source, destination, e))
+						% (source, destination, forceUnicode(e)))
 	
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
@@ -1064,7 +1064,7 @@ class WebDAVRepository(HTTPRepository):
 			if src: src.close()
 			if conn:
 				self._connectionPool.endConnection(None)
-			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, e))
+			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, forceUnicode(e)))
 		logger.debug2(u"WebDAV upload done")
 	
 	def delete(self, destination):
