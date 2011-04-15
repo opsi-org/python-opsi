@@ -886,7 +886,7 @@ class BackendAccessControl(object):
 
 
 def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
-				extensionConfigDir, aclFile, depotId, postpath, context):
+				extensionConfigDir, aclFile, depotId, postpath, context, **kwargs):
 	backendManager = None
 	if   (len(postpath) == 2) and (postpath[0] == 'backend'):
 		backendManager = BackendManager(
@@ -895,7 +895,8 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			backendConfigDir     = backendConfigDir,
 			aclFile              = aclFile,
 			username             = user,
-			password             = password
+			password             = password,
+			**kwargs
 		)
 	elif (len(postpath) == 2) and (postpath[0] == 'extend'):
 		extendPath = postpath[1]
@@ -910,7 +911,8 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			depotBackend         = bool(depotId),
 			hostControlBackend   = True,
 			username             = user,
-			password             = password
+			password             = password,
+			**kwargs
 		)
 	else:
 		backendManager = BackendManager(
@@ -922,7 +924,8 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			depotBackend         = bool(depotId),
 			hostControlBackend   = True,
 			username             = user,
-			password             = password
+			password             = password,
+			**kwargs
 		)
 
 	return backendManager
