@@ -25,6 +25,10 @@
 
 from UserDict import DictMixin
 
+class DefaultList(list):
+	def __copy__(self):
+		return []
+
 class OrderedDict(dict, DictMixin):
 
 	def __init__(self, *args, **kwds):
