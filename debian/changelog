@@ -1,4 +1,4 @@
-python-opsi (4.0.1-23) stable; urgency=low
+python-opsi (4.0.1.1-1) stable; urgency=low
 
   * Product: do not set owner of links
   * Util: new function ipAddressInNetwork
