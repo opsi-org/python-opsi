@@ -263,7 +263,7 @@ def forceNetmask(var):
 		raise ValueError(u"Bad netmask: '%s'" % var)
 	return var
 
-networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3][0-9]*|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
 	var = forceUnicodeLower(var)
 	if not re.search(networkAddressRegex, var):
