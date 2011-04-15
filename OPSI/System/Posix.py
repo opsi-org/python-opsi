@@ -35,9 +35,14 @@
 __version__ = '4.0'
 
 # Imports
-import os, sys, subprocess, locale, threading, time, codecs, socket, posix
+import os, sys, subprocess, locale, threading, time, codecs, socket, posix, platform
 import copy as pycopy
 from signal import *
+
+if sys.version_info < (2,6):
+	from platform import dist as linux_distribution
+else:
+	from platform import linux_distribution
 
 # OPSI imports
 from OPSI.Logger import *
@@ -2230,6 +2235,86 @@ class Harddisk:
 		
 
 
+class Distribution(object):
+	
+	def __init__(self):
+		self.distribution, self._version, self.id = linux_distribution()
+		osType, self.hostname, self.kernel, self.detailedVersion, self.arch, processor = platform.uname()
+
+	@property
+	def version(self):
+		return tuple([int(x) for x in self._version.split(".")])
+	
+	def __str__(self):
+		return ("%s %s %s" % (self.distribution, self._version, self.id)).strip()
+
+	def __unicode__(self):
+		return unicode(self.__str__())
+
+class SysInfo(object):
+	
+	def __init__(self):
+		self.dist = Distribution()
+
+	@property
+	def hostname(self):
+		return forceHostname(socket.gethostname().split(".")[0])
+	
+	@property
+	def fqdn(self):
+		return forceUnicodeLower(socket.getfqdn())
+	
+	@property
+	def domainname(self):
+		return forceDomain(".".join(self.fqdn.split(".")[1:]))
+	
+	@property
+	def distribution(self):
+		return self.dist.distribution
+	
+	@property
+	def sysVersion(self):
+		return self.dist.version
+	
+	@property
+	def distributionId(self):
+		return self.dist.id
+	
+	@property
+	def ipAddress(self):
+		return forceIPAddress(socket.gethostbyname(self.hostname))
+	
+	@property
+	def hardwareAddress(self):
+		for device in getEthernetDevices():
+			devconf = getNetworkDeviceConfig(device)
+			if devconf['ipAddress'] and not devconf['ipAddress'].startswith(('127', '169')):
+				if (self.ipAddress == devconf['ipAddress']):
+					return forceHardwareAddress(devconf['hardwareAddress'])
+		return None
+	@property
+	def netmask(self):
+		for device in getEthernetDevices():
+			devconf = getNetworkDeviceConfig(device)
+			if devconf['ipAddress'] and not devconf['ipAddress'].startswith(('127', '169')):
+				if (self.ipAddress == devconf['ipAddress']):
+					return forceNetmask(devconf['netmask'])
+		return u'255.255.255.0'
+	
+	@property
+	def broadcast(self):
+		return u".".join(u"%d" % (int(self.ipAddress.split(u'.')[i]) | int(self.netmask.split(u'.')[i]) ^255) for i in range(len(self.ipAddress.split('.'))))
+	
+	@property
+	def subnet(self):
+		return u".".join(u"%d" % (int(self.ipAddress.split(u'.')[i]) & int(self.netmask.split(u'.')[i])) for i in range(len(self.ipAddress.split('.'))))
+	
+	@property
+	def opsiVersion(self):
+		fd = open("/etc/opsi/version")
+		v = fd.read()
+		fd.close()
+		return v.strip()
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                       HARDWARE INVENTORY                                          -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
