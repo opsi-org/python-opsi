@@ -56,6 +56,11 @@ if (os.name == 'nt'):
 	except Exception, e:
 		logger.error(u"Failed to import librsync: %s" % e)
 
+try:
+	import argparse
+except ImportError:
+	import _argparse as argparse
+
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
