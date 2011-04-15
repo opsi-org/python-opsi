@@ -48,6 +48,7 @@ elif (os.name == 'nt'):
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.System import which, execute
+from OPSI.Util import ipAddressInNetwork
 
 # Get logger instance
 logger = Logger()
@@ -1610,30 +1611,12 @@ class DHCPDConfFile(TextFile):
 		for (key, value) in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 		
-		# Calculate bitmask of host's ipaddress
-		n = ipAddress.split('.')
-		for i in range(4):
-			n[i] = forceInt(n[i])
-		ip = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
-		
 		# Default parent block is global
 		parentBlock = self._globalBlock
 		
 		# Search the right subnet block
 		for block in self._globalBlock.getBlocks('subnet'):
-			# Calculate bitmask of subnet
-			n = (block.settings[1]).split('.')
-			for i in range(4):
-				n[i] = int(n[i])
-			network = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
-			n = (block.settings[3]).split('.')
-			for i in range(4):
-				n[i] = int(n[i])
-			netmask = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
-			
-			wildcard = netmask ^ 0xFFFFFFFFL
-			if (wildcard | ip == wildcard | network):
-				# Host matches the subnet
+			if ipAddressInNetwork(ipAddress, u'%s/%s' % (block.settings[1], block.settings[3])):
 				logger.debug(u"Choosing subnet %s/%s for host %s" % (block.settings[1], block.settings[3], hostname))
 				parentBlock = block
 		

@@ -331,8 +331,10 @@ class ProductPackageFile(object):
 			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
 				
-				logger.debug(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
 				try:
+					if os.path.islink(path):
+						continue
+					logger.debug(u"Setting owner of '%s' to '%s:%s'" % (path, uid, gid))
 					os.chown(path, uid, gid)
 				except Exception, e:
 					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))

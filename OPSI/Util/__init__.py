@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import ctypes, threading, os, random, base64, types, socket, httplib
+import ctypes, threading, os, random, base64, types, socket, httplib, struct
 from sys import version_info
 if (version_info >= (2,6)):
 	import json
@@ -360,6 +360,8 @@ def objectToHtml(obj, level=0):
 		html += u'}'
 	elif type(obj) is types.BooleanType:
 		html += str(obj).lower()
+	elif type(obj) is types.NoneType:
+		html += 'null'
 	else:
 		isStr = type(obj) in (str, unicode)
 		if isStr:
@@ -670,36 +672,75 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 				logger.debug(u"Including file '%s'" % entry)
 		files.append(pp)
 	return files
+
+def ipAddressInNetwork(ipAddress, networkAddress):
+	ipAddress = forceIPAddress(ipAddress)
+	networkAddress = forceNetworkAddress(networkAddress)
 	
+	n = ipAddress.split('.')
+	for i in range(4):
+		n[i] = forceInt(n[i])
+	ip = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+	
+	(network, netmask) = networkAddress.split(u'/')
+	while (network.count('.') < 3):
+		network = network + u'.0'
+	if (netmask.find('.') == -1):
+		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I',0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
+	while (netmask.count('.') < 3):
+		netmask = netmask + u'.0'
+	
+	logger.debug(u"Testing if ip %s is part of network %s/%s" % (ipAddress, network, netmask))
+	
+	n = network.split('.')
+	for i in range(4):
+		n[i] = int(n[i])
+	network = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+	n = netmask.split('.')
+	for i in range(4):
+		n[i] = int(n[i])
+	netmask = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+	
+	wildcard = netmask ^ 0xFFFFFFFFL
+	if (wildcard | ip == wildcard | network):
+		return True
+	return False
 	
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
-	from OPSI.Object import *
-	obj = []
-	for i in range(1000):
-		obj.append(
-			LocalbootProduct(
-				id = 'product%d' % i,
-				productVersion = random.choice(('1.0', '2', 'xxx', '3.1', '4')),
-				packageVersion = random.choice(('1', '2', 'y', '3', '10', 11, 22)),
-				name = 'Product %d' % i,
-				licenseRequired = random.choice((None, True, False)),
-				setupScript = random.choice(('setup.ins', None)),
-				uninstallScript = random.choice(('uninstall.ins', None)),
-				updateScript = random.choice(('update.ins', None)),
-				alwaysScript = random.choice(('always.ins', None)),
-				onceScript = random.choice(('once.ins', None)),
-				priority = random.choice((-100, -90, -30, 0, 30, 40, 60, 99)),
-				description = random.choice(('Test product %d' % i, 'Some product', '--------', '', None)),
-				advice = random.choice(('Nothing', 'Be careful', '--------', '', None)),
-				changelog = None,
-				windowsSoftwareIds = None
-			)
-		)
-	start = time.time()
-	print objectToHtml(obj, level=0)
-	print time.time() - start
+	
+	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/16')
+	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/24')
+	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/23')
+	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/25')
+	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
+	print ipAddressInNetwork('10.10.1.1', '0.0.0.0/0')
+	#from OPSI.Object import *
+	#obj = []
+	#for i in range(1000):
+	#	obj.append(
+	#		LocalbootProduct(
+	#			id = 'product%d' % i,
+	#			productVersion = random.choice(('1.0', '2', 'xxx', '3.1', '4')),
+	#			packageVersion = random.choice(('1', '2', 'y', '3', '10', 11, 22)),
+	#			name = 'Product %d' % i,
+	#			licenseRequired = random.choice((None, True, False)),
+	#			setupScript = random.choice(('setup.ins', None)),
+	#			uninstallScript = random.choice(('uninstall.ins', None)),
+	#			updateScript = random.choice(('update.ins', None)),
+	#			alwaysScript = random.choice(('always.ins', None)),
+	#			onceScript = random.choice(('once.ins', None)),
+	#			priority = random.choice((-100, -90, -30, 0, 30, 40, 60, 99)),
+	#			description = random.choice(('Test product %d' % i, 'Some product', '--------', '', None)),
+	#			advice = random.choice(('Nothing', 'Be careful', '--------', '', None)),
+	#			changelog = None,
+	#			windowsSoftwareIds = None
+	#		)
+	#	)
+	#start = time.time()
+	#print objectToHtml(obj, level=0)
+	#print time.time() - start
 	
 	
 	

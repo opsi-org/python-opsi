@@ -437,6 +437,7 @@ class BackendAccessControl(object):
 		self._aclFile       = None
 		self._pamService    = 'common-auth'
 		self._userGroups    = []
+		self._forceGroups   = None
 		self._host          = None
 		self._authenticated = False
 		
@@ -459,6 +460,8 @@ class BackendAccessControl(object):
 				self._pamService = value
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
+			elif option in ('forcegroups',):
+				self._forceGroups = forceUnicodeList(value)
 			
 		if not self._acl:
 			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []} ] ] ]
@@ -585,24 +588,27 @@ class BackendAccessControl(object):
 		
 		try:
 			win32security.LogonUser(self._username, 'None', self._password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
-			
-			gresume = 0
-			while True:
-				(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
-				for groupname in (u['name'] for u in groups):
-					logger.debug2(u"Found group '%s'" % groupname)
-					uresume = 0
-					while True:
-						(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
-						for sid in (u['sid'] for u in users):
-							(username, domain, type) = win32security.LookupAccountSid(None, sid)
-							if (username.lower() == self._username.lower()):
-								self._userGroups.append(groupname)
-								logger.debug(u"User '%s' is member of group '%s'" % (self._username, groupname))
-						if (uresume == 0):
+			if not self._forceGroups is None:
+				self._userGroups = self._forceGroups
+				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
+			else:
+				gresume = 0
+				while True:
+					(groups, total, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
+					for groupname in (u['name'] for u in groups):
+						logger.debug2(u"Found group '%s'" % groupname)
+						uresume = 0
+						while True:
+							(users, total, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
+							for sid in (u['sid'] for u in users):
+								(username, domain, type) = win32security.LookupAccountSid(None, sid)
+								if (username.lower() == self._username.lower()):
+									self._userGroups.append(groupname)
+									logger.debug(u"User '%s' is member of group '%s'" % (self._username, groupname))
+							if (uresume == 0):
+								break
+						if (gresume == 0):
 							break
-					if (gresume == 0):
-						break
 		except Exception, e:
 			# Something failed => raise authentication error
 			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
@@ -654,14 +660,17 @@ class BackendAccessControl(object):
 			auth.authenticate()
 			auth.acct_mgmt()
 			
-			self._userGroups = [ grp.getgrgid( pwd.getpwnam(self._username)[3] )[0] ]
-			logger.debug(u"Primary group of user '%s' is '%s'" % (self._username, self._userGroups[0]))
-			groups = grp.getgrall()
-			for group in groups:
-				if self._username in group[3]:
-					self._userGroups.append(group[0])
-					logger.debug(u"User '%s' is member of group '%s'" % (self._username, group[0]))
-		
+			if not self._forceGroups is None:
+				self._userGroups = self._forceGroups
+				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
+			else:
+				self._userGroups = [ grp.getgrgid( pwd.getpwnam(self._username)[3] )[0] ]
+				logger.debug(u"Primary group of user '%s' is '%s'" % (self._username, self._userGroups[0]))
+				groups = grp.getgrall()
+				for group in groups:
+					if self._username in group[3]:
+						self._userGroups.append(group[0])
+						logger.debug(u"User '%s' is member of group '%s'" % (self._username, group[0]))
 		except Exception, e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 	
