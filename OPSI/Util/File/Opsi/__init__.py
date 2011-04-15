@@ -34,8 +34,15 @@
 
 __version__ = '4.0.0.2'
 
-import os, codecs, re, ConfigParser
+import os, sys, codecs, re, ConfigParser, tarfile, tempfile, datetime, socket, StringIO, shutil, pwd, grp, bz2, gzip
+from subprocess import Popen, PIPE, STDOUT
+from OPSI.System.Posix import SysInfo
 
+if sys.version_info < (2,5):
+	import sha as sha1
+else:
+	from hashlib import sha1
+	
 if (os.name == 'posix'):
 	import fcntl
 
@@ -43,6 +50,7 @@ elif (os.name == 'nt'):
 	import win32con
 	import win32file
 	import pywintypes
+
 
 # OPSI imports
 from OPSI.Logger import *
@@ -837,6 +845,367 @@ class PackageControlFile(TextFile):
 		self.writelines()
 		self.close()
 	
-	
-	
 
+class OpsiBackupArchive(tarfile.TarFile):
+	
+	CONTENT_DIR = "CONTENT"
+	CONTROL_DIR = "CONTROL"
+	
+	CONF_DIR="/etc/opsi"
+	BACKEND_CONF_DIR=os.path.join(CONF_DIR, "backends")
+	
+	def __init__(self, name=None, mode=None, tempdir=tempfile.gettempdir(), fileobj=None, **kwargs):
+		
+		self.tempdir = tempdir
+		self.mode = mode
+		self.sysinfo = None
+		compression = None
+		
+		if mode and ":" in mode:
+			self.mode, compression = mode.split(":")
+			assert compression in ("gz", "bz2")
+			
+		if name is None:
+			self.sysinfo = self._probeSysInfo()
+			name = self._generateNewArchive(suffix=compression)
+			self.mode = 'w'
+		elif not os.path.exists(name):
+			if self.mode and not self.mode.startswith("w"):
+				raise OpsiBackupFileNotFound("Cannot read from nonexisting file.")
+		else:
+			if self.mode and self.mode.startswith("w"):
+				raise OpsiBackupFileError("Backup files are immutable.")
+
+		if compression and not fileobj:
+			if compression == "gz":
+				fileobj = gzip.GzipFile(name, self.mode)
+			if compression == "bz2":
+				fileobj = bz2.BZ2File(name, self.mode)
+
+		self._filemap = {}
+		
+		assert(self.mode and str(self.mode)[0] in ("r", "w"))
+		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
+
+		if self.mode == "w":
+			if self.sysinfo is None:
+				self.sysinfo = self._probeSysInfo()
+		else:
+			self.sysinfo = self._readSysInfo()
+			self._filemap = self._readChecksumFile()
+
+		try:
+			self._backends = self._readBackendConfiguration()
+		except OpsiBackupFileError, e:
+			if self.mode == "w":
+				raise e
+			self._backends = None
+
+	def _readBackendConfiguration(self):
+		backends = {}
+		
+		if  os.path.exists(self.BACKEND_CONF_DIR):
+			for file in os.listdir(self.BACKEND_CONF_DIR):
+				b = { 'socket': socket, 'config': {}, 'module': '' }
+				try:
+					execfile(os.path.join(self.BACKEND_CONF_DIR,file), b)
+					backends[b["module"].lower()] = b["config"]
+					
+				except Exception, e:
+					logger.warning(u"Failed to read backend config %s: %s" %(file, e))
+			return backends
+		raise OpsiBackupFileError("Could not read backend Configuration.")
+	
+	def _generateNewArchive(self, suffix=None):
+		return os.path.join(self.tempdir, self._generateArchiveName(suffix=suffix))
+	
+	def _generateArchiveName(self, suffix=None):
+		t = datetime.datetime.now()
+		name = "%s_%s_%s.tar" % (self.sysinfo['hostname'], self.sysinfo['opsiVersion'], str(t).replace(" ", "_"))
+		if suffix:
+			name += ".%s" % suffix
+		return name
+
+	def _probeSysInfo(self):
+		sysinfo = SysInfo()
+		map = {}
+		map["hostname"] = sysinfo.hostname
+		map["fqdn"] = sysinfo.fqdn
+		map["domainname"] = sysinfo.domainname
+		map["distribution"] = sysinfo.distribution
+		map["sysVersion"] = sysinfo.sysVersion
+		map["distributionId"] = sysinfo.distributionId
+		map["opsiVersion"] = sysinfo.opsiVersion
+		return map
+			
+	def _readSysInfo(self):
+		map = {}
+		fp = self.extractfile("%s/sysinfo" % self.CONTROL_DIR)
+		try:
+			for line in fp.readlines():
+				key, value = line.split(":")
+				map[key.strip()] = value.strip()
+		finally:
+			fp.close()
+		
+		return map
+	
+	def _readChecksumFile(self):
+		map = {}
+		fp = self.extractfile("%s/checksums" % self.CONTROL_DIR)
+		try:
+			for line in fp.readlines():
+				key, value = line.split(" ", 1)
+				map[value.strip()] = key.strip()
+		finally:
+			fp.close()
+			
+		return map
+	
+	def _addContent(self, path, sub=()):
+
+		dest = path
+		if sub:
+			dest = dest.replace(sub[0],sub[1])
+		dest = os.path.join(self.CONTENT_DIR, dest)
+		if os.path.isdir(path):
+			self.add(path, dest, recursive=False)
+			for entry in os.listdir(path):
+				self._addContent(os.path.join(path, entry), sub=sub)
+		else:
+			
+			if sys.version_info < (2, 5):
+				checksum = sha1.new()
+			else: 
+				checksum = sha1()
+			
+			f = open(path)
+			chunk = True
+			try:
+				while chunk:
+					chunk = f.read()
+					checksum.update(chunk)
+			finally:
+				f.close()
+			self._filemap[dest]= checksum.hexdigest()
+
+			self.add(path, dest)
+			
+	def _addChecksumFile(self):
+		string = StringIO.StringIO()
+		for path, checksum in self._filemap.iteritems():
+			string.write("%s %s\n" % (checksum, path))
+		string.seek(0)
+		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
+		info.size=len(string.buf)
+		
+		self.addfile(info, string)
+		
+	def _addSysInfoFile(self):
+		string = StringIO.StringIO()
+		
+		for key, value in self.sysinfo.iteritems():
+			string.write("%s: %s\n" %(key, value))
+		string.seek(0)
+		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
+		info.size=len(string.buf)
+		
+		self.addfile(info, string)
+
+	def verify(self):
+		
+		if self.mode == "w":
+			raise OpsiBackupFileError("Backup archive is not finalized.")
+
+		for member in self.getmembers():
+			if member.isfile() and member.name.startswith(self.CONTENT_DIR):
+				checksum = self._filemap[member.name]
+				
+				if sys.version_info < (2, 5):
+					filesum = sha1.new()
+				else: 
+					filesum = sha1()
+				
+				chunk = True
+				fp = self.extractfile(member)
+				try:
+					while chunk:
+						chunk = fp.read()
+						filesum.update(chunk)
+				finally:
+					fp.close()
+	
+				if checksum != filesum.hexdigest():
+					raise OpsiBackupFileError("Backup Archive is not valid: File %s is corrupetd" % member.name)
+		return True
+
+	def close(self):
+		if self.mode == "w":
+			self._addChecksumFile()
+			self._addSysInfoFile()
+		tarfile.TarFile.close(self)
+		if self.fileobj and self._extfileobj:
+			self.fileobj.close()
+			
+	
+	def _extractFile(self, src, dest):
+		tf, path = tempfile.mkstemp(dir=self.tempdir)
+		
+		try:
+			checksum = self._filemap[src]
+			
+			if sys.version_info < (2, 5):
+				filesum = sha1.new()
+			else: 
+				filesum = sha1()
+			
+			chunk = True
+			fp = self.extractfile(src)
+			try:
+				while chunk:
+					chunk = fp.read()
+					filesum.update(chunk)
+					os.write(tf, chunk)
+			finally:
+				fp.close()
+			if filesum.hexdigest() != checksum:
+				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
+		
+			shutil.copyfile(path, dest)
+			
+		finally:
+			os.close(tf)
+			os.remove(path)
+			
+			
+	def backupConfiguration(self):
+		self._addContent(self.CONF_DIR, sub=(self.CONF_DIR, "CONF"))
+		
+	def restoreConfiguration(self):
+		shutil.rmtree(self.CONF_DIR, ignore_errors=True)
+
+		for member in self.getmembers():
+			if member.name.startswith(os.path.join(self.CONTENT_DIR, "CONF")):
+				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"),self.CONF_DIR)
+
+				if member.isfile():
+					self._extractFile(member.name, dest)
+				else:
+					if not os.path.exists(dest):
+						os.makedirs(dest, mode=member.mode)
+						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+		
+	def backupFileBackend(self):
+		backend = self._backends["file"]
+		baseDir = backend["baseDir"]
+		self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE"))
+	
+	def restoreFileBackend(self):
+		backend = self._backends["file"]
+		baseDir = backend["baseDir"]
+		
+		members = self.getmembers()
+
+		for member in members:
+			if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE")):
+				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE"), baseDir)
+
+				if member.isfile():
+					self._extractFile(member.name, dest)
+				else:
+					if not os.path.exists(dest):
+						os.makedirs(dest, mode=member.mode)
+						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+	def backupDHCPBackend(self):
+		
+		backend = self._backends["dhcpd"]
+		self._addContent(backend['dhcpdConfigFile'], sub=(os.path.dirname(backend['dhcpdConfigFile']), "BACKENDS/DHCP"))
+	
+	def restoreDHCPBackend(self):
+		backend = self._backends["dhcpd"]
+		members = self.getmembers()
+
+		file = backend['dhcpdConfigFile']
+		if os.path.exists(file):
+			os.remove(file)
+		
+		for member in members:
+			if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP")):
+				self._extractFile(member.name, backend['dhcpdConfigFile'])
+
+		
+
+	def backupMySQLBackend(self):
+		backend = self._backends["mysql"]
+		
+		cmd = ["/usr/bin/mysqldump"]
+		cmd.append("--host=%s" % backend["address"])
+		cmd.append("--user=%s" % backend["username"])
+		cmd.append("--password=%s" % backend["password"])
+		cmd.append("--flush-log")
+		cmd.append("--lock-tables")
+		cmd.append("--add-drop-table")
+		cmd.append(backend["database"])
+	
+		fd, name = tempfile.mkstemp(dir=self.tempdir)
+		try:
+			error = StringIO.StringIO()
+			
+			p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+			out = p.stdout.readline()
+			err = ""
+			while not p.poll() and (out or err):
+				os.write(fd, out)
+				error.write(err)
+				out = p.stdout.readline()
+				#err = p.stderr.readline()
+				
+			if p.returncode not in (0, None):
+				raise OpsiBackupFileError(u"MySQL dump failed: %s" % error.getvalue())
+			
+			self._addContent(name, (name, "BACKENDS/MYSQL/database.sql"))
+		finally:
+			os.close(fd)
+			os.remove(name)
+
+
+	def restoreMySQLBackend(self):
+		backend = self._backends["mysql"]
+		
+		fd, name = tempfile.mkstemp(dir=self.tempdir)
+		os.chmod(name, 0770)
+
+		try:
+			for member in self.getmembers():
+				if member.name == os.path.join(self.CONTENT_DIR,"BACKENDS/MYSQL/database.sql"):
+					self._extractFile(member.name, name)
+			
+			cmd = ["/usr/bin/mysql"]
+			#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))
+			cmd.append("--host=%s" % backend["address"])
+			cmd.append("--user=%s" % backend["username"])
+			cmd.append("--password=%s" % backend["password"])
+			cmd.append(backend["database"])
+
+			output = StringIO.StringIO()
+			
+			p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
+			
+			out = p.stdout.readline()
+			while not p.poll() and out:
+				output.write(out)
+				out = p.stdout.readline()
+				
+			if p.returncode not in (0, None):
+				raise OpsiBackupFileError(u"Failed to restore MySQL Backend: %s" % output.getvalue())
+			
+		finally:
+			os.close(fd)
+			os.remove(name)
+		
+		
+	def backupLDAPBackend(self):
+		raise NotImplementedError("LDAP backend backups are not supported yet.")
+	
+	def backupUniventionBackend(self):
+		raise NotImplementedError("Univention backend backups are not supported yet.")

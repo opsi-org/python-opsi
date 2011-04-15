@@ -695,6 +695,12 @@ class OpsiError(Exception):
 			self._message = forceUnicode(message)
 		return property(get, set)
 
+class OpsiBackupFileError(OpsiError):
+	ExceptionShortDescription = u"Opsi backup file error"
+	
+class OpsiBackupFileNotFound(OpsiBackupFileError):
+	ExceptionShortDescription = u"Opsi backup file not found"
+
 class OpsiAuthenticationError(OpsiError):
 	ExceptionShortDescription = u"Opsi authentication error"
 
