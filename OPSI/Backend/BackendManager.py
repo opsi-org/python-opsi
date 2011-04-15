@@ -461,7 +461,8 @@ class BackendAccessControl(object):
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
 			elif option in ('forcegroups',):
-				self._forceGroups = forceUnicodeList(value)
+				if not value is None:
+					self._forceGroups = forceUnicodeList(value)
 			
 		if not self._acl:
 			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []} ] ] ]

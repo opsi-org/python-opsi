@@ -33,7 +33,7 @@
 """
 
 from twisted.internet import defer
-from OPSI.web2 import http, resource, server
+from OPSI.web2 import http, resource, server, responsecode
 import OPSI.web2.dav.static
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface, WorkerOpsiDAV
 
