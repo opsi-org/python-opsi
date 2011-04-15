@@ -33,17 +33,14 @@
 """
 
 from twisted.internet import defer
-from OPSI.web2 import resource, server
+from OPSI.web2 import http, resource, server
 import OPSI.web2.dav.static
-
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface, WorkerOpsiDAV
 
 from OPSI.Logger import *
 
 logger = Logger()
 
-
-		
 class ResourceOpsi(resource.Resource):
 	WorkerClass = WorkerOpsi
 	isLeaf = True
