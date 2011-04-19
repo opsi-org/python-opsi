@@ -1,3 +1,9 @@
+python-opsi (4.0.1.2-1) stable; urgency=low
+
+  * Posix: fix calculation of disk size
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 19 Apr 2011 10:41:19 +0200
+
 python-opsi (4.0.1.1-1) stable; urgency=low
 
   * Product: do not set owner of links

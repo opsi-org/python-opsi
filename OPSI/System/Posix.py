@@ -1012,20 +1012,18 @@ class Harddisk:
 	
 	def __init__(self, device):
 		''' Harddisk constructor. '''
-		self.device        = forceFilename(device)
-		self.model         = u''
-		self.signature     = None
-		self.biosDevice    = None
-		self.biosHeads     = 0
-		self.biosSectors   = 0
-		self.biosCylinders = 0
-		self.cylinders     = 0
-		self.heads         = 0
-		self.sectors       = 0
-		self.label         = None
-		self.size          = -1
-		self.partitions    = []
-		self.ldPreload     = None
+		self.device         = forceFilename(device)
+		self.model          = u''
+		self.signature      = None
+		self.biosDevice     = None
+		self.totalCylinders = 0
+		self.cylinders      = 0
+		self.heads          = 0
+		self.sectors        = 0
+		self.label          = None
+		self.size           = -1
+		self.partitions     = []
+		self.ldPreload      = None
 		
 		self.useBIOSGeometry()
 		self.readPartitionTable()
@@ -1155,14 +1153,15 @@ class Harddisk:
 					self.cylinders = forceInt(match.group(1))
 					self.heads     = forceInt(match.group(2))
 					self.sectors   = forceInt(match.group(3))
-				
+					self.totalCylinders = self.cylinders * self.heads * self.sectors
+					
 				elif line.lower().startswith(u'units'):
 					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
 					if not match:
 						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
 					self.bytesPerCylinder = forceInt(match.group(1))
 					
-					self.size = self.bytesPerCylinder * self.cylinders
+					self.size = self.bytesPerCylinder * self.totalCylinders
 					logger.info(u"Size of disk '%s': %s Byte / %s MB" % ( self.device, self.size, (self.size/(1024*1024))) )
 				
 				elif line.startswith(self.device):
@@ -1672,7 +1671,7 @@ class Harddisk:
 				start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif start.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', start)
-				start = int(round( (float(match.group(1))/100) * self.cylinders ))
+				start = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			else:
 				start = int(start)
 			
@@ -1684,16 +1683,16 @@ class Harddisk:
 				end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif end.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', end)
-				end = int(round( (float(match.group(1))/100) * self.cylinders ))
+				end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			else:
 				end = int(end)
 			
 			if (start < 0):
 				# Lowest possible cylinder is 0
 				start = 0
-			if (end >= self.cylinders):
+			if (end >= self.totalCylinders):
 				# Highest possible cylinder is total cylinders - 1
-				end = self.cylinders-1
+				end = self.totalCylinders-1
 			
 			number = len(self.partitions) + 1
 			for part in self.partitions:

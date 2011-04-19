@@ -972,7 +972,10 @@ class TxtSetupOemFile(ConfigFile):
 		for componentOptions in self._componentOptions:
 			if (componentOptions['componentName'] == device['componentName']) and (componentOptions["componentId"] == device['componentId']):
 				return componentOptions
-		raise Exception(u"Component name '%s' not found in txtsetup.oem file '%s'" % (componentName, self._filename))
+		for componentOptions in self._componentOptions:
+			if (componentOptions['componentName'].lower() == device['componentName'].lower()) and (componentOptions["componentId"].lower() == device['componentId'].lower()):
+				return componentOptions
+		raise Exception(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
 		
 	def applyWorkarounds(self):
 		if not self._parsed:
