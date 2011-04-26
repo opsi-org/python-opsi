@@ -1082,10 +1082,11 @@ class OpsiBackupArchive(tarfile.TarFile):
 		self._addContent(self.CONF_DIR, sub=(self.CONF_DIR, "CONF"))
 		
 	def restoreConfiguration(self):
-		shutil.rmtree(self.CONF_DIR, ignore_errors=True)
-
+		
+		
 		for member in self.getmembers():
 			if member.name.startswith(os.path.join(self.CONTENT_DIR, "CONF")):
+				shutil.rmtree(self.CONF_DIR, ignore_errors=True)
 				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"),self.CONF_DIR)
 
 				if member.isfile():
