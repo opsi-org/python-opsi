@@ -126,9 +126,8 @@ class OpsiBackup(object):
 
 			logger.notice(_("Backup complete"))
 		except Exception, e:
-			#os.remove(archive.name)
-			print type(e)
-			logger.logException(e)
+			os.remove(archive.name)
+			logger.logException(e, LOG_DEBUG)
 			raise e
 		
 	def _verify(self, file, **kwargs):
