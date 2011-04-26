@@ -34,7 +34,7 @@
 __version__ = (0,0)
 __verstr__ = ".".join([str(i) for i in __version__])
 
-import sys, types, os, termios, fcntl, gettext, bz2, gzip
+import sys, types, os, termios, fcntl, gettext, bz2, gzip, shutil
 
 from OPSI.Types import *
 from OPSI.Util import argparse
@@ -95,7 +95,11 @@ class OpsiBackup(object):
 		archive = self._getArchive(file=file, mode="w", compression=compression)
 		
 		try:
-			logger.notice(_(u"Creating backup archive %s." % archive.name))
+			if file is None:
+				name = archive.name.split(os.sep)[-1]
+			else:
+				name = archive.name
+			logger.notice(_(u"Creating backup archive %s" % name))
 			
 			if mode == "raw":
 				for backend in backends:
@@ -124,6 +128,9 @@ class OpsiBackup(object):
 			
 			self._verify(archive.name)
 
+			if file is None:
+				shutil.move(archive.name, os.path.join(os.getcwd(), archive.name.split(os.sep)[-1]))
+
 			logger.notice(_("Backup complete"))
 		except Exception, e:
 			os.remove(archive.name)
@@ -143,7 +150,7 @@ class OpsiBackup(object):
 			logger.info(_("Verifying archive %s" %f))
 			try:
 				archive.verify()
-				logger.notice(_("Archive %s is OK." %f))
+				logger.notice(_("Archive is OK."))
 			except OpsiBackupFileError, e:
 				logger.error(e)
 				result = 1
@@ -259,16 +266,16 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 	
 	parser_restore = subs.add_parser("restore", help=_("Restore data from a backup archive."))
 	parser_restore.add_argument("file", nargs=1, help=_("The backup archive to restore data from."))
-	parser_restore.add_argument("--mode", nargs=1, choices=['raw', 'data', 'full'], default="raw", help=_("Select a mode that should ne used for restoration. (Default: raw)"))
-	parser_restore.add_argument("--backend", action="append", choices=['file','mysql','all'],  default=DefaultList(["all"]), help=_("Select a backend to restore or 'all' for all backends. Can be given multiple times. (Only in raw mode) (Default: all)"))
+	parser_restore.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for restoration. (Default: raw)"))
+	parser_restore.add_argument("--backends", action="append", choices=['file','mysql','all'],  default=DefaultList(["all"]), help=_("Select a backend to restore or 'all' for all backends. Can be given multiple times. (Default: all)"))
 	parser_restore.add_argument("--configuration", action="store_true", default=False, help=_("Restore opsi configuration."))
 	parser_restore.add_argument("--dhcp", action="store_true", default=False, help=_("Restore dhcp configuration."))
-	parser_restore.add_argument("-f", "--force", action="store_true", default=False, help=_("Ignore warnings and try to apply anyways. Use with caution! (Default: false)"))
+	parser_restore.add_argument("-f", "--force", action="store_true", default=False, help=_("Ignore sanity checks and try to apply anyways. Use with caution! (Default: false)"))
 	
 	parser_create = subs.add_parser("create", help=_("Create a new backup."))
 	parser_create.add_argument("file", nargs="?", help=_("Distination of the generated output file. (optional)"))
-	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=_("Select a mode that should ne used for backup. (Default: raw)"))
-	parser_create.add_argument("--backend", action="append", choices=['file','mysql','all'], default=DefaultList(["all"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Only in raw mode) (Default: all)"))
+	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for backup. (Default: raw)"))
+	parser_create.add_argument("--backends", action="append", choices=['file','mysql','all'], default=DefaultList(["all"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: all)"))
 	parser_create.add_argument("--configuration", action="store_true", default=False, help=_("Backup opsi configuration."))
 	parser_create.add_argument("--dhcp", action="store_true", default=False, help=_("Backup dhcp configuration."))
 	parser_create.add_argument("-c", "--compression", nargs="?", default="bz2", choices=['gz','bz2', 'none'], help=_("Sets the compression format for the archive (Default: bz2)"))
