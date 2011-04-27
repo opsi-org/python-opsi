@@ -887,7 +887,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		assert(self.mode and str(self.mode)[0] in ("r", "w"))
 		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
 
-		if self.mode == "w":
+		if self.mode.startswith((u"w","w")):
 			if self.sysinfo is None:
 				self.sysinfo = self._probeSysInfo()
 		else:
@@ -897,7 +897,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		try:
 			self._backends = self._readBackendConfiguration()
 		except OpsiBackupFileError, e:
-			if self.mode == "w":
+			if self.mode.startswith((u"w","w")):
 				raise e
 			self._backends = None
 
@@ -1014,7 +1014,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 	def verify(self):
 		
-		if self.mode == "w":
+		if self.mode.startswith((u"w","w")):
 			raise OpsiBackupFileError("Backup archive is not finalized.")
 
 		for member in self.getmembers():
@@ -1040,7 +1040,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return True
 
 	def close(self):
-		if self.mode == "w":
+		if self.mode.startswith((u"w","w")):
 			self._addChecksumFile()
 			self._addSysInfoFile()
 		tarfile.TarFile.close(self)
@@ -1082,11 +1082,15 @@ class OpsiBackupArchive(tarfile.TarFile):
 		self._addContent(self.CONF_DIR, sub=(self.CONF_DIR, "CONF"))
 		
 	def restoreConfiguration(self):
-		
-		
+
+		first = True
+
 		for member in self.getmembers():
 			if member.name.startswith(os.path.join(self.CONTENT_DIR, "CONF")):
-				shutil.rmtree(self.CONF_DIR, ignore_errors=True)
+				if first:
+					shutil.rmtree(self.CONF_DIR, ignore_errors=True)
+					os.makedirs(self.CONF_DIR)
+					first = False
 				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"),self.CONF_DIR)
 
 				if member.isfile():
@@ -1096,12 +1100,16 @@ class OpsiBackupArchive(tarfile.TarFile):
 						os.makedirs(dest, mode=member.mode)
 						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 		
+		
 	def backupFileBackend(self):
 		backend = self._backends["file"]
 		baseDir = backend["baseDir"]
 		self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE"))
 	
 	def restoreFileBackend(self):
+		if not self._backends:
+			self._backends = self._readBackendConfiguration()
+		
 		backend = self._backends["file"]
 		baseDir = backend["baseDir"]
 		
@@ -1123,6 +1131,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 		self._addContent(backend['dhcpdConfigFile'], sub=(os.path.dirname(backend['dhcpdConfigFile']), "BACKENDS/DHCP"))
 	
 	def restoreDHCPBackend(self):
+		if not self._backends:
+			self._backends = self._readBackendConfiguration()
+		
 		backend = self._backends["dhcpd"]
 		members = self.getmembers()
 
@@ -1147,7 +1158,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		cmd.append("--lock-tables")
 		cmd.append("--add-drop-table")
 		cmd.append(backend["database"])
-	
+		print cmd
 		fd, name = tempfile.mkstemp(dir=self.tempdir)
 		try:
 			error = StringIO.StringIO()
@@ -1171,6 +1182,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 
 	def restoreMySQLBackend(self):
+		if not self._backends:
+			self._backends = self._readBackendConfiguration()
+		
 		backend = self._backends["mysql"]
 		
 		fd, name = tempfile.mkstemp(dir=self.tempdir)

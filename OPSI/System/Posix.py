@@ -2310,10 +2310,13 @@ class SysInfo(object):
 	
 	@property
 	def opsiVersion(self):
-		fd = open("/etc/opsi/version")
-		v = fd.read()
-		fd.close()
-		return v.strip()
+		try:
+			fd = open("/etc/opsi/version")
+			v = fd.read()
+			fd.close()
+			return v.strip()
+		except Exception, e:
+			raise OpsiVersionError("Unable to determain opsi version")
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                       HARDWARE INVENTORY                                          -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

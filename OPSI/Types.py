@@ -721,7 +721,10 @@ class OpsiTimeoutError(OpsiError):
 
 class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
-	
+
+class OpsiVersionError(OpsiError):
+	ExceptionShortDescription = u"Opsi version error"
+		
 class BackendError(OpsiError):
 	""" Exception raised if there is an error in the backend. """
 	ExceptionShortDescription = u"Backend error"

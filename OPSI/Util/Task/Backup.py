@@ -53,7 +53,11 @@ except Exception, e:
 	def _(string):
 		return string
 
-WARNING = _("""WARNING: Your system config is different from the one recorded with this backup.
+WARNING_DIFF = _(u"""WARNING: Your system config is different from the one recorded with this backup.
+This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
+Do you wish to continue? [y/n]""")
+
+WARNING_SYSCONFIG = _(u"""WARNING: A problem occurred while reading the sysconfig: %s
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
 Do you wish to continue? [y/n]""")
 
@@ -62,6 +66,8 @@ class OpsiBackup(object):
 	def __init__(self, stdout=None):
 		if stdout is None:
 			self.stdout = sys.stdout
+		else:
+			self.stdout = stdout
 
 	def _getArchive(self, mode, file=None, compression=None):
 		
@@ -86,16 +92,22 @@ class OpsiBackup(object):
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
 
-	def _create(self, file=None, mode="raw", backends=["all"], configuration=True, dhcp=True, compression="bz2"):
+	def _create(self, destination=None, mode="raw", backends=["all"], configuration=True, dhcp=True, compression="bz2", **kwargs):
 
 		
 		if "all" in backends:
 			backends = ["all"]
 		
+		
+		if os.path.exists(destination) and not os.path.isfile(destination):
+			file = None
+		else:
+			file = destination
+		
 		archive = self._getArchive(file=file, mode="w", compression=compression)
 		
 		try:
-			if file is None:
+			if destination is None:
 				name = archive.name.split(os.sep)[-1]
 			else:
 				name = archive.name
@@ -128,8 +140,11 @@ class OpsiBackup(object):
 			
 			self._verify(archive.name)
 
-			if file is None:
-				shutil.move(archive.name, os.path.join(os.getcwd(), archive.name.split(os.sep)[-1]))
+			filename = archive.name.split(os.sep)[-1]
+			if os.path.isdir(destination):
+				destination = os.path.join(destination, filename)
+				
+			shutil.move(archive.name, destination)
 
 			logger.notice(_("Backup complete"))
 		except Exception, e:
@@ -159,54 +174,56 @@ class OpsiBackup(object):
 	
 	def _verifySysconfig(self, archive):
 		
-		sysInfo = SysInfo()
-		archiveInfo = archive.sysinfo
-		
-		diff = {}
-		
-		for key, value in archiveInfo.iteritems():
-			if str(getattr(sysInfo, key, None)) != value:
-				diff[key] = value
-
-
-
-		def ask():
-			fd = sys.stdin.fileno()
-
-			oldterm = termios.tcgetattr(fd)
-			newattr = termios.tcgetattr(fd)
-			newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-			termios.tcsetattr(fd, termios.TCSANOW, newattr)
-			
-			oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-			
-			self.stdout.write(WARNING)
-			
+		def ask(q=WARNING_DIFF):
+				fd = sys.stdin.fileno()
+	
+				oldterm = termios.tcgetattr(fd)
+				newattr = termios.tcgetattr(fd)
+				newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+				termios.tcsetattr(fd, termios.TCSANOW, newattr)
 				
-			try:
-				while 1:
-					try:
-						c = sys.stdin.read(1)
-						return (forceUnicode(c) in (u"y",u"Y"))
-					except IOError: pass
-			finally:
-				termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
-
-		if diff:
-			return ask()
+				oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+				
+				self.stdout.write(q)
+				
+					
+				try:
+					while 1:
+						try:
+							c = sys.stdin.read(1)
+							return (forceUnicode(c) in (u"y",u"Y"))
+						except IOError: pass
+				finally:
+					termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+					fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+		
+		try:
+			sysInfo = SysInfo()
+			archiveInfo = archive.sysinfo
+		
+		
+			diff = {}
+			
+			for key, value in archiveInfo.iteritems():
+				if str(getattr(sysInfo, key, None)) != value:
+					diff[key] = value
+					
+			if diff:
+				return ask(WARNING_DIFF)
+		except OpsiError, e:
+			return ask(WARNING_SYSCONFIG % unicode(e))
 		return True
 
 
-	def _restore(self, file, mode="raw", backends=["all"], configuration=True, dhcp=True, force=False):
+	def _restore(self, file, mode="raw", backends=["all"], configuration=True, dhcp=True, force=False, **kwargs):
 		
 		if "all" in backends:
 			backends = ["all"] 
 		
 		archive = self._getArchive(file=file[0], mode="r")
 		
-		self._verify(archive.name)
+		#self._verify(archive.name)
 		
 		if force or self._verifySysconfig(archive):
 		
@@ -273,7 +290,7 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 	parser_restore.add_argument("-f", "--force", action="store_true", default=False, help=_("Ignore sanity checks and try to apply anyways. Use with caution! (Default: false)"))
 	
 	parser_create = subs.add_parser("create", help=_("Create a new backup."))
-	parser_create.add_argument("file", nargs="?", help=_("Distination of the generated output file. (optional)"))
+	parser_create.add_argument("destination", nargs="?", help=_("Distination of the generated output file. (optional)"))
 	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for backup. (Default: raw)"))
 	parser_create.add_argument("--backends", action="append", choices=['file','mysql','all'], default=DefaultList(["all"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: all)"))
 	parser_create.add_argument("--configuration", action="store_true", default=False, help=_("Backup opsi configuration."))
