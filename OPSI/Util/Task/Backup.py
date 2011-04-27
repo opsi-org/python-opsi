@@ -99,7 +99,7 @@ class OpsiBackup(object):
 			backends = ["all"]
 		
 		
-		if os.path.exists(destination) and not os.path.isfile(destination):
+		if destination and os.path.exists(destination) and not os.path.isfile(destination):
 			file = None
 		else:
 			file = destination
@@ -141,6 +141,9 @@ class OpsiBackup(object):
 			self._verify(archive.name)
 
 			filename = archive.name.split(os.sep)[-1]
+			if not destination:
+				destination = os.getcwdu()
+			
 			if os.path.isdir(destination):
 				destination = os.path.join(destination, filename)
 				
@@ -223,7 +226,7 @@ class OpsiBackup(object):
 		
 		archive = self._getArchive(file=file[0], mode="r")
 		
-		#self._verify(archive.name)
+		self._verify(archive.name)
 		
 		if force or self._verifySysconfig(archive):
 		
@@ -235,7 +238,7 @@ class OpsiBackup(object):
 	
 			if dhcp:
 				logger.debug(u"Restoring dhcp configuration.")
-				archive.resoreDHCPBackend()
+				archive.restoreDHCPBackend()
 			
 			if mode == "raw":
 				for backend in backends:

@@ -89,82 +89,70 @@ class BackendArchiveTest(TestCase):
 				
 		self.assertEquals(old, new)
 		
-	def test_backupDHCPBackend(self):
-		archive = self.useFixture(BackendArchiveFixture())
-		archive.backupDHCPBackend()
-		archive.close()
-		
-		file = archive._backends["dhcpd"]
-		if os.path.exists(file):
-			os.remove(file)
-		
-		backup = self.useFixture(BackendArchiveFixture(name=archive.name, mode="r"))
-		backup.restoreDHCPBackend()
-		backup.close()
-		
-		self.assertTrue(os.path.exists(archive.name))
-		
 	def test_backupFileBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
 		
-		baseDir = archive._backends["file"]["baseDir"]
-		old = []
-		
-		for root, ds, files in os.walk(baseDir):
-			for d in ds:
-				old.append(os.path.join(root, d))
-			for file in files:
-				old.append(file)
-		
-		
-		archive.backupFileBackend()
-		archive.close()
-		
-		shutil.rmtree(baseDir, ignore_errors=True)
-		os.mkdir(baseDir)
-		
-		backup = self.useFixture(BackendArchiveFixture(name=archive.name, mode="r"))
-		backup.restoreFileBackend()
-
-		new = []
-		
-		for root, ds, files in os.walk(baseDir):
-			for d in ds:
-				new.append(os.path.join(root, d))
-			for file in files:
-				new.append(file)
-				
-		self.assertEquals(old, new)
+		for backend in archive._getBackends("file"):
+			baseDir = backend["config"]["baseDir"]
+			old = []
+			
+			for root, ds, files in os.walk(baseDir):
+				for d in ds:
+					old.append(os.path.join(root, d))
+				for file in files:
+					old.append(file)
+			
+			
+			archive.backupFileBackend()
+			archive.close()
+			
+			shutil.rmtree(baseDir, ignore_errors=True)
+			os.mkdir(baseDir)
+			
+			backup = self.useFixture(BackendArchiveFixture(name=archive.name, mode="r"))
+			backup.restoreFileBackend()
+	
+			new = []
+			
+			for root, ds, files in os.walk(baseDir):
+				for d in ds:
+					new.append(os.path.join(root, d))
+				for file in files:
+					new.append(file)
+					
+			self.assertEquals(old, new)
 	
 	def test_backupDHCPBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
-		file = archive._backends['dhcpd']['dhcpdConfigFile']
 		
-		orig = md5sum(file)
-		
-		
-		archive.backupDHCPBackend()
-		archive.close()
-		
-		os.remove(file)
-		
-		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
-		backup.restoreDHCPBackend()
-		
-		new = md5sum(file)
-		
-		self.assertEqual(orig, new)
+		for backend in archive._getBackends("dhcpd"):
+			file = backend['config']['dhcpdConfigFile']
+			
+			orig = md5sum(file)
+			
+			
+			archive.backupDHCPBackend()
+			archive.close()
+			
+			os.remove(file)
+			
+			backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
+			backup.restoreDHCPBackend()
+			
+			new = md5sum(file)
+			
+			self.assertEqual(orig, new)
 		
 	def test_backupMySQL(self):
 		archive = self.useFixture(BackendArchiveFixture())
 		archive.backupMySQLBackend()
 		archive.close()
 
-		backend = archive._backends["mysql"]
-		con = MySQLdb.connect (	host = backend["address"],
-					user = backend["username"],
-					passwd = backend["password"],
-					db = backend["database"])
+		for backend in archive._getBackends("mysql"):
+			con = MySQLdb.connect (	host = backend["config"]["address"],
+						user = backend["config"]["username"],
+						passwd = backend["config"]["password"],
+						db = backend["config"]["database"])
 		
 		
 		cursor = con.cursor ()
