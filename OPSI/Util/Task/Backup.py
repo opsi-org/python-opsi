@@ -92,7 +92,7 @@ class OpsiBackup(object):
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
 
-	def _create(self, destination=None, mode="raw", backends=["all"], configuration=True, dhcp=True, compression="bz2", **kwargs):
+	def _create(self, destination=None, mode="raw", backends=["all"], configuration=True, dhcp=True, compression="bz2", no_flush_logs=False, **kwargs):
 
 		
 		if "all" in backends:
@@ -120,7 +120,7 @@ class OpsiBackup(object):
 						archive.backupFileBackend()
 					if backend in ("mysql", "all"):
 						logger.debug(u"Backing up mysql backend.")
-						archive.backupMySQLBackend()
+						archive.backupMySQLBackend(flushLogs=not no_flush_logs)
 
 					#TODO: implement ldap/univention backup
 					#if backend in ("ldap", "all"):
@@ -295,6 +295,7 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 	parser_create = subs.add_parser("create", help=_("Create a new backup."))
 	parser_create.add_argument("destination", nargs="?", help=_("Distination of the generated output file. (optional)"))
 	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for backup. (Default: raw)"))
+	parser_create.add_argument("--no-flush-logs", action="store_true", default=False, help=_("Causes mysql not to flush table logs to disk before the backup. (default: off)"))
 	parser_create.add_argument("--backends", action="append", choices=['file','mysql','all'], default=DefaultList(["all"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: all)"))
 	parser_create.add_argument("--configuration", action="store_true", default=False, help=_("Backup opsi configuration."))
 	parser_create.add_argument("--dhcp", action="store_true", default=False, help=_("Backup dhcp configuration."))
