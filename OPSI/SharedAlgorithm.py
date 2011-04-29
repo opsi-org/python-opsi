@@ -633,7 +633,7 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 						
 				except OpsiProductOrderingError, e:
 					for i in range(len(prioclass)):
-						logger.info(u" product %s %s " % (i, prioclass[i]))
+						logger.warning(u" product %s %s " % (i, prioclass[i]))
 					raise e
 						
 				orderingsByClasses[prioclasskey] = ob.getOrdering()
