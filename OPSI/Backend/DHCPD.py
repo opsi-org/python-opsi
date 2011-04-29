@@ -60,8 +60,9 @@ class DHCPDBackend(ConfigDataBackend):
 		
 		ConfigDataBackend.__init__(self, **kwargs)
 		
-		self._dhcpdConfigFile         = u'/etc/dhcp3/dhcpd.conf'
-		self._reloadConfigCommand     = u'/usr/bin/sudo /etc/init.d/dhcp3-server restart'
+		self._dhcpdConfigFile         = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
+		self._reloadConfigCommand     = u'/usr/bin/sudo %s restart' % System.Posix.locateDHCPDInit(u'/etc/init.d/dhcp3-server') 
+		
 		self._fixedAddressFormat      = u'IP'
 		self._defaultClientParameters = { 'next-server': socket.gethostbyname(socket.getfqdn()), 'filename': u'linux/pxelinux.0' }
 		self._dhcpdOnDepot            = False

@@ -2852,6 +2852,34 @@ def daemonize():
 	sys.stdout = logger.getStdout()
 	sys.stderr = logger.getStderr()
 
+def locateDHCPDConfig(default = None):
+	
+	locations = (u"/etc/dhcpd.conf",		# suse / redhat / centos
+		     u"/etc/dhcp/dhcpd.conf",	# newer debian / ubuntu
+		     u"/etc/dhcp3/dhcpd.conf"	# older debian / ubuntu
+	)
+	
+	for file in locations:
+		if os.path.exists(file):
+			return file
+	if default is not None:
+		return default
+	raise RuntimeError(u"Could not locate dhcpd.conf.")
+
+def locateDHCPDInit(default = None):
+	
+	locations = (u"/etc/init.d/dhcpd",		# suse / redhat / centos
+		     u"/etc/init.d/isc-dhcp-server",	# newer debian / ubuntu
+		     u"/etc/init.d/dhcp3-server"		# older debian / ubuntu
+		     )
+
+	for file in locations:
+		if os.path.exists(file):
+			return file
+	if default is not None:
+		return default
+	raise RuntimeError(u"Could not locate dhcpd init file.")
+
 if (__name__ == "__main__"):
 	print getBlockDeviceContollerInfo('/dev/sda')
 	print getNetworkDeviceConfig(getDefaultNetworkInterfaceName())
