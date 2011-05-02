@@ -926,7 +926,7 @@ class FileBackend(ConfigDataBackend):
 					removeSections = []
 					removeOptions = {}
 					if   objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
-						removeSections = ['info', 'depotshare', 'repository']
+						removeSections = ['info', 'depotserver', 'depotshare', 'repository']
 					elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 						removeSections = [obj.getId()]
 					elif objType in ('Group', 'HostGroup', 'ProductGroup'):

@@ -1133,8 +1133,18 @@ class Harddisk:
 			hook.pre_Harddisk_readPartitionTable(self)
 		try:
 			self.partitions = []
+			os.putenv("LC_ALL", "C")
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
+			
+			result = execute(u'%s -s -uB %s' % (which('sfdisk'), self.device))
+			for line in result:
+				try:
+					self.size = int(line.strip())*1024
+				except:
+					pass
+			
+			logger.info(u"Size of disk '%s': %s Byte / %s MB" % ( self.device, self.size, (self.size/(1024*1024))) )
 			
 			result = execute(u"%s -l %s" % (which('sfdisk'), self.device))
 			for line in result:
@@ -1153,16 +1163,15 @@ class Harddisk:
 					self.cylinders = forceInt(match.group(1))
 					self.heads     = forceInt(match.group(2))
 					self.sectors   = forceInt(match.group(3))
-					self.totalCylinders = self.cylinders * self.heads * self.sectors
+					self.totalCylinders = self.cylinders
 					
 				elif line.lower().startswith(u'units'):
 					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
 					if not match:
 						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
 					self.bytesPerCylinder = forceInt(match.group(1))
-					
-					self.size = self.bytesPerCylinder * self.totalCylinders
-					logger.info(u"Size of disk '%s': %s Byte / %s MB" % ( self.device, self.size, (self.size/(1024*1024))) )
+					self.totalCylinders = int(self.size / self.bytesPerCylinder)
+					logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
 				
 				elif line.startswith(self.device):
 					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
@@ -1186,7 +1195,7 @@ class Harddisk:
 									  'cylEnd':	forceInt(match.group(5)),
 									  'cylSize':	forceInt(match.group(6)),
 									  'start':	forceInt(match.group(4)) * self.bytesPerCylinder,
-									  'end':	forceInt(match.group(5)) * self.bytesPerCylinder,
+									  'end':	(forceInt(match.group(5))+1) * self.bytesPerCylinder,
 									  'size':	forceInt(match.group(6)) * self.bytesPerCylinder,
 									  'type':	forceUnicodeLower(match.group(8)),
 									  'fs':		fs,
@@ -2881,7 +2890,18 @@ def locateDHCPDInit(default = None):
 	raise RuntimeError(u"Could not locate dhcpd init file.")
 
 if (__name__ == "__main__"):
-	print getBlockDeviceContollerInfo('/dev/sda')
-	print getNetworkDeviceConfig(getDefaultNetworkInterfaceName())
-	print getNetworkDeviceConfig('eth0')
+	logger.setConsoleLevel(LOG_DEBUG)
+	logger.setConsoleColor(True)
+	#print getBlockDeviceContollerInfo('/dev/sda')
+	#print getNetworkDeviceConfig(getDefaultNetworkInterfaceName())
+	#print getNetworkDeviceConfig('eth0')
+	disks = getHarddisks()
+	disks[0].readPartitionTable()
+	
+	
+	
+	
+	
+	
+	
 	
