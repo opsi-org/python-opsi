@@ -1,8 +1,9 @@
 python-opsi (4.0.1.4-1) stable; urgency=low
 
   * IniFile: Add newline at end of section
+  * BackenAccessControl _pamAuthenticateUser: pam winbind forceUnicode names
 
- -- Jan Schneider <j.schneider@uib.de>  Wed, 04 May 2011 11:51:22 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 04 May 2011 14:46:17 +0200
 
 python-opsi (4.0.1.3-1) stable; urgency=low
 
