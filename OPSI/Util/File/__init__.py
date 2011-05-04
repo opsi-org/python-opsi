@@ -626,7 +626,7 @@ class IniFile(ConfigFile):
 					for l in comments.get(section, {}).get(option, []):
 						self._lines.append(forceUnicode(l))
 				self._lines.append(u'%s = %s' % (option, forceUnicode(self._configParser.get(section, option))))
-		self._lines.append(u'')
+			self._lines.append(u'')
 		self.open('w')
 		self.writelines()
 		self.close()
