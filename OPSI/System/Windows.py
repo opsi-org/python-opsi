@@ -1569,18 +1569,37 @@ class Impersonate:
 	def end(self):
 		try:
 			win32security.RevertToSelf()
+			if self.userToken:
+				try:
+					self.userToken.Close()
+				except Exception, e:
+					logger.debug(u"Failed to close user token: %s" % e)
+			if self.saveWindowStation:
+				try:
+					self.saveWindowStation.SetProcessWindowStation()
+				except Exception, e:
+					logger.debug(u"Failed to set process WindowStation: %s" % e)
+			if self.saveDesktop:
+				try:
+					self.saveDesktop.SetThreadDesktop()
+				except Exception, e:
+					logger.debug(u"Failed to set thread Desktop: %s" % e)
+			if self.newDesktop:
+				try:
+					self.newWindowStation.CloseDesktop()
+				except Exception, e:
+					logger.debug(u"Failed to close Desktop: %s" % e)
+			if self.newWindowStation:
+				try:
+					self.newWindowStation.CloseWindowStation()
+				except Exception, e:
+					logger.debug(u"Failed to close WindowStation: %s" % e)
 			if self.userProfile:
-				#win32api.ExitWindows()
-				logger.info(u"Unloading user profile")
+				logger.debug(u"Unloading user profile")
 				try:
 					win32profile.UnloadUserProfile(self.userToken, self.userProfile)
 				except Exception, e:
-					logger.error(u"Failed to unload user profile: %s" % e)
-			if self.userToken: self.userToken.Close()
-			if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
-			if self.saveDesktop:       self.saveDesktop.SetThreadDesktop()
-			if self.newWindowStation:  self.newWindowStation.CloseWindowStation()
-			if self.newDesktop:        self.newDesktop.CloseDesktop()
+					logger.debug(u"Failed to unload user profile: %s" % e)
 		except Exception, e:
 			logger.logException(e)
 		
