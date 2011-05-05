@@ -1514,7 +1514,7 @@ class Impersonate:
 				self.userProfile = win32profile.LoadUserProfile(self.userToken, {'UserName': self.username, 'Flags': 0, 'ProfilePath': None})
 				logger.debug(u"User profile loaded")
 				
-				self.userEnvironment = win32profile.CreateEnvironmentBlock(self.userProfile, False)
+				self.userEnvironment = win32profile.CreateEnvironmentBlock(self.userToken, False)
 				logger.debug(u"Environment block created")
 			
 			win32security.ImpersonateLoggedOnUser(self.userToken)
