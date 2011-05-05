@@ -1368,7 +1368,7 @@ def createUser(username, password, groups = []):
 		win32net.NetLocalGroupAddMembers(u"\\\\" + domain, group, 3, [ u ])
 		
 	
-def deleteUser(username):
+def deleteUser(username, deleteProfile = True):
 	username = forceUnicode(username)
 	domain = getHostname()
 	if (username.find(u'\\') != -1):
@@ -1378,11 +1378,21 @@ def deleteUser(username):
 	if (domain != getHostname().upper()):
 		raise ValueError(u"Can only handle domain %s" % getHostname().upper())
 	
+	sid = None
+	try:
+		sid = getUserSid(username)
+	except Exception, e:
+		pass
 	try:
 		win32net.NetUserDel(u"\\\\" + domain, username)
-	except win32net.error:
-		pass
-
+	except win32net.error, e:
+		logger.info(u"Failed to delete user '%s': %s" % (username, forceUnicode(e)))
+	if deleteProfile and sid:
+		try:
+			win32profile.DeleteProfile(sid)
+		except Exception, e:
+			logger.info(u"Failed to delete user profile '%s' (sid %s): %s" % (username, sid, forceUnicode(e)))
+	
 def existsUser(username):
 	username = forceUnicode(username)
 	domain = getHostname()
