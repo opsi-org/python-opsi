@@ -1567,7 +1567,9 @@ class Impersonate:
 		return (None, None, None, None)
 		
 	def end(self):
-		if self.userProfile: win32profile.UnloadUserProfile(self.userToken, self.userProfile)
+		if self.userProfile:
+			win32api.ExitWindows()
+			win32profile.UnloadUserProfile(self.userToken, self.userProfile)
 		if self.userToken: self.userToken.Close()
 		win32security.RevertToSelf()
 		if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
