@@ -629,8 +629,8 @@ def mount(dev, mountpoint, **options):
 				options['username'] = None
 			
 			elif options['username'] and (options['username'].find(u'\\') != -1):
-				options['domain'] = options['username'].split(u'\\')[-1]
-				options['username'] = options['username'].split(u'\\')[0]
+				options['domain'] = options['username'].split(u'\\')[0]
+				options['username'] = options['username'].split(u'\\')[-1]
 				
 			if not 'password' in options:
 				options['password'] = None
