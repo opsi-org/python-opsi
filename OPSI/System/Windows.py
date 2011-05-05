@@ -1567,16 +1567,23 @@ class Impersonate:
 		return (None, None, None, None)
 		
 	def end(self):
-		if self.userProfile:
-			win32api.ExitWindows()
-			win32profile.UnloadUserProfile(self.userToken, self.userProfile)
-		if self.userToken: self.userToken.Close()
-		win32security.RevertToSelf()
-		if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
-		if self.saveDesktop:       self.saveDesktop.SetThreadDesktop()
-		if self.newWindowStation:  self.newWindowStation.CloseWindowStation()
-		if self.newDesktop:        self.newDesktop.CloseDesktop()
-	
+		try:
+			if self.userProfile:
+				#win32api.ExitWindows()
+				logger.info(u"Unloading user profile")
+				try:
+					win32profile.UnloadUserProfile(self.userToken, self.userProfile)
+				except Exception, e:
+					logger.error(u"Failed to unload user profile: %s" % e)
+			if self.userToken: self.userToken.Close()
+			win32security.RevertToSelf()
+			if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
+			if self.saveDesktop:       self.saveDesktop.SetThreadDesktop()
+			if self.newWindowStation:  self.newWindowStation.CloseWindowStation()
+			if self.newDesktop:        self.newDesktop.CloseDesktop()
+		except Exception, e:
+			logger.logException(e)
+		
 	def __del__(self):
 		self.end()
 
