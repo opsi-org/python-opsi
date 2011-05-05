@@ -1569,11 +1569,6 @@ class Impersonate:
 	def end(self):
 		try:
 			win32security.RevertToSelf()
-			if self.userToken:
-				try:
-					self.userToken.Close()
-				except Exception, e:
-					logger.debug(u"Failed to close user token: %s" % e)
 			if self.saveWindowStation:
 				try:
 					self.saveWindowStation.SetProcessWindowStation()
@@ -1600,6 +1595,11 @@ class Impersonate:
 					win32profile.UnloadUserProfile(self.userToken, self.userProfile)
 				except Exception, e:
 					logger.debug(u"Failed to unload user profile: %s" % e)
+			if self.userToken:
+				try:
+					self.userToken.Close()
+				except Exception, e:
+					logger.debug(u"Failed to close user token: %s" % e)
 		except Exception, e:
 			logger.logException(e)
 		
