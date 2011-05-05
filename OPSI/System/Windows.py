@@ -42,6 +42,7 @@ from ctypes import *
 import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
 import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
 import win32pdhutil, win32pdh, win32pipe, msvcrt
+import win32profile
 
 # OPSI imports
 from OPSI.Logger import *
@@ -1440,12 +1441,14 @@ class Impersonate:
 		self.winsta = forceUnicode(self.winsta)
 		self.desktop = forceUnicode(self.desktop)
 		self.userToken = userToken
+		self.userProfile = None
+		self.userEnvironment = None
 		self.saveWindowStation = None
 		self.saveDesktop = None
 		self.newWindowStation = None
 		self.newDesktop = None
 		
-	def start(self, logonType=u'INTERACTIVE', newDesktop=False):
+	def start(self, logonType=u'INTERACTIVE', newDesktop=False, createEnvironment=False):
 		try:
 			logonType = forceUnicode(logonType)
 			newDesktop = forceBool(newDesktop)
@@ -1502,9 +1505,17 @@ class Impersonate:
 					
 					winstaAceIndices = addUserToWindowStation(self.newWindowStation, userSid)
 					logger.debug(u"Added user to window station")
-						
+					
 					desktopAceIndices = addUserToDesktop(self.newDesktop, userSid)
 					logger.debug(u"Added user to desktop")
+			
+			if createEnvironment:
+				# http://www.java2s.com/Open-Source/Python/Windows/pyExcelerator/pywin32-214/win32/Demos/win32cred_demo.py.htm
+				self.userProfile = win32profile.LoadUserProfile(self.userToken, {'UserName': self.username, 'Flags': 0, 'ProfilePath': None})
+				logger.debug(u"User profile loaded")
+				
+				self.userEnvironment = win32profile.CreateEnvironmentBlock(self.userProfile, False)
+				logger.debug(u"Environment block created")
 			
 			win32security.ImpersonateLoggedOnUser(self.userToken)
 			logger.debug(u"User impersonated")
@@ -1526,9 +1537,9 @@ class Impersonate:
 		s.lpDesktop = self.winsta + u'\\' + self.desktop
 		
 		logger.notice(u"Running command '%s' as user '%s' on desktop '%s'" % (command, self.username, self.desktop))
-		
+		self.userEnvironment
 		(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
-					self.userToken, None, command, None, None, 0, dwCreationFlags, None, None, s)
+					self.userToken, None, command, None, None, 0, dwCreationFlags, self.userEnvironment, None, s)
 		logger.info(u"Process startet, pid: %d" % dwProcessId)
 		if not waitForProcessEnding:
 			return (hProcess, hThread, dwProcessId, dwThreadId)
@@ -1546,6 +1557,7 @@ class Impersonate:
 		return (None, None, None, None)
 		
 	def end(self):
+		if self.userProfile: win32profile.UnloadUserProfile(self.userToken, self.userProfile)
 		if self.userToken: self.userToken.Close()
 		win32security.RevertToSelf()
 		if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
