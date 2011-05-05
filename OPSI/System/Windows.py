@@ -1378,20 +1378,20 @@ def deleteUser(username, deleteProfile = True):
 	if (domain != getHostname().upper()):
 		raise ValueError(u"Can only handle domain %s" % getHostname().upper())
 	
-	sid = None
-	try:
-		sid = getUserSid(username)
-	except Exception, e:
-		pass
+	if deleteProfile:
+		try:
+			sid = getUserSid(username)
+			if sid:
+				try:
+					win32profile.DeleteProfile(sid)
+				except Exception, e:
+					logger.info(u"Failed to delete user profile '%s' (sid %s): %s" % (username, sid, forceUnicode(e)))
+		except Exception, e:
+			pass
 	try:
 		win32net.NetUserDel(u"\\\\" + domain, username)
 	except win32net.error, e:
 		logger.info(u"Failed to delete user '%s': %s" % (username, forceUnicode(e)))
-	if deleteProfile and sid:
-		try:
-			win32profile.DeleteProfile(sid)
-		except Exception, e:
-			logger.info(u"Failed to delete user profile '%s' (sid %s): %s" % (username, sid, forceUnicode(e)))
 	
 def existsUser(username):
 	username = forceUnicode(username)
