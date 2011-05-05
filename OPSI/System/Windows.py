@@ -1568,6 +1568,7 @@ class Impersonate:
 		
 	def end(self):
 		try:
+			win32security.RevertToSelf()
 			if self.userProfile:
 				#win32api.ExitWindows()
 				logger.info(u"Unloading user profile")
@@ -1576,7 +1577,6 @@ class Impersonate:
 				except Exception, e:
 					logger.error(u"Failed to unload user profile: %s" % e)
 			if self.userToken: self.userToken.Close()
-			win32security.RevertToSelf()
 			if self.saveWindowStation: self.saveWindowStation.SetProcessWindowStation()
 			if self.saveDesktop:       self.saveDesktop.SetThreadDesktop()
 			if self.newWindowStation:  self.newWindowStation.CloseWindowStation()
