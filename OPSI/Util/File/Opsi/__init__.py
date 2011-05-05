@@ -34,9 +34,8 @@
 
 __version__ = '4.0.0.2'
 
-import os, sys, codecs, re, ConfigParser, tarfile, tempfile, datetime, socket, StringIO, shutil, pwd, grp, bz2, gzip, fcntl
+import os, sys, codecs, re, ConfigParser, tarfile, tempfile, datetime, socket, StringIO, shutil, bz2, gzip
 from subprocess import Popen, PIPE, STDOUT
-from OPSI.System.Posix import SysInfo
 
 if sys.version_info < (2,5):
 	import sha as sha1
@@ -45,6 +44,8 @@ else:
 	
 if (os.name == 'posix'):
 	import fcntl
+	from OPSI.System.Posix import SysInfo
+	import pwd, grp
 
 elif (os.name == 'nt'):
 	import win32con
