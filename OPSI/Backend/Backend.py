@@ -1146,9 +1146,10 @@ class ConfigDataBackend(Backend):
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
 		if softwareLicenseIds:
-			if self._context.licenseOnClient_getObjects(softwareLicenseId = softwareLicenseIds):
+			licenseOnClients = self._context.licenseOnClient_getObjects(softwareLicenseId = softwareLicenseIds)
+			if licenseOnClients:
 				raise BackendReferentialIntegrityError(u"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
-					% licenseOnClientIdents)
+					% licenseOnClients)
 		
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients                                                                          -
