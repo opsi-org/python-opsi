@@ -262,6 +262,7 @@ def getDefaultNetworkInterfaceName():
 class NetworkPerformanceCounter(threading.Thread):
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
+		self.interface = None
 		self._lastBytesIn = 0
 		self._lastBytesOut = 0
 		self._lastTime = None
@@ -275,12 +276,18 @@ class NetworkPerformanceCounter(threading.Thread):
 		iftable.dwNumEntries = 0
 		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
 		bestRatio = 0.0
+		if (iftable.dwNumEntries <= 0):
+			raise Exception(u"No network interfaces found while searching for interface '%s'" % interface)
+		
 		for i in range(iftable.dwNumEntries):
 			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
 			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s" % (interface, iftable.table[i].bDescr, ratio))
 			if (ratio > bestRatio):
 				bestRatio = ratio
 				self.interface = iftable.table[i].bDescr
+		if not self.interface:
+			raise Exception(u"Network interface '%s' not found" % interface)
+		
 		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)" % (self.interface, bestRatio))
 		self.start()
 		

@@ -351,7 +351,7 @@ def objectToHtml(obj, level=0):
 			html += u'<div style="padding-left: 3em;">'
 			i = 0
 			for (key, value) in obj.items():
-				html += u'"<font class="json_key">%s</font>": ' % key
+				html += u'<font class="json_key">%s</font>: ' % objectToHtml(key)
 				html += objectToHtml(value, level+1)
 				if (i < len(obj)-1):
 					html += u',<br />\n'
