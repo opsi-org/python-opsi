@@ -1,3 +1,9 @@
+python-opsi (4.0.1.5-1) stable; urgency=low
+
+  * OpsiBackupFile: Fix symlink restore
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 11 May 2011 17:40:42 +0200
+
 python-opsi (4.0.1.4-1) stable; urgency=low
 
   * IniFile: Add newline at end of section

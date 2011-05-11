@@ -1129,12 +1129,14 @@ class OpsiBackupArchive(tarfile.TarFile):
 					first = False
 				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"),self.CONF_DIR)
 
-				if member.isfile():
-					self._extractFile(member.name, dest)
-				else:
+				if member.issym():
+					os.symlink(member.linkname, dest)
+				elif member.isdir():
 					if not os.path.exists(dest):
 						os.makedirs(dest, mode=member.mode)
 						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+				else:
+					self._extractFile(member.name, dest)
 		
 		
 	def backupFileBackend(self):
@@ -1261,3 +1263,4 @@ class OpsiBackupArchive(tarfile.TarFile):
 	
 	def backupUniventionBackend(self):
 		raise NotImplementedError("Univention backend backups are not supported yet.")
+

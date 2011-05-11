@@ -271,7 +271,7 @@ class OpsiBackup(object):
 		
 def main(argv = sys.argv[1:], stdout=sys.stdout):
 
-	
+	logger.setLogFormat('[%l] [%D] %M')
 	logger.setConsoleLevel(5)
 	
 	backup = OpsiBackup(stdout=stdout)
