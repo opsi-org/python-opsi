@@ -1177,7 +1177,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
 					self._extractFile(member.name, backend["config"]['dhcpdConfigFile'])
 
-	def backupMySQLBackend(self, flushLogs=True):
+	def backupMySQLBackend(self, flushLogs=False):
 		
 
 		for backend in self._getBackends("mysql"):
@@ -1187,6 +1187,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			cmd.append("--user=%s" % backend["config"]["username"])
 			cmd.append("--password=%s" % backend["config"]["password"])
 			if flushLogs:
+				logger.debug("Flushing mysql table logs.")
 				cmd.append("--flush-log")
 			cmd.append("--lock-tables")
 			cmd.append("--add-drop-table")
