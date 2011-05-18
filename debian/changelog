@@ -1,3 +1,9 @@
+python-opsi (4.0.1.6-1) stable; urgency=low
+
+  * fixes for OpsiBackup
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 18 May 2011 15:42:33 +0200
+
 python-opsi (4.0.1.5-1) stable; urgency=low
 
   * OpsiBackupFile: Fix symlink restore
