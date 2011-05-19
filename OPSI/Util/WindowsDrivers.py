@@ -436,6 +436,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 				prefix      = additionalDriverDir,
 				includeFile = re.compile('\.inf$', re.IGNORECASE),
 				returnDirs  = False,
+				followLinks = True,
 				repository  = srcRepository)
 		logger.info(u"Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
 		if not infFiles:
