@@ -652,7 +652,7 @@ class FileRepository(Repository):
 					entry = os.path.join(path, entry)
 					info['path'] = entry[srcLen:]
 					size = 0
-					if os.path.islink(entry):
+					if os.path.islink(entry) and not(os.path.isdir(entry)):
 						pass
 					elif os.path.isfile(entry):
 						info['size'] = os.path.getsize(entry)
