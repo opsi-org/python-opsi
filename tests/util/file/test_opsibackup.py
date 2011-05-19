@@ -88,7 +88,16 @@ class BackendArchiveTest(TestCase):
 				new.append(file)
 				
 		self.assertEquals(old, new)
+	
+	def test_hasConfiguration(self):
+		archive = self.useFixture(BackendArchiveFixture())
+		archive.backupConfiguration()
+		archive.close()
 		
+		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
+		self.assertTrue(backup.hasConfiguration())
+		backup.close()
+
 	def test_backupFileBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
 		
@@ -122,6 +131,15 @@ class BackendArchiveTest(TestCase):
 					
 			self.assertEquals(old, new)
 	
+	def test_hasFileBackend(self):
+		archive = self.useFixture(BackendArchiveFixture())
+		archive.backupFileBackend()
+		archive.close()
+		
+		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
+		self.assertTrue(backup.hasFileBackend())
+		backup.close()
+	
 	def test_backupDHCPBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
 		
@@ -142,12 +160,22 @@ class BackendArchiveTest(TestCase):
 			new = md5sum(file)
 			
 			self.assertEqual(orig, new)
+
+	def test_hasDHCPBackend(self):
+		archive = self.useFixture(BackendArchiveFixture())
+		archive.backupDHCPBackend()
+		archive.close()
 		
-	def test_backupMySQL(self):
+		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
+		self.assertTrue(backup.hasDHCPBackend())
+		backup.close()
+		
+	def test_backupMySQLBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
 		archive.backupMySQLBackend()
 		archive.close()
 
+		orig = {}
 		for backend in archive._getBackends("mysql"):
 			con = MySQLdb.connect (	host = backend["config"]["address"],
 						user = backend["config"]["username"],
@@ -155,26 +183,42 @@ class BackendArchiveTest(TestCase):
 						db = backend["config"]["database"])
 		
 		
-		cursor = con.cursor ()
-		cursor.execute ("SHOW TABLES;")
-		orig = dict.fromkeys([r[0] for r in cursor.fetchall ()])
-		for entry in orig.keys():
-			cursor.execute("SELECT COUNT(*) FROM `%s`"% entry)
-			count = cursor.fetchone()
-			orig[entry] = count[0]
-			cursor.execute("DROP TABLE `%s`" % entry)
+			cursor = con.cursor ()
+			cursor.execute ("SHOW TABLES;")
+			orig[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall ()])
+			for entry in orig[backend["name"]].keys():
+				cursor.execute("SELECT COUNT(*) FROM `%s`"% entry)
+				count = cursor.fetchone()
+				orig[backend["name"]][entry] = count[0]
+				cursor.execute("DROP TABLE `%s`" % entry)
 			
 		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
 		backup.restoreMySQLBackend()
-		
-		cursor.execute ("SHOW TABLES;")
-		new = dict.fromkeys([r[0] for r in cursor.fetchall ()])
-		for entry in new.keys():
-			cursor.execute("SELECT COUNT(*) FROM `%s`"% entry)
-			count = cursor.fetchone()
-			new[entry] = count[0]
 			
-		self.assertEqual(orig, new)
+		new = {}
+		for backend in archive._getBackends("mysql"):
+			con = MySQLdb.connect (	host = backend["config"]["address"],
+						user = backend["config"]["username"],
+						passwd = backend["config"]["password"],
+						db = backend["config"]["database"])
+			cursor = con.cursor ()
+			cursor.execute ("SHOW TABLES;")
+			new[backend["name"]] = dict.fromkeys([r[0] for r in cursor.fetchall ()])
+			for entry in new[backend["name"]].keys():
+				cursor.execute("SELECT COUNT(*) FROM `%s`"% entry)
+				count = cursor.fetchone()
+				new[backend["name"]][entry] = count[0]
+				
+			self.assertEqual(orig, new)
+	
+	def test_hasMySQLBackend(self):
+		archive = self.useFixture(BackendArchiveFixture())
+		archive.backupMySQLBackend()
+		archive.close()
+
+		backup = self.useFixture(BackendArchiveFixture(archive.name, "r"))
+		self.assertTrue(backup.hasMySQLBackend())
+		backup.close()
 		
 	def test_backupVerify(self):
 		archive = self.useFixture(BackendArchiveFixture())
@@ -183,7 +227,6 @@ class BackendArchiveTest(TestCase):
 
 		backup = self.useFixture(BackendArchiveFixture(name=archive.name, mode="r"))
 		self.assertTrue(backup.verify())
-		
 		backup.close()
 
 #	def test_backupVerifyCorrupted(self):

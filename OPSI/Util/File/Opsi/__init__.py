@@ -1116,7 +1116,13 @@ class OpsiBackupArchive(tarfile.TarFile):
 			
 	def backupConfiguration(self):
 		self._addContent(self.CONF_DIR, sub=(self.CONF_DIR, "CONF"))
-		
+	
+	def hasConfiguration(self):
+		for member in self.getmembers():
+			if member.name.startswith(os.path.join(self.CONTENT_DIR, "CONF")):
+				return True
+		return False
+	
 	def restoreConfiguration(self):
 
 		first = True
@@ -1137,8 +1143,20 @@ class OpsiBackupArchive(tarfile.TarFile):
 						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 				else:
 					self._extractFile(member.name, dest)
+	def _hasBackend(self, backend, name=None):
 		
+		if name:
+			backend = os.path.join(backend,name)
+
+		for member in self.getmembers():
+			if member.name.startswith(os.path.join(self.CONTENT_DIR, os.path.join("BACKENDS", backend))):
+				return True
+		return False
+	
+	def hasFileBackend(self, name=None):
+		return self._hasBackend("FILE", name=name)
 		
+	
 	def backupFileBackend(self):
 		for backend in self._getBackends("file"):
 			baseDir = backend["config"]["baseDir"]
@@ -1165,6 +1183,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 		for backend in self._getBackends("dhcpd"):
 			self._addContent(backend["config"]['dhcpdConfigFile'], sub=(os.path.dirname(backend["config"]['dhcpdConfigFile']), "BACKENDS/DHCP/%s" % backend["name"]))
 	
+	def hasDHCPBackend(self, name=None):
+		return self._hasBackend("DHCP", name=name)
+	
 	def restoreDHCPBackend(self):
 		for backend in self._getBackends("dhcpd"):
 			members = self.getmembers()
@@ -1176,6 +1197,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 			for member in members:
 				if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
 					self._extractFile(member.name, backend["config"]['dhcpdConfigFile'])
+
+	def hasMySQLBackend(self, name=None):
+		return self._hasBackend("MYSQL", name=name)
 
 	def backupMySQLBackend(self, flushLogs=False):
 		
@@ -1259,6 +1283,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 				os.close(fd)
 				os.remove(name)
 
+	def hasLDAPBackend(self):
+		#TODO: Implement this when LDAP is supported
+		return False
+	
 	def backupLDAPBackend(self):
 		raise NotImplementedError("LDAP backend backups are not supported yet.")
 	

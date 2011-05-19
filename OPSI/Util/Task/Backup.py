@@ -229,40 +229,61 @@ class OpsiBackup(object):
 		
 		archive = self._getArchive(file=file[0], mode="r")
 		
-		self._verify(archive.name)
-		
-		if force or self._verifySysconfig(archive):
-		
-			logger.notice(_(u"Restoring data from backup archive %s." % archive.name))
+		try:
 			
-			if configuration:
-				logger.debug(u"Restoring opsi configuration.")
-				archive.restoreConfiguration()
-	
-			if dhcp:
-				logger.debug(u"Restoring dhcp configuration.")
-				archive.restoreDHCPBackend()
+			self._verify(archive.name)
 			
-			if mode == "raw":
-				for backend in backends:
-					if backend in ("file", "all"):
-						logger.debug(u"Restoring file backend.")
-						archive.restoreFileBackend()
-					if backend in ("mysql", "all"):
-						logger.debug(u"Restoring mysql backend.")
-						archive.restoreMySQLBackend()
+			functions = []
+			
+			if force or self._verifySysconfig(archive):
+			
+				logger.notice(_(u"Restoring data from backup archive %s." % archive.name))
+				
+				if configuration:
+					if not archive.hasConfiguration() and not force:
+						raise OpsiBackupFileError(_("Backup file does not contain configuration data."))
+					logger.debug(u"Restoring opsi configuration.")
+					functions.append(archive.restoreConfiguration)
 		
-					#TODO: implement ldap/univention backup
-					#if backend in ("ldap", "all"):
-					#	logger.debug(u"Backing up ldap backend.")
-					#	archive.backupLdapBackend()
-					#if backend in ("ldap", "all"):
-					#	logger.debug(u"Backing up univention backend.")
-					#	archive.backupUniventionBackend()
-		
+				if dhcp:
+					if not archive.hasDHCPBackend() and not force:
+						raise OpsiBackupFileError(_("Backup file does not contain DHCP backup data."))
+					logger.debug(u"Restoring dhcp configuration.")
+					functions.append(archive.restoreDHCPBackend)
+				
+				if mode == "raw":
+					for backend in backends:
+						if backend in ("file", "all"):
+							if not archive.hasFileBackend() and not force:
+								raise OpsiBackupFileError(_("Backup file does not contain file backend data."))
+							logger.debug(u"Restoring file backend.")
+							functions.append(archive.restoreFileBackend)
+						if backend in ("mysql", "all"):
+							if not archive.hasMySQLBackend() and not force:
+								raise OpsiBackupFileError(_("Backup file does not contain mysql backend data."))
+							
+							logger.debug(u"Restoring mysql backend.")
+							functions.append(archive.restoreMySQLBackend)
+							
+						#TODO: implement ldap/univention backup
+						#if backend in ("ldap", "all"):
+						#	logger.debug(u"Backing up ldap backend.")
+						#	archive.backupLdapBackend()
+						#if backend in ("ldap", "all"):
+						#	logger.debug(u"Backing up univention backend.")
+						#	archive.backupUniventionBackend()
+				try:
+					for f in functions:
+						logger.debug2("Running restoration function %s" % repr(f))
+						f()
+				except Exception, e:
+					logger.error("Failed to restore data from archive %s: %s. Aborting." %(archive.name, e))
+					raise e
+				
+				logger.notice(_("Restoration complete"))
+		finally:
 			archive.close()
-			
-			logger.notice(_("Restoration complete"))
+
 
 	def run(self):
 		
