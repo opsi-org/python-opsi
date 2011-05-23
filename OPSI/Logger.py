@@ -48,7 +48,7 @@ LOG_COMMENT      = LOG_ESSENTIAL
 LOG_NONE         = 0
 
 # Imports
-import sys, locale, time, os, thread, threading, codecs, types
+import sys, locale, time, os, thread, threading, codecs, types, warnings
 
 if (os.name == 'nt'):
 	# Windows imports for file locking
@@ -172,10 +172,31 @@ class LoggerSubject:
 	
 	def serializable(self):
 		return { "message": self.getMessage(), "severity": self.getSeverity(), "id": self.getId(), "class": self.getClass(), "type": self.getType() }
+
+class TwistedLogObserver(object):
+	def __init__(self, logger):
+		self._logger = logger
 	
+	def emit(self, eventDict):
+		if eventDict.get('isError'):
+			if eventDict.get('failure'):
+				self._logger.logTraceback(eventDict['failure'].getTracebackObject())
+				self._logger.critical(u"     ==>>> %s" % eventDict['failure'].getErrorMessage())
+			for line in eventDict.get('message', ()):
+				if line.find("Can't find property") != -1:
+					# Dav property errors
+					self._logger.debug(u"[twisted] %s" % line)
+				else:
+					self._logger.error(u"[twisted] %s" % line)
+		else:
+			for line in eventDict.get('message', ()):
+				self._logger.debug(u"[twisted] %s" % line)
+
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                   CLASS LOGGERIMPLEMENTATION                                       =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+
+_showwarning = warnings.showwarning
 
 class LoggerImplementation:
 	''' Implementation of the singleton interface '''
@@ -740,6 +761,20 @@ class LoggerImplementation:
 		except Exception, e:
 			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
 
+	def logWarnings(self):
+		def _logWarning(message, category, filename, lineno, file=None, line=None):
+			if file is not None:
+				_showwarning(message, category, filename, lineno, file, line)
+			else:
+				msg = warnings.formatwarning(message, category, filename, lineno, line)
+				self.warning(msg)
+		
+		warnings.showwarning = _logWarning
+	def startTwistedLogging(self):
+		from twisted.python import log
+		observer = TwistedLogObserver(self)
+		log.startLoggingWithObserver(observer.emit, setStdout=0)
+
 	def confidential( self, message ):
 		''' Log a confidential message. '''
 		self.log(LOG_CONFIDENTIAL, message)
@@ -821,7 +856,8 @@ class Logger(LoggerImplementation):
 
 	def __setattr__(self, attr, value):
 		""" Delegate access to implementation """
-	 	return setattr(self.__instance, attr, value)
+		return setattr(self.__instance, attr, value)
+
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                          CLASS VIRTFILE                                            =
