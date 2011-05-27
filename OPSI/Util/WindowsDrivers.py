@@ -50,7 +50,16 @@ from OPSI.Util.Repository import Repository
 # Get logger instance
 logger = Logger()
 
+integratedDrivers = {
+	"pci":     {},
+	"usb":     {},
+	"hdaudio": {},
+	"acpi":    {},
+	}
+
+
 def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepository=None):
+	global integratedDrivers
 	driverDir = forceFilename(driverDir)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
@@ -85,6 +94,13 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		if not hasattr(auditHardware, 'deviceId') or not auditHardware.deviceId:
 			logger.debug(u"Skipping %s device %s: device id not found" % (hwClass, auditHardware))
 			continue
+			
+		devtype = baseDir[:-3]
+		if integratedDrivers.has_key(devtype):
+			if integratedDrivers[devtype].has_key(auditHardware.vendorId):
+				if auditHardware.deviceId in integratedDrivers[devtype][auditHardware.vendorId]:
+					logger.warning("Driver for device [%s:%s] already found." % (auditHardware.vendorId,auditHardware.deviceId))
+					continue
 		
 		name = u'unknown'
 		if hasattr(auditHardware, 'name') and auditHardware.name:
@@ -403,6 +419,7 @@ def integrateAdditionalDrivers(driverSourceDirectory, driverDestinationDirectory
 		messageSubject.detachObserver(messageObserver)
 	
 def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None):
+	global integratedDrivers
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	if not type(additionalDrivers) is list:
@@ -415,6 +432,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if not isinstance(srcRepository, Repository):
 			raise Exception(u"Not a repository: %s" % srcRepository)
 		exists  = srcRepository.exists
+		copy    = srcRepository.copy
+		
 	
 	logger.info(u"Adding additional drivers")
 	
@@ -446,12 +465,35 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			continue
 		for infFile in infFiles:
 			additionalDriverDir = os.path.dirname(infFile)
+			copy(infFile,"/tmp")
+			tf = os.path.join("/tmp",os.path.basename(infFile))
+			infFile = InfFile(tf)
+			for dev in infFile.getDevices():
+				devtype = dev['type'].lower()
+				if not devtype in integratedDrivers.keys():  
+					logger.error(u"Unknown device type %s for device %s:%s, infFile: %s" \
+						% (dev['type'], dev['vendor'], dev['device'], os.path.abspath(infFile.getFilename())))
+					continue
+					
+				vendor = dev['vendor']
+				device = dev['device']	
+				
+				if not integratedDrivers[devtype].has_key(vendor):
+					integratedDrivers[devtype][vendor] = []
+				if device in integratedDrivers[devtype][vendor]:
+					logger.warning("For Device type %s for device %s:%s in infFile: %s is a driver already integrated." \
+						% (devtype,vendor,device, os.path.abspath(infFile.getFilename())))
+				else:
+					integratedDrivers[devtype][vendor].append(device)
+				
 			if additionalDriverDir in driverDirectories:
 				continue
 			logger.info(u"Adding additional driver dir '%s'" % additionalDriverDir)
 			if messageSubject:
 				messageSubject.setMessage("Adding additional driver dir '%s'" % additionalDriverDir)
 			driverDirectories.append(additionalDriverDir)
+			
+			
 	
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository)
 
