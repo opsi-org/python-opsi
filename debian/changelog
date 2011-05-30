@@ -1,8 +1,9 @@
 python-opsi (4.0.1.7-1) stable; urgency=low
 
-  * Fixes AdditionalDriver-Integration with Directories as SymbolicLinks
+  * Fixes additional driver integration with directories as symbolic links
+  * Improved logging in generateProductOnClientSequence_algorithm1
 
- -- erol <e.ueluekmen@uib.de>  Thu, 19 May 2011 13:48:18 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 30 May 2011 14:21:08 +0200
 
 python-opsi (4.0.1.6-1) stable; urgency=low
 

@@ -242,6 +242,7 @@ def generateProductOnClientSequence_algorithm1(productOnClients, availableProduc
 					ppos = sequence.index(productId)
 					dpos = sequence.index(requiredProductId)
 					if (requirementType == 'before') and (ppos < dpos):
+						logger.info("%s requires %s before, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, requiredProductId, productId))
 						sequence.remove(requiredProductId)
 						sequence.insert(ppos, requiredProductId)
 						sequenceChanged = True
