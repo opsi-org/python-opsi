@@ -256,7 +256,8 @@ class HostControlBackend(ExtendedBackend):
 					sock.close()
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception, e:
-				result[host.id] = {"result": None, "error": e}
+				logger.logException(e, LOG_DEBUG)
+				result[host.id] = {"result": None, "error": forceUnicode(e)}
 		return result
 	
 	def hostControl_shutdown(self, hostIds=[]):
