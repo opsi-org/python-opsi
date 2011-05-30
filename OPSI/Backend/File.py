@@ -610,7 +610,7 @@ class FileBackend(ConfigDataBackend):
 								)
 							except Exception, e:
 								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
-									% (option, section, filename, e))
+									% (option, section, p['filename'], e))
 					else:
 						objIdents.append({'id': section, 'type': groupType})
 		
