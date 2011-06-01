@@ -258,6 +258,7 @@ class JSONRPCBackend(Backend):
 		self._serverCertFile      = None
 		self._verifyServerCert    = False
 		self._serverVerified      = False
+		self._verifyByCaCertsFile = None
 		
 		if not self._username:
 			self._username = u''
@@ -289,10 +290,13 @@ class JSONRPCBackend(Backend):
 				self._rpcQueuePollingTime = forceFloat(value)
 			if option in ('rpcqueuesize',):
 				self._rpcQueueSize = forceInt(value)
-			if option in ('servercertfile',):
+			if option in ('servercertfile',) and not value is None:
 				self._serverCertFile = forceFilename(value)
 			if option in ('verifyservercert',):
 				self._verifyServerCert = forceBool(value)
+			if option in ('verifybycacertsfile',) and not value is None:
+				self._verifyByCaCertsFile = forceFilename(value)
+			
 		if not retry:
 			self._retryTime = 0
 		
@@ -301,16 +305,17 @@ class JSONRPCBackend(Backend):
 		
 		self._processAddress(address)
 		self._connectionPool = getSharedConnectionPool(
-			scheme           = self._protocol,
-			host             = self._host,
-			port             = self._port,
-			socketTimeout    = self._socketTimeout,
-			connectTimeout   = self._connectTimeout,
-			retryTime        = self._retryTime,
-			maxsize          = self._connectionPoolSize,
-			block            = True,
-			verifyServerCert = self._verifyServerCert,
-			serverCertFile   = self._serverCertFile
+			scheme              = self._protocol,
+			host                = self._host,
+			port                = self._port,
+			socketTimeout       = self._socketTimeout,
+			connectTimeout      = self._connectTimeout,
+			retryTime           = self._retryTime,
+			maxsize             = self._connectionPoolSize,
+			block               = True,
+			verifyServerCert    = self._verifyServerCert,
+			serverCertFile      = self._serverCertFile,
+			verifyByCaCertsFile = self._verifyByCaCertsFile
 		)
 		
 		if self._connectOnInit:

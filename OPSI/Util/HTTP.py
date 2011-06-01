@@ -34,8 +34,6 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2'
-
 # Imports
 from Queue import Queue, Empty, Full
 from urllib import urlencode
@@ -82,10 +80,13 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	sock.settimeout(None)
 	self.sock = sock
 	
-def non_blocking_connect_https(self, connectTimeout=0):
+def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
 	if (version_info >= (2,6)):
-		self.sock = ssl_module.wrap_socket(self.sock, self.key_file, self.cert_file)
+		if verifyByCaCertsFile:
+			self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_REQUIRED, ca_certs = verifyByCaCertsFile)
+		else:
+			self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_NONE)
 	else:
 		ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
 		self.sock = FakeSocket(self.sock, ssl)
@@ -186,23 +187,24 @@ class HTTPConnectionPool(object):
 	
 	scheme = 'http'
 	
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False, verifyServerCert=False, serverCertFile=None):
-		self.host              = forceUnicode(host)
-		self.port              = forceInt(port)
-		self.socketTimeout     = forceInt(socketTimeout or 0)
-		self.connectTimeout    = forceInt(connectTimeout or 0)
-		self.retryTime         = forceInt(retryTime)
-		self.block             = forceBool(block)
-		self.reuseConnection   = forceBool(reuseConnection)
-		self.pool              = None
-		self.usageCount        = 1
-		self.num_connections   = 0
-		self.num_requests      = 0
-		self.httplibDebugLevel = 0
-		self.peerCertificate   = None
-		self.serverVerified    = False
-		self.verifyServerCert  = False
-		self.serverCertFile    = None
+	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False, verifyServerCert=False, serverCertFile=None, verifyByCaCertsFile=None):
+		self.host                = forceUnicode(host)
+		self.port                = forceInt(port)
+		self.socketTimeout       = forceInt(socketTimeout or 0)
+		self.connectTimeout      = forceInt(connectTimeout or 0)
+		self.retryTime           = forceInt(retryTime)
+		self.block               = forceBool(block)
+		self.reuseConnection     = forceBool(reuseConnection)
+		self.pool                = None
+		self.usageCount          = 1
+		self.num_connections     = 0
+		self.num_requests        = 0
+		self.httplibDebugLevel   = 0
+		self.peerCertificate     = None
+		self.serverVerified      = False
+		self.verifyServerCert    = False
+		self.serverCertFile      = None
+		self.verifyByCaCertsFile = None
 		if isinstance(self, HTTPSConnectionPool):
 			self.verifyServerCert = forceBool(verifyServerCert)
 			if serverCertFile:
@@ -210,7 +212,11 @@ class HTTPConnectionPool(object):
 			if self.verifyServerCert:
 				if not self.serverCertFile:
 					raise Exception(u"Server verfication enabled but no server cert file given")
-				logger.info(u"Server verfication enabled for host '%s'" % host)
+				logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
+			if verifyByCaCertsFile:
+				self.verifyByCaCertsFile = forceFilename(verifyByCaCertsFile)
+				logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.verifyByCaCertsFile, self.host))
+		
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):
@@ -492,7 +498,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		"""
 		logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
 		conn = HTTPSConnection(host=self.host, port=self.port)
-		non_blocking_connect_https(conn, self.connectTimeout)
+		non_blocking_connect_https(conn, self.connectTimeout, self.verifyByCaCertsFile)
 		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
 		if not self.peerCertificate:
