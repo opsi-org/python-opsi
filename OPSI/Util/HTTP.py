@@ -456,7 +456,7 @@ class HTTPConnectionPool(object):
 				pass
 			if retry and (now - firstTryTime < self.retryTime):
 				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, forceUnicode(e)))
-				time.sleep(0.01)
+				time.sleep(0.1)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
 			else:
 				raise
@@ -473,7 +473,7 @@ class HTTPConnectionPool(object):
 		# Handle redirection
 		if redirect and response.status in [301, 302, 303, 307] and 'location' in response.headers: # Redirect, retry
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
-			time.sleep(0.01)
+			time.sleep(0.1)
 			self._put_conn(None)
 			try:
 				if conn:
