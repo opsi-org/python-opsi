@@ -536,7 +536,6 @@ class Repository:
 								sizeString = "%0.2f kByte" % ( float(c['size'])/(1024) )
 							overallProgressSubject.setMessage(u"[%s/%s] %s (%s)" \
 									% (countLenFormat % fileCount, totalFiles, c['name'], sizeString ) )
-						
 						path = [ destination ]
 						path.extend(c['path'].split('/')[:-1])
 						targetDir = os.path.join(*path)
@@ -998,7 +997,7 @@ class WebDAVRepository(HTTPRepository):
 		for child in msr.root_element.children[1:]:
 			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
 			info = { 'size': long(0), 'type': 'file' }
-			info['path'] = unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data), encoding)[srcLen:]
+			info['path'] = unicode(urllib.unquote(child.childOfType(davxml.HRef).children[0].data[srcLen:]), encoding)
 			info['name'] = unicode(pContainer.childOfType(davxml.DisplayName).children[0].data, encoding)
 			if (str(pContainer.childOfType(davxml.GETContentLength)) != 'None'):
 				info['size'] = long( str(pContainer.childOfType(davxml.GETContentLength)) )
@@ -1457,12 +1456,13 @@ if (__name__ == "__main__"):
 	#	shutil.rmtree(tempDir)
 	if not os.path.exists(tempDir):
 		os.mkdir(tempDir)
-
+	
+	
 	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxx', mount = False)
 	#sourceDepot.listdir()
-	print sourceDepot.listdir()
+	#print sourceDepot.listdir()
 	
-        #rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)#, maxBandwidth = 100000)
+	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)#, maxBandwidth = 100000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 10000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 100000)
