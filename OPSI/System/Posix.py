@@ -1012,21 +1012,25 @@ class Harddisk:
 	
 	def __init__(self, device):
 		''' Harddisk constructor. '''
-		self.device         = forceFilename(device)
-		self.model          = u''
-		self.signature      = None
-		self.biosDevice     = None
-		self.totalCylinders = 0
-		self.cylinders      = 0
-		self.heads          = 0
-		self.sectors        = 0
-		self.label          = None
-		self.size           = -1
-		self.partitions     = []
-		self.ldPreload      = None
+		self.device           = forceFilename(device)
+		self.model            = u''
+		self.signature        = None
+		self.biosDevice       = None
+		self.totalCylinders   = 0
+		self.cylinders        = 0
+		self.heads            = 0
+		self.sectors          = 0
+		self.label            = None
+		self.size             = -1
+		self.partitions       = []
+		self.ldPreload        = None
+		self.dosCompatibility = True
 		
 		self.useBIOSGeometry()
 		self.readPartitionTable()
+	
+	def setDosCompatibility(comp = True):
+		self.dosCompatibility = bool(comp)
 	
 	def getBusType(self):
 		return getBlockDeviceBusType(self.device)
@@ -1276,8 +1280,10 @@ class Harddisk:
 					cmd += u'0,0'
 				
 				cmd += u'\n'
-				
-			cmd +=  u'" | %s -D %s' % (which('sfdisk'), self.device)
+			dosCompat = u''
+			if self.dosCompatibility:
+				dosCompat = u'-D '
+			cmd +=  u'" | %s -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 			
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
@@ -1314,6 +1320,7 @@ class Harddisk:
 			self._forceReReadPartionTable()
 			self.label = None
 			self.partitions = []
+			self.readPartitionTable()
 		except Exception, e:
 			for hook in hooks:
 				hook.error_Harddisk_deletePartitionTable(self, e)
