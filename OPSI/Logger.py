@@ -764,9 +764,12 @@ class LoggerImplementation:
 	def logWarnings(self):
 		def _logWarning(message, category, filename, lineno, file=None, line=None):
 			if file is not None:
-				_showwarning(message, category, filename, lineno, file, line)
+				if sys.version_info < (2,6):
+					_showwarning(message, category, filename, lineno, file)
+				else:
+					_showwarning(message, category, filename, lineno, file, line)
 			else:
-				msg = warnings.formatwarning(message, category, filename, lineno, line)
+				msg = warnings.formatwarning(message, category, filename, lineno)
 				self.warning(msg)
 		
 		warnings.showwarning = _logWarning
