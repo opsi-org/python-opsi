@@ -1,3 +1,11 @@
+python-opsi (4.0.1.9-1) stable; urgency=low
+
+  * System/Posix:
+     - Added Harddisk.setDosCompatibility()
+     - reread partition table after deleting partition table
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 07 Jun 2011 10:45:49 +0200
+
 python-opsi (4.0.1.8-1) stable; urgency=low
 
   * HostControl backend: Fix error message
