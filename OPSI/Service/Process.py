@@ -15,14 +15,18 @@ logger = Logger()
 
 class SupervisionProtocol(ProcessProtocol):
 	
-	def __init__(self, daemon):
+	def __init__(self, daemon, deferred = Deferred()):
 		self.daemon = daemon
+		self.deferred = deferred
 		self.pid = None
 		self.defer = None
 		self.logRegex = re.compile('^\[([0-9])\]\s*(.*)')
 		
 	def connectionMade(self):
 		self.pid = self.transport.pid
+		d, self.deferred = self.deferred, Deferred()
+		d.callback(self.daemon)
+		
 		
 	def stop(self):
 		if self.transport.pid:
@@ -89,7 +93,8 @@ class OpsiDaemon(object):
 
 	def start(self):
 
-		self._process = SupervisionProtocol(self)
+		d = Deferred()
+		self._process = SupervisionProtocol(self, d)
 		script = self.findScript()
 		
 		args = [script]
@@ -99,6 +104,7 @@ class OpsiDaemon(object):
 		self._reactor.spawnProcess(self._process, script, args=args,
 					env=self._env, uid=self._uid, gid=self._gid, 
 					childFDs=self._childFDs)
+		return d
 	def stop(self):
 		if not self._process:
 			d =  succeed(None)

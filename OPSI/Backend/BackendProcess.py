@@ -110,11 +110,12 @@ class OpsiBackendService(Service):
 		self._check.start(10)
 
 
-	def initialize(self, user, password, dispatchConfigFile, backendConfigDir,
+	def initialize(self, user, password, forceGroups, dispatchConfigFile, backendConfigDir,
 				extensionConfigDir, aclFile, depotId, postpath):
 		
 		self.user = user
 		self.password = password
+		self.forceGroups = forceGroups
 		self.dispatchConfigFile = dispatchConfigFile
 		self.backendConfigDir = backendConfigDir
 		self.extensionConfigDir = extensionConfigDir
@@ -147,6 +148,7 @@ class OpsiBackendService(Service):
 		self._backendManager = backendManagerFactory(
 			user               = user,
 			password           = password,
+			forceGroups        = forceGroups,
 			dispatchConfigFile = dispatchConfigFile,
 			backendConfigDir   = backendConfigDir,
 			extensionConfigDir = extensionConfigDir,
@@ -201,7 +203,8 @@ class OpsiBackendProcessConnector(OpsiProcessConnector):
 	
 	def connect(self):
 		def connected(remote):
-			remote.attacheDataPort(self._dataport)
+			self.remote = remote
+			remote.attachDataPort(self._dataport)
 			return remote
 		
 		d = OpsiProcessConnector.connect(self)
@@ -210,13 +213,13 @@ class OpsiBackendProcessConnector(OpsiProcessConnector):
 	
 	def assignDataPort(self, dataport):
 		self._dataport = dataport
+		self.remote.attachDataPort(self._dataport)
 
 class OpsiBackendProcess(OpsiPyDaemon):
 	
 	user = "opsiconfd"
 	serviceClass = OpsiBackendService
 	configurationClass = BackendProcessConfiguration
-	connector = OpsiBackendProcessConnector
 	allowRestart = False
 	
 	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
@@ -235,21 +238,16 @@ class OpsiBackendProcess(OpsiPyDaemon):
 	
 	def start(self):
 		
-		d = defer.Deferred()
-		d.addCallback(lambda x: self.check.start(5, False))
-		d.addCallback(self.openDataport)
 		logger.info(u"Starting new backend worker process")
-		OpsiPyDaemon.start(self)
+		d = OpsiPyDaemon.start(self)
 		
-		
-		delay = int(os.getloadavg()[0])+2
-		self._reactor.callLater(delay, d.callback, None)
+		d.addCallback(lambda x: self._startCheck(5, False))
 		
 		return d
 
-	def openDataport(self):
-		self._dataport = self._reactor.listenUNIX("%s.dataport" % self._socket, OpsiProcessProtocolFactory())
-		self._connector.assignDataPort(self._dataport)
+
+	def _startCheck(self, interval, now=False):
+		self.check.start(interval=interval, now=now)
 
 	def checkRunning(self):
 		d = self.isRunning()

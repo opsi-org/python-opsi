@@ -363,6 +363,7 @@ class RemoteDaemonProxy(object):
 			def processResponse(response):
 				r = response["result"]
 				if r == USE_BUFFERED_RESPONSE:
+					
 					buffer = self._dataport.getResponseBuffer(response["tag"])
 					
 					if buffer is None:
@@ -376,6 +377,7 @@ class RemoteDaemonProxy(object):
 
 					result.callback(obj)
 				else:
+					
 					result.callback(r)
 			
 			def processFailure(failure):
@@ -400,7 +402,7 @@ class RemoteDaemonProxy(object):
 			return result
 		return callRemote
 	
-	def attacheDataPort(self, dataport):
+	def attachDataPort(self, dataport):
 		self.dataport = dataport
 		
 class OpsiProcessConnector(object):
@@ -424,6 +426,7 @@ class OpsiProcessConnector(object):
 			self._protocol = result
 			#self._protocol.openDataSink(self._socket)
 			self._remote = self.remote(self._protocol)
+			self._remote.attachDataPort(self._connectDataPort())
 			d, self._connected = self._connected, None
 			d.callback(self._remote)
 		
@@ -442,6 +445,11 @@ class OpsiProcessConnector(object):
 		
 		return self._connected
 	
+	def _connectDataPort(self):
+		self._dataport = self._reactor.listenUNIX("%s.dataport" % self._socket, OpsiProcessProtocolFactory())
+		return self._dataport
+		
+
 	def connectionFailed(self, reason):
 		d, self._connected = self._connected, None
 		d.errback(reason)
@@ -452,6 +460,8 @@ class OpsiProcessConnector(object):
 		if self._remote:
 			if self._remote._protocol.transport:
 				self._remote._protocol.transport.loseConnection()
+			if self._dataport:
+				self._dataport.stopListening()
 			self._remote = None
 		if self._connected:
 			self._connected = None
