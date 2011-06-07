@@ -760,6 +760,7 @@ class HTTPRepository(Repository):
 		proxy = None
 		serverCertFile = None
 		verifyServerCert = False
+		verifyByCaCertsFile = None
 		
 		for (key, value) in kwargs.items():
 			key = key.lower()
@@ -775,7 +776,9 @@ class HTTPRepository(Repository):
 				serverCertFile = forceFilename(value)
 			elif (key == 'verifyservercert'):
 				verifyServerCert = forceBool(value)
-		
+			elif (key == 'verifybycacertsfile'):
+				verifyByCaCertsFile = forceFilename(value)
+			
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
 		
 		if not scheme in ('http', 'https', 'webdav', 'webdavs'):
@@ -824,16 +827,17 @@ class HTTPRepository(Repository):
 			self._port = proxyPort
 		
 		self._connectionPool = getSharedConnectionPool(
-			scheme           = self._protocol,
-			host             = self._host,
-			port             = self._port,
-			socketTimeout    = self._socketTimeout,
-			connectTimeout   = self._connectTimeout,
-			retryTime        = self._retryTime,
-			maxsize          = self._connectionPoolSize,
-			block            = True,
-			serverCertFile   = serverCertFile,
-			verifyServerCert = verifyServerCert
+			scheme              = self._protocol,
+			host                = self._host,
+			port                = self._port,
+			socketTimeout       = self._socketTimeout,
+			connectTimeout      = self._connectTimeout,
+			retryTime           = self._retryTime,
+			maxsize             = self._connectionPoolSize,
+			block               = True,
+			serverCertFile      = serverCertFile,
+			verifyServerCert    = verifyServerCert,
+			verifyByCaCertsFile = verifyByCaCertsFile
 		)
 		
 	def _preProcessPath(self, path):
@@ -865,7 +869,10 @@ class HTTPRepository(Repository):
 		if cookie:
 			# Store cookie
 			self._cookie = cookie.split(';')[0].strip()
-		
+	
+	def getPeerCertificate(self, asPem=False):
+		return self._connectionPool.getPeerCertificate(asPem)
+	
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		'''
 		startByteNumber: position of first byte to be read

@@ -335,7 +335,10 @@ class JSONRPCBackend(Backend):
 		self.stopRpcQueue()
 		if self._connectionPool:
 			self._connectionPool.free()
-		
+	
+	def getPeerCertificate(self, asPem=False):
+		return self._connectionPool.getPeerCertificate(asPem)
+	
 	def backend_exit(self):
 		res = None
 		if self._connected:

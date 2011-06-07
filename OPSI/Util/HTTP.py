@@ -39,7 +39,7 @@ from Queue import Queue, Empty, Full
 from urllib import urlencode
 from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
 from socket import error as SocketError, timeout as SocketTimeout
-import socket, time, base64, os
+import socket, time, base64, os, re
 from sys import version_info
 if (version_info >= (2,6)):
 	import ssl as ssl_module
@@ -256,9 +256,6 @@ class HTTPConnectionPool(object):
 	def __del__(self):
 		self.delPool()
 	
-	def _verifyServer(self):
-		pass
-	
 	def _new_conn(self):
 		"""
 		Return a fresh HTTPConnection.
@@ -301,10 +298,12 @@ class HTTPConnectionPool(object):
 	def is_same_host(self, url):
 		return url.startswith('/') or get_host(url) == (self.scheme, self.host, self.port)
 	
-	#def getConnection(self):
-	#	conn = self._get_conn()
-	#	conn.sock.settimeout(self.socketTimeout)
-	#	return conn
+	def getPeerCertificate(self, asPem=False):
+		if not self.peerCertificate:
+			return None
+		if asPem:
+			return self.peerCertificate
+		return crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate)
 	
 	def getConnection(self):
 		return self._get_conn()
@@ -502,7 +501,21 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
 		if not self.peerCertificate:
-			self.peerCertificate = getPeerCertificate(conn, asPEM = True)
+			peerCertificate = getPeerCertificate(conn, asPEM = False)
+			if peerCertificate:
+				self.peerCertificate = crypto.dump_certificate(crypto.FILETYPE_PEM, peerCertificate)
+				if self.verifyByCaCertsFile:
+					commonName = peerCertificate.get_subject().commonName
+					host = self.host
+					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
+						fqdn = socket.getfqdn(host)
+						if (fqdn == host):
+							raise Exception(u"Failed to get fqdn for ip %s" % host)
+						host = fqdn
+					if not host or not commonName or (host.lower() != commonName.lower()):
+						raise Exception(u"Host '%s' does not match common name '%s'" % (host, commonName))
+			elif self.verifyByCaCertsFile:
+				raise Exception(u"Failed to get peer certificate")
 		return conn
 	
 class CurlHTTPConnectionPool(HTTPConnectionPool):
