@@ -38,6 +38,7 @@ if sys.version_info >= (2,5):
 	import functools
 	from hashlib import md5
 else:
+	from OPSI.Util import _functools as functools
 	from md5 import md5
 
 
@@ -46,7 +47,6 @@ else:
 from twisted.application.service import Service
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor, defer
-from twisted.internet.task import LoopingCall
 from twisted.conch.ssh import keys
 from twisted.python.failure import Failure
 
@@ -54,6 +54,7 @@ from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
 from OPSI.Util.Configuration import BaseConfiguration
 from OPSI.Util.AMP import OpsiProcessProtocolFactory, RemoteDaemonProxy, OpsiProcessConnector, USE_BUFFERED_RESPONSE
+from OPSI.Util.Twisted import ResetableLoop
 from OPSI.Service.JsonRpc import JsonRpcRequestProcessor
 from OPSI.Logger import *
 logger = Logger()
@@ -84,25 +85,26 @@ class OpsiBackendService(Service):
 		self._backendManager = None
 		self._socket = None
 		self._lastContact = time.time()
-		self._check = LoopingCall(self.checkConnected)
+		self._check = ResetableLoop(self.checkConnected)
 	
 	def checkConnected(self):
-		if ((time.time() - self._lastContact) > 30):
+		if ((time.time() - self._lastContact) > 300):
 			reactor.stop()
 	
 	def setLogging(self, console=LOG_WARNING, file=LOG_WARNING):
 		logger.setConsoleLevel(console)
 		logger.setFileLevel(file)
-	
+		logger.startTwistedLogging()
+		logger.logWarnings()
 	def startService(self):
-		logger.warning(u"Starting opsi backend Service")
+		logger.info(u"Starting opsi backend Service")
 		logger.setLogFile(self._config.logFile)
 
 		if not os.path.exists(os.path.dirname(self._config.socket)):
 			os.makedirs(os.path.dirname(self._config.socket))
 
 		self.factory = OpsiProcessProtocolFactory(self, "%s.dataport" % self._config.socket)
-		logger.warning(u"Opening socket %s for interprocess communication." % self._config.socket)
+		logger.debug(u"Opening socket %s for interprocess communication." % self._config.socket)
 		try:
 			self._socket = reactor.listenUNIX(self._config.socket, self.factory)
 		except Exception, e:
@@ -188,7 +190,7 @@ class OpsiBackendService(Service):
 	def isRunning(self):
 		self._lastContact = time.time()
 		if self._check.running:
-			self._check._reschedule()
+			self._check.reset()
 		return True
 	
 	def __getattr__(self, name):
@@ -224,27 +226,22 @@ class OpsiBackendProcess(OpsiPyDaemon):
 	
 	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
 		
-		# FIXME
-		if sys.version_info < (2,5):
-			raise Exception("Multiprocessing is currently unsupported in python 2.4. Please set 'multiprocessing = no' in your opsiconfd.conf")
-		
 		self._socket = socket
 		
 		args.extend(["--socket", socket, "--logFile", logFile])
 		OpsiPyDaemon.__init__(self, socket = socket, args = args, reactor = reactor)
 		self._uid, self._gid = None, None
 		
-		self.check = LoopingCall(self.checkRunning)
+		self.check = ResetableLoop(self.checkRunning)
 	
 	def start(self):
 		
 		logger.info(u"Starting new backend worker process")
 		d = OpsiPyDaemon.start(self)
 		
-		d.addCallback(lambda x: self._startCheck(5, False))
+		d.addCallback(lambda x: self._startCheck(30, False))
 		
 		return d
-
 
 	def _startCheck(self, interval, now=False):
 		self.check.start(interval=interval, now=now)
@@ -259,34 +256,40 @@ class OpsiBackendProcess(OpsiPyDaemon):
 			d.addCallback(lambda x: self.start)
 	
 	def processQuery(self, request, gzip=False):
+		
+		def reschedule(result):
+			self.check.reset()
+			return result
+		
 		d = self.callRemote("processQuery", request, gzip=gzip)
+		d.addCallback(reschedule)
 		d.addCallback(self.maybeStopped)
 		return d
 	
 	def maybeStopped(self, result):
-		r = defer.Deferred()
+		
 		if 'backend_exit' in map((lambda x: x.method), result):
 				d = self.stop()
-				d.addCallback(lambda x: r.callback(result))
+				d.addCallback(lambda x: result)
+				return d
 		else:
-			r.callback(result)
-		return r
-	
+			return defer.succeed(result)
+
 	def stop(self):
 		logger.info(u"Stopping backend worker process (pid: %s)" % self._process.pid)
-		result = defer.Deferred()
+		self.allowRestart = False
 		try:
-			self.check.stop()
+			if self.check.running:
+				self.check.stop()
 		except Exception, e:
 			logger.error(e)
-			result.errback(Failure())
 		
 		d = OpsiPyDaemon.stop(self)
-		d.addCallback(result.callback, result.errback)
-		return result
+		return d
 	
 	def backend_exit(self):
-		
+		if self.check.running:
+			self.check.stop()
 		d = self.callRemote("backend_exit")
 		d.addCallback(lambda x: self.stop())
 		return d

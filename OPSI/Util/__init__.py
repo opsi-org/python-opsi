@@ -61,6 +61,8 @@ try:
 except ImportError:
 	import _argparse as argparse
 
+
+
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -78,7 +80,6 @@ class PickleString(str):
 	
 	def __setstate__(self, state):
 		self = base64.standard_b64decode(state)
-
 
 def deserialize(obj, preventObjectCreation=False):
 	newObj = None

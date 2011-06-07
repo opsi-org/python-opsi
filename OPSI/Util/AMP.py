@@ -98,7 +98,7 @@ class RemoteProcessCall(Command):
 class ChunkedArgument(Command):
 	
 	arguments = [	('tag', Integer()),
-			('argString', String())]
+			('chunk', String())]
 
 	response = [('result', Integer())]
 	
@@ -144,7 +144,7 @@ class OpsiQueryingProtocol(AMP):
 		self.dataSink = None
 		
 	def getNextTag(self):
-		self.tag += 1
+		self.tag = self.tag +1
 		return self.tag
 	
 	def openDataSink(self, address):
@@ -185,11 +185,12 @@ class OpsiQueryingProtocol(AMP):
 		if len(chunks) > 1:
 			for chunk in chunks[:-1]:
 				def sendChunk(tag, chunk):
-					deferedSend = lambda x: self.dataport.callRemote(
-							commandType=ResponseBufferPush, tag=tag, chunk=chunk)
+					deferedSend = lambda x: self.callRemote(
+							commandType=ChunkedArgument, tag=tag, chunk=chunk)
 					return deferedSend
 					
-				d.addCallback(sendChunk(tag=tag, argString=chunk))
+				d.addCallback(sendChunk(tag=tag, chunk=chunk))
+		
 		d.addCallback(lambda x: self.callRemote(RemoteProcessCall, name=method, tag=tag, argString=chunks[-1]))
 		d.callback(None)
 		return d
@@ -201,7 +202,7 @@ class OpsiQueryingProtocol(AMP):
 	
 
 	def getResponseBuffer(self,tag):
-		return self.dataSink.factory._protocol.responseBuffer.pop(tag)
+		return self.responseBuffer.pop(tag)
 	
 class OpsiResponseProtocol(AMP):
 	
@@ -222,13 +223,12 @@ class OpsiResponseProtocol(AMP):
 		
 	@RemoteProcessCall.responder
 	def remoteProcessCallReceived(self, tag, name, argString):
-
 		args = self.buffer.pop(tag, argString)
 		
 		if type(args) is not StringType:
 			args.write(argString)
 			args, closed = args.getvalue(), args.close()
-				
+
 		args, kwargs = loads(args)
 
 		method = getattr(self.factory._remote, name, None)
@@ -280,9 +280,9 @@ class OpsiResponseProtocol(AMP):
 		return dd
 
 	@ChunkedArgument.responder
-	def chunkReceived(self, tag, argString):
+	def chunkReceived(self, tag, chunk):
 		buffer = self.buffer.setdefault(tag, StringIO.StringIO())
-		buffer.write(argString)
+		buffer.write(chunk)
 		return {'result': tag}
 	
 
@@ -320,7 +320,8 @@ class OpsiProcessProtocolFactory(ReconnectingClientFactory):
 		self._notifiers.append((callback, errback))
 	
 	def removeNotifier(self, callback, errback=None):
-		self._notifiers.remove((callback, errback))
+		if (callback,errback) in self._notifiers:
+			self._notifiers.remove((callback, errback))
 	
 	def notifySuccess(self, *args, **kwargs):
 		for callback, errback in self._notifiers:
@@ -403,7 +404,7 @@ class RemoteDaemonProxy(object):
 		return callRemote
 	
 	def attachDataPort(self, dataport):
-		self.dataport = dataport
+		self._dataport = dataport
 		
 class OpsiProcessConnector(object):
 	
@@ -426,9 +427,10 @@ class OpsiProcessConnector(object):
 			self._protocol = result
 			#self._protocol.openDataSink(self._socket)
 			self._remote = self.remote(self._protocol)
-			self._remote.attachDataPort(self._connectDataPort())
 			d, self._connected = self._connected, None
+			self._connectDataPort()
 			d.callback(self._remote)
+
 		
 		def failure(fail):
 			self._factory.removeNotifier(success, failure)
@@ -446,7 +448,9 @@ class OpsiProcessConnector(object):
 		return self._connected
 	
 	def _connectDataPort(self):
-		self._dataport = self._reactor.listenUNIX("%s.dataport" % self._socket, OpsiProcessProtocolFactory())
+		f = OpsiProcessProtocolFactory()
+		f.addNotifier(self._remote.attachDataPort)
+		self._dataport = self._reactor.listenUNIX("%s.dataport" % self._socket, f)
 		return self._dataport
 		
 

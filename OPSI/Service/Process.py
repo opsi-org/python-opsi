@@ -32,7 +32,7 @@ class SupervisionProtocol(ProcessProtocol):
 		if self.transport.pid:
 			self.defer = Deferred()
 			self.transport.signalProcess(signal.SIGTERM)
-			reactor.callLater(15, self.kill)
+			reactor.callLater(30, self.kill)
 			return self.defer
 		return succeed(None)
 
@@ -193,6 +193,12 @@ class OpsiPyDaemon(OpsiDaemon):
 	
 	MAIN = """\
 import sys
+
+from twisted.application.reactors import getReactorTypes, installReactor
+
+for r in getReactorTypes():
+	if sys.argv[-3] == r.moduleName:
+		installReactor(r.shortName)
 
 from OPSI.Service.Process import runOpsiService
 

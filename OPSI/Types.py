@@ -613,7 +613,7 @@ def forceArchitectureList(var):
 def args(*vars, **typeVars):
 	"""Function to populate an object with passed on keyword args.
 	This is intended to be used as a decorator.
-	Classes using this decorator must explicitly inherit from object or a subclass ob object.
+	Classes using this decorator must explicitly inherit from object or a subclass of object.
 		
 		@args()			#works
 		class Foo(object):
