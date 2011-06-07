@@ -3,6 +3,10 @@ python-opsi (4.0.1.9-1) stable; urgency=low
   * System/Posix:
      - Added Harddisk.setDosCompatibility()
      - reread partition table after deleting partition table
+  * Util/Repository:
+     - Fix HTTPRepository.copy
+  * Util/HTTP, Util/Repository, Backend/JSONRPC
+     - SSL verify by ca certs file
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 07 Jun 2011 10:45:49 +0200
 
