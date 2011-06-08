@@ -841,17 +841,18 @@ class HTTPRepository(Repository):
 		
 	def _preProcessPath(self, path):
 		path = forceUnicode(path)
-		if path.startswith('/'):
-			path = path[1:]
+		path = path.lstrip("/")
 		if self._proxy:
 			if self._url.endswith('/'):
 				path = self._url + path
 			else:
 				path = self._url + u'/' + path
 		else:
-			path = self._path + u'/' + path
-		if path.endswith('/'):
-			path = path[:-1]
+			path = (u"/".join([self._path, path])).lstrip("/")
+			if not self._url.endswith("/"):
+				path = u"/" + path
+			
+		path = path.rstrip("/")
 		return urllib.quote(path.encode('utf-8'))
 	
 	def _headers(self):
