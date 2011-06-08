@@ -199,8 +199,8 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		driverNeeded = True
 		newDriversTmp = []
 		infFiles = findFiles(
-			directory   = driverDestinationDirectory,
-			prefix      = driverDestinationDirectory,
+			directory   = driverSourceDirectory,
+			prefix      = driverSourceDirectory,
 			includeFile = re.compile('\.inf$', re.IGNORECASE),
 			returnDirs  = False,
 			followLinks = True,
