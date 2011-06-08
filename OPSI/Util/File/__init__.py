@@ -643,12 +643,18 @@ class InfFile(ConfigFile):
 	
 	def __init__(self, filename, lockFailTimeout = 2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
+		self._sourceDisksNames = []
 		self._devices = []
 	
 	def getDevices(self):
 		if not self._parsed:
 			self.parse()
 		return self._devices
+	
+	def getSourceDisksNames(self):
+		if not self._parsed:
+			self.parse()
+		return self._sourceDisksNames
 	
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		try:
@@ -709,6 +715,26 @@ class InfFile(ConfigFile):
 					except:
 						pass
 		logger.debug2(u"        got strings: %s" % strings)
+		
+		# Get source disks names
+		self._sourceDisksNames = []
+		sectionFound = False
+		for line in lines:
+			match = re.search(self.sectionRegex, line)
+			if match:
+				section = match.group(1)
+				if section.lower().startswith(u'sourcedisksnames'):
+					sectionFound = True
+				else:
+					sectionFound = False
+				continue
+			if sectionFound:
+				if (line.find('=') == -1):
+					continue
+				name = line.split(u'=')[1].split(u',')[0].strip()
+				name = strings.get(name.replace('%', '').lower(), name)
+				if not name in self._sourceDisksNames:
+					self._sourceDisksNames.append(name)
 		
 		# Get devices
 		logger.debug(u"   - Getting devices")
