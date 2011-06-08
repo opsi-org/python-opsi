@@ -141,6 +141,10 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	driverSourceDirectories = forceUnicodeList(driverSourceDirectories)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	
+	if not driverSourceDirectories:
+		logger.warning(u"No driver source directories passed")
+		return []
+	
 	exists  = os.path.exists
 	listdir = os.listdir
 	copy    = System.copy
@@ -211,7 +215,8 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				tempInfFile = u'/tmp/temp.inf'
 				copy(infFile, tempInfFile)
 				infFile = InfFile(tempInfFile)
-			infFile = InfFile(infFile)
+			else:
+				infFile = InfFile(infFile)
 			devices = infFile.getDevices()
 			newDriversTmp.append({
 				'devices': devices,
@@ -273,7 +278,11 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 		logger.notice(u"Integrating driver for device %s" % name)
 		if messageSubject:
 			messageSubject.setMessage(u"Integrating driver for device %s" % name)
-		
+	
+	if not driverDirectories:
+		logger.debug(u"No driver directories to integrate")
+		return []
+	
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository)
 
 def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):
@@ -430,6 +439,10 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if messageSubject:
 				messageSubject.setMessage(u"Adding additional driver dir '%s'" % additionalDriverDir)
 			driverDirectories.append(additionalDriverDir)
+	
+	if not driverDirectories:
+		logger.debug(u"No additional driver directories to integrate")
+		return []
 	
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository)
 
