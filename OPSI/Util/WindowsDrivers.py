@@ -396,12 +396,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		additionalDrivers = forceUnicodeList(additionalDrivers)
 	
 	exists  = os.path.exists
+	listdir = os.listdir
+	copy    = System.copy
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
 			raise Exception(u"Not a repository: %s" % srcRepository)
 		exists  = srcRepository.exists
+		listdir = srcRepository.listdir
 		copy    = srcRepository.copy
-		
 	
 	logger.info(u"Adding additional drivers")
 	
@@ -433,6 +435,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			continue
 		for infFile in infFiles:
 			additionalDriverDir = os.path.dirname(infFile)
+			parentDir = os.path.dirname(additionalDriverDir)
+			try:
+				for entry in listdir(parentDir):
+					if (entry.lower() == 'txtsetup.oem'):
+						additionalDriverDir = parentDir
+						break
+			except Exception, e:
+				logger.debug(e)
 			if additionalDriverDir in driverDirectories:
 				continue
 			logger.info(u"Adding additional driver dir '%s'" % additionalDriverDir)
