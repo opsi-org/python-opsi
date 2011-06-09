@@ -34,7 +34,7 @@
 
 import time, zlib, urllib, copy
 
-from twisted.internet.defer import maybeDeferred, Deferred, succeed
+from twisted.internet.defer import maybeDeferred, Deferred, succeed, DeferredList
 from twisted.internet import threads
 from twisted.python.failure import Failure
 from OPSI.Util import objectToHtml, toJson, fromJson
@@ -127,9 +127,9 @@ class JsonRpc(object):
 				self.result = eval( "instance.%s(*params, **keywords)" % self.getMethodName() )
 			else:
 				self.result = eval( "instance.%s(*params)" % self.getMethodName() )
-			
+
 			logger.info(u'Got result')
-			logger.debug2(self.result)
+			logger.debug2("RPC ID %s: %s" %(self.tid, self.result))
 		
 		except Exception, e:
 			logger.logException(e, LOG_INFO)
@@ -244,15 +244,14 @@ class JsonRpcRequestProcessor(object):
 		return deferred
 		
 	def executeRpcs(self, thread=True):
-		deferred = Deferred()
+		dl = []
 		for rpc in self.rpcs:
-			deferred.addCallback(lambda x: self._executeRpc(rpc, thread))
-		deferred.callback(None)
-		return deferred
+			d = self._executeRpc(rpc=rpc, thread=thread)
+			dl.append(d)
+		
+		return DeferredList(dl)
 	
 	def getResults(self):
-		#if len(self.rpcs) == 0:
-		#	raise ValueError("No rpcs to generate results from.")
 		return self.rpcs
 			
 
