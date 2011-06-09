@@ -93,7 +93,7 @@ class JSONRPC(DeferredCall):
 						pass
 					raise exception
 				raise Exception(u'%s (error on server)' % error)
-			self.result = deserialize(result.get('result'))
+			self.result = deserialize(result.get('result'), preventObjectCreation = self.method.endswith('_getHashes'))
 		except Exception, e:
 			logger.logException(e)
 			self.error = e
