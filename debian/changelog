@@ -1,3 +1,10 @@
+python-opsi (4.0.1.10-1.1) stable; urgency=low
+
+  * Util/Task/Backup, Util/File/Opsi
+    - Several usability improvements
+
+ -- Christian Kampka <c.kampka@uib.de>  Fri, 10 Jun 2011 14:14:46 +0200
+
 python-opsi (4.0.1.9-1) stable; urgency=low
 
   * System/Posix:
