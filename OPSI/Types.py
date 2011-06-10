@@ -701,6 +701,9 @@ class OpsiBackupFileError(OpsiError):
 class OpsiBackupFileNotFound(OpsiBackupFileError):
 	ExceptionShortDescription = u"Opsi backup file not found"
 
+class OpsiBackupBackendNotFound(OpsiBackupFileError):
+	ExceptionShortDescription = u"Opsi backend not found in backup"
+	
 class OpsiAuthenticationError(OpsiError):
 	ExceptionShortDescription = u"Opsi authentication error"
 

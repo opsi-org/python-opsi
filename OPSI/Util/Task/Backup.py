@@ -92,13 +92,16 @@ class OpsiBackup(object):
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
 
-	def _create(self, destination=None, mode="raw", backends=["all"], configuration=True, dhcp=True, compression="bz2", flush_logs=False, **kwargs):
+	def _create(self, destination=None, mode="raw", backends=["auto"], no_configuration=False, compression="bz2", flush_logs=False, **kwargs):
 
 		
 		if "all" in backends:
 			backends = ["all"]
-		
-		
+			
+		if "auto" in backends:
+			backends = ["auto"]
+
+
 		if destination and os.path.exists(destination) and not os.path.isfile(destination):
 			file = None
 		else:
@@ -115,13 +118,15 @@ class OpsiBackup(object):
 			
 			if mode == "raw":
 				for backend in backends:
-					if backend in ("file", "all"):
+					if backend in ("file", "all", "auto"):
 						logger.debug(u"Backing up file backend.")
-						archive.backupFileBackend()
-					if backend in ("mysql", "all"):
+						archive.backupFileBackend(auto=("auto" in backends))
+					if backend in ("mysql", "all", "auto"):
 						logger.debug(u"Backing up mysql backend.")
-						archive.backupMySQLBackend(flushLogs=flush_logs)
-
+						archive.backupMySQLBackend(flushLogs=flush_logs, auto=("auto" in backends))
+					if backend in ("dhcp", "all", "auto"):
+						logger.debug(u"Backing up dhcp configuration.")
+						archive.backupDHCPBackend(auto=("auto" in backends))
 					#TODO: implement ldap/univention backup
 					#if backend in ("ldap", "all"):
 					#	logger.debug(u"Backing up ldap backend.")
@@ -130,12 +135,10 @@ class OpsiBackup(object):
 					#	logger.debug(u"Backing up univention backend.")
 					#	archive.backupUniventionBackend()
 			
-			if configuration:
+			if not no_configuration:
 				logger.debug(u"Backing up opsi configuration.")
 				archive.backupConfiguration()
-			if dhcp:
-				logger.debug(u"Backing up dhcp configuration.")
-				archive.backupDHCPBackend()
+
 			archive.close()
 			
 			self._verify(archive.name)
@@ -219,14 +222,16 @@ class OpsiBackup(object):
 		return True
 
 
-	def _restore(self, file, mode="raw", backends=[], configuration=True, dhcp=True, force=False, **kwargs):
+	def _restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
 		
 		if not backends:
 			backends = []
 		
 		if "all" in backends:
-			backends = ["all"] 
+			backends = ["all"]
 		
+		auto = "auto" in backends
+			
 		archive = self._getArchive(file=file[0], mode="r")
 		
 		try:
@@ -245,26 +250,24 @@ class OpsiBackup(object):
 					logger.debug(u"Restoring opsi configuration.")
 					functions.append(archive.restoreConfiguration)
 		
-				if dhcp:
-					if not archive.hasDHCPBackend() and not force:
-						raise OpsiBackupFileError(_("Backup file does not contain DHCP backup data."))
-					logger.debug(u"Restoring dhcp configuration.")
-					functions.append(archive.restoreDHCPBackend)
-				
+
+
 				if mode == "raw":
 					for backend in backends:
-						if backend in ("file", "all"):
-							if not archive.hasFileBackend() and not force:
+						if backend in ("file", "all", "auto"):
+							if not archive.hasFileBackend() and not force and not auto:
 								raise OpsiBackupFileError(_("Backup file does not contain file backend data."))
-							logger.debug(u"Restoring file backend.")
 							functions.append(archive.restoreFileBackend)
-						if backend in ("mysql", "all"):
-							if not archive.hasMySQLBackend() and not force:
+							
+						if backend in ("mysql", "all", "auto"):
+							if not archive.hasMySQLBackend() and not force and not auto:
 								raise OpsiBackupFileError(_("Backup file does not contain mysql backend data."))
-							
-							logger.debug(u"Restoring mysql backend.")
 							functions.append(archive.restoreMySQLBackend)
-							
+						
+						if backend in ("dhcp", "all", "auto"):
+							if not archive.hasDHCPBackend() and not force and not auto:
+								raise OpsiBackupFileError(_("Backup file does not contain DHCP backup data."))
+							functions.append(archive.restoreDHCPBackend)
 						#TODO: implement ldap/univention backup
 						#if backend in ("ldap", "all"):
 						#	logger.debug(u"Backing up ldap backend.")
@@ -275,7 +278,10 @@ class OpsiBackup(object):
 				try:
 					for f in functions:
 						logger.debug2("Running restoration function %s" % repr(f))
-						f()
+						f(auto)
+				except OpsiBackupBackendNotFound, e:
+					if not auto:
+						raise e
 				except Exception, e:
 					logger.error("Failed to restore data from archive %s: %s. Aborting." %(archive.name, e))
 					raise e
@@ -296,14 +302,15 @@ class OpsiBackup(object):
 def main(argv = sys.argv[1:], stdout=sys.stdout):
 
 	logger.setLogFormat('[%l] [%D] %M')
-	logger.setConsoleLevel(LOG_NOTICE)
+	logger.setConsoleLevel(LOG_WARNING)
 	
 	backup = OpsiBackup(stdout=stdout)
 	parser = argparse.ArgumentParser(prog="opsi-backup", description=_('Creates and restores opsi backups.'))
 	#FIXME: show program version
+	parser.add_argument("-v", "--verbose", action="store_true", default=False, help=_("Show log output on standard out."))
 	parser.add_argument("-V", "--version", action="version", version='opsi-backup %s'%  __verstr__, help="Show programm version.")
 	parser.add_argument("-l", "--log-level", type=int, default=5, choices=range(1,10), help=_("Set the log level for this programm (Default: 5)."))
-	parser.add_argument("--log-file", metavar='FILE', help=_("Set a log file for this programm."))
+	parser.add_argument("--log-file", metavar='FILE', default="/var/log/opsi/opsi-backup.log", help=_("Set a log file for this programm."))
 	subs = parser.add_subparsers(title="commands", dest="command", help=_("opsi-backup sub-commands"))
 	
 	parser_verify = subs.add_parser("verify", help=_("Verify archive integrity."))
@@ -312,28 +319,30 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 	parser_restore = subs.add_parser("restore", help=_("Restore data from a backup archive."))
 	parser_restore.add_argument("file", nargs=1, help=_("The backup archive to restore data from."))
 	parser_restore.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for restoration. (Default: raw)"))
-	parser_restore.add_argument("--backends", action="append", choices=['file','mysql','all'], help=_("Select a backend to restore or 'all' for all backends. Can be given multiple times."))
+	parser_restore.add_argument("--backends", action="append", choices=['file','mysql','dhcp','auto','all'], help=_("Select a backend to restore or 'all' for all backends. Can be given multiple times."))
 	parser_restore.add_argument("--configuration", action="store_true", default=False, help=_("Restore opsi configuration."))
-	parser_restore.add_argument("--dhcp", action="store_true", default=False, help=_("Restore dhcp configuration."))
+	#parser_restore.add_argument("--dhcp", action="store_true", default=False, help=_("Restore dhcp configuration."))
 	parser_restore.add_argument("-f", "--force", action="store_true", default=False, help=_("Ignore sanity checks and try to apply anyways. Use with caution! (Default: false)"))
 	
 	parser_create = subs.add_parser("create", help=_("Create a new backup."))
 	parser_create.add_argument("destination", nargs="?", help=_("Distination of the generated output file. (optional)"))
 	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for backup. (Default: raw)"))
 	parser_create.add_argument("--flush-logs", action="store_true", default=False, help=_("Causes mysql to flush table logs to disk before the backup. (recommended)"))
-	parser_create.add_argument("--backends", action="append", choices=['file','mysql','all'], default=DefaultList(["all"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: all)"))
-	parser_create.add_argument("--configuration", action="store_true", default=False, help=_("Backup opsi configuration."))
-	parser_create.add_argument("--dhcp", action="store_true", default=False, help=_("Backup dhcp configuration."))
+	parser_create.add_argument("--backends", action="append", choices=['file','mysql','dhcp', 'auto', 'all'], default=DefaultList(["auto"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: auto)"))
+	parser_create.add_argument("--no-configuration", action="store_true", default=False, help=_("Backup opsi configuration."))
+	#parser_create.add_argument("--dhcp", action="store_true", default=False, help=_("Backup dhcp configuration."))
 	parser_create.add_argument("-c", "--compression", nargs="?", default="bz2", choices=['gz','bz2', 'none'], help=_("Sets the compression format for the archive (Default: bz2)"))
-	
+
 	parser.parse_args(argv, namespace=backup)
-	
+
 	logLevel = backup.__dict__.pop("log_level")
-	logger.setConsoleLevel(logLevel)
-	
+
+	verbose = backup.__dict__.pop("verbose", None)
+	if verbose:
+		logger.setConsoleLevel(logLevel)
+
 	logFile = backup.__dict__.pop("log_file", None)
 	if logFile:
-		logger.setConsoleLevel(LOG_NONE)
 		logger.setLogFile(logFile)
 		logger.setFileLevel(logLevel)
 
@@ -348,4 +357,13 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 		logger.logException(e, LOG_DEBUG)
 		logger.error(_(u"Task backup failed: %s" %e))
 		return 1
+
+
+
+
+
+
+
+
+
 

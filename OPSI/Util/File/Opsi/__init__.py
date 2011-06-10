@@ -904,38 +904,31 @@ class OpsiBackupArchive(tarfile.TarFile):
 			self._backends = None
 
 	def _readBackendConfiguration(self):
-		backends = []
+		backends = {}
 		
-		b = []
+		dispatch = []
 		if os.path.exists(self.CONF_DIR):
 			try:
 				for list in map(lambda x: x[1], BackendDispatchConfigFile(self.DISPATCH_CONF).parse()):
-					b.extend(list)
+					dispatch.extend(list)
 			except Exception, e:
 				logger.warning(u"Could not read dispatch configuration: %s" % unicode(e))
-				b = []
+				dispatch = []
 		
-		b = {}.fromkeys(b).keys()
-		files = []
 		if  os.path.exists(self.BACKEND_CONF_DIR):
-			for config in b:
-				if os.path.exists(os.path.join(self.BACKEND_CONF_DIR, "%s.conf" %config)):
-					files.append("%s.conf" %config)
-			if not files:
-				# fallback if dispatch could not be used to determain backends
-				files = os.listdir(self.BACKEND_CONF_DIR)
-
-			for file in files:
-				
-				name = file.rsplit(".")[0]
-				b = { 'socket': socket, 'config': {}, 'module': '' }
-				try:
-					execfile(os.path.join(self.BACKEND_CONF_DIR,file), b)
-					backends.append({"name": name, "config": b["config"], "module": b['module']})
-					
-				except Exception, e:
-					logger.warning(u"Failed to read backend config %s: %s" %(file, e))
+			for entry in os.listdir(self.BACKEND_CONF_DIR):
+				if entry.endswith(".conf"):
+					name = entry.split(".")[0].lower()
+					if name in backends:
+						raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
+					b = { 'socket': socket, 'config': {}, 'module': ''}
+					try:
+						execfile(os.path.join(self.BACKEND_CONF_DIR, entry), b)
+						backends[name] = {"name": name, "config": b["config"], "module": b['module'], "dispatch": (name in dispatch)}
+					except Exception, e:
+						logger.warning(u"Failed to read backend config %s: %s" %(file, e))
 			return backends
+
 		raise OpsiBackupFileError("Could not read backend Configuration.")
 	
 	def _getBackends(self, type=None):
@@ -943,7 +936,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		if not self._backends:
 			self._backends = self._readBackendConfiguration()
 		
-		for backend in self._backends:
+		for backend in self._backends.values():
 			if type is None or backend["module"].lower() == type:
 				yield backend
 		
@@ -1157,131 +1150,155 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return self._hasBackend("FILE", name=name)
 		
 	
-	def backupFileBackend(self):
+	def backupFileBackend(self, auto=False):
 		for backend in self._getBackends("file"):
-			baseDir = backend["config"]["baseDir"]
-			self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE/%s" % backend["name"]))
+			if not auto or backend["dispatch"]:
+				if not backend["dispatch"]:
+					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
+				baseDir = backend["config"]["baseDir"]
+				self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE/%s" % backend["name"]))
 	
-	def restoreFileBackend(self):
+	def restoreFileBackend(self, auto=False):
+
+
+		if not self.hasFileBackend():
+			raise OpsiBackupBackendNotFound("No File Backend found in backup archive")
 
 		for backend in self._getBackends("file"):
-			baseDir = backend["config"]["baseDir"]
-			
-			members = self.getmembers()
-	
-			for member in members:
-				if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])):
-					dest = member.name.replace(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"]), baseDir)
-	
-					if member.isfile():
-						self._extractFile(member.name, dest)
-					else:
-						if not os.path.exists(dest):
-							os.makedirs(dest, mode=member.mode)
-							os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
-	def backupDHCPBackend(self):
+			if not auto or backend["dispatch"]:
+				baseDir = backend["config"]["baseDir"]
+				
+				members = self.getmembers()
+		
+				for member in members:
+					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"])):
+						dest = member.name.replace(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"]), baseDir)
+		
+						if member.isfile():
+							self._extractFile(member.name, dest)
+						else:
+							if not os.path.exists(dest):
+								os.makedirs(dest, mode=member.mode)
+								os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+
+	def backupDHCPBackend(self, auto=False):
 		for backend in self._getBackends("dhcpd"):
-			self._addContent(backend["config"]['dhcpdConfigFile'], sub=(os.path.dirname(backend["config"]['dhcpdConfigFile']), "BACKENDS/DHCP/%s" % backend["name"]))
+			if not auto or backend["dispatch"]:
+				if not backend["dispatch"]:
+					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
+				self._addContent(backend["config"]['dhcpdConfigFile'], sub=(os.path.dirname(backend["config"]['dhcpdConfigFile']), "BACKENDS/DHCP/%s" % backend["name"]))
 	
 	def hasDHCPBackend(self, name=None):
 		return self._hasBackend("DHCP", name=name)
 	
-	def restoreDHCPBackend(self):
+	def restoreDHCPBackend(self, auto=False):
+		
+		
+		if not self.hasDHCPBackend():
+			raise OpsiBackupBackendNotFound("No DHCPD Backend found in backup archive")
+		
 		for backend in self._getBackends("dhcpd"):
-			members = self.getmembers()
-	
-			file = backend["config"]['dhcpdConfigFile']
-			if os.path.exists(file):
-				os.remove(file)
-			
-			for member in members:
-				if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
-					self._extractFile(member.name, backend["config"]['dhcpdConfigFile'])
+			if not auto or backend["dispatch"]:
+				members = self.getmembers()
+		
+				file = backend["config"]['dhcpdConfigFile']
+				if os.path.exists(file):
+					os.remove(file)
+				
+				for member in members:
+					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
+						self._extractFile(member.name, backend["config"]['dhcpdConfigFile'])
 
 	def hasMySQLBackend(self, name=None):
 		return self._hasBackend("MYSQL", name=name)
 
-	def backupMySQLBackend(self, flushLogs=False):
+	def backupMySQLBackend(self, flushLogs=False, auto=False):
 		
-
 		for backend in self._getBackends("mysql"):
-
-			cmd = ["/usr/bin/mysqldump"]
-			cmd.append("--host=%s" % backend["config"]["address"])
-			cmd.append("--user=%s" % backend["config"]["username"])
-			cmd.append("--password=%s" % backend["config"]["password"])
-			if flushLogs:
-				logger.debug("Flushing mysql table logs.")
-				cmd.append("--flush-log")
-			cmd.append("--lock-tables")
-			cmd.append("--add-drop-table")
-			cmd.append(backend["config"]["database"])
-	
-			fd, name = tempfile.mkstemp(dir=self.tempdir)
-			try:
-				
-				p = Popen(cmd, stdout=PIPE, stderr=PIPE)
-				
-				flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
-				fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags| os.O_NONBLOCK)
-							
-				out = p.stdout.readline()
-				try:
-					err = p.stderr.readline()
-				except:
-					err = ""
-				while not p.poll() and (out or err):
-					os.write(fd, out)
-					out = p.stdout.readline()
-					
-					try:
-						err += p.stderr.readline()
-					except:
-						continue
-					
-				if p.returncode not in (0, None):
-					raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], err))
-				
-				self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" %backend["name"]))
-			finally:
-				os.close(fd)
-				os.remove(name)
-
-
-	def restoreMySQLBackend(self):
-		for backend in self._getBackends("mysql"):
-		
-			fd, name = tempfile.mkstemp(dir=self.tempdir)
-			os.chmod(name, 0770)
-	
-			try:
-				for member in self.getmembers():
-					if member.name == os.path.join(self.CONTENT_DIR,"BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
-						self._extractFile(member.name, name)
-				
-				cmd = ["/usr/bin/mysql"]
-				#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))
+			if not auto or backend["dispatch"]:
+				if not backend["dispatch"]:
+					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
+				cmd = ["/usr/bin/mysqldump"]
 				cmd.append("--host=%s" % backend["config"]["address"])
 				cmd.append("--user=%s" % backend["config"]["username"])
 				cmd.append("--password=%s" % backend["config"]["password"])
+				if flushLogs:
+					logger.debug("Flushing mysql table logs.")
+					cmd.append("--flush-log")
+				cmd.append("--lock-tables")
+				cmd.append("--add-drop-table")
 				cmd.append(backend["config"]["database"])
-	
-				output = StringIO.StringIO()
-				
-				p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
-				
-				out = p.stdout.readline()
-
-				while not p.poll() and out:
-					output.write(out)
-					out = p.stdout.readline()
+		
+				fd, name = tempfile.mkstemp(dir=self.tempdir)
+				try:
 					
-				if p.returncode not in (0, None):
-					raise OpsiBackupFileError(u"Failed to restore MySQL Backend: %s" % output.getvalue())
-				
-			finally:
-				os.close(fd)
-				os.remove(name)
+					p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+					
+					flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
+					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags| os.O_NONBLOCK)
+								
+					out = p.stdout.readline()
+					try:
+						err = p.stderr.readline()
+					except:
+						err = ""
+					while not p.poll() and (out or err):
+						os.write(fd, out)
+						out = p.stdout.readline()
+						
+						try:
+							err += p.stderr.readline()
+						except:
+							continue
+						
+					if p.returncode not in (0, None):
+						raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], err))
+					
+					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" %backend["name"]))
+				finally:
+					os.close(fd)
+					os.remove(name)
+
+
+	def restoreMySQLBackend(self, auto=False):
+		
+		
+		if not self.hasMySQLBackend():
+			raise OpsiBackupBackendNotFound("No MySQL Backend found in backup archive")
+		
+		for backend in self._getBackends("mysql"):
+			if not auto or backend["dispatch"]:
+				fd, name = tempfile.mkstemp(dir=self.tempdir)
+				os.chmod(name, 0770)
+		
+				try:
+					for member in self.getmembers():
+						if member.name == os.path.join(self.CONTENT_DIR,"BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
+							self._extractFile(member.name, name)
+					
+					cmd = ["/usr/bin/mysql"]
+					#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))
+					cmd.append("--host=%s" % backend["config"]["address"])
+					cmd.append("--user=%s" % backend["config"]["username"])
+					cmd.append("--password=%s" % backend["config"]["password"])
+					cmd.append(backend["config"]["database"])
+		
+					output = StringIO.StringIO()
+					
+					p = Popen(cmd, stdin=fd, stdout=PIPE, stderr=STDOUT)
+					
+					out = p.stdout.readline()
+	
+					while not p.poll() and out:
+						output.write(out)
+						out = p.stdout.readline()
+						
+					if p.returncode not in (0, None):
+						raise OpsiBackupFileError(u"Failed to restore MySQL Backend: %s" % output.getvalue())
+					
+				finally:
+					os.close(fd)
+					os.remove(name)
 
 	def hasLDAPBackend(self):
 		#TODO: Implement this when LDAP is supported

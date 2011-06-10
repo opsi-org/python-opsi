@@ -35,7 +35,7 @@ class BackendArchiveFixture(Fixture):
 		return getattr(self.archive, name)
 
 
-class BackendArchiveTest(TestCase):
+class BackupArchiveTest(TestCase):
 
 	def test_createBackupArchive(self):
 		archive = self.useFixture(BackendArchiveFixture())
@@ -209,7 +209,7 @@ class BackendArchiveTest(TestCase):
 				count = cursor.fetchone()
 				new[backend["name"]][entry] = count[0]
 				
-			self.assertEqual(orig, new)
+		self.assertEqual(orig, new)
 	
 	def test_hasMySQLBackend(self):
 		archive = self.useFixture(BackendArchiveFixture())
