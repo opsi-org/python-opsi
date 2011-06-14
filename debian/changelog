@@ -1,3 +1,10 @@
+python-opsi (4.0.1.11-2) stable; urgency=low
+
+  * Util/Task/Backup:
+    - supress waring when restoring configuration
+
+ -- Christian Kampka <c.kampka@uib.de>  Tue, 14 Jun 2011 15:57:24 +0200
+
 python-opsi (4.0.1.11-1) stable; urgency=low
 
   * Util/Task/Backup:
