@@ -1,3 +1,11 @@
+python-opsi (4.0.1.11-1) stable; urgency=low
+
+  * Util/Task/Backup:
+    - Override backup file if it already exists
+    - Fixed spelling in help text
+
+ -- Christian Kampka <c.kampka@uib.de>  Tue, 14 Jun 2011 13:41:56 +0200
+
 python-opsi (4.0.1.10-1.1) stable; urgency=low
 
   * Util/Task/Backup, Util/File/Opsi
