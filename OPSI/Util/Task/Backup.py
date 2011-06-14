@@ -229,9 +229,9 @@ class OpsiBackup(object):
 		
 		if "all" in backends:
 			backends = ["all"]
-		
+
 		auto = "auto" in backends
-			
+
 		archive = self._getArchive(file=file[0], mode="r")
 		
 		try:
@@ -308,9 +308,9 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 	parser = argparse.ArgumentParser(prog="opsi-backup", description=_('Creates and restores opsi backups.'))
 	#FIXME: show program version
 	parser.add_argument("-v", "--verbose", action="store_true", default=False, help=_("Show log output on standard out."))
-	parser.add_argument("-V", "--version", action="version", version='opsi-backup %s'%  __verstr__, help="Show programm version.")
-	parser.add_argument("-l", "--log-level", type=int, default=5, choices=range(1,10), help=_("Set the log level for this programm (Default: 5)."))
-	parser.add_argument("--log-file", metavar='FILE', default="/var/log/opsi/opsi-backup.log", help=_("Set a log file for this programm."))
+	parser.add_argument("-V", "--version", action="version", version='opsi-backup %s'%  __verstr__, help="Show program version.")
+	parser.add_argument("-l", "--log-level", type=int, default=5, choices=range(1,10), help=_("Set the log level for this program (Default: 5)."))
+	parser.add_argument("--log-file", metavar='FILE', default="/var/log/opsi/opsi-backup.log", help=_("Set a log file for this program."))
 	subs = parser.add_subparsers(title="commands", dest="command", help=_("opsi-backup sub-commands"))
 	
 	parser_verify = subs.add_parser("verify", help=_("Verify archive integrity."))
@@ -325,7 +325,7 @@ def main(argv = sys.argv[1:], stdout=sys.stdout):
 	parser_restore.add_argument("-f", "--force", action="store_true", default=False, help=_("Ignore sanity checks and try to apply anyways. Use with caution! (Default: false)"))
 	
 	parser_create = subs.add_parser("create", help=_("Create a new backup."))
-	parser_create.add_argument("destination", nargs="?", help=_("Distination of the generated output file. (optional)"))
+	parser_create.add_argument("destination", nargs="?", help=_("Destination of the generated output file. (optional)"))
 	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for backup. (Default: raw)"))
 	parser_create.add_argument("--flush-logs", action="store_true", default=False, help=_("Causes mysql to flush table logs to disk before the backup. (recommended)"))
 	parser_create.add_argument("--backends", action="append", choices=['file','mysql','dhcp', 'auto', 'all'], default=DefaultList(["auto"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: auto)"))
