@@ -456,8 +456,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository)
 
-def getOemPnpDriversPath(driverDirectory, target, separator=';', prePath='', postPath=''):
-	logger.info("Generating oemPnpDriversPath")
+def getOemPnpDriversPath(driverDirectory, target, separator=u';', prePath=u'', postPath=u''):
+	logger.info(u"Generating oemPnpDriversPath")
 	if not driverDirectory.startswith(target):
 		raise Exception(u"Driver directory '%s' not on target '%s'" % (driverDirectory, target))
 	
@@ -466,17 +466,18 @@ def getOemPnpDriversPath(driverDirectory, target, separator=';', prePath='', pos
 		relPath = relPath[1:]
 	while relPath.endswith(os.sep):
 		relPath = relPath[:-1]
-	relPath = '\\'.join(relPath.split(os.sep))
-	oemPnpDriversPath = ''
-	for dirname in os.listdir(driverDirectory):
-		dirname = relPath + '\\' + dirname
-		if prePath:
-			dirname = prePath + '\\' + dirname
-		if postPath:
-			dirname = postPath + '\\' + dirname
-		if oemPnpDriversPath:
-			oemPnpDriversPath += separator
-		oemPnpDriversPath += dirname
+	relPath = u'\\'.join(relPath.split(os.sep))
+	oemPnpDriversPath = u''
+	if os.path.exists(driverDirectory):
+		for dirname in os.listdir(driverDirectory):
+			dirname = relPath + u'\\' + dirname
+			if prePath:
+				dirname = prePath + u'\\' + dirname
+			if postPath:
+				dirname = postPath + u'\\' + dirname
+			if oemPnpDriversPath:
+				oemPnpDriversPath += separator
+			oemPnpDriversPath += dirname
 	logger.info(u"Returning oemPnpDriversPath '%s'" % oemPnpDriversPath)
 	return oemPnpDriversPath
 
