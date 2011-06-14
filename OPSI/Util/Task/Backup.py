@@ -102,7 +102,7 @@ class OpsiBackup(object):
 			backends = ["auto"]
 
 
-		if destination and os.path.exists(destination) and not os.path.isfile(destination):
+		if destination and os.path.exists(destination):
 			file = None
 		else:
 			file = destination
