@@ -907,7 +907,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		backends = {}
 		
 		dispatch = []
-		if os.path.exists(self.CONF_DIR):
+		if os.path.exists(self.CONF_DIR) and os.path.exists(self.DISPATCH_CONF):
 			try:
 				for list in map(lambda x: x[1], BackendDispatchConfigFile(self.DISPATCH_CONF).parse()):
 					dispatch.extend(list)
