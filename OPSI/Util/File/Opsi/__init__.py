@@ -1077,11 +1077,11 @@ class OpsiBackupArchive(tarfile.TarFile):
 			self.fileobj.close()
 			
 	
-	def _extractFile(self, src, dest):
+	def _extractFile(self, member, dest):
 		tf, path = tempfile.mkstemp(dir=self.tempdir)
 		
 		try:
-			checksum = self._filemap[src]
+			checksum = self._filemap[member.name]
 			
 			if sys.version_info < (2, 5):
 				filesum = sha1.new()
@@ -1089,7 +1089,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				filesum = sha1()
 			
 			chunk = True
-			fp = self.extractfile(src)
+			fp = self.extractfile(member.name)
 			try:
 				while chunk:
 					chunk = fp.read()
@@ -1101,6 +1101,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 				raise OpsiBackupFileError("Error restoring file %s: checksum missmacht.")
 		
 			shutil.copyfile(path, dest)
+			os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+			os.chmod(dest, member.mode)
+			os.utime(dest, (member.mtime, member.mtime))
 			
 		finally:
 			os.close(tf)
@@ -1135,7 +1138,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						os.makedirs(dest, mode=member.mode)
 						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 				else:
-					self._extractFile(member.name, dest)
+					self._extractFile(member, dest)
 	def _hasBackend(self, backend, name=None):
 		
 		if name:
@@ -1175,7 +1178,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						dest = member.name.replace(os.path.join(self.CONTENT_DIR, "BACKENDS/FILE/%s" % backend["name"]), baseDir)
 		
 						if member.isfile():
-							self._extractFile(member.name, dest)
+							self._extractFile(member, dest)
 						else:
 							if not os.path.exists(dest):
 								os.makedirs(dest, mode=member.mode)
@@ -1207,7 +1210,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				
 				for member in members:
 					if member.name.startswith(os.path.join(self.CONTENT_DIR, "BACKENDS/DHCP/%s" %backend["name"])):
-						self._extractFile(member.name, backend["config"]['dhcpdConfigFile'])
+						self._extractFile(member, backend["config"]['dhcpdConfigFile'])
 
 	def hasMySQLBackend(self, name=None):
 		return self._hasBackend("MYSQL", name=name)
@@ -1274,7 +1277,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				try:
 					for member in self.getmembers():
 						if member.name == os.path.join(self.CONTENT_DIR,"BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
-							self._extractFile(member.name, name)
+							self._extractFile(member, name)
 					
 					cmd = ["/usr/bin/mysql"]
 					#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))

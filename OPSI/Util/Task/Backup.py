@@ -284,6 +284,7 @@ class OpsiBackup(object):
 						raise e
 				except Exception, e:
 					logger.error("Failed to restore data from archive %s: %s. Aborting." %(archive.name, e))
+					logger.logException(e, LOG_DEBUG)
 					raise e
 				
 				logger.notice(_("Restoration complete"))
