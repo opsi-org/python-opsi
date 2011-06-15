@@ -1,3 +1,10 @@
+python-opsi (4.0.1.12-1) stable; urgency=low
+
+  * Util/File/Opsi
+    - copy permission bits and mtime on filecopy 
+
+ -- Christian Kampka <c.kampka@uib.de>  Wed, 15 Jun 2011 11:00:27 +0200
+
 python-opsi (4.0.1.11-2) stable; urgency=low
 
   * Util/Task/Backup:
