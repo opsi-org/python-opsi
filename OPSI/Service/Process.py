@@ -1,14 +1,13 @@
 
 
-import sys, os, pwd, signal, re, os
+import pwd, signal, re
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, succeed, fail, DeferredList
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.error import ProcessExitedAlready
 from twisted.python import reflect
-from twisted.internet.task import LoopingCall
 
-from OPSI.Util.AMP import OpsiProcessProtocolFactory, OpsiProcessConnector
+
+from OPSI.Util.AMP import OpsiProcessConnector
 
 from OPSI.Logger import *
 logger = Logger()
@@ -156,29 +155,14 @@ class OpsiDaemon(object):
 		return self.__class__.socket
 
 def runOpsiService(serviceClass, configurationClass, reactorModule):
-	import sys
 
-	def probeReactor():
-		from twisted.application.reactors import getReactorTypes, installReactor
-
-		for r in getReactorTypes():
-			if reactorModule == r.moduleName:
-				installReactor(r.shortName)
-				return
-
-	#probeReactor()		#TODO: make this work
-
-	from OPSI.Logger import Logger
 	logger = Logger()
 	logger.setConsoleLevel(LOG_WARNING)
 	logger.setFileLevel(LOG_WARNING)
 	logger.setLogFormat('[%l] %M (%F|%N)')
 	
-	from twisted.application.service import Application, Service
+	from twisted.application.service import Application
 	from twisted.application.app import startApplication
-	
-	from twisted.internet import reactor
-	from twisted.python import reflect, runtime
 	
 	config = reflect.namedAny(configurationClass)(sys.argv[1:-3])
 	service = reflect.namedAny(serviceClass)(config)
