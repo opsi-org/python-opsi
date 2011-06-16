@@ -236,7 +236,7 @@ class BackendDispatchConfigFile(ConfigFile):
 				continue
 			method = match.group(1).strip()
 			dispatch.append([method, []])
-			for entry in match.group(2).split(','):
+			for entry in match.group(2).strip(',').split(','):
 				dispatch[-1][1].append(entry.strip())
 		self._parsed = True
 		return dispatch
