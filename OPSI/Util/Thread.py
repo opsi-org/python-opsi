@@ -167,11 +167,11 @@ class ThreadPool(object):
 					if (num == 0):
 						break
 		
-		worker = []
+		worker_ = []
 		for worker in self.worker:
 			if not worker in deleteWorkers:
-				worker.append(worker)
-		self.worker = worker
+				worker_.append(worker)
+		self.worker = worker_
 		if wait:
 			for worker in deleteWorkers:
 				worker.join(60)
