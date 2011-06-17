@@ -206,17 +206,20 @@ class HTTPConnectionPool(object):
 		self.serverCertFile      = None
 		self.verifyByCaCertsFile = None
 		if isinstance(self, HTTPSConnectionPool):
-			self.verifyServerCert = forceBool(verifyServerCert)
-			if serverCertFile:
-				self.serverCertFile = forceFilename(serverCertFile)
-			if self.verifyServerCert:
-				if not self.serverCertFile:
-					raise Exception(u"Server verfication enabled but no server cert file given")
-				logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
-			if verifyByCaCertsFile:
-				self.verifyByCaCertsFile = forceFilename(verifyByCaCertsFile)
-				logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.verifyByCaCertsFile, self.host))
-		
+			if self.host in ('localhost', '127.0.0.1'):
+				self.serverVerified = True
+				logger.debug(u"No host verification for localhost")
+			else:
+				self.verifyServerCert = forceBool(verifyServerCert)
+				if serverCertFile:
+					self.serverCertFile = forceFilename(serverCertFile)
+				if self.verifyServerCert:
+					if not self.serverCertFile:
+						raise Exception(u"Server verfication enabled but no server cert file given")
+					logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
+				if verifyByCaCertsFile:
+					self.verifyByCaCertsFile = forceFilename(verifyByCaCertsFile)
+					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.verifyByCaCertsFile, self.host))
 		self.adjustSize(maxsize)
 	
 	def increaseUsageCount(self):

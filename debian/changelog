@@ -1,3 +1,12 @@
+python-opsi (4.0.1.13-1) stable; urgency=low
+
+  * Service/Session
+    - sessionExpired(): return true if expired / false if closed by client
+  * Util/HTTP:
+    - disable server verification for localhost
+
+ -- Jan Schneider <j.schneider@uib.de>  Fri, 17 Jun 2011 14:21:03 +0200
+
 python-opsi (4.0.1.12-1) stable; urgency=low
 
   * Util/File/Opsi
