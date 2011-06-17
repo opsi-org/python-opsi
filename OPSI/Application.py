@@ -19,7 +19,7 @@ class AppRunner(object):
 class _BaseProfiler(AppRunner):
 
 	def _getProfiler(self):
-		raise NotImplementedError("Subclass must implement this.")
+		raise NotImplementedError(u"Subclass must implement this.")
 	
 	def run(self):
 		try:
@@ -40,7 +40,7 @@ class _BaseProfiler(AppRunner):
 				f.close()
 		
 		except ImportError, e:
-			logger.error("Failed to load profiler %s. Make sure the profiler module is installed on your system. (%s)" %(self._config.get("profiler"), e))
+			logger.error(u"Failed to load profiler %s. Make sure the profiler module is installed on your system. (%s)" % (self._config.get("profiler"), e))
 			raise e
 		
 		
@@ -68,14 +68,14 @@ class Application(object):
 		self._runner = self._getRunner()
 		
 	def _getApplication(self):
-		raise NotImplementedError("Subclass must implement this function.")
+		raise NotImplementedError(u"Subclass must implement this function.")
 	
 	def _getRunner(self):
 		if self._config.get("profile", False):
 			profiler = self._config.get("profiler", "profiler").lower()
 			if profiler in self.profiler:
 				return self.profiler[profiler](self._app, self._config)
-			raise NotImplementedError("Profiler %s is not supported." % profiler)
+			raise NotImplementedError(u"Profiler %s is not supported." % profiler)
 		return AppRunner(self._app, self._config)
 
 	def setup(self):
