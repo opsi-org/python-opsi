@@ -1502,14 +1502,21 @@ class Impersonate:
 				
 				self.newWindowStation.SetProcessWindowStation()
 				logger.debug(u"Process window station set")
-					
+				
 				self.newDesktop = win32service.OpenDesktop(
 								self.desktop,
 								win32con.DF_ALLOWOTHERACCOUNTHOOK, #0,
-								False,
+								True, #False,
 								win32con.READ_CONTROL |
 								win32con.WRITE_DAC |
+								win32con.DESKTOP_CREATEMENU |
+								win32con.DESKTOP_CREATEWINDOW |
+								win32con.DESKTOP_ENUMERATE |
+								win32con.DESKTOP_HOOKCONTROL |
+								win32con.DESKTOP_JOURNALPLAYBACK |
+								win32con.DESKTOP_JOURNALRECORD |
 								win32con.DESKTOP_READOBJECTS |
+								win32con.DESKTOP_SWITCHDESKTOP |
 								win32con.DESKTOP_WRITEOBJECTS)
 				self.newDesktop.SetThreadDesktop()
 				logger.debug(u"Thread desktop set")
