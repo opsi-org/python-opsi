@@ -37,7 +37,7 @@ class ResetableLoop(LoopingCall):
 	
 	def reset(self):
 
-		assert self.running, ("Tried to reset a LoopingCall that was not running.")
+		assert self.running, (u"Tried to reset a LoopingCall that was not running.")
 		if self.call is not None:
 			self.call.cancel()
 			self.call = None

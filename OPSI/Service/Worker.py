@@ -617,7 +617,7 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 	
 	def _processQuery(self, result):
 		
-		logger.debug("Using multiprocessing to handle rpc.")
+		logger.debug(u"Using multiprocessing to handle rpc.")
 		
 		def processResult(r):
 			self._rpcs = r

@@ -282,6 +282,10 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
 	
+	def hostControl_getActiveSessions(self, hostIds=[]):
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		return self._opsiclientdRpc(hostIds = hostIds, method = 'getActiveSessions', params = [])
+	
 	def hostControl_reachable(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		result = {}

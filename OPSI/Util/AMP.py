@@ -152,7 +152,7 @@ class OpsiQueryingProtocol(AMP):
 			if not self.dataSink:
 				self.dataSink = reactor.listenUNIX("%s.dataport" % address, OpsiProcessProtocolFactory(self))
 		except Exception, e:
-			logger.error("Could not open data socket %s: %s" % ("%s.dataport" % address, e))
+			logger.error(u"Could not open data socket %s: %s" % ("%s.dataport" % address, e))
 			raise e
 	
 	def closeDataSink(self):
@@ -252,12 +252,12 @@ class OpsiResponseProtocol(AMP):
 		dd = Deferred()
 		
 		def handleConnectionFailure(fail):
-			logger.error("Failed to connect to socket %s: %s" %(self.factory._dataport, fail.getErrorMessage()))
+			logger.error(u"Failed to connect to socket %s: %s" %(self.factory._dataport, fail.getErrorMessage()))
 			return fail
 		
 		if len(chunks) > 1:
 			if self.dataport is None:
-				logger.info("Connecting do data port %s" % self.factory._dataport)
+				logger.info(u"Connecting do data port %s" % self.factory._dataport)
 				dd.addCallback(lambda x: ClientCreator(reactor, AMP).connectUNIX(self.factory._dataport))
 				dd.addErrback(handleConnectionFailure)
 				dd.addCallback(self.assignDataPort)
@@ -368,7 +368,7 @@ class RemoteDaemonProxy(object):
 					buffer = self._dataport.getResponseBuffer(response["tag"])
 					
 					if buffer is None:
-						raise Exception("Expected a buffered response but no response buffer was found for tag %s" % r["tag"])
+						raise Exception(u"Expected a buffered response but no response buffer was found for tag %s" % r["tag"])
 
 					s = buffer.getvalue()
 					
@@ -391,7 +391,7 @@ class RemoteDaemonProxy(object):
 					except Exception, e:
 						raise e
 					else:
-						logger.error("This should not happen!")
+						logger.error(u"This should not happen!")
 						result.errback(failure)
 				else:
 					result.errback(failure)
@@ -442,7 +442,7 @@ class OpsiProcessConnector(object):
 			self._reactor.connectUNIX(self._socket, self._factory)
 			self._factory.addNotifier(success, failure)
 		except Exception, e:
-			logger.error("Failed to connect to socket %s: %s"(self._socket,e))
+			logger.error(u"Failed to connect to socket %s: %s"(self._socket,e))
 			self._connected.errback(Failure())
 		
 		return self._connected
