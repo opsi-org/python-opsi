@@ -415,7 +415,7 @@ class HTTPConnectionPool(object):
 					logger.error(u"Service verification failed: %s" % e)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
 			
-			if self.serverCertFile and not os.path.exists(self.serverCertFile) and self.peerCertificate:
+			if self.serverCertFile and self.peerCertificate:
 				try:
 					certDir = os.path.dirname(self.serverCertFile)
 					if not os.path.exists(certDir):
@@ -517,6 +517,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 						host = fqdn
 					if not host or not commonName or (host.lower() != commonName.lower()):
 						raise Exception(u"Host '%s' does not match common name '%s'" % (host, commonName))
+					self.serverVerified = True
 				else:
 					raise Exception(u"Failed to get peer certificate")
 			except Exception:

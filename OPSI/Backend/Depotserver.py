@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import socket, shutil
+import socket, shutil, os
 
 # OPSI imports
 from OPSI.Logger import *
@@ -45,6 +45,7 @@ from OPSI.Backend.Backend import *
 from OPSI.System import getDiskSpaceUsage, execute, which
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDeltaFile
+from OPSI.Util.File import ZsyncFile
 
 # Get logger instance
 logger = Logger()
@@ -114,7 +115,23 @@ class DepotserverBackend(ExtendedBackend):
 	
 	def depot_uninstallPackage(self, productId, force=False, deleteFiles=True):
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
-
+	
+	def depot_createMd5SumFile(self, filename, md5sumFilename):
+		if not os.path.exists(filename):
+			raise Exception(u"File not found: %s" % filename)
+		logger.info(u"Creating md5sum file '%s'" % md5sumFilename)
+		md5 = md5sum(filename)
+		f = open(md5sumFilename, 'w')
+		f.write(md5)
+		f.close()
+		
+	def depot_createZsyncFile(self, filename, zsyncFilename):
+		if not os.path.exists(filename):
+			raise Exception(u"File not found: %s" % filename)
+		logger.info(u"Creating zsync file '%s'" % zsyncFilename)
+		zsyncFile = ZsyncFile(zsyncFilename)
+		zsyncFile.generate(filename)
+		
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS DEPOTSERVERPACKAGEMANAGER                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
