@@ -181,6 +181,7 @@ class BackendManager(ExtendedBackend):
 		
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
+		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
 		if not config['module']:
 			raise BackendConfigurationError(u"No module defined in backend config file '%s'" % backendConfigFile)
 		if not type(config['config']) is dict:
@@ -579,7 +580,7 @@ class BackendAccessControl(object):
 			self._winAuthenticateUser()
 		else:
 			# Other os, not implemented yet
-			raise NotImplemetedError("Sorry, operating system '%s' not supported yet!" % os.name)
+			raise NotImplementedError("Sorry, operating system '%s' not supported yet!" % os.name)
 		
 	def _winAuthenticateUser(self):
 		'''
