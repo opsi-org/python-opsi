@@ -96,6 +96,7 @@ class OpsiBackendService(Service):
 		logger.setFileLevel(file)
 		logger.startTwistedLogging()
 		logger.logWarnings()
+	
 	def startService(self):
 		logger.info(u"Starting opsi backend Service")
 		logger.setLogFile(self._config.logFile)

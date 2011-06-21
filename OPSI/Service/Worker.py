@@ -623,6 +623,14 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 			self._rpcs = r
 			return r
 		
+		def cleanup(rpcs):
+			for rpc in rpcs:
+				if (rpc.getMethodName() == 'backend_exit'):
+					logger.notice(u"User '%s' asked to close the session" % self.session.user)
+					self._freeSession(result)
+					self.service._getSessionHandler().deleteSession(self.session.uid)
+			return rpcs
+		
 		def makeInstanceCall():
 			contentType = self.request.headers.getHeader('content-type')
 			contentEncoding = None
@@ -637,6 +645,8 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())
+		deferred.addCallback(cleanup)
+		
 		return deferred
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
