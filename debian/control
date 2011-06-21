@@ -2,7 +2,7 @@ Source: python-opsi
 Section: opsi
 Priority: optional
 Maintainer: uib GmbH <info@uib.de>
-Build-Depends: gettext, debhelper (>= 7), python-support, python (>=2.5), python-setuptools
+Build-Depends: gettext, debhelper (>= 7), python-support, python (>=2.5), python-setuptools, lsb-release
 XS-Python-Version: >=2.5
 Standards-Version: 3.8.4
 
