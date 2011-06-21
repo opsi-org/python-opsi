@@ -619,16 +619,21 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		logger.debug(u"Using multiprocessing to handle rpc.")
 		
-		def processResult(r):
-			self._rpcs = r
-			return r
+
 		
-		def cleanup(rpcs):
+		def cleanup(rpc):
+			if (rpc.getMethodName() == 'backend_exit'):
+				logger.notice(u"User '%s' asked to close the session" % self.session.user)
+				self._freeSession(result)
+				self.service._getSessionHandler().deleteSession(self.session.uid)
+		
+		def processResult(rpcs):
+			self._rpcs = rpcs
+
 			for rpc in rpcs:
-				if (rpc.getMethodName() == 'backend_exit'):
-					logger.notice(u"User '%s' asked to close the session" % self.session.user)
-					self._freeSession(result)
-					self.service._getSessionHandler().deleteSession(self.session.uid)
+				cleanup(rpc)
+				self._addRpcToStatistics(None, rpc)
+				self.session.setLastRpcMethod(rpc.getMethodName())
 			return rpcs
 		
 		def makeInstanceCall():
@@ -645,7 +650,6 @@ class MultiprocessWorkerOpsiJsonRpc(WorkerOpsiJsonRpc):
 		
 		deferred = self._getCallInstance(None)
 		deferred.addCallback(lambda x: makeInstanceCall())
-		deferred.addCallback(cleanup)
 		
 		return deferred
 
