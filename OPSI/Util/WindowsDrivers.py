@@ -292,6 +292,9 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 	
 	logger.notice(u"Integrating textmode drivers")
 	
+	if not os.path.exists(driverDirectory):
+		logger.notice(u"Driver directory '%s' does not exist" % driverDirectory)
+	
 	if messageSubject:
 		messageSubject.setMessage(u"Integrating textmode drivers")
 	
