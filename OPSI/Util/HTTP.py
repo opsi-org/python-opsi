@@ -503,8 +503,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		non_blocking_connect_https(conn, self.connectTimeout, self.verifyByCaCertsFile)
 		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
-		if not self.peerCertificate:
-			self.peerCertificate = getPeerCertificate(conn, asPEM = True)
+		self.peerCertificate = getPeerCertificate(conn, asPEM = True)
 		if self.verifyByCaCertsFile:
 			try:
 				if self.peerCertificate:
