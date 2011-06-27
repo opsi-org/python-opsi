@@ -155,12 +155,12 @@ def getOpsiHotfixName():
 	elif (major == 6):
 		lang = u'glb'
 		if (minor == 0):
+			os = u'vista-win2008'
+		elif (minor == 1):
 			if (arch == 'x86'):
 				os = u'win7'
 			else:
 				os = u'win7-win2008r2'
-		elif (minor == 1):
-			os = u'vista-win2008'
 		
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 	
