@@ -512,6 +512,8 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
+				if not self.verifyServerCertByCa:
+					self.serverVerified = True
 			except Exception, e:
 				logger.debug(e)
 				if (e.__class__.__name__ != 'SSLError') or self.verifyServerCertByCa:
