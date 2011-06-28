@@ -517,7 +517,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 			except Exception, e:
 				logger.debug(e)
 				if (e.__class__.__name__ != 'SSLError') or self.verifyServerCertByCa:
-					raise
+					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % e)
 				non_blocking_connect_https(conn, self.connectTimeout)
 		
 		logger.debug(u"Connection established to: %s" % self.host)
