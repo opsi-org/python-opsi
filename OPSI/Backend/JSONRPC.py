@@ -232,33 +232,34 @@ class JSONRPCBackend(Backend):
 		
 		Backend.__init__(self, **kwargs)
 		
-		self._application         = 'opsi jsonrpc module version %s' % __version__
-		self._sessionId           = None
-		self._deflate             = False
-		self._connectOnInit       = True
-		self._connected           = False
-		self._retryTime           = 5
-		self._defaultHttpPort     = 4444
-		self._defaultHttpsPort    = 4447
-		self._host                = None
-		self._port                = None
-		self._baseUrl             = u'/rpc'
-		self._protocol            = 'https'
-		self._socketTimeout       = None
-		self._connectTimeout      = 30
-		self._connectionPoolSize  = 1
-		self._legacyOpsi          = False
-		self._interface           = None
-		self._rpcId               = 0
-		self._rpcIdLock           = threading.Lock()
-		self._async               = False
-		self._rpcQueue            = None
-		self._rpcQueuePollingTime = 0.01
-		self._rpcQueueSize        = 10
-		self._serverCertFile      = None
-		self._verifyServerCert    = False
-		self._serverVerified      = False
-		self._verifyByCaCertsFile = None
+		self._application          = 'opsi jsonrpc module version %s' % __version__
+		self._sessionId            = None
+		self._deflate              = False
+		self._connectOnInit        = True
+		self._connected            = False
+		self._retryTime            = 5
+		self._defaultHttpPort      = 4444
+		self._defaultHttpsPort     = 4447
+		self._host                 = None
+		self._port                 = None
+		self._baseUrl              = u'/rpc'
+		self._protocol             = 'https'
+		self._socketTimeout        = None
+		self._connectTimeout       = 30
+		self._connectionPoolSize   = 1
+		self._legacyOpsi           = False
+		self._interface            = None
+		self._rpcId                = 0
+		self._rpcIdLock            = threading.Lock()
+		self._async                = False
+		self._rpcQueue             = None
+		self._rpcQueuePollingTime  = 0.01
+		self._rpcQueueSize         = 10
+		self._serverCertFile       = None
+		self._caCertFile           = None
+		self._verifyServerCert     = False
+		self._verifyServerCertByCa = False
+		self._verifyByCaCertsFile  = None
 		
 		if not self._username:
 			self._username = u''
@@ -294,8 +295,10 @@ class JSONRPCBackend(Backend):
 				self._serverCertFile = forceFilename(value)
 			if option in ('verifyservercert',):
 				self._verifyServerCert = forceBool(value)
-			if option in ('verifybycacertsfile',) and not value is None:
-				self._verifyByCaCertsFile = forceFilename(value)
+			if option in ('cacertfile',) and not value is None:
+				self._caCertFile = forceFilename(value)
+			if option in ('verifyservercertbyca',):
+				self._verifyServerCertByCa = forceBool(value)
 			
 		if not retry:
 			self._retryTime = 0
@@ -305,17 +308,18 @@ class JSONRPCBackend(Backend):
 		
 		self._processAddress(address)
 		self._connectionPool = getSharedConnectionPool(
-			scheme              = self._protocol,
-			host                = self._host,
-			port                = self._port,
-			socketTimeout       = self._socketTimeout,
-			connectTimeout      = self._connectTimeout,
-			retryTime           = self._retryTime,
-			maxsize             = self._connectionPoolSize,
-			block               = True,
-			verifyServerCert    = self._verifyServerCert,
-			serverCertFile      = self._serverCertFile,
-			verifyByCaCertsFile = self._verifyByCaCertsFile
+			scheme               = self._protocol,
+			host                 = self._host,
+			port                 = self._port,
+			socketTimeout        = self._socketTimeout,
+			connectTimeout       = self._connectTimeout,
+			retryTime            = self._retryTime,
+			maxsize              = self._connectionPoolSize,
+			block                = True,
+			verifyServerCert     = self._verifyServerCert,
+			serverCertFile       = self._serverCertFile,
+			caCertFile           = self._caCertFile,
+			verifyServerCertByCa = self._verifyServerCertByCa
 		)
 		
 		if self._connectOnInit:

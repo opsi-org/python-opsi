@@ -759,7 +759,8 @@ class HTTPRepository(Repository):
 		proxy = None
 		serverCertFile = None
 		verifyServerCert = False
-		verifyByCaCertsFile = None
+		caCertFile = None
+		verifyServerCertByCa = False
 		
 		for (key, value) in kwargs.items():
 			key = key.lower()
@@ -775,8 +776,10 @@ class HTTPRepository(Repository):
 				serverCertFile = forceFilename(value)
 			elif (key == 'verifyservercert'):
 				verifyServerCert = forceBool(value)
-			elif (key == 'verifybycacertsfile'):
-				verifyByCaCertsFile = forceFilename(value)
+			elif (key == 'cacertfile'):
+				caCertFile = forceFilename(value)
+			elif (key == 'verifyservercertbyca'):
+				verifyServerCertByCa = forceBool(value)
 			
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
 		
@@ -826,17 +829,18 @@ class HTTPRepository(Repository):
 			self._port = proxyPort
 		
 		self._connectionPool = getSharedConnectionPool(
-			scheme              = self._protocol,
-			host                = self._host,
-			port                = self._port,
-			socketTimeout       = self._socketTimeout,
-			connectTimeout      = self._connectTimeout,
-			retryTime           = self._retryTime,
-			maxsize             = self._connectionPoolSize,
-			block               = True,
-			serverCertFile      = serverCertFile,
-			verifyServerCert    = verifyServerCert,
-			verifyByCaCertsFile = verifyByCaCertsFile
+			scheme               = self._protocol,
+			host                 = self._host,
+			port                 = self._port,
+			socketTimeout        = self._socketTimeout,
+			connectTimeout       = self._connectTimeout,
+			retryTime            = self._retryTime,
+			maxsize              = self._connectionPoolSize,
+			block                = True,
+			serverCertFile       = serverCertFile,
+			verifyServerCert     = verifyServerCert,
+			caCertFile           = caCertFile,
+			verifyServerCertByCa = verifyServerCertByCa
 		)
 		
 	def _preProcessPath(self, path):

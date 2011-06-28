@@ -187,41 +187,49 @@ class HTTPConnectionPool(object):
 	
 	scheme = 'http'
 	
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False, verifyServerCert=False, serverCertFile=None, verifyByCaCertsFile=None):
-		self.host                = forceUnicode(host)
-		self.port                = forceInt(port)
-		self.socketTimeout       = forceInt(socketTimeout or 0)
-		self.connectTimeout      = forceInt(connectTimeout or 0)
-		self.retryTime           = forceInt(retryTime)
-		self.block               = forceBool(block)
-		self.reuseConnection     = forceBool(reuseConnection)
-		self.pool                = None
-		self.usageCount          = 1
-		self.num_connections     = 0
-		self.num_requests        = 0
-		self.httplibDebugLevel   = 0
-		self.peerCertificate     = None
-		self.serverVerified      = False
-		self.verifyServerCert    = False
-		self.serverCertFile      = None
-		self.verifyByCaCertsFile = None
+	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=False, verifyServerCert=False, serverCertFile=None, caCertFile=None, verifyServerCertByCa=False):
+		
+		self.host                 = forceUnicode(host)
+		self.port                 = forceInt(port)
+		self.socketTimeout        = forceInt(socketTimeout or 0)
+		self.connectTimeout       = forceInt(connectTimeout or 0)
+		self.retryTime            = forceInt(retryTime)
+		self.block                = forceBool(block)
+		self.reuseConnection      = forceBool(reuseConnection)
+		self.pool                 = None
+		self.usageCount           = 1
+		self.num_connections      = 0
+		self.num_requests         = 0
+		self.httplibDebugLevel    = 0
+		self.peerCertificate      = None
+		self.serverVerified       = False
+		self.verifyServerCert     = False
+		self.serverCertFile       = None
+		self.caCertFile           = None
+		self.verifyServerCertByCa = False
 		if isinstance(self, HTTPSConnectionPool):
 			if self.host in ('localhost', '127.0.0.1'):
 				self.serverVerified = True
 				logger.debug(u"No host verification for localhost")
 			else:
-				self.verifyServerCert = forceBool(verifyServerCert)
-				if serverCertFile:
-					self.serverCertFile = forceFilename(serverCertFile)
-				if self.verifyServerCert:
-					if not self.serverCertFile:
-						raise Exception(u"Server verfication enabled but no server cert file given")
-					logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
-				if verifyByCaCertsFile:
-					self.verifyByCaCertsFile = forceFilename(verifyByCaCertsFile)
-					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.verifyByCaCertsFile, self.host))
+				if caCertFile:
+					self.caCertFile = forceFilename(caCertFile)
+				self.verifyServerCertByCa = forceBool(verifyServerCertByCa)
+				
+				if self.verifyServerCertByCa:
+					if not self.caCertFile:
+						raise Exception(u"Server certificate verfication by CA enabled but no CA cert file given")
+					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'" % (self.caCertFile, self.host))
+				else:
+					self.verifyServerCert = forceBool(verifyServerCert)
+					if serverCertFile:
+						self.serverCertFile = forceFilename(serverCertFile)
+					if self.verifyServerCert:
+						if not self.serverCertFile:
+							raise Exception(u"Server verfication enabled but no server cert file given")
+						logger.info(u"Server verfication by server certificate enabled for host '%s'" % self.host)
 		self.adjustSize(maxsize)
-	
+		
 	def increaseUsageCount(self):
 		self.usageCount += 1
 	
@@ -499,12 +507,20 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 		Return a fresh HTTPSConnection.
 		"""
 		logger.debug(u"Starting new HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = HTTPSConnection(host=self.host, port=self.port)
-		non_blocking_connect_https(conn, self.connectTimeout, self.verifyByCaCertsFile)
+		conn = HTTPSConnection(host = self.host, port = self.port)
+		if self.verifyServerCert or self.verifyServerCertByCa:
+			try:
+				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
+			except Exception, e:
+				logger.debug(e)
+				if (e.__class__.__name__ != 'SSLError') or self.verifyServerCertByCa:
+					raise
+				non_blocking_connect_https(conn, self.connectTimeout)
+		
 		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
 		self.peerCertificate = getPeerCertificate(conn, asPEM = True)
-		if self.verifyByCaCertsFile:
+		if self.verifyServerCertByCa:
 			try:
 				if self.peerCertificate:
 					commonName = crypto.load_certificate(crypto.FILETYPE_PEM, self.peerCertificate).get_subject().commonName
@@ -524,104 +540,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				conn.close()
 				raise
 		return conn
-	
-class CurlHTTPConnectionPool(HTTPConnectionPool):
-	
-	scheme = 'http'
-	
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None, retryTime=0, maxsize=1, block=False, reuseConnection=True):
-		if not pycurl:
-			raise Exception(u"pycurl not available")
-		HTTPConnectionPool.__init__(self, host, port, socketTimeout, connectTimeout, retryTime, maxsize, block, reuseConnection)
-		
-	def _new_conn(self):
-		logger.debug(u"Creating new curl HTTP connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = pycurl.Curl()
-		self.num_connections += 1
-		return conn
-	
-	def urlopen(self, method, url, body=None, headers={}, retry=True, redirect=True, assert_same_host=True, firstTryTime=None):
-		now = time.time()
-		if not firstTryTime:
-			firstTryTime = now
-		
-		conn = None
-		# Check host
-		if assert_same_host and not self.is_same_host(url):
-			host = "%s://%s" % (self.scheme, self.host)
-			if self.port:
-				host = "%s:%d" % (host, self.port)
-			raise HostChangedError("Connection pool with host '%s' tried to open a foreign host: %s" % (host, url))
-		
-		try:
-			# Request a connection from the queue
-			conn = self._get_conn()
-			
-			# Make the request
-			self.num_requests += 1
-			
-			global totalRequests
-			totalRequests += 1
-			#logger.essential("totalRequests: %d" % totalRequests)
-			
-			response = HTTPResponse()
-			conn.setopt(pycurl.SSL_VERIFYPEER, 0)
-			conn.setopt(pycurl.SSL_VERIFYHOST, False)
-			conn.setopt(pycurl.WRITEFUNCTION, response.addData)
-			conn.setopt(pycurl.HEADERFUNCTION, response.curlHeader)
-			conn.setopt(conn.URL, (u'%s://%s:%d%s' % (self.scheme, self.host, self.port, url)).encode('ascii', 'replace') )
-			h = []
-			for (k, v) in headers.items():
-				h.append((u"%s: %s" % (k, v)).encode('ascii', 'replace'))
-			conn.setopt(pycurl.HTTPHEADER, h)
-			conn.setopt(pycurl.CONNECTTIMEOUT, self.connectTimeout or 0)
-			conn.setopt(pycurl.TIMEOUT, self.socketTimeout or 0)
-			#conn.setopt(pycurl.NOSIGNAL, 1)
-			if redirect:
-				conn.setopt(pycurl.FOLLOWLOCATION, 1)
-				conn.setopt(pycurl.MAXREDIRS, 5)
-			else:
-				conn.setopt(pycurl.FOLLOWLOCATION, 0)
-			if body:
-				conn.setopt(pycurl.POSTFIELDS, body)
-			conn.perform()
-			
-			# Put the connection back to be reused
-			self._put_conn(None)
-			try:
-				conn.sock.close()
-				conn.close()
-			except:
-				pass
-		
-		except Exception, e:
-			logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s, (%s)" \
-					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, e))
-			self._put_conn(None)
-			try:
-				conn.sock.close()
-				conn.close()
-			except:
-				pass
-			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to '%s' failed: %s, retrying" % (self.host, e))
-				time.sleep(0.01)
-				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
-			else:
-				raise
-		
-		return response
 
-class CurlHTTPSConnectionPool(CurlHTTPConnectionPool):
-	
-	scheme = 'https'
-	
-	def _new_conn(self):
-		logger.info(u"Creating new curl HTTPS connection (%d) to %s:%d" % (self.num_connections, self.host, self.port))
-		conn = pycurl.Curl()
-		self.num_connections += 1
-		return conn
-	
 def urlsplit(url):
 	url = forceUnicode(url)
 	scheme = None
@@ -708,7 +627,7 @@ def destroyPool(pool):
 if (__name__ == '__main__'):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
-	pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5)
+	pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
 	resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	print resp.data
 	time.sleep(5)
