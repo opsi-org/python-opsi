@@ -609,6 +609,12 @@ def forceArchitectureList(var):
 		var[i] = forceArchitecture(var[i])
 	return var
 
+def forceUniqueList(_list):
+	l = []
+	for entry in _list:
+		if entry not in l:
+			l.append(entry)
+	return l
 
 def args(*vars, **typeVars):
 	"""Function to populate an object with passed on keyword args.
