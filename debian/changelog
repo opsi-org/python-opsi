@@ -1,3 +1,9 @@
+python-opsi (4.0.1.14-1) stable; urgency=low
+
+  * SQL: methods for character escaping
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 29 Jun 2011 14:47:47 +0200
+
 python-opsi (4.0.1.13-1) stable; urgency=low
 
   * Service/Session
