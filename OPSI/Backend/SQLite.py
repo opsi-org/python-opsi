@@ -167,9 +167,9 @@ class SQLite(SQL):
 				elif type(value) in (float, long, int):
 					values += u"%s, " % value
 				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value.decode("utf-8"))))
+					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
-					values += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value)))
+					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
 				
 			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 			logger.debug2(u"insert: %s" % query)
@@ -202,9 +202,9 @@ class SQLite(SQL):
 				elif type(value) in (float, long, int):
 					query += u"%s, " % value
 				elif type(value) is str:
-					query += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value.decode("utf-8"))))
+					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
-					query += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value)))
+					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
 			
 			query = u'%s WHERE %s;' % (query[:-2], where)
 			logger.debug2(u"update: %s" % query)
