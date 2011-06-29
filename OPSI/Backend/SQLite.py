@@ -55,6 +55,9 @@ logger = Logger()
 class SQLite(SQL):
 	AUTOINCREMENT = ''
 	ALTER_TABLE_CHANGE_SUPPORTED = False
+	ESCAPED_BACKSLASH  = "\\"
+	ESCAPED_APOSTROPHE = "''"
+	ESCAPED_ASTERISK   = "**"
 	
 	def __init__(self, **kwargs):
 		self._database        = ":memory:"
@@ -164,9 +167,9 @@ class SQLite(SQL):
 				elif type(value) in (float, long, int):
 					values += u"%s, " % value
 				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "''")
+					values += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value.decode("utf-8"))))
 				else:
-					values += u"\'%s\', " % (u'%s' % value).replace("'", "''")
+					values += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value)))
 				
 			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 			logger.debug2(u"insert: %s" % query)
@@ -199,9 +202,9 @@ class SQLite(SQL):
 				elif type(value) in (float, long, int):
 					query += u"%s, " % value
 				elif type(value) is str:
-					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("'", "\\\'")
+					query += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value.decode("utf-8"))))
 				else:
-					query += u"\'%s\', " % (u'%s' % value).replace("'", "\\\'")
+					query += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value)))
 			
 			query = u'%s WHERE %s;' % (query[:-2], where)
 			logger.debug2(u"update: %s" % query)
@@ -255,8 +258,6 @@ class SQLite(SQL):
 		return u''
 
 class SQLiteBackend(SQLBackend):
-	
-	ESCAPE_BACKSLASH = False
 	
 	def __init__(self, **kwargs):
 		self._name = 'sqlite'

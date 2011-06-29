@@ -58,6 +58,12 @@ logger = Logger()
 class SQL(object):
 	
 	AUTOINCREMENT = 'AUTO_INCREMENT'
+	ALTER_TABLE_CHANGE_SUPPORTED = True
+	ESCAPED_BACKSLASH  = "\\\\"
+	ESCAPED_APOSTROPHE = "\\\'"
+	ESCAPED_UNDERSCORE = "\\_"
+	ESCAPED_PERCENT    = "\\%"
+	ESCAPED_ASTERISK   = "\\*"
 	
 	def __init__(self, **kwargs):
 		pass
@@ -73,10 +79,10 @@ class SQL(object):
 	
 	def getRow(self, query):
 		return {}
-		
+	
 	def insert(self, table, valueHash):
 		return -1
-		
+	
 	def update(self, table, where, valueHash, updateWhereNone=False):
 		return 0
 	
@@ -85,7 +91,7 @@ class SQL(object):
 	
 	def getTables(self):
 		return {}
-		
+	
 	def execute(self, query, conn=None, cursor=None):
 		return None
 	
@@ -94,7 +100,22 @@ class SQL(object):
 	
 	def getTableCreationOptions(self, table):
 		return u''
-
+	
+	def escapeBackslash(self, string):
+		return string.replace('\\', self.ESCAPED_BACKSLASH)
+	
+	def escapeApostrophe(self, string):
+		return string.replace("'", self.ESCAPED_APOSTROPHE)
+	
+	def escapeUnderscore(self, string):
+		return string.replace('_', self.ESCAPED_UNDERSCORE)
+	
+	def escapePercent(self, string):
+		return string.replace('%', self.ESCAPED_PERCENT)
+	
+	def escapeAsterisk(self, string):
+		return string.replace('%', self.ESCAPED_ASTERISK)
+	
 class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def __init__(self, **kwargs):
 		BackendModificationListener.__init__(self)
@@ -135,7 +156,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'date':        timestamp()
 		}
 		if self._lastModificationOnly:
-			self._sql.delete('OBJECT_MODIFICATION_TRACKER', '`objectClass` = "%(objectClass)s" AND `ident` = "%(ident)s"' % data)
+			self._sql.delete('OBJECT_MODIFICATION_TRACKER', "`objectClass` = '%(objectClass)s' AND `ident` = '%(ident)s'" % data)
 		start = time.time()
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		logger.debug(u"Took %0.2f seconds to track modification of objectClass %s, ident %s" % ((time.time() - start), data['objectClass'], data['ident']))
@@ -160,8 +181,6 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			self._trackModification('delete', obj)
 	
 class SQLBackend(ConfigDataBackend):
-	
-	ESCAPE_BACKSLASH = True
 	
 	def __init__(self, **kwargs):
 		self._name = 'sql'
@@ -206,9 +225,7 @@ class SQLBackend(ConfigDataBackend):
 				elif value is None:
 					where += u"`%s` is NULL" % key
 				else:
-					if self.ESCAPE_BACKSLASH:
-						value = value.replace("\\", "\\\\")
-					value = value.replace("'", "\\\'")
+					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
 					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
 					if match:
 						operator = match.group(1)
@@ -218,7 +235,7 @@ class SQLBackend(ConfigDataBackend):
 						value = value.replace("\\*", u'\uffff')
 						if (value.find('*') != -1):
 							operator = 'LIKE'
-							value = value.replace("%", "\\%").replace("_", "\\_").replace('*', '%')
+							value = self._sql.escapeUnderscore(self._sql.escapePercent(value)).replace('*', '%')
 						value = value.replace(u'\uffff', "\\*")
 						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
 				where += u' or '
@@ -336,7 +353,7 @@ class SQLBackend(ConfigDataBackend):
 			#elif value is None:
 			#	where += u"`%s` is NULL" % key
 			else:
-				condition += u"`%s` = '%s'" % (arg, value.replace("\\", "\\\\").replace("'", "\\\'"))
+				condition += u"`%s` = '%s'" % (arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 		if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
 			condition += u" and `type` = '%s'" % object.getType()
 		return condition
@@ -2024,7 +2041,7 @@ class SQLBackend(ConfigDataBackend):
 			if value is None:
 				filter[attribute] = [ None ]
 			elif type(value) is unicode:
-				filter[attribute] = value.replace(u'*', u'\\*')
+				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				filter[attribute] = value
 		res = self.auditHardware_getObjects(**filter)
@@ -2186,7 +2203,7 @@ class SQLBackend(ConfigDataBackend):
 			if value is None:
 				filter[attribute] = [ None ]
 			elif type(value) is unicode:
-				filter[attribute] = value.replace(u'*', u'\\*')
+				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
 				filter[attribute] = value
 			

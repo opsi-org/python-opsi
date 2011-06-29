@@ -101,6 +101,9 @@ class MySQL(SQL):
 	
 	AUTOINCREMENT = 'AUTO_INCREMENT'
 	ALTER_TABLE_CHANGE_SUPPORTED = True
+	ESCAPED_BACKSLASH  = "\\\\"
+	ESCAPED_APOSTROPHE = "\\\'"
+	ESCAPED_ASTERISK   = "\\*"
 	
 	def __init__(self, **kwargs):
 		
@@ -247,9 +250,9 @@ class MySQL(SQL):
 				elif type(value) in (float, long, int):
 					values += u"%s, " % value
 				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+					values += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value.decode("utf-8"))))
 				else:
-					values += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+					values += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value)))
 				
 			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 			logger.debug2(u"insert: %s" % query)
@@ -289,9 +292,9 @@ class MySQL(SQL):
 				elif type(value) in (float, long, int):
 					query += u"%s, " % value
 				elif type(value) is str:
-					query += u"\'%s\', " % (u'%s' % value.decode("utf-8")).replace("\\", "\\\\").replace("'", "\\\'")
+					query += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value.decode("utf-8"))))
 				else:
-					query += u"\'%s\', " % (u'%s' % value).replace("\\", "\\\\").replace("'", "\\\'")
+					query += u"\'%s\', " % (u'%s' % self.escapeBackslash(self.escapeApostrophe(value)))
 			
 			query = u'%s WHERE %s;' % (query[:-2], where)
 			logger.debug2(u"update: %s" % query)
@@ -366,8 +369,6 @@ class MySQL(SQL):
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 
 class MySQLBackend(SQLBackend):
-	
-	ESCAPE_BACKSLASH = True
 	
 	def __init__(self, **kwargs):
 		self._name = 'mysql'
