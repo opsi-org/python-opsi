@@ -1,30 +1,60 @@
 # -*- coding: utf-8 -*-
 
-__unittest = True
+import pwd, grp
 
-import sys, time, random, socket
+from fixtures import TempDir
+
+from tests.helper.fixture import Fixture
+from tests.helper.testcase import TestCase
+
+from OPSI.Backend.File import FileBackend
+from OPSI.Backend.MySQL import MySQLBackend
+from OPSI.Backend.SQLite import SQLiteBackend
+from OPSI.Backend.LDAP import LDAPBackend
+from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from OPSI.Object import *
-from opsidevtools.unittest.lib.unittest2.case import TestCase
 
-class BackendTestCase(TestCase):
+class _BackendFixture(Fixture):
 	
-	backend = None
-	
+	defaultOptions = {
+			'processProductPriorities':            False,
+			'processProductDependencies':          False,
+			'addProductOnClientDefaults':          False,
+			'addProductPropertyStateDefaults':     False,
+			'addConfigStateDefaults':              False,
+			'deleteConfigStateIfDefault':          False,
+			'returnObjectsOnUpdateAndCreate':      False
+	}
 	licenseManagement = False
-	inventoryHistory = False
 	
+	def __init__(self):
+		super(_BackendFixture, self).__init__()
+		self.options = self.defaultOptions.copy()
+	
+	def extend(self):
+		self.backend = ExtendedConfigDataBackend(self.backend)
+
 	def setUp(self):
-		self.serverId = socket.getfqdn()
-		self.failUnless(self.serverId.count('.') >= 2,
-			u"Failed to get fqdn: %s" % self.serverId)
+		super(_BackendFixture, self).setUp()
+		self.addCleanup(self.backend.backend_exit)
+		self.backend.backend_setOptions(self.options)
+		self.backend.backend_createBase()
 		
-		self.createBackend()
+		self.useFixture(BackendContentFixture(self.backend, self.licenseManagement))
+
+class BackendContentFixture(_BackendFixture):
+	
+	def __init__(self, backend, licenseManagement=False):
+		self.backend = backend
+	
+		self.licenseManagement = licenseManagement
+	
 		self.hwconf = self.backend.auditHardware_getConfig()
 		AuditHardware.setHardwareConfig(self.hwconf)
 		AuditHardwareOnHost.setHardwareConfig(self.hwconf)
-
-
+		
+		
 		self.hosts = []
 		self.configserver1 = OpsiConfigserver(
 			id                  = self.serverId,
@@ -52,7 +82,7 @@ class BackendTestCase(TestCase):
 			repositoryLocalUrl  = 'file:///var/lib/opsi/repository',
 			repositoryRemoteUrl = 'webdavs://depotserver1.uib.local:4447/repository',
 			description         = 'A depot',
-			notes               = 'D€pot 1',
+			notes               = u'D€pot 1',
 			hardwareAddress     = None,
 			ipAddress           = None,
 			inventoryNumber     = '00000000002',
@@ -1221,11 +1251,6 @@ class BackendTestCase(TestCase):
 		
 		self.auditHardwareOnHosts = [ self.auditHardwareOnHost1, self.auditHardwareOnHost2, self.auditHardwareOnHost3,
 						self.auditHardwareOnHost4, self.auditHardwareOnHost5, self.auditHardwareOnHost6, self.auditHardwareOnHost7 ]
-		
-		self.backend.backend_createBase()
-		
-		self.setBackendOptions()
-		
 		self.backend.host_createObjects( self.hosts )
 		self.backend.host_createObjects( self.depotservers )
 		self.backend.config_createObjects( self.configs )
@@ -1248,27 +1273,45 @@ class BackendTestCase(TestCase):
 			self.backend.licensePool_createObjects(self.licensePools)
 			self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
 			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
-	
-	def setBackendOptions(self):
-		self.backend.backend_setOptions({
-			'processProductPriorities':            False,
-			'processProductDependencies':          False,
-			'addProductOnClientDefaults':          False,
-			'addProductPropertyStateDefaults':     False,
-			'addConfigStateDefaults':              False,
-			'deleteConfigStateIfDefault':          False,
-			'returnObjectsOnUpdateAndCreate':      False
-		})
-		
-	def createBackend(self):
-		self.fail("No Backend was created by Subclass.")
 
-	def tearDown(self):
-		self.backend.backend_deleteBase()
+
+class FileBackendFixture(_BackendFixture):
+	
+	def __init__(self, baseDir=None, hostKeyFile=None):
 		
-class ExtendedBackendTestCase(BackendTestCase):
-	def setBackendOptions(self):
-		self.backend.backend_setOptions({
+		super(FileBackendFixture, self).__init__()
+		
+		env = os.environ.copy()
+		uid = gid = env["USER"]
+		
+		if baseDir is None:
+			bd = self.useFixture(TempDir())
+			baseDir = bd.path
+		if hostKeyFile is None:
+			hkf = self.useFixture(TempDir())
+			hostKeyFile = os.path.join(hkf, "pckeys")
+		
+		self.baseDir = baseDir
+		self.hostKeyFile = hostKeyFile
+		
+		self.backend = FileBackend(baseDir=baseDir, hostKeyFile=hostKeyFile)
+		
+		self.patch(self.backend, "__fileUid", pwd.getpwnam(uid)[2])
+		self.patch(self.backend, "__fileGid", grp.getgrnam(gid)[2])
+		self.patch(self.backend, "__dirUid", pwd.getpwnam(uid)[2])
+		self.patch(self.backend, "__dirGid", grp.getgrnam(gid)[2])
+
+		self.extend()
+
+
+	def setOptions(self, options):
+		self.options.update(options)
+		self.backend.backend_setOptions(self.options)
+
+
+class MySQLBackendFixture(_BackendFixture):
+	
+	defaultOptions = {
 			'processProductPriorities':            True,
 			'processProductDependencies':          True,
 			'addProductOnClientDefaults':          True,
@@ -1276,5 +1319,76 @@ class ExtendedBackendTestCase(BackendTestCase):
 			'addConfigStateDefaults':              True,
 			'deleteConfigStateIfDefault':          True,
 			'returnObjectsOnUpdateAndCreate':      False
-		})
+	}
+	
+	def __init__(self, username, password, database, hostname="localhost"):
+		super(MySQLBackendFixture, self).__init__()
+		self.username = username
+		self.password = password
+		self.database = database
+		self.hostname = hostname
 		
+		self.licenseManagement = True
+		self.inventoryHistory = True
+		
+		self.backend = MySQLBackend(username = self.username, password = self.password, database = self.database, address = self.hostname)
+		self.extend()
+
+class SQLiteBackendFixture(_BackendFixture):
+	defaultOptions = {
+			'processProductPriorities':            True,
+			'processProductDependencies':          True,
+			'addProductOnClientDefaults':          True,
+			'addProductPropertyStateDefaults':     True,
+			'addConfigStateDefaults':              True,
+			'deleteConfigStateIfDefault':          True,
+			'returnObjectsOnUpdateAndCreate':      False
+		}
+	
+	def __init__(self, database=":memory:"):
+		super(SQLiteBackendFixture, self).__init__()
+		
+		self.database = database
+		
+		self.licenseManagement = True
+		self.inventoryHistory = True
+		
+		self.backend = SQLiteBackend(database = self.database)
+		self.extend()
+
+class LDAPBackendFixture(_BackendFixture):
+	
+	baseDn = u'dc=uib,dc=local'
+	
+	def __init__(self, username, password, address, opsiBaseDn="opsi-test", hostsContainerDN="hosts"):
+		
+		super(LDAPBackendFixture, self).__init__()
+		
+		self.username = u"cn=%s,%s" % (username, self.baseDn)
+		self.password = password
+		self.address = address
+		
+		self.opsiBaseDn = u"cn=%s,%s" % (opsiBaseDn,self.baseDn)
+		self.hostsContainerDn = u"cn=%s,%s" % (hostsContainerDN, self.opsiBaseDn)
+		
+		self.backend = LDAPBackend(
+					username         = self.username,
+					password         = self.password,
+					address          = self.address,
+					opsiBaseDn       = self.opsiBaseDn,
+					hostsContainerDn = self.hostsContainerDn
+					)
+		self.extend()
+
+class BackendTestCase(TestCase):
+	
+	inventoryHistroy = False
+
+	def setUp(self):
+		super(TestCase, self).setUp()
+		import socket
+		if socket.getfqdn().count(".") < 2:
+			self.patch(socket, "getfqdn", self._getfqdn)
+		
+	def _getfqdn(self):
+		return "opsi-test-srv.uib.local"
