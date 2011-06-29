@@ -706,7 +706,16 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	if (wildcard | ip == wildcard | network):
 		return True
 	return False
-	
+
+def flattenSequence(sequence):
+	list = []
+	for s in sequence:
+		if type(s) in (types.ListType, types.TupleType):
+			list.extend(flattenSequence(s))
+		else:
+			list.append(s)
+	return list
+
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
