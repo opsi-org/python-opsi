@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import pwd, grp
+import os, pwd, grp, socket
 
 from fixtures import TempDir
 
-from tests.helper.fixture import Fixture
-from tests.helper.testcase import TestCase
+from OPSI.tests.helper.fixture import Fixture
+from OPSI.tests.helper.testcase import TestCase
 
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.MySQL import MySQLBackend
@@ -31,24 +31,36 @@ class _BackendFixture(Fixture):
 	def __init__(self):
 		super(_BackendFixture, self).__init__()
 		self.options = self.defaultOptions.copy()
-	
+
 	def extend(self):
 		self.backend = ExtendedConfigDataBackend(self.backend)
 
 	def setUp(self):
 		super(_BackendFixture, self).setUp()
+		
+		self.setupBackend()
+		
 		self.addCleanup(self.backend.backend_exit)
 		self.backend.backend_setOptions(self.options)
+
 		self.backend.backend_createBase()
 		
-		self.useFixture(BackendContentFixture(self.backend, self.licenseManagement))
+	def setupBackend(self):
+		raise NotImplementedError()
 
-class BackendContentFixture(_BackendFixture):
+class BackendContentFixture(Fixture):
 	
 	def __init__(self, backend, licenseManagement=False):
+		
 		self.backend = backend
 	
 		self.licenseManagement = licenseManagement
+
+		
+	def setUp(self):
+		super(BackendContentFixture, self).setUp()
+		self.addCleanup(self.backend.backend_deleteBase)
+		self.serverId = socket.getfqdn()
 	
 		self.hwconf = self.backend.auditHardware_getConfig()
 		AuditHardware.setHardwareConfig(self.hwconf)
@@ -1281,28 +1293,35 @@ class FileBackendFixture(_BackendFixture):
 		
 		super(FileBackendFixture, self).__init__()
 		
-		env = os.environ.copy()
-		uid = gid = env["USER"]
-		
-		if baseDir is None:
-			bd = self.useFixture(TempDir())
-			baseDir = bd.path
-		if hostKeyFile is None:
-			hkf = self.useFixture(TempDir())
-			hostKeyFile = os.path.join(hkf, "pckeys")
-		
+		self.env = os.environ.copy()
+		self.uid = self.gid = self.env["USER"]
+	
 		self.baseDir = baseDir
 		self.hostKeyFile = hostKeyFile
 		
-		self.backend = FileBackend(baseDir=baseDir, hostKeyFile=hostKeyFile)
+	def setupBackend(self):
 		
-		self.patch(self.backend, "__fileUid", pwd.getpwnam(uid)[2])
-		self.patch(self.backend, "__fileGid", grp.getgrnam(gid)[2])
-		self.patch(self.backend, "__dirUid", pwd.getpwnam(uid)[2])
-		self.patch(self.backend, "__dirGid", grp.getgrnam(gid)[2])
+		if self.baseDir is None:
+			bd = self.useFixture(TempDir())
+			self.baseDir = bd.path
+		if self.hostKeyFile is None:
+			hkf = self.useFixture(TempDir())
+			self.hostKeyFile = os.path.join(hkf.path, "pckeys")
 
+		
+		self.backend = FileBackend(baseDir=self.baseDir, hostKeyFile=self.hostKeyFile)
+		
+		self.patch(self.backend, "_fileUid", pwd.getpwnam(self.uid)[2])
+		self.patch(self.backend, "_fileGid", grp.getgrnam(self.gid)[2])
+		self.patch(self.backend, "_dirUid", pwd.getpwnam(self.uid)[2])
+		self.patch(self.backend, "_dirGid", grp.getgrnam(self.gid)[2])
+
+		self.patch(self.backend, "_fileUser", self.uid)
+		self.patch(self.backend, "_fileGroup", self.gid)
+		self.patch(self.backend, "_dirUser", self.uid)
+		self.patch(self.backend, "_dirGroup", self.gid)
+		
 		self.extend()
-
 
 	def setOptions(self, options):
 		self.options.update(options)

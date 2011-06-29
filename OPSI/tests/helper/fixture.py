@@ -12,7 +12,17 @@ class Fixture(_Fixture):
 	def patch(self, obj, attribute, value):
 		self.addCleanup(patch(obj, attribute, value))
 
-
+class FQDNFixture(Fixture):
+	
+	def __init__(self, fqdn="opsi.uib.local"):
+		self.fqdn = fqdn
+		
+	def setUp(self):
+		super(FQDNFixture, self).setUp()
+		import socket
+		def getfqdn():
+			return self.fqdn
+		self.patch(socket, "getfqdn", getfqdn)
 
 class DispatchConfigFixture(Fixture):
 	

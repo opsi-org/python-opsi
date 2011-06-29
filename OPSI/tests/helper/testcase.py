@@ -6,4 +6,4 @@ class TestCase(testtools.TestCase):
 	
 	def useFixture(self, fixture):
 		fixture.test = self
-		super(TestCase, self).useFixture(fixture)
+		return super(TestCase, self).useFixture(fixture)

@@ -1,7 +1,9 @@
-import os, pwd, grp
+import os, pwd, grp, time
 
-from tests.helper.backend import FileBackendFixture, BackendContentFixture
-from tests.helper.testcase import TestCase
+
+from OPSI.tests.helper.fixture import FQDNFixture
+from OPSI.tests.helper.backend import FileBackendFixture, BackendContentFixture
+from OPSI.tests.helper.testcase import TestCase
 from OPSI.Object import *
 
 from BackendMixins.ObjectMethodsMixin import ObjectMethodsMixin
@@ -16,6 +18,9 @@ class FileBackendTestCase(TestCase,
 	
 	def setUp(self):
 		super(FileBackendTestCase, self).setUp()
-		fb = self.useFixture(FileBackendFixture())
-		self.useFixture(BackendContentFixture(fb.backend, False))
 		
+		self.useFixture(FQDNFixture())
+		self.fb = self.useFixture(FileBackendFixture())
+		self.useFixture(BackendContentFixture(self.fb.backend, False))
+		
+		self.backend = self.fb.backend
