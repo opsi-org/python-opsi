@@ -114,7 +114,7 @@ class SQL(object):
 		return string.replace('%', self.ESCAPED_PERCENT)
 	
 	def escapeAsterisk(self, string):
-		return string.replace('%', self.ESCAPED_ASTERISK)
+		return string.replace('*', self.ESCAPED_ASTERISK)
 	
 class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def __init__(self, **kwargs):
