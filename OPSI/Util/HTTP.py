@@ -85,7 +85,7 @@ def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None)
 	if (version_info >= (2,6)):
 		if verifyByCaCertsFile:
 			self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_REQUIRED, ca_certs = verifyByCaCertsFile)
-			logger.info(u"Server verified by CA")
+			logger.debug(u"Server verified by CA")
 		else:
 			self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_NONE)
 	else:
