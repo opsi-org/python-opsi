@@ -156,7 +156,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			'date':        timestamp()
 		}
 		if self._lastModificationOnly:
-			self._sql.delete('OBJECT_MODIFICATION_TRACKER', "`objectClass` = '%(objectClass)s' AND `ident` = '%(ident)s'" % data)
+			self._sql.delete('OBJECT_MODIFICATION_TRACKER', "`objectClass` = '%(objectClass)s' AND `ident` = '%(ident)s'" % self._sql.escapeApostrophe(self._sql.escapeBackslash(data)))
 		start = time.time()
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		logger.debug(u"Took %0.2f seconds to track modification of objectClass %s, ident %s" % ((time.time() - start), data['objectClass'], data['ident']))
