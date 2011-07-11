@@ -49,7 +49,7 @@ from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
-from OPSI.Util import objectToBeautifiedText
+from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
 
 # Get logger instance
@@ -69,6 +69,7 @@ try:
 	f.close()
 except Exception, e:
 	pass
+
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                  CLASS BACKENDMANAGER                                              =
@@ -125,7 +126,7 @@ class BackendManager(ExtendedBackend):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
-		
+
 		if loadBackend:
 			logger.info(u"* BackendManager is loading backend '%s'" % loadBackend)
 			self._backend = self.__loadBackend(loadBackend)

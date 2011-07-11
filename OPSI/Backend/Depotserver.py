@@ -44,7 +44,7 @@ from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.System import getDiskSpaceUsage, execute, which
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDeltaFile
+from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDeltaFile, getfqdn
 from OPSI.Util.File import ZsyncFile
 
 # Get logger instance
@@ -63,7 +63,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageLog           = os.path.join(LOG_DIR, 'package.log')
 		self._sshRSAPublicKeyFile  = u'/etc/ssh/ssh_host_rsa_key.pub'
 		
-		self._depotId = forceHostId(socket.getfqdn())
+		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		if not self._context.host_getIdents(id = self._depotId):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)

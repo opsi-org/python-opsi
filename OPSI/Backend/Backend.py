@@ -56,7 +56,7 @@ if (os.name == 'posix'):
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
-from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt
+from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt, getfqdn
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
@@ -64,6 +64,7 @@ logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE  = u'/etc/opsi/passwd'
+OPSI_GLOBAL_CONF  = u'/etc/opsi/global.conf'
 LOG_DIR           = u'/var/log/opsi'
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -436,7 +437,7 @@ class ConfigDataBackend(Backend):
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._opsiPasswdFile                = OPSI_PASSWD_FILE
-		self._depotId                       = socket.getfqdn()
+		self._depotId                       = getfqdn(conf=OPSI_GLOBAL_CONF)
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()

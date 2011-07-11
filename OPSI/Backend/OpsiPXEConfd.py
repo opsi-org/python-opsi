@@ -43,7 +43,7 @@ from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-
+from OPSI.Util import getfqdn
 # Get logger instance
 logger = Logger()
 
@@ -98,7 +98,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			if option in ('timeout',):
 				self._timeout = forceInt(value)
 		
-		self._depotId = forceHostId(socket.getfqdn())
+		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._opsiHostKey = None
 		self._depotConnections  = {}
 		self._updateThreads = {}

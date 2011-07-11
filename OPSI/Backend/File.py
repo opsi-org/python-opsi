@@ -39,7 +39,7 @@ import os, socket, ConfigParser, shutil, types, pwd, grp
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Util import toJson, fromJson
+from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import *
 from OPSI.Util.File.Opsi import *
 from OPSI.Object import *
@@ -95,7 +95,7 @@ class FileBackend(ConfigDataBackend):
 		self.__defaultClientTemplateName = u'pcproto'
 		self.__defaultClientTemplatePath = os.path.join(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + u'.ini'))
 		
-		self.__serverId = forceHostId(socket.getfqdn())
+		self.__serverId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._placeholderRegex  = re.compile('^(.*)<([^>]+)>(.*)$')
 		
 		self._mappings = {

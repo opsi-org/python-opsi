@@ -45,6 +45,7 @@ from OPSI import System
 from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.File import DHCPDConfFile
+from OPSI.Util import getfqdn
 
 # Get logger instance
 logger = Logger()
@@ -64,7 +65,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadConfigCommand     = u'/usr/bin/sudo %s restart' % System.Posix.locateDHCPDInit(u'/etc/init.d/dhcp3-server') 
 		
 		self._fixedAddressFormat      = u'IP'
-		self._defaultClientParameters = { 'next-server': socket.gethostbyname(socket.getfqdn()), 'filename': u'linux/pxelinux.0' }
+		self._defaultClientParameters = { 'next-server': socket.gethostbyname(getfqdn(conf=OPSI_GLOBAL_CONF)), 'filename': u'linux/pxelinux.0' }
 		self._dhcpdOnDepot            = False
 		
 		# Parse arguments
@@ -92,7 +93,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadEvent.set()
 		self._reloadLock = threading.Lock()
 		self._reloadThread = None 
-		self._depotId = forceHostId(socket.getfqdn())
+		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._opsiHostKey = None
 		self._depotConnections  = {}
 		
