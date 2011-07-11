@@ -716,6 +716,23 @@ def flattenSequence(sequence):
 			list.append(s)
 	return list
 
+from OPSI.Util.File import IniFile
+def getfqdn(name='', conf=None):
+	if not name:
+		env = os.environ.copy()
+		if "OPSI_HOSTNAME" in env:
+			return forceFqdn(env["OPSI_HOSTNAME"])
+		
+		if conf and os.path.exists(conf):
+			conf = IniFile(conf)
+			try:
+				p = conf.parse()
+				if p.has_section("global") and p.has_option("global", "hostname"):
+					return forceFqdn(p.get("global", "hostname"))
+			finally:
+				conf.close()
+	return forceFqdn(socket.getfqdn(name))
+
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
