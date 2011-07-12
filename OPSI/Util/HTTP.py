@@ -248,7 +248,8 @@ class HTTPConnectionPool(object):
 					conn = self.pool.get(block = False)
 					if conn:
 						try:
-							conn.sock.close()
+							if conn.sock:
+								conn.sock.close()
 							conn.close()
 						except:
 							pass
@@ -442,7 +443,8 @@ class HTTPConnectionPool(object):
 				logger.debug(u"Closing connection: %s" % conn)
 				self._put_conn(None)
 				try:
-					conn.sock.close()
+					if conn.sock:
+						conn.sock.close()
 					conn.close()
 				except:
 					pass
@@ -461,7 +463,8 @@ class HTTPConnectionPool(object):
 			self._put_conn(None)
 			try:
 				if conn:
-					conn.sock.close()
+					if conn.sock:
+						conn.sock.close()
 					conn.close()
 			except:
 				pass
@@ -475,7 +478,8 @@ class HTTPConnectionPool(object):
 			self._put_conn(None)
 			try:
 				if conn:
-					conn.sock.close()
+					if conn.sock:
+						conn.sock.close()
 					conn.close()
 			except:
 				pass
@@ -488,7 +492,8 @@ class HTTPConnectionPool(object):
 			self._put_conn(None)
 			try:
 				if conn:
-					conn.sock.close()
+					if conn.sock:
+						conn.sock.close()
 					conn.close()
 			except:
 				pass
@@ -539,7 +544,8 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				else:
 					raise Exception(u"Failed to get peer certificate")
 			except Exception:
-				conn.sock.close()
+				if conn.sock:
+					conn.sock.close()
 				conn.close()
 				raise
 		return conn
