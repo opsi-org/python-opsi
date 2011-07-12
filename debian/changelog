@@ -1,3 +1,12 @@
+python-opsi (4.0.1.15-1) stable; urgency=low
+
+  * OPSI/Util
+    - method to determain a fixed fqdn
+  * OPIS/Util/HTTP
+    - make sure socket is not None
+
+ -- Christian Kampka <c.kampka@uib.de>  Tue, 12 Jul 2011 12:49:24 +0200
+
 python-opsi (4.0.1.14-1) stable; urgency=low
 
   * SQL: methods for character escaping
