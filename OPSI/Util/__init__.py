@@ -716,8 +716,9 @@ def flattenSequence(sequence):
 			list.append(s)
 	return list
 
-from OPSI.Util.File import IniFile
 def getfqdn(name='', conf=None):
+	# lazy import to avoid circular import failure
+	from OPSI.Util.File import IniFile
 	if not name:
 		env = os.environ.copy()
 		if "OPSI_HOSTNAME" in env:
