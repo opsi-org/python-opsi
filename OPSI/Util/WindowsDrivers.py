@@ -232,20 +232,18 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				os.remove(tempInfFile)
 			if not driverNeeded:
 				break
-		if not driverNeeded:
-			break
-		
-		driverNumber += 1
-		dstDriverPath = os.path.join(driverDestinationDirectory, forceUnicode(driverNumber))
-		if not os.path.exists(dstDriverPath):
-			os.mkdir(dstDriverPath)
-		
-		copy(driverSourceDirectory + '/*', dstDriverPath)
-		for i in range(len(newDriversTmp)):
-			newDriversTmp[i]['driverNumber'] = driverNumber
-			newDriversTmp[i]['directory'] = dstDriverPath
-			newDriversTmp[i]['infFile'] = os.path.join(dstDriverPath, newDriversTmp[i]['infFile'])
-		newDrivers.extend(newDriversTmp)
+		if driverNeeded:
+			driverNumber += 1
+			dstDriverPath = os.path.join(driverDestinationDirectory, forceUnicode(driverNumber))
+			if not os.path.exists(dstDriverPath):
+				os.mkdir(dstDriverPath)
+			
+			copy(driverSourceDirectory + '/*', dstDriverPath)
+			for i in range(len(newDriversTmp)):
+				newDriversTmp[i]['driverNumber'] = driverNumber
+				newDriversTmp[i]['directory'] = dstDriverPath
+				newDriversTmp[i]['infFile'] = os.path.join(dstDriverPath, newDriversTmp[i]['infFile'])
+			newDrivers.extend(newDriversTmp)
 	return newDrivers
 
 def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, auditHardwares, messageSubject=None, srcRepository=None):
