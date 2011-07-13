@@ -1,3 +1,9 @@
+python-opsi (4.0.1.16-1) stable; urgency=low
+
+  * Version bump
+
+ -- Christian Kampka <c.kampka@uib.de> Wed, 13 Jul 2011 14:20:15 +0200
+
 python-opsi (4.0.1.15-2) stable; urgency=low
 
   * OPSI/Utils
