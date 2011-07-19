@@ -167,10 +167,13 @@ class HostControlBackend(ExtendedBackend):
 			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
 		return address
 	
-	def _opsiclientdRpc(self, hostIds, method, params=[]):
+	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
 		hostIds = forceHostIdList(hostIds)
 		method  = forceUnicode(method)
 		params  = forceList(params)
+		if not timeout:
+			timeout = self._hostRpcTimeout
+		timeout = forceInt(timeout)
 		
 		result = {}
 		rpcts = []
@@ -209,7 +212,7 @@ class HostControlBackend(ExtendedBackend):
 						runningThreads += 1
 				else:
 					timeRunning = time.time() - rpct.started
-					if (timeRunning >= self._hostRpcTimeout + 5):
+					if (timeRunning >= timeout + 5):
 						# thread still alive 5 seconds after timeout => kill
 						logger.error(u"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
 						result[rpct.hostId] = {"result": None, "error": u"timed out after %0.2f seconds" % timeRunning}
@@ -285,6 +288,10 @@ class HostControlBackend(ExtendedBackend):
 	def hostControl_getActiveSessions(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'getActiveSessions', params = [])
+	
+	def hostControl_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
+		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
 	
 	def hostControl_reachable(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')

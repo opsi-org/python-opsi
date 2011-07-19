@@ -1,8 +1,9 @@
 python-opsi (4.0.1.17-1) stable; urgency=low
 
   * Correct replacement of escaped asterisk in search filter
+  * Added new hostControl method opsiclientdRpc
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 19 Jul 2011 13:45:31 +0200
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 19 Jul 2011 14:46:35 +0200
 
 python-opsi (4.0.1.16-1) stable; urgency=low
 
