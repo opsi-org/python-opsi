@@ -227,18 +227,19 @@ class SQLBackend(ConfigDataBackend):
 				elif value is None:
 					where += u"`%s` is NULL" % key
 				else:
+					value = value.replace(self._sql.ESCAPED_ASTERISK, u'\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
 					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
+						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
 						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
 					else:
-						value = value.replace("\\*", u'\uffff')
 						if (value.find('*') != -1):
 							operator = 'LIKE'
 							value = self._sql.escapeUnderscore(self._sql.escapePercent(value)).replace('*', '%')
-						value = value.replace(u'\uffff', "\\*")
+						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
 						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
 				where += u' or '
 			where = where[:-4] + u')'

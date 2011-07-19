@@ -1,3 +1,9 @@
+python-opsi (4.0.1.17-1) stable; urgency=low
+
+  * Correct replacement of escaped asterisk in search filter
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 19 Jul 2011 13:45:31 +0200
+
 python-opsi (4.0.1.16-1) stable; urgency=low
 
   * Version bump
