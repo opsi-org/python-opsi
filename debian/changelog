@@ -1,4 +1,4 @@
-python-opsi (4.0.1.18-1) stable; urgency=low
+python-opsi (4.0.1.18-2) stable; urgency=low
 
   * OPSI/Backend/SQL
     - fix _getHardwareIds
