@@ -1,3 +1,10 @@
+python-opsi (4.0.1.18-1) stable; urgency=low
+
+  * OPSI/Backend/SQL
+    - fix _getHardwareIds
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 20 Jul 2011 11:42:10 +0200
+
 python-opsi (4.0.1.17-1) stable; urgency=low
 
   * Correct replacement of escaped asterisk in search filter

@@ -2029,7 +2029,9 @@ class SQLBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardware.items():
 			if value is None:
 				auditHardware[attribute] = [ None ]
-		
+			elif type(value) is unicode:
+				auditHardware[attribute] = self._sql.escapeAsterisk(value)
+			
 		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
 		hardwareIds = self._auditHardware_search(returnHardwareIds = True, attributes=[], **auditHardware)
 		logger.debug(u"Found hardware ids: %s" % hardwareIds)
