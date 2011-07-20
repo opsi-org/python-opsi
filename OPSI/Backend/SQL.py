@@ -2019,7 +2019,7 @@ class SQLBackend(ConfigDataBackend):
 			elif type(value) in (float, long, int, bool):
 				condition += u"`%s` = %s" % (attribute, value)
 			else:
-				condition += u"`%s` = '%s'" % (attribute, value)
+				condition += u"`%s` = '%s'" % (attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 		return condition
 		
 	def _getHardwareIds(self, auditHardware):
