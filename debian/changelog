@@ -1,3 +1,10 @@
+python-opsi (4.0.1.20-1) stable; urgency=low
+
+  * OPSI/Backend/JSONRPC
+    - forceUnicode Exception
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 21 Jul 2011 17:36:54 +0200
+
 python-opsi (4.0.1.19-1) stable; urgency=low
 
   * OPSI/Util/WindowsDrivers
