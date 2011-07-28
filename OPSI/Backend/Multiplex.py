@@ -605,7 +605,7 @@ class RemoteService(Service, JSONRPCBackend):
 			logger.notice(u"Successfully connected to service %s (Thread: %s)" % (self.url, threading.currentThread()))
 			self.setAsync(True)
 		else:
-			self.error = error
+			self.error = forceUnicode(error)
 			logger.error(u"Failed to connect to service %s: %s (Thread: %s)" % (self.url, error, threading.currentThread()))
 	
 	def refresh(self):
