@@ -559,25 +559,27 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			result = http.Response()
 		result.code = responsecode.OK
 		
-		deflate = False
+		encoding = None
 		try:
+			if ('deflate' in self.request.headers.getHeader('Accept-Encoding')):
+				encoding = 'deflate'
 			if ('gzip' in self.request.headers.getHeader('Accept-Encoding')):
-				deflate = True
+				encoding = 'gzip'
 		except Exception, e:
 			pass
-		if not deflate:
+		if not encoding:
 			try:
 				if self.request.headers.getHeader('Accept'):
 					for accept in self.request.headers.getHeader('Accept').keys():
 						if accept.mediaType.startswith('gzip'):
-							deflate = True
+							encoding = 'gzip'
 							break
 			except Exception, e:
 				logger.error(u"Failed to get accepted mime types from header: %s" % e)
 			
-		if deflate:
+		if encoding:
 			result.headers.setHeader('content-type', http_headers.MimeType("gzip-application", "json", {"charset": "utf-8"}))
-			result.headers.setHeader('content-encoding', ['gzip'])
+			result.headers.setHeader('content-encoding', [encoding])
 		else:
 			result.headers.setHeader('content-type', http_headers.MimeType("application", "json", {"charset": "utf-8"}))
 		
@@ -590,7 +592,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		if not response:
 			response = None
 		
-		if deflate:
+		if encoding:
 			# level 1 (fastest) to 9 (most compression)
 			level = 1
 			logger.debug(u"Sending compressed (level: %d) data" % level)
