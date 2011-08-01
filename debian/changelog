@@ -1,3 +1,9 @@
+python-opsi (4.0.1.21-1) experimental; urgency=low
+
+  * Build against dhcp3 in lucid
+
+ -- Christian Kampka <c.kampka@uib.de>  Mon, 01 Aug 2011 12:27:34 +0200
+
 python-opsi (4.0.1.20-1) stable; urgency=low
 
   * OPSI/Backend/JSONRPC
