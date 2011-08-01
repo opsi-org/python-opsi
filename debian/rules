@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 
-ifneq (,$(findstring $(shell lsb_release -cs),"lucid maverick natty squeeze"))
+ifneq (,$(findstring $(shell lsb_release -cs),"maverick natty squeeze"))
 override_dh_auto_install:
 	dh_auto_install
 	sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcp/dhcpd.conf#;s#/etc/init.d/dhcp3-server#/etc/init.d/isc-dhcp-server#' debian/python-opsi/etc/opsi/backends/dhcpd.conf
