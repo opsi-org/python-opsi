@@ -896,22 +896,37 @@ def createWindowStation(name):
 	except win32service.error, e:
 		logger.error(u"Failed to create window station '%s': %s" % (name, forceUnicode(e)))
 
-def createDesktop(name, cmd):
+def createDesktop(name, runCommand=None):
 	name = forceUnicode(name)
-	cmd = forceUnicode(cmd)
+	if runCommand:
+		runCommand = forceUnicode(runCommand)
 	sa = pywintypes.SECURITY_ATTRIBUTES()
 	sa.bInheritHandle = 1
 	sa.SECURITY_DESCRIPTOR = None
-	
+	hdesk = None
 	try:
 		hdesk = win32service.CreateDesktop(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error, e:
 		logger.error(u"Failed to create desktop '%s': %s" % (name, forceUnicode(e)))
 	
-	s = win32process.STARTUPINFO()
-	s.lpDesktop = name
-	prc_info = win32process.CreateProcess(None, cmd, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', s)
+	if cmd:
+		s = win32process.STARTUPINFO()
+		s.lpDesktop = name
+		prc_info = win32process.CreateProcess(None, runCommand, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', s)
 	return hdesk
+
+def getDesktops(winsta = None):
+	if not winsta:
+		winsta = win32service.GetProcessWindowStation()
+	desktops = []
+	for d in winsta.EnumDesktops():
+		desktops.append(forceUnicodeLower(d))
+	return desktops
+
+def switchDesktop(name):
+	name = forceUnicode(name)
+	hdesk = win32service.OpenDesktop(name, 0, 0, win32con.MAXIMUM_ALLOWED)
+	hdesk.SwitchDesktop()
 
 def addUserToDesktop(desktop, userSid):
 	'''
@@ -1455,8 +1470,8 @@ class Impersonate:
 		if (desktop.find(u'\\') == -1):
 			desktop = u'winsta0\\' + desktop
 		(self.winsta, self.desktop) = desktop.split('\\', 1)
-		self.winsta = forceUnicode(self.winsta)
-		self.desktop = forceUnicode(self.desktop)
+		self.winsta = forceUnicodeLower(self.winsta)
+		self.desktop = forceUnicodeLower(self.desktop)
 		self.userToken = userToken
 		self.userProfile = None
 		self.userEnvironment = None
@@ -1502,6 +1517,10 @@ class Impersonate:
 				
 				self.newWindowStation.SetProcessWindowStation()
 				logger.debug(u"Process window station set")
+				
+				if not self.desktop in getDesktops(self.newWindowStation):
+					logger.info(u"Creating new desktop '%s'" % self.desktop)
+					createDesktop(self.desktop)
 				
 				self.newDesktop = win32service.OpenDesktop(
 								self.desktop,
