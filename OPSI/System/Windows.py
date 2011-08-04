@@ -1525,13 +1525,14 @@ class Impersonate:
 				self.newWindowStation.SetProcessWindowStation()
 				logger.debug(u"Process window station set")
 				
-				try:
-					if not self.desktop in getDesktops():
-						logger.info(u"Creating new desktop '%s'" % self.desktop)
-						createDesktop(self.desktop)
-				except Exception, e:
-					logger.debug(e)
 				
+				if not self.desktop in ('default', 'winlogon'):
+					logger.info(u"Creating new desktop '%s'" % self.desktop)
+					try:
+						createDesktop(self.desktop)
+					except Exception, e:
+						logger.warning(e)
+					
 				self.newDesktop = win32service.OpenDesktop(
 								self.desktop,
 								win32con.DF_ALLOWOTHERACCOUNTHOOK, #0,
