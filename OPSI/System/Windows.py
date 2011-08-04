@@ -906,7 +906,8 @@ def createDesktop(name, runCommand=None):
 	try:
 		sa.SECURITY_DESCRIPTOR = win32security.GetUserObjectSecurity(
 			win32service.OpenDesktop('winlogon', 0, 0, win32con.MAXIMUM_ALLOWED), win32con.DACL_SECURITY_INFORMATION)
-	except:
+	except Exception, e:
+		logger.debug(e)
 		sa.SECURITY_DESCRIPTOR = None
 	
 	hdesk = None
