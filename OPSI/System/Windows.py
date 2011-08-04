@@ -1330,7 +1330,7 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 		sessionId = getActiveSessionId()
 	
 	if not desktop.split('\\')[-1] in ('default', 'winlogon'):
-		logger.info(u"Creating new desktop '%s'" % self.desktop)
+		logger.info(u"Creating new desktop '%s'" % desktop.split('\\')[-1])
 		try:
 			createDesktop(desktop.split('\\')[-1])
 		except Exception, e:
