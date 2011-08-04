@@ -1317,7 +1317,7 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	command = forceUnicode(command)
 	if not sessionId is None:
 		sessionId = forceInt(sessionId)
-	desktop = forceUnicode(desktop)
+	desktop = forceUnicodeLower(desktop)
 	if (desktop.find(u'\\') == -1):
 		desktop = u'winsta0\\' + desktop
 	duplicateFrom = forceUnicode(duplicateFrom)
@@ -1328,6 +1328,13 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 	if sessionId is None or (sessionId < 0):
 		logger.debug(u"No session id given, running in active session")
 		sessionId = getActiveSessionId()
+	
+	if not desktop.split('\\')[-1] in ('default', 'winlogon'):
+		logger.info(u"Creating new desktop '%s'" % self.desktop)
+		try:
+			createDesktop(desktop.split('\\')[-1])
+		except Exception, e:
+			logger.warning(e)
 	
 	userToken = getUserToken(sessionId, duplicateFrom)
 	
