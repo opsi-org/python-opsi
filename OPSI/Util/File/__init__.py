@@ -1105,15 +1105,7 @@ class TxtSetupOemFile(ConfigFile):
 				if serviceName.startswith(u'"') and serviceName.endswith(u'"'):
 					serviceName = serviceName[1:-1]
 				match = re.search(self.pciDeviceRegex, device)
-				if match:
-					type = u'PCI'
-				else:
-					match = re.search(self.usbDeviceRegex, device)
-					if match:
-						type = u'USB'
-					else:
-						logger.error(u"Parse error: =>%s<=" % device)
-				if (type != u'PCI'):
+				if not match:
 					continue
 				vendor = forceHardwareVendorId(match.group(1))
 				device = None
@@ -1122,8 +1114,8 @@ class TxtSetupOemFile(ConfigFile):
 				extra = None
 				if match.group(4):
 					extra = forceUnicode(match.group(4))
-				logger.debug(u"   Found %s device: %s:%s, service name: %s" % (type, vendor, device, serviceName))
-				self._devices.append( { 'vendor': vendor, 'device': device, 'extra': extra, 'type': type, 'serviceName': serviceName, \
+				logger.debug(u"   Found %s device: %s:%s, service name: %s" % (u'PCI', vendor, device, serviceName))
+				self._devices.append( { 'vendor': vendor, 'device': device, 'extra': extra, 'type': u'PCI', 'serviceName': serviceName, \
 							'componentName': componentName, 'componentId': componentId } )
 				if not serviceName in self._serviceNames:
 					self._serviceNames.append(serviceName)
