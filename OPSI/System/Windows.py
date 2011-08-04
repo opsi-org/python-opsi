@@ -901,13 +901,13 @@ def createDesktop(name, runCommand=None):
 	if runCommand:
 		runCommand = forceUnicode(runCommand)
 	sa = pywintypes.SECURITY_ATTRIBUTES()
-	sa.bInheritHandle = 1
+	sa.bInheritHandle = 0
 	
 	try:
 		sa.SECURITY_DESCRIPTOR = win32security.GetUserObjectSecurity(
 			win32service.OpenDesktop('winlogon', 0, 0, win32con.MAXIMUM_ALLOWED), win32con.DACL_SECURITY_INFORMATION)
 	except Exception, e:
-		logger.debug(e)
+		logger.error(e)
 		sa.SECURITY_DESCRIPTOR = None
 	
 	hdesk = None
