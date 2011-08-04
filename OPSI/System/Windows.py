@@ -905,7 +905,7 @@ def createDesktop(name, runCommand=None):
 	
 	try:
 		sa.SECURITY_DESCRIPTOR = win32security.GetUserObjectSecurity(
-			win32service.OpenDesktop('winlogon', 0, 0, win32con.MAXIMUM_ALLOWED), win32con.DACL_SECURITY_INFORMATION)
+			win32service.OpenDesktop('default', 0, 0, win32con.MAXIMUM_ALLOWED), win32con.DACL_SECURITY_INFORMATION)
 	except Exception, e:
 		logger.error(e)
 		sa.SECURITY_DESCRIPTOR = None
@@ -916,7 +916,7 @@ def createDesktop(name, runCommand=None):
 	except win32service.error, e:
 		logger.error(u"Failed to create desktop '%s': %s" % (name, forceUnicode(e)))
 	
-	if cmd:
+	if runCommand:
 		s = win32process.STARTUPINFO()
 		s.lpDesktop = name
 		prc_info = win32process.CreateProcess(None, runCommand, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', s)
