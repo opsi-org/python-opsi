@@ -889,7 +889,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		assert(self.mode and str(self.mode)[0] in ("r", "w"))
 		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
 
-		if self.mode.startswith((u"w","w")):
+		if self.mode.startswith("w"):
 			if self.sysinfo is None:
 				self.sysinfo = self._probeSysInfo()
 		else:
@@ -899,7 +899,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		try:
 			self._backends = self._readBackendConfiguration()
 		except OpsiBackupFileError, e:
-			if self.mode.startswith((u"w","w")):
+			if self.mode.startswith("w"):
 				raise e
 			self._backends = None
 
@@ -1038,7 +1038,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 	def verify(self):
 		
-		if self.mode.startswith((u"w","w")):
+		if self.mode.startswith("w"):
 			raise OpsiBackupFileError("Backup archive is not finalized.")
 
 		for member in self.getmembers():
@@ -1069,7 +1069,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return True
 
 	def close(self):
-		if self.mode.startswith((u"w","w")):
+		if self.mode.startswith("w"):
 			self._addChecksumFile()
 			self._addSysInfoFile()
 		tarfile.TarFile.close(self)
