@@ -2,27 +2,55 @@
 import os
 
 from testtools.monkey import patch
-from fixtures import Fixture as _Fixture
+from fixtures import Fixture
 import fixtures
 
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 
-class Fixture(_Fixture):
-	
-	def patch(self, obj, attribute, value):
-		self.addCleanup(patch(obj, attribute, value))
-
 class FQDNFixture(Fixture):
+	
+	def __init__(self, fqdn="opsi.uib.local", address="172.16.0.1"):
+		
+		self.hostname = fqdn.split(".")[0]
+		self.fqdn = fqdn
+		self.address = address
+		
+	def setUp(self):
+		super(FQDNFixture, self).setUp()
+		
+		def getfqdn(_ignore):
+			return self.fqdn
+		
+		def gethostbyaddr(_ignore):
+			return (self.fqdn, [self.hostname], [self.address])
+		
+		self.useFixture(fixtures.MonkeyPatch('socket.getfqdn', getfqdn))
+		self.useFixture(fixtures.MonkeyPatch('socket.gethostbyaddr', gethostbyaddr))
+
+class GlobalConfFixture(Fixture):
+	
+	template = """[global]
+hostname = #hostname#
+"""
 	
 	def __init__(self, fqdn="opsi.uib.local"):
 		self.fqdn = fqdn
 		
 	def setUp(self):
-		super(FQDNFixture, self).setUp()
-		import socket
-		def getfqdn():
-			return self.fqdn
-		self.patch(socket, "getfqdn", getfqdn)
+		super(GlobalConfFixture, self).setUp()
+		self.dir = self.useFixture(fixtures.TempDir())
+		self.path = os.path.join(self.dir.path, "global.conf")
+		
+		s = self.template.replace("#hostname#", self.fqdn)
+		try:
+			f = open(self.path, "w")
+			f.write(s)
+
+		except Exception, e:
+			self.addDetail("conferror", e)
+			self.test.fail("Could not generate global.conf.")
+		finally:
+			f.close()
 
 class DispatchConfigFixture(Fixture):
 	

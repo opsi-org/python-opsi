@@ -53,10 +53,10 @@ class NonObjectMethodsMixin(object):
 	def test_hostIdents(self):
 		self.test_createDepotServer()
 		self.test_createClient()
-		numHosts = len(self.hosts)
+		numHosts = len(self.expected.hosts)
 		
 		selfIdents = []
-		for host in self.hosts:
+		for host in self.expected.hosts:
 			selfIdents.append(host.getIdent(returnType = 'dict'))
 		
 		selfIdents.append({'id': 'depot100.uib.local'})
@@ -92,7 +92,7 @@ class NonObjectMethodsMixin(object):
 		
 		selfIdents = []
 			
-		for config in self.configs:
+		for config in self.expected.configs:
 			selfIdents.append(config.getIdent(returnType = 'dict'))
 		selfIds = map((lambda set: set['id']), selfIdents)
 		
@@ -102,7 +102,7 @@ class NonObjectMethodsMixin(object):
 			self.assertIn(ident, selfIds, u"'%s' not in '%s'" % (ident, selfIds))
 		
 		selfIdents = []
-		for configState in self.configStates:
+		for configState in self.expected.configStates:
 			selfIdents.append(configState.getIdent(returnType = 'dict'))
 		
 		self.backend.backend_setOptions({"addConfigStateDefaults": False})
@@ -112,7 +112,7 @@ class NonObjectMethodsMixin(object):
 			id = dict(zip(('configId', 'objectId'), tuple(ident.split(";"))))
 			self.assertIn(id, selfIdents, u"'%s' not in '%s'" % (ident, selfIdents))
 		
-		expect = len(self.backend.host_getObjects()) * len(self.configs)
+		expect = len(self.backend.host_getObjects()) * len(self.expected.configs)
 		self.backend.backend_setOptions({"addConfigStateDefaults": True})
 		ids = self.backend.configState_getIdents()
 		self.assertEqual(expect, len(ids), u"Expected %s idents, but found '%s' on backend." % (expect, len(ids)))
@@ -140,29 +140,29 @@ class NonObjectMethodsMixin(object):
 		expected = self.backend.host_getIdents(type="OpsiDepotserver")
 		result.sort()
 		expected.sort()
-		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+		self.assertEqual(expected, result, u"Expected %s, got %s" % (expected, result))
 
 		result = self.backend.backend_searchIdents('(&(&(objectClass=Host)(type=OpsiDepotserver))(objectClass=Host))')
 		expected = self.backend.host_getIdents(type="OpsiDepotserver")
 		result.sort()
 		expected.sort()
-		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+		self.assertEqual(expected, result, u"Expected %s, got %s" % (expected, result))
 		
 		result = self.backend.backend_searchIdents('(|(&(objectClass=OpsiClient)(id=client1*))(&(objectClass=OpsiClient)(id=client2*)))')
 		expected = self.backend.host_getIdents(type="OpsiClient", id = ["client1*", "client2*" ] )
 		result.sort()
 		expected.sort()
-		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+		self.assertEqual(expected, result, u"Expected %s, got %s" % (expected, result))
 		
 		result = self.backend.backend_searchIdents('(&(&(objectClass=OpsiClient))(&(objectClass=ProductOnClient)(installationStatus=installed))(&(objectClass=ProductOnClient)(productId=product1)))')
 		expected = map((lambda x: x["clientId"]),self.backend.productOnClient_getIdents(returnType="dict", installationStatus="installed", productId="product1"))
 		result.sort()
 		expected.sort()
-		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+		self.assertEqual(expected, result, u"Expected %s, got %s" % (expected, result))
 
 		
 		result = self.backend.backend_searchIdents('(&(objectClass=Host)(description=T*))')
 		expected = self.backend.host_getIdents(description="T*")
 		result.sort()
 		expected.sort()
-		self.assertListEqual(expected, result, u"Expected %s, got %s" % (expected, result))
+		self.assertEqual(expected, result, u"Expected %s, got %s" % (expected, result))

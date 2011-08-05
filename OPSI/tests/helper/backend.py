@@ -4,7 +4,7 @@ import os, pwd, grp, socket
 
 from fixtures import TempDir
 
-from OPSI.tests.helper.fixture import Fixture
+from OPSI.tests.helper.fixture import Fixture, FQDNFixture
 from OPSI.tests.helper.testcase import TestCase
 
 from OPSI.Backend.File import FileBackend
@@ -53,7 +53,6 @@ class BackendContentFixture(Fixture):
 	def __init__(self, backend, licenseManagement=False):
 		
 		self.backend = backend
-	
 		self.licenseManagement = licenseManagement
 
 		
@@ -1286,7 +1285,6 @@ class BackendContentFixture(Fixture):
 			self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
 			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
 
-
 class FileBackendFixture(_BackendFixture):
 	
 	def __init__(self, baseDir=None, hostKeyFile=None):
@@ -1311,15 +1309,15 @@ class FileBackendFixture(_BackendFixture):
 		
 		self.backend = FileBackend(baseDir=self.baseDir, hostKeyFile=self.hostKeyFile)
 		
-		self.patch(self.backend, "_fileUid", pwd.getpwnam(self.uid)[2])
-		self.patch(self.backend, "_fileGid", grp.getgrnam(self.gid)[2])
-		self.patch(self.backend, "_dirUid", pwd.getpwnam(self.uid)[2])
-		self.patch(self.backend, "_dirGid", grp.getgrnam(self.gid)[2])
+		self.patch(self.backend, "__fileUid", pwd.getpwnam(self.uid)[2])
+		self.patch(self.backend, "__fileGid", grp.getgrnam(self.gid)[2])
+		self.patch(self.backend, "__dirUid", pwd.getpwnam(self.uid)[2])
+		self.patch(self.backend, "__dirGid", grp.getgrnam(self.gid)[2])
 
-		self.patch(self.backend, "_fileUser", self.uid)
-		self.patch(self.backend, "_fileGroup", self.gid)
-		self.patch(self.backend, "_dirUser", self.uid)
-		self.patch(self.backend, "_dirGroup", self.gid)
+		self.patch(self.backend, "__fileUser", self.uid)
+		self.patch(self.backend, "__fileGroup", self.gid)
+		self.patch(self.backend, "__dirUser", self.uid)
+		self.patch(self.backend, "__dirGroup", self.gid)
 		
 		self.extend()
 
@@ -1347,11 +1345,15 @@ class MySQLBackendFixture(_BackendFixture):
 		self.database = database
 		self.hostname = hostname
 		
+
+
+	def setupBackend(self):
 		self.licenseManagement = True
 		self.inventoryHistory = True
 		
 		self.backend = MySQLBackend(username = self.username, password = self.password, database = self.database, address = self.hostname)
 		self.extend()
+
 
 class SQLiteBackendFixture(_BackendFixture):
 	defaultOptions = {
@@ -1401,13 +1403,9 @@ class LDAPBackendFixture(_BackendFixture):
 
 class BackendTestCase(TestCase):
 	
-	inventoryHistroy = False
+	inventoryHistory = False
 
 	def setUp(self):
 		super(TestCase, self).setUp()
-		import socket
-		if socket.getfqdn().count(".") < 2:
-			self.patch(socket, "getfqdn", self._getfqdn)
-		
-	def _getfqdn(self):
-		return "opsi-test-srv.uib.local"
+		self.useFixture(FQDNFixture('opsi-test-server.uib.local'))
+

@@ -1,7 +1,7 @@
 
 
-from testtools import TestCase
-from tests.helpers.fixture import DispatchConfigFixture
+from OPSI.tests.helper.testcase import TestCase
+from OPSI.tests.helper.fixture import DispatchConfigFixture
 
 class DispatchConfigTests(TestCase):
 	

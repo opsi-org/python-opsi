@@ -11,14 +11,14 @@ class ExtendedBackendMixin(object):
 		clientToDepots = self.backend.configState_getClientToDepotserver()
 		self.assertEqual(len(clientToDepots), len(clients), u"Expected %s clients, but got %s from backend." % (len(clientToDepots), len(clients)))
 		
-		for depotserver in self.depotservers:
+		for depotserver in self.expected.depotservers:
 			productOnDepots = self.backend.productOnDepot_getObjects(depotId = depotserver.id)
-			expectedProducts = filter(lambda x: x.depotId == depotserver.id, self.productOnDepots)
+			expectedProducts = filter(lambda x: x.depotId == depotserver.id, self.expected.productOnDepots)
 			for productOnDepot in productOnDepots:
 				self.assertIn(productOnDepot, expectedProducts, u"Expected products %s do be on depotserver %s, but depotserver found %s." % (expectedProducts, depotserver.id, productOnDepot.productId))
 				
 		for clientToDepot in clientToDepots:
-			self.assertIn(clientToDepot['depotId'], map((lambda x: x.id),self.depotservers), u"Expected client %s to be in depot %s, but couldn't find it." %(clientToDepot['depotId'], depotserver.id))
+			self.assertIn(clientToDepot['depotId'], map((lambda x: x.id),self.expected.depotservers), u"Expected client %s to be in depot %s, but couldn't find it." %(clientToDepot['depotId'], depotserver.id))
 
 	def test_createProductOnClient(self):
 		poc = ProductOnClient(

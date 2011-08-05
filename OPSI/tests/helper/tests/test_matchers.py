@@ -1,5 +1,5 @@
 
-from tests.helpers.matchers import GreaterThan
+from OPSI.tests.helpers.matchers import GreaterThan
 from testtools.tests.test_matchers import TestMatchersInterface
 from testtools import TestCase
 

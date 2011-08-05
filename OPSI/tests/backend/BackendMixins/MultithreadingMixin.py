@@ -58,7 +58,7 @@ class MultithreadingMixin(object):
 				mtt.start()
 			for mtt in mtts:
 				mtt.join()
-			self.backend.host_createObjects(self.client1)
+			self.backend.host_createObjects(self.expected.client1)
 			while len(mtts) > 0:
 				mtt = mtts.pop(0)
 				if not mtt.isAlive():

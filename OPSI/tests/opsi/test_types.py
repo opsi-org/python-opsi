@@ -1,20 +1,32 @@
 
-from opsidevtools.unittest.lib.unittest2.case import TestCase
-from opsidevtools.unittest.lib import unittest2 as unittest
+from testtools import TestCase
 from OPSI.Types import *
 import sys
 
 class TypesTestCase(TestCase):
+
+	def test_uniqueList(self):
 	
-	@unittest.skipIf(sys.version_info < (2, 6), "Class decorators are not supported in python < 2.6")
+		l = [	([1,1], [1]),
+			((1,2,2,3), [1,2,3]),
+			([2,2,1,3,5,4,1], [2,1,3,5,4])
+		]
+		
+		for list in l:
+			self.assertEqual(list[1], forceUniqueList(list[0]))
+
 	def test_argsDecoratorClassConstruction(self):
 
+		if sys.version_info < (2, 6):
+			self.skip("Class decorators are not supported in python < 2.6")
 		# will raise SyntaxError on python < 2.6 so we need to create this on demand
-		exec(' \
-		@args("somearg", "someOtherArg") \
-		class SomeClass(object): \
-			def __init__(self, **kwargs): \
-				pass'
+		exec(
+"""
+@args("somearg", "someOtherArg")
+class SomeClass(object):
+	def __init__(self, **kwargs):
+		pass
+"""
 		)
 			
 		someObj = SomeClass()
@@ -25,11 +37,13 @@ class TypesTestCase(TestCase):
 			self.fail(e)
 		
 		# will raise SyntaxError on python < 2.6 so we need to create this on demand
-		exec(' \
-		@args("somearg", someOtherArg=forceInt) \
-		class SomeClass(object): \
-			def __init__(self, **kwargs): \
-				pass'
+		exec(
+"""
+@args("somearg", someOtherArg=forceInt)
+class SomeOtherClass(object):
+	def __init__(self, **kwargs):
+		pass
+"""
 		)
 
 		someOtherObj = SomeOtherClass(someOtherArg="5")
@@ -42,15 +56,19 @@ class TypesTestCase(TestCase):
 		except AttributeError,e:
 			self.fail(e)
 			
-	@unittest.skipIf(sys.version_info < (2, 6), "Class decorators are not supported in python < 2.6")
 	def test_argsDecoratorWithPrivateArgs(self):
+
+		if sys.version_info < (2, 6):
+			self.skip("Class decorators are not supported in python < 2.6")
 		
 		# will raise SyntaxError on python < 2.6 so we need to create this on demand
-		exec(' \
-		@args("_somearg", "_someOtherArg") \
-		class SomeClass(object): \
-			def __init__(self, **kwargs): \
-				pass'
+		exec(
+"""
+@args("_somearg", "_someOtherArg")
+class SomeClass(object):
+	def __init__(self, **kwargs):
+		pass
+"""
 		)
 
 		someObj = SomeClass(somearg=5)
