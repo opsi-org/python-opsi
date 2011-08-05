@@ -1,10 +1,34 @@
 # -*- coding: utf-8 -*-
+"""
+   Copyright (C) 2010 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope thatf it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright: uib GmbH <info@uib.de>
+   @author: Christian Kampka <c.kampka@uib.de>
+   @license: GNU General Public License version 2
+"""
 
 import os, pwd, grp, socket
 
 from fixtures import TempDir
 
-from OPSI.tests.helper.fixture import Fixture, FQDNFixture
+from OPSI.tests.helper.fixture import Fixture, FQDNFixture, ConfigFixture
 from OPSI.tests.helper.testcase import TestCase
 
 from OPSI.Backend.File import FileBackend
@@ -14,6 +38,40 @@ from OPSI.Backend.LDAP import LDAPBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from OPSI.Object import *
+
+
+class FileBackendConfigFixture(Fixture):
+	
+	name = "file.conf"
+	template = """# -*- coding: utf-8 -*-
+module = 'File'
+config = {
+    "baseDir":     u"#baseDir#",
+    "hostKeyFile": u"#hostKeyFile#"
+}
+"""
+	
+	def __init__(self, baseDir=None, hostKeyFile=None, prefix="backends", configDir=None):
+		super(FileBackendConfigFixture, self).__init__(prefix=prefix, dir=configDir)
+		
+		self.baseDir = baseDir
+		self.hostKeyFile = hostKeyFile
+	
+	def setUp(self):
+		super(FileBackendConfigFixture, self).setUp()
+		
+		if not self.baseDir:
+			self.basedir = self.useFixture(TempDir()).path
+		
+		if not self.hostKeyFile:
+			self.hostKeyFile = os.path.join(self.useFixture(TempDir()).path, "pckeys")
+		
+		s = self.template
+		s = s.replace("#baseDir#", self.baseDir)
+		s = s.replace("#hostKeyFile#", self.hostKeyFile)
+		
+		self._write(s)
+
 
 class _BackendFixture(Fixture):
 	
@@ -1284,6 +1342,10 @@ class BackendContentFixture(Fixture):
 			self.backend.licensePool_createObjects(self.licensePools)
 			self.backend.softwareLicenseToLicensePool_createObjects(self.softwareLicenseToLicensePools)
 			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
+
+class FileBackendConfigFixtire(Fixture):
+	
+	template = 
 
 class FileBackendFixture(_BackendFixture):
 	

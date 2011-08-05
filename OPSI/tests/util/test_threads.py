@@ -1,15 +1,56 @@
-
+# -*- coding: utf-8 -*-
+"""
+   Copyright (C) 2010 uib GmbH
+   
+   http://www.uib.de/
+   
+   All rights reserved.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+   
+   This program is distributed in the hope thatf it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   
+   @copyright: uib GmbH <info@uib.de>
+   @author: Christian Kampka <c.kampka@uib.de>
+   @license: GNU General Public License version 2
+"""
 
 import time, threading
 
 from OPSI.Util.Thread import *
-from opsidevtools.unittest.lib.unittest2.case import TestCase
+from OPSI.tests.helper.testcase import TestCase
+from OPSI.tests.helper.fixture import Fixture
 
+class TestPoolFixture(Fixture):
+	
+	def __init__(self, size=10):
+		self.pool = ThreadPool(size=size, autostart=False)
+
+	def setUp(self):
+		super(TestPoolFixture, self).setUp()
+		
+		self.addCleanup(self.pool.stop)
+		self.pool.start()
+		
+	def adjustSize(self, size):
+		self.pool.adjustSize(size=size)
+		
+	
 class ThreadTestCase(TestCase):
 	
 	def setUp(self):
-		self.pool = ThreadPool(autostart=False)
-		self.pool.start()
+		TestCase.setUp(self)
+		f = self.useFixture(TestPoolFixture())
+		self.pool = f.pool
 		
 	def test_WorkerCreation(self):
 		self.pool.adjustSize(size=10)
@@ -113,8 +154,17 @@ class ThreadTestCase(TestCase):
 		self.assertEquals(5, len(results), "Expected %s results but, but got %s" % (5, len(results)))
 		
 	def test_globalPool(self):
-		pool = getGlobalThreadPool()
-		self.assertTrue(isinstance(pool, ThreadPool), "Expected %s to be a ThreadPool instance." % pool)
+		pool1 = getGlobalThreadPool()
+		pool2 = getGlobalThreadPool()
+		
+		self.assertTrue(isinstance(pool1, ThreadPool), "Expected %s to be a ThreadPool instance." % pool1)
+		self.assertEqual(pool1, pool2)
+		
+		pool2.adjustSize(5)
+		self.assertEqual(pool1.size, 5)
+		
+		pool1.stop()
+
 		
 	def test_dutyAfterNoDuty(self):
 		self.pool.adjustSize(5)
@@ -212,7 +262,5 @@ class ThreadTestCase(TestCase):
 	#	self.assertTrue(result[0], "Expected callback success to be 'True', but got %s"%result[0])
 	#	self.assertEqual(result[1], 'test', "Expected callback result to be 'test', but got %s"%result[1])
 	#	self.assertIsNone(result[2], "Expected function to run successfully, but got error %s"% result[2])
-		
-	def tearDown(self):
-		self.pool.stop()
+
 	

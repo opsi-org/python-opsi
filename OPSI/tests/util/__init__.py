@@ -29,6 +29,3 @@
    @author: Christian Kampka <c.kampka@uib.de>
    @license: GNU General Public License version 2
 """
-
-__unittest = True
-
