@@ -32,6 +32,8 @@
 
 __unittest = True
 
+import unittest
+
 def test_suite():
 	from OPSI.tests.backend import (
 		test_acl,
