@@ -32,3 +32,22 @@
 
 __unittest = True
 
+def test_suite():
+	from OPSI.tests.backend import (
+		test_acl,
+		test_filebackend,
+		test_hostcontrol,
+		test_modificationtracker,
+		test_mysql,
+		test_sqlite
+		)
+	modules = [
+		test_acl,
+		test_filebackend,
+		test_hostcontrol,
+		test_modificationtracker,
+		test_mysql,
+		test_sqlite
+		]
+	suites = map(lambda x: x.test_suite(), modules)
+	return unittest.TestSuite(suites)

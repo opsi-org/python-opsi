@@ -238,29 +238,7 @@ class ThreadTestCase(TestCase):
 		time.sleep(3)
 		self.assertEquals(len(results), 12,  "Expected %s results, but got %s" % (12, len(results)))
 	
-	#def test_poolDecorator(self):
-	#	
-	#	result = []
-	#	
-	#	def decoratorCallback(success, returned, errors):
-	#		result.append(success)
-	#		result.append(returned)
-	#		result.append(errors)
-	#
-	#	#run class method in ThreadPool via decorator
-	#	class SomeClass(object):
-	#		@poolJob(callback=decoratorCallback)
-	#		def poolJobTest(self):
-	#			return "test"
-	#	
-	#	someClass = SomeClass()
-	#	someClass.poolJobTest()
-	#	
-	#	#give job a second to finish
-	#	time.sleep(1)
-	#	
-	#	self.assertTrue(result[0], "Expected callback success to be 'True', but got %s"%result[0])
-	#	self.assertEqual(result[1], 'test', "Expected callback result to be 'test', but got %s"%result[1])
-	#	self.assertIsNone(result[2], "Expected function to run successfully, but got error %s"% result[2])
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)
 
-	

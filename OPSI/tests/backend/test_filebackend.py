@@ -16,9 +16,14 @@ class FileBackendTestCase(BackendTestCase,
 	
 	def setUp(self):
 		super(FileBackendTestCase, self).setUp()
+		self.inventoryHistory = False
 		
 		self.useFixture(FQDNFixture())
 		self.fb = self.useFixture(FileBackendFixture())
 		self.backend = self.fb.backend
 		
 		self.expected = self.useFixture(BackendContentFixture(self.fb.backend, False))
+
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)

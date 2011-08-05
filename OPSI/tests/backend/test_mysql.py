@@ -18,15 +18,19 @@ class MySQLTestCase(BackendTestCase,
 		    ExtendedBackendMixin,
 #		    MultithreadingMixin
 		):
+
+	inventoryHistory = True
+
 	
 	def setUp(self):
 		super(MySQLTestCase, self).setUp()
 		
-		self.licenseManagement = True
-		self.inventoryHistory = True
-		
 		self.useFixture(FQDNFixture())
-		self.backendFixture = self.useFixture(MySQLBackendFixture(username="root", password="linux123", database="test"))
+		self.backendFixture = self.useFixture(MySQLBackendFixture(username="root", password="linux123"))
 		self.backend = self.backendFixture.backend
 		
-		self.expected = self.useFixture(BackendContentFixture(self.backendFixture.backend, self.backendFixture.licenseManagement))
+		self.expected = self.useFixture(BackendContentFixture(self.backend, self.backendFixture.licenseManagement))
+
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)

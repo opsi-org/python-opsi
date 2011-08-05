@@ -110,7 +110,7 @@ class InventoryObjectMethodMixin(object):
 		self.assertEqual(len(auditHardwares), 0, u"Expected 0 audit hardware objects, but found %s on backend." % (len(auditHardwares)))
 		
 	def test_createAuditHardware(self):
-		self.backend.auditHardware_deleteObjects([ self.expected.auditHardware1, self.expected.auditHardware2 ])
+		#self.backend.auditHardware_deleteObjects([ self.expected.auditHardware1, self.expected.auditHardware2 ])
 		self.backend.auditHardware_createObjects([ self.expected.auditHardware1, self.expected.auditHardware2 ])
 		auditHardwares = self.backend.auditHardware_getObjects()
 		self.assertEqual(len(auditHardwares), len(self.expected.auditHardwares), u"Expected %s audit hardware objects, but found %s on backend." % (len(self.expected.auditHardwares), len(auditHardwares)))

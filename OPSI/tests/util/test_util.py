@@ -68,3 +68,6 @@ class UtilTestCase(TestCase):
 		
 		self.assertEqual(fqdn, getfqdn(name=address))
 
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)

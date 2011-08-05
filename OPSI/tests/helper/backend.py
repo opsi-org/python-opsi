@@ -24,20 +24,21 @@
    @license: GNU General Public License version 2
 """
 
-import os, pwd, grp, socket
+import os, pwd, grp, socket, MySQLdb, random, time
 
-from fixtures import TempDir
+from fixtures import TempDir, MonkeyPatch
 
-from OPSI.tests.helper.fixture import Fixture, FQDNFixture, ConfigFixture
+from OPSI.tests.helper.fixture import Fixture, FQDNFixture, ConfigFixture, HwAuditConfigFixture
 from OPSI.tests.helper.testcase import TestCase
 
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.MySQL import MySQLBackend
-from OPSI.Backend.SQLite import SQLiteBackend
+from OPSI.Backend.SQLite import SQLiteBackend, SQLiteObjectBackendModificationTracker
 from OPSI.Backend.LDAP import LDAPBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from OPSI.Object import *
+from OPSI.Util import randomString
 
 
 class FileBackendConfigFixture(Fixture):
@@ -117,7 +118,7 @@ class BackendContentFixture(Fixture):
 	def setUp(self):
 		super(BackendContentFixture, self).setUp()
 		self.addCleanup(self.backend.backend_deleteBase)
-		self.serverId = socket.getfqdn()
+		self.serverId = socket.getfqdn('')
 	
 		self.hwconf = self.backend.auditHardware_getConfig()
 		AuditHardware.setHardwareConfig(self.hwconf)
@@ -1362,6 +1363,10 @@ class FileBackendFixture(_BackendFixture):
 		
 	def setupBackend(self):
 		
+		hw = HwAuditConfigFixture()
+
+		self.useFixture(hw)
+		
 		if self.baseDir is None:
 			bd = self.useFixture(TempDir())
 			self.baseDir = bd.path
@@ -1370,17 +1375,17 @@ class FileBackendFixture(_BackendFixture):
 			self.hostKeyFile = os.path.join(hkf.path, "pckeys")
 
 		
-		self.backend = FileBackend(baseDir=self.baseDir, hostKeyFile=self.hostKeyFile)
+		self.backend = FileBackend(baseDir=self.baseDir, hostKeyFile=self.hostKeyFile, audithardwareconfigfile=hw.path)
 		
-		self.patch(self.backend, "__fileUid", pwd.getpwnam(self.uid)[2])
-		self.patch(self.backend, "__fileGid", grp.getgrnam(self.gid)[2])
-		self.patch(self.backend, "__dirUid", pwd.getpwnam(self.uid)[2])
-		self.patch(self.backend, "__dirGid", grp.getgrnam(self.gid)[2])
+		self.test.patch(self.backend, "__fileUid", pwd.getpwnam(self.uid)[2])
+		self.test.patch(self.backend, "__fileGid", grp.getgrnam(self.gid)[2])
+		self.test.patch(self.backend, "__dirUid", pwd.getpwnam(self.uid)[2])
+		self.test.patch(self.backend, "__dirGid", grp.getgrnam(self.gid)[2])
 
-		self.patch(self.backend, "__fileUser", self.uid)
-		self.patch(self.backend, "__fileGroup", self.gid)
-		self.patch(self.backend, "__dirUser", self.uid)
-		self.patch(self.backend, "__dirGroup", self.gid)
+		self.test.patch(self.backend, "__fileUser", self.uid)
+		self.test.patch(self.backend, "__fileGroup", self.gid)
+		self.test.patch(self.backend, "__dirUser", self.uid)
+		self.test.patch(self.backend, "__dirGroup", self.gid)
 		
 		self.extend()
 
@@ -1388,7 +1393,58 @@ class FileBackendFixture(_BackendFixture):
 		self.options.update(options)
 		self.backend.backend_setOptions(self.options)
 
+class SQLiteBackendFixture(_BackendFixture):
+	
+	defaultOptions = {
+			'processProductPriorities':            True,
+			'processProductDependencies':          True,
+			'addProductOnClientDefaults':          True,
+			'addProductPropertyStateDefaults':     True,
+			'addConfigStateDefaults':              True,
+			'deleteConfigStateIfDefault':          True,
+			'returnObjectsOnUpdateAndCreate':      False
+	}
+	licenseManagement = True
+	
+	def __init__(self, database=":memory:"):
+		super(SQLiteBackendFixture, self).__init__()
+		
+		self.database = database
+		self.backend = None
+		
+	def setupBackend(self):
+		
+		hw = HwAuditConfigFixture()
 
+		self.useFixture(hw)
+		
+		if not self.database:
+			bd = self.useFixture(TempDir())
+			self.baseDir = bd.path
+			self.database = os.path.join(self.baseDir, "opsi.sqlite")
+		
+		self.backend = SQLiteBackend(database=self.database, audithardwareconfigfile=hw.path)
+		self.extend()
+
+class SQLiteModificationTrackerFixture(Fixture):
+	
+	def __init__(self, database=":memory:"):
+		super(SQLiteModificationTrackerFixture, self).setUp()
+		
+		self.database = database
+		self.tracker = None
+		
+	def setUp(self):
+		super(SQLiteModificationTrackerFixture, self).setUp()
+		if not self.database:
+			bd = self.useFixture(TempDir())
+			self.baseDir = bd.path
+			self.database = os.path.join(self.baseDir, "tracker.sqlite")
+		
+		self.tracker = SQLiteObjectBackendModificationTracker(database = self.database)
+		
+		
+		
 class MySQLBackendFixture(_BackendFixture):
 	
 	defaultOptions = {
@@ -1400,8 +1456,9 @@ class MySQLBackendFixture(_BackendFixture):
 			'deleteConfigStateIfDefault':          True,
 			'returnObjectsOnUpdateAndCreate':      False
 	}
+	licenseManagement = True
 	
-	def __init__(self, username, password, database, hostname="localhost"):
+	def __init__(self, username, password, database=None, hostname="localhost"):
 		super(MySQLBackendFixture, self).__init__()
 		self.username = username
 		self.password = password
@@ -1409,36 +1466,36 @@ class MySQLBackendFixture(_BackendFixture):
 		self.hostname = hostname
 		
 
-
 	def setupBackend(self):
-		self.licenseManagement = True
-		self.inventoryHistory = True
+
+		hw = HwAuditConfigFixture()
+
+		self.useFixture(hw)
+
+		if not self.database:
+			random.SystemRandom(time.clock()*1234567)
+			self.database = "opsitest%s" % str(random.randint(1000000, 10000000))
+		con = MySQLdb.connect(user=self.username, passwd=self.password)
+		c = con.cursor()
+		c.execute("CREATE DATABASE %s" % self.database)
 		
-		self.backend = MySQLBackend(username = self.username, password = self.password, database = self.database, address = self.hostname)
+		c.close()
+		con.close()
+		self.addCleanup(self._dropDatabase)
+		
+		self.backend = self.mb = MySQLBackend(username = self.username, password = self.password, database = self.database, address = self.hostname, audithardwareconfigfile=hw.path)
 		self.extend()
 
-
-class SQLiteBackendFixture(_BackendFixture):
-	defaultOptions = {
-			'processProductPriorities':            True,
-			'processProductDependencies':          True,
-			'addProductOnClientDefaults':          True,
-			'addProductPropertyStateDefaults':     True,
-			'addConfigStateDefaults':              True,
-			'deleteConfigStateIfDefault':          True,
-			'returnObjectsOnUpdateAndCreate':      False
-		}
-	
-	def __init__(self, database=":memory:"):
-		super(SQLiteBackendFixture, self).__init__()
+	def _dropDatabase(self):
+		con = MySQLdb.connect(user=self.username, passwd=self.password)
+		c = con.cursor()
+		c.execute("DROP DATABASE IF EXISTS %s" % self.database)
+		c.close()
+		con.close()
+		self.database = None
+		self.mb._sql._pool.destroy()
+		del self.mb._sql._pool
 		
-		self.database = database
-		
-		self.licenseManagement = True
-		self.inventoryHistory = True
-		
-		self.backend = SQLiteBackend(database = self.database)
-		self.extend()
 
 class LDAPBackendFixture(_BackendFixture):
 	

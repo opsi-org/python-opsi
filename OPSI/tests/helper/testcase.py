@@ -25,9 +25,9 @@
 """
 
 import testtools
-from testtools.matchers import Annotate, Not
+from testtools.matchers import Annotate, Not, Equals
 
-from OPSI.tests.helper.matchers import In, GreaterThan
+from OPSI.tests.helper.matchers import In, GreaterThan 
 
 
 class TestCase(testtools.TestCase):
@@ -49,7 +49,20 @@ class TestCase(testtools.TestCase):
 		if message:
 			matcher = Annotate(message, matcher)
 		self.assertThat(needle, matcher)
-		
+	
+	def assertIsNone(self, observed, message=''):
+
+		matcher = Equals(None)
+		if message:
+			matcher = Annotate(message, matcher)
+		self.assertThat(observed, matcher)
+
+	def assertIsNotNone(self, observed, message=''):
+		matcher = Not(Equals(None))
+		if message:
+			matcher = Annotate(message, matcher)
+		self.assertThat(observed, matcher)
+
 	def assertNotIn(self, needle, haystack, message=''):
 		matcher = Not(In(haystack))
 		if message:

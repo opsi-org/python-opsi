@@ -23,3 +23,17 @@
    @author: Christian Kampka <c.kampka@uib.de>
    @license: GNU General Public License version 2
 """
+
+import unittest
+
+
+def test_suite():
+	from OPSI.tests.helper.tests import (
+		test_matchers
+		)
+	modules = [
+		test_matchers
+		]
+	suites = map(lambda x: x.test_suite(), modules)
+	return unittest.TestSuite(suites)
+

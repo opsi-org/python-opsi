@@ -28,7 +28,7 @@ import unittest
 
 
 def test_suite():
-	from tests.opsi import (
+	from OPSI.tests.opsi import (
 		test_application,
 		test_logger
 		)

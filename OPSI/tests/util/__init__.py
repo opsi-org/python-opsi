@@ -29,3 +29,23 @@
    @author: Christian Kampka <c.kampka@uib.de>
    @license: GNU General Public License version 2
 """
+
+
+import unittest
+
+
+def test_suite():
+	from OPSI.tests.util import (
+		file,
+		test_functools,
+		test_threads,
+		test_util,
+		)
+	modules = [
+		file,
+		test_functools,
+		test_threads,
+		test_util
+		]
+	suites = map(lambda x: x.test_suite(), modules)
+	return unittest.TestSuite(suites)

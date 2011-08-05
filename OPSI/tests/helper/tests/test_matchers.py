@@ -25,10 +25,9 @@
 """
 
 from OPSI.tests.helper.matchers import GreaterThan
-from testtools.tests.test_matchers import TestMatchersInterface
 from testtools import TestCase
 
-class GreaterThanMatcherTest(TestCase, TestMatchersInterface):
+class GreaterThanMatcherTest(TestCase):
 
 	matches_matcher = GreaterThan(4)
 	matches_matches = [5, 9, 1000]

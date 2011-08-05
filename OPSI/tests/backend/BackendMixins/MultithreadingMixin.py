@@ -2,7 +2,6 @@
 import time, sys, traceback
 from MySQLdb.constants.ER import DUP_ENTRY
 from MySQLdb import IntegrityError
-from opsidevtools.unittest.lib import unittest2
 
 try:
 	from apsw import ConstraintError
@@ -26,15 +25,15 @@ class MultithreadingMixin(object):
 				try:
 					time.sleep(1)
 					self._backendTest.backend.host_getObjects()
-					self._backendTest.backend.host_deleteObjects(self._backendTest.client1)
+					self._backendTest.backend.host_deleteObjects(self._backendTest.expected.client1)
 					self._backendTest.backend.host_getObjects()
-					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
-					self._backendTest.backend.host_createObjects(self._backendTest.client2)
-					self._backendTest.backend.host_createObjects(self._backendTest.client1)
+					self._backendTest.backend.host_deleteObjects(self._backendTest.expected.client2)
+					self._backendTest.backend.host_createObjects(self._backendTest.expected.client2)
+					self._backendTest.backend.host_createObjects(self._backendTest.expected.client1)
 					self._backendTest.backend.host_getObjects()
-					self._backendTest.backend.host_createObjects(self._backendTest.client1)
-					self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
-					self._backendTest.backend.host_createObjects(self._backendTest.client1)
+					self._backendTest.backend.host_createObjects(self._backendTest.expected.client1)
+					self._backendTest.backend.host_deleteObjects(self._backendTest.expected.client2)
+					self._backendTest.backend.host_createObjects(self._backendTest.expected.client1)
 					self._backendTest.backend.host_getObjects()
 				except IntegrityError, e:
 					if e[0] != DUP_ENTRY:

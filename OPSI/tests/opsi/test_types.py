@@ -24,7 +24,7 @@
    @license: GNU General Public License version 2
 """
 
-from testtools import TestCase
+from OPSI.tests.helper.testcase import TestCase
 from OPSI.Types import *
 import sys
 
@@ -102,3 +102,7 @@ class SomeClass(object):
 			self.assertIsNone(someObj._someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj._someOtherArg)
 		except AttributeError, e:
 			self.fail(e)
+			
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)

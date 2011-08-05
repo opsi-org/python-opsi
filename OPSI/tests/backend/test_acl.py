@@ -1,37 +1,33 @@
 import os, pwd, grp
 
-from OPSI.Backend.SQLite import SQLiteBackend
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
+
+
+from OPSI.tests.helper.fixture import FQDNFixture
+from OPSI.tests.helper.backend import SQLiteBackendFixture, BackendContentFixture, BackendTestCase
+from OPSI.tests.helper.testcase import TestCase
+
 from OPSI.Backend.BackendManager import BackendAccessControl
 from OPSI.Object import *
-from BackendTest import *
 
-#from OPSI.Logger import *
-#logger = Logger()
-#logger.setConsoleLevel(6)
-#logger.setConsoleColor(True)
 
-class ACLTestCase(ExtendedBackendTestCase):
+
+class ACLTestCase(BackendTestCase):
 	
-	@classmethod
-	def setUpClass(cls):
-		cls.sqliteBackend = SQLiteBackend(database = ":memory:")
-	
-	def createBackend(self):
-		env = os.environ.copy()
-		uid = gid = env["USER"]
+	def setUp(self):
+		super(ACLTestCase, self).setUp()
 		
-		self.licenseManagement = True
+		self.useFixture(FQDNFixture())
+		self.fb = self.useFixture(SQLiteBackendFixture())
+		self.backend = self.fb.backend
+		
+		self.expected = self.useFixture(BackendContentFixture(self.fb.backend, True))
 		self.inventoryHistory = True
-		
-		self.backend = ExtendedConfigDataBackend(self.sqliteBackend)
-		self.backend.backend_createBase()
 	
 	def test_get_access_full(self):
 		backend = BackendAccessControl(
 				backend  = self.backend,
-				username = self.configserver1.id,
-				password = self.configserver1.opsiHostKey,
+				username = self.expected.configserver1.id,
+				password = self.expected.configserver1.opsiHostKey,
 				acl      = [
 					['.*', [
 							{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
@@ -40,9 +36,9 @@ class ACLTestCase(ExtendedBackendTestCase):
 				]
 		)
 		hosts = backend.host_getObjects()
-		self.assertEqual(len(self.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.hosts), len(hosts)))
+		self.assertEqual(len(self.expected.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.expected.hosts), len(hosts)))
 		for host in hosts:
-			for h in self.hosts:
+			for h in self.expected.hosts:
 				if (h.id != host.id):
 					continue
 				self.assertEqual(h.opsiHostKey, host.opsiHostKey, u"Expected opsi host key %s, but got '%s' from backend" % (h.opsiHostKey, host.opsiHostKey))
@@ -50,8 +46,8 @@ class ACLTestCase(ExtendedBackendTestCase):
 	def test_get_access_self(self):
 		backend = BackendAccessControl(
 				backend  = self.backend,
-				username = self.configserver1.id,
-				password = self.configserver1.opsiHostKey,
+				username = self.expected.configserver1.id,
+				password = self.expected.configserver1.opsiHostKey,
 				acl      = [
 					['.*', [
 							{'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
@@ -66,8 +62,8 @@ class ACLTestCase(ExtendedBackendTestCase):
 		denyAttributes = ['opsiHostKey', 'description']
 		backend = BackendAccessControl(
 				backend  = self.backend,
-				username = self.configserver1.id,
-				password = self.configserver1.opsiHostKey,
+				username = self.expected.configserver1.id,
+				password = self.expected.configserver1.opsiHostKey,
 				acl      = [
 					['.*', [
 							{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []}
@@ -76,7 +72,7 @@ class ACLTestCase(ExtendedBackendTestCase):
 				]
 		)
 		hosts = backend.host_getObjects()
-		self.assertEqual(len(self.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.hosts), len(hosts)))
+		self.assertEqual(len(self.expected.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.expected.hosts), len(hosts)))
 		for host in hosts:
 			for (attribute, value) in host.toHash().items():
 				if attribute in denyAttributes:
@@ -86,8 +82,8 @@ class ACLTestCase(ExtendedBackendTestCase):
 		allowAttributes = ['type', 'id', 'description', 'notes']
 		backend = BackendAccessControl(
 				backend  = self.backend,
-				username = self.configserver1.id,
-				password = self.configserver1.opsiHostKey,
+				username = self.expected.configserver1.id,
+				password = self.expected.configserver1.opsiHostKey,
 				acl      = [
 					['.*', [
 							{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': allowAttributes}
@@ -96,7 +92,7 @@ class ACLTestCase(ExtendedBackendTestCase):
 				]
 		)
 		hosts = backend.host_getObjects()
-		self.assertEqual(len(self.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.hosts), len(hosts)))
+		self.assertEqual(len(self.expected.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.expected.hosts), len(hosts)))
 		for host in hosts:
 			for (attribute, value) in host.toHash().items():
 				if attribute not in allowAttributes:
@@ -106,8 +102,8 @@ class ACLTestCase(ExtendedBackendTestCase):
 		denyAttributes = ['opsiHostKey', 'description']
 		backend = BackendAccessControl(
 				backend  = self.backend,
-				username = self.configserver1.id,
-				password = self.configserver1.opsiHostKey,
+				username = self.expected.configserver1.id,
+				password = self.expected.configserver1.opsiHostKey,
 				acl      = [
 					['.*', [
 							{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []},
@@ -117,10 +113,10 @@ class ACLTestCase(ExtendedBackendTestCase):
 				]
 		)
 		hosts = backend.host_getObjects()
-		self.assertEqual(len(self.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.hosts), len(hosts)))
+		self.assertEqual(len(self.expected.hosts), len(hosts), u"Expected %s hosts, but got '%s' from backend" % (len(self.expected.hosts), len(hosts)))
 		for host in hosts:
-			if (host.id == self.configserver1.id):
-				self.assertEqual(self.configserver1.opsiHostKey, host.opsiHostKey, u"Expected opsi host key %s, but got '%s' from backend" % (self.configserver1.opsiHostKey, host.opsiHostKey))
+			if (host.id == self.expected.configserver1.id):
+				self.assertEqual(self.expected.configserver1.opsiHostKey, host.opsiHostKey, u"Expected opsi host key %s, but got '%s' from backend" % (self.expected.configserver1.opsiHostKey, host.opsiHostKey))
 			else:
 				for (attribute, value) in host.toHash().items():
 					if attribute in denyAttributes:
@@ -161,8 +157,11 @@ class ACLTestCase(ExtendedBackendTestCase):
 			pass
 		else:
 			self.fail("Successfuly inserted productOnClient %s as user %s into backend. Access should have been denied." % (productOnClient, client.id))
-		
-		
+
+
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)		
 		
 		
 		

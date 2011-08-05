@@ -50,7 +50,7 @@ class ExtendedBackendMixin(object):
 			
 		productOnClients = map((lambda x: x.productId), self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['product6', 'product7']))
 		productOnClients.sort()
-		self.assertListEqual(productOnClients, [u'product6',u'product7'], u"Expected result to be '%s', but got %s from backend." % (productOnClients, ['product6', 'product7']))
+		self.assertEqual(productOnClients, [u'product6',u'product7'], u"Expected result to be '%s', but got %s from backend." % (productOnClients, ['product6', 'product7']))
 #		
 	def test_selectProductOnClientsByWildcard(self):
 		
@@ -65,4 +65,4 @@ class ExtendedBackendMixin(object):
 		self.backend.productOnClient_createObjects(poc)
 		
 		productOnClients = self.backend.productOnClient_getObjects(clientId = 'client1.uib.local', productId = ['*6*'])
-		self.assertListEqual(productOnClients, [poc], "Expected product %s on client %s, but got %s from backend" % (poc.productId, poc.clientId, productOnClients))
+		self.assertEqual(productOnClients, [poc], "Expected product %s on client %s, but got %s from backend" % (poc.productId, poc.clientId, productOnClients))

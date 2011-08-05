@@ -43,3 +43,6 @@ class In(Matcher):
 		if needle in self.haystack:
 			return None
 		return Mismatch("No value %s was found in haystack %s" %(needle, self.haystack))
+	
+	def __str__(self):
+		return "%s(%r)" % (self.__class__.__name__, self.haystack)

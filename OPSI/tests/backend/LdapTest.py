@@ -33,3 +33,7 @@ class LdapTestCase(BackendTestCase,
 	@unittest.expectedFailure
 	def test_Multithreading(self):
 		MultithreadingMixin(LdapTestCase, self).test_Multithreading()
+
+def test_suite():
+	from unittest import TestLoader
+	return TestLoader().loadTestsFromName(__name__)
