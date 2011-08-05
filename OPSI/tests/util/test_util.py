@@ -16,6 +16,7 @@ class UtilTestCase(TestCase):
 		
 		for sequence in s:
 			self.assertEqual(sequence[1], flattenSequence(sequence[0]))
+
 			
 	def test_getfqdn(self):
 		
@@ -66,3 +67,4 @@ class UtilTestCase(TestCase):
 		self.useFixture(FQDNFixture(fqdn=fqdn, address=address))
 		
 		self.assertEqual(fqdn, getfqdn(name=address))
+

@@ -1345,7 +1345,8 @@ class BackendContentFixture(Fixture):
 
 class FileBackendConfigFixtire(Fixture):
 	
-	template = 
+	template = None 
+
 
 class FileBackendFixture(_BackendFixture):
 	
@@ -1469,5 +1470,5 @@ class BackendTestCase(TestCase):
 
 	def setUp(self):
 		super(TestCase, self).setUp()
-		self.useFixture(FQDNFixture('opsi-test-server.uib.local'))
 
+		self.useFixture(FQDNFixture('opsi-test-server.uib.local'))
