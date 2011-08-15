@@ -83,10 +83,10 @@ class ConfigFixture(Fixture):
 		f = file(self.path, "w")
 		try:
 			f.write(data)
+			f.close()
 		except Exception, e:
 			self.addDetail("conferror", e)
 			self.test.fail("Could not generate global.conf.")
-		finally:
 			f.close()
 
 	

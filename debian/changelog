@@ -1,3 +1,10 @@
+python-opsi (4.0.1.24-1) stable; urgency=low
+
+  * tests/helper/fixture
+    - fix for python 2.4
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 15 Aug 2011 15:12:05 +0200
+
 python-opsi (4.0.1.23-1) stable; urgency=low
 
   * OPSI/Object
