@@ -403,7 +403,7 @@ class Host(Object):
 		return self.hardwareAddress
 	
 	def setHardwareAddress(self, hardwareAddress):
-		self.hardwareAddress = forceHardwareAddress(hardwareAddress)
+		self.hardwareAddress = forceHardwareAddress(forceList(hardwareAddress)[0])
 	
 	def getIpAddress(self):
 		return self.ipAddress

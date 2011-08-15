@@ -1,3 +1,10 @@
+python-opsi (4.0.1.23-1) stable; urgency=low
+
+  * OPSI/Object
+    - Host: force list of hardware addresses to single value (needed for univention)
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 15 Aug 2011 14:15:33 +0200
+
 python-opsi (4.0.1.22-1) stable; urgency=low
 
   * OPSI/Util/File/Opsi/__init__:
