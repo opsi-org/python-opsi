@@ -806,7 +806,12 @@ class BoolConfig(Config):
 		Config.setPossibleValues(self, [ True, False ])
 	
 	def setDefaultValues(self, defaultValues):
-		defaultValues = forceBoolList(defaultValues)
+		dv = []
+		# Remove duplicates
+		for value in forceBoolList(defaultValues):
+			if not value in dv:
+				dv.append(value)
+		defaultValues = dv
 		if (len(defaultValues) > 1):
 			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % defaultValues)
 		Config.setDefaultValues(self, defaultValues)

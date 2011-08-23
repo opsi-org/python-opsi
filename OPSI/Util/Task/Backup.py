@@ -31,14 +31,9 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = (0,0)
-__verstr__ = ".".join([str(i) for i in __version__])
-
 import sys, types, os, termios, fcntl, gettext, bz2, gzip, shutil
 
 from OPSI.Types import *
-from OPSI.Util import argparse
-from OPSI.Util.Collections import DefaultList
 from OPSI.Logger import *
 from OPSI.Util.File.Opsi import OpsiBackupArchive
 from OPSI.System.Posix import SysInfo
@@ -114,7 +109,7 @@ class OpsiBackup(object):
 				name = archive.name.split(os.sep)[-1]
 			else:
 				name = archive.name
-			logger.notice(_(u"Creating backup archive %s" % name))
+			logger.notice(u"Creating backup archive %s" % name)
 			
 			if mode == "raw":
 				for backend in backends:
@@ -152,7 +147,7 @@ class OpsiBackup(object):
 				
 			shutil.move(archive.name, destination)
 
-			logger.notice(_("Backup complete"))
+			logger.notice(u"Backup complete")
 		except Exception, e:
 			os.remove(archive.name)
 			logger.logException(e, LOG_DEBUG)
@@ -168,10 +163,10 @@ class OpsiBackup(object):
 			
 			archive = self._getArchive(mode="r", file=f)
 			
-			logger.info(_("Verifying archive %s" %f))
+			logger.info(u"Verifying archive %s" % f)
 			try:
 				archive.verify()
-				logger.notice(_("Archive is OK."))
+				logger.notice(u"Archive is OK.")
 			except OpsiBackupFileError, e:
 				logger.error(e)
 				result = 1
@@ -242,31 +237,31 @@ class OpsiBackup(object):
 			
 			if force or self._verifySysconfig(archive):
 			
-				logger.notice(_(u"Restoring data from backup archive %s." % archive.name))
+				logger.notice(u"Restoring data from backup archive %s." % archive.name)
 				
 				if configuration:
 					if not archive.hasConfiguration() and not force:
-						raise OpsiBackupFileError(_("Backup file does not contain configuration data."))
+						raise OpsiBackupFileError(u"Backup file does not contain configuration data.")
 					logger.debug(u"Restoring opsi configuration.")
 					functions.append(lambda x: archive.restoreConfiguration())
 		
 
 
-				if mode == "raw":
+				if (mode == "raw"):
 					for backend in backends:
 						if backend in ("file", "all", "auto"):
 							if not archive.hasFileBackend() and not force and not auto:
-								raise OpsiBackupFileError(_("Backup file does not contain file backend data."))
+								raise OpsiBackupFileError(u"Backup file does not contain file backend data.")
 							functions.append(archive.restoreFileBackend)
 							
 						if backend in ("mysql", "all", "auto"):
 							if not archive.hasMySQLBackend() and not force and not auto:
-								raise OpsiBackupFileError(_("Backup file does not contain mysql backend data."))
+								raise OpsiBackupFileError(u"Backup file does not contain mysql backend data.")
 							functions.append(archive.restoreMySQLBackend)
 						
 						if backend in ("dhcp", "all", "auto"):
 							if not archive.hasDHCPBackend() and not force and not auto:
-								raise OpsiBackupFileError(_("Backup file does not contain DHCP backup data."))
+								raise OpsiBackupFileError(u"Backup file does not contain DHCP backup data.")
 							functions.append(archive.restoreDHCPBackend)
 						#TODO: implement ldap/univention backup
 						#if backend in ("ldap", "all"):
@@ -277,89 +272,19 @@ class OpsiBackup(object):
 						#	archive.backupUniventionBackend()
 				try:
 					for f in functions:
-						logger.debug2("Running restoration function %s" % repr(f))
+						logger.debug2(u"Running restoration function %s" % repr(f))
 						f(auto)
 				except OpsiBackupBackendNotFound, e:
 					if not auto:
 						raise e
 				except Exception, e:
-					logger.error("Failed to restore data from archive %s: %s. Aborting." %(archive.name, e))
+					logger.error(u"Failed to restore data from archive %s: %s. Aborting." % (archive.name, e))
 					logger.logException(e, LOG_DEBUG)
 					raise e
 				
-				logger.notice(_("Restoration complete"))
+				logger.notice(u"Restoration complete")
 		finally:
 			archive.close()
-
-
-	def run(self):
-		
-		func = getattr(self, "_%s" % self.__dict__.pop("command"), None)
-		if func is None:
-			raise RuntimeError("Invalid command specified")
-		
-		func(**self.__dict__)
-		
-def main(argv = sys.argv[1:], stdout=sys.stdout):
-
-	logger.setLogFormat('[%l] [%D] %M')
-	logger.setConsoleLevel(LOG_WARNING)
-	
-	backup = OpsiBackup(stdout=stdout)
-	parser = argparse.ArgumentParser(prog="opsi-backup", description=_('Creates and restores opsi backups.'))
-	#FIXME: show program version
-	parser.add_argument("-v", "--verbose", action="store_true", default=False, help=_("Show log output on standard out."))
-	parser.add_argument("-V", "--version", action="version", version='opsi-backup %s'%  __verstr__, help="Show program version.")
-	parser.add_argument("-l", "--log-level", type=int, default=5, choices=range(1,10), help=_("Set the log level for this program (Default: 5)."))
-	parser.add_argument("--log-file", metavar='FILE', default="/var/log/opsi/opsi-backup.log", help=_("Set a log file for this program."))
-	subs = parser.add_subparsers(title="commands", dest="command", help=_("opsi-backup sub-commands"))
-	
-	parser_verify = subs.add_parser("verify", help=_("Verify archive integrity."))
-	parser_verify.add_argument("file", nargs="+", help=_("The backup archive to verify."))
-	
-	parser_restore = subs.add_parser("restore", help=_("Restore data from a backup archive."))
-	parser_restore.add_argument("file", nargs=1, help=_("The backup archive to restore data from."))
-	parser_restore.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for restoration. (Default: raw)"))
-	parser_restore.add_argument("--backends", action="append", choices=['file','mysql','dhcp','auto','all'], help=_("Select a backend to restore or 'all' for all backends. Can be given multiple times."))
-	parser_restore.add_argument("--configuration", action="store_true", default=False, help=_("Restore opsi configuration."))
-	#parser_restore.add_argument("--dhcp", action="store_true", default=False, help=_("Restore dhcp configuration."))
-	parser_restore.add_argument("-f", "--force", action="store_true", default=False, help=_("Ignore sanity checks and try to apply anyways. Use with caution! (Default: false)"))
-	
-	parser_create = subs.add_parser("create", help=_("Create a new backup."))
-	parser_create.add_argument("destination", nargs="?", help=_("Destination of the generated output file. (optional)"))
-	parser_create.add_argument("--mode", nargs=1, choices=['raw', 'data'], default="raw", help=argparse.SUPPRESS ) # TODO: help=_("Select a mode that should ne used for backup. (Default: raw)"))
-	parser_create.add_argument("--flush-logs", action="store_true", default=False, help=_("Causes mysql to flush table logs to disk before the backup. (recommended)"))
-	parser_create.add_argument("--backends", action="append", choices=['file','mysql','dhcp', 'auto', 'all'], default=DefaultList(["auto"]), help=_("Select a backend to backup or 'all' for all backends. Can be given multiple times. (Default: auto)"))
-	parser_create.add_argument("--no-configuration", action="store_true", default=False, help=_("Backup opsi configuration."))
-	#parser_create.add_argument("--dhcp", action="store_true", default=False, help=_("Backup dhcp configuration."))
-	parser_create.add_argument("-c", "--compression", nargs="?", default="bz2", choices=['gz','bz2', 'none'], help=_("Sets the compression format for the archive (Default: bz2)"))
-
-	parser.parse_args(argv, namespace=backup)
-
-	logLevel = backup.__dict__.pop("log_level")
-
-	verbose = backup.__dict__.pop("verbose", None)
-	if verbose:
-		logger.setConsoleLevel(logLevel)
-
-	logFile = backup.__dict__.pop("log_file", None)
-	if logFile:
-		logger.setLogFile(logFile)
-		logger.setFileLevel(logLevel)
-
-	try:
-		result = backup.run()
-		if type(result) == types.IntType:
-			return result
-		return 0
-	except KeyboardInterrupt, e:
-		return 1
-	except Exception, e:
-		logger.logException(e, LOG_DEBUG)
-		logger.error(_(u"Task backup failed: %s" %e))
-		return 1
-
-
 
 
 
