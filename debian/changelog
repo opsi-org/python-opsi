@@ -1,3 +1,12 @@
+python-opsi (4.0.1.26-1) stable; urgency=low
+
+  * OPSI/Util/WindowsDriver:
+     - Fix integrateWindowsDrivers
+  * OPSI/Util/File:
+     - Modify loglevels in inf-file-parsing
+
+ -- Jan Schneider <j.schneider@uib.de>  Thu, 25 Aug 2011 15:42:13 +0200
+
 python-opsi (4.0.1.25-1) stable; urgency=low
 
   * OPSI/Object:

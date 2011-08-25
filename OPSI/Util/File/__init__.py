@@ -695,7 +695,7 @@ class InfFile(ConfigFile):
 		lines = newLines
 		
 		# Get strings
-		logger.debug(u"   - Getting strings")
+		logger.debug2(u"   - Getting strings")
 		strings = {}
 		section = u''
 		for line in lines:
@@ -737,7 +737,7 @@ class InfFile(ConfigFile):
 					self._sourceDisksNames.append(name)
 		
 		# Get devices
-		logger.debug(u"   - Getting devices")
+		logger.debug2(u"   - Getting devices")
 		section = u''
 		for line in lines:
 			match = re.search(self.sectionRegex, line)
@@ -767,7 +767,7 @@ class InfFile(ConfigFile):
 				if not i in devSections:
 					devSections.append(i)
 		deviceSections = devSections
-		logger.debug(u"      - Device sections: %s" % ', '.join(deviceSections))
+		logger.debug2(u"      - Device sections: %s" % ', '.join(deviceSections))
 		
 		def isDeviceSection(section):
 			if section in deviceSections:
@@ -787,14 +787,14 @@ class InfFile(ConfigFile):
 					if section and isDeviceSection(section):
 						sectionsParsed.append(section)
 					section = match.group(1)
-					if isDeviceSection(section): logger.debug(u"   - Parsing device section: %s" % section)
+					if isDeviceSection(section): logger.debug2(u"   - Parsing device section: %s" % section)
 				else:
 					if isDeviceSection(section) and not section in sectionsParsed:
 						try:
 							if (line.find('=') == -1) or (line.find(',') == -1):
 								continue
 							devString = line.split(u'=')[1].split(u',')[1].strip()
-							logger.debug(u"      - Processing device string: %s" % devString)
+							logger.debug2(u"      - Processing device string: %s" % devString)
 							type = ''
 							match = re.search(self.hdaudioDeviceRegex, devString)
 							if match:
@@ -812,7 +812,7 @@ class InfFile(ConfigFile):
 										if match:
 											type = u'ACPI'
 							if match:
-								logger.debug(u"         - Device type is %s" % type)
+								logger.debug2(u"         - Device type is %s" % type)
 								if (type == u'ACPI'):
 									vendor = match.group(1)
 									device = match.group(2)
@@ -820,7 +820,7 @@ class InfFile(ConfigFile):
 									vendor = forceHardwareVendorId(match.group(1))
 									device = forceHardwareDeviceId(match.group(2))
 								if u"%s:%s" % (vendor, device) not in found:
-									logger.debug(u"         - Found %s device: %s:%s" % (type, vendor, device))
+									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
 									found.append(u"%s:%s:%s" % (type, vendor, device))
 									self._devices.append( { 'path': path, 'class': deviceClass, 'vendor': vendor, 'device': device, 'type': type } )
 						except IndexError:

@@ -407,11 +407,11 @@ class JSONRPCBackend(Backend):
 											mysqlBackend = True
 								break
 					except Exception, e:
-						logger.info(e)
+						logger.info(forceUnicode(e))
 			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError):
 				raise
 			except Exception, e:
-				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % e)
+				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % forceUnicode(e))
 				self._interface = self._jsonRPC(u'getPossibleMethods_listOfHashes')
 				logger.info(u"Legacy opsi")
 				self._legacyOpsi = True
