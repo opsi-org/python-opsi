@@ -485,21 +485,21 @@ class SnackUI(UI):
 				width = self.getScreen().width - 15
 			
 			if (height <= 14):
-				height = 11 + len(entries)
+				height = 13 + len(entries)
 				if text:
-					height += len(text.split(u'\n'))
-				if (height > self.getScreen().height - 10):
-					height = self.getScreen().height - 10
+					height += len(text.split(u'\n')) + 1
+				if (height > self.getScreen().height - 5):
+					height = self.getScreen().height - 5
 			
 			entriesHeight = len(entries)
-			if (entriesHeight > height - 11):
-				entriesHeight = height - 11
+			if (entriesHeight > height - 13):
+				entriesHeight = height - 13
 			
 			# create text grid
 			textGrid = Grid(1, 1)
 			if text:
-				textHeight = len(text.split(u'\n'))
-				diff = textHeight + entriesHeight + 11 - height
+				textHeight = len(text.split(u'\n')) + 1
+				diff = textHeight + entriesHeight + 13 - height
 				if (diff > 0):
 					entriesHeight -= diff
 					if (entriesHeight < 3):
