@@ -1,3 +1,10 @@
+python-opsi (4.0.1.27-1) stable; urgency=low
+
+  * OPSI/UI
+     - Fix getSelection for many entries / scrolling
+
+ -- Jan Schneider <j.schneider@uib.de>  Mon, 29 Aug 2011 14:38:29 +0200
+
 python-opsi (4.0.1.26-1) stable; urgency=low
 
   * OPSI/Util/WindowsDriver:

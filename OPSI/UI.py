@@ -484,48 +484,54 @@ class SnackUI(UI):
 			if (width <= 0):
 				width = self.getScreen().width - 15
 			
+			if (height <= 14):
+				height = 11 + len(entries)
+				if text:
+					height += len(text.split(u'\n'))
+				if (height > self.getScreen().height - 10):
+					height = self.getScreen().height - 10
+			
+			entriesHeight = len(entries)
+			if (entriesHeight > height - 11):
+				entriesHeight = height - 11
+			
 			# create text grid
 			textGrid = Grid(1, 1)
 			if text:
-				textHeight = 0
-				if (height <= 0):
-					height = self.getScreen().height - 15
-					textHeight = height - len(entries)
-					if (textHeight < 2):
-						textHeight = 2
-					elif (textHeight > len(text.split(u'\n'))):
-						textHeight = len(text.split(u'\n'))
-				else:
-					textHeight = height - len(entries)
+				textHeight = len(text.split(u'\n'))
+				diff = textHeight + entriesHeight + 11 - height
+				if (diff > 0):
+					entriesHeight -= diff
+					if (entriesHeight < 3):
+						textHeight = textHeight - 3 + entriesHeight
+						entriesHeight = 3
 				
 				textBox = Textbox(width = width, height = textHeight, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
 				textGrid.setField(textBox, col = 0, row = 0)
 			
-			# create grid for entries
-			entriesGrid = Grid(1, len(entries))
+			# create widget for entries
+			entriesWidget = None
+			if radio:
+				entriesWidget = Listbox(height = entriesHeight, scroll = 1, returnExit = 0, width = 0, showCursor = 0)
+			else:
+				entriesWidget = CheckboxTree(height = entriesHeight, scroll = 1)
 			
 			row = 0
 			group = None
 			numSelected = 0
-			for entry in entries:
+			for i in range(len(entries)):
+				entry = entries[i]
 				selected = forceBool(entry.get('selected', False))
 				if radio and (numSelected >= 1):
 					selected = False
 				if selected:
 					numSelected += 1
-				
 				if radio:
-					group = entry['entry'] = SingleRadioButton(
-							text  = forceUnicode(entry.get('name', '???')).encode(encoding, 'replace'),
-							group = group,
-							isOn  = selected )
+					entriesWidget.append(text = forceUnicode(entry.get('name', '???')).encode(encoding, 'replace'), item = i)
+					if selected:
+						entriesWidget.setCurrent(i)
 				else:
-					entry['entry'] = Checkbox(
-							text = forceUnicode(entry.get('name', '???')).encode(encoding, 'replace'),
-							isOn = selected )
-				
-				entriesGrid.setField(entry['entry'], col = 0, row = row, anchorLeft = 1, padding = (0, 0, 0, 0))
-				
+					entriesWidget.append(text = forceUnicode(entry.get('name', '???')).encode(encoding, 'replace'), item = i, selected = selected)
 				row += 1
 			
 			# create grid for buttons
@@ -538,9 +544,9 @@ class SnackUI(UI):
 			buttonsGrid.setField(okButton, col = 1, row = 0, padding = (10, 0, 0, 0))
 			
 			gridForm = GridForm(self._screen, title.encode(encoding, 'replace'), 1, 3)
-			gridForm.add (textGrid,    col = 0, row = 0, padding = (0, 0, 0, 1))
-			gridForm.add (entriesGrid, col = 0, row = 1, padding = (0, 0, 0, 1))
-			gridForm.add (buttonsGrid, col = 0, row = 2, padding = (0, 0, 0, 0))
+			gridForm.add (textGrid,      col = 0, row = 0, padding = (0, 0, 0, 1))
+			gridForm.add (entriesWidget, col = 0, row = 1, padding = (0, 0, 0, 1))
+			gridForm.add (buttonsGrid,   col = 0, row = 2, padding = (0, 0, 0, 0))
 			
 			# help line
 			helpLine = _(u"<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select") % (cancelLabel, okLabel)
@@ -559,12 +565,11 @@ class SnackUI(UI):
 				return None
 			
 			result = []
-			for i in range( len(entries) ):
-				if entries[i]['entry'].selected():
-					if radio:
-						return [ entries[i]['name'] ]
-					else:
-						result.append(entries[i]['name'])
+			if radio:
+				result.append(entries[entriesWidget.current()]['name'])
+			else:
+				for sel in entriesWidget.getSelection():
+					result.append(entries[sel]['name'])
 			return result
 		except Exception, e:
 			self.exit()
@@ -588,17 +593,22 @@ class SnackUI(UI):
 				width = self.getScreen().width - 15
 			
 			if (height <= 0):
-				height = self.getScreen().height - 15
+				height = 11 + len(entries)
+				if text:
+					height += len(text.split(u'\n'))
+				if (height > self.getScreen().height - 10):
+					height = self.getScreen().height - 10
 			
 			# create text grid
 			textGrid = Grid(1, 1)
-			
 			if text:
-				height -= len(entries)
-				if (height < 2):
-					height = 2
-				textBox = Textbox(width = width, height = height, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
-				textGrid.setField(textBox, col = 0, row = 0)
+				textHeight = len(text.split(u'\n'))
+				diff = textHeight + len(entries) + 11 - height
+				if (diff > 0):
+					textHeight -= diff
+				if (textHeight > 0):
+					textBox = Textbox(width = width, height = textHeight, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
+					textGrid.setField(textBox, col = 0, row = 0)
 			
 			# create grid for entries
 			entriesGrid = Grid(2, len(entries))
