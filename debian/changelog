@@ -1,3 +1,9 @@
+python-opsi (4.0.1.28-1) stable; urgency=low
+
+  * french localization
+
+ -- Jan Schneider <j.schneider@uib.de>  Wed, 31 Aug 2011 16:57:40 +0200
+
 python-opsi (4.0.1.27-1) stable; urgency=low
 
   * OPSI/UI

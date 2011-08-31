@@ -85,6 +85,11 @@ if not os.path.exists('locale/de/LC_MESSAGES'):
 os.system('msgfmt -o locale/de/LC_MESSAGES/python-opsi.mo gettext/python-opsi_de.po')
 data_files.append( ('/usr/share/locale/de/LC_MESSAGES', ['locale/de/LC_MESSAGES/python-opsi.mo']) )
 
+if not os.path.exists('locale/fr/LC_MESSAGES'):
+	os.makedirs('locale/fr/LC_MESSAGES')
+os.system('msgfmt -o locale/fr/LC_MESSAGES/python-opsi.mo gettext/python-opsi_fr.po')
+data_files.append( ('/usr/share/locale/fr/LC_MESSAGES', ['locale/fr/LC_MESSAGES/python-opsi.mo']) )
+
 setup(
 	name='python-opsi',
 	version=VERSION,
