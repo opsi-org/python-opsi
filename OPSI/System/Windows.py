@@ -165,7 +165,7 @@ def getOpsiHotfixName():
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 	
 def getHostname():
-	return forceHostname(win32api.GetComputerName())
+	return forceUnicodeLower(win32api.GetComputerName())
 
 def getFQDN():
 	fqdn = socket.getfqdn().lower()
