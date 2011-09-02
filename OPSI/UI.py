@@ -232,7 +232,7 @@ class SnackUI(UI):
 		for string in self.confidentialStrings:
 			text = text.replace(string, u'*** confidential ***')
 		try:
-			self._screen.drawRootText(x, y, text.encode('ascii', 'replace'))
+			self._screen.drawRootText(x, y, text.encode(encoding, 'replace'))
 			self.refresh()
 		except Exception, e:
 			self.exit()
@@ -1054,6 +1054,10 @@ if (__name__ == "__main__"):
 	
 	answer = uiTest.yesno(text = u'Täxt', title = u'Yäs Or Nö', okLabel = u'ÖK', cancelLabel = u'Cäncel', width = -1, height = -1)
 	uiTest.showMessage(text = u'Answer was: %s' % answer, seconds = 2)
+	
+	
+	#uiTest.showError(self, _(u'Nothing selected'), title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
+	uiTest.showMessage(text = u'Answer was: %s' % _(u'Nothing selected'), seconds = 2)
 	
 	time.sleep(2)
 	uiTest.exit()

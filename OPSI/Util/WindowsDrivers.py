@@ -137,13 +137,24 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		drivers.append(driver)
 	return drivers
 	
-def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory, messageSubject=None, srcRepository=None):
+def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory, messageSubject=None, srcRepository=None, drivers=None):
 	driverSourceDirectories = forceUnicodeList(driverSourceDirectories)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	
 	if not driverSourceDirectories:
 		logger.warning(u"No driver source directories passed")
 		return []
+	
+	driversOnMachine = {}
+	if drivers:
+		for driver in drivers:
+			vendorId = driver.get('vendorId', '')
+			deviceId = driver.get('deviceId', '')
+			if not vendorId or not deviceId:
+				continue
+			if not driversOnMachine.has_key(vendorId):
+				driversOnMachine[vendorId] = []
+			driversOnMachine[vendorId].append(deviceId)
 	
 	exists  = os.path.exists
 	listdir = os.listdir
@@ -224,6 +235,10 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			})
 			for dev in devices:
 				if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
+					if drivers and not dev['device'] in driversOnMachine.get(dev['vendor'], []):
+						logger.debug(u"Device %s:%s not found in HardwareInventory (%s)." \
+							% (dev['vendor'],dev['device'],driversOnMachine.get(dev['vendor'], [])))
+						continue
 					logger.notice(u"Driver for %s device %s:%s already integrated" \
 						% (dev['type'], dev['vendor'], dev['device']))
 					driverNeeded = False
@@ -287,7 +302,7 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 		logger.debug(u"No driver directories to integrate")
 		return []
 	
-	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository)
+	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository, drivers = drivers)
 
 def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):
 	driverDirectory = forceFilename(driverDirectory)
