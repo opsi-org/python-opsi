@@ -137,7 +137,7 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		drivers.append(driver)
 	return drivers
 	
-def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory, messageSubject=None, srcRepository=None, drivers=None):
+def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory, messageSubject=None, srcRepository=None, drivers=None, checkDups=False):
 	driverSourceDirectories = forceUnicodeList(driverSourceDirectories)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	
@@ -233,16 +233,19 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				'devices': devices,
 				'infFile': os.path.basename(infFile.getFilename())
 			})
-			for dev in devices:
-				if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
-					if drivers and not dev['device'] in driversOnMachine.get(dev['vendor'], []):
-						logger.debug(u"Device %s:%s not found in HardwareInventory (%s)." \
-							% (dev['vendor'],dev['device'],driversOnMachine.get(dev['vendor'], [])))
-						continue
-					logger.notice(u"Driver for %s device %s:%s already integrated" \
-						% (dev['type'], dev['vendor'], dev['device']))
-					driverNeeded = False
-					break
+			if checkDups:
+				for dev in devices:
+					if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
+						#if drivers and not dev['device'] in driversOnMachine.get(dev['vendor'], []):
+						#	logger.debug(u"Device %s:%s not found in HardwareInventory (%s)." \
+						#		% (dev['vendor'],dev['device'],driversOnMachine.get(dev['vendor'], [])))
+						#	continue
+						logger.notice(u"Driver for %s device %s:%s already integrated" \
+							% (dev['type'], dev['vendor'], dev['device']))
+						driverNeeded = False
+					elif dev['device'] in driversOnMachine.get(dev['vendor'], []):
+						driverNeeded = True
+						break
 			if tempInfFile:
 				os.remove(tempInfFile)
 			if not driverNeeded:
@@ -302,7 +305,7 @@ def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDire
 		logger.debug(u"No driver directories to integrate")
 		return []
 	
-	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository, drivers = drivers)
+	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject = messageSubject, srcRepository = srcRepository, drivers = drivers, checkDups=True)
 
 def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):
 	driverDirectory = forceFilename(driverDirectory)
