@@ -51,6 +51,7 @@ from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
+from OPSI.Util.MessageBus import MessageBusClient
 
 # Get logger instance
 logger = Logger()
@@ -71,10 +72,38 @@ except Exception, e:
 	pass
 
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                  CLASS BACKENDMANAGER                                              =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-
+class MessageBusNotifier(BackendModificationListener):
+	def __init__(self):
+		BackendModificationListener.__init__(self)
+		self._messageBusClient = MessageBusClient()
+		self._messageBusClient.start()
+		
+	def objectInserted(self, backend, obj):
+		try:
+			self._messageBusClient.notifyObjectCreated(obj)
+		except Exception, e:
+			logger.logException(e)
+		
+	def objectUpdated(self, backend, obj):
+		try:
+			self._messageBusClient.notifyObjectUpdated(obj)
+		except Exception, e:
+			logger.logException(e)
+	
+	def objectsDeleted(self, backend, objs):
+		for obj in objs:
+			try:
+				self._messageBusClient.notifyObjectDeleted(obj)
+			except Exception, e:
+				logger.logException(e)
+		
+	def backendModified(self, backend):
+		pass
+	
+	def stop(self):
+		self._messageBusClient.stop()
+		self._messageBusClient.join(10)
+		
 class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
 		self._backend = None
@@ -82,6 +111,7 @@ class BackendManager(ExtendedBackend):
 		self._options = {}
 		self._overwrite = True
 		self._context = self
+		self._messageBusNotifier = None
 		
 		Backend.__init__(self, **kwargs)
 		
@@ -94,6 +124,7 @@ class BackendManager(ExtendedBackend):
 		accessControl = False
 		depotBackend = False
 		hostControlBackend = False
+		messageBusNotifier = False
 		
 		loadBackend = None
 		for (option, value) in kwargs.items():
@@ -126,6 +157,8 @@ class BackendManager(ExtendedBackend):
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
+			elif option in ('messagebusnotifier',) and value:
+				messageBusNotifier = True
 
 		if loadBackend:
 			logger.info(u"* BackendManager is loading backend '%s'" % loadBackend)
@@ -139,6 +172,13 @@ class BackendManager(ExtendedBackend):
 			logger.info(u"* BackendManager is creating BackendDispatcher")
 			self._backend = BackendDispatcher(context = self, **kwargs)
 			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
+		
+		if messageBusNotifier:
+			logger.info(u"* BackendManager is creating ModificationTrackingBackend and MessageBusNotifier")
+			self._backend = ModificationTrackingBackend(self._backend)
+			self._messageBusNotifier = MessageBusNotifier()
+			self._backend.addBackendChangeListener(self._messageBusNotifier)
+			
 		if extend or depotBackend:
 			logger.info(u"* BackendManager is creating ExtendedConfigDataBackend")
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
@@ -191,6 +231,11 @@ class BackendManager(ExtendedBackend):
 		exec(u'from %s import %sBackend' % (config['module'], config['module']))
 		return eval(u'%sBackend(**config["config"])' % config['module'])
 	
+	def backend_exit(self):
+		ExtendedBackend.backend_exit(self)
+		if self._messageBusNotifier:
+			self._messageBusNotifier.stop()
+		
 class BackendDispatcher(Backend):
 	def __init__(self, **kwargs):
 		Backend.__init__(self, **kwargs)
