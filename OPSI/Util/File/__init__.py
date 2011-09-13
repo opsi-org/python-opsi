@@ -1637,7 +1637,7 @@ class DHCPDConfFile(TextFile):
 		parentBlock = self._globalBlock
 		
 		# Search the right subnet block
-		for block in self._globalBlock.getBlocks('subnet'):
+		for block in self._globalBlock.getBlocks('subnet', recursive = True):
 			if ipAddressInNetwork(ipAddress, u'%s/%s' % (block.settings[1], block.settings[3])):
 				logger.debug(u"Choosing subnet %s/%s for host %s" % (block.settings[1], block.settings[3], hostname))
 				parentBlock = block
