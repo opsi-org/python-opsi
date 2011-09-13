@@ -1,3 +1,11 @@
+python-opsi (4.0.1.31-1) stable; urgency=low
+
+  * OPSI/Backend/Backend:
+     - log_read/log_write: add type userlogin
+     - log_write: maximum logfile size
+
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 13 Sep 2011 14:40:13 +0200
+
 python-opsi (4.0.1.30-1) stable; urgency=low
 
   * DHCP-parser: Fix recursive searching blocks.

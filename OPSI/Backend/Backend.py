@@ -66,6 +66,7 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE  = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF  = u'/etc/opsi/global.conf'
 LOG_DIR           = u'/var/log/opsi'
+MAX_LOGFILE_SIZE  = 5000000
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                                                                                                    =
@@ -437,6 +438,7 @@ class ConfigDataBackend(Backend):
 		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._opsiPasswdFile                = OPSI_PASSWD_FILE
+		self._maxLogfileSize                = MAX_LOGFILE_SIZE
 		self._depotId                       = getfqdn(conf=OPSI_GLOBAL_CONF)
 		
 		for (option, value) in kwargs.items():
@@ -449,6 +451,8 @@ class ConfigDataBackend(Backend):
 				self._opsiPasswdFile = forceFilename(value)
 			elif option in ('depotid', 'serverid'):
 				self._depotId = value
+			elif option in ('maxlogfilesize',):
+				self._maxLogfileSize = forceInt(value)
 			
 		self._depotId = forceHostId(self._depotId)
 		
@@ -484,21 +488,38 @@ class ConfigDataBackend(Backend):
 			objectId = forceObjectId(objectId)
 		append = forceBool(append)
 		
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
 			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
 		
-		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+		if not objectId and logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog', 'opsiconfd'):
 			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
 		
 		if not os.path.exists( os.path.join(LOG_DIR, logType) ):
 			os.mkdir(os.path.join(LOG_DIR, logType), 02770)
 		
 		logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
+		if not os.path.exists(logFile):
+			open(logFile, 'w').close()
+		
+		if (self._maxLogfileSize > 0) and (len(data) > self._maxLogfileSize):
+			start = data.find('\n', len(data)-self._maxLogfileSize)
+			if (start == -1):
+				start = len(data)-self._maxLogfileSize
+			data = data[start+1:]
 		
 		f = None
-		if append:
-			f = codecs.open(logFile, 'a+', 'utf-8', 'replace')
-		else:
+		if append and (self._maxLogfileSize > 0):
+			currentSize = os.stat(logFile).st_size
+			maxFileSize = self._maxLogfileSize - len(data)
+			if (currentSize > maxFileSize):
+				fc = codecs.open(logFile, 'r', 'utf-8', 'replace')
+				fc.seek(currentSize - maxFileSize)
+				data = fc.read() + data
+				data = data[data.find('\n')+1:]
+				fc.close()
+			else:
+				f = codecs.open(logFile, 'a+', 'utf-8', 'replace')
+		if not f:
 			f = codecs.open(logFile, 'w', 'utf-8', 'replace')
 		f.write(data)
 		f.close()
@@ -511,10 +532,10 @@ class ConfigDataBackend(Backend):
 		else:
 			objectId = forceObjectId(objectId)
 		maxSize = forceInt(maxSize)
-		if logType not in ('bootimage', 'clientconnect', 'instlog', 'opsiconfd'):
+		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
 			raise BackendBadValueError(u'Unknown log type %s' % logType)
 		
-		if not objectId and logType in ('bootimage', 'clientconnect', 'instlog'):
+		if not objectId and logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
 			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
 		
 		if not objectId:
