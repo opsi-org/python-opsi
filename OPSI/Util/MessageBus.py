@@ -236,6 +236,7 @@ class MessageBusServer(threading.Thread):
 		try:
 			logger.notice(u"Creating unix socket '%s'" % self._port)
 			if os.path.exists(self._port):
+				logger.warning(u"Unix socket '%s' already exists" % self._port)
 				os.unlink(self._port)
 			self._server = reactor.listenUNIX(self._port, self._factory)
 			if startReactor and not reactor.running:
