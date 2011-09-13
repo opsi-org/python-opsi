@@ -2282,7 +2282,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 		return self.licenseKey
 	
 	def setLicenseKey(self, licenseKey):
-		self.licenseKey = licenseKey
+		self.licenseKey = forceUnicode(licensekey)
 	
 	@staticmethod
 	def fromHash(hash):
@@ -2343,7 +2343,7 @@ class LicenseOnClient(Relationship):
 		return self.licenseKey
 	
 	def setLicenseKey(self, licenseKey):
-		self.licenseKey = licenseKey
+		self.licenseKey = forceUnicode(licensekey)
 	
 	def getNotes(self):
 		return self.notes
@@ -2621,7 +2621,7 @@ class AuditSoftwareOnClient(Relationship):
 		return self.licenseKey
 	
 	def setLicenseKey(self, licenseKey):
-		self.licenseKey = licenseKey
+		self.licenseKey = forceUnicode(licensekey)
 	
 	@staticmethod
 	def fromHash(hash):
