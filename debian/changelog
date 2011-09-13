@@ -1,3 +1,10 @@
+python-opsi (4.0.1.32-1) stable; urgency=low
+
+  * OPSI/Objects:
+     - remove forceUnicodeLower for all licensekeys
+
+ -- Erol Ueluekmen <erol@erollinux.uib.local>  Tue, 13 Sep 2011 14:59:11 +0200
+
 python-opsi (4.0.1.31-1) stable; urgency=low
 
   * OPSI/Backend/Backend:
