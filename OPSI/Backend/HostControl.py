@@ -264,10 +264,14 @@ class HostControlBackend(ExtendedBackend):
 		return result
 	
 	def hostControl_shutdown(self, hostIds=[]):
+		if not hostIds:
+			raise BackendMissingDataError(u"No valid hostId given.")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
 	def hostControl_reboot(self, hostIds=[]):
+		if not hostIds:
+			raise BackendMissingDataError(u"No valid hostId given.")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
 	
@@ -277,6 +281,8 @@ class HostControlBackend(ExtendedBackend):
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
 	
 	def hostControl_showPopup(self, message, hostIds=[]):
+		if not hostIds:
+			raise BackendMissingDataError(u"No valid hostId given.")
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
