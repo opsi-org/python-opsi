@@ -168,6 +168,8 @@ class HostControlBackend(ExtendedBackend):
 		return address
 	
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
+		if not hostIds:
+			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
 		method  = forceUnicode(method)
 		params  = forceList(params)
@@ -264,19 +266,11 @@ class HostControlBackend(ExtendedBackend):
 		return result
 	
 	def hostControl_shutdown(self, hostIds=[]):
-		if not hostIds:
-			raise BackendMissingDataError(u"No valid hostId given.")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		if not hostIds:
-			raise BackendMissingDataError(u"No valid hostId found.")
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
 	def hostControl_reboot(self, hostIds=[]):
-		if not hostIds:
-			raise BackendMissingDataError(u"No valid hostId given.")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		if not hostIds:
-			raise BackendMissingDataError(u"No valid hostId found.")
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
 	
 	def hostControl_fireEvent(self, event, hostIds=[]):
@@ -285,12 +279,8 @@ class HostControlBackend(ExtendedBackend):
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
 	
 	def hostControl_showPopup(self, message, hostIds=[]):
-		if not hostIds:
-			raise BackendMissingDataError(u"No valid hostId given.")
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
-		if not hostIds:
-			raise BackendMissingDataError(u"No valid hostId found.")
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
 	
 	def hostControl_uptime(self, hostIds=[]):
@@ -307,6 +297,8 @@ class HostControlBackend(ExtendedBackend):
 	
 	def hostControl_reachable(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		if not hostIds:
+			raise BackendMissingDataError(u"No matching host ids found")
 		result = {}
 		threads = []
 		for host in self._context.host_getObjects(id = hostIds):
