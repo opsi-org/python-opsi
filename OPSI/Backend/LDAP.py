@@ -700,6 +700,9 @@ class LDAPBackend(ConfigDataBackend):
 				if not updateWhereNone:
 					continue
 				value = []
+			elif (attribute.lower() == 'opsipcpatchpassword'):
+				# opsi 3.4 relict for upgrade to opsi 4.0
+				continue
 			ldapObject.setAttribute(attribute, value)
 		ldapObject.writeToDirectory(self._ldap)
 	
