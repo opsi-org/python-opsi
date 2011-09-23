@@ -2,7 +2,8 @@ python-opsi (4.0.1.32-1) stable; urgency=low
 
   * Add module OPSI/Util/MessageBus
   * OPSI/Backend/BackendManager: implement MessageBusNotifier
-  * OPSI/Backend/HostControl: Don't reboot or shutdown all opsiClients if no or wrong hostId is given
+  * OPSI/Backend/HostControl: Don't reboot or shutdown all opsiClients if wrong hostId is given
+  * OPSI/Util/WindowsDriver: Fix for duplicatesearch in WindowsDriver
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 13 Sep 2011 17:06:32 +0200
 

@@ -235,6 +235,8 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			})
 			if checkDups:
 				for dev in devices:
+					if not dev['device'] in driversOnMachine.get(dev['vendor'], []):
+						continue
 					if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
 						#if drivers and not dev['device'] in driversOnMachine.get(dev['vendor'], []):
 						#	logger.debug(u"Device %s:%s not found in HardwareInventory (%s)." \
@@ -243,9 +245,9 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 						logger.notice(u"Driver for %s device %s:%s already integrated" \
 							% (dev['type'], dev['vendor'], dev['device']))
 						driverNeeded = False
-					elif dev['device'] in driversOnMachine.get(dev['vendor'], []):
+					else:
 						driverNeeded = True
-						break
+					break
 			if tempInfFile:
 				os.remove(tempInfFile)
 			if not driverNeeded:
