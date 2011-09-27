@@ -35,7 +35,7 @@
 __version__ = '4.0.1'
 
 # Imports
-import base64, new, stat, time, threading, zlib, threading
+import base64, new, stat, time, threading, zlib, threading, socket
 from Queue import Queue, Empty, Full
 from twisted.conch.ssh import keys
 from sys import version_info
@@ -408,7 +408,7 @@ class JSONRPCBackend(Backend):
 								break
 					except Exception, e:
 						logger.info(forceUnicode(e))
-			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError):
+			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error):
 				raise
 			except Exception, e:
 				logger.debug(u"backend_getInterface failed: %s, trying getPossibleMethods_listOfHashes" % forceUnicode(e))
