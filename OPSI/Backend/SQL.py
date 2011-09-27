@@ -842,7 +842,7 @@ class SQLBackend(ConfigDataBackend):
 							hardwareDeviceTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
 						else:
 							# Column does not exist => add
-							hardwareDeviceTable += u'ADD `%s` %s NULL,\n' % (value, value)
+							hardwareDeviceTable += u'ADD `%s` %s NULL,\n' % (value, valueInfo["Type"])
 					else:
 						hardwareDeviceTable += u'`%s` %s NULL,\n' % (value, valueInfo["Type"])
 					hardwareDeviceValuesProcessed += 1
