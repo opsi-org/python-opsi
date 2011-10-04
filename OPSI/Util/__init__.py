@@ -727,7 +727,7 @@ def getfqdn(name='', conf=None):
 			return forceFqdn(hn)
 	return forceFqdn(socket.getfqdn(name))
 
-def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF)
+def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 	name = forceUnicode(name)
 	if os.path.exists(configFile):
 		f = codecs.open(conf, 'r', 'utf8')
