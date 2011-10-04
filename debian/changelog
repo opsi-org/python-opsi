@@ -1,6 +1,7 @@
 python-opsi (4.0.1.33-1) stable; urgency=low
 
   * OPSI/Util: Add function getGlobalConf
+  * OPSI/Types: Add BootConfiguration
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 04 Oct 2011 10:32:53 +0200
 

@@ -74,9 +74,10 @@ except Exception, e:
 
 class MessageBusNotifier(BackendModificationListener):
 	def __init__(self, startReactor=True):
+		self._startReactor = startReactor
 		BackendModificationListener.__init__(self)
 		self._messageBusClient = MessageBusClient()
-		self._messageBusClient.start(startReactor)
+		self._messageBusClient.start(self._startReactor)
 		
 	def objectInserted(self, backend, obj):
 		try:
@@ -101,7 +102,7 @@ class MessageBusNotifier(BackendModificationListener):
 		pass
 	
 	def stop(self):
-		self._messageBusClient.stop()
+		self._messageBusClient.stop(stopReactor = self._startReactor)
 		self._messageBusClient.join(10)
 		
 class BackendManager(ExtendedBackend):

@@ -2940,4 +2940,144 @@ class AuditHardwareOnHost(Relationship):
 	
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
 
+class BootConfiguration(Entity):
+	subClasses = {}
+	backendMethodPrefix = 'bootConfiguration'
+	
+	def __init__(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, osName=None):
+		self.priority = None
+		self.description = None
+		self.netbootProductId = None
+		self.pxeTemplate = None
+		self.options = None
+		self.disk = None
+		self.partition = None
+		self.active = None
+		self.deleteAfter = None
+		self.deactivateAfter = None
+		self.osName = None
+		self.setName(name)
+		self.setClientId(clientId)
+		if not priority is None:
+			self.setPriority(priority)
+		if not description is None:
+			self.setDescription(description)
+		if not netbootProductId is None:
+			self.setNetbootProductId(netbootProductId)
+		if not pxeTemplate is None:
+			self.setPxeTemplate(pxeTemplate)
+		if not options is None:
+			self.setOptions(options)
+		if not disk is None:
+			self.setDisk(disk)
+		if not partition is None:
+			self.setPartition(partition)
+		if not active is None:
+			self.setActive(active)
+		if not deleteAfter is None:
+			self.setDeleteAfter(deleteAfter)
+		if not deactivateAfter is None:
+			self.setDeactivateAfter(deactivateAfter)
+		if not osName is None:
+			self.setOsName(osName)
+		
+	def setDefaults(self):
+		Entity.setDefaults(self)
+		if self.priority is None:
+			self.setPriority(0)
+		if self.description is None:
+			self.setDescription(u"")
+	
+	def getName(self):
+		return self.name
+	
+	def setName(self, name):
+		self.name = forceUnicode(name)
+	
+	def getClientId(self):
+		return self.clientId
+	
+	def setClientId(self, clientId):
+		self.clientId = forceHostId(clientId)
+	
+	def getPriority(self):
+		return self.priority
+	
+	def setPriority(self, priority):
+		self.priority = forceBootConfigurationPriority(priority)
+	
+	def getDescription(self):
+		return self.description
+	
+	def setDescription(self, description):
+		self.description = forceUnicode(description)
+	
+	def getNetbootProductId(self):
+		return self.netbootProductId
+	
+	def setNetbootProductId(self, netbootProductId):
+		self.netbootProductId = forceProductId(netbootProductId)
+	
+	def getPxeTemplate(self):
+		return self.pxeTemplate
+	
+	def setPxeTemplate(self, pxeTemplate):
+		self.pxeTemplate = forceUnicode(pxeTemplate)
+	
+	def getOptions(self):
+		return self.options
+	
+	def setOptions(self, options):
+		self.options = forceDict(options)
+	
+	def getDisk(self):
+		return self.disk
+	
+	def setDisk(self, disk):
+		self.disk = forceInt(disk)
+	
+	def getPartition(self):
+		return self.partition
+	
+	def setPartition(self, partition):
+		self.partition = forceInt(partition)
+	
+	def getActive(self):
+		return self.active
+	
+	def setActive(self, active):
+		self.active = forceBool(active)
+	
+	def getDeleteAfter(self):
+		return self.deleteAfter
+	
+	def setDeleteAfter(self, deleteAfter):
+		self.deleteAfter = forceInt(deleteAfter)
+	
+	def getDeactivateAfter(self):
+		return self.deactivateAfter
+	
+	def setDeactivateAfter(self, deactivateAfter):
+		self.deactivateAfter = forceInt(deactivateAfter)
+	
+	def getOsName(self):
+		return self.osName
+	
+	def setOsName(self, osName):
+		self.osName = forceInt(osName)
+	
+	@staticmethod
+	def fromHash(hash):
+		if not hash.has_key('type'): hash['type'] = 'BootConfiguration'
+		return Entity.fromHash(hash)
+	
+	@staticmethod
+	def fromJson(jsonString):
+		return fromJson(jsonString, 'BootConfiguration')
+	
+	def __unicode__(self):
+		return u"<%s name '%s', clientId '%s'>" \
+			% (self.getType(), self.name, self.clientId)
+	
+Entity.subClasses['BootConfiguration'] = BootConfiguration
 

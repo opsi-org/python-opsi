@@ -163,6 +163,9 @@ class MessageBusServerFactory(ServerFactory):
 						'operations': operations,
 						'objTypes': objTypes
 					}
+					logger.info(u"Client '%s' now registered for objTypes %s, operations %s" \
+							% (clientId, objTypes, operations))
+				
 				elif (message.get('message_type') == 'object_event'):
 					operation = forceUnicode(message.get('operation'))
 					if not operation in ('created', 'updated', 'deleted'):
@@ -220,25 +223,30 @@ class MessageBusServer(threading.Thread):
 		self._factory = MessageBusServerFactory()
 		self._server = None
 		self._startReactor = False
+		self._stopping = False
 	
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
+		logger.notice(u"Creating unix socket '%s'" % self._port)
+		if os.path.exists(self._port):
+			logger.warning(u"Unix socket '%s' already exists" % self._port)
+			os.unlink(self._port)
+		self._server = reactor.listenUNIX(self._port, self._factory)
 		threading.Thread.start(self)
 		
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
-			logger.notice(u"Creating unix socket '%s'" % self._port)
-			if os.path.exists(self._port):
-				logger.warning(u"Unix socket '%s' already exists" % self._port)
-				os.unlink(self._port)
-			self._server = reactor.listenUNIX(self._port, self._factory)
 			if self._startReactor and not reactor.running:
-				reactor.run(installSignalHandlers=0)
+				reactor.run(installSignalHandlers = False)
+			else:
+				while not self._stopping:
+					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
-	
+		
 	def stop(self, stopReactor=True):
+		self._stopping = True
 		self._server.stopListening()
 		if stopReactor and reactor and reactor.running:
 			try:
@@ -288,15 +296,18 @@ class MessageBusClient(threading.Thread):
 	
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
+		self._client = reactor.connectUNIX(self._port, self._factory)
 		threading.Thread.start(self)
 	
 	def run(self):
 		logger.info(u"MessageBus client is starting")
 		self._messageQueue.start()
 		try:
-			self._client = reactor.connectUNIX(self._port, self._factory)
 			if self._startReactor and not reactor.running:
-				reactor.run(installSignalHandlers=0)
+				reactor.run(installSignalHandlers = False)
+			else:
+				while not self._stopping:
+					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
 		self._messageQueue.join(10)
@@ -321,10 +332,12 @@ class MessageBusClient(threading.Thread):
 		pass
 	
 	def connectionMade(self, connection):
+		logger.info(u"Connected to server")
 		self._connection = connection
 		self._connected.set()
 	
 	def connectionLost(self, reason):
+		logger.info(u"Connection to server lost")
 		self._connection = None
 		self._connected.clear()
 		self._clientId = None
@@ -416,6 +429,8 @@ class MessageBusClient(threading.Thread):
 		self.notifyObjectEvent('deleted', obj)
 	
 	def registerForObjectEvents(self, objTypes = [], operations = []):
+		if self._stopping:
+			return
 		self._waitForClientId()
 		self._messageQueue.add({
 			"client_id":    self._clientId,
@@ -440,3 +455,38 @@ if (__name__ == '__main__'):
 		mb.registerForObjectEvents(objTypes = ['OpsiHost', 'OpsiClient'], operations = ['created', 'deleted', 'updated'])
 		mb.join()
 
+
+
+'''
+import signal
+from OPSI.Logger import *
+from OPSI.Util.MessageBus import MessageBusClient, reactor
+
+class PrintingMessageBusClient(MessageBusClient):
+	def objectEventReceived(self, objType, ident, operation):
+		print u"%s %s %s" % (objType, ident, operation)
+	
+	def connectionMade(self, connection):
+		MessageBusClient.connectionMade(self, connection)
+		reactor.callLater(0.1, self._register)
+	
+	def _register(self):
+		self.registerForObjectEvents(objTypes = ['OpsiClient'], operations = ['updated', 'created'])
+	
+def signalHandler(signo, stackFrame):
+	if signo in (signal.SIGHUP, signal.SIGINT):
+		messageBusClient.stop()
+	
+if (__name__ == '__main__'):
+	logger = Logger()
+	logger.setConsoleLevel(LOG_INFO)
+	logger.setConsoleColor(True)
+	
+	signal.signal(signal.SIGHUP, signalHandler)
+	signal.signal(signal.SIGINT, signalHandler)
+	
+	messageBusClient = PrintingMessageBusClient()
+	messageBusClient.start(startReactor = False)
+	
+	reactor.run(installSignalHandlers=False)
+'''

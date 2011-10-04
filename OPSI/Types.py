@@ -379,6 +379,12 @@ def forceProductPriority(var):
 	if (var >  100): var =  100
 	return var
 
+def forceBootConfigurationPriority(var):
+	var = forceInt(var)
+	if (var <   0): var =   0
+	if (var > 100): var = 100
+	return var
+
 def forceFilename(var):
 	return forceUnicode(var)
 
