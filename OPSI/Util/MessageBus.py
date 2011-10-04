@@ -53,8 +53,6 @@ from OPSI.Util import randomString, getGlobalConfig
 # Get logger instance
 logger = Logger()
 
-startReactor = True
-
 def getMessageBusSocket():
 	sock = getGlobalConfig('opsi_message_bus_socket')
 	if not sock:
@@ -214,14 +212,19 @@ class MessageBusServerFactory(ServerFactory):
 		self.sendMessage({'message_type': 'error', 'message': forceUnicode(errorMessage)}, clientId)
 	
 class MessageBusServer(threading.Thread):
-	def __init__(self, port = None):
+	def __init__(self, port = None,):
 		threading.Thread.__init__(self)
 		if not port:
 			port = getMessageBusSocket()
 		self._port = forceFilename(port)
 		self._factory = MessageBusServerFactory()
 		self._server = None
+		self._startReactor = False
 	
+	def start(self, startReactor=True):
+		self._startReactor = startReactor
+		threading.Thread.start(self)
+		
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
@@ -230,7 +233,7 @@ class MessageBusServer(threading.Thread):
 				logger.warning(u"Unix socket '%s' already exists" % self._port)
 				os.unlink(self._port)
 			self._server = reactor.listenUNIX(self._port, self._factory)
-			if startReactor and not reactor.running:
+			if self._startReactor and not reactor.running:
 				reactor.run(installSignalHandlers=0)
 		except Exception, e:
 			logger.logException(e)
@@ -281,13 +284,18 @@ class MessageBusClient(threading.Thread):
 		self._reactorStopPending = False
 		self._stopping = False
 		self._registeredForObjectEvents = {}
-		
+		self._startReactor = False
+	
+	def start(self, startReactor=True):
+		self._startReactor = startReactor
+		threading.Thread.start(self)
+	
 	def run(self):
 		logger.info(u"MessageBus client is starting")
 		self._messageQueue.start()
 		try:
 			self._client = reactor.connectUNIX(self._port, self._factory)
-			if startReactor and not reactor.running:
+			if self._startReactor and not reactor.running:
 				reactor.run(installSignalHandlers=0)
 		except Exception, e:
 			logger.logException(e)

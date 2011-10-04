@@ -73,10 +73,10 @@ except Exception, e:
 
 
 class MessageBusNotifier(BackendModificationListener):
-	def __init__(self):
+	def __init__(self, startReactor=True):
 		BackendModificationListener.__init__(self)
 		self._messageBusClient = MessageBusClient()
-		self._messageBusClient.start()
+		self._messageBusClient.start(startReactor)
 		
 	def objectInserted(self, backend, obj):
 		try:
@@ -125,8 +125,9 @@ class BackendManager(ExtendedBackend):
 		depotBackend = False
 		hostControlBackend = False
 		messageBusNotifier = False
-		
+		startReactor = True
 		loadBackend = None
+		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('username',):
@@ -159,6 +160,8 @@ class BackendManager(ExtendedBackend):
 				accessControl = True
 			elif option in ('messagebusnotifier',) and value:
 				messageBusNotifier = True
+			elif option in ('startreactor',) and value is False:
+				startReactor = False
 
 		if loadBackend:
 			logger.info(u"* BackendManager is loading backend '%s'" % loadBackend)
@@ -176,7 +179,7 @@ class BackendManager(ExtendedBackend):
 		if messageBusNotifier:
 			logger.info(u"* BackendManager is creating ModificationTrackingBackend and MessageBusNotifier")
 			self._backend = ModificationTrackingBackend(self._backend)
-			self._messageBusNotifier = MessageBusNotifier()
+			self._messageBusNotifier = MessageBusNotifier(startReactor)
 			self._backend.addBackendChangeListener(self._messageBusNotifier)
 			
 		if extend or depotBackend:
