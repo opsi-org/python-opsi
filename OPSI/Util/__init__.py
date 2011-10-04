@@ -35,7 +35,7 @@
 __version__ = '4.0'
 
 # Imports
-import ctypes, threading, os, random, base64, types, socket, httplib, struct
+import ctypes, threading, os, random, base64, types, socket, httplib, struct, codecs
 from sys import version_info
 if (version_info >= (2,6)):
 	import json
@@ -71,7 +71,8 @@ from OPSI.Util.Thread import KillableThread
 # Get logger instance
 logger = Logger()
 
-RANDOM_DEVICE = '/dev/urandom'
+RANDOM_DEVICE    = u'/dev/urandom'
+OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 class PickleString(str):
 	
@@ -717,22 +718,30 @@ def flattenSequence(sequence):
 	return list
 
 def getfqdn(name='', conf=None):
-	# lazy import to avoid circular import failure
-	from OPSI.Util.File import IniFile
 	if not name:
 		env = os.environ.copy()
 		if "OPSI_HOSTNAME" in env:
 			return forceFqdn(env["OPSI_HOSTNAME"])
-		
-		if conf and os.path.exists(conf):
-			conf = IniFile(conf)
-			try:
-				p = conf.parse()
-				if p.has_section("global") and p.has_option("global", "hostname"):
-					return forceFqdn(p.get("global", "hostname"))
-			finally:
-				conf.close()
+		hn = getGlobalConfig('hostname')
+		if hn:
+			return forceFqdn(hn)
 	return forceFqdn(socket.getfqdn(name))
+
+def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF)
+	name = forceUnicode(name)
+	if os.path.exists(configFile):
+		f = codecs.open(conf, 'r', 'utf8')
+		try:
+			for line in f.readlines():
+				line = line.strip()
+				if not line or line[0] in ('#', ';') or (line.find('=') == -1):
+					continue
+				(k, v) = line.split('=', 1)
+				if (k.strip().lower() == name.lower()):
+					return v.strip()
+		finally:
+			f.close()
+	return None
 
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG2)

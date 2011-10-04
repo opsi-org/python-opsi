@@ -48,27 +48,18 @@ from Queue import Queue, Empty, Full
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
-from OPSI.Util import randomString
+from OPSI.Util import randomString, getGlobalConfig
 
 # Get logger instance
 logger = Logger()
 
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
-
 startReactor = True
 
 def getMessageBusSocket():
-	if os.path.exists(OPSI_GLOBAL_CONF):
-		from OPSI.Util.File import IniFile
-		conf = IniFile(OPSI_GLOBAL_CONF)
-		try:
-			p = conf.parse()
-			if p.has_section("opsi-message-bus") and p.has_option("opsi-message-bus", "socket"):
-				return forceFilename(p.get("opsi-message-bus", "socket"))
-		finally:
-			conf.close()
-	return u'/var/run/opsi-message-bus.socket'
-
+	sock = getGlobalConfig('opsi_message_bus_socket')
+	if not sock:
+		sock = u'/var/run/opsi-message-bus/opsi-message-bus.socket'
+	return sock
 
 class MessageQueue(threading.Thread):
 	def __init__(self, transport, size, poll = 0.01, additionalTransportArgs = []):
