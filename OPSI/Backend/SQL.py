@@ -770,6 +770,7 @@ class SQLBackend(ConfigDataBackend):
 					`active` bool,
 					`deleteAfter` integer,
 					`deactivateAfter` integer,
+					`accessCount` integer,
 					`osName` varchar(128),
 					PRIMARY KEY (`name`, `clientId`),
 					FOREIGN KEY (`clientId`) REFERENCES `HOST` (`hostId`)

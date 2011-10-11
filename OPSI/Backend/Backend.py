@@ -3998,7 +3998,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		return result
 	
-	def bootConfiguration_create(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, osName=None):
+	def bootConfiguration_create(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, accessCount=None, osName=None):
 		hash = locals()
 		del hash['self']
 		return self.bootConfiguration_createObjects(BootConfiguration.fromHash(hash))

@@ -2944,7 +2944,7 @@ class BootConfiguration(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'bootConfiguration'
 	
-	def __init__(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, osName=None):
+	def __init__(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, accessCount=None, osName=None):
 		self.priority = None
 		self.description = None
 		self.netbootProductId = None
@@ -2978,6 +2978,8 @@ class BootConfiguration(Relationship):
 			self.setDeleteAfter(deleteAfter)
 		if not deactivateAfter is None:
 			self.setDeactivateAfter(deactivateAfter)
+		if not accessCount is None:
+			self.setAccessCount(accessCount)
 		if not osName is None:
 			self.setOsName(osName)
 		
@@ -2987,7 +2989,9 @@ class BootConfiguration(Relationship):
 			self.setPriority(0)
 		if self.description is None:
 			self.setDescription(u"")
-	
+		if self.accessCount is None:
+			self.setAccessCount(0)
+		
 	def getName(self):
 		return self.name
 	
@@ -3059,6 +3063,12 @@ class BootConfiguration(Relationship):
 	
 	def setDeactivateAfter(self, deactivateAfter):
 		self.deactivateAfter = forceInt(deactivateAfter)
+	
+	def getAccessCount(self):
+		return self.accessCount
+	
+	def setAccessCount(self, accessCount):
+		self.accessCount = forceInt(accessCount)
 	
 	def getOsName(self):
 		return self.osName
