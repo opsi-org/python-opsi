@@ -2982,7 +2982,7 @@ class BootConfiguration(Relationship):
 			self.setOsName(osName)
 		
 	def setDefaults(self):
-		Entity.setDefaults(self)
+		Relationship.setDefaults(self)
 		if self.priority is None:
 			self.setPriority(0)
 		if self.description is None:
@@ -3069,7 +3069,7 @@ class BootConfiguration(Relationship):
 	@staticmethod
 	def fromHash(hash):
 		if not hash.has_key('type'): hash['type'] = 'BootConfiguration'
-		return Entity.fromHash(hash)
+		return Relationship.fromHash(hash)
 	
 	@staticmethod
 	def fromJson(jsonString):
