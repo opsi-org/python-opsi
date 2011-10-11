@@ -1811,6 +1811,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			result.append(licenseOnClient.getIdent(returnType))
 		return result
 	
+	def bootConfiguration_getIdents(self, returnType='unicode', **filter):
+		result = []
+		for bootConfiguration in self.bootConfiguration_getObjects(attributes = ['name', 'clientId'], **filter):
+			result.append(bootConfiguration.getIdent(returnType))
+		return result
+	
 	def auditSoftware_getIdents(self, returnType='unicode', **filter):
 		result = []
 		for auditSoftware in self.auditSoftware_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture'], **filter):
