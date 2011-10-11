@@ -678,6 +678,12 @@ class ConfigDataBackend(Backend):
 					objectId = host.id ))
 			
 			if isinstance(host, OpsiClient):
+				# Remove boot configurations
+				self._context.bootConfiguration_deleteObjects(
+					self._context.bootConfiguration_getObjects(
+						name     = [],
+						clientId = host.id ))
+				
 				# Remove audit softwares
 				self._context.auditSoftwareOnClient_deleteObjects(
 					self._context.auditSoftwareOnClient_getObjects(

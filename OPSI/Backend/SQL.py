@@ -757,6 +757,29 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_license_on_client_clientId` on `LICENSE_ON_CLIENT` (`clientId`);')
 		
+		if not 'BOOT_CONFIGURATION' in tables.keys():
+			logger.debug(u'Creating table BOOT_CONFIGURATION')
+			table = u'''CREATE TABLE `BOOT_CONFIGURATION` (
+					`name` varchar(64) NOT NULL,
+					`clientId` varchar(255) NOT NULL,
+					`priority` integer DEFAULT 0,
+					`description` varchar(200),
+					`netbootProductId` varchar(100),
+					`pxeTemplate` varchar(255),
+					`options` varchar(255),
+					`disk` integer,
+					`partition` integer,
+					`active` bool,
+					`deleteAfter` integer,
+					`deactivateAfter` integer,
+					`osName` varchar(128),
+					PRIMARY KEY (`name`, `clientId`),
+					FOREIGN KEY (`clientId`) REFERENCES `HOST` (`hostId`)
+				) %s;
+				''' % self._sql.getTableCreationOptions('BOOT_CONFIGURATION')
+			logger.debug(table)
+			self._sql.execute(table)
+		
 		# Software audit tables
 		if not 'SOFTWARE' in tables.keys():
 			logger.debug(u'Creating table SOFTWARE')
@@ -2366,9 +2389,41 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
 			self._sql.delete( u'HARDWARE_CONFIG_' + auditHardwareOnHost.getHardwareClass(), where)
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   BootConfigurations                                                                        -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def bootConfiguration_insertObject(self, bootConfiguration):
+		ConfigDataBackend.bootConfiguration_insertObject(self, bootConfiguration)
+		data = self._objectToDatabaseHash(bootConfiguration)
+		
+		where = self._uniqueCondition(bootConfiguration)
+		if self._sql.getRow('select * from `BOOT_CONFIGURATION` where %s' % where):
+			self._sql.update('BOOT_CONFIGURATION', where, data, updateWhereNone = True)
+		else:
+			self._sql.insert('BOOT_CONFIGURATION', data)
+		
+	def bootConfiguration_updateObject(self, bootConfiguration):
+		ConfigDataBackend.bootConfiguration_updateObject(self, bootConfiguration)
+		data = self._objectToDatabaseHash(bootConfiguration)
+		where = self._uniqueCondition(bootConfiguration)
+		self._sql.update('BOOT_CONFIGURATION', where, data)
 	
+	def bootConfiguration_getObjects(self, attributes=[], **filter):
+		ConfigDataBackend.bootConfiguration_getObjects(self, attributes=[], **filter)
+		logger.info(u"Getting bootConfigurations, filter: %s" % filter)
+		bootConfigurations = []
+		(attributes, filter) = self._adjustAttributes(bootConfiguration, attributes, filter)
+		for res in self._sql.getSet(self._createQuery('BOOT_CONFIGURATION', attributes, filter)):
+			self._adjustResult(bootConfiguration, res)
+			bootConfigurations.append(BootConfiguration.fromHash(res))
+		return bootConfigurations
 	
-	
+	def bootConfiguration_deleteObjects(self, bootConfigurations):
+		ConfigDataBackend.bootConfiguration_deleteObjects(self, bootConfigurations)
+		for bootConfiguration in forceObjectClassList(bootConfigurations, BootConfiguration):
+			logger.info(u"Deleting bootConfiguration %s" % bootConfiguration)
+			where = self._uniqueCondition(bootConfiguration)
+			self._sql.delete('BOOT_CONFIGURATION', where)
 	
 	
 	
