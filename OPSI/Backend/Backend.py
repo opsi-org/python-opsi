@@ -1413,6 +1413,28 @@ class ConfigDataBackend(Backend):
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		pass
 	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   BootConfigurations                                                                        -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def bootConfiguration_insertObject(self, bootConfiguration):
+		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
+		bootConfiguration.setDefaults()
+		
+	def bootConfiguration_updateObject(self, bootConfiguration):
+		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
+	
+	def bootConfiguration_getHashes(self, attributes = [], **filter):
+		hashes = []
+		for obj in self.bootConfiguration_getObjects(attributes, **filter):
+			hashes.append(obj.toHash())
+		return hashes
+	
+	def bootConfiguration_getObjects(self, attributes=[], **filter):
+		return []
+	
+	def bootConfiguration_deleteObjects(self, bootConfigurations):
+		pass
+	
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
@@ -3933,7 +3955,56 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			auditHardwareOnHosts[i].setState(0)
 			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
 	
-
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   BootConfigurations                                                                        -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def bootConfiguration_createObjects(self, bootConfigurations):
+		result = []
+		for bootConfiguration in forceObjectClassList(bootConfigurations, BootConfiguration):
+			logger.info(u"Creating bootConfiguration %s" % bootConfiguration)
+			self._backend.bootConfiguration_insertObject(bootConfiguration)
+			if self._options['returnObjectsOnUpdateAndCreate']:
+				result.extend(
+					self._backend.bootConfiguration_getObjects(
+						name     = bootConfiguration.name,
+						clientId = bootConfiguration.clientId
+					)
+				)
+		return result
+		
+	def bootConfiguration_updateObjects(self, bootConfigurations):
+		result = []
+		bootConfigurations = forceObjectClassList(bootConfigurations, BootConfiguration)
+		for bootConfiguration in bootConfigurations:
+			logger.info(u"Updating bootConfiguration '%s'" % bootConfiguration)
+			if self.bootConfiguration_getIdents(
+					name     = bootConfiguration.name,
+					clientId = bootConfiguration.clientId):
+				self._backend.bootConfiguration_updateObject(bootConfiguration)
+			else:
+				logger.info(u"BootConfiguration %s does not exist, creating" % bootConfiguration)
+				self._backend.bootConfiguration_insertObject(bootConfiguration)
+			if self._options['returnObjectsOnUpdateAndCreate']:
+				result.extend(
+					self._backend.bootConfiguration_getObjects(
+						name     = bootConfiguration.name,
+						clientId = bootConfiguration.clientId)
+				)
+		return result
+	
+	def bootConfiguration_create(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, osName=None):
+		hash = locals()
+		del hash['self']
+		return self.bootConfiguration_createObjects(BootConfiguration.fromHash(hash))
+	
+	def bootConfiguration_delete(self, name, clientId):
+		if name is None:     name = []
+		if clientId is None: clientId = []
+		return self._backend.bootConfiguration_deleteObjects(
+				self._backend.bootConfiguration_getObjects(
+					name     = name,
+					clientId = clientId))
+	
 class ModificationTrackingBackend(ExtendedBackend):
 	
 	def __init__(self, backend, overwrite = True):

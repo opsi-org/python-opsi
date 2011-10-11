@@ -2940,7 +2940,7 @@ class AuditHardwareOnHost(Relationship):
 	
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
 
-class BootConfiguration(Entity):
+class BootConfiguration(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'bootConfiguration'
 	
@@ -3079,5 +3079,5 @@ class BootConfiguration(Entity):
 		return u"<%s name '%s', clientId '%s'>" \
 			% (self.getType(), self.name, self.clientId)
 	
-Entity.subClasses['BootConfiguration'] = BootConfiguration
+Relationship.subClasses['BootConfiguration'] = BootConfiguration
 
