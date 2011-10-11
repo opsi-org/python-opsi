@@ -2409,9 +2409,9 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.bootConfiguration_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting bootConfigurations, filter: %s" % filter)
 		bootConfigurations = []
-		(attributes, filter) = self._adjustAttributes(bootConfiguration, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(BootConfiguration, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('BOOT_CONFIGURATION', attributes, filter)):
-			self._adjustResult(bootConfiguration, res)
+			self._adjustResult(BootConfiguration, res)
 			bootConfigurations.append(BootConfiguration.fromHash(res))
 		return bootConfigurations
 	
