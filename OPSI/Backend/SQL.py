@@ -32,8 +32,6 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
-
 import time
 from twisted.conch.ssh import keys
 from sys import version_info
@@ -2099,7 +2097,6 @@ class SQLBackend(ConfigDataBackend):
 		
 		logger.info(u"Getting auditHardwares, filter: %s" % filter)
 		auditHardwares = []
-		start = time.time()
 		for h in self.auditHardware_getHashes(attributes, **filter):
 			auditHardwares.append(AuditHardware.fromHash(h))
 		return auditHardwares
