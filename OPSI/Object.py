@@ -3064,7 +3064,7 @@ class BootConfiguration(Relationship):
 		return self.osName
 	
 	def setOsName(self, osName):
-		self.osName = forceInt(osName)
+		self.osName = forceUnicode(osName)
 	
 	@staticmethod
 	def fromHash(hash):
