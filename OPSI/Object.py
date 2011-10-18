@@ -2955,6 +2955,7 @@ class BootConfiguration(Relationship):
 		self.active = None
 		self.deleteAfter = None
 		self.deactivateAfter = None
+		self.accessCount = None
 		self.osName = None
 		self.setName(name)
 		self.setClientId(clientId)
