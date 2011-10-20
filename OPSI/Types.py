@@ -498,7 +498,7 @@ def forceGroupIdList(var):
 
 objectIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceObjectId(var):
-	var = forceUnicodeLower(var)
+	var = forceUnicodeLower(var).strip()
 	match = re.search(objectIdRegex, var)
 	if not match:
 		raise ValueError(u"Bad object id: '%s'" % var)
