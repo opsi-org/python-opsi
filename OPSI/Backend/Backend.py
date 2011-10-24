@@ -328,8 +328,14 @@ class Backend:
 					continue
 				state = state.lower()
 				if not state in ('yes', 'no'):
-					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
-					continue
+					try:
+						state = int(state)
+						state = str(state)
+						modules[module] = True
+						continue
+					except ValueError:
+						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
+						continue
 				modules[module] = (state == 'yes')
 			f.close()
 			if not modules.get('signature'):
@@ -349,8 +355,17 @@ class Backend:
 				if module in ('valid', 'signature'):
 					continue
 				val = modules[module]
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				try:
+					val = int(val)
+					if val:
+						val = 'yes'
+					else:
+						val = 'no'
+				except ValueError:
+					if (val == False): val = 'no'
+					if (val == True):  val = 'yes'
+				
+				
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
 		except Exception, e:
