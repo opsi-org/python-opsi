@@ -330,8 +330,8 @@ class Backend:
 				if not state in ('yes', 'no'):
 					try:
 						state = int(state)
-						state = str(state)
-						modules[module] = True
+						if (state):
+							modules[module] = True
 						continue
 					except ValueError:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
