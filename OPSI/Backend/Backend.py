@@ -330,13 +330,13 @@ class Backend:
 				if not state in ('yes', 'no'):
 					try:
 						state = int(state)
-						if (state):
-							modules[module] = True
-						continue
 					except ValueError:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 						continue
-				modules[module] = (state == 'yes')
+				if isinstance(state,int):
+					modules[module] = (str(state))
+				else:
+					modules[module] = (state == 'yes')
 			f.close()
 			if not modules.get('signature'):
 				modules = {'valid': False}
@@ -355,15 +355,16 @@ class Backend:
 				if module in ('valid', 'signature'):
 					continue
 				val = modules[module]
-				try:
-					val = int(val)
-					if val:
-						val = 'yes'
-					else:
-						val = 'no'
-				except ValueError:
-					if (val == False): val = 'no'
-					if (val == True):  val = 'yes'
+				#try:
+				#	val = int(val)
+				#	val = str(val)
+				#	#if val:
+				#	#	val = 'yes'
+				#	#else:
+				#	#	val = 'no'
+				#except ValueError:
+				if (val == False): val = 'no'
+				if (val == True):  val = 'yes'
 				
 				
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
