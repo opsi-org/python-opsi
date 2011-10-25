@@ -404,8 +404,16 @@ class MySQLBackend(SQLBackend):
 				if module in ('valid', 'signature'):
 					continue
 				val = modules[module]
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				try:
+					val = int(val)
+					if val:
+						val = 'yes'
+					else:
+						val = 'no'
+				except ValueError:
+					if (val == False): val = 'no'
+					if (val == True):  val = 'yes'
+					
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
