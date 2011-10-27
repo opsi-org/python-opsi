@@ -337,13 +337,17 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 	def _cacheBackendInfo(self, backendInfo):
 		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')
 		modules = backendInfo['modules']
+		helpermodules = backendInfo['realmodules']
 		for (module, state) in modules.items():
-			if module in ('customer', 'expires'):
+			if helpermodules in ('customer', 'expires'):
 				continue
-			if state:
-				state = 'yes'
-			else:
-				state = 'no'
+			if helpermodules.has_key(module):
+				state = helpermodules[module]
+			else:	
+				if state:
+					state = 'yes'
+				else:
+					state = 'no'
 			f.write('%s = %s\n' % (module.lower(), state))
 		f.write('customer = %s\n' % modules.get('customer', ''))
 		f.write('expires = %s\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))

@@ -383,7 +383,9 @@ class MySQLBackend(SQLBackend):
 		self._licenseManagementModule = False
 		self._sqlBackendModule = False
 		
-		modules = self._context.backend_info()['modules']
+		backendinfo = self._context.backend_info()
+		modules = backendinfo['modules']
+		helpermodules = backendinfo['realmodules']
 		
 		if not modules.get('customer'):
 			logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
@@ -403,10 +405,15 @@ class MySQLBackend(SQLBackend):
 			for module in mks:
 				if module in ('valid', 'signature'):
 					continue
-				val = modules[module]
 				
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				if helpermodules.has_key(module):
+					val = helpermodules[module]
+					if int(val) > 0:
+						modules[module] = True
+				else:
+					val = modules[module]
+					if (val == False): val = 'no'
+					if (val == True):  val = 'yes'
 					
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):

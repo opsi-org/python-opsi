@@ -312,6 +312,7 @@ class Backend:
 			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
 		
 		modules = {}
+		helpermodules = {}
 		try:
 			modules['valid'] = False
 			f = codecs.open(self._opsiModulesFile, 'r', 'utf-8')
@@ -329,12 +330,13 @@ class Backend:
 				state = state.lower()
 				if not state in ('yes', 'no'):
 					try:
+						helpermodules[module] = state
 						state = int(state)
 					except ValueError:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 						continue
 				if isinstance(state,int):
-					modules[module] = (str(state))
+					modules[module] = (state > 0)
 				else:
 					modules[module] = (state == 'yes')
 			f.close()
@@ -354,17 +356,13 @@ class Backend:
 			for module in mks:
 				if module in ('valid', 'signature'):
 					continue
-				val = modules[module]
-				#try:
-				#	val = int(val)
-				#	val = str(val)
-				#	#if val:
-				#	#	val = 'yes'
-				#	#else:
-				#	#	val = 'no'
-				#except ValueError:
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				
+				if helpermodules.has_key(module):
+					val = helpermodules[module]
+				else:
+					val = modules[module]
+					if (val == False): val = 'no'
+					if (val == True):  val = 'yes'
 				
 				
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
@@ -374,7 +372,8 @@ class Backend:
 		
 		return {
 			"opsiVersion": opsiVersion,
-			"modules":     modules
+			"modules":     modules,
+			"realmodules": helpermodules
 		}
 	
 	def backend_getSharedAlgorithm(self, function):
