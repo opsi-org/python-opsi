@@ -389,14 +389,14 @@ class JSONRPCBackend(Backend):
 		self._async = False
 		try:
 			modules = None
-			realModules = None
+			realmodules = None
 			mysqlBackend = False
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface')
 				if (self._application.find('opsiclientd') != -1):
 					try:
 						modules = self._jsonRPC(u'backend_info').get('modules', None)
-						realModules = self._jsonRPC(u'backend_info').get('realmodules', None)
+						realmodules = self._jsonRPC(u'backend_info').get('realmodules', None)
 						if modules:
 							logger.confidential(u"Modules: %s" % modules)
 						else:
