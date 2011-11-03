@@ -528,6 +528,8 @@ class JSONRPCBackend(Backend):
 					
 					if realmodules.has_key(module):
 						val = realmodules[module]
+						if int(val) > 0:
+							modules[module] = True
 					else:
 						val = modules[module]
 						if (val == False): val = 'no'
