@@ -389,12 +389,14 @@ class JSONRPCBackend(Backend):
 		self._async = False
 		try:
 			modules = None
+			realModules = None
 			mysqlBackend = False
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface')
 				if (self._application.find('opsiclientd') != -1):
 					try:
 						modules = self._jsonRPC(u'backend_info').get('modules', None)
+						realModules = self._jsonRPC(u'backend_info').get('realmodules', None)
 						if modules:
 							logger.confidential(u"Modules: %s" % modules)
 						else:
@@ -420,7 +422,7 @@ class JSONRPCBackend(Backend):
 			if self._legacyOpsi:
 				self._createInstanceMethods34()
 			else:
-				self._createInstanceMethods(modules, mysqlBackend)
+				self._createInstanceMethods(modules, realmodules, mysqlBackend)
 			self._connected = True
 			logger.info(u"%s: Connected to service" % self)
 		finally:
@@ -496,7 +498,7 @@ class JSONRPCBackend(Backend):
 			
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 		
-	def _createInstanceMethods(self, modules=None, mysqlBackend=False):
+	def _createInstanceMethods(self, modules=None, realmodules=None, mysqlBackend=False):
 		licenseManagementModule = True
 		if modules:
 			licenseManagementModule = False
@@ -523,9 +525,13 @@ class JSONRPCBackend(Backend):
 				for module in mks:
 					if module in ('valid', 'signature'):
 						continue
-					val = modules[module]
-					if (val == False): val = 'no'
-					if (val == True):  val = 'yes'
+					
+					if realmodules.has_key(module):
+						val = realmodules[module]
+					else:
+						val = modules[module]
+						if (val == False): val = 'no'
+						if (val == True):  val = 'yes'
 					data += u'%s = %s\r\n' % (module.lower().strip(), val)
 				if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
 					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
