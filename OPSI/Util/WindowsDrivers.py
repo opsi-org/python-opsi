@@ -252,12 +252,6 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				os.remove(tempInfFile)
 			if not driverNeeded:
 				break
-			for dev in devices:
-				if not integratedDrivers.has_key(dev['type']):
-					integratedDrivers[dev['type']] = {}
-				if not integratedDrivers[dev['type']].has_key(dev['vendor']):
-					integratedDrivers[dev['type']][dev['vendor']] = []
-				integratedDrivers[dev['type']][dev['vendor']].append(dev['device'])
 		if driverNeeded:
 			driverNumber += 1
 			dstDriverPath = os.path.join(driverDestinationDirectory, forceUnicode(driverNumber))
