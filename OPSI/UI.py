@@ -990,6 +990,29 @@ class SnackCopyDualProgressBox(SnackDualProgressBox):
 
 if (__name__ == "__main__"):
 	uiTest = UIFactory('snack')
+	try:
+		values = []
+		for i in range(10):
+			sel = False
+			if i == 30: sel = True
+			values.append( { "name": i, "selected": sel } )
+		res = uiTest.getSelection(values, text = "Line1\nLine2\nLine3", radio=True, title = u"Please select")
+		uiTest.showMessage(text = str(res), title = u'Message', width = 5, height = 5, seconds = 2)
+	except Exception, e:
+		uiTest.showMessage(text = str(e), title = u'Message', width = 5, height = 5, seconds = 2)
+	
+	try:
+		values = []
+		for i in range(10):
+			sel = False
+			if i == 30: sel = True
+			values.append( { "name": i, "selected": sel } )
+		res = uiTest.getSelection(values, radio=False, title = u"Please select")
+		uiTest.showMessage(text = str(res), title = u'Message', width = 5, height = 5, seconds = 2)
+	except Exception, e:
+		uiTest.showMessage(text = str(e), title = u'Message', width = 5, height = 5, seconds = 2)
+	
+	sys.exit(0)
 	uiTest.drawRootText(x = 1, y = 1, text = u'Test ä root text')
 	uiTest.drawRootText(x = 1, y = 2, text = u'Test root text 2')
 	uiTest.drawRootText(x = 5, y = 5, text = u'Test root text 3')
