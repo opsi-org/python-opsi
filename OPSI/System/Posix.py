@@ -1025,12 +1025,16 @@ class Harddisk:
 		self.partitions       = []
 		self.ldPreload        = None
 		self.dosCompatibility = True
+		self.ssdAlignment     = False
 		
 		self.useBIOSGeometry()
 		self.readPartitionTable()
 	
 	def setDosCompatibility(comp = True):
 		self.dosCompatibility = bool(comp)
+		
+	def setSsdAlignment(self, align = False):
+		self.ssdAlignment = bool(align)
 	
 	def getBusType(self):
 		return getBlockDeviceBusType(self.device)
@@ -1229,6 +1233,7 @@ class Harddisk:
 			result = execute(u"%s -uS -l %s" % (which('sfdisk'), self.device))
 			for line in result:
 				line = line.strip()
+				
 				if line.startswith(self.device):
 					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
 					if not match:
@@ -1244,6 +1249,13 @@ class Harddisk:
 										% ( self.partitions[p]['number'], self.partitions[p]['secStart'],
 										    self.partitions[p]['secEnd'], self.partitions[p]['secSize']) )
 								break
+				elif line.lower().startswith('units'):
+					match = re.search('sectors\sof\s(\d+)\sbytes', line)
+					if not match:
+						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+					self.bytesPerSector = forceInt(match.group(1))
+					self.totalSectors   = int(self.size / self.bytesPerSector)
+					logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
 			
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
@@ -1264,15 +1276,26 @@ class Harddisk:
 			for p in range(4):
 				try:
 					part = self.getPartition(p + 1)
-					logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
+					if self.ssdAlignment:
+						logger.debug(u"   number: %s, start: %s MB (%s sec), end: %s MB (%s sec), size: %s MB (%s sec), " \
 								% (	part['number'], 
-									(part['start']/(1000*1000)), part['cylStart'], 
-									(part['end']/(1000*1000)), part['cylEnd'], 
-									(part['size']/(1000*1000)), part['cylSize'] ) \
+									(part['start']/(1000*1000)), part['secStart'], 
+									(part['end']/(1000*1000)), part['secEnd'], 
+									(part['size']/(1000*1000)), part['secSize'] ) \
 								+ "type: %s, fs: %s, boot: %s" \
 								% (part['type'], part['fs'], part['boot']) )
 					
-					cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
+						cmd += u'%s,%s,%s' % (part['secStart'], part['secSize'], part['type'])
+					else:
+						logger.debug(u"   number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
+									% (	part['number'], 
+										(part['start']/(1000*1000)), part['cylStart'], 
+										(part['end']/(1000*1000)), part['cylEnd'], 
+										(part['size']/(1000*1000)), part['cylSize'] ) \
+									+ "type: %s, fs: %s, boot: %s" \
+									% (part['type'], part['fs'], part['boot']) )
+						
+						cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
 					if part['boot']:
 						cmd += u',*'
 				except Exception, e:
@@ -1283,7 +1306,10 @@ class Harddisk:
 			dosCompat = u''
 			if self.dosCompatibility:
 				dosCompat = u'-D '
-			cmd +=  u'" | %s -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
+			if self.ssdAlignment:
+				cmd +=  u'" | %s -uS -f %s' % (which('sfdisk'), self.device)
+			else:
+				cmd +=  u'" | %s -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 			
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
@@ -1681,75 +1707,138 @@ class Harddisk:
 			
 			if   start.endswith(u'm') or start.endswith(u'mb'):
 				match = re.search('^(\d+)\D', start)
-				start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
+				if self.ssdAlignment:
+					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
+				else:
+					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
 			elif start.endswith(u'g') or start.endswith(u'gb'):
 				match = re.search('^(\d+)\D', start)
-				start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
+				if self.ssdAlignment:
+					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
+				else:
+					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif start.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', start)
-				start = int(round( (float(match.group(1))/100) * self.totalCylinders ))
+				if ssdAlignment:
+					start = int(round( (float(match.group(1))/100) * self.totalSectors ))
+				else:
+					start = int(round( (float(match.group(1))/100) * self.totalCylinders ))
+			elif start.lower().endswith(u's'):
+				match = re.search('^(\d+)\D', start)
+				start = match.group(1)
 			else:
 				start = int(start)
 			
 			if   end.endswith(u'm') or end.endswith(u'mb'):
 				match = re.search('^(\d+)\D', end)
-				end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
+				if self.ssdAlignment:
+					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
+				else:
+					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
 			elif end.endswith(u'g') or end.endswith(u'gb'):
 				match = re.search('^(\d+)\D', end)
-				end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
+				if self.ssdAlignment:
+					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
+				else:
+					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif end.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', end)
-				end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
+				if self.ssdAlignment:
+					end = int(round( (float(match.group(1))/100) * self.totalSectors ))
+				else:
+					end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			else:
 				end = int(end)
 			
-			if (start < 0):
-				# Lowest possible cylinder is 0
-				start = 0
-			if (end >= self.totalCylinders):
-				# Highest possible cylinder is total cylinders - 1
-				end = self.totalCylinders-1
+			if not self.ssdAlignment:
+				if (start < 0):
+					# Lowest possible cylinder is 0
+					start = 0
+				if (end >= self.totalCylinders):
+					# Highest possible cylinder is total cylinders - 1
+					end = self.totalCylinders-1
+
+			else:
+				# Start on aligned sector 2048
+				start = 2048
+				if (end >= self.totalSectors):
+					# Highest possible sectors is total sectors - 1
+					end = self.totalSectors-1
+			
 			
 			number = len(self.partitions) + 1
 			for part in self.partitions:
-				if (end <= part['cylStart']):
+				if self.ssdAlignment:
+					partitionStart = part['secStart']
+				else:
+					partitionStart = part['cylStart']
+				if (end <= partitionStart):
 					if (part['number']-1 <= number):
 						# Insert before
 						number = part['number']-1
 			
 			try:
 				prev = self.getPartition(number-1)
-				if (start <= prev['cylEnd']):
-					# Partitions overlap
-					start = prev['cylEnd']+1
+				if self.ssdAlignment:
+					if (start <= prev['secEnd']):
+						# Partitions overlap
+						start = prev['secEnd']+1
+				else:
+					if (start <= prev['cylEnd']):
+						# Partitions overlap
+						start = prev['cylEnd']+1
 			except:
 				pass
 			
 			try:
 				next = self.getPartition(number+1)
-				if (end >= next['cylStart']):
+				if self.ssdAlignment:
+					nextstart = next['secStart']
+				else:
+					nextstart = next['cylStart']
+					
+				if (end >= nextstart):
 					# Partitions overlap
-					end = next['cylStart']-1
+					end = nextstart-1
 			except:
 				pass
-			
-			logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
-						% (self.device, number, type, fs, start, end))
-			
-			if (number < 1) or (number > 4):
-				raise Exception(u'Cannot create partition %s' % number)
-			
-			self.partitions.append( { 'number':	number,
-						  'cylStart':	start,
-						  'cylEnd':	end,
-						  'cylSize':	end-start+1,
-						  'start':	start * self.bytesPerCylinder,
-						  'end':	end * self.bytesPerCylinder,
-						  'size':	(end-start+1) * self.bytesPerCylinder,
-						  'type':	partId,
-						  'fs':		fs,
-						  'boot':	boot,
-						  'lba':	lba } )
+			if self.ssdAlignment:
+				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
+							% (self.device, number, type, fs, start, end))
+				
+				if (number < 1) or (number > 4):
+					raise Exception(u'Cannot create partition %s' % number)
+				
+				self.partitions.append( { 'number':	number,
+							  'secStart':	start,
+							  'secEnd':	end,
+							  'secSize':	end-start+1,
+							  'start':	start * self.bytesPerSector,
+							  'end':	end * self.bytesPerSector,
+							  'size':	(end-start+1) * self.bytesPerSector,
+							  'type':	partId,
+							  'fs':		fs,
+							  'boot':	boot,
+							  'lba':	lba } )
+				
+			else:	
+				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
+							% (self.device, number, type, fs, start, end))
+				
+				if (number < 1) or (number > 4):
+					raise Exception(u'Cannot create partition %s' % number)
+				
+				self.partitions.append( { 'number':	number,
+							  'cylStart':	start,
+							  'cylEnd':	end,
+							  'cylSize':	end-start+1,
+							  'start':	start * self.bytesPerCylinder,
+							  'end':	end * self.bytesPerCylinder,
+							  'size':	(end-start+1) * self.bytesPerCylinder,
+							  'type':	partId,
+							  'fs':		fs,
+							  'boot':	boot,
+							  'lba':	lba } )
 			
 			self.writePartitionTable()
 			self.readPartitionTable()
