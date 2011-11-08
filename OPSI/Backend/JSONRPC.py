@@ -498,7 +498,7 @@ class JSONRPCBackend(Backend):
 			
 			setattr(self.__class__, method['name'], new.instancemethod(eval(method['name']), None, self.__class__))
 		
-	def _createInstanceMethods(self, modules=None, realmodules=None, mysqlBackend=False):
+	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
 		licenseManagementModule = True
 		if modules:
 			licenseManagementModule = False
