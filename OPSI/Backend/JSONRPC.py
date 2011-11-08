@@ -526,7 +526,7 @@ class JSONRPCBackend(Backend):
 					if module in ('valid', 'signature'):
 						continue
 					
-					if realmodules.has_key(module):
+					if realmodules.get(module, None):
 						val = realmodules[module]
 						if int(val) > 0:
 							modules[module] = True
