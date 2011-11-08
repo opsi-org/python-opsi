@@ -389,7 +389,7 @@ class JSONRPCBackend(Backend):
 		self._async = False
 		try:
 			modules = None
-			realmodules = None
+			realmodules = {}
 			mysqlBackend = False
 			try:
 				self._interface = self._jsonRPC(u'backend_getInterface')
