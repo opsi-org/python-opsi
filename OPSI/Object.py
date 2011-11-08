@@ -3087,8 +3087,8 @@ class BootConfiguration(Relationship):
 		return fromJson(jsonString, 'BootConfiguration')
 	
 	def __unicode__(self):
-		return u"<%s name '%s', clientId '%s'>" \
-			% (self.getType(), self.name, self.clientId)
+		return u"<%s name '%s', clientId '%s', priority %d>" \
+			% (self.getType(), self.name, self.clientId, self.priority)
 	
 Relationship.subClasses['BootConfiguration'] = BootConfiguration
 
