@@ -1025,7 +1025,7 @@ class Harddisk:
 		self.partitions       = []
 		self.ldPreload        = None
 		self.dosCompatibility = True
-		self.ssdAlignment     = False
+		self.blockAlignment     = False
 		
 		self.useBIOSGeometry()
 		self.readPartitionTable()
@@ -1034,7 +1034,7 @@ class Harddisk:
 		self.dosCompatibility = bool(comp)
 		
 	def setSsdAlignment(self, align = False):
-		self.ssdAlignment = bool(align)
+		self.blockAlignment = bool(align)
 	
 	def getBusType(self):
 		return getBlockDeviceBusType(self.device)
@@ -1276,7 +1276,7 @@ class Harddisk:
 			for p in range(4):
 				try:
 					part = self.getPartition(p + 1)
-					if self.ssdAlignment:
+					if self.blockAlignment:
 						logger.debug(u"   number: %s, start: %s MB (%s sec), end: %s MB (%s sec), size: %s MB (%s sec), " \
 								% (	part['number'], 
 									(part['start']/(1000*1000)), part['secStart'], 
@@ -1306,7 +1306,7 @@ class Harddisk:
 			dosCompat = u''
 			if self.dosCompatibility:
 				dosCompat = u'-D '
-			if self.ssdAlignment:
+			if self.blockAlignment:
 				cmd +=  u'" | %s -uS -f %s' % (which('sfdisk'), self.device)
 			else:
 				cmd +=  u'" | %s -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
@@ -1707,57 +1707,60 @@ class Harddisk:
 			
 			if   start.endswith(u'm') or start.endswith(u'mb'):
 				match = re.search('^(\d+)\D', start)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
 				else:
 					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
 			elif start.endswith(u'g') or start.endswith(u'gb'):
 				match = re.search('^(\d+)\D', start)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
 				else:
 					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif start.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', start)
-				if ssdAlignment:
+				if blockAlignment:
 					start = int(round( (float(match.group(1))/100) * self.totalSectors ))
 				else:
 					start = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			elif start.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', start)
-				start = match.group(1)
+				start = int(match.group(1))
 			else:
 				start = int(start)
 			
 			if   end.endswith(u'm') or end.endswith(u'mb'):
 				match = re.search('^(\d+)\D', end)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
 				else:
 					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
 			elif end.endswith(u'g') or end.endswith(u'gb'):
 				match = re.search('^(\d+)\D', end)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
 				else:
 					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif end.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', end)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					end = int(round( (float(match.group(1))/100) * self.totalSectors ))
 				else:
 					end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
+			elif end.lower().endswith(u's'):
+				match = re.search('^(\d+)\D', end)
+				end = int(match.group(1))
 			else:
 				end = int(end)
 			
-			if not self.ssdAlignment:
+			if not self.blockAlignment:
 				if (start < 0):
 					# Lowest possible cylinder is 0
 					start = 0
 				if (end >= self.totalCylinders):
 					# Highest possible cylinder is total cylinders - 1
 					end = self.totalCylinders-1
-
+			
 			else:
 				# Start on aligned sector 2048
 				start = 2048
@@ -1768,7 +1771,7 @@ class Harddisk:
 			
 			number = len(self.partitions) + 1
 			for part in self.partitions:
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					partitionStart = part['secStart']
 				else:
 					partitionStart = part['cylStart']
@@ -1779,7 +1782,7 @@ class Harddisk:
 			
 			try:
 				prev = self.getPartition(number-1)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					if (start <= prev['secEnd']):
 						# Partitions overlap
 						start = prev['secEnd']+1
@@ -1792,7 +1795,7 @@ class Harddisk:
 			
 			try:
 				next = self.getPartition(number+1)
-				if self.ssdAlignment:
+				if self.blockAlignment:
 					nextstart = next['secStart']
 				else:
 					nextstart = next['cylStart']
@@ -1802,7 +1805,7 @@ class Harddisk:
 					end = nextstart-1
 			except:
 				pass
-			if self.ssdAlignment:
+			if self.blockAlignment:
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
 							% (self.device, number, type, fs, start, end))
 				
