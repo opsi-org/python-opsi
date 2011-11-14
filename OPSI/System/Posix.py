@@ -1732,19 +1732,19 @@ class Harddisk:
 			if   end.endswith(u'm') or end.endswith(u'mb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
+					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector )) - 1
 				else:
 					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
 			elif end.endswith(u'g') or end.endswith(u'gb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
+					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector )) - 1
 				else:
 					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif end.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (float(match.group(1))/100) * self.totalSectors ))
+					end = int(round( (float(match.group(1))/100) * self.totalSectors )) - 1
 				else:
 					end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			elif end.lower().endswith(u's'):
