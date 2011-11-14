@@ -1763,10 +1763,15 @@ class Harddisk:
 			
 			else:
 				# Start on aligned sector 2048
-				start = 2048
+				if (start <= 0):
+					start = 2048
 				if (end >= self.totalSectors):
 					# Highest possible sectors is total sectors - 1
 					end = self.totalSectors-1
+				# Find out, if end sector is correct set
+				modulo = end % 2048
+				if modulo:
+					end = end + 2048 - modulo - 1
 			
 			
 			number = len(self.partitions) + 1
