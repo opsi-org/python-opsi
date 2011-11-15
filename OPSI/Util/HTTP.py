@@ -39,7 +39,7 @@ from Queue import Queue, Empty, Full
 from urllib import urlencode
 from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
 from socket import error as SocketError, timeout as SocketTimeout
-import socket, time, base64, os, re
+import socket, time, base64, os, re, random
 from sys import version_info
 if (version_info >= (2,6)):
 	import ssl as ssl_module
