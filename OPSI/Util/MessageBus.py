@@ -349,7 +349,10 @@ class MessageBusClient(threading.Thread):
 				pass
 		if not self._stopping and self._autoReconnect:
 			reactor.callLater(1, self._reconnect)
-		
+	
+	def initialized(self):
+		logger.info(u"Initialized")
+	
 	def _reconnect(self):
 		if self._connection:
 			if self._registeredForObjectEvents:
@@ -385,6 +388,7 @@ class MessageBusClient(threading.Thread):
 					self._clientId = message.get('client_id', self._clientId)
 					if self._clientId:
 						self._clientIdReceived.set()
+					reactor.callLater(0.001, self.initialized)
 				elif (message.get('message_type') == 'object_event'):
 					operation = forceUnicode(message.get('operation'))
 					if not operation in ('created', 'updated', 'deleted'):
