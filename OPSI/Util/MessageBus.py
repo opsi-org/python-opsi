@@ -167,30 +167,33 @@ class MessageBusServerFactory(ServerFactory):
 							% (clientId, objTypes, operations))
 				
 				elif (message.get('message_type') == 'object_event'):
-					operation = forceUnicode(message.get('operation'))
-					if not operation in ('created', 'updated', 'deleted'):
-						logger.error(u"Unknown operation '%s'" % operation)
 					objType = forceUnicode(message.get('objType'))
 					ident = message.get('ident')
-					message = {
-						"message_type": "object_event",
-						"operation":    operation,
-						"objType":      objType,
-						"ident":        ident
-					}
-					for clientId in self.clients.keys():
-						if not self.clients[clientId].get('registeredForObjectEvents'):
-							continue
-						operations = self.clients[clientId]['registeredForObjectEvents'].get('operations')
-						if operations and not operation in operations:
-							continue
-						objTypes = self.clients[clientId]['registeredForObjectEvents'].get('objTypes')
-						if objTypes and not objType in objTypes:
-							continue
-						self.clients[clientId]['messageQueue'].add(message)
+					operation = forceUnicode(message.get('operation'))
+					self._sendObjectEvent(objType, ident, operation)
 		except Exception, e:
 			logger.logException(e)
 	
+	def _sendObjectEvent(self, objType, ident, operation):
+		if not operation in ('created', 'updated', 'deleted'):
+			logger.error(u"Unknown operation '%s'" % operation)
+		message = {
+			"message_type": "object_event",
+			"operation":    operation,
+			"objType":      objType,
+			"ident":        ident
+		}
+		for clientId in self.clients.keys():
+			if not self.clients[clientId].get('registeredForObjectEvents'):
+				continue
+			operations = self.clients[clientId]['registeredForObjectEvents'].get('operations')
+			if operations and not operation in operations:
+				continue
+			objTypes = self.clients[clientId]['registeredForObjectEvents'].get('objTypes')
+			if objTypes and not objType in objTypes:
+				continue
+			self.clients[clientId]['messageQueue'].add(message)
+		
 	def sendMessage(self, message, clientId = None):
 		if clientId:
 			client = self.clients.get(clientId)
