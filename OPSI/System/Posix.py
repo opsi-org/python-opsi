@@ -1702,6 +1702,9 @@ class Harddisk:
 			if (type != u'primary'):
 				raise Exception("Type '%s' not supported!" % type)
 			
+			unit  = 'cyl'
+			if self.blockAlignment:
+				unit  = 'sec'
 			start = start.replace(u' ', u'')
 			end   = end.replace(u' ', u'')
 			
@@ -1726,34 +1729,54 @@ class Harddisk:
 			elif start.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', start)
 				start = int(match.group(1))
-			else:
+				if not blockAlignment:
+					start = int(round( ((float(start) * self.bytesPerSector) / self.bytesPerCylinder) ))
+			elif start.lower().endswith(u'c'):
+				# Cylinder!
 				start = int(start)
+				if blockAlignment:
+					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
+			else:
+				# Cylinder!
+				start = int(start)
+				if blockAlignment:
+					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
 			
 			if   end.endswith(u'm') or end.endswith(u'mb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector )) - 1
+					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
 				else:
 					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerCylinder ))
 			elif end.endswith(u'g') or end.endswith(u'gb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector )) - 1
+					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerSector ))
 				else:
 					end = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif end.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
-					end = int(round( (float(match.group(1))/100) * self.totalSectors )) - 1
+					end = int(round( (float(match.group(1))/100) * self.totalSectors ))
 				else:
 					end = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			elif end.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', end)
 				end = int(match.group(1))
-			else:
+				if not blockAlignment:
+					end = int(round( ((float(end) * self.bytesPerSector) / self.bytesPerCylinder) ))
+			elif end.lower().endswith(u'c'):
+				# Cylinder!
 				end = int(end)
+				if blockAlignment:
+					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
+			else:
+				# Cylinder!
+				end = int(end)
+				if blockAlignment:
+					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
 			
-			if not self.blockAlignment:
+			if (unit == 'cyl'):
 				if (start < 0):
 					# Lowest possible cylinder is 0
 					start = 0
@@ -1762,21 +1785,24 @@ class Harddisk:
 					end = self.totalCylinders-1
 			
 			else:
-				# Start on aligned sector 2048
-				if (start <= 0):
+				modulo = start % 2048
+				if modulo:
+					start = start + 2048 - modulo
+				
+				modulo = end % 2048
+				end = end + 2048 - (end % 2048) - 1
+				
+				if (start < 2048):
 					start = 2048
+				
 				if (end >= self.totalSectors):
 					# Highest possible sectors is total sectors - 1
 					end = self.totalSectors-1
-				# Find out, if end sector is correct set
-				modulo = end % 2048
-				if modulo:
-					end = end + 2048 - modulo - 1
-			
+				
 			
 			number = len(self.partitions) + 1
 			for part in self.partitions:
-				if self.blockAlignment:
+				if (unit == 'sec'):
 					partitionStart = part['secStart']
 				else:
 					partitionStart = part['cylStart']
@@ -1787,7 +1813,7 @@ class Harddisk:
 			
 			try:
 				prev = self.getPartition(number-1)
-				if self.blockAlignment:
+				if (unit == 'sec'):
 					if (start <= prev['secEnd']):
 						# Partitions overlap
 						start = prev['secEnd']+1
@@ -1800,17 +1826,16 @@ class Harddisk:
 			
 			try:
 				next = self.getPartition(number+1)
-				if self.blockAlignment:
+				nextstart = next['cylStart']
+				if (unit == 'sec'):
 					nextstart = next['secStart']
-				else:
-					nextstart = next['cylStart']
-					
+				
 				if (end >= nextstart):
 					# Partitions overlap
 					end = nextstart-1
 			except:
 				pass
-			if self.blockAlignment:
+			if (unit == 'sec'):
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
 							% (self.device, number, type, fs, start, end))
 				
@@ -1829,7 +1854,7 @@ class Harddisk:
 							  'boot':	boot,
 							  'lba':	lba } )
 				
-			else:	
+			else:
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
 							% (self.device, number, type, fs, start, end))
 				
