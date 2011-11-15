@@ -1033,7 +1033,7 @@ class Harddisk:
 	def setDosCompatibility(comp = True):
 		self.dosCompatibility = bool(comp)
 		
-	def setSsdAlignment(self, align = False):
+	def setBlockAlignment(self, align = False):
 		self.blockAlignment = bool(align)
 	
 	def getBusType(self):
