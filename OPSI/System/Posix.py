@@ -1722,24 +1722,24 @@ class Harddisk:
 					start = int(round( (int(match.group(1))*1024*1024*1024) / self.bytesPerCylinder ))
 			elif start.lower().endswith(u'%'):
 				match = re.search('^(\d+)\D', start)
-				if blockAlignment:
+				if self.blockAlignment:
 					start = int(round( (float(match.group(1))/100) * self.totalSectors ))
 				else:
 					start = int(round( (float(match.group(1))/100) * self.totalCylinders ))
 			elif start.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', start)
 				start = int(match.group(1))
-				if not blockAlignment:
+				if not self.blockAlignment:
 					start = int(round( ((float(start) * self.bytesPerSector) / self.bytesPerCylinder) ))
 			elif start.lower().endswith(u'c'):
 				# Cylinder!
 				start = int(start)
-				if blockAlignment:
+				if self.blockAlignment:
 					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
 			else:
 				# Cylinder!
 				start = int(start)
-				if blockAlignment:
+				if self.blockAlignment:
 					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
 			
 			if   end.endswith(u'm') or end.endswith(u'mb'):
@@ -1763,17 +1763,17 @@ class Harddisk:
 			elif end.lower().endswith(u's'):
 				match = re.search('^(\d+)\D', end)
 				end = int(match.group(1))
-				if not blockAlignment:
+				if not self.blockAlignment:
 					end = int(round( ((float(end) * self.bytesPerSector) / self.bytesPerCylinder) ))
 			elif end.lower().endswith(u'c'):
 				# Cylinder!
 				end = int(end)
-				if blockAlignment:
+				if self.blockAlignment:
 					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
 			else:
 				# Cylinder!
 				end = int(end)
-				if blockAlignment:
+				if self.blockAlignment:
 					end = int(round( ((float(end) * self.bytesPerCylinder) / self.bytesPerSector) ))
 			
 			if (unit == 'cyl'):
