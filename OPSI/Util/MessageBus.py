@@ -404,6 +404,8 @@ class MessageBusClient(threading.Thread):
 		self.sendLine(json.dumps(messages))
 		
 	def notifyObjectEvent(self, operation, obj):
+		if self.isStopping():
+			return
 		self._messageQueue.add({
 			"client_id":    self._clientId,
 			"message_type": "object_event",
