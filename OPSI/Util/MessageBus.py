@@ -121,11 +121,11 @@ class MessageBusServerFactory(ServerFactory):
 	def connectionCount(self):
 		return len(self.clients)
 	
-	def connectionMade(self, client):
+	def connectionMade(self, client, readonly = False):
 		logger.debug(u"Client connection made")
 		clientId = randomString(16)
 		messageQueue = MessageQueue(transport = self, additionalTransportArgs = [ clientId ])
-		self.clients[clientId] = { 'connection': client, 'messageQueue': messageQueue, 'registeredForObjectEvents': {} }
+		self.clients[clientId] = { 'readonly': readonly, 'connection': client, 'messageQueue': messageQueue, 'registeredForObjectEvents': {} }
 		messageQueue.start()
 		self.sendMessage({"message_type": "init", "client_id": clientId}, clientId = clientId)
 		
@@ -167,6 +167,13 @@ class MessageBusServerFactory(ServerFactory):
 							% (clientId, objTypes, operations))
 				
 				elif (message.get('message_type') == 'object_event'):
+					clientId = 'unknown'
+					try:
+						if self.clients[clientId]['readonly']:
+							raise Exception('readonly')
+					except Exception, e:
+						logger.warning("Read only client '%s' passed object_event" % clientId)
+						return
 					objType = forceUnicode(message.get('objType'))
 					ident = message.get('ident')
 					operation = forceUnicode(message.get('operation'))
