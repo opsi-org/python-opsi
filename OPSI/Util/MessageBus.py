@@ -60,7 +60,7 @@ def getMessageBusSocket():
 	return sock
 
 class MessageQueue(threading.Thread):
-	def __init__(self, transport, size, poll = 0.01, additionalTransportArgs = []):
+	def __init__(self, transport, size = 10, poll = 0.5, additionalTransportArgs = []):
 		threading.Thread.__init__(self)
 		self.transport = transport
 		self.size = forceInt(size)
@@ -75,7 +75,7 @@ class MessageQueue(threading.Thread):
 	def add(self, message):
 		if self.stopped:
 			raise Exception(u"MessageQueue stopped")
-		logger.debug(u'Adding message %s to queue (current queue size: %d)' % (message, self.queue.qsize()))
+		logger.debug(u'Adding message %s to queue %s (current queue size: %d)' % (message, self, self.queue.qsize()))
 		self.queue.put(message, block = True)
 		logger.debug2(u'Added message %s to queue' % message)
 	
@@ -124,7 +124,7 @@ class MessageBusServerFactory(ServerFactory):
 	def connectionMade(self, client):
 		logger.info(u"Client connection made")
 		clientId = randomString(16)
-		messageQueue = MessageQueue(transport = self, size = 10, poll = 0.01, additionalTransportArgs = [ clientId ])
+		messageQueue = MessageQueue(transport = self, additionalTransportArgs = [ clientId ])
 		self.clients[clientId] = { 'connection': client, 'messageQueue': messageQueue, 'registeredForObjectEvents': {} }
 		messageQueue.start()
 		self.sendMessage({"message_type": "init", "client_id": clientId}, clientId = clientId)
@@ -292,7 +292,7 @@ class MessageBusClient(threading.Thread):
 		self._client = None
 		self._connection = None
 		self._clientId = None
-		self._messageQueue = MessageQueue(transport = self, size = 10, poll = 0.01)
+		self._messageQueue = MessageQueue(transport = self)
 		self._reactorStopPending = False
 		self._stopping = False
 		self._registeredForObjectEvents = {}
@@ -327,10 +327,6 @@ class MessageBusClient(threading.Thread):
 			if stopReactor and reactor and reactor.running:
 				reactor.stop()
 			return
-		self._messageQueue.add({
-			"client_id":    self._clientId,
-			"message_type": "quit"
-		})
 		self._messageQueue.stop()
 		self._client.disconnect()
 		self._reactorStopPending = stopReactor
@@ -343,7 +339,7 @@ class MessageBusClient(threading.Thread):
 		self._connection = connection
 	
 	def connectionLost(self, reason):
-		logger.info(u"Connection to server lost")
+		logger.info(u"Connection to server lost, stopping: %s" % self.isStopping())
 		self._initialized.clear()
 		self._connection = None
 		self._clientId = None
@@ -402,11 +398,13 @@ class MessageBusClient(threading.Thread):
 	
 	def sendLine(self, line):
 		if not self._connection:
+			if self.isStopping():
+				return
 			raise Exception(u"Cannot send line: not connected")
 		self._connection.sendLine(line)
 	
 	def transmitMessages(self, messages):
-		logger.info(u"Transmitting messages")
+		logger.info(u"Transmitting messages: %s" % messages)
 		self.sendLine(json.dumps(messages))
 		
 	def notifyObjectEvent(self, operation, obj):
