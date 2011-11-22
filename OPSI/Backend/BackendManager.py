@@ -78,20 +78,32 @@ class MessageBusNotifier(BackendModificationListener):
 		BackendModificationListener.__init__(self)
 		self._messageBusClient = MessageBusClient()
 		self._messageBusClient.start(self._startReactor)
-		
+	
 	def objectInserted(self, backend, obj):
+		self._messageBusClient.waitInitialized(5)
+		if not self._messageBusClient.isInitialized():
+			logger.error(u"Cannot notify: message bus not initialized")
+			return
 		try:
 			self._messageBusClient.notifyObjectCreated(obj)
 		except Exception, e:
 			logger.logException(e)
 		
 	def objectUpdated(self, backend, obj):
+		self._messageBusClient.waitInitialized(5)
+		if not self._messageBusClient.isInitialized():
+			logger.error(u"Cannot notify: message bus not initialized")
+			return
 		try:
 			self._messageBusClient.notifyObjectUpdated(obj)
 		except Exception, e:
 			logger.logException(e)
 	
 	def objectsDeleted(self, backend, objs):
+		self._messageBusClient.waitInitialized(5)
+		if not self._messageBusClient.isInitialized():
+			logger.error(u"Cannot notify: message bus not initialized")
+			return
 		for obj in objs:
 			try:
 				self._messageBusClient.notifyObjectDeleted(obj)

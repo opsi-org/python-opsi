@@ -206,7 +206,7 @@ class MessageBusServerFactory(ServerFactory):
 				client['messageQueue'].add(message)
 		
 	def transmitMessages(self, messages, clientId):
-		logger.info(u"Transmitting messages to client '%s'" % clientId)
+		logger.debug(u"Transmitting messages to client '%s'" % clientId)
 		messages = json.dumps(messages)
 		client = self.clients.get(clientId)
 		if not client:
@@ -227,6 +227,9 @@ class MessageBusServer(threading.Thread):
 		self._server = None
 		self._startReactor = False
 		self._stopping = False
+	
+	def isStopping(self):
+		return self._stopping
 	
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
@@ -290,12 +293,14 @@ class MessageBusClient(threading.Thread):
 		self._connection = None
 		self._clientId = None
 		self._messageQueue = MessageQueue(transport = self, size = 10, poll = 0.01)
-		self._connected = threading.Event()
-		self._clientIdReceived = threading.Event()
 		self._reactorStopPending = False
 		self._stopping = False
 		self._registeredForObjectEvents = {}
 		self._startReactor = False
+		self._initialized = threading.Event()
+	
+	def isStopping(self):
+		return self._stopping
 	
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
@@ -309,7 +314,7 @@ class MessageBusClient(threading.Thread):
 			if self._startReactor and not reactor.running:
 				reactor.run(installSignalHandlers = False)
 			else:
-				while not self._stopping:
+				while not self.isStopping():
 					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
@@ -317,7 +322,6 @@ class MessageBusClient(threading.Thread):
 		
 	def stop(self, stopReactor=True):
 		self._stopping = True
-		self._waitForConnection()
 		if not self._connection:
 			self._messageQueue.stop()
 			if stopReactor and reactor and reactor.running:
@@ -337,24 +341,29 @@ class MessageBusClient(threading.Thread):
 	def connectionMade(self, connection):
 		logger.info(u"Connected to server")
 		self._connection = connection
-		self._connected.set()
 	
 	def connectionLost(self, reason):
 		logger.info(u"Connection to server lost")
+		self._initialized.clear()
 		self._connection = None
-		self._connected.clear()
 		self._clientId = None
-		self._clientIdReceived.clear()
-		if self._stopping and self._reactorStopPending and reactor and reactor.running:
+		if self.isStopping() and self._reactorStopPending and reactor and reactor.running:
 			try:
 				reactor.stop()
 			except:
 				pass
-		if not self._stopping and self._autoReconnect:
+		if not self.isStopping() and self._autoReconnect:
 			reactor.callLater(1, self._reconnect)
+	
+	def waitInitialized(self, timeout = 0.0):
+		return self._initialized.wait(timeout = timeout)
+	
+	def isInitialized(self):
+		return self._initialized.isSet()
 	
 	def initialized(self):
 		logger.info(u"Initialized")
+		self._initialized.set()
 	
 	def _reconnect(self):
 		if self._connection:
@@ -367,21 +376,8 @@ class MessageBusClient(threading.Thread):
 			self._client.connect()
 		except Exception, e:
 			pass
-		self._connected.wait(1)
-		reactor.callLater(1, self._reconnect)
-		
-	def _waitForConnection(self, timeout = 5):
-		self._connected.wait(timeout)
-		if not self._connection:
-			error = u"Connect timed out after %d seconds" % timeout
-			logger.error(error)
-			self.messageBusConnectionError(error)
-		
-	def _waitForClientId(self, timeout = 5):
-		self._clientIdReceived.wait(timeout)
-		if not self._clientId:
-			logger.error(u"Wait for client id timed out after %d seconds" % timeout)
-		
+		reactor.callLater(2, self._reconnect)
+	
 	def lineReceived(self, line):
 		try:
 			for message in forceList(json.loads(line)):
@@ -389,8 +385,6 @@ class MessageBusClient(threading.Thread):
 					logger.error(u"Received error message: %s" % message.get('message'))
 				elif (message.get('message_type') == 'init'):
 					self._clientId = message.get('client_id', self._clientId)
-					if self._clientId:
-						self._clientIdReceived.set()
 					reactor.callLater(0.001, self.initialized)
 				elif (message.get('message_type') == 'object_event'):
 					operation = forceUnicode(message.get('operation'))
@@ -407,9 +401,8 @@ class MessageBusClient(threading.Thread):
 		pass
 	
 	def sendLine(self, line):
-		self._waitForConnection()
 		if not self._connection:
-			return
+			raise Exception(u"Cannot send line: not connected")
 		self._connection.sendLine(line)
 	
 	def transmitMessages(self, messages):
@@ -417,7 +410,6 @@ class MessageBusClient(threading.Thread):
 		self.sendLine(json.dumps(messages))
 		
 	def notifyObjectEvent(self, operation, obj):
-		self._waitForClientId()
 		self._messageQueue.add({
 			"client_id":    self._clientId,
 			"message_type": "object_event",
@@ -436,9 +428,8 @@ class MessageBusClient(threading.Thread):
 		self.notifyObjectEvent('deleted', obj)
 	
 	def registerForObjectEvents(self, objTypes = [], operations = []):
-		if self._stopping:
+		if self.isStopping():
 			return
-		self._waitForClientId()
 		self._messageQueue.add({
 			"client_id":    self._clientId,
 			"message_type": "register_for_object_events",
@@ -448,52 +439,38 @@ class MessageBusClient(threading.Thread):
 		self._registeredForObjectEvents = { 'objTypes': objTypes, 'operations': operations }
 		
 if (__name__ == '__main__'):
-	logger.setConsoleLevel(LOG_DEBUG)
-	if sys.argv[1] == 'server':
-		mb = MessageBusServer()
-		mb.start()
-		while True:
-			time.sleep(1)
-		
-	else:
-		mb = MessageBusClient()
-		mb.start()
-		#mb.registerForObjectEvents(objTypes = ['OpsiHost'], operations = ['xxxxxxx'])
-		mb.registerForObjectEvents(objTypes = ['OpsiHost', 'OpsiClient'], operations = ['created', 'deleted', 'updated'])
-		mb.join()
-
-
-
-'''
-import signal
-from OPSI.Logger import *
-from OPSI.Util.MessageBus import MessageBusClient, reactor
-
-class PrintingMessageBusClient(MessageBusClient):
-	def objectEventReceived(self, objType, ident, operation):
-		print u"%s %s %s" % (objType, ident, operation)
-	
-	def connectionMade(self, connection):
-		MessageBusClient.connectionMade(self, connection)
-		reactor.callLater(0.1, self._register)
-	
-	def _register(self):
-		self.registerForObjectEvents(objTypes = ['OpsiClient'], operations = ['updated', 'created'])
-	
-def signalHandler(signo, stackFrame):
-	if signo in (signal.SIGHUP, signal.SIGINT):
-		messageBusClient.stop()
-	
-if (__name__ == '__main__'):
+	import signal
+	mb = None
 	logger = Logger()
-	logger.setConsoleLevel(LOG_INFO)
+	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
+
+	def signalHandler(signo, stackFrame):
+		if not mb:
+			return
+		if signo in (signal.SIGHUP, signal.SIGINT):
+			mb.stop()
 	
 	signal.signal(signal.SIGHUP, signalHandler)
 	signal.signal(signal.SIGINT, signalHandler)
 	
-	messageBusClient = PrintingMessageBusClient()
-	messageBusClient.start(startReactor = False)
-	
-	reactor.run(installSignalHandlers=False)
-'''
+	if (len(sys.argv) > 1) and (sys.argv[1] == 'server'):
+		mb = MessageBusServer()
+	else:
+		class PrintingMessageBusClient(MessageBusClient):
+			def objectEventReceived(self, objType, ident, operation):
+				print u"%s %s %s" % (objType, ident, operation)
+			
+			def initialized(self):
+				MessageBusClient.initialized(self)
+				self._register()
+			
+			def _register(self):
+				self.registerForObjectEvents(objTypes = ['OpsiClient'], operations = ['updated', 'created'])
+		
+		mb = PrintingMessageBusClient()
+	mb.start()
+	while not mb.isStopping():
+		time.sleep(1)
+	mb.join()
+
