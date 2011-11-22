@@ -304,11 +304,11 @@ class MessageBusClient(threading.Thread):
 	
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
-		self._client = reactor.connectUNIX(self._port, self._factory)
 		threading.Thread.start(self)
 	
 	def run(self):
 		logger.info(u"MessageBus client is starting")
+		self._client = reactor.connectUNIX(self._port, self._factory, timeout=1)
 		self._messageQueue.start()
 		try:
 			if self._startReactor and not reactor.running:
@@ -318,21 +318,17 @@ class MessageBusClient(threading.Thread):
 					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
-		self._messageQueue.join(10)
+		self._messageQueue.stop()
+		self._messageQueue.join(5)
 		
 	def stop(self, stopReactor=True):
 		self._stopping = True
-		if not self._connection:
-			self._messageQueue.stop()
-			if stopReactor and reactor and reactor.running:
-				reactor.stop()
-			return
-		self._messageQueue.stop()
-		self._client.disconnect()
-		self._reactorStopPending = stopReactor
-	
-	def messageBusConnectionError(self, error):
-		pass
+		if self._connection:
+			if stopReactor:
+				self._reactorStopPending = True
+			self._client.disconnect()
+		elif stopReactor and reactor and reactor.running:
+			reactor.stop()
 	
 	def connectionMade(self, connection):
 		logger.debug(u"Connected to server")
@@ -343,7 +339,7 @@ class MessageBusClient(threading.Thread):
 		self._initialized.clear()
 		self._connection = None
 		self._clientId = None
-		if self.isStopping() and self._reactorStopPending and reactor and reactor.running:
+		if self._reactorStopPending and reactor and reactor.running:
 			try:
 				reactor.stop()
 			except:

@@ -115,7 +115,7 @@ class MessageBusNotifier(BackendModificationListener):
 	
 	def stop(self):
 		self._messageBusClient.stop(stopReactor = self._startReactor)
-		self._messageBusClient.join(10)
+		self._messageBusClient.join(5)
 		
 class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
