@@ -60,7 +60,7 @@ def getMessageBusSocket():
 	return sock
 
 class MessageQueue(threading.Thread):
-	def __init__(self, transport, size = 10, poll = 0.5, additionalTransportArgs = []):
+	def __init__(self, transport, size = 10, poll = 0.3, additionalTransportArgs = []):
 		threading.Thread.__init__(self)
 		self.transport = transport
 		self.size = forceInt(size)
@@ -122,7 +122,7 @@ class MessageBusServerFactory(ServerFactory):
 		return len(self.clients)
 	
 	def connectionMade(self, client):
-		logger.info(u"Client connection made")
+		logger.debug(u"Client connection made")
 		clientId = randomString(16)
 		messageQueue = MessageQueue(transport = self, additionalTransportArgs = [ clientId ])
 		self.clients[clientId] = { 'connection': client, 'messageQueue': messageQueue, 'registeredForObjectEvents': {} }
@@ -130,7 +130,7 @@ class MessageBusServerFactory(ServerFactory):
 		self.sendMessage({"message_type": "init", "client_id": clientId}, clientId = clientId)
 		
 	def connectionLost(self, client, reason):
-		logger.info(u"Client connection lost")
+		logger.debug(u"Client connection lost")
 		for clientId in self.clients.keys():
 			if self.clients[clientId]['connection'] is client:
 				self.clients[clientId]['messageQueue'].stop()
@@ -335,11 +335,11 @@ class MessageBusClient(threading.Thread):
 		pass
 	
 	def connectionMade(self, connection):
-		logger.info(u"Connected to server")
+		logger.debug(u"Connected to server")
 		self._connection = connection
 	
 	def connectionLost(self, reason):
-		logger.info(u"Connection to server lost, stopping: %s" % self.isStopping())
+		logger.debug(u"Connection to server lost, stopping: %s" % self.isStopping())
 		self._initialized.clear()
 		self._connection = None
 		self._clientId = None
