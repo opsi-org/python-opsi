@@ -2705,7 +2705,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 									packageVersion = [ packageVersion ]))
 		return ret
 		
-	def productOnDepot_delete(self, productId, productVersion, packageVersion, depotId):
+	def productOnDepot_delete(self, productId, depotId, productVersion=None, packageVersion=None):
 		if productId is None:      productId      = []
 		if productVersion is None: productVersion = []
 		if packageVersion is None: packageVersion = []

@@ -1,6 +1,7 @@
 python-opsi (4.0.1.36-1) stable; urgency=low
 
   * MessageBus improvements
+  * fix deleteProduct method
 
  -- Jan Schneider <j.schneider@uib.de>  Tue, 22 Nov 2011 13:05:41 +0100
 
