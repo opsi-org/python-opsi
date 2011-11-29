@@ -36,7 +36,7 @@ import threading, sys, base64, os
 from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, defer
-from twisted.internet.endpoints import SSL4ClientEndpoint
+#from twisted.internet.endpoints import SSL4ClientEndpoint
 from twisted.internet._sslverify import OpenSSLCertificateOptions
 
 from sys import version_info
@@ -291,7 +291,10 @@ class MessageBusClientFactory(ClientFactory):
 	
 	def __init__(self, messageBusClient):
 		self.messageBusClient = messageBusClient
-
+	
+	def clientConnectionFailed(self, client, reason):
+		self.messageBusClient.connectionFailed(reason)
+	
 class MessageBusClient(threading.Thread):
 	def __init__(self, port = None, autoReconnect = True):
 		threading.Thread.__init__(self)
@@ -318,10 +321,14 @@ class MessageBusClient(threading.Thread):
 		self._startReactor = startReactor
 		threading.Thread.start(self)
 	
+	def connectionFailed(self, reason):
+		logger.error(u"Failed to connect to omb unix socket '%s': %s" % (self._port, reason))
+		self.stop()
+		
 	def _connect(self):
 		logger.info(u"Connecting to socket: %s" % self._port)
 		self._client = reactor.connectUNIX(self._port, self._factory, timeout=1)
-		
+	
 	def run(self):
 		logger.info(u"MessageBus client is starting")
 		self._connect()
@@ -472,7 +479,6 @@ class MessageBusWebsocketClient(MessageBusClient):
 		self._url = url
 		self._reconnectionAttemptInterval = 10
 		self._factory = MessageBusWebsocketClientFactory(self)
-		self.__protocol = None
 		self.__wsVersion = 8
 		self.__wsHandshakeDone = False
 		self.__headers = {}
@@ -484,7 +490,7 @@ class MessageBusWebsocketClient(MessageBusClient):
 	
 	def _connect(self):
 		logger.info(u"Connecting to host: %s" % self._host)
-		sslContextFactory = OpenSSLCertificateOptions(
+		contextFactory = OpenSSLCertificateOptions(
 			privateKey          = None,
 			certificate         = None,
 			method              = SSL.SSLv3_METHOD,
@@ -496,15 +502,11 @@ class MessageBusWebsocketClient(MessageBusClient):
 			enableSingleUseKeys = False,
 			enableSessions      = False,
 			fixBrokenPeers      = True)
-		ep = SSL4ClientEndpoint(reactor = reactor, host = self._host, port = self._port, sslContextFactory = sslContextFactory, timeout = 10)
-		d = ep.connect(self._factory)
-		d.addCallback(self._gotProtocol)
+		self._client = reactor.connectSSL(self._host, self._port, self._factory, contextFactory, timeout = 10)
 		
-	def _gotProtocol(self, protocol):
-		self.__protocol = protocol
-	
-	def _disconnect(self):
-		self.__protocol.transport.loseConnection()
+	def connectionFailed(self, reason):
+		logger.error(u"Failed to connect to omb websocket on '%s': %s" % (self._host, reason))
+		self.stop()
 	
 	def connectionMade(self, connection):
 		logger.debug(u"Connected to host: %s" % self._host)
@@ -513,7 +515,7 @@ class MessageBusWebsocketClient(MessageBusClient):
 		
 		self.__wsKey = base64.b64encode(os.urandom(16))
 		
-		headers =  'GET %s HTTP/1.1\r\n' % self._baseUrl
+		headers = 'GET %s HTTP/1.1\r\n' % self._baseUrl
 		if self.__username and self.__password:
 			auth = (self.__username + u':' + self.__password).encode('latin-1')
 			headers += 'Authorization: Basic ' + base64.encodestring(auth).strip()
@@ -570,6 +572,7 @@ if (__name__ == '__main__'):
 		mb = MessageBusServer()
 	else:
 		class PrintingMessageBusClient(MessageBusWebsocketClient):
+		#class PrintingMessageBusClient(MessageBusClient):
 			def objectEventReceived(self, object_type, ident, operation):
 				print u"%s %s %s" % (object_type, ident, operation)
 			
