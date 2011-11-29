@@ -32,10 +32,12 @@
    @license: GNU General Public License version 2
 """
 
-import threading, sys
+import threading, sys, base64, os
 from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, defer
+from twisted.internet.endpoints import SSL4ClientEndpoint
+from twisted.internet._sslverify import OpenSSLCertificateOptions
 
 from sys import version_info
 if (version_info >= (2,6)):
@@ -44,11 +46,13 @@ else:
 	import simplejson as json
 
 from Queue import Queue, Empty, Full
+from OpenSSL import SSL
 
 # OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Util import randomString, getGlobalConfig
+from OPSI.Util.HTTP import hybi10Decode, hybi10Encode, urlsplit
 
 # Get logger instance
 logger = Logger()
@@ -153,7 +157,7 @@ class MessageBusServerFactory(ServerFactory):
 					if not self.clients.has_key(clientId):
 						raise Exception(u"Unknown client id '%s'" % clientId)
 					operations = forceUnicodeList(message.get('operations', []))
-					objTypes = forceUnicodeList(message.get('objTypes', []))
+					object_types = forceUnicodeList(message.get('object_types', []))
 					for op in operations:
 						if not op in ('created', 'updated', 'deleted'):
 							logger.error(u"Unknown operation '%s' in register_for_object_events of client '%s'" \
@@ -161,33 +165,33 @@ class MessageBusServerFactory(ServerFactory):
 							self.sendError(u"Unknown operation '%s'" % op, clientId = clientId)
 					self.clients[clientId]['registeredForObjectEvents'] = {
 						'operations': operations,
-						'objTypes': objTypes
+						'object_types': object_types
 					}
-					logger.info(u"Client '%s' now registered for objTypes %s, operations %s" \
-							% (clientId, objTypes, operations))
+					logger.info(u"Client '%s' now registered for object_types %s, operations %s" \
+							% (clientId, object_types, operations))
 				
 				elif (message.get('message_type') == 'object_event'):
-					clientId = 'unknown'
+					clientId = message.get('client_id', 'unknown')
 					try:
 						if self.clients[clientId]['readonly']:
 							raise Exception('readonly')
 					except Exception, e:
 						logger.warning("Read only client '%s' passed object_event" % clientId)
 						return
-					objType = forceUnicode(message.get('objType'))
+					object_type = forceUnicode(message.get('object_type'))
 					ident = message.get('ident')
 					operation = forceUnicode(message.get('operation'))
-					self._sendObjectEvent(objType, ident, operation)
+					self._sendObjectEvent(object_type, ident, operation)
 		except Exception, e:
 			logger.logException(e)
 	
-	def _sendObjectEvent(self, objType, ident, operation):
+	def _sendObjectEvent(self, object_type, ident, operation):
 		if not operation in ('created', 'updated', 'deleted'):
 			logger.error(u"Unknown operation '%s'" % operation)
 		message = {
 			"message_type": "object_event",
 			"operation":    operation,
-			"objType":      objType,
+			"object_type":  object_type,
 			"ident":        ident
 		}
 		for clientId in self.clients.keys():
@@ -196,8 +200,8 @@ class MessageBusServerFactory(ServerFactory):
 			operations = self.clients[clientId]['registeredForObjectEvents'].get('operations')
 			if operations and not operation in operations:
 				continue
-			objTypes = self.clients[clientId]['registeredForObjectEvents'].get('objTypes')
-			if objTypes and not objType in objTypes:
+			object_types = self.clients[clientId]['registeredForObjectEvents'].get('object_types')
+			if object_types and not object_type in object_types:
 				continue
 			self.clients[clientId]['messageQueue'].add(message)
 		
@@ -281,7 +285,7 @@ class MessageBusClientProtocol(LineReceiver):
 	def lineReceived(self, line):
 		logger.debug(u"Line received")
 		self.factory.messageBusClient.lineReceived(line)
-		
+
 class MessageBusClientFactory(ClientFactory):
 	protocol = MessageBusClientProtocol
 	
@@ -295,6 +299,7 @@ class MessageBusClient(threading.Thread):
 			port = getMessageBusSocket()
 		self._port = forceFilename(port)
 		self._autoReconnect = forceBool(autoReconnect)
+		self._reconnectionAttemptInterval = 2
 		self._factory = MessageBusClientFactory(self)
 		self._client = None
 		self._connection = None
@@ -313,9 +318,13 @@ class MessageBusClient(threading.Thread):
 		self._startReactor = startReactor
 		threading.Thread.start(self)
 	
+	def _connect(self):
+		logger.info(u"Connecting to socket: %s" % self._port)
+		self._client = reactor.connectUNIX(self._port, self._factory, timeout=1)
+		
 	def run(self):
 		logger.info(u"MessageBus client is starting")
-		self._client = reactor.connectUNIX(self._port, self._factory, timeout=1)
+		self._connect()
 		self._messageQueue.start()
 		try:
 			if self._startReactor and not reactor.running:
@@ -327,22 +336,25 @@ class MessageBusClient(threading.Thread):
 			logger.logException(e)
 		self._messageQueue.stop()
 		self._messageQueue.join(5)
+	
+	def _disconnect(self):
+		self._client.disconnect()
 		
 	def stop(self, stopReactor=True):
 		self._stopping = True
 		if self._connection:
 			if stopReactor:
 				self._reactorStopPending = True
-			self._client.disconnect()
+			self._disconnect()
 		elif stopReactor and reactor and reactor.running:
 			reactor.stop()
 	
 	def connectionMade(self, connection):
-		logger.debug(u"Connected to server")
+		logger.debug(u"Connected to socket %s" % self._port)
 		self._connection = connection
 	
 	def connectionLost(self, reason):
-		logger.debug(u"Connection to server lost, stopping: %s" % self.isStopping())
+		logger.info(u"Connection to server lost, stopping: %s" % self.isStopping())
 		self._initialized.clear()
 		self._connection = None
 		self._clientId = None
@@ -368,14 +380,14 @@ class MessageBusClient(threading.Thread):
 		if self._connection:
 			if self._registeredForObjectEvents:
 				self.registerForObjectEvents(
-					objTypes   = self._registeredForObjectEvents['objTypes'],
+					object_types   = self._registeredForObjectEvents['object_types'],
 					operations = self._registeredForObjectEvents['operations'])
 			return
 		try:
-			self._client.connect()
+			self._connect()
 		except Exception, e:
 			pass
-		reactor.callLater(2, self._reconnect)
+		reactor.callLater(self._reconnectionAttemptInterval, self._reconnect)
 	
 	def lineReceived(self, line):
 		try:
@@ -389,14 +401,14 @@ class MessageBusClient(threading.Thread):
 					operation = forceUnicode(message.get('operation'))
 					if not operation in ('created', 'updated', 'deleted'):
 						logger.error(u"Unknown operation '%s'" % operation)
-					objType = forceUnicode(message.get('objType'))
+					object_type = forceUnicode(message.get('object_type'))
 					ident = message.get('ident')
-					logger.info(u"%s %s %s" % (objType, ident, operation))
-					self.objectEventReceived(objType, ident, operation)
+					logger.info(u"%s %s %s" % (object_type, ident, operation))
+					self.objectEventReceived(object_type, ident, operation)
 		except Exception, e:
 			logger.logException(e)
 	
-	def objectEventReceived(self, objType, ident, operation):
+	def objectEventReceived(self, object_type, ident, operation):
 		pass
 	
 	def sendLine(self, line):
@@ -417,7 +429,7 @@ class MessageBusClient(threading.Thread):
 			"client_id":    self._clientId,
 			"message_type": "object_event",
 			"operation":    operation,
-			"objType":      obj.getType(),
+			"object_type":  obj.getType(),
 			"ident":        obj.getIdent('dict')
 		})
 		
@@ -430,17 +442,114 @@ class MessageBusClient(threading.Thread):
 	def notifyObjectDeleted(self, obj):
 		self.notifyObjectEvent('deleted', obj)
 	
-	def registerForObjectEvents(self, objTypes = [], operations = []):
+	def registerForObjectEvents(self, object_types = [], operations = []):
 		if self.isStopping():
 			return
 		self._messageQueue.add({
 			"client_id":    self._clientId,
 			"message_type": "register_for_object_events",
 			"operations":   forceUnicodeList(operations),
-			"objTypes":     forceUnicodeList(objTypes)
+			"object_types": forceUnicodeList(object_types)
 		})
-		self._registeredForObjectEvents = { 'objTypes': objTypes, 'operations': operations }
+		self._registeredForObjectEvents = { 'object_types': object_types, 'operations': operations }
+
+class MessageBusWebsocketClientProtocol(MessageBusClientProtocol):
+	def rawDataReceived(self, data):
+		self.lineReceived(hybi10Decode(data))
+	
+	def lineReceived(self, line):
+		logger.debug(u"Line received")
+		self.factory.messageBusClient.lineReceived(line)
+		if self.line_mode and self.factory.messageBusClient.isWebsocketHandshakeDone():
+			self.setRawMode()
+	
+class MessageBusWebsocketClientFactory(MessageBusClientFactory):
+	protocol = MessageBusWebsocketClientProtocol
+
+class MessageBusWebsocketClient(MessageBusClient):
+	def __init__(self, url = 'https://localhost:4447/omb', autoReconnect = True):
+		MessageBusClient.__init__(self, port = None, autoReconnect = autoReconnect)
+		self._url = url
+		self._reconnectionAttemptInterval = 10
+		self._factory = MessageBusWebsocketClientFactory(self)
+		self.__protocol = None
+		self.__wsVersion = 8
+		self.__wsHandshakeDone = False
+		self.__headers = {}
 		
+		(self._scheme, self._host, self._port, self._baseUrl, self.__username, self.__password) = urlsplit(self._url)
+		
+	def isWebsocketHandshakeDone(self):
+		return self.__wsHandshakeDone
+	
+	def _connect(self):
+		logger.info(u"Connecting to host: %s" % self._host)
+		sslContextFactory = OpenSSLCertificateOptions(
+			privateKey          = None,
+			certificate         = None,
+			method              = SSL.SSLv3_METHOD,
+			verify              = False,
+			caCerts             = [],
+			verifyDepth         = 2,
+			requireCertificate  = False,
+			verifyOnce          = False,
+			enableSingleUseKeys = False,
+			enableSessions      = False,
+			fixBrokenPeers      = True)
+		ep = SSL4ClientEndpoint(reactor = reactor, host = self._host, port = self._port, sslContextFactory = sslContextFactory, timeout = 10)
+		d = ep.connect(self._factory)
+		d.addCallback(self._gotProtocol)
+		
+	def _gotProtocol(self, protocol):
+		self.__protocol = protocol
+	
+	def _disconnect(self):
+		self.__protocol.transport.loseConnection()
+	
+	def connectionMade(self, connection):
+		logger.debug(u"Connected to host: %s" % self._host)
+		self._connection = connection
+		self.__wsHandshakeDone = False
+		
+		self.__wsKey = base64.b64encode(os.urandom(16))
+		
+		headers =  'GET %s HTTP/1.1\r\n' % self._baseUrl
+		if self.__username and self.__password:
+			auth = (self.__username + u':' + self.__password).encode('latin-1')
+			headers += 'Authorization: Basic ' + base64.encodestring(auth).strip()
+		headers += 'Upgrade: websocket\r\n'
+		headers += 'Connection: Upgrade\r\n'
+		headers += 'Host: %s:%d\r\n' % (self._host, self._port)
+		headers += 'Sec-WebSocket-Origin: %s%s:%d%s\r\n' % (self._scheme, self._host, self._port, self._baseUrl)
+		headers += 'Sec-WebSocket-Key: %s\r\n' % self.__wsKey
+		headers += 'Sec-WebSocket-Version: %d\r\n' % self.__wsVersion
+		
+		self.sendLine(str(headers))
+	
+	def _websocketHandshake(self):
+		self.__wsHandshakeDone = True
+	
+	def lineReceived(self, line):
+		#logger.debug2("lineReceived: %s" % line)
+		if not self.__wsHandshakeDone:
+			line = line.strip()
+			if line:
+				if line.startswith('HTTP/') and (line.find(' 101 ') != -1):
+					return
+				if (line.find(':') == -1):
+					raise Exception(u"Bad header: %s" % line)
+				(k, v) = line.split(':', 1)
+				self.__headers[k.strip().lower()] = v.strip()
+			else:
+				self._websocketHandshake()
+		else:
+			MessageBusClient.lineReceived(self, line)
+	
+	def sendLine(self, line):
+		if self.isWebsocketHandshakeDone():
+			line = hybi10Encode(line)
+		MessageBusClient.sendLine(self, line)
+	
 if (__name__ == '__main__'):
 	import signal
 	mb = None
@@ -460,20 +569,24 @@ if (__name__ == '__main__'):
 	if (len(sys.argv) > 1) and (sys.argv[1] == 'server'):
 		mb = MessageBusServer()
 	else:
-		class PrintingMessageBusClient(MessageBusClient):
-			def objectEventReceived(self, objType, ident, operation):
-				print u"%s %s %s" % (objType, ident, operation)
+		class PrintingMessageBusClient(MessageBusWebsocketClient):
+			def objectEventReceived(self, object_type, ident, operation):
+				print u"%s %s %s" % (object_type, ident, operation)
 			
 			def initialized(self):
 				MessageBusClient.initialized(self)
 				self._register()
 			
 			def _register(self):
-				self.registerForObjectEvents(objTypes = ['OpsiClient'], operations = ['updated', 'created'])
+				self.registerForObjectEvents(object_types = ['OpsiClient'], operations = ['updated', 'created'])
 		
 		mb = PrintingMessageBusClient()
 	mb.start()
 	while not mb.isStopping():
 		time.sleep(1)
 	mb.join()
-
+	
+	
+	
+	
+	

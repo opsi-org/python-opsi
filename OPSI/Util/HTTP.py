@@ -56,6 +56,7 @@ connectionPools = {}
 totalRequests = 0
 
 def hybi10Encode(data):
+	data = data.strip()
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	frame = [ 0x81 ]
 	mask = [ random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255) ]
@@ -78,6 +79,7 @@ def hybi10Encode(data):
 	return encodedData
 
 def hybi10Decode(data):
+	data = data.strip()
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	mask = ''
 	codedData = ''
@@ -692,10 +694,13 @@ def destroyPool(pool):
 if (__name__ == '__main__'):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
-	pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
-	resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
-	print resp.data
-	time.sleep(5)
+	
+	print generateWebsocketKey()
+	
+	#pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
+	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
+	#print resp.data
+	#time.sleep(5)
 	#pool = CurlHTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5)
 	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	#print resp.data
