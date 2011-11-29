@@ -114,6 +114,7 @@ class MessageBusNotifier(BackendModificationListener):
 		pass
 	
 	def stop(self):
+		logger.info(u"Stopping message bus client")
 		self._messageBusClient.stop(stopReactor = self._startReactor)
 		self._messageBusClient.join(5)
 		
