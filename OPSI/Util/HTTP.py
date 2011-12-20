@@ -80,6 +80,9 @@ def hybi10Encode(data):
 
 def hybi10Decode(data):
 	data = data.strip()
+	if (len(data) < 2):
+		return ''
+	logger.essential(data)
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	mask = ''
 	codedData = ''
