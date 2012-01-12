@@ -183,6 +183,7 @@ class MessageBusServerFactory(ServerFactory):
 					operation = forceUnicode(message.get('operation'))
 					self._sendObjectEvent(object_type, ident, operation)
 		except Exception, e:
+			logger.debug(line)
 			logger.logException(e)
 	
 	def _sendObjectEvent(self, object_type, ident, operation):
@@ -410,9 +411,10 @@ class MessageBusClient(threading.Thread):
 						logger.error(u"Unknown operation '%s'" % operation)
 					object_type = forceUnicode(message.get('object_type'))
 					ident = message.get('ident')
-					logger.info(u"%s %s %s" % (object_type, ident, operation))
+					#logger.info(u"%s %s %s" % (object_type, ident, operation))
 					self.objectEventReceived(object_type, ident, operation)
 		except Exception, e:
+			logger.error(line)
 			logger.logException(e)
 	
 	def objectEventReceived(self, object_type, ident, operation):
