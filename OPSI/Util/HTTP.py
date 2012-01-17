@@ -78,7 +78,7 @@ def hybi10Encode(data):
 	return encodedData
 
 def hybi10Decode(data):
-	if (len(data) < 2):
+	if (len(data.strip()) < 2):
 		return ''
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	mask = ''
@@ -700,6 +700,14 @@ if (__name__ == '__main__'):
 	import random
 	def string_generator(size):
 		return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(size))
+	
+	
+	randstring = u'[{"operations": ["created", "deleted", "updated"], "message_type": "register_for_object_events", "client_id": "nJ87nTA7Fph8n29C", "object_types": ["OpsiClient", "ProductOnClient", "BootConfiguration", "ProductOnDepot", "ConfigState"]}]'
+	randstring = randstring.encode('utf-8')
+	encoded = hybi10Encode(randstring)
+	decoded = hybi10Decode(encoded)
+	if (randstring != decoded):
+		raise Exception("'%s' != '%s'" % (randstring, decoded))
 	
 	for i in range(1000):
 		randstring = string_generator(random.randint(1,10000))

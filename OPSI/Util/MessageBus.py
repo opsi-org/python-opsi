@@ -183,7 +183,7 @@ class MessageBusServerFactory(ServerFactory):
 					operation = forceUnicode(message.get('operation'))
 					self._sendObjectEvent(object_type, ident, operation)
 		except Exception, e:
-			logger.debug(line)
+			logger.error(u"Received line '%s'" % line)
 			logger.logException(e)
 	
 	def _sendObjectEvent(self, object_type, ident, operation):
@@ -304,6 +304,7 @@ class MessageBusClient(threading.Thread):
 		self._port = forceFilename(port)
 		self._autoReconnect = forceBool(autoReconnect)
 		self._reconnectionAttemptInterval = 2
+		self._reconnecting = False
 		self._factory = MessageBusClientFactory(self)
 		self._client = None
 		self._connection = None
@@ -323,8 +324,11 @@ class MessageBusClient(threading.Thread):
 		threading.Thread.start(self)
 	
 	def connectionFailed(self, reason):
-		logger.error(u"Failed to connect to omb unix socket '%s': %s" % (self._port, reason))
-		self.stop()
+		if self._reconnecting:
+			logger.debug(u"Failed to reconnect %s '%s': %s" % (self._client, self._port, reason))
+		else:
+			logger.error(u"Failed to connect %s '%s': %s" % (self._client, self._port, reason))
+			self.stop()
 		
 	def _connect(self):
 		logger.info(u"Connecting to socket: %s" % self._port)
@@ -342,27 +346,38 @@ class MessageBusClient(threading.Thread):
 					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
+		logger.debug2(u"MessageBus client stopping messageQueue %s" % self._messageQueue)
 		self._messageQueue.stop()
 		self._messageQueue.join(5)
+		logger.debug2(u"Done waiting for messageQueue %s" % self._messageQueue)
+		logger.debug2(u"MessageBus client exiting")
 	
 	def _disconnect(self):
+		logger.debug(u"MessageBusClient disconnecting (%s)" % self._client)
+		#logger.debug2(self._client.transport.__dict__)
+		#self._client.transport.socket.close()
+		self._client.timeout = 1
 		self._client.disconnect()
 		
 	def stop(self, stopReactor=True):
 		self._stopping = True
+		logger.debug(u"MessageBusClient is stopping")
 		if self._connection:
 			if stopReactor:
+				logger.debug(u"MessageBusClient should stop reactor")
 				self._reactorStopPending = True
 			self._disconnect()
 		elif stopReactor and reactor and reactor.running:
+			logger.debug(u"MessageBusClient is stopping reactor")
 			reactor.stop()
 	
 	def connectionMade(self, connection):
 		logger.debug(u"Connected to socket %s" % self._port)
 		self._connection = connection
-	
+		self._reconnecting = False
+		
 	def connectionLost(self, reason):
-		logger.info(u"Connection to server lost, stopping: %s" % self.isStopping())
+		logger.info(u"Connection to server lost, stopping: %s, auto reconnect: %s" % (self.isStopping(), self._autoReconnect))
 		self._initialized.clear()
 		self._connection = None
 		self._clientId = None
@@ -372,6 +387,7 @@ class MessageBusClient(threading.Thread):
 			except:
 				pass
 		if not self.isStopping() and self._autoReconnect:
+			self._reconnecting = True
 			reactor.callLater(1, self._reconnect)
 	
 	def waitInitialized(self, timeout = 0.0):
@@ -385,6 +401,8 @@ class MessageBusClient(threading.Thread):
 		self._initialized.set()
 	
 	def _reconnect(self):
+		logger.debug2(u"Reconnect")
+		self._reconnecting = True
 		if self._connection:
 			if self._registeredForObjectEvents:
 				self.registerForObjectEvents(
@@ -398,6 +416,8 @@ class MessageBusClient(threading.Thread):
 		reactor.callLater(self._reconnectionAttemptInterval, self._reconnect)
 	
 	def lineReceived(self, line):
+		if self.isStopping():
+			return
 		try:
 			for message in forceList(json.loads(line)):
 				if (message.get('message_type') == 'error'):
@@ -411,7 +431,7 @@ class MessageBusClient(threading.Thread):
 						logger.error(u"Unknown operation '%s'" % operation)
 					object_type = forceUnicode(message.get('object_type'))
 					ident = message.get('ident')
-					#logger.info(u"%s %s %s" % (object_type, ident, operation))
+					logger.info(u"Object event received: %s %s %s" % (object_type, forceUnicode(ident), operation))
 					self.objectEventReceived(object_type, ident, operation)
 		except Exception, e:
 			logger.error(line)
@@ -506,10 +526,6 @@ class MessageBusWebsocketClient(MessageBusClient):
 			fixBrokenPeers      = True)
 		self._client = reactor.connectSSL(self._host, self._port, self._factory, contextFactory, timeout = 10)
 		
-	def connectionFailed(self, reason):
-		logger.error(u"Failed to connect to omb websocket on '%s': %s" % (self._host, reason))
-		self.stop()
-	
 	def connectionMade(self, connection):
 		logger.debug(u"Connected to host: %s" % self._host)
 		self._connection = connection
