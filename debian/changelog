@@ -2,7 +2,7 @@ python-opsi (4.0.1.37-1) stable; urgency=low
 
   * fix hybi10Decode
 
- -- Jan Schneider <j.schneider@uib.de>  Tue, 20 Dec 2011 13:42:11 +0100
+ -- Jan Schneider <j.schneider@uib.de>  Tue, 17 Jan 2012 13:40:01 +0100
 
 python-opsi (4.0.1.36-1) stable; urgency=low
 
