@@ -111,7 +111,6 @@ def hybi10Decode(data):
 			decodedData = data[10:]
 		else:
 			decodedData = data[2:]
-	
 	return decodedData
 
 def non_blocking_connect_http(self, connectTimeout=0):

@@ -144,6 +144,7 @@ class MessageBusServerFactory(ServerFactory):
 	
 	def lineReceived(self, line):
 		try:
+			logger.debug(u"Line received: '%s'" % line)
 			for message in forceList(json.loads(line)):
 				if message.get('message_type') in ('quit', 'exit', 'bye'):
 					client = self.clients.get(message.get('client_id'))
@@ -419,6 +420,7 @@ class MessageBusClient(threading.Thread):
 		if self.isStopping():
 			return
 		try:
+			line = line.rstrip()
 			for message in forceList(json.loads(line)):
 				if (message.get('message_type') == 'error'):
 					logger.error(u"Received error message: %s" % message.get('message'))
@@ -488,6 +490,7 @@ class MessageBusWebsocketClientProtocol(MessageBusClientProtocol):
 	
 	def lineReceived(self, line):
 		logger.debug(u"Line received")
+		line = line.rstrip()
 		self.factory.messageBusClient.lineReceived(line)
 		if self.line_mode and self.factory.messageBusClient.isWebsocketHandshakeDone():
 			self.setRawMode()
@@ -550,6 +553,7 @@ class MessageBusWebsocketClient(MessageBusClient):
 		self.__wsHandshakeDone = True
 	
 	def lineReceived(self, line):
+		line = line.rstrip()
 		#logger.debug2("lineReceived: %s" % line)
 		if not self.__wsHandshakeDone:
 			line = line.strip()
