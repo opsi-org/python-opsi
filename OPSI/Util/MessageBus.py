@@ -347,18 +347,15 @@ class MessageBusClient(threading.Thread):
 					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
+		
 		logger.debug2(u"MessageBus client stopping messageQueue %s" % self._messageQueue)
 		self._messageQueue.stop()
 		self._messageQueue.join(5)
-		logger.debug2(u"Done waiting for messageQueue %s" % self._messageQueue)
 		logger.debug2(u"MessageBus client exiting")
 	
 	def _disconnect(self):
 		logger.debug(u"MessageBusClient disconnecting (%s)" % self._client)
-		#logger.debug2(self._client.transport.__dict__)
-		#self._client.transport.socket.close()
-		self._client.timeout = 1
-		self._client.disconnect()
+		reactor.callFromThread(self._client.disconnect)
 		
 	def stop(self, stopReactor=True):
 		self._stopping = True
