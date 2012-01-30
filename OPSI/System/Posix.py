@@ -1030,7 +1030,7 @@ class Harddisk:
 		self.useBIOSGeometry()
 		self.readPartitionTable()
 	
-	def setDosCompatibility(comp = True):
+	def setDosCompatibility(self, comp = True):
 		self.dosCompatibility = bool(comp)
 		
 	def setBlockAlignment(self, align = False):
