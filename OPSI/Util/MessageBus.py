@@ -123,25 +123,29 @@ class MessageBusServerFactory(ServerFactory):
 		self.clients = {}
 	
 	def connectionCount(self):
-		return len(self.clients)
+		return len(self.clients.keys())
 	
 	def connectionMade(self, client, readonly = False):
 		logger.debug(u"Client connection made")
 		clientId = randomString(16)
 		messageQueue = MessageQueue(transport = self, additionalTransportArgs = [ clientId ])
 		self.clients[clientId] = { 'readonly': readonly, 'connection': client, 'messageQueue': messageQueue, 'registeredForObjectEvents': {} }
+		logger.notice(u"%s client connection made (%s), %d client(s) connected" % (self.__class__.__name__, clientId, self.connectionCount()))
 		messageQueue.start()
 		self.sendMessage({"message_type": "init", "client_id": clientId}, clientId = clientId)
 		
 	def connectionLost(self, client, reason):
 		logger.debug(u"Client connection lost")
-		for clientId in self.clients.keys():
-			if self.clients[clientId]['connection'] is client:
-				self.clients[clientId]['messageQueue'].stop()
-				self.clients[clientId]['messageQueue'].join(10)
-				del self.clients[clientId]
-				return
-	
+		clientId = u'unknown'
+		for cid in self.clients.keys():
+			if self.clients[cid]['connection'] is client:
+				clientId = cid
+				self.clients[cid]['messageQueue'].stop()
+				self.clients[cid]['messageQueue'].join(10)
+				del self.clients[cid]
+				break
+		logger.notice(u"%s client connection lost (%s), %d client(s) connected" % (self.__class__.__name__, clientId, self.connectionCount()))
+		
 	def lineReceived(self, line):
 		try:
 			logger.debug(u"Line received: '%s'" % line)
@@ -602,7 +606,7 @@ if (__name__ == '__main__'):
 			def _register(self):
 				self.registerForObjectEvents(object_types = ['OpsiClient'], operations = ['updated', 'created'])
 		
-		mb = PrintingMessageBusClient()
+		mb = PrintingMessageBusClient(url = 'https://192.168.1.14:4447/omb')
 	mb.start()
 	while not mb.isStopping():
 		time.sleep(1)
