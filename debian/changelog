@@ -1,3 +1,9 @@
+python-opsi (4.0.1.38-1) testing; urgency=low
+
+  * HostControl-Backend: added hostControl_execute
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Sun, 12 Feb 2012 23:42:37 +0100
+
 python-opsi (4.0.1.37-1) stable; urgency=low
 
   * fix hybi10Decode
