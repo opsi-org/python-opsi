@@ -454,7 +454,7 @@ class ConfigDataBackend(Backend):
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._opsiPasswdFile                = OPSI_PASSWD_FILE
 		self._maxLogfileSize                = MAX_LOGFILE_SIZE
-		self._depotId                       = None
+		self._depotId                       = getfqdn(conf=OPSI_GLOBAL_CONF)
 		
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -468,9 +468,7 @@ class ConfigDataBackend(Backend):
 				self._depotId = value
 			elif option in ('maxlogfilesize',):
 				self._maxLogfileSize = forceInt(value)
-		
-		if not self._depotId:
-			self._depotId = getfqdn(conf=OPSI_GLOBAL_CONF)
+			
 		self._depotId = forceHostId(self._depotId)
 		
 		self._options['additionalReferentialIntegrityChecks'] = True

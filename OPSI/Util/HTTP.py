@@ -56,6 +56,7 @@ connectionPools = {}
 totalRequests = 0
 
 def hybi10Encode(data):
+	data = data.strip()
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	frame = [ 0x81 ]
 	mask = [ random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255) ]
@@ -78,8 +79,7 @@ def hybi10Encode(data):
 	return encodedData
 
 def hybi10Decode(data):
-	if (len(data.strip()) < 2):
-		return ''
+	data = data.strip()
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	mask = ''
 	codedData = ''
@@ -87,7 +87,6 @@ def hybi10Decode(data):
 	secondByte = bin(ord(data[1]))[2:]
 	masked = False
 	dataLength = ord(data[1])
-	
 	if (secondByte[0] == '1'):
 		masked = True
 		dataLength = ord(data[1]) & 127
@@ -111,6 +110,7 @@ def hybi10Decode(data):
 			decodedData = data[10:]
 		else:
 			decodedData = data[2:]
+	
 	return decodedData
 
 def non_blocking_connect_http(self, connectTimeout=0):
@@ -695,25 +695,7 @@ if (__name__ == '__main__'):
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
 	
-	import string
-	import random
-	def string_generator(size):
-		return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(size))
-	
-	
-	randstring = u'[{"operations": ["created", "deleted", "updated"], "message_type": "register_for_object_events", "client_id": "nJ87nTA7Fph8n29C", "object_types": ["OpsiClient", "ProductOnClient", "BootConfiguration", "ProductOnDepot", "ConfigState"]}]'
-	randstring = randstring.encode('utf-8')
-	encoded = hybi10Encode(randstring)
-	decoded = hybi10Decode(encoded)
-	if (randstring != decoded):
-		raise Exception("'%s' != '%s'" % (randstring, decoded))
-	
-	for i in range(1000):
-		randstring = string_generator(random.randint(1,10000))
-		encoded = hybi10Encode(randstring)
-		decoded = hybi10Decode(encoded)
-		if (randstring != decoded):
-			raise Exception("'%s' != '%s'" % (randstring, decoded))
+	print generateWebsocketKey()
 	
 	#pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
 	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})

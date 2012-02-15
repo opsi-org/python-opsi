@@ -70,13 +70,7 @@ try:
 	f.close()
 except Exception, e:
 	pass
-DISTRELEASE = 'unknown'
-try:
-	f = os.popen('lsb_release -r 2>/dev/null')
-	DISTRELEASE = f.read().split(':')[1].strip()
-	f.close()
-except Exception, e:
-	pass
+
 
 class MessageBusNotifier(BackendModificationListener):
 	def __init__(self, startReactor=True):
@@ -513,13 +507,9 @@ class BackendAccessControl(object):
 		
 		if (DISTRIBUTOR.lower().find('suse') != -1):
 			self._pamService = 'sshd'
-		elif (DISTRIBUTOR.lower().find('centos') != -1) or (DISTRIBUTOR.lower().find('scientificsl') != -1) or (DISTRIBUTOR.lower().find('sme') != -1):
+		elif (DISTRIBUTOR.lower().find('redhat') != -1) or (DISTRIBUTOR.lower().find('centos') != -1) or (DISTRIBUTOR.lower().find('scientificsl') != -1) or (DISTRIBUTOR.lower().find('sme') != -1):
 			self._pamService = 'system-auth'
-		elif (DISTRIBUTOR.lower().find('redhat') != -1):
-			self._pamService = 'system-auth'
-			if (DISTRELEASE.startswith('6.')):
-				self._pamService = 'password-auth'
-				
+		
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('username',):
