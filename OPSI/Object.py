@@ -541,7 +541,7 @@ class OpsiDepotserver(Host):
 		if self.opsiHostKey is None:
 			self.setOpsiHostKey(generateOpsiHostKey())
 		if self.isMasterDepot is None:
-			self.setIsMasterDepot(False)
+			self.setIsMasterDepot(True)
 		
 	def getOpsiHostKey(self):
 		return self.opsiHostKey

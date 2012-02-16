@@ -1,8 +1,8 @@
 python-opsi (4.0.1.38-1) testing; urgency=low
 
   * HostControl-Backend: added hostControl_execute
-  * 20_legacy.conf: added setProductActionRequestWithDependencies
-  * Backend.py: host_createOpsiDepotserver host_createOpsiConfigserver: new default: isMasterDepot=True
+  * 10_opsi.conf: added setProductActionRequestWithDependencies
+  * Object.py: OpsiDepotserver new default: isMasterDepot=True
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 15 Feb 2012 13:42:37 +0100
 
