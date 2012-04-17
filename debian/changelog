@@ -1,3 +1,9 @@
+python-opsi (4.0.1.39-1) testing; urgency=low
+
+  * 20_legacy.conf: method getProductDependencies_listOfHashes fix.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 17 Apr 2012 16:51:08 +0200
+
 python-opsi (4.0.1.38-1) testing; urgency=low
 
   * HostControl-Backend: added hostControl_execute
