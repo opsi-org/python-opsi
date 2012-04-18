@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.1.1'
 
 # Globals
 DEFAULT_TMP_DIR           = u'/tmp'
@@ -53,7 +53,8 @@ from OPSI.Logger import *
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import *
 from OPSI.Util import randomString, findFiles
-from OPSI.System import execute
+from OPSI.System import execute, getDiskSpaceUsage
+
 
 logger = Logger()
 
@@ -494,7 +495,9 @@ class ProductPackageSource(object):
 		
 		try:
 			archives = []
+			diskusage = 0
 			dirs = [ u'CLIENT_DATA', u'SERVER_DATA', u'OPSI' ]
+			
 			if self.customName:
 				found = False
 				for i in range(len(dirs)):
@@ -507,6 +510,23 @@ class ProductPackageSource(object):
 							dirs.append(customDir)
 				if not found:
 					raise Exception(u"No custom dirs found for '%s'" % self.customName)
+			
+			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
+			for d in dirs:
+				if not os.path.exists( os.path.join(self.packageSourceDir, d) ) and (d != u'OPSI'):
+					logger.info(u"Directory '%s' does not exist" % os.path.join(self.packageSourceDir, d))
+					continue
+				fileList = findFiles(
+					os.path.join(self.packageSourceDir, d),
+					excludeDir  = EXCLUDE_DIRS_ON_PACK,
+					excludeFile = EXCLUDE_FILES_ON_PACK,
+					followLinks = self.dereference )
+				if fileList:
+					for f in fileList:
+						diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, d, f))
+			if diskusage >= 2147483648:
+				logger.info(u"Switching to tar format, because sourcefiles overrides cpio sizelimit.")
+				self.format = u'tar'
 			
 			for d in dirs:
 				if not os.path.exists( os.path.join(self.packageSourceDir, d) ) and (d != u'OPSI'):

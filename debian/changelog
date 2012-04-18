@@ -1,5 +1,7 @@
 python-opsi (4.0.1.39-1) testing; urgency=low
 
+  * opsi-makeproductfile: switch to tar format if source files take
+      then 2GB of diskusage, to prevent a override of cpio sizelimit.
   * 20_legacy.conf: method getProductDependencies_listOfHashes fix.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 17 Apr 2012 16:51:08 +0200
