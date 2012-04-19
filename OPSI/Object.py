@@ -2405,19 +2405,13 @@ class AuditSoftware(Entity):
 		return self.name
 	
 	def setVersion(self, version):
-		if not version:
-			self.version = u''
-		else:
-			self.version = forceUnicodeLower(version)
+		self.version = forceUnicodeLower(version)
 	
 	def getVersion(self):
 		return self.version
 	
 	def setSubVersion(self, subVersion):
-		if not subVersion:
-			self.subVersion = u''
-		else:
-			self.subVersion = forceUnicodeLower(subVersion)
+		self.subVersion = forceUnicodeLower(subVersion)
 	
 	def getSubVersion(self):
 		return self.subVersion

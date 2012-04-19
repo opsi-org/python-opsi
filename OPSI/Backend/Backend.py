@@ -804,11 +804,6 @@ class ConfigDataBackend(Backend):
 	def product_deleteObjects(self, products):
 		productByIdAndVersion = {}
 		for product in forceObjectClassList(products, Product):
-			# Remove from groups
-			self._context.objectToGroup_deleteObjects(
-				self._context.objectToGroup_getObjects(
-					groupType = 'ProductGroup',
-					objectId  = product.id ))
 			if not productByIdAndVersion.has_key(product.id):
 				productByIdAndVersion[product.id] = {}
 			if not productByIdAndVersion[product.id].has_key(product.productVersion):
@@ -830,7 +825,6 @@ class ConfigDataBackend(Backend):
 					productId      = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
-			
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersionsWillBeDeleted = True
 			for product in self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'], id = productId):
@@ -839,6 +833,12 @@ class ConfigDataBackend(Backend):
 					break
 			if not allProductVersionsWillBeDeleted:
 				continue
+			
+			# Remove from groups, when allProductVerionsWillBeDelted
+			self._context.objectToGroup_deleteObjects(
+				self._context.objectToGroup_getObjects(
+					groupType = 'ProductGroup',
+					objectId  = productId ))
 			self._context.productOnClient_deleteObjects(
 				self._context.productOnClient_getObjects(productId = productId)
 			)

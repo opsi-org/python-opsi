@@ -84,16 +84,16 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		
 		setActionRequestToNone = False
 		if not availableProductsByProductId.has_key(dependency.requiredProductId):
-			logger.warning(u"   product '%s' defines dependency to product '%s', which is not avaliable on depot" \
+			logger.error(u"   product '%s' defines dependency to product '%s', which is not avaliable on depot" \
 								% (productId, dependency.requiredProductId))
 			setActionRequestToNone = True
 		
 		elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion):
-			logger.warning(u"   product '%s' defines dependency to product '%s', but product version '%s' is not available" \
+			logger.error(u"   product '%s' defines dependency to product '%s', but product version '%s' is not available" \
 								% (productId, dependency.requiredProductId, dependency.requiredProductVersion))
 			setActionRequestToNone = True
 		elif (not dependency.requiredPackageVersion is None and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion):
-			logger.warning(u"   product '%s' defines dependency to product '%s', but package version '%s' is not available" \
+			logger.error(u"   product '%s' defines dependency to product '%s', but package version '%s' is not available" \
 								% (productId, dependency.requiredProductId, dependency.requiredPackageVersion))
 			setActionRequestToNone = True
 		
