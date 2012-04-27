@@ -6,6 +6,8 @@ python-opsi (4.0.1.39-1) testing; urgency=low
   * fix loosing membership in productGroups when upgrading opsi-packages
   * setProductActionRequestWithDepedencies:
       Raising exeption if required packages are not available.
+  * fix setVersion for auditSoftware and auditSoftwareOnClient
+      software Version 0 will be produce '0' and not ''
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 17 Apr 2012 16:51:08 +0200
 
