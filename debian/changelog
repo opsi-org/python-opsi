@@ -1,3 +1,9 @@
+python-opsi (4.0.1.40-1) testing; urgency=low
+
+  * Fix getArchitecture for Windows-Systems (opsiclientd)
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 08 May 2012 15:27:08 +0200
+
 python-opsi (4.0.1.39-1) testing; urgency=low
 
   * opsi-makeproductfile: switch to tar format if source files take

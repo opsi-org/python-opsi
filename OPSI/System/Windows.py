@@ -127,9 +127,13 @@ def removeSystemHook(hook):
 # -                                               INFO                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getArchitecture():
-	if (2**63-1 == sys.maxint):
-		return u'x64'
-	return u'x86'
+	try:
+		if win32process.IsWow64Process():
+			return u'x64'
+		else:
+			return u'x86'
+	except Exception, e:
+		logger.error("Error by determining OS-Architecture: '%s'; returning default: 'x86'")
 
 def getOpsiHotfixName():
 	arch = getArchitecture()
