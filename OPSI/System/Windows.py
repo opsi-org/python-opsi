@@ -722,17 +722,20 @@ def getActiveSessionIds():
 	#for s in win32ts.WTSEnumerateSessions():
 	#	logger.debug(u"   Found session: %s" % s)
 	#	sessionIds.append(forceInt(s['SessionId']))
-	for s in win32security.LsaEnumerateLogonSessions():
-		sessionData = win32security.LsaGetLogonSessionData(s)
-		if not forceInt(sessionData['LogonType']) in (2, 10):
-			continue
-		sessionId = forceInt(sessionData['Session'])
-		if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
-			# Service session
-			continue
-		logger.debug(u"   Found session: %s" % sessionData)
-		if not sessionId in sessionIds:
-			sessionIds.append(sessionId)
+	try:
+		for s in win32security.LsaEnumerateLogonSessions():
+			sessionData = win32security.LsaGetLogonSessionData(s)
+			if not forceInt(sessionData['LogonType']) in (2, 10):
+				continue
+			sessionId = forceInt(sessionData['Session'])
+			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
+				# Service session
+				continue
+			logger.debug(u"   Found session: %s" % sessionData)
+			if not sessionId in sessionIds:
+				sessionIds.append(sessionId)
+	except Exception,e:
+		logger.error(u"Failed to getActiveSessions: '%s'" % (forceUnicode(e))
 	return sessionIds
 
 def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
