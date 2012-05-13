@@ -40,7 +40,7 @@ import re, os, time, socket, sys, locale, subprocess, difflib, threading
 # Win32 imports
 from ctypes import *
 import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
-import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg, win32ts
+import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
 import win32pdhutil, win32pdh, win32pipe, msvcrt
 import win32profile
 
@@ -720,7 +720,7 @@ def getActiveSessionIds():
 	sessionIds = []
 	logger.debug(u"Getting active sessions")
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
-		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64"
+		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 			
 		for s in win32ts.WTSEnumerateSessions():
 			logger.debug(u"   Found session: %s" % s)
