@@ -747,7 +747,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	sessionIds = []
 	newest = None
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
-		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64"
+		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 			
 		for s in win32ts.WTSEnumerateSessions():
 			sessionData = win32ts.WTSQuerySessionInformation(s)
