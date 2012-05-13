@@ -40,7 +40,7 @@ import re, os, time, socket, sys, locale, subprocess, difflib, threading
 # Win32 imports
 from ctypes import *
 import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
-import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
+import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg, win32ts
 import win32pdhutil, win32pdh, win32pipe, msvcrt
 import win32profile
 
