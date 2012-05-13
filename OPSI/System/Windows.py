@@ -719,10 +719,13 @@ def getActiveDesktopName():
 def getActiveSessionIds():
 	sessionIds = []
 	logger.debug(u"Getting active sessions")
-	#for s in win32ts.WTSEnumerateSessions():
-	#	logger.debug(u"   Found session: %s" % s)
-	#	sessionIds.append(forceInt(s['SessionId']))
-	try:
+	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
+		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64"
+			
+		for s in win32ts.WTSEnumerateSessions():
+			logger.debug(u"   Found session: %s" % s)
+			sessionIds.append(forceInt(s['SessionId']))
+	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
 			if not forceInt(sessionData['LogonType']) in (2, 10):
@@ -734,37 +737,55 @@ def getActiveSessionIds():
 			logger.debug(u"   Found session: %s" % sessionData)
 			if not sessionId in sessionIds:
 				sessionIds.append(sessionId)
-	except Exception,e:
-		logger.error(u"Failed to getActiveSessions: '%s'" % (forceUnicode(e))
 	return sessionIds
 
 def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
+	logger.debug("Getting ActiveSessionId")
 	defaultSessionId = getActiveConsoleSessionId()
 	if (sys.getwindowsversion()[0] >= 6) and (defaultSessionId == 0):
 		defaultSessionId = 1
 	sessionIds = []
 	newest = None
-	for s in win32security.LsaEnumerateLogonSessions():
-		sessionData = win32security.LsaGetLogonSessionData(s)
-		if not forceInt(sessionData['LogonType']) in (2, 10):
-			continue
-		sessionId = forceInt(sessionData['Session'])
-		if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
-			# Service session
-			continue
-		
-		logger.debug(u"   Found session: %s" % sessionData)
-		
-		if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
-			continue
-		
-		if not sessionId in sessionIds:
-			sessionIds.append(sessionId)
-		if newest:
-			if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
+		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64"
+			
+		for s in win32ts.WTSEnumerateSessions():
+			sessionData = win32ts.WTSQuerySessionInformation(s)
+			logger.debug(u"   Found session: %s" % s)
+			sessionIds.append(forceInt(s['SessionId']))
+			
+			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
+				continue
+			
+			if not sessionId in sessionIds:
+				sessionIds.append(sessionId)
+			if newest:
+				if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+					newest = sessionData
+			else:
 				newest = sessionData
-		else:
-			newest = sessionData
+	else:
+		for s in win32security.LsaEnumerateLogonSessions():
+			sessionData = win32security.LsaGetLogonSessionData(s)
+			if not forceInt(sessionData['LogonType']) in (2, 10):
+				continue
+			sessionId = forceInt(sessionData['Session'])
+			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
+				# Service session
+				continue
+			
+			logger.debug(u"   Found session: %s" % sessionData)
+			
+			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
+				continue
+			
+			if not sessionId in sessionIds:
+				sessionIds.append(sessionId)
+			if newest:
+				if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+					newest = sessionData
+			else:
+				newest = sessionData
 	if (len(sessionIds) == 0):
 		return defaultSessionId
 	if newest:
