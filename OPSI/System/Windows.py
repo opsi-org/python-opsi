@@ -722,10 +722,10 @@ def getActiveSessionIds():
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute("utilities\sessionhelper\getActiveSessionIds.exe")
+			result = execute(os.path.join(sys.path[0],"utilities\sessionhelper\getActiveSessionIds.exe"))
 			sessionIds = result[0]
 		except Exception,e:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path))
+			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
@@ -751,10 +751,10 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute("utilities\sessionhelper\getActiveSessionIds.exe")
+			result = execute(os.path.join(sys.path[0],"utilities\sessionhelper\getActiveSessionIds.exe"))
 			sessionIds = result[0]
 		except Exception,e:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path))
+			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
@@ -817,12 +817,12 @@ def getSessionInformation(sessionId):
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute("utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId)
+			result = execute(os.path.join(sys.path[0],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId))
 			sessionData = result[0]
 			if sessionData:
 				return sessionData
 		except Exception,e:
-			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path))
+			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
