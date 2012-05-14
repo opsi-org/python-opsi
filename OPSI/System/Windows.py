@@ -725,6 +725,7 @@ def getActiveSessionIds():
 			result = execute("utilities\sessionhelper\getActiveSessionIds.exe")
 			sessionIds = result[0]
 		except Exception,e:
+			logger.debug("Working directory: '%s'" % os.getcwd())
 			logger.logException(e)
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
@@ -753,6 +754,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 			result = execute("utilities\sessionhelper\getActiveSessionIds.exe")
 			sessionIds = result[0]
 		except Exception,e:
+			logger.debug("Working directory: '%s'" % os.getcwd())
 			logger.logException(e)
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
@@ -820,6 +822,7 @@ def getSessionInformation(sessionId):
 			if sessionData:
 				return sessionData
 		except Exception,e:
+			logger.debug("Working directory: '%s'" % os.getcwd())
 			logger.logException(e)
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
