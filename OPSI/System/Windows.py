@@ -721,8 +721,11 @@ def getActiveSessionIds():
 	logger.debug(u"Getting active sessions")
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
-			
-		return sessionIds
+		try:
+			result = execute("utilities\sessionhelper\getActiveSessionIds.exe")
+			sessionIds = result[0]
+		except Exception,e:
+			pass
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
@@ -746,8 +749,11 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	newest = None
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
-			
-		return defaultSessionId
+		try:
+			result = execute("utilities\sessionhelper\getActiveSessionIds.exe")
+			sessionIds = result[0]
+		except Exception,e:
+			pass
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
@@ -806,6 +812,15 @@ def getSessionInformation(sessionId):
 	'LogonDomain': u'COMPUTERNAME',
 	'LogonTime': <PyTime:19.04.2010 16:33:07>}
 	"""
+	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
+		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
+		try:
+			result = execute("utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId)
+			sessionData = result[0]
+			if sessionData:
+				return sessionData
+		except Exception,e:
+			pass
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		if (forceInt(sessionData['Session']) == sessionId):

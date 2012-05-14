@@ -1,6 +1,7 @@
 python-opsi (4.0.1.40-1) testing; urgency=low
 
   * Fix getArchitecture for Windows-Systems (opsiclientd)
+  * Workarround for WinAPI Bug: LSAGetLogonSessionData in NT5 x64
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 08 May 2012 15:27:08 +0200
 
