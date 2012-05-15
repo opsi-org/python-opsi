@@ -716,13 +716,13 @@ def getActiveDesktopName():
 	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
 	return forceUnicode(win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME))
 
-def getActiveSessionIds():
+def getActiveSessionIds(winApiBugCommand = None):
 	sessionIds = []
 	logger.debug(u"Getting active sessions")
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
+			result = execute(winApiBugCommand, shell=False)
 			sessionIds = forceList(eval(result[0]))
 			logger.debug(u"   Found sessionIds: %s" % sessionIds)
 		except Exception,e:
@@ -742,7 +742,7 @@ def getActiveSessionIds():
 				sessionIds.append(sessionId)
 	return sessionIds
 
-def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
+def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand = None):
 	logger.debug("Getting ActiveSessionId")
 	defaultSessionId = getActiveConsoleSessionId()
 	if (sys.getwindowsversion()[0] >= 6) and (defaultSessionId == 0):
@@ -752,10 +752,10 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
+			result = execute(winApiBugCommand, shell=False)
 			logger.debug(u"   Found sessionIds: %s" % eval(result[0]))
 			for sessionId in forceList(eval(result[0])):
-				res = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId), shell=False)
+				res = execute("%s %s" % (winApiBugCommand,sessionId), shell=False)
 				sessionData = forceDict(eval(res[0]))
 				if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
 					continue
@@ -804,7 +804,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 		return defaultSessionId
 	return sessionIds[0]
 	
-def getSessionInformation(sessionId):
+def getSessionInformation(sessionId, winApiBugCommand = None):
 	#info = {}
 	#for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
 	#                  'WTSOEMId', 'WTSUserName', 'WTSWinStationName', 'WTSWorkingDirectory', 'WTSClientProtocolType', 'WTSClientProductId',
@@ -831,7 +831,7 @@ def getSessionInformation(sessionId):
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId), shell=False)
+			result = execute("%s %s" % (winApiBugCommand,sessionId), shell=False)
 			sessionData = forceDict(eval(result[0]))
 			if sessionData:
 				logger.debug(u"   Found session: %s" % sessionData)
@@ -845,10 +845,10 @@ def getSessionInformation(sessionId):
 			return sessionData
 	return {}
 
-def getActiveSessionInformation():
+def getActiveSessionInformation(winApiBugCommand = None):
 	info = []
-	for sessionId in getActiveSessionIds():
-		info.append(getSessionInformation(sessionId))
+	for sessionId in getActiveSessionIds(winApiBugCommand):
+		info.append(getSessionInformation(sessionId, winApiBugCommand))
 	return info
 
 def getUserSessionIds(username):
