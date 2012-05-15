@@ -722,7 +722,7 @@ def getActiveSessionIds():
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute([os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe")])
+			result = execute([os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe")], shell=False)
 			sessionIds = result[0]
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
@@ -751,7 +751,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute([os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe")])
+			result = execute([os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe")], shell=False)
 			sessionIds = result[0]
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
@@ -817,7 +817,7 @@ def getSessionInformation(sessionId):
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
-			result = execute([os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId)])
+			result = execute([os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId)], shell=False)
 			sessionData = result[0]
 			if sessionData:
 				return sessionData
@@ -1087,13 +1087,14 @@ def addUserToWindowStation(winsta, userSid):
 def which(cmd):
 	raise NotImplementedError(u"which() not implemented on windows")
 
-def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
+def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True):
 	cmd             = forceUnicode(cmd)
 	waitForEnding   = forceBool(waitForEnding)
 	getHandle       = forceBool(getHandle)
 	exitOnStderr    = forceBool(exitOnStderr)
 	captureStderr   = forceBool(captureStderr)
 	timeout         = forceInt(timeout)
+	shell              = forceBool(shell)
 	
 	exitCode = 0
 	result = []
@@ -1103,9 +1104,9 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 		logger.info(u"Executing: %s" % cmd)
 		if getHandle:
 			if captureStderr:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
+				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)).stdout
 			else:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
+				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None)).stdout
 		else:
 			data = ''
 			stderr = None
@@ -1113,7 +1114,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr	= subprocess.PIPE
 			proc = subprocess.Popen(
 				cmd,
-				shell	= True,
+				shell	= shell,
 				stdin	= subprocess.PIPE,
 				stdout	= subprocess.PIPE,
 				stderr	= stderr,
