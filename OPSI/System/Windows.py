@@ -754,7 +754,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 		try:
 			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
 			logger.debug(u"   Found sessionIds: %s" % eval(result[0]))
-			for sessionId in forceList(result[0]):
+			for sessionId in forceList(eval(result[0])):
 				res = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId), shell=False)
 				sessionData = forceDict(eval(res[0]))
 				if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
