@@ -753,18 +753,19 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
 			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
-			sessionIds = result[0]
 			logger.debug(u"   Found sessionIds: %s" % sessionIds)
-			if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
-				continue
-			
-			if not sessionId in sessionIds:
-				sessionIds.append(sessionId)
-			if newest:
-				if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+			for sessionId in result[0]:
+				sessionData = result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId), shell=False)
+				if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
+					continue
+				
+				if not sessionId in sessionIds:
+					sessionIds.append(sessionId)
+				if newest:
+					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+						newest = sessionData
+				else:
 					newest = sessionData
-			else:
-				newest = sessionData
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
