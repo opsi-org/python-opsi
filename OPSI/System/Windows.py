@@ -851,7 +851,7 @@ def getActiveSessionInformation(winApiBugCommand = None):
 		info.append(getSessionInformation(sessionId, winApiBugCommand))
 	return info
 
-def getUserSessionIds(username):
+def getUserSessionIds(username, winApiBugCommand = None):
 	sessionIds = []
 	if not username:
 		return sessionIds
@@ -860,7 +860,7 @@ def getUserSessionIds(username):
 	if (username.find('\\') != -1):
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
-	for session in getActiveSessionInformation():
+	for session in getActiveSessionInformation(winApiBugCommand):
 		#if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
 		#     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
 		#	sessionIds.append(session.get('WTSSessionId'))
