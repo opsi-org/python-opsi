@@ -724,6 +724,7 @@ def getActiveSessionIds():
 		try:
 			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
 			sessionIds = result[0]
+			logger.debug(u"   Found sessionIds: %s" % sessionIds)
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
@@ -753,6 +754,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 		try:
 			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
 			sessionIds = result[0]
+			logger.debug(u"   Found sessionIds: %s" % sessionIds)
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
@@ -820,6 +822,7 @@ def getSessionInformation(sessionId):
 			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId), shell=False)
 			sessionData = result[0]
 			if sessionData:
+				logger.debug(u"   Found session: %s" % sessionData)
 				return sessionData
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
