@@ -753,8 +753,8 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe"):
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
 			result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe"), shell=False)
-			logger.debug(u"   Found sessionIds: %s" % sessionIds)
-			for sessionId in result[0]:
+			logger.debug(u"   Found sessionIds: %s" % result[0])
+			for sessionId in forceList(result[0]):
 				sessionData = result = execute(os.path.join(sys.path[0][:-15],"utilities\sessionhelper\getActiveSessionIds.exe %s" % sessionId), shell=False)
 				if verifyProcessRunning and not getPids(verifyProcessRunning, sessionId = sessionId):
 					continue
