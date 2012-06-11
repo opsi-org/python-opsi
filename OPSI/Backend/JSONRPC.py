@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.1'
+__version__ = '4.0.2'
 
 # Imports
 import base64, new, stat, time, threading, zlib, threading, socket
@@ -629,6 +629,10 @@ class JSONRPCBackend(Backend):
 			headers['Content-Encoding'] = 'gzip'
 			level = 1
 			data = zlib.compress(data, level)
+			# Fix for python 2.7
+			# http://bugs.python.org/issue12398
+			if (version_info >= (2,7)):
+				data = bytearray(data)
 		else:
 			headers['content-type'] = 'application/json-rpc'
 		
