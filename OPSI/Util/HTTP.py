@@ -135,6 +135,8 @@ def non_blocking_connect_http(self, connectTimeout=0):
 			if e[0] not in (114, ) or not lastError:
 				lastError = e
 			time.sleep(0.5)
+		finally:
+			sock.close()
 	sock.settimeout(None)
 	self.sock = sock
 	
