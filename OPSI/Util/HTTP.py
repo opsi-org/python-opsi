@@ -128,6 +128,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 			sock.connect((self.host, self.port))
 			break
 		except socket.error, e:
+			logger.logException(e, LOG_DEBUG)
 			logger.debug(e)
 			if e[0] in (106, 10056):
 				# Transport endpoint is already connected
@@ -135,8 +136,6 @@ def non_blocking_connect_http(self, connectTimeout=0):
 			if e[0] not in (114, ) or not lastError:
 				lastError = e
 			time.sleep(0.5)
-		finally:
-			sock.close()
 	sock.settimeout(None)
 	self.sock = sock
 	

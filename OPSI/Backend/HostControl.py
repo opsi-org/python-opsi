@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.1'
+__version__ = '4.0.2.2'
 
 # Imports
 import socket, threading, httplib, base64, time, struct
@@ -44,7 +44,7 @@ from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
-from OPSI.Util.HTTP import non_blocking_connect_https, HTTPSConnection
+from OPSI.Util.HTTP import non_blocking_connect_https
 
 # Get logger instance
 logger = Logger()
@@ -110,17 +110,23 @@ class ConnectionThread(KillableThread):
 	def run(self):
 		try:
 			self.started = time.time()
+			timeout = self.hostControlBackend._hostRpcTimeout
+			if (timeout < 0):
+				timeout = 0
+				
 			logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
-			conn = HTTPSConnection(host = self.address, port = self.hostControlBackend._opsiclientdPort)
+			conn = httplib.HTTPSConnection(host = self.address, port = self.hostControlBackend._opsiclientdPort)
 			non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
 			if conn:
 				self.result = True
 				try:
-					conn.sock.close()
+					if conn.sock:
+						conn.sock.close()
 					conn.close()
 				except:
 					pass
 		except Exception, e:
+			logger.logException(e, LOG_DEBUG)
 			logger.debug(e)
 		self.ended = time.time()
 
@@ -311,6 +317,7 @@ class HostControlBackend(ExtendedBackend):
 				thread.start()
 				threads.append(thread)
 			except Exception, e:
+				logger.logException(e, LOG_DEBUG)
 				result[host.id] = False
 		
 		while threads:
