@@ -313,7 +313,7 @@ class HostControlBackend(ExtendedBackend):
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
 		if not timeout:
-			timeout = self._hostRpcTimeout
+			timeout = self._hostReachableTimeout
 		timeout = forceInt(timeout)
 		
 		result = {}
@@ -347,14 +347,14 @@ class HostControlBackend(ExtendedBackend):
 					timeRunning = time.time() - thread.started
 					if (timeRunning >= timeout +5):
 							# thread still alive 5 seconds after timeout => kill
-							logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
+							logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
 							result[thread.hostId] = False
 							if not thread.ended:
 								try:
 									thread.terminate()
 								except Exception, e:
 									logger.error(u"Failed to terminate reachable thread: %s" % e)
-							ruuningThreads -= 1
+							runningThreads -= 1
 							continue
 				newThreads.append(thread)
 			threads = newThreads
