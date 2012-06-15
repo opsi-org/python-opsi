@@ -110,7 +110,7 @@ class ConnectionThread(KillableThread):
 	def run(self):
 		try:
 			self.started = time.time()
-			timeout = self.hostControlBackend._hostRpcTimeout
+			timeout = self.hostControlBackend._hostReachableTimeout
 			if (timeout < 0):
 				timeout = 0
 				
@@ -164,11 +164,17 @@ class HostControlBackend(ExtendedBackend):
 	def _getHostAddress(self, host):
 		address = None
 		if self._resolveHostAddress:
-			address = socket.gethostbyname(host.id)
+			try:
+				address = socket.gethostbyname(host.id)
+			except socket.error:
+				raise Exception(u"Failed to resolve ip address for host '%s'" % host.id)
 		if not address:
 			address = host.ipAddress
-		if not address:
-			address = socket.gethostbyname(host.id)
+		if not address and not self._resolveHostAddress:
+			try:
+				address = socket.gethostbyname(host.id)
+			except socket.error:
+				raise Exception(u"Failed to resolve ip address for host '%s'" % host.id)
 		if not address:
 			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
 		return address
@@ -301,31 +307,55 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
 	
-	def hostControl_reachable(self, hostIds=[]):
+	def hostControl_reachable(self, hostIds=[], timeout=None):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
+		hostIds = forceHostIdList(hostIds)
+		if not timeout:
+			timeout = self._hostRpcTimeout
+		timeout = forceInt(timeout)
+		
 		result = {}
 		threads = []
 		for host in self._context.host_getObjects(id = hostIds):
 			try:
 				address = self._getHostAddress(host)
-				thread = ConnectionThread(
+				threads.append(
+					ConnectionThread(
 						hostControlBackend = self,
 						hostId             = host.id,
-						address            = address)
-				thread.start()
-				threads.append(thread)
+						address            = address))
 			except Exception, e:
-				logger.logException(e, LOG_DEBUG)
+				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False
 		
+		runningThreads = 0
 		while threads:
 			newThreads = []
 			for thread in threads:
 				if thread.ended:
 					result[thread.hostId] = thread.result
+					runningThreads -= 1
 					continue
+				if not thread.started:
+					if (runningThreads < self._maxConnections):
+						logger.debug(u"Trying to check host reachable %s" % thread.hostId)
+						thread.start()
+						runningThreads += 1
+				else:
+					timeRunning = time.time() - thread.started
+					if (timeRunning >= timeout +5):
+							# thread still alive 5 seconds after timeout => kill
+							logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (rpct.hostId, rpct.address, timeRunning))
+							result[thread.hostId] = False
+							if not thread.ended:
+								try:
+									thread.terminate()
+								except Exception, e:
+									logger.error(u"Failed to terminate reachable thread: %s" % e)
+							ruuningThreads -= 1
+							continue
 				newThreads.append(thread)
 			threads = newThreads
 			time.sleep(0.1)
