@@ -1,6 +1,7 @@
 python-opsi (4.0.2.2-1) testing; urgency=low
 
   * Workarround for python 2.7 in jsonrpc-backend: compressed data will send as bytearray
+  * fix for isc-dhcp-server for oneiric and precise
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 11 Jun 2012 13:42:58 +0200
 
