@@ -77,6 +77,9 @@ class FileBackend(ConfigDataBackend):
 				self.__baseDir = forceFilename(value)
 			elif option in ('hostkeyfile',):
 				self.__hostKeyFile = forceFilename(value)
+			elif option in ('fileadmingroup',):
+				self.__fileGroup = forceUnicode(value)
+				self.__dirGroup  = forceUnicode(value)
 		
 		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
 		self.__fileGid = grp.getgrnam(self.__fileGroup)[2]
