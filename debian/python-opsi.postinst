@@ -8,7 +8,11 @@
 
 case "$1" in
 	configure)
-		if [ -z "`getent group pcpatch`" ]; then
+		fileadmingroup=$(grep "fileadmingroup" /etc/opsi/backends/file.conf | cut -d ":" -f 2 | cut -d "\"" -f 2)
+		if [ -z "$fileadmingroup" ]; then
+			fileadmingroup=pcpatch
+		fi
+		if [ -z $("getent group pcpatch")  ]; then
 			groupadd -g 992 pcpatch
 		fi
 		
