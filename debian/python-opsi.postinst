@@ -13,7 +13,7 @@ case "$1" in
 			fileadmingroup=pcpatch
 		fi
 		if [ -z "$(getent group $fileadmingroup)"  ]; then
-			groupadd -g 992 pcpatch
+			groupadd -g 992 $fileadmingroup
 		fi
 		
 		if [ -z "`getent passwd pcpatch`" ]; then
@@ -24,19 +24,19 @@ case "$1" in
 			groupadd opsiadmin
 		fi
 		
-		chown -R root:pcpatch /etc/opsi/backendManager
+		chown -R root:$fileadmingroup /etc/opsi/backendManager
 		find /etc/opsi/backendManager -type d -exec chmod 770 {} \;
 		find /etc/opsi/backendManager -type f -exec chmod 660 {} \;
-		chown -R root:pcpatch /etc/opsi/backends
+		chown -R root:$fileadmingroup /etc/opsi/backends
 		chmod 770 /etc/opsi/backends
 		chmod 660 /etc/opsi/backends/*.conf
 		
 		test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
-		chown root:pcpatch /etc/opsi/pckeys
+		chown root:$fileadmingroup /etc/opsi/pckeys
 		chmod 660 /etc/opsi/pckeys
 		
 		test -e /etc/opsi/passwd || touch /etc/opsi/passwd
-		chown root:pcpatch /etc/opsi/passwd
+		chown root:$fileadmingroup /etc/opsi/passwd
 		chmod 660 /etc/opsi/passwd
 		
 		[ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf
