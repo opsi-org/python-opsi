@@ -845,6 +845,100 @@ class PackageControlFile(TextFile):
 		self.open('w')
 		self.writelines()
 		self.close()
+
+class OpsiConfFile(IniFile):
+	
+	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
+	optionRegex = re.compile('^([^\:]+)\s*\=\s*(.*)$')
+	
+	def __init__(self, filename, lockFailTimeout = 2000):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
+		self._parsed = False
+		self._sections = False
+		self._opsiGroups = {}
+	
+	def parse(self, lines=None):
+		if lines:
+			self._lines = forceUnicodeListe(lines)
+		else:
+			self.readlines()
+		self.parsed = False
+		self._sections = {}
+		self._opsiConfig = {}
+		
+		sectionType = None
+		lineNum = 0
+		
+		for line in self._lines:
+			lineNum += 1
+			
+			if (len(line) > 0) and line[0] in (';', '#'):
+				# Comment
+				continue
+				
+			line = line.replace('\r', '')
+			
+			match = self.sectionRegex.search(line)
+			if match:
+				sectionType = match.group(1).strip().lower()
+				if sectionType not in ('groups'):
+					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
+			elif not sectionType and line:
+				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+			
+			key = None
+			value = None
+			
+			match = self.optionRegex.search(line)
+			
+			if match:
+				key = match.group(1).lower()
+				value = match.group(2).lower()
+			
+			if (sectionType == "groups"):
+				if (key == "fileadmingroup"):
+					value = forceUnicodeLower(value)
+				else:
+					value = forceUnicodeList(value)
+				if not self._opsiConfig.has_key("groups"):
+					self._opsiConfig["groups"] = {}
+				self._opsiConfig["groups"][key] = value                
+			
+			if not option:
+				raise Exception(u"Parse error in line '%s': no option / bad option defined" % lineNum)
+		self._parsed = True
+		return self._opsiConfig
+	
+	def getOpsiFileAdmins(self):
+		if not self._parsed:
+			self.parse()
+		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
+			return "pcpatch"
+		else:
+			return self._opsiConfig["groups"]["fileadmingroup"]
+	
+	def getOpsiGroups(self, groupType):
+		if not self._parsed:
+			self.parse()
+		if not self._opsiConfig.get("groups", {}).get(groupType, ""):
+			return None
+		else:
+			return self._opsiConfig["groups"][groupType]
+			
+			
+		
+			
+		
+					
+			
+			
+		
+	
+	def getOpsiFileAdminGroup(self):
+		if not self._parsed:
+			self.parse()
+		if not self.
+		
 	
 
 class OpsiBackupArchive(tarfile.TarFile):

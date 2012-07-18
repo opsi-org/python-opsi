@@ -415,7 +415,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 			sif.writelines(lines)
 			sif.close()
 
-def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None):
+def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None, auditHardwareOnHosts=None):
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	if not type(additionalDrivers) is list:
@@ -437,6 +437,26 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	
 	if messageSubject:
 		messageSubject.setMessage(u"Adding additional drivers")
+	
+	rulesdir = os.path.join(driverSourceDirectory, "rules.d")
+	if exists(rulesdir) and auditHardwareOnHosts:
+		logger.info(u"Checking if automated integrating of additional drivers are possible")
+		vendorFromHost = None
+		modelFromHost = None
+		for auditHardwareOnHost in auditHardwareOnHosts:
+			hwClass = auditHardware.getHardwareClass()
+			if (hwClass == "COMPUTER_SYSTEM"):
+				vendorFromHost = auditHardwareOnHost.vendor
+				modelFromHost  = auditHardwareOnHost.model
+		if vendorFromHost and modelFromHost:
+			additionalDriverDir = os.path.join(driverSourceDirectory, additionalDriver)
+			vendordirectories = listdir(rulesdir)
+			for vendordirectory in vendordirectories:
+				if vendordirectory.lower() == vendorFromHost.lower():
+					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
+					for modeldirectory in modeldirectories:
+						if modeldirectory.lower() == modelFromHost.lower():
+							additionalDrivers.append(os.path.join("rules.d", vendordirectory, modeldirectory))
 	
 	driverDirectories = []
 	for additionalDriver in additionalDrivers:

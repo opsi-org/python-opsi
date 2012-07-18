@@ -1970,6 +1970,13 @@ class Harddisk:
 			
 			logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
 			
+			retries = 1
+			while retries <= 5:
+				if os.path.exists(self.getPartition(partition)['device']):
+					break
+				retries += 1
+				time.sleep(2)
+			
 			if   (fs == u'fat32'):
 				cmd = u"mkfs.vfat -F 32 %s" % self.getPartition(partition)['device']
 			elif (fs == u'linux-swap'):
