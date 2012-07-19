@@ -66,10 +66,14 @@ class FileBackend(ConfigDataBackend):
 		self.__fileUser  = u'opsiconfd'
 		self.__fileGroup = u'pcpatch'
 		self.__fileMode  = 0660
+		self.__dirGroup = u'pcpatch'
 		self.__dirUser   = u'opsiconfd'
+		
 		try:
+			self.__fileGroup = OpsiConfFile().getOpsiFileAdminGroup()
 			self.__dirGroup = OpsiConfFile().getOpsiFileAdminGroup()
 		except:
+			self.__fileGroup  = u'pcpatch'
 			self.__dirGroup  = u'pcpatch'
 		self.__dirMode   = 0770
 		
@@ -80,9 +84,6 @@ class FileBackend(ConfigDataBackend):
 				self.__baseDir = forceFilename(value)
 			elif option in ('hostkeyfile',):
 				self.__hostKeyFile = forceFilename(value)
-			elif option in ('fileadmingroup',):
-				self.__fileGroup = forceUnicode(value)
-				self.__dirGroup  = forceUnicode(value)
 		
 		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
 		self.__fileGid = grp.getgrnam(self.__fileGroup)[2]

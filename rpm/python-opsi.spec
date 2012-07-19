@@ -89,9 +89,16 @@ rm -rf $RPM_BUILD_ROOT
 
 # ===[ post ]=======================================
 %post
-fileadmingroup=$(grep "fileadmingroup" /etc/opsi/opsi.conf | cut -d "=" -f 2 | sed 's/ //g')
-if [ -z "`getent group $fileadmingroup`" ]; then
-	groupadd -g 992 $fileadmingroup
+fileadmingroup=$(grep "fileadmingroup" /etc/opsi/opsi.conf | cut -d "=" -f 2 | sed 's/\s*//g')
+if [ -z "$fileadmingroup" ]; then
+	fileadmingroup=pcpatch
+fi
+if [ $fileadmingroup != pcpatch -a -z "$(getent group $fileadmingroup)" ]; then
+	groupmod -n $fileadmingroup pcpatch
+else
+	if [ -z "$(getent group $fileadmingroup)"  ]; then
+		groupadd -g 992 $fileadmingroup
+	fi
 fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
