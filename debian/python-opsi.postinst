@@ -8,7 +8,7 @@
 
 case "$1" in
 	configure)
-		fileadmingroup=$(grep "fileadmingroup" /etc/opsi/backends/file.conf | cut -d ":" -f 2 | cut -d "\"" -f 2)
+		fileadmingroup=$(grep "fileadmingroup" /etc/opsi/opsi.conf | cut -d "=" -f 2 | sed 's/ //g')
 		if [ -z "$fileadmingroup" ]; then
 			fileadmingroup=pcpatch
 		fi
@@ -30,6 +30,8 @@ case "$1" in
 		chown -R root:$fileadmingroup /etc/opsi/backends
 		chmod 770 /etc/opsi/backends
 		chmod 660 /etc/opsi/backends/*.conf
+		chown root:$fileadmingroup /etc/opsi/opsi.conf
+		chmod 660 /etc/opsi/opsi.conf
 		
 		test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
 		chown root:$fileadmingroup /etc/opsi/pckeys

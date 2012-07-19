@@ -70,7 +70,7 @@ data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default'
 				     'data/backends/multiplex.conf',
 				     'data/backends/hostcontrol.conf',
 				     'data/backends/opsipxeconfd.conf']),
-	    ('/etc/opsi/', ['data/version']),
+	    ('/etc/opsi/', ['data/version','data/opsi.conf']),
 	    ('/etc/opsi/hwaudit/', ['data/hwaudit/opsihwaudit.conf']),
 	    ('/etc/opsi/hwaudit/locales', ['data/hwaudit/locales/de_DE',
 					   'data/hwaudit/locales/en_US',

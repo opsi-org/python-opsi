@@ -89,8 +89,9 @@ rm -rf $RPM_BUILD_ROOT
 
 # ===[ post ]=======================================
 %post
-if [ -z "`getent group pcpatch`" ]; then
-	groupadd -g 992 pcpatch
+fileadmingroup=$(grep "fileadmingroup" /etc/opsi/opsi.conf | cut -d "=" -f 2 | sed 's/ //g')
+if [ -z "`getent group $fileadmingroup`" ]; then
+	groupadd -g 992 $fileadmingroup
 fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
@@ -101,19 +102,21 @@ if [ -z "`getent group opsiadmin`" ]; then
 	groupadd opsiadmin
 fi
 
-chown -R root:pcpatch /etc/opsi/backendManager
+chown -R root:$fileadmingroup /etc/opsi/backendManager
 find /etc/opsi/backendManager -type d -exec chmod 770 {} \;
 find /etc/opsi/backendManager -type f -exec chmod 660 {} \;
-chown -R root:pcpatch /etc/opsi/backends
+chown -R root:$fileadmingroup /etc/opsi/backends
 chmod 770 /etc/opsi/backends
 chmod 660 /etc/opsi/backends/*.conf
+chown root:$fileadmingroup /etc/opsi/opsi.conf
+chmod 660 /etc/opsi/opsi.conf
 
 test -e /etc/opsi/pckeys || touch /etc/opsi/pckeys
-chown root:pcpatch /etc/opsi/pckeys
+chown root:$fileadmingroup /etc/opsi/pckeys
 chmod 660 /etc/opsi/pckeys
 
 test -e /etc/opsi/passwd || touch /etc/opsi/passwd
-chown root:pcpatch /etc/opsi/passwd
+chown root:$fileadmingroup /etc/opsi/passwd
 chmod 660 /etc/opsi/passwd
 
 [ -e "/etc/opsi/backendManager/acl.conf" ]      || ln -s /etc/opsi/backendManager/acl.conf.default      /etc/opsi/backendManager/acl.conf

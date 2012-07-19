@@ -892,8 +892,8 @@ class OpsiConfFile(IniFile):
 			match = self.optionRegex.search(line)
 			
 			if match:
-				key = match.group(1).lower()
-				value = match.group(2).lower()
+				key = match.group(1).strip().lower()
+				value = match.group(2).strip().lower()
 			
 			if (sectionType == "groups"):
 				if (key == "fileadmingroup"):
@@ -904,12 +904,10 @@ class OpsiConfFile(IniFile):
 					self._opsiConfig["groups"] = {}
 				self._opsiConfig["groups"][key] = value                
 			
-			if not option:
-				raise Exception(u"Parse error in line '%s': no option / bad option defined" % lineNum)
 		self._parsed = True
 		return self._opsiConfig
 	
-	def getOpsiFileAdmins(self):
+	def getOpsiFileAdminGroup(self):
 		if not self._parsed:
 			self.parse()
 		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
@@ -924,21 +922,6 @@ class OpsiConfFile(IniFile):
 			return None
 		else:
 			return self._opsiConfig["groups"][groupType]
-			
-			
-		
-			
-		
-					
-			
-			
-		
-	
-	def getOpsiFileAdminGroup(self):
-		if not self._parsed:
-			self.parse()
-		if not self.
-		
 	
 
 class OpsiBackupArchive(tarfile.TarFile):
