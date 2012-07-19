@@ -849,9 +849,10 @@ class PackageControlFile(TextFile):
 class OpsiConfFile(IniFile):
 	
 	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
+	valueContinuationRegex = re.compile('^\s(.*)$')
 	optionRegex = re.compile('^([^\:]+)\s*\=\s*(.*)$')
 	
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename = u'/etc/opsi/opsi.conf', lockFailTimeout = 2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
 		self._parsed = False
 		self._sections = False
@@ -871,7 +872,6 @@ class OpsiConfFile(IniFile):
 		
 		for line in self._lines:
 			lineNum += 1
-			
 			if (len(line) > 0) and line[0] in (';', '#'):
 				# Comment
 				continue
@@ -885,24 +885,36 @@ class OpsiConfFile(IniFile):
 					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 			elif not sectionType and line:
 				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
-			
 			key = None
 			value = None
 			
-			match = self.optionRegex.search(line)
+			match = self.valueContinuationRegex.search(line)
+			if match:
+				value = match.group(1)
+			else:
+				match = self.optionRegex.search(line)
+				if match:
+					key = match.group(1).lower()
+					#value = match.group(2).lstrip()
+					value = match.group(2).strip()
 			
 			if match:
 				key = match.group(1).strip().lower()
 				value = match.group(2).strip().lower()
-			
 			if (sectionType == "groups"):
 				if (key == "fileadmingroup"):
 					value = forceUnicodeLower(value)
 				else:
-					value = forceUnicodeList(value)
+					if value:
+						parts = value.split(",")
+						grouplist = []
+						for part in parts:
+							grouplist.append(part.strip().lower())
+						value = forceUnicodeList(grouplist)
 				if not self._opsiConfig.has_key("groups"):
 					self._opsiConfig["groups"] = {}
-				self._opsiConfig["groups"][key] = value                
+				if key and value:
+					self._opsiConfig["groups"][key] = value
 			
 		self._parsed = True
 		return self._opsiConfig
@@ -918,6 +930,7 @@ class OpsiConfFile(IniFile):
 	def getOpsiGroups(self, groupType):
 		if not self._parsed:
 			self.parse()
+		
 		if not self._opsiConfig.get("groups", {}).get(groupType, ""):
 			return None
 		else:

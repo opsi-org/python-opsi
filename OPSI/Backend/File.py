@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.2.3'
 
 import os, socket, ConfigParser, shutil, types, pwd, grp
 
@@ -67,7 +67,10 @@ class FileBackend(ConfigDataBackend):
 		self.__fileGroup = u'pcpatch'
 		self.__fileMode  = 0660
 		self.__dirUser   = u'opsiconfd'
-		self.__dirGroup  = u'pcpatch'
+		try:
+			self.__dirGroup = OpsiConfFile().getOpsiFileAdminGroup()
+		except:
+			self.__dirGroup  = u'pcpatch'
 		self.__dirMode   = 0770
 		
 		# Parse arguments

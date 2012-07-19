@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.1.1'
+__version__ = '4.0.2.3'
 
 # Globals
 DEFAULT_TMP_DIR           = u'/tmp'
@@ -55,6 +55,11 @@ from OPSI.Util.File.Archive import *
 from OPSI.Util import randomString, findFiles
 from OPSI.System import execute, getDiskSpaceUsage
 
+try:
+	from OPSI.Util.File.Opsi import OpsiConfFile
+	DEFAULT_CLIENT_DATA_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+except:
+	DEFAULT_CLIENT_DATA_GROUP = u'pcpatch'
 
 logger = Logger()
 
