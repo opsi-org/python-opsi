@@ -12,6 +12,7 @@ HARDWARE_DEVICE.serialNumber = Numéro de série
 COMPUTER_SYSTEM = Ordinateur
 COMPUTER_SYSTEM.systemType = Type
 COMPUTER_SYSTEM.totalPhysicalMemory = Mémoire physique
+COMPUTER_SYSTEM.dellexpresscode = Dell Expresscode
 CHASSIS = Chassis
 CHASSIS.name = Nom
 CHASSIS.chassisType = Type de châssis
