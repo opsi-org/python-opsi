@@ -2477,6 +2477,7 @@ def auditHardware(config, hostId, progressSubject=None):
 		auditHardwareOnHosts = []
 		
 		info = hardwareInventory(config)
+		info = hardwareExtendedInventory(config, info)
 		for (hardwareClass, devices) in info.items():
 			if (hardwareClass == 'SCANPROPERTIES'):
 				continue
@@ -2495,7 +2496,64 @@ def auditHardware(config, hostId, progressSubject=None):
 		auditHardwareOnHosts = hook.post_auditHardware(config, hostId, auditHardwareOnHosts)
 	
 	return auditHardwareOnHosts
+
+def hardwareExtendedInventory(config, opsiValues = {}, progressSubject=None):
+	if not config:
+		logger.error(u"hardwareInventory: no config given")
+		return {}
 	
+	for hwClass in config:
+		
+		if not hwClass.get('Class') or not hwClass['Class'].get('Opsi'):
+			continue
+		
+		opsiName = hwClass['Class']['Opsi']
+		
+		logger.debug(u"Processing class '%s'" % (opsiName))
+		
+		valuesregex = re.compile("(.*)#(.*)#")
+		for item in hwClass['Values']:
+			pythonline = item.get('Python')
+			if not pythonline:
+				continue
+			condition = item.get("Condition")
+			if condition:
+				val = condition.split("=")[0]
+				r = condition.split("=")[1]
+				if val and r:
+					conditionregex = re.compile(r)
+					
+					logger.info("Condition found, try to check the Condition")
+					for i in range(len(opsiValues[opsiName])):
+						value = opsiValues[opsiName][i].get(val, "")
+						if value:
+							conditionmatch = re.search(conditionregex, value)
+
+					if not conditionmatch:
+						continue
+				match = re.search(valuesregex, pythonline)
+				if match:
+					srcfields = match.group(2)
+					fieldsdict = eval(srcfields)
+					attr = ''
+					for (key, value) in fieldsdict.items():
+						for i in range(len(opsiValues.get(key, []))):
+							attr = opsiValues.get(key)[i].get(value, '')
+						if attr:
+							break
+					if attr:
+						pythonline = pythonline.replace("#%s#" % srcfields, "'%s'" % attr)
+						result = eval(pythonline)
+						
+					if type(result) is unicode:
+						result = result.encode('utf-8')
+					if not opsiValues.has_key(opsiName):
+						opsiValues[opsiName].appen({})
+					for i in range(len(opsiValues[opsiName])):
+						opsiValues[opsiName][i][item['Opsi']] = result
+		
+	return opsiValues
+
 def hardwareInventory(config, progressSubject=None):
 	import xml.dom.minidom
 	
@@ -2737,44 +2795,6 @@ def hardwareInventory(config, progressSubject=None):
 	logger.debug2(u"Parsed dmidecode info:")
 	logger.debug2(objectToBeautifiedText(dmidecode))
 	
-	def executePython(attribute):
-		valuesregex = re.compile("(.*)#(.*)#")
-		try:
-			condition = attribute.get('Condition', ''):
-			if condition:
-				val = condition.split('=')[0]
-				r = condition.split('=')[1]
-				if val and r:
-					conditionregex = re.compile(r)
-					
-					src = opsiValues.get(opsiClass, {}).get(val, ''))
-					if src:
-						conditionmatch = re.search(conditionregex, src)
-					if not conditionmatch:
-						return
-
-			device = {}
-			source = attribute['Linux'][8:]
-			match = re.search(valuesregex, source)
-			if match:
-				srcfields = match.group(2)
-				fieldsdict = eval(srcfields)
-				attr = ''
-				for (key, value) in fieldsdict:
-					attr = opsiValues.get(key, {}).get(value, '')
-					if attr:
-						break
-				if attr:
-					source = source.replace("#%s#" % srcfields, "'%s'" % attr)
-					result = eval(source)
-					if result:
-						device[attribute['Opsi']] = value
-						return device
-		except Exception:
-			logger.warning(e)
-			device[attribute['Opsi']] = u''
-			return device
-	
 	# Build hw info structure
 	for hwClass in config:
 		
@@ -2859,11 +2879,7 @@ def hardwareInventory(config, progressSubject=None):
 					elements = [ devices[i] ]
 					if not attribute.get('Opsi') or not attribute.get('Linux'):
 						continue
-					elif attribute.get('Linux', '').startswith('[python']:
-						dev = executePython(attribute)
-						if dev:
-							opsiValues[hwClass['Class']['Opsi']].append(dev)
-						continue
+					
 					logger.debug2(u"Processing attribute '%s' : '%s'" % (attribute['Linux'], attribute['Opsi']) )
 					for attr in attribute['Linux'].split('||'):
 						attr = attr.strip()
@@ -2929,11 +2945,7 @@ def hardwareInventory(config, progressSubject=None):
 					for attribute in hwClass['Values']:
 						if not attribute.get('Linux'):
 							continue
-						elif attribute.get('Linux', '').startswith('[python']:
-							dev = executePython(attribute)
-							if dev:
-								opsiValues[hwClass['Class']['Opsi']].append(dev)
-							continue
+						
 						for aname in attribute['Linux'].split('||'):
 							aname = aname.strip()
 							method = None
@@ -2960,11 +2972,7 @@ def hardwareInventory(config, progressSubject=None):
 				for attribute in hwClass['Values']:
 					if not attribute.get('Linux') or not dev.has_key(attribute['Linux']):
 						continue
-					elif attribute.get('Linux', '').startswith('[python']:
-						dev = executePython(attribute)
-						if dev:
-							opsiValues[hwClass['Class']['Opsi']].append(dev)
-						continue
+					
 					try:
 						device[attribute['Opsi']] = dev[attribute['Linux']]
 					except Exception, e:
@@ -2980,11 +2988,7 @@ def hardwareInventory(config, progressSubject=None):
 				for attribute in hwClass['Values']:
 					if not attribute.get('Linux'):
 						continue
-					elif attribute.get('Linux', '').startswith('[python']:
-						dev = executePython(attribute)
-						if dev:
-							opsiValues[hwClass['Class']['Opsi']].append(dev)
-						continue
+					
 					try:
 						value = pycopy.deepcopy(dev)
 						for key in (attribute['Linux'].split('/')):
