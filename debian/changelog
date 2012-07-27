@@ -4,6 +4,7 @@ python-opsi (4.0.2.3-1) testing; urgency=low
   * Automated additional-driver integration support.
   * hostControl-Fix for host_reachable method.
   * added opsiFileAdminhandling, added new opsi.conf File.
+  * dellexpresscode for hwinvent implemented
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 17 Jul 2012 13:33:13 +0200
 
