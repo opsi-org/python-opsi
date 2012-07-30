@@ -446,8 +446,6 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		for auditHardwareOnHost in auditHardwareOnHosts:
 			if not auditHardwareOnHost.hardwareClass == "COMPUTER_SYSTEM":
 				continue
-			if not auditHardwareOnHost.state == 1:
-				continue
 			vendorFromHost = auditHardwareOnHost.vendor
 			modelFromHost  = auditHardwareOnHost.model
 		if vendorFromHost and modelFromHost:
@@ -457,7 +455,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
-							additionalDrivers.append(os.path.join(rulesdir, vendordirectory, modeldirectory))
+							additionalDrivers.append(os.path.join("hwaudit" , vendordirectory, modeldirectory))
 	
 	driverDirectories = []
 	for additionalDriver in additionalDrivers:
