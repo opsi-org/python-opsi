@@ -438,25 +438,26 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if messageSubject:
 		messageSubject.setMessage(u"Adding additional drivers")
 	
-	rulesdir = os.path.join(driverSourceDirectory, "rules.d")
+	rulesdir = os.path.join(driverSourceDirectory, "hwaudit")
 	if exists(rulesdir) and auditHardwareOnHosts:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		vendorFromHost = None
 		modelFromHost = None
 		for auditHardwareOnHost in auditHardwareOnHosts:
-			hwClass = auditHardware.getHardwareClass()
-			if (hwClass == "COMPUTER_SYSTEM"):
-				vendorFromHost = auditHardwareOnHost.vendor
-				modelFromHost  = auditHardwareOnHost.model
+			if not auditHardwareOnHost.hardwareClass == "COMPUTER_SYSTEM":
+				continue
+			if not auditHardwareOnHost.state == 1:
+				continue
+			vendorFromHost = auditHardwareOnHost.vendor
+			modelFromHost  = auditHardwareOnHost.model
 		if vendorFromHost and modelFromHost:
-			additionalDriverDir = os.path.join(driverSourceDirectory, additionalDriver)
 			vendordirectories = listdir(rulesdir)
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
-							additionalDrivers.append(os.path.join("rules.d", vendordirectory, modeldirectory))
+							additionalDrivers.append(os.path.join(rulesdir, vendordirectory, modeldirectory))
 	
 	driverDirectories = []
 	for additionalDriver in additionalDrivers:
