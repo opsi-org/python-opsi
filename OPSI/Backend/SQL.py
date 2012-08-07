@@ -729,7 +729,7 @@ class SQLBackend(ConfigDataBackend):
 			table = u'''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
 					`softwareLicenseId` VARCHAR(100) NOT NULL,
 					`licensePoolId` VARCHAR(100) NOT NULL,
-					`licenseKey` VARCHAR(100),
+					`licenseKey` VARCHAR(1024),
 					PRIMARY KEY (`softwareLicenseId`, `licensePoolId`),
 					FOREIGN KEY (`softwareLicenseId`) REFERENCES `SOFTWARE_LICENSE` (`softwareLicenseId`),
 					FOREIGN KEY (`licensePoolId`) REFERENCES `LICENSE_POOL` (`licensePoolId`)
@@ -745,7 +745,7 @@ class SQLBackend(ConfigDataBackend):
 					`softwareLicenseId` VARCHAR(100) NOT NULL,
 					`licensePoolId` VARCHAR(100) NOT NULL,
 					`clientId` varchar(255),
-					`licenseKey` VARCHAR(100),
+					`licenseKey` VARCHAR(1024),
 					`notes` VARCHAR(1024),
 					PRIMARY KEY (`license_on_client_id`),
 					FOREIGN KEY (`softwareLicenseId`, `licensePoolId`) REFERENCES `SOFTWARE_LICENSE_TO_LICENSE_POOL` (`softwareLicenseId`, `licensePoolId`)
@@ -818,7 +818,7 @@ class SQLBackend(ConfigDataBackend):
 					`state` TINYINT NOT NULL,
 					`usageFrequency` integer NOT NULL DEFAULT -1,
 					`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-					`licenseKey` VARCHAR(100),
+					`licenseKey` VARCHAR(1024),
 					PRIMARY KEY (`config_id`)
 				) %s;
 				''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
