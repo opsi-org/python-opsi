@@ -438,7 +438,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if messageSubject:
 		messageSubject.setMessage(u"Adding additional drivers")
 	
-	rulesdir = os.path.join(driverSourceDirectory, "hwaudit")
+	rulesdir = os.path.join(driverSourceDirectory, "byAudit")
 	if exists(rulesdir) and auditHardwareOnHosts:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		vendorFromHost = None
@@ -455,7 +455,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
-							additionalDrivers.append(os.path.join("hwaudit" , vendordirectory, modeldirectory))
+							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, modeldirectory))
 	
 	driverDirectories = []
 	for additionalDriver in additionalDrivers:

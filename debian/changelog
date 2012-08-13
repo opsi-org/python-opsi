@@ -1,7 +1,7 @@
 python-opsi (4.0.2.3-1) testing; urgency=low
 
   * Workarround for bootimage: wait if blockfile to partition not exists.
-  * Automated additional-driver integration support.
+  * Automated additional-driver - byAudit - integration support.
   * hostControl-Fix for host_reachable method.
   * added opsiFileAdminhandling, added new opsi.conf File.
   * dellexpresscode for hwinvent implemented
