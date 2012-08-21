@@ -1971,10 +1971,13 @@ class Harddisk:
 			logger.info(u"Creating filesystem '%s' on '%s'." % (fs, self.getPartition(partition)['device']))
 			
 			retries = 1
-			while retries <= 5:
+			while retries <= 6:
 				if os.path.exists(self.getPartition(partition)['device']):
 					break
 				retries += 1
+				if retries == 3:
+					logger.debug(u"Forcing kernel to reread the partitiontable again")
+					self._forceReReadPartionTable()
 				time.sleep(2)
 			
 			if   (fs == u'fat32'):
