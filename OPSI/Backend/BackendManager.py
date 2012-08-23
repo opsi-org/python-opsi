@@ -519,6 +519,8 @@ class BackendAccessControl(object):
 			self._pamService = 'system-auth'
 			if (DISTRELEASE.startswith('6.')):
 				self._pamService = 'password-auth'
+		if os.path.exists("/etc/pam.d/opsi-auth"):
+			self._pamService = 'opsi-auth'
 				
 		for (option, value) in kwargs.items():
 			option = option.lower()
