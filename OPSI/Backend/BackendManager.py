@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.2.3'
 
 import os, sys, new, inspect, re, types, socket, copy
 

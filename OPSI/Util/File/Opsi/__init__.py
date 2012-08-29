@@ -849,7 +849,6 @@ class PackageControlFile(TextFile):
 class OpsiConfFile(IniFile):
 	
 	sectionRegex = re.compile('^\s*\[([^\]]+)\]\s*$')
-	valueContinuationRegex = re.compile('^\s(.*)$')
 	optionRegex = re.compile('^([^\:]+)\s*\=\s*(.*)$')
 	
 	def __init__(self, filename = u'/etc/opsi/opsi.conf', lockFailTimeout = 2000):
@@ -888,19 +887,12 @@ class OpsiConfFile(IniFile):
 			key = None
 			value = None
 			
-			match = self.valueContinuationRegex.search(line)
-			if match:
-				value = match.group(1)
-			else:
-				match = self.optionRegex.search(line)
-				if match:
-					key = match.group(1).lower()
-					#value = match.group(2).lstrip()
-					value = match.group(2).strip()
-			
+			match = self.optionRegex.search(line)
 			if match:
 				key = match.group(1).strip().lower()
-				value = match.group(2).strip().lower()
+				#value = match.group(2).lstrip()
+				value = match.group(2).strip()
+			
 			if (sectionType == "groups"):
 				if (key == "fileadmingroup"):
 					value = forceUnicodeLower(value)
