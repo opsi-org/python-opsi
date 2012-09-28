@@ -50,7 +50,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Util import objectToBeautifiedText, getfqdn
-from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile
+from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
 
 # Get logger instance
@@ -603,6 +603,13 @@ class BackendAccessControl(object):
 	
 	def accessControl_userIsAdmin(self):
 		return self._isMemberOfGroup('opsiadmin') or self._isOpsiDepotserver()
+		
+	def accessControl_userIsReadOnlyUser(self):
+		if not accessControl_userIsAdmin():
+			readOnlyGroups = OpsiConfFile().getOpsiGroups(readonly)
+			if readOnlyGroups:
+				return self._isMemberOfGroup(readOnlyGroups)
+		return False
 	
 	def __loadACLFile(self):
 		try:
