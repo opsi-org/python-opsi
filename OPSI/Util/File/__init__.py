@@ -1368,7 +1368,22 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			   re.match('^\w+\.\w+$', value) or \
 			   self.key.endswith(u'-name') or \
 			   self.key.endswith(u'-domain') or \
-			   self.key.endswith(u'-identifier'):
+			   self.key.endswith(u'-identifier') or \
+			   self.key.endswith(u'-search') or \
+			   self.key.endswith(u'merit-dump') or \
+			   self.key.endswith(u'nds-context') or \
+			   self.key.endswith(u'netbios-scope') or \
+			   self.key.endswith(u'nwip-domain') or \
+			   self.key.endswith(u'nwip-suboptions') or \
+			   self.key.endswith(u'nis-domain') or \
+			   self.key.endswith(u'nisplus-domain') or \
+			   self.key.endswith(u'root-path') or \
+			   self.key.endswith(u'uap-servers') or \
+			   self.key.endswith(u'user-class') or \
+			   self.key.endswith(u'vendor-encapsulated-options') or \
+			   self.key.endswith(u'circuit-id') or \
+			   self.key.endswith(u'remote-id') or \
+			   self.key.endswith(u'fqdn.fqdn'):  
 				value = u'"%s"' % value
 			if (i+1 < len(self.value)):
 				value += u', '
