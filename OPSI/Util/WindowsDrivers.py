@@ -334,9 +334,14 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		txtSetupOemFile = TxtSetupOemFile(txtSetupOem)
 		driverPath = os.path.dirname(txtSetupOem)
 		supportedDevice = None
+		deviceKnown = None
 		for device in devices:
 			logger.debug2(u"Testing if textmode driver '%s' supports device %s" % (driverPath, device))
-			if txtSetupOemFile.isDeviceKnown(vendorId = device.get('vendorId'), deviceId = device.get('deviceId')):
+			try:
+				deviceKnown = txtSetupOemFile.isDeviceKnown(vendorId = device.get('vendorId'), deviceId = device.get('deviceId'))
+			except Exception, e:
+				logger.critical(u"Error by integrating TextMode driver, error was: %s" % e)
+			if deviceKnown:
 				logger.debug(u"Textmode driver '%s' supports device %s" % (driverPath, device))
 				supportedDevice = device
 				break
