@@ -2,6 +2,7 @@ python-opsi (4.0.2.4-1) testing; urgency=low
 
   * fixes method setProductActionRequestWithDependencies after host_createOpsiClient
   * added default dhcp string and text options that the values will be set in double-quotes (fixes#403)
+  * added method userIsReadOnlyUser()
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Thu, 27 Sep 2012 10:35:17 +0200
 

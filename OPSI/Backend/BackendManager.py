@@ -605,10 +605,9 @@ class BackendAccessControl(object):
 		return self._isMemberOfGroup('opsiadmin') or self._isOpsiDepotserver()
 		
 	def accessControl_userIsReadOnlyUser(self):
-		if not accessControl_userIsAdmin():
-			readOnlyGroups = OpsiConfFile().getOpsiGroups(readonly)
-			if readOnlyGroups:
-				return self._isMemberOfGroup(readOnlyGroups)
+		readOnlyGroups = OpsiConfFile().getOpsiGroups('readonly')
+		if readOnlyGroups:
+			return self._isMemberOfGroup(readOnlyGroups)
 		return False
 	
 	def __loadACLFile(self):
