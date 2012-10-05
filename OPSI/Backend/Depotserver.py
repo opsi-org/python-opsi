@@ -276,6 +276,20 @@ class DepotserverPackageManager(object):
 						productId = product.getId(),
 						objectId  = depotId ) )
 				
+				logger.info(u"Deleting not needed property states of product %s" % product.getId())
+				productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(
+					productId = product.getId() )
+				baseProperties = self._depotBackend._context.productProperty_getObjects(
+					productId = product.getId() )
+				
+				productPropertyIds = None
+				productPropertyStatesToDelete = None
+				productPropertyIds = [ productProperty.propertyId  for productProperty in  baseProperties ]
+				productPropertyStatesToDelete = [ ppState  for ppState in productPropertyStates if not ppState.propertyId in productPropertyIds ]
+				logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
+				if productPropertyStatesToDelete:
+					self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
+				
 				logger.notice(u"Setting product property states in backend")
 				productPropertyStates = []
 				for productProperty in productProperties:
