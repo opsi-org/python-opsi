@@ -39,9 +39,9 @@ Source:         python-opsi_4.0.2.3-1.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
 # also disabled for non SUSE distros
-%if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
+# %if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
 BuildArch:      noarch
-%endif
+# %endif
 %if 0%{?centos_version} || 0%{?rhel_version}
 BuildRequires:  gettext
 %else
@@ -160,7 +160,7 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/backendManager/extend.d/10_opsi.conf
 %config /etc/opsi/backendManager/extend.d/20_legacy.conf
 %config /etc/opsi/backendManager/extend.d/configed/30_configed.conf
-/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
+%config /etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US
@@ -189,6 +189,11 @@ chmod 660 /etc/opsi/passwd
 #%dir /etc/opsi/backends
 #%dir /etc/opsi/hwaudit/locales
 #%dir /etc/ldap/schema
+
+%if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
+%define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')
+%{python_sitearch}/OPSI/*
+%endif
 
 # ===[ changelog ]==================================
 %changelog
