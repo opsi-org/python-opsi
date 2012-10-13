@@ -39,9 +39,9 @@ Source:         python-opsi_4.0.2.3-1.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
 # also disabled for non SUSE distros
-# %if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
+%if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
 BuildArch:      noarch
-# %endif
+%endif
 %if 0%{?centos_version} || 0%{?rhel_version}
 BuildRequires:  gettext
 %else
