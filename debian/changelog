@@ -1,4 +1,4 @@
-python-opsi (4.0.2.4-1) testing; urgency=low
+python-opsi (4.0.2.4-1) stable; urgency=low
 
   * fixes method setProductActionRequestWithDependencies after host_createOpsiClient
   * added default dhcp string and text options that the values will be set in double-quotes (fixes#403)
