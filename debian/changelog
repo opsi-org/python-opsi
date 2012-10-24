@@ -1,3 +1,9 @@
+python-opsi (4.0.2.5-1) testing; urgency=low
+
+  * fix in hwinvent procedure, don't crash if lshw don't work properly
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 24 Oct 2012 00:38:34 +0200
+
 python-opsi (4.0.2.4-1) stable; urgency=low
 
   * fixes method setProductActionRequestWithDependencies after host_createOpsiClient

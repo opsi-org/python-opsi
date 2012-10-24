@@ -2015,6 +2015,7 @@ class Harddisk:
 		try:
 			partition = forceInt(partition)
 			size = forceInt(size)
+			bytesPerSector = forceInt(self.bytesPerSector)
 			if not fs:
 				fs = self.getPartition(partition)['fs']
 			fs = forceUnicodeLower(fs)
@@ -2022,7 +2023,10 @@ class Harddisk:
 				raise Exception(u"Resizing of filesystem '%s' not supported!" % fs)
 			
 			if (size <= 0):
-				size = self.getPartition(partition)['size'] - 5*1024*1024
+				if bytesPerSector > 0 and self.blockAlignment:
+					size = self.getPartition(partition)['secSize'] * bytesPerSector
+				else:
+					size = self.getPartition(partition)['size'] - 10*1024*1024
 			
 			if (size <= 0):
 				raise Exception(u"New filesystem size of %0.2f MB is not possible!" % (float(size)/(1024*1024)))
@@ -2525,12 +2529,17 @@ def hardwareExtendedInventory(config, opsiValues = {}, progressSubject=None):
 				r = condition.split("=")[1]
 				if val and r:
 					conditionregex = re.compile(r)
+					conditionmatch = None
 					
 					logger.info("Condition found, try to check the Condition")
 					for i in range(len(opsiValues[opsiName])):
 						value = opsiValues[opsiName][i].get(val, "")
 						if value:
 							conditionmatch = re.search(conditionregex, value)
+							break
+
+					if not value:
+						logger.warning("The Value of your condition '%s' doesn't exists, please check your opsihwaudit.conf." % condition)
 
 					if not conditionmatch:
 						continue
