@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.2.5'
 
 # Imports
 import os, sys, subprocess, locale, threading, time, codecs, socket, posix, platform
@@ -965,9 +965,12 @@ def getBlockDeviceBusType(device):
 			return type
 
 
-def getBlockDeviceContollerInfo(device):
+def getBlockDeviceContollerInfo(device, lshwoutput=None):
 	device = forceFilename(device)
-	lines = execute(u'%s -short -numeric' % which('lshw'))
+	if lshwoutput and isinstance(lshwoutput, list):
+		lines = lshwoutput
+	else:
+		lines = execute(u'%s -short -numeric' % which('lshw'))
 	'''
 	example:
 	...
@@ -1006,6 +1009,40 @@ def getBlockDeviceContollerInfo(device):
 			for hwPath in storageControllers.keys():
 				if parts[0].startswith(hwPath + u'/'):
 					return storageControllers[hwPath]
+	
+	''' emulated storage controller dirty-hack, for outputs like:
+	...
+	/0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
+	/0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
+	/0/1          scsi0       storage         (Posix.py|741)
+	/0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
+	/0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
+	...
+	In this case return the first AHCI controller, that will be found
+	'''
+	storageControllers = {}
+	
+	for line in lines:
+		match = re.search('^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+		if match:
+			vendorId = match.group(3)
+			while (len(vendorId) < 4):
+				vendorId = '0' + vendorId
+			deviceId = match.group(4)
+			while (len(deviceId) < 4):
+				deviceId = '0' + deviceId
+			storageControllers[match.group(1)] = {
+				'hwPath':      forceUnicode(match.group(1)),
+				'device':      device,
+				'description': forceUnicode(match.group(2)),
+				'vendorId':    forceHardwareVendorId(vendorId),
+				'deviceId':    forceHardwareDeviceId(deviceId)
+			}
+			if storageControllers:
+				return storageControllers
+			
+	
+	
 	return None
 	
 class Harddisk:
@@ -3104,6 +3141,13 @@ def locateDHCPDInit(default = None):
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
+	#testcase = []
+	#testcase.append('/0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]')
+	#testcase.append('/0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]')
+	#testcase.append('/0/1          scsi0       storage')
+	#testcase.append('/0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS')
+	#testcase.append('/0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume')
+	#print getBlockDeviceContollerInfo('dev/sda', testcase)
 	#print getBlockDeviceContollerInfo('/dev/sda')
 	#print getNetworkDeviceConfig(getDefaultNetworkInterfaceName())
 	#print getNetworkDeviceConfig('eth0')
