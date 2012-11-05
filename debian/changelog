@@ -1,11 +1,16 @@
-python-opsi (4.0.2.5-1) testing; urgency=low
+python-opsi (4.0.2.6-1) testing; urgency=low
 
-  * fix in hwinvent procedure, don't crash if lshw don't work properly
-  * fix for resizeNTFSPartition if blockAlignmnet is used (ntfs-restore-image)
   * Posix: getBlockDeviceControllerInfo():
     - if no devices attached on a AHCI-Controller (maybe a lshw or a kernel bug)
       try to find AHCI-Controller, if found try return the first found AHCI Controller
       for textmode-driverintegration (only for nt5)
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 05 Nov 2012 17:34:13 +0100
+
+python-opsi (4.0.2.5-1) testing; urgency=low
+
+  * fix in hwinvent procedure, don't crash if lshw don't work properly
+  * fix for resizeNTFSPartition if blockAlignmnet is used (ntfs-restore-image)
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 02 Nov 2012 15:00:34 +0200
 

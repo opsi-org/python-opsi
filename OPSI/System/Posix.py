@@ -1039,7 +1039,8 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				'deviceId':    forceHardwareDeviceId(deviceId)
 			}
 			if storageControllers:
-				return storageControllers
+				for hwPath in storageControllers.keys():
+					return storageControllers[hwPath]
 			
 	
 	
