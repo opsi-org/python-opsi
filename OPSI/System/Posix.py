@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.5'
+__version__ = '4.0.2.6'
 
 # Imports
 import os, sys, subprocess, locale, threading, time, codecs, socket, posix, platform
@@ -1566,11 +1566,30 @@ class Harddisk:
 		
 		try:
 			system = forceUnicodeLower(system)
+			ms-sys-version = None
+			
+			try:
+				logger.debug("Try to determine ms-sys version")
+				cmd = u"%s -v" % (which('ms-sys'))
+				res = execute(cmd)
+				if res:
+					ms-sys-version = res[0][14:].strip()
+			except:
+				ms-sys-version = u"2.1.3"
+				
+			
 			mbrType = u'-w'
+			
 			if   system in (u'win2000', u'winxp', u'win2003', u'nt5'):
 				mbrType = u'--mbr'
 			elif system in (u'vista', u'win7', u'nt6'):
-				mbrType = u'--mbrnt60'
+				if not ms-sys-version = "2.1.3":
+					if system = u'vista':
+						mbrType = u'--mbrvista'
+					else:
+						mbrType = u'--mbr7'
+				else:
+					mbrType = u'--mbrnt60'
 			elif system in (u'win9x', u'win95', u'win98'):
 				mbrType = u'--mbr95b'
 			elif system in (u'dos', u'winnt'):
