@@ -1566,7 +1566,6 @@ class Harddisk:
 		
 		try:
 			system = forceUnicodeLower(system)
-			ms-sys-version = None
 			
 			try:
 				logger.debug("Try to determine ms-sys version")
