@@ -1383,7 +1383,7 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			   self.key.endswith(u'vendor-encapsulated-options') or \
 			   self.key.endswith(u'circuit-id') or \
 			   self.key.endswith(u'remote-id') or \
-			   self.key.endswith(u'fqdn.fqdn'): or \
+			   self.key.endswith(u'fqdn.fqdn') or \
 			   self.key.endswith(u'ddns-rev-domainname'):
 				value = u'"%s"' % value
 			if (i+1 < len(self.value)):
