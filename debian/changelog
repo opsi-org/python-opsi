@@ -1,11 +1,19 @@
+python-opsi (4.0.2.7-1) testing; urgency=low
+
+  * Windows.py: verifyProcessRunning switched from winlogon.exe to explorer.exe
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 13 Nov 2012 14:56:23 +0100
+
 python-opsi (4.0.2.6-1) testing; urgency=low
 
   * Posix: getBlockDeviceControllerInfo():
     - if no devices attached on a AHCI-Controller (maybe a lshw or a kernel bug)
       try to find AHCI-Controller, if found try return the first found AHCI Controller
       for textmode-driverintegration (only for nt5)
+  * Posix: modifications for newer ms-sys version
+  * rpm-spec-file: noreplace option for dispatch.conf.default in files-section
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 05 Nov 2012 17:34:13 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 07 Nov 2012 17:34:13 +0100
 
 python-opsi (4.0.2.5-1) testing; urgency=low
 

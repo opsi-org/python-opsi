@@ -742,7 +742,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 				sessionIds.append(sessionId)
 	return sessionIds
 
-def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand = None):
+def getActiveSessionId(verifyProcessRunning = "explorer.exe", winApiBugCommand = None):
 	logger.debug("Getting ActiveSessionId")
 	defaultSessionId = getActiveConsoleSessionId()
 	if (sys.getwindowsversion()[0] >= 6) and (defaultSessionId == 0):
