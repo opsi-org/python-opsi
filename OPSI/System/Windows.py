@@ -839,6 +839,11 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 			result = execute("%s %s" % (winApiBugCommand,sessionId), shell=False)
 			sessionData = forceDict(eval(result[0]))
 			if sessionData:
+				try:
+					if wtsUserName and not sessionData['UserName'].lower() ==  wtsUserName.lower():
+						sessionData['UserName'] = wtsUserName
+				except:
+					pass
 				logger.debug(u"   Found session: %s" % sessionData)
 				return sessionData
 		except Exception,e:
