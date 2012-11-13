@@ -1572,9 +1572,9 @@ class Harddisk:
 				cmd = u"%s -v" % (which('ms-sys'))
 				res = execute(cmd)
 				if res:
-					ms-sys-version = res[0][14:].strip()
+					ms_sys_version = res[0][14:].strip()
 			except:
-				ms-sys-version = u"2.1.3"
+				ms_sys_version = u"2.1.3"
 				
 			
 			mbrType = u'-w'
@@ -1582,7 +1582,7 @@ class Harddisk:
 			if   system in (u'win2000', u'winxp', u'win2003', u'nt5'):
 				mbrType = u'--mbr'
 			elif system in (u'vista', u'win7', u'nt6'):
-				if not ms-sys-version == "2.1.3":
+				if not ms_sys_version == "2.1.3":
 					if system == u'vista':
 						mbrType = u'--mbrvista'
 					else:
