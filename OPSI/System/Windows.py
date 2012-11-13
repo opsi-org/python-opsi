@@ -815,6 +815,11 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	#		info[infoClass] = None
 	#		logger.debug(e)
 	#return info
+	wtsUserName = None
+	try:
+		wtsUserName = win32ts.WTSQuerySessionInformation(None, sessionId, win32ts.WTSUserName)
+	except:
+		pass
 	"""
 	'UserName': u'Administrator',
 	'AuthenticationPackage': u'NTLM',
@@ -842,6 +847,11 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		if (forceInt(sessionData['Session']) == sessionId):
+			try:
+				if wtsUserName and not sessionData['UserName'].lower() ==  wtsUserName.lower():
+					sessionData['UserName'] = wtsUserName
+			except
+				pass
 			return sessionData
 	return {}
 
