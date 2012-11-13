@@ -850,7 +850,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 			try:
 				if wtsUserName and not sessionData['UserName'].lower() ==  wtsUserName.lower():
 					sessionData['UserName'] = wtsUserName
-			except
+			except:
 				pass
 			return sessionData
 	return {}
