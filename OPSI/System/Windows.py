@@ -852,11 +852,8 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		if (forceInt(sessionData['Session']) == sessionId):
-			try:
-				if wtsUserName and not sessionData['UserName'].lower() ==  wtsUserName.lower():
-					sessionData['UserName'] = wtsUserName
-			except:
-				pass
+			if wtsUserName and sessionData['UserName'].lower != wtsUserName.lower():
+				continue
 			return sessionData
 	return {}
 
