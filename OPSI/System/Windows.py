@@ -731,7 +731,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if not forceInt(sessionData['LogonType']) in (2, 10):
+			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
