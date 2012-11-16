@@ -854,6 +854,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 		if (forceInt(sessionData['Session']) == sessionId):
 			if wtsUserName and sessionData['UserName'].lower != wtsUserName.lower():
 				continue
+			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
 			return sessionData
 	return {}
 
