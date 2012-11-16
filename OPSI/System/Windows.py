@@ -742,7 +742,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 				sessionIds.append(sessionId)
 	return sessionIds
 
-def getActiveSessionId(verifyProcessRunning = "explorer.exe", winApiBugCommand = None):
+def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand = None):
 	logger.debug("Getting ActiveSessionId")
 	defaultSessionId = getActiveConsoleSessionId()
 	if (sys.getwindowsversion()[0] >= 6) and (defaultSessionId == 0):
@@ -863,11 +863,12 @@ def getActiveSessionInformation(winApiBugCommand = None):
 		info.append(getSessionInformation(sessionId, winApiBugCommand))
 	return info
 
-def getUserSessionIds(username, winApiBugCommand = None):
+def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 	sessionIds = []
 	if not username:
 		return sessionIds
 	domain = None
+	newest = None
 	logger.debug(u"Getting sessions of user '%s'" % username)
 	if (username.find('\\') != -1):
 		domain = username.split('\\')[0]
@@ -880,8 +881,16 @@ def getUserSessionIds(username, winApiBugCommand = None):
 		if ( session.get('UserName') and (session.get('UserName').lower() == username.lower()) and \
 		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
 			sessionIds.append(forceInt(session.get('Session')))
+			if onlyNewestId:
+				if newest and (session.get('LogonId') > newest.get('LogonId')):
+					newest = session
+				else:
+					newest = session
 			logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('Session')))
-	return sessionIds
+	if onlyNewestId and newest:
+		return [ newest.get('Session') ]
+	else:
+		return sessionIds
 	
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
