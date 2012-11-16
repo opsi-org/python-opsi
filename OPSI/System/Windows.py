@@ -849,14 +849,23 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 		except Exception,e:
 			logger.debug("Working directory: '%s', scriptdirectory: '%s'" % (os.getcwd(),sys.path[0]))
 			logger.logException(e)
+	newest = None
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		if (forceInt(sessionData['Session']) == sessionId):
 			if wtsUserName and sessionData['UserName'].lower != wtsUserName.lower():
 				continue
 			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
-			return sessionData
-	return {}
+			if newest and (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+				newest = sessionData
+			else:
+				newest = sessionData
+	if newest:
+		return newest
+	elif sessionData:
+		return sessionData
+	else:
+		return {}
 
 def getActiveSessionInformation(winApiBugCommand = None):
 	info = []
