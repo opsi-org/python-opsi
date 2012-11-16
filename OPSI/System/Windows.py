@@ -891,6 +891,7 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 					newest = session
 				else:
 					newest = session
+			logger.debug(u"   onlyNewestId: '%s' newest = '%s'" % (onlyNewestId, newest))
 			logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('Session')))
 	if onlyNewestId and newest:
 		return [ newest.get('Session') ]
