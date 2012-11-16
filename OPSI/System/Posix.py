@@ -421,7 +421,7 @@ def getNetworkDeviceConfig(device):
 		x = "%x" % x
 		result['deviceId'] = forceHardwareDeviceId(((4-len(x))*'0') + x)
 	except Exception, e:
-		logger.error(u"Failed to get vendor/device id for network device %s" % device)
+		logger.warning(u"Failed to get vendor/device id for network device %s" % device)
 	return result
 	
 def getDefaultNetworkInterfaceName():

@@ -2,6 +2,7 @@ python-opsi (4.0.2.7-1) testing; urgency=low
 
   * Windows.py: verifyProcessRunning switched from winlogon.exe to explorer.exe
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
+  * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 13 Nov 2012 14:56:23 +0100
 
