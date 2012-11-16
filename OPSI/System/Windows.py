@@ -887,7 +887,7 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
 			sessionIds.append(forceInt(session.get('Session')))
 			if onlyNewestId:
-				if newest and (session.get('LogonId') > newest.get('LogonId')):
+				if newest and (forceInt(session.get('LogonId')) > forceInt(newest.get('LogonId'))):
 					newest = session
 				else:
 					newest = session
