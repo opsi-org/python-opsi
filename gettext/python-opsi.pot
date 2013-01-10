@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2011-09-02 16:59+CEST\n"
+"POT-Creation-Date: 2013-01-08 13:18+CET\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,11 +18,10 @@ msgstr ""
 #: ../OPSI/UI.py:112 ../OPSI/UI.py:115 ../OPSI/UI.py:136 ../OPSI/UI.py:139
 #: ../OPSI/UI.py:142 ../OPSI/UI.py:145 ../OPSI/UI.py:242 ../OPSI/UI.py:281
 #: ../OPSI/UI.py:394 ../OPSI/UI.py:470 ../OPSI/UI.py:579 ../OPSI/UI.py:679
-#: ../OPSI/UI.py:1059
 msgid "OK"
 msgstr ""
 
-#: ../OPSI/UI.py:112 ../OPSI/UI.py:242 ../OPSI/UI.py:1059
+#: ../OPSI/UI.py:112 ../OPSI/UI.py:242
 msgid "An error occured"
 msgstr ""
 
@@ -80,7 +79,7 @@ msgstr ""
 msgid " | <Up/Down> scroll text"
 msgstr ""
 
-#: ../OPSI/UI.py:1059 ../OPSI/UI.py:1060
+#: ../OPSI/UI.py:1083
 msgid "Nothing selected"
 msgstr ""
 
