@@ -6,6 +6,7 @@ python-opsi (4.0.2.7-1) testing; urgency=low
     - saveImage returns the result from partclone if run was successfull. 
     - readPartitionTable: Try to find out the right filesystem with blkid tool.
     - createPartition: allows linux as filesystem-type and produces partition with id 83
+  * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 11 Jan 2013 11:40:23 +0100
 

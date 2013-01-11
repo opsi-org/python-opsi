@@ -2213,9 +2213,7 @@ class Harddisk:
 				logger.debug(u"Last Mesage was: %s" % lastMsg)
 				match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(.*),', lastMsg)
 				if match:
-					saveImageResult{ 'TotalTime'	= match.group(1),
-									'AveRate'		= match.group(2),
-									}	
+					saveImageResult = {'TotalTime' : match.group(1),'AveRate':match.group(2),}	
 			time.sleep(3)
 			if handle: handle.close()
 			

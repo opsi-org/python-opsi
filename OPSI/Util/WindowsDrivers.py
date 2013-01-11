@@ -32,10 +32,12 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.2.7'
 
 # Imports
 import os, re, codecs
+
+from string import maketrans
 
 # OPSI imports
 from OPSI.Logger import *
@@ -453,6 +455,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 				continue
 			vendorFromHost = auditHardwareOnHost.vendor
 			modelFromHost  = auditHardwareOnHost.model
+			trans = maketrans('<>?":|\/*','_________')
+			vendorFromHost = vendorFromHost.translate(trans)
+			modelFromHost = modelFromHost.translate(trans)
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
 			for vendordirectory in vendordirectories:
