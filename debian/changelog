@@ -2,8 +2,11 @@ python-opsi (4.0.2.7-1) testing; urgency=low
 
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
   * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device
+  * Posix: 
+    - saveImage returns the result from partclone if run was successfull. 
+    - readPartitionTable: Try to find out the right filesystem with blkid tool.
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 13 Nov 2012 14:56:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 11 Jan 2013 11:40:23 +0100
 
 python-opsi (4.0.2.6-1) testing; urgency=low
 

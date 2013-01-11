@@ -266,8 +266,8 @@ class SystemSpecificHook(object):
 	def pre_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
 		return (partition, imageFile, progressSubject)
 	
-	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
-		return None
+	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, saveImageResult):
+		return saveImageResult
 	
 	def error_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, exception):
 		pass
@@ -1234,6 +1234,14 @@ class Harddisk:
 							fs = u'fat32'
 						elif (match.group(8).lower() in [u"7"]):
 							fs = u'ntfs'
+						try:
+							logger.debug("Trying using Blkid")
+							fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), self.device))
+							if fsres:
+								logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % fsres)
+								fs = fsres
+						except:
+							pass
 						
 						self.partitions.append( { 'device':	forceFilename(match.group(1) + match.group(2)),
 									  'number':	forceInt(match.group(2)),
@@ -2115,6 +2123,8 @@ class Harddisk:
 			imageType = None
 			image = None
 			
+			saveImageResult = {}
+			
 			part = self.getPartition(partition)
 			if not part:
 				raise Exception(u'Partition %s does not exist' % partition)
@@ -2189,6 +2199,7 @@ class Harddisk:
 								if progressSubject and (percent != progressSubject.getState()):
 									logger.debug(u" -->>> %s" % buf[i])
 									progressSubject.setState(percent)
+							
 					lastMsg = buf[-2]
 					buf[:-1] = []
 				
@@ -2197,7 +2208,14 @@ class Harddisk:
 				else:
 					timeout += 1
 					continue
-			
+			if done:
+				logger.debug(u"Try to analyse the lastMsg from Imagesaving")
+				logger.debug(u"Last Mesage was: %s" % lastMsg)
+				match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(.*),', lastMsg)
+				if match:
+					saveImageResult{ 'TotalTime'	= match.group(1),
+									'AveRate'		= match.group(2),
+									}	
 			time.sleep(3)
 			if handle: handle.close()
 			
@@ -2209,7 +2227,7 @@ class Harddisk:
 			raise
 		
 		for hook in hooks:
-			hook.post_Harddisk_saveImage(self, partition, imageFile, progressSubject)
+			hook.post_Harddisk_saveImage(self, partition, imageFile, progressSubject, saveImageResult)
 		
 	def restoreImage(self, partition, imageFile, progressSubject=None):
 		for hook in hooks:
