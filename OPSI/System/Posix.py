@@ -1752,7 +1752,7 @@ class Harddisk:
 			if re.search('^[a-f0-9]{2}$', fs):
 				partId = fs
 			else:
-				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4'):
+				if fs in (u'ext2', u'ext3', u'ext4', u'xfs', u'reiserfs', u'reiser4', u'linux'):
 					partId = u'83'
 				elif (fs == u'linux-swap'):
 					partId = u'82'
