@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.6'
+__version__ = '4.0.2.7'
 
 # Imports
 import os, sys, subprocess, locale, threading, time, codecs, socket, posix, platform
@@ -1239,8 +1239,12 @@ class Harddisk:
 							logger.debug("Trying using Blkid")
 							fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), part))
 							if fsres:
-								logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % fsres)
-								fs = fsres
+								for line in fsres:
+									line = line.strip()
+									if not line:
+										continue
+									logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % line)
+									fs = line
 						except:
 							pass
 						

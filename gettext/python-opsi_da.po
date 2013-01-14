@@ -1,0 +1,129 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: python-opsi\n"
+"POT-Creation-Date: 2011-09-02 16:59+CEST\n"
+"PO-Revision-Date: 2013-01-14 14:09+0100\n"
+"Last-Translator: Lars Juul <lju@eucl.dk>\n"
+"Language-Team: Lars Juul <lju@eucl.dk>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"X-Poedit-Language: Danish\n"
+"X-Poedit-Country: DENMARK\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#: ../OPSI/UI.py:112
+#: ../OPSI/UI.py:115
+#: ../OPSI/UI.py:136
+#: ../OPSI/UI.py:139
+#: ../OPSI/UI.py:142
+#: ../OPSI/UI.py:145
+#: ../OPSI/UI.py:242
+#: ../OPSI/UI.py:281
+#: ../OPSI/UI.py:394
+#: ../OPSI/UI.py:470
+#: ../OPSI/UI.py:579
+#: ../OPSI/UI.py:679
+#: ../OPSI/UI.py:1059
+msgid "OK"
+msgstr "OK"
+
+#: ../OPSI/UI.py:112
+#: ../OPSI/UI.py:242
+#: ../OPSI/UI.py:1059
+msgid "An error occured"
+msgstr "En fejl opstod"
+
+#: ../OPSI/UI.py:115
+#: ../OPSI/UI.py:281
+msgid "Message"
+msgstr "Besked"
+
+#: ../OPSI/UI.py:118
+#: ../OPSI/UI.py:124
+#: ../OPSI/UI.py:320
+#: ../OPSI/UI.py:350
+msgid "Progress"
+msgstr "Fremskridt"
+
+#: ../OPSI/UI.py:121
+#: ../OPSI/UI.py:127
+#: ../OPSI/UI.py:335
+#: ../OPSI/UI.py:365
+msgid "Copy progress"
+msgstr "Kopiere fremskridt"
+
+#: ../OPSI/UI.py:130
+#: ../OPSI/UI.py:380
+msgid "Text"
+msgstr "Tekst"
+
+#: ../OPSI/UI.py:136
+#: ../OPSI/UI.py:139
+#: ../OPSI/UI.py:142
+#: ../OPSI/UI.py:145
+#: ../OPSI/UI.py:394
+#: ../OPSI/UI.py:470
+#: ../OPSI/UI.py:579
+#: ../OPSI/UI.py:679
+msgid "Cancel"
+msgstr "Afbryd"
+
+#: ../OPSI/UI.py:136
+#: ../OPSI/UI.py:394
+msgid "Please type text"
+msgstr "Skriv venligst tekst"
+
+#: ../OPSI/UI.py:139
+#: ../OPSI/UI.py:470
+msgid "Please select"
+msgstr "Vælg venligst"
+
+#: ../OPSI/UI.py:142
+#: ../OPSI/UI.py:579
+msgid "Please fill in"
+msgstr "Udfyld venligst"
+
+#: ../OPSI/UI.py:145
+#: ../OPSI/UI.py:679
+msgid "Question"
+msgstr "Spørgsmål"
+
+#: ../OPSI/UI.py:149
+#: ../OPSI/UI.py:166
+#: ../OPSI/UI.py:179
+#: ../OPSI/UI.py:733
+#: ../OPSI/UI.py:832
+#: ../OPSI/UI.py:896
+msgid "Title"
+msgstr "Titel"
+
+#: ../OPSI/UI.py:273
+#: ../OPSI/UI.py:312
+msgid "<F12> %s | <Space> select | <Up/Down> scroll text"
+msgstr "<F12> %s | <Space> vælg | <Up/Down> scroll tekst"
+
+#: ../OPSI/UI.py:449
+#: ../OPSI/UI.py:552
+#: ../OPSI/UI.py:651
+#: ../OPSI/UI.py:711
+msgid "<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select"
+msgstr "<ESC> %s | <F12> %s | <Tab> flyt cursor | <Space> vælg"
+
+#: ../OPSI/UI.py:451
+#: ../OPSI/UI.py:554
+#: ../OPSI/UI.py:653
+#: ../OPSI/UI.py:713
+msgid " | <Up/Down> scroll text"
+msgstr " | <Up/Down> scroll tekst"
+
+#: ../OPSI/UI.py:1059
+#: ../OPSI/UI.py:1060
+msgid "Nothing selected"
+msgstr "Intet valgt"
+

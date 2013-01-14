@@ -37,7 +37,6 @@ __version__ = '4.0.2.7'
 # Imports
 import os, re, codecs
 
-from string import maketrans
 
 # OPSI imports
 from OPSI.Logger import *
@@ -453,11 +452,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		for auditHardwareOnHost in auditHardwareOnHosts:
 			if not auditHardwareOnHost.hardwareClass == "COMPUTER_SYSTEM":
 				continue
-			vendorFromHost = auditHardwareOnHost.vendor
-			modelFromHost  = auditHardwareOnHost.model
-			trans = maketrans('<>?":|\/*','_________')
-			vendorFromHost = vendorFromHost.translate(trans)
-			modelFromHost = modelFromHost.translate(trans)
+			vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
+			modelFromHost  = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model)
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
 			for vendordirectory in vendordirectories:

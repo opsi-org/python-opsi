@@ -7,7 +7,7 @@ dir=${cwd}/$(dirname $0)
 
 cd $dir
 pygettext --extract-all --default-domain=${package_name} ../OPSI/UI.py
-for lang in de fr; do
+for lang in de da fr; do
     if [ -e ${package_name}_${lang}.po ]; then
 	msgmerge -U ${package_name}_${lang}.po ${package_name}.pot
     else
