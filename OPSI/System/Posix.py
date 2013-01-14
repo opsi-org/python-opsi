@@ -1235,8 +1235,9 @@ class Harddisk:
 						elif (match.group(8).lower() in [u"7"]):
 							fs = u'ntfs'
 						try:
+							part = forceFilename(match.group(1) + match.group(2))
 							logger.debug("Trying using Blkid")
-							fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), self.device))
+							fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), part))
 							if fsres:
 								logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % fsres)
 								fs = fsres
@@ -1737,7 +1738,7 @@ class Harddisk:
 				return part
 		raise Exception(u'Partition %s does not exist' % number)
 	
-	def createPartition(self, start, end, fs, type = u'primary', boot = False, lba = False):
+	def createPartition(self, start, end, fs, type = u'primary', boot = False, lba = False, number = None):
 		for hook in hooks:
 			(start, end, fs, type, boot, lba) = hook.pre_Harddisk_createPartition(self, start, end, fs, type, boot, lba)
 		try:
@@ -1863,8 +1864,10 @@ class Harddisk:
 					# Highest possible sectors is total sectors - 1
 					end = self.totalSectors-1
 				
-			
-			number = len(self.partitions) + 1
+			# if no number given - count
+			if not number:
+				number = len(self.partitions) + 1
+				
 			for part in self.partitions:
 				if (unit == 'sec'):
 					partitionStart = part['secStart']
