@@ -266,8 +266,8 @@ class SystemSpecificHook(object):
 	def pre_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
 		return (partition, imageFile, progressSubject)
 	
-	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, saveImageResult):
-		return saveImageResult
+	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):
+		return None
 	
 	def error_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, exception):
 		pass
@@ -2182,6 +2182,10 @@ class Harddisk:
 							raise Exception(u"Failed: %s" % '\n'.join(buf))
 						if ( buf[i].find(u'Partclone successfully') != -1 ):
 							done = True
+						if ( buf[i].find(u'Total Time') != -1 ):
+							match =  re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(.*),', buf[i])
+							if match:
+								saveImageResult = {'TotalTime' : match.group(1),'AveRate':match.group(2),}
 						if not started:
 							if ( buf[i].find(u'Calculating bitmap') != -1 ):
 								logger.info(u"Save image: Scanning filesystem")
@@ -2215,12 +2219,7 @@ class Harddisk:
 				else:
 					timeout += 1
 					continue
-			if done:
-				logger.debug(u"Try to analyse the lastMsg from Imagesaving")
-				logger.debug(u"Last Mesage was: %s" % lastMsg)
-				match = re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(.*),', lastMsg)
-				if match:
-					saveImageResult = {'TotalTime' : match.group(1),'AveRate':match.group(2),}	
+			
 			time.sleep(3)
 			if handle: handle.close()
 			
@@ -2232,7 +2231,9 @@ class Harddisk:
 			raise
 		
 		for hook in hooks:
-			hook.post_Harddisk_saveImage(self, partition, imageFile, progressSubject, saveImageResult)
+			hook.post_Harddisk_saveImage(self, partition, imageFile, progressSubject)
+		
+		return saveImageResult
 		
 	def restoreImage(self, partition, imageFile, progressSubject=None):
 		for hook in hooks:
