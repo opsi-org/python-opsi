@@ -8,8 +8,9 @@ python-opsi (4.0.2.7-1) testing; urgency=low
     - createPartition: allows linux as filesystem-type and produces partition with id 83
   * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _
   * python-opsi locale: danish added
+  * compareVersion: fixed handling with versions from custom packages.
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 14 Jan 2013 11:40:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 17 Jan 2013 15:40:23 +0100
 
 python-opsi (4.0.2.6-1) testing; urgency=low
 
