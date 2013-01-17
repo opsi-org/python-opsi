@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.2.7'
 
 # Imports
 import ctypes, threading, os, random, base64, types, socket, httplib, struct, codecs
@@ -385,6 +385,11 @@ def objectToHtml(obj, level=0):
 def compareVersions(v1, condition, v2):
 	v1 = forceUnicode(v1)
 	v2 = forceUnicode(v2)
+	
+	if "~" in v1:
+		v1 = v1[:v1.find("~")]
+	if "~" in v2:
+		v2 = v2[:v2.find("~")]
 	
 	if not condition:
 		condition = u'=='
