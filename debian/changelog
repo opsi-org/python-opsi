@@ -9,8 +9,9 @@ python-opsi (4.0.2.7-1) testing; urgency=low
   * WindowsDriver: byAudit: Translating model and vendor from hwinvent: characters <>?":|\/* will be translated to _
   * python-opsi locale: danish added
   * compareVersion: fixed handling with versions from custom packages.
+  * global.conf: fixed hostname entries
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 17 Jan 2013 15:40:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 25 Jan 2013 15:40:23 +0100
 
 python-opsi (4.0.2.6-1) testing; urgency=low
 

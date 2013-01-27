@@ -735,7 +735,7 @@ def getfqdn(name='', conf=None):
 def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 	name = forceUnicode(name)
 	if os.path.exists(configFile):
-		f = codecs.open(conf, 'r', 'utf8')
+		f = codecs.open(configFile, 'r', 'utf8')
 		try:
 			for line in f.readlines():
 				line = line.strip()
