@@ -2183,9 +2183,14 @@ class Harddisk:
 						if ( buf[i].find(u'Partclone successfully') != -1 ):
 							done = True
 						if ( buf[i].find(u'Total Time') != -1 ):
-							match =  re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(.*),', buf[i])
+							match =  re.search('Total\sTime:\s(\d+:\d+:\d+),\sAve.\sRate:\s*(\d*.\d*)([GgMm]B/min)', buf[i])
 							if match:
-								saveImageResult = {'TotalTime' : match.group(1),'AveRate':match.group(2),}
+								rate = match.group(2)
+								unit = match.group(3)
+								if unit.startswith("G") or unit.startswith("g"):
+									rate = rate * 1024
+									unit = 'MB/min'
+								saveImageResult = { 'TotalTime': match.group(1),'AveRate': rate, 'AveUnit': unit, }
 						if not started:
 							if ( buf[i].find(u'Calculating bitmap') != -1 ):
 								logger.info(u"Save image: Scanning filesystem")
