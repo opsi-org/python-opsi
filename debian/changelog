@@ -10,8 +10,9 @@ python-opsi (4.0.2.7-1) testing; urgency=low
   * python-opsi locale: danish added
   * compareVersion: fixed handling with versions from custom packages.
   * global.conf: fixed hostname entries
+  * fixed resource directory listing for custom packages /repository
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 25 Jan 2013 15:40:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 05 Feb 2013 17:40:23 +0100
 
 python-opsi (4.0.2.6-1) testing; urgency=low
 

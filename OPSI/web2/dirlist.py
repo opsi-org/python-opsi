@@ -45,7 +45,7 @@ class DirectoryLister(resource.Resource):
         files = []
 
         for path in directory:
-            url = urllib.quote(path, '/')
+            url = urllib.quote(path, '/~')
             fullpath = os.path.join(self.path, path)
             try:
                 st = os.stat(fullpath)

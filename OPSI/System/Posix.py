@@ -2130,7 +2130,7 @@ class Harddisk:
 			imageType = None
 			image = None
 			
-			saveImageResult = {}
+			saveImageResult = {'TotalTime': 'n/a','AveRate': 'n/a', 'AveUnit': 'n/a',}
 			
 			part = self.getPartition(partition)
 			if not part:
