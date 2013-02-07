@@ -876,8 +876,18 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 			if wtsUserName and sessionData['UserName'].lower != wtsUserName.lower():
 				continue
 			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
-			if newest and (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
-				newest = sessionData
+			try:
+				lt = newest['LogonTime']
+				lts = sessionData['LogonTime']
+				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+				if sessiondt > newestdt:
+					logger.notice("Token in SessionData is newer then the cached one.")
+					newest = sessionData
+			except Exception, e:
+				logger.warning(e)
+				if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+					newest = sessionData
 			else:
 				newest = sessionData
 	if newest:
@@ -916,8 +926,18 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
 			sessionIds.append(forceInt(session.get('Session')))
 			if onlyNewestId:
-				if newest and (forceInt(session.get('LogonId')) > forceInt(newest.get('LogonId'))):
-					newest = session
+				try:
+					lt = newest['LogonTime']
+					lts = sessionData['LogonTime']
+					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					if sessiondt > newestdt:
+						logger.notice("Token in SessionData is newer then the cached one.")
+						newest = sessionData
+				except Exception, e:
+					logger.warning(e)
+					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+						newest = sessionData
 				else:
 					newest = session
 			logger.debug(u"   onlyNewestId: '%s' newest = '%s'" % (onlyNewestId, newest))
