@@ -39,6 +39,7 @@ import re, os, time, socket, sys, locale, subprocess, difflib, threading
 
 # Win32 imports
 from ctypes import *
+from datetime import datetime
 import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
 import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
 import win32pdhutil, win32pdh, win32pipe, msvcrt
@@ -763,8 +764,17 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 				if not sessionId in sessionIds:
 					sessionIds.append(sessionId)
 				if newest:
-					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
-						newest = sessionData
+					try:
+						lt = newest['LogonTime']
+						lts = sessionData['LogonTime']
+						newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+						sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+						if sessiondt > newestdt:
+							logger.notice("Token in SessionData is newer then the cached one.")
+							newest = sessionData
+					except:
+						if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+							newest = sessionData
 				else:
 					newest = sessionData
 		except Exception,e:
@@ -788,8 +798,18 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 			if not sessionId in sessionIds:
 				sessionIds.append(sessionId)
 			if newest:
-				if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
-					newest = sessionData
+				try:
+					lt = newest['LogonTime']
+					lts = sessionData['LogonTime']
+					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					if sessiondt > newestdt:
+						logger.notice("Token in SessionData is newer then the cached one.")
+						newest = sessionData
+				except, Exception e:
+					logger.warning(e)
+					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
+							newest = sessionData
 			else:
 				newest = sessionData
 	if (len(sessionIds) == 0):
