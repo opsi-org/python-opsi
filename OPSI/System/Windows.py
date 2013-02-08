@@ -773,7 +773,8 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 						if sessiondt > newestdt:
 							logger.notice("Token in SessionData is newer then the cached one.")
 							newest = sessionData
-					except:
+					except Exception, e:
+						logger.warning(e)
 						if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
 							newest = sessionData
 				else:
@@ -807,7 +808,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 					if sessiondt > newestdt:
 						logger.notice("Token in SessionData is newer then the cached one.")
 						newest = sessionData
-				except, Exception e:
+				except Exception, e:
 					logger.warning(e)
 					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
 							newest = sessionData
