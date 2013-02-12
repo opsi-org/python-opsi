@@ -49,6 +49,7 @@ from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
+from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
