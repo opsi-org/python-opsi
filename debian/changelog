@@ -1,4 +1,4 @@
-python-opsi (4.0.2.7-1) testing; urgency=low
+python-opsi (4.0.3.1-1) testing; urgency=low
 
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
   * System: opsi-setup --init-current-config gives an warning instead of error, when vendor not found for network device

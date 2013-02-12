@@ -29,10 +29,11 @@
    
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
+   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.2'
+__version__ = '4.0.2.7'
 
 # Imports
 import socket, threading, httplib, base64, time, struct
@@ -278,10 +279,14 @@ class HostControlBackend(ExtendedBackend):
 		return result
 	
 	def hostControl_shutdown(self, hostIds=[]):
+		if not hostIds:
+			raise BackendMissingDataError(u"No host ids given")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
 	
 	def hostControl_reboot(self, hostIds=[]):
+		if not hostIds:
+			raise BackendMissingDataError(u"No host ids given")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
 	

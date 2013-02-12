@@ -144,6 +144,7 @@ class BackendManager(ExtendedBackend):
 		accessControl = False
 		depotBackend = False
 		hostControlBackend = False
+		hostControlSafeBackend = False
 		messageBusNotifier = False
 		startReactor = True
 		loadBackend = None
@@ -168,6 +169,8 @@ class BackendManager(ExtendedBackend):
 				depotBackend = forceBool(value)
 			elif option in ('hostcontrolbackend',):
 				hostControlBackend = forceBool(value)
+			elif option in ('hostcontrolsafebackend',):
+				hostControlSafeBackend = forceBool(value)
 			elif option in ('extensionconfigdir',) and value:
 				extensionConfigDir = value
 				extend = True
@@ -218,6 +221,14 @@ class BackendManager(ExtendedBackend):
 			except Exception, e:
 				logger.error(e)
 			self._backend = HostControlBackend(self._backend, **hcc)
+		if hostControlSafeBackend:
+			logger.info(u"* BackendManager is creating HostControlBackend")
+			hcc = {}
+			try:
+				hcc = self.__loadBackendConfig('hostcontrol')['config']
+			except Exception, e:
+				logger.error(e)
+			self._backend = HostControlSafeBackend(self._backend, **hcc)
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
 			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
