@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.7'
+__version__ = '4.0.3.1'
 
 # Imports
 import socket, threading, httplib, base64, time, struct
@@ -42,7 +42,7 @@ from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-from OPSI.Backend.HostControlBackend import RpcThread, ConnectionThread
+from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
 # Get logger instance
 logger = Logger()
