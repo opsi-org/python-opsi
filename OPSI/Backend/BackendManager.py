@@ -637,7 +637,7 @@ class BackendAccessControl(object):
 	
 	def _createInstanceMethods(self):
 		protectedMethods = []
-		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend):
+		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_'):
@@ -1007,6 +1007,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			accessControlContext = context,
 			depotBackend         = bool(depotId),
 			hostControlBackend   = True,
+			hostControlSafeBackend   = True,
 			username             = user,
 			password             = password,
 			**kwargs
@@ -1020,6 +1021,7 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 			accessControlContext = context,
 			depotBackend         = bool(depotId),
 			hostControlBackend   = True,
+			hostControlSafeBackend   = True,
 			username             = user,
 			password             = password,
 			**kwargs
