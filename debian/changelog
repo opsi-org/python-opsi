@@ -11,6 +11,7 @@ python-opsi (4.0.3.1-1) testing; urgency=low
   * compareVersion: fixed handling with versions from custom packages.
   * global.conf: fixed hostname entries
   * fixed resource directory listing for custom packages /repository
+  * fix for ubuntu 12.10
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 05 Feb 2013 17:40:23 +0100
 
