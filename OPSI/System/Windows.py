@@ -896,7 +896,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 				lts = sessionData['LogonTime']
 				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-				if sessiondt < newestdt:
+				if sessiondt > newestdt:
 					logger.notice("Token in SessionData is newer then the cached one.")
 					newest = sessionData
 			except Exception, e:
@@ -1327,7 +1327,7 @@ def getPids(process, sessionId = None):
 			sid = win32ts.ProcessIdToSessionId(pid)
 		except:
 			pass
-		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
+		logger.debug(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
 		if (pe32.szExeFile.lower() == process.lower()):
 			logger.info(u"Found process %s with matching name (pid %d, session %s)" % (pe32.szExeFile.lower(), pid, sid))
 			if sessionId is None or (sid == sessionId):
