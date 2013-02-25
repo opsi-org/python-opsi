@@ -933,6 +933,8 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					lts = sessionInfo['LogonTime']
 					logger.debug("lt '%s'" % lt)
 					logger.debug("lts '%s'" % lts)
+					logger.debug("lt-type '%s'" % type(lt))
+					logger.debug("lts-type '%s'" % type(lts))
 					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
@@ -970,6 +972,7 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 						continue
 					lt = newest['LogonTime']
 					lts = sessionData['LogonTime']
+					
 					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > newestdt:
