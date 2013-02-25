@@ -968,10 +968,10 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 			if onlyNewestId:
 				try:
 					if not newest:
-						newest = sessionData
+						newest = session
 						continue
 					lt = newest['LogonTime']
-					lts = sessionData['LogonTime']
+					lts = session['LogonTime']
 					
 					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
@@ -980,8 +980,8 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 						newest = sessionData
 				except Exception, e:
 					logger.warning(e)
-					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
-						newest = sessionData
+					if (forceInt(session['LogonId']) > forceInt(newest['LogonId'])):
+						newest = session
 				else:
 					newest = session
 			logger.debug(u"   onlyNewestId: '%s' newest = '%s'" % (onlyNewestId, newest))
