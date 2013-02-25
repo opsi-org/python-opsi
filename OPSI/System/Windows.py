@@ -904,7 +904,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 					logger.notice("Token in SessionData is newer then the cached one.")
 					newest = sessionData
 			except Exception, e:
-				logger.warning(e)
+				logger.warning("WARNING in getSessionInformation method: '%s'" % e)
 				if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
 					newest = sessionData
 			else:
