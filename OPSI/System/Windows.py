@@ -909,9 +909,12 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 					newest = sessionData
 			else:
 				newest = sessionData
+	
 	if newest:
+		logger.debug("Found newest SessionId: '%s' for User: '%s'" % (newest['Session'], newest['UserName']))
 		return newest
 	elif sessionData:
+		logger.debug("Found newest SessionId: '%s' for User: '%s'" % (sessionData['Session'], sessionData['UserName']))
 		return sessionData
 	else:
 		return {}
