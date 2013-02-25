@@ -880,9 +880,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	newest = None
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
-		logger.debug("Session to check '%s'" % sessionData['Session'])
-		logger.debug("Given SessionId '%s'" % sessionId)
-		logger.debug("Full Session to check: '%s'" % sessionData)
+		
 		if (forceInt(sessionData['Session']) == forceInt(sessionId)):
 			logger.debug("Session is found and checked. wtsUserName: '%s'" % wtsUserName)
 			if wtsUserName and sessionData['UserName'].lower() != wtsUserName.lower():
@@ -931,12 +929,12 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					logger.debug("Duplicate Session Found, trying to figure out, which one is the newest.")
 					lt = item['LogonTime']
 					lts = sessionInfo['LogonTime']
-					logger.debug("lt '%s'" % lt)
-					logger.debug("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second))
-					logger.debug("lts '%s'" % lts)
-					logger.debug("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second))
-					logger.debug("lt-type '%s'" % type(lt))
-					logger.debug("lts-type '%s'" % type(lts))
+					logger.debug2("lt '%s'" % lt)
+					logger.debug2("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second))
+					logger.debug2("lts '%s'" % lts)
+					logger.debug2("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second))
+					logger.debug2("lt-type '%s'" % type(lt))
+					logger.debug2("lts-type '%s'" % type(lts))
 					infodt = datetime.datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime.datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
@@ -1354,7 +1352,7 @@ def getPids(process, sessionId = None):
 			sid = win32ts.ProcessIdToSessionId(pid)
 		except:
 			pass
-		logger.debug(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
+		logger.debug2(u"   got process %s with pid %d in session %s" % (pe32.szExeFile, pid, sid))
 		if (pe32.szExeFile.lower() == process.lower()):
 			logger.info(u"Found process %s with matching name (pid %d, session %s)" % (pe32.szExeFile.lower(), pid, sid))
 			if sessionId is None or (sid == sessionId):
