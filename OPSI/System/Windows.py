@@ -938,7 +938,7 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					logger.debug("lt-type '%s'" % type(lt))
 					logger.debug("lts-type '%s'" % type(lts))
 					infodt = datetime.datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
-					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					sessiondt = datetime.datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
 						logger.notice("Token in SessionData is newer then the cached one.")
 						info.remove(item)
