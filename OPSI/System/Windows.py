@@ -878,6 +878,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 		logger.debug("Given SessionId '%s'" % type(sessionId))
 		logger.debug("Full Session to check: '%s'" % sessionData)
 		if (forceInt(sessionData['Session']) == forceInt(sessionId)):
+			logger.debug("Session is found and checked. wtsUserName: '%s'" % wtsUserName)
 			if wtsUserName and sessionData['UserName'].lower != wtsUserName.lower():
 				continue
 			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
