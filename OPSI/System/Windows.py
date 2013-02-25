@@ -931,6 +931,8 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					logger.debug("Duplicate Session Found, trying to figure out, which one is the newest.")
 					lt = item['LogonTime']
 					lts = sessionInfo['LogonTime']
+					logger.debug("lt '%s'" % lt)
+					logger.debug("lts '%s'" % lts)
 					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
 					if sessiondt > infodt:
