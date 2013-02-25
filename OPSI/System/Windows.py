@@ -896,7 +896,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 				lts = sessionData['LogonTime']
 				newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
 				sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
-				if sessiondt > newestdt:
+				if sessiondt < newestdt:
 					logger.notice("Token in SessionData is newer then the cached one.")
 					newest = sessionData
 			except Exception, e:
