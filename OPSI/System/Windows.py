@@ -925,7 +925,19 @@ def getActiveSessionInformation(winApiBugCommand = None):
 	for sessionId in getActiveSessionIds(winApiBugCommand):
 		logger.debug("sessionid info: %s" % sessionId)
 		sessionInfo = getSessionInformation(sessionId, winApiBugCommand)
-		if sessionInfo: 
+		if info and sessionInfo:
+			for item in info:
+				if item['UserName'].lower() == sessionInfo['UserName'].lower():
+					logger.debug("Duplicate Session Found, trying to figure out, which one is the newest.")
+					lt = item['LogonTime']
+					lts = sessionInfo['LogonTime']
+					infodt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
+					sessiondt = datetime(lts.year, lts.month, lts.day, lts.hour, lts.minute, lts.second)
+					if sessiondt > infodt:
+						logger.notice("Token in SessionData is newer then the cached one.")
+						info.remove(item)
+						info.append(sessionInfo)
+		elif sessionInfo: 
 			info.append(sessionInfo)
 		#info.append(getSessionInformation(sessionId, winApiBugCommand))
 	logger.debug(u"info: '%s'" % info)
