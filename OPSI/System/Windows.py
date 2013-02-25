@@ -932,7 +932,7 @@ def getActiveSessionInformation(winApiBugCommand = None):
 					lt = item['LogonTime']
 					lts = sessionInfo['LogonTime']
 					logger.debug("lt '%s'" % lt)
-					logger.debug("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (t.year, lt.month, lt.day, lt.hour, lt.minute, lt.second))
+					logger.debug("lt: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second))
 					logger.debug("lts '%s'" % lts)
 					logger.debug("lts: year: '%s', month: '%s', day: '%s', hour: '%s', minute: '%s', second: '%s'" % (lts.year, lts.month, lts.day, lts.hour, lts.minute, ltltssecond))
 					logger.debug("lt-type '%s'" % type(lt))
