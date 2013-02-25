@@ -875,9 +875,9 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		logger.debug("Session to check '%s'" % sessionData['Session'])
-		logger.debug("Given SessionId '%s'" % sessionId)
+		logger.debug("Given SessionId '%s'" % type(sessionId))
 		logger.debug("Full Session to check: '%s'" % sessionData)
-		if (forceInt(sessionData['Session']) == sessionId):
+		if (forceInt(sessionData['Session']) == forceInt(sessionId)):
 			if wtsUserName and sessionData['UserName'].lower != wtsUserName.lower():
 				continue
 			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
