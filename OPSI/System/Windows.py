@@ -766,6 +766,9 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 					sessionIds.append(sessionId)
 				if newest:
 					try:
+						if not newest:
+							newest = sessionData
+							continue
 						lt = newest['LogonTime']
 						lts = sessionData['LogonTime']
 						newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
@@ -801,6 +804,9 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 				sessionIds.append(sessionId)
 			if newest:
 				try:
+					if not newest:
+						newest = sessionData
+						continue
 					lt = newest['LogonTime']
 					lts = sessionData['LogonTime']
 					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
@@ -937,6 +943,9 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 			sessionIds.append(forceInt(session.get('Session')))
 			if onlyNewestId:
 				try:
+					if not newest:
+						newest = sessionData
+						continue
 					lt = newest['LogonTime']
 					lts = sessionData['LogonTime']
 					newestdt = datetime(lt.year, lt.month, lt.day, lt.hour, lt.minute, lt.second)
