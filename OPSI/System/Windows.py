@@ -881,7 +881,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	for s in win32security.LsaEnumerateLogonSessions():
 		sessionData = win32security.LsaGetLogonSessionData(s)
 		logger.debug("Session to check '%s'" % sessionData['Session'])
-		logger.debug("Given SessionId '%s'" % type(sessionId))
+		logger.debug("Given SessionId '%s'" % sessionId)
 		logger.debug("Full Session to check: '%s'" % sessionData)
 		if (forceInt(sessionData['Session']) == forceInt(sessionId)):
 			logger.debug("Session is found and checked. wtsUserName: '%s'" % wtsUserName)
