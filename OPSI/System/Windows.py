@@ -890,6 +890,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 			logger.debug(u"sessionData: '%s', wtsUserName: '%s'" % (sessionData['UserName'], wtsUserName))
 			try:
 				if not newest:
+					logger.debug("No newest object found, so newest is Session with ID: '%s'" % sessionData['Session'])
 					newest = sessionData
 					continue
 				lt = newest['LogonTime']
