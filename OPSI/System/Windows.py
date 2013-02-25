@@ -902,6 +902,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 def getActiveSessionInformation(winApiBugCommand = None):
 	info = []
 	for sessionId in getActiveSessionIds(winApiBugCommand):
+		logger.debug("sessionid info: %s" % sessionId)
 		sessionInfo = getSessionInformation(sessionId, winApiBugCommand)
 		if sessionInfo: 
 			info.append(sessionInfo)
