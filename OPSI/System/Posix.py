@@ -33,7 +33,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.7'
+__version__ = '4.0.3.2'
 
 # Imports
 import os, sys, subprocess, locale, threading, time, codecs, socket, posix, platform
@@ -59,6 +59,14 @@ GEO_OVERWRITE_SO     = '/usr/local/lib/geo_override.so'
 BIN_WHICH            = '/usr/bin/which'
 WHICH_CACHE          = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp3/dhclient.leases'
+
+64bit = False
+try:
+	if "64bit" in platform.architecture():
+		64bit = True
+except:
+	pass	
+	
 
 class SystemSpecificHook(object):
 	def __init__(self):
@@ -1042,7 +1050,28 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			if storageControllers:
 				for hwPath in storageControllers.keys():
 					return storageControllers[hwPath]
-			
+		else:
+			''' Quick Hack: for entry like this: /0/100/1f.2              storage        82801 SATA Controller [RAID mode] [8086:2822]
+			This Quick hack is for Bios-Generations, that will only have a choice for "RAID + AHCI", this devices will be shown as
+			RAID mode-Devices '''
+			match = re.search('^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
+			if match:
+				vendorId = match.group(3)
+				while (len(vendorId) < 4):
+					vendorId = '0' + vendorId
+				deviceId = match.group(4)
+				while (len(deviceId) < 4):
+					deviceId = '0' + deviceId
+				storageControllers[match.group(1)] = {
+					'hwPath':      forceUnicode(match.group(1)),
+					'device':      device,
+					'description': forceUnicode(match.group(2)),
+					'vendorId':    forceHardwareVendorId(vendorId),
+					'deviceId':    forceHardwareDeviceId(deviceId)
+				}
+				if storageControllers:
+					for hwPath in storageControllers.keys():
+						return storageControllers[hwPath]
 	
 	
 	return None
@@ -1089,9 +1118,14 @@ class Harddisk:
 		except Exception, e:
 			logger.error(e)
 			return
-		# geo_override.so will affect all devices !
-		logger.info(u"Using geo_override.so for all disks.")
-		self.ldPreload = GEO_OVERWRITE_SO
+		# Don't use geo_override patch, if bootimage is in 64bit mode.
+		# If geo_override is not needed, it should removed from bootimage.
+		if not 64bit:
+			# geo_override.so will affect all devices !
+			logger.info(u"Using geo_override.so for all disks.")
+			self.ldPreload = GEO_OVERWRITE_SO
+		else:
+			logger.info(u"Don't load geo_override.so on 64bit architecture.")
 		
 	def getSignature(self):
 		hd = posix.open(str(self.device), posix.O_RDONLY)
