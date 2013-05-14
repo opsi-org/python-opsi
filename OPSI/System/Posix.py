@@ -60,10 +60,10 @@ BIN_WHICH            = '/usr/bin/which'
 WHICH_CACHE          = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp3/dhclient.leases'
 
-64bit = False
+x86_64 = False
 try:
 	if "64bit" in platform.architecture():
-		64bit = True
+		x86_64 = True
 except:
 	pass	
 	
@@ -1120,7 +1120,7 @@ class Harddisk:
 			return
 		# Don't use geo_override patch, if bootimage is in 64bit mode.
 		# If geo_override is not needed, it should removed from bootimage.
-		if not 64bit:
+		if not x86_64:
 			# geo_override.so will affect all devices !
 			logger.info(u"Using geo_override.so for all disks.")
 			self.ldPreload = GEO_OVERWRITE_SO

@@ -1,3 +1,15 @@
+python-opsi (4.0.3.3-1) experimental; urgency=low
+
+  * Fixes for wheezy and raring support
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 14 May 2013 13:41:33 +0200
+
+python-opsi (4.0.3.2-1) experimental; urgency=low
+
+  * Don't load geo_override module on 64bit bootimage.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 29 Apr 2013 16:13:16 +0200
+
 python-opsi (4.0.3.1-1) testing; urgency=low
 
   * dhcp-backend: ddns-rev-domainname added to list where the values are written in double quotas
