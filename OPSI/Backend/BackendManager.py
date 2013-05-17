@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.3'
+__version__ = '4.0.3.3'
 
 import os, sys, new, inspect, re, types, socket, copy
 
@@ -525,7 +525,7 @@ class BackendAccessControl(object):
 		
 		if (DISTRIBUTOR.lower().find('suse') != -1):
 			self._pamService = 'sshd'
-		elif (DISTRIBUTOR.lower().find('centos') != -1) or (DISTRIBUTOR.lower().find('scientificsl') != -1) or (DISTRIBUTOR.lower().find('sme') != -1):
+		elif (DISTRIBUTOR.lower().find('centos') != -1) or (DISTRIBUTOR.lower().find('scientific') != -1) or (DISTRIBUTOR.lower().find('sme') != -1):
 			self._pamService = 'system-auth'
 		elif (DISTRIBUTOR.lower().find('redhat') != -1):
 			self._pamService = 'system-auth'
