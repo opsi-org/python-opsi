@@ -33,7 +33,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.1'
+__version__ = '4.0.3.3'
 
 # Imports
 import re, os, time, socket, sys, locale, subprocess, difflib, threading
@@ -167,6 +167,11 @@ def getOpsiHotfixName():
 				os = u'win7'
 			else:
 				os = u'win7-win2008r2'
+		elif (minor == 2):
+			if (arch == 'x86'):
+				os = u'win8'
+			else:
+				os = u'win8-win2012'
 		
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 	
