@@ -10,17 +10,9 @@ import stat
 import time
 
 # twisted imports
-from OPSI.web2 import iweb, resource, http, http_headers
+from OPSI.web2 import resource, http, http_headers
+from OPSI.Util import formatFileSize
 
-def formatFileSize(size):
-    if size < 1024:
-        return '%i' % size
-    elif size < (1024**2):
-        return '%iK' % (size / 1024)
-    elif size < (1024**3):
-        return '%iM' % (size / (1024**2))
-    else:
-        return '%iG' % (size / (1024**3))
 
 class DirectoryLister(resource.Resource):
     def __init__(self, pathname, dirs=None,
@@ -65,7 +57,7 @@ class DirectoryLister(resource.Resource):
                 mimetype, encoding = getTypeAndEncoding(
                     path,
                     self.contentTypes, self.contentEncodings, self.defaultType)
-                
+
                 filesize = st.st_size
                 files.append({
                     'link': url,
@@ -77,15 +69,15 @@ class DirectoryLister(resource.Resource):
 
         return files
 
-    def __repr__(self):  
+    def __repr__(self):
         return '<DirectoryLister of %r>' % self.path
-        
+
     __str__ = __repr__
 
 
     def render(self, request):
         title = "Directory listing for %s" % urllib.unquote(request.path)
-    
+
         s= """<html><head><title>%s</title><style>
           th, .even td, .odd td { padding-right: 0.5em; font-family: monospace}
           .even-dir { background-color: #efe0ef }
@@ -110,7 +102,7 @@ class DirectoryLister(resource.Resource):
             s+='<tr class="%s">' % (even and 'even' or 'odd',)
             s+='<td><a href="%(link)s">%(linktext)s</a></td><td align="right">%(size)s</td><td>%(lastmod)s</td><td>%(type)s</td></tr>' % row
             even = not even
-                
+
         s+="</table></div></body></html>"
         response = http.Response(200, {}, s)
         response.headers.setHeader("content-type", http_headers.MimeType('text', 'html'))

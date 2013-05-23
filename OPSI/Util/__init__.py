@@ -4,29 +4,29 @@
    = = = = = = = = = = = = = = = = = = =
    =   opsi python library - Util      =
    = = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2006, 2007, 2008 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
@@ -35,9 +35,20 @@
 __version__ = '4.0.2.7'
 
 # Imports
-import ctypes, threading, os, random, base64, types, socket, httplib, struct, codecs
+import ctypes
+import threading
+import os
+import random
+import base64
+import types
+import socket
+import httplib
+import struct
+import codecs
+
 from sys import version_info
-if (version_info >= (2,6)):
+
+if (version_info >= (2, 6)):
 	import json
 else:
 	import simplejson as json
@@ -62,9 +73,8 @@ except ImportError:
 	import _argparse as argparse
 
 
-
 # OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Util.Thread import KillableThread
 
@@ -75,10 +85,10 @@ RANDOM_DEVICE    = u'/dev/urandom'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 class PickleString(str):
-	
+
 	def __getstate__(self):
 		return base64.standard_b64encode(self)
-	
+
 	def __setstate__(self, state):
 		self = base64.standard_b64decode(state)
 
@@ -122,19 +132,29 @@ def serialize(obj):
 		return obj
 	return newObj
 
+def formatFileSize(sizeInBytes):
+	if sizeInBytes < 1024:
+		return '%i' % sizeInBytes
+	elif sizeInBytes < (1024**2):
+		return '%iK' % (sizeInBytes / 1024)
+	elif sizeInBytes < (1024**3):
+		return '%iM' % (sizeInBytes / (1024**2))
+	else:
+		return '%iG' % (sizeInBytes / (1024**3))
+
 def fromJson(obj, objectType=None, preventObjectCreation=False):
 	obj = json.loads(obj)
 	if type(obj) is dict and objectType:
 		obj['type'] = objectType
 	return deserialize(obj, preventObjectCreation = preventObjectCreation)
-	
+
 def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
 
 def librsyncSignature(filename, base64Encoded = True):
 	#if (os.name != 'posix'):
 	#	raise NotImplementedError(u"Not implemented for non-posix os")
-	
+
 	(f, sf) = (None, None)
 	try:
 		f = open(filename, 'rb')
@@ -154,7 +174,7 @@ def librsyncSignature(filename, base64Encoded = True):
 def librsyncPatchFile(oldfile, deltafile, newfile):
 	#if (os.name != 'posix'):
 	#	raise NotImplementedError(u"Not implemented for non-posix os")
-	
+
 	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
 	if (oldfile == newfile):
 		raise ValueError(u"Oldfile and newfile are the same file")
@@ -162,7 +182,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		raise ValueError(u"deltafile and newfile are the same file")
 	if (deltafile == oldfile):
 		raise ValueError(u"oldfile and deltafile are the same file")
-	
+
 	(of, df, nf, pf) = (None, None, None, None)
 	bufsize = 1024*1024
 	try:
@@ -188,14 +208,14 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 def librsyncDeltaFile(filename, signature, deltafile):
 	#if (os.name != 'posix'):
 	#	raise NotImplementedError(u"Not implemented for non-posix os")
-	
+
 	(f, df, ldf) = (None, None, None)
 	bufsize = 1024*1024
 	try:
 		f = open(filename, "rb")
 		df = open(deltafile, "wb")
 		ldf = librsync.DeltaFile(signature, f)
-		
+
 		data = True
 		while(data):
 			data = ldf.read(bufsize)
@@ -208,7 +228,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 		if f:   f.close()
 		if ldf: ldf.close()
 		raise Exception(u"Failed to write delta file: %s" % forceUnicode(e))
-	
+
 def md5sum(filename):
 	f = open(filename, 'rb')
 	m = md5()
@@ -253,7 +273,7 @@ def timestamp(secs=0, dateOnly=False):
 def objectToBeautifiedText(obj, level=0):
 	if (level == 0):
 		obj = serialize(obj)
-	
+
 	hspace = level*10
 	text = u''
 	if type(obj) is types.ListType:
@@ -262,7 +282,7 @@ def objectToBeautifiedText(obj, level=0):
 			if not type(obj[i]) in (types.DictType, types.ListType):
 				text += u' '*hspace
 			text += objectToBeautifiedText(obj[i], level+1)
-			
+
 			if (i < len(obj)-1):
 				text += u',\n'
 		text += u'\n' + u' '*hspace + u']'
@@ -274,7 +294,7 @@ def objectToBeautifiedText(obj, level=0):
 			if type(value) in (types.DictType, types.ListType):
 				text += u'\n'
 			text += objectToBeautifiedText(value, level+1)
-			
+
 			if (i < len(obj)-1):
 				text += u',\n'
 			i+=1
@@ -288,17 +308,17 @@ def objectToBeautifiedText(obj, level=0):
 def objectToBash(obj, bashVars = {}, level=0):
 	if (level == 0):
 		obj = serialize(obj)
-	
+
 	varName = 'RESULT'
 	if (level > 0):
 		varName = 'RESULT%d' % level
-	
+
 	if not bashVars.get(varName):
 		bashVars[varName] = u''
-	
+
 	if hasattr(obj, 'serialize'):
 		obj = obj.serialize()
-	
+
 	if type(obj) is types.ListType:
 		bashVars[varName] += u'(\n'
 		for i in range( len(obj) ):
@@ -323,19 +343,19 @@ def objectToBash(obj, bashVars = {}, level=0):
 				objectToBash(value, bashVars, level)
 			bashVars[varName] += u'\n'
 		bashVars[varName] = bashVars[varName][:-1] + u'\n)'
-	
+
 	elif obj is None:
 		bashVars[varName] += u'""'
-	
+
 	else:
 		bashVars[varName] += u'"%s"' % forceUnicode(obj)
-	
+
 	return bashVars
 
 def objectToHtml(obj, level=0):
 	if (level == 0):
 		obj = serialize(obj)
-	
+
 	html = u''
 	if type(obj) is types.ListType:
 		html += u'['
@@ -385,41 +405,41 @@ def objectToHtml(obj, level=0):
 def compareVersions(v1, condition, v2):
 	v1 = forceUnicode(v1)
 	v2 = forceUnicode(v2)
-	
+
 	if "~" in v1:
 		v1 = v1[:v1.find("~")]
 	if "~" in v2:
 		v2 = v2[:v2.find("~")]
-	
+
 	if not condition:
 		condition = u'=='
 	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
 		raise Exception(u"Bad condition '%s'" % condition)
 	if (condition == u'='):
 		condition = u'=='
-	
+
 	v1ProductVersion = u'0'
 	v1PackageVersion = u'0'
-	
+
 	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v1)
 	if not match:
 		raise Exception(u"Bad version string '%s'" % v1)
-	
+
 	v1ProductVersion = match.group(1)
 	if match.group(2):
 		v1PackageVersion = match.group(2)
-	
+
 	v2ProductVersion = u'0'
 	v2PackageVersion = u'0'
-	
+
 	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v2)
 	if not match:
 		raise Exception(u"Bad version string '%s'" % v2)
-	
+
 	v2ProductVersion = match.group(1)
 	if match.group(2):
 		v2PackageVersion = match.group(2)
-	
+
 	for (v1, v2) in ( (v1ProductVersion, v2ProductVersion), (v1PackageVersion, v2PackageVersion) ):
 		v1p = v1.split(u'.')
 		v2p = v2.split(u'.')
@@ -431,7 +451,7 @@ def compareVersions(v1, condition, v2):
 			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
 				cv1 = u''
 				cv2 = u''
-				
+
 				match = re.search('^(\d+)(\D*.*)$', v1p[i])
 				if match:
 					cv1 = int(match.group(1))
@@ -441,7 +461,7 @@ def compareVersions(v1, condition, v2):
 					if match:
 						cv1 = match.group(1)
 						v1p[i] = match.group(2)
-				
+
 				match = re.search('^(\d+)(\D*.*)$', v2p[i])
 				if match:
 					cv2 = int(match.group(1))
@@ -451,16 +471,16 @@ def compareVersions(v1, condition, v2):
 					if match:
 						cv2 = match.group(1)
 						v2p[i] = match.group(2)
-				
+
 				if (cv1 == u''): cv1 = chr(1)
 				if (cv2 == u''): cv2 = chr(1)
 				if (cv1 == cv2):
 					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
 					continue
-				
+
 				if type(cv1) is not int: cv1 = u"'%s'" % cv1
 				if type(cv2) is not int: cv2 = u"'%s'" % cv2
-				
+
 				b = eval( u"%s %s %s" % (cv1, condition, cv2) )
 				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
 				if not b:
@@ -478,8 +498,8 @@ def compareVersions(v1, condition, v2):
 	logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
 		% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
 	return True
-	
-	
+
+
 
 unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 def removeUnit(x):
@@ -487,14 +507,14 @@ def removeUnit(x):
 	match = unitRegex.search(x)
 	if not match:
 		return x
-	
+
 	if (match.group(1).find(u'.') != -1):
 		value = float(match.group(1))
 	else:
 		value = int(match.group(1))
 	unit = match.group(2)
 	mult = 1000
-	
+
 	if   unit.lower().endswith('hz'):
 		unit = unit[:-2]
 	elif unit.lower().endswith('bits'):
@@ -505,7 +525,7 @@ def removeUnit(x):
 		unit = unit[:-1]
 	elif unit.lower().endswith('s') or unit.lower().endswith('v'):
 		unit = unit[:-1]
-	
+
 	if unit.endswith('n'):
 		return float(value)/(mult*mult)
 	if unit.endswith('m'):
@@ -516,18 +536,18 @@ def removeUnit(x):
 		return value*mult*mult
 	if unit.endswith('G'):
 		return value*mult*mult*mult
-	
+
 	return value
 
 
 BLOWFISH_IV = 'OPSI1234'
 
 def blowfishEncrypt(key, cleartext):
-	''' Takes cleartext string, 
+	''' Takes cleartext string,
 	    returns hex-encoded, blowfish-encrypted string '''
 	cleartext = forceUnicode(cleartext).encode('utf-8')
 	key = forceUnicode(key)
-	
+
 	while ( len(cleartext) % 8 != 0 ):
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
@@ -535,13 +555,13 @@ def blowfishEncrypt(key, cleartext):
 		key = key.decode("hex")
 	except TypeError, e:
 		raise Exception(u"Failed to hex decode key '%s'" % key)
-	
+
 	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
 	crypt = blowfish.encrypt(cleartext)
 	return unicode(crypt.encode("hex"))
 
 def blowfishDecrypt(key, crypt):
-	''' Takes hex-encoded, blowfish-encrypted string, 
+	''' Takes hex-encoded, blowfish-encrypted string,
 	    returns cleartext string '''
 	key = forceUnicode(key)
 	crypt = forceUnicode(crypt)
@@ -620,7 +640,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	returnDirs = forceBool(returnDirs)
 	returnLinks = forceBool(returnLinks)
 	followLinks = forceBool(followLinks)
-	
+
 	islink  = os.path.islink
 	isdir   = os.path.isdir
 	listdir = os.listdir
@@ -628,7 +648,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		islink  = repository.islink
 		isdir   = repository.isdir
 		listdir = repository.listdir
-	
+
 	files = []
 	for entry in listdir(directory):
 		if type(entry) is str:
@@ -683,12 +703,12 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 def ipAddressInNetwork(ipAddress, networkAddress):
 	ipAddress = forceIPAddress(ipAddress)
 	networkAddress = forceNetworkAddress(networkAddress)
-	
+
 	n = ipAddress.split('.')
 	for i in range(4):
 		n[i] = forceInt(n[i])
 	ip = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
-	
+
 	(network, netmask) = networkAddress.split(u'/')
 	while (network.count('.') < 3):
 		network = network + u'.0'
@@ -696,9 +716,9 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I',0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
 	while (netmask.count('.') < 3):
 		netmask = netmask + u'.0'
-	
+
 	logger.debug(u"Testing if ip %s is part of network %s/%s" % (ipAddress, network, netmask))
-	
+
 	n = network.split('.')
 	for i in range(4):
 		n[i] = int(n[i])
@@ -707,7 +727,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	for i in range(4):
 		n[i] = int(n[i])
 	netmask = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
-	
+
 	wildcard = netmask ^ 0xFFFFFFFFL
 	if (wildcard | ip == wildcard | network):
 		return True
@@ -749,9 +769,11 @@ def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 	return None
 
 if (__name__ == "__main__"):
+	from OPSI.Logger import LOG_DEBUG2
+
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
-	
+
 	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/16')
 	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/24')
 	print ipAddressInNetwork('10.10.1.1', '10.10.0.0/23')
@@ -783,6 +805,3 @@ if (__name__ == "__main__"):
 	#start = time.time()
 	#print objectToHtml(obj, level=0)
 	#print time.time() - start
-	
-	
-	
