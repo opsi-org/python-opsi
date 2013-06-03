@@ -3,8 +3,9 @@ python-opsi (4.0.3.3-1) experimental; urgency=low
   * Fixes for wheezy and raring support
   * System.Windows: Added handling mshotfix for win8 and win2012
   * Moved method formatFileSize from OPSI.web2.dirlist to OPSI.Util
+  * Added 40_groupActions.conf in opsi-webservice-extender
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 22 May 2013 11:41:33 +0200
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 03 Jun 2013 11:41:33 +0200
 
 python-opsi (4.0.3.2-1) experimental; urgency=low
 
