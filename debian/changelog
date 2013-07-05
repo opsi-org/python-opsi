@@ -4,6 +4,7 @@ python-opsi (4.0.3.3-1) experimental; urgency=low
   * System.Windows: Added handling mshotfix for win8 and win2012
   * Moved method formatFileSize from OPSI.web2.dirlist to OPSI.Util
   * Added 40_groupActions.conf in opsi-webservice-extender
+  * Modified debian postinst script (user opsiconfd will be created if not exists)
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 03 Jun 2013 11:41:33 +0200
 
