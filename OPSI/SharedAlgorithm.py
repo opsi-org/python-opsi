@@ -161,7 +161,6 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 		addedInfo = {}
 		for productId in productOnClientByProductId.keys():
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
-		
 	return productOnClientByProductId.values()
 '''
 
@@ -859,7 +858,7 @@ if (__name__ == "__main__"):
 	
 	assert len(productOnClients) == 5
 	
-	productOnClients = generateProductOnClientSequence(
+	productOnClients = generateProductOnClientSequence_algorithm1(
 		productOnClients,
 		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
 		[ flashplayerDependency1, javavmDependency1 ])
@@ -871,10 +870,112 @@ if (__name__ == "__main__"):
 		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
 		[ flashplayerDependency1, javavmDependency1 ])
 	
-	for productOnClient in productOnClients:
-		print productOnClient
+	#for productOnClient in productOnClients:
+	#	print productOnClient
+		
+	print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 	
 
+	fsv = LocalbootProduct(
+		id                 = 'fsv',
+		name               = u'HIS FSV',
+		productVersion     = '15.0.0.0',
+		packageVersion     = '1',
+		licenseRequired    = False,
+		setupScript        = u"fsv.ins",
+		uninstallScript    = u"",
+		updateScript       = u"fsvreg.ins",
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 12,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = []
+	)
+	
+	psqlclient = LocalbootProduct(
+		id                 = 'psql-client',
+		name               = u'PostgreSQL',
+		productVersion     = '9.1.200',
+		packageVersion     = '1',
+		licenseRequired    = False,
+		setupScript        = u"psqlclient.ins",
+		uninstallScript    = u"delpsqlclient.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 2,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = []
+	)
 
+	fsvDependency = ProductDependency(
+		productId                  = fsv.id,
+		productVersion             = fsv.productVersion,
+		packageVersion             = fsv.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = psqlclient.id,
+		requiredProductVersion     = psqlclient.productVersion,
+		requiredPackageVersion     = psqlclient.packageVersion,
+		requiredAction             = 'setup',
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'before'
+	)
 
+	productOnClient1 = ProductOnClient(
+		productId          = fsv.getId(),
+		productType        = fsv.getType(),
+		clientId           = 'client1.uib.local',
+		installationStatus = 'installed',
+		actionRequest      = 'setup',
+		actionProgress     = '',
+		productVersion     = fsv.getProductVersion(),
+		packageVersion     = fsv.getPackageVersion(),
+		modificationTime   = '2013-07-01 12:00:00'
+	)
+	productOnClient2 = ProductOnClient(
+		productId          = psqlclient.getId(),
+		productType        = psqlclient.getType(),
+		clientId           = 'client1.uib.local',
+		installationStatus = 'installed',
+		actionRequest      = None,
+		actionProgress     = '',
+		productVersion     = None,
+		packageVersion     = None,
+		modificationTime   = '2013-07-01 12:00:00'
+	)
 
+	print "Result with algorithm 1:"
+	print "========================"	
+	productOnClients = addDependentProductOnClients(
+		[ productOnClient1 ],
+		[ fsv, psqlclient ],
+		[ fsvDependency ])
+
+	productOnClients = generateProductOnClientSequence_algorithm1(
+		productOnClients,
+		[ fsv, psqlclient ],
+		[ fsvDependency ])
+	
+	for productOnClient in productOnClients:
+		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
+	
+	
+	print "Result with algorithm 2:"
+	print "========================"
+	productOnClients = addDependentProductOnClients(
+		[ productOnClient1, productOnClient2 ],
+		[ fsv, psqlclient ],
+		[ fsvDependency ])
+
+	productOnClients = generateProductOnClientSequence_algorithm2(
+		productOnClients,
+		[ fsv, psqlclient ],
+		[ fsvDependency ])
+	
+	
+	for productOnClient in productOnClients:
+		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
+	
+	
