@@ -32,7 +32,7 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.3.1'
 
 # Imports
 import types, re, time, sys, datetime
@@ -312,7 +312,7 @@ def forcePackageVersionList(var):
 		var[i] = forcePackageVersion(var[i])
 	return var
 
-productIdRegex = re.compile('^[a-z0-9-_\.]{1,32}$')
+productIdRegex = re.compile('^[a-z0-9-_\.]{1,128}$')
 def forceProductId(var):
 	var = forceObjectId(var)
 	#if (var.find('_') != -1):
