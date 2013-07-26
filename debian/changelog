@@ -1,3 +1,9 @@
+python-opsi (4.0.3.4-1) experimental; urgency=low
+
+  * Tar archives: make use of pigz for parallel gzip compression if available. Requires pigz version >2.2.3
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 26 Jul 2013 14:10:05 +0200
+
 python-opsi (4.0.3.3-1) experimental; urgency=low
 
   * Fixes for wheezy and raring support
