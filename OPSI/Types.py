@@ -4,29 +4,29 @@
    = = = = = = = = = = = = = = = = = =
    =   opsi python library - Types   =
    = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2006, 2007, 2008 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
@@ -34,14 +34,16 @@
 
 __version__ = '4.0.3.1'
 
-# Imports
-import types, re, time, sys, datetime
+import datetime
+import re
+import os
+import sys
+import time
+import types
 
-# OPSI imports
 from OPSI.Logger import *
 
 encoding = sys.getfilesystemencoding()
-# Get logger instance
 logger = Logger()
 
 def forceList(var):
@@ -78,7 +80,7 @@ def forceUnicode(var):
 			return var
 		return unicode(var, 'utf-8', 'replace')
 	return unicode(var)
-	
+
 def forceUnicodeLower(var):
 	return forceUnicode(var).lower()
 
@@ -255,7 +257,7 @@ def forceHostAddress(var):
 	except Exception, e:
 		raise ValueError(u"Bad host address: '%s'" % var)
 	return var
-	
+
 netmaskRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceNetmask(var):
 	var = forceUnicodeLower(var)
@@ -414,7 +416,7 @@ def forceActionRequestList(var):
 	for i in range(len(var)):
 		var[i] = forceActionRequest(var[i])
 	return var
-	
+
 def forceActionProgress(var):
 	return forceUnicode(var)
 
@@ -452,14 +454,14 @@ def forceObjectClass(var, objectClass):
 		except Exception, e:
 			exception = e
 			logger.debug(u"Failed to get object from dict '%s': %s" % (var, e))
-		
+
 	if not isinstance(var, objectClass):
 		if exception:
 			raise ValueError(u"Not a %s: '%s': %s" % (objectClass, var, exception))
 		else:
 			raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
 	return var
-	
+
 def forceObjectClassList(var, objectClass):
 	var = forceList(var)
 	for i in range(len(var)):
@@ -626,32 +628,32 @@ def args(*vars, **typeVars):
 	"""Function to populate an object with passed on keyword args.
 	This is intended to be used as a decorator.
 	Classes using this decorator must explicitly inherit from object or a subclass of object.
-		
+
 		@args()			#works
 		class Foo(object):
 			pass
-			
+
 		@args()			#works
 		class Bar(Foo):
 			pass
-			
+
 		@args()			#does not work
 		class Foo():
 			pass
-			
+
 		@args()			#does not work
 		class Foo:
 			pass
 	"""
 	vars = list(vars)
 	def wrapper(cls):
-		
+
 		def new(typ, *args, **kwargs):
 			if getattr(cls, "__base__", None) in (object, None):
 				obj = object.__new__(typ) ### Suppress deprecation warning
 			else:
 				obj = cls.__base__.__new__(typ, *args, **kwargs)
-			
+
 			vars.extend(typeVars.keys())
 			ka = kwargs.copy()
 
@@ -669,7 +671,7 @@ def args(*vars, **typeVars):
 				if getattr(obj, key, None) is None:
 					setattr(obj, key, value)
 			return obj
-		
+
 		cls.__new__ = staticmethod(new)
 		return cls
 	return wrapper
@@ -681,25 +683,25 @@ def args(*vars, **typeVars):
 
 class OpsiError(Exception):
 	""" Base class for OPSI Backend exceptions. """
-	
+
 	ExceptionShortDescription = "Opsi error"
 	_message = None
-	
+
 	def __init__(self, message = ''):
 		self._message = forceUnicode(message)
-	
+
 	def __unicode__(self):
 		if self._message:
 			return u"%s: %s" % (self.ExceptionShortDescription, self._message)
 		else:
 			return u"%s" % self.ExceptionShortDescription
-		
+
 	def __repr__(self):
 		return unicode(self).encode("utf-8")
-	
+
 	__str__ = __repr__
 	complete_message = __unicode__
-	
+
 	def message():
 		def get(self):
 			return self._message
@@ -709,13 +711,13 @@ class OpsiError(Exception):
 
 class OpsiBackupFileError(OpsiError):
 	ExceptionShortDescription = u"Opsi backup file error"
-	
+
 class OpsiBackupFileNotFound(OpsiBackupFileError):
 	ExceptionShortDescription = u"Opsi backup file not found"
 
 class OpsiBackupBackendNotFound(OpsiBackupFileError):
 	ExceptionShortDescription = u"Opsi backend not found in backup"
-	
+
 class OpsiAuthenticationError(OpsiError):
 	ExceptionShortDescription = u"Opsi authentication error"
 
@@ -739,7 +741,7 @@ class OpsiProductOrderingError(OpsiError):
 
 class OpsiVersionError(OpsiError):
 	ExceptionShortDescription = u"Opsi version error"
-		
+
 class BackendError(OpsiError):
 	""" Exception raised if there is an error in the backend. """
 	ExceptionShortDescription = u"Backend error"
@@ -797,31 +799,3 @@ class RepositoryError(OpsiError):
 
 class CanceledException(Exception):
 	ExceptionShortDescription = u"CanceledException"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
