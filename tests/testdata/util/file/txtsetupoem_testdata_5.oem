@@ -1,0 +1,39 @@
+[Disks]
+d1 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\
+d2 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\i386
+d3 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\x86_64
+
+[Defaults]
+scsi = fttxr5_O_i386
+
+[scsi]
+fttxr5_O_i386 = "Promise FastTrak TX4310 (tm) Controller-Intel x86", fttxr5_O
+fttxr5_O_x86_64 = "Promise FastTrak TX4310 (tm) Controller-x86_64", fttxr5_O
+
+[Files.scsi.fttxr5_O_i386]
+driver = d2, fttxr5_O.sys, fttxr5_O
+;driver = d2, bb_run.sys, bb_run
+;driver = d1, DontGo.sys, dontgo
+;dll = d1, ftutil2.dll
+inf    = d2, fttxr5_O.inf
+catalog= d2, fttxr5_O.cat
+
+[Files.scsi.fttxr5_O_x86_64]
+driver = d3, fttxr5_O.sys, fttxr5_O
+;driver = d3, bb_run.sys, bb_run
+;driver = d1, DontGo.sys, dontgo
+;dll = d1, ftutil2.dll
+inf    = d3, fttxr5_O.inf
+catalog= d3, fttxr5_O.cat
+
+
+
+[HardwareIds.scsi.fttxr5_O_i386]
+id="PCI\VEN_105A", "fttxr5_O"
+
+[HardwareIds.scsi.fttxr5_O_x86_64]
+id="PCI\VEN_105A", "fttxr5_O"
+
+
+[Config.fttxr5_O]
+value = "", Tag, REG_DWORD, 1

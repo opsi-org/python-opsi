@@ -1,0 +1,74 @@
+[Version]
+Signature="$WINDOWS NT$"
+Class=Processor
+ClassGuid={50127DC3-0F36-415e-A6CC-4CB3BE910B65}
+Provider=%AMD%
+DriverVer=10/26/2004, 1.2.2.0
+CatalogFile=AmdK8.cat
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskDesc%,,,
+
+[SourceDisksFiles]
+AmdK8.sys = 1
+
+[ControlFlags]
+;
+; Exclude all devices from Select Device list
+;
+ExcludeFromSelect = *
+
+[ClassInstall32]
+AddReg=Processor_Class_Addreg
+
+[Processor_Class_Addreg]
+HKR,,,0,%ProcessorClassName%
+HKR,,NoInstallClass,,1
+HKR,,Icon,,"-28"
+
+[Manufacturer]
+%AMD%=AmdK8
+
+[AmdK8]
+%AmdK8.DeviceDesc% = AmdK8_Inst,ACPI\AuthenticAMD_-_x86_Family_15
+%AmdK8.DeviceDesc% = AmdK8_Inst,ACPI\AuthenticAMD_-_AMD64_Family_15
+
+[AmdK8_Inst.NT]
+Copyfiles = @AmdK8.sys
+
+[AmdK8_Inst.NT.Services]
+AddService = AmdK8,%SPSVCINST_ASSOCSERVICE%,AmdK8_Service_Inst,AmdK8_EventLog_Inst
+
+[AmdK8_Service_Inst]
+DisplayName    = %AmdK8.SvcDesc%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_SYSTEM_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %12%\AmdK8.sys
+LoadOrderGroup = Extended Base
+AddReg         = AmdK8_Inst_AddReg
+
+[AmdK8_Inst_AddReg]
+HKR,"Parameters",Capabilities,0x00010001,0x80
+
+[AmdK8_EventLog_Inst]
+AddReg = AmdK8_EventLog_AddReg
+
+[AmdK8_EventLog_AddReg]
+HKR,,EventMessageFile,0x00020000,"%%SystemRoot%%\System32\IoLogMsg.dll;%%SystemRoot%%\System32\drivers\AmdK8.sys"
+HKR,,TypesSupported,0x00010001,7
+
+[strings]
+AMD                   = "Advanced Micro Devices"
+ProcessorClassName    = "Processors"
+AmdK8.DeviceDesc      = "AMD K8 Processor"
+AmdK8.SvcDesc         = "AMD Processor Driver"
+DiskDesc              = "AMD Processor Driver Disk"
+
+SPSVCINST_ASSOCSERVICE= 0x00000002
+SERVICE_KERNEL_DRIVER = 1
+SERVICE_SYSTEM_START  = 1
+SERVICE_ERROR_NORMAL  = 1

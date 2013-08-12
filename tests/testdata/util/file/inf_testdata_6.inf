@@ -1,0 +1,211 @@
+[Version]
+CatalogFile=RTHDMI32.cat
+Signature = "$chicago$"
+Class=MEDIA
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%OrganizationName%
+DriverPackageType=PlugAndPlay
+DriverPackageDisplayName=%PackageDisplayName%
+DriverVer=03/02/2007, 5.10.0.5368
+
+[Manufacturer]
+%MfgName% = AzaliaManufacturerID
+
+[ControlFlags]
+ExcludeFromSelect = *
+
+[AzaliaManufacturerID]
+"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_791A
+"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_793C
+"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA01
+"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA09
+"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA11
+"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA19
+
+[SourceDisksNames]
+222="Realtek HD Audio Installation Disk",,,
+
+[SourceDisksFiles]
+RtHDMI.sys=222
+RtkUpd.exe=222
+
+[DestinationDirs]
+DefaultDestDir=10; dirid = \system32\drivers
+RtAzAudModelCopyFiles = 10,system32\drivers
+RTUninstall.CopyList = 10           ;; WINDOWS
+
+[RtAzAudModelCopyFiles]
+RtHDMI.sys
+
+[RTUninstall.CopyList]
+RtkUpd.exe
+
+[RtAzAudModel.NTX86]
+Include=ks.inf,wdmaudio.inf
+Needs=KS.Registration,WDMAUDIO.Registration
+CopyFiles = RtAzAudModelCopyFiles, RTUninstall.CopyList
+AddReg    = RtAzAudModelAddReg, DS3DConfiguration.AddReg, RTUninstall.AddReg
+
+[RtAzAudModel.NTX86.HW]
+AddReg=HdAudSecurity.AddReg
+
+[RtAzAudModel.NTX86.Services]
+AddService = RTHDMIAzAudService, 0x00000002, RTHDMIAzAudServiceInstall
+
+[RTHDMIAzAudServiceInstall]
+DisplayName   = "Service for HDMI"
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %10%\system32\drivers\RtHDMI.sys
+
+
+[RtAzAudModel.NTX86.Interfaces]
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifWave%, RtAzAudModel.RtSpdifWave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifWave%, RtAzAudModel.RtSpdifWave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifTopo%, RtAzAudModel.RtSpdifTopo
+AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifTopo%, RtAzAudModel.RtSpdifTopo
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifHDMIWave%, RtAzAudModel.RtSpdifHDMIWave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifHDMIWave%, RtAzAudModel.RtSpdifHDMIWave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifHDMITopo%, RtAzAudModel.RtSpdifHDMITopo
+AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifHDMITopo%, RtAzAudModel.RtSpdifHDMITopo
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifRCAWave%, RtAzAudModel.RtSpdifRCAWave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifRCAWave%, RtAzAudModel.RtSpdifRCAWave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifRCATopo%, RtAzAudModel.RtSpdifRCATopo
+AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifRCATopo%, RtAzAudModel.RtSpdifRCATopo
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifOptWave%, RtAzAudModel.RtSpdifOptWave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifOptWave%, RtAzAudModel.RtSpdifOptWave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifOptTopo%, RtAzAudModel.RtSpdifOptTopo
+AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifOptTopo%, RtAzAudModel.RtSpdifOptTopo
+
+[DS3DConfiguration.AddReg]
+HKR,DS3D,ForwardSpeakerConfiguration,0x00010001,0
+HKR,DS3D,IgnoreDSSpeakerConfiguration,0x00010001,1
+HKR,"DS3D\OldArch",ForwardSpeakerConfiguration,0x00010001,0
+HKR,"DS3D\OldArch",IgnoreDSSpeakerConfiguration,0x00010001,1
+
+[RTUninstall.AddReg]
+HKLM,%RT_UNINSTALL%,DisplayName,,"Realtek High Definition Audio Driver"
+HKLM,%RT_UNINSTALL%,UninstallString,,"RtkUpd.exe -r -m"
+
+[HdAudSecurity.AddReg]
+HKR,,DeviceType,0x10001,0x0000001D
+
+[RtAzAudModelAddReg]
+HKR,,AssociatedFilters,,"wdmaud,swmidi,redbook"
+HKR,,Driver,,RtHDMI.sys
+
+HKR,Drivers,SubClasses,,"wave,midi,mixer,aux"
+
+HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\midi\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\aux\wdmaud.drv,Driver,,wdmaud.drv
+
+HKR,Drivers\wave\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
+HKR,Drivers\midi\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
+HKR,Drivers\aux\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
+
+HKR,,SetupPreferredAudioDevices,3,01,00,00,00
+
+[RtAzAudModel.RtSpdifWave]
+AddReg = RtAzAudModel.RtSpdifWave.AddReg
+[RtAzAudModel.RtSpdifWave.AddReg]
+HKR,,FriendlyName,,%RtSpdifWaveDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+[RtAzAudModel.RtSpdifTopo]
+AddReg = RtAzAudModel.RtSpdifTopo.AddReg
+[RtAzAudModel.RtSpdifTopo.AddReg]
+HKR,,FriendlyName,,%RtSpdifTopoDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+
+[RtAzAudModel.RtSpdifHDMIWave]
+AddReg = RtAzAudModel.RtSpdifHDMIWave.AddReg
+[RtAzAudModel.RtSpdifHDMIWave.AddReg]
+HKR,,FriendlyName,,%RtSpdifHDMIWaveDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+[RtAzAudModel.RtSpdifHDMITopo]
+AddReg = RtAzAudModel.RtSpdifHDMITopo.AddReg
+
+[RtAzAudModel.RtSpdifHDMITopo.AddReg]
+HKR,,FriendlyName,,%RtSpdifHDMITopoDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+
+HKLM,%MediaCategories%\%GUID.RTSPDIFOut%,Name,,%Node.RTSPDIFOut%
+HKLM,%MediaCategories%\%GUID.RTSPDIFOut%,Display,1,00,00,00,00
+HKLM,%MediaCategories%\%GUID.RTHDMIOut%,Name,,%Node.RTHDMIOut%
+HKLM,%MediaCategories%\%GUID.RTHDMIOut%,Display,1,00,00,00,00
+HKLM,%MediaCategories%\%GUID.RTSPDIFOutRCA%,Name,,%Node.RTSPDIFOutRCA%
+HKLM,%MediaCategories%\%GUID.RTSPDIFOutRCA%,Display,1,00,00,00,00
+HKLM,%MediaCategories%\%GUID.RTSPDIFOutOpt%,Name,,%Node.RTSPDIFOutOpt%
+HKLM,%MediaCategories%\%GUID.RTSPDIFOutOpt%,Display,1,00,00,00,00
+
+[RtAzAudModel.RtSpdifRCAWave]
+AddReg = RtAzAudModel.RtSpdifRCAWave.AddReg
+[RtAzAudModel.RtSpdifRCAWave.AddReg]
+HKR,,FriendlyName,,%RtSpdifRCAWaveDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+[RtAzAudModel.RtSpdifRCATopo]
+AddReg = RtAzAudModel.RtSpdifRCATopo.AddReg
+[RtAzAudModel.RtSpdifRCATopo.AddReg]
+HKR,,FriendlyName,,%RtSpdifRCATopoDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+
+[RtAzAudModel.RtSpdifOptWave]
+AddReg = RtAzAudModel.RtSpdifOptWave.AddReg
+[RtAzAudModel.RtSpdifOptWave.AddReg]
+HKR,,FriendlyName,,%RtSpdifOptWaveDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+[RtAzAudModel.RtSpdifOptTopo]
+AddReg = RtAzAudModel.RtSpdifOptTopo.AddReg
+[RtAzAudModel.RtSpdifOptTopo.AddReg]
+HKR,,FriendlyName,,%RtSpdifOptTopoDeviceName%
+HKR,,CLSID,,%Proxy.CLSID%
+
+[Strings]
+MfgName="Realtek"
+MediaCategories="SYSTEM\CurrentControlSet\Control\MediaCategories"
+
+OrganizationName="Realtek Semiconductor Corp."
+PackageDisplayName="HD Audio Driver"
+IntcAzAudioDeviceDescription = "Realtek High Definition Audio"
+
+RT_UNINSTALL="Software\Microsoft\Windows\CurrentVersion\Uninstall\{F132AF7F-7BCA-4EDE-8A7C-958108FE7DBC}"
+
+KSNAME_RtSpdifWave="RtSpdifWave"
+KSNAME_RtSpdifTopo="RtSpdifTopo"
+KSNAME_RtSpdifHDMIWave="RtSpdifHDMIWave"
+KSNAME_RtSpdifHDMITopo="RtSpdifHDMITopo"
+KSNAME_RtSpdifRCAWave="RtSpdifRCAWave"
+KSNAME_RtSpdifRCATopo="RtSpdifRCATopo"
+KSNAME_RtSpdifOptWave="RtSpdifOptWave"
+KSNAME_RtSpdifOptTopo="RtSpdifOptTopo"
+
+RtSpdifWaveDeviceName="Realtek HDA SPDIF Out"
+RtSpdifTopoDeviceName="Realtek HDA SPDIF Out Mixer"
+RtSpdifHDMIWaveDeviceName="Realtek HDA HDMI Out"
+RtSpdifHDMITopoDeviceName="Realtek HDA HDMI Out Mixer"
+RtSpdifRCAWaveDeviceName="Realtek HDA SPDIF RCA Out"
+RtSpdifRCATopoDeviceName="Realtek HDA SPDIF RCA Out Mixer"
+RtSpdifOptWaveDeviceName="Realtek HDA SPDIF Optical Out"
+RtSpdifOptTopoDeviceName="Realtek HDA SPDIF Optical Out Mixer"
+
+
+KSCATEGORY_AUDIO = "{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSCATEGORY_RENDER="{65E8773E-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_CAPTURE="{65E8773D-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_TOPOLOGY="{DDA54A40-1E4C-11D1-A050-405705C10000}"
+Proxy.CLSID ="{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+
+GUID.RTSPDIFOut         ="{8FD300D2-FFE1-44f3-A9EB-6F4395D73C9F}"
+Node.RTSPDIFOut         ="Realtek Digital Output"
+GUID.RTHDMIOut          ="{9C8E490E-877D-48fe-9EF1-AD83C91CC057}"
+Node.RTHDMIOut          ="Realtek HDMI Output"
+GUID.RTSPDIFOutRCA      ="{3FF4EDB6-3FF3-4b5a-B164-10FFF0367547}"
+Node.RTSPDIFOutRCA      ="Realtek Digital Output(RCA)"
+GUID.RTSPDIFOutOpt      ="{94FCA009-B26E-4cdc-AC75-051613EF01BB}"
+Node.RTSPDIFOutOpt      ="Realtek Digital Output(Optical)"

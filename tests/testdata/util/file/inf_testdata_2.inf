@@ -1,0 +1,110 @@
+
+; SMBUSati.inf
+;
+; Installation file (.inf) for the ATI SMBus device.
+;
+; (c) Copyright 2002-2006 ATI Technologies Inc
+;
+
+[Version]
+Signature="$CHICAGO$"
+Provider=%ATI%
+ClassGUID={4d36e97d-e325-11ce-bfc1-08002be10318}
+Class=System
+CatalogFile=SMbusati.cat
+DriverVer=02/26/2007,5.10.1000.8
+
+[DestinationDirs]
+DefaultDestDir   = 12
+
+;
+; Driver information
+;
+
+[Manufacturer]
+%ATI%   = ATI.Mfg, NTamd64
+
+
+[ATI.Mfg]
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4353
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4363
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4372
+%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4385
+
+[ATI.Mfg.NTamd64]
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4353
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4363
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4372
+%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4385
+
+;
+; General installation section
+;
+
+[ATISMBus]
+AddReg=Install.AddReg
+
+[ATISMBus64]
+AddReg=Install.AddReg.NTamd64
+
+;
+; Service Installation
+;
+
+[ATISMBus.Services]
+AddService = , 0x00000002
+
+[ATISMBus64.Services]
+AddService = , 0x00000002
+
+[ATISMBus_Service_Inst]
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE
+LoadOrderGroup = Pointer Port
+
+[ATISMBus_EventLog_Inst]
+AddReg = ATISMBus_EventLog_AddReg
+
+[ATISMBus_EventLog_AddReg]
+
+[Install.AddReg]
+HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",DisplayName,,"ATI SMBus"
+HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",Version,,"5.10.1000.8"
+HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",Install,,"Success"
+
+[Install.AddReg.NTamd64]
+HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",DisplayName,,"ATI SMBus"
+HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",Version,,"5.10.1000.8"
+HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",Install,,"Success"
+
+;
+; Source file information
+;
+
+[SourceDisksNames]
+1 = %DiskId1%,,,
+
+[SourceDisksFiles]
+; Files for disk ATI Technologies Inc Installation Disk #1 (System)
+
+[Strings]
+
+;
+; Non-Localizable Strings
+;
+
+REG_SZ         = 0x00000000
+REG_MULTI_SZ   = 0x00010000
+REG_EXPAND_SZ  = 0x00020000
+REG_BINARY     = 0x00000001
+REG_DWORD      = 0x00010001
+SERVICEROOT    = "System\CurrentControlSet\Services"
+
+;
+; Localizable Strings
+;
+
+ATI.DeviceDesc0 = "ATI SMBus"
+DiskId1 = "ATI Technologies Inc Installation Disk #1 (System)"
+ATI = "ATI Technologies Inc"

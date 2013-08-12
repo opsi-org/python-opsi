@@ -1,0 +1,76 @@
+[Disks]
+d1 = "NVIDIA AHCI DRIVER (SCSI)",\disk1,\
+
+[Defaults]
+
+[scsi]
+BUSDRV = "NVIDIA nForce Storage Controller (required)"
+
+[Files.scsi.BUSDRV]
+driver = d1,nvgts.sys,BUSDRV
+inf    = d1, nvgts.inf
+catalog = d1, nvata.cat
+dll    = d1,nvraidco.dll
+dll     = d1,NvRCoENU.dll
+dll     = d1,NvRCoAr.dll
+dll     = d1,NvRCoCs.dll
+dll     = d1,NvRCoDa.dll
+dll     = d1,NvRCoDe.dll
+dll     = d1,NvRCoEl.dll
+dll     = d1,NvRCoEng.dll
+dll     = d1,NvRCoEs.dll
+dll     = d1,NvRCoEsm.dll
+dll     = d1,NvRCoFi.dll
+dll     = d1,NvRCoFr.dll
+dll     = d1,NvRCoHe.dll
+dll     = d1,NvRCoHu.dll
+dll     = d1,NvRCoIt.dll
+dll     = d1,NvRCoJa.dll
+dll     = d1,NvRCoKo.dll
+dll     = d1,NvRCoNl.dll
+dll     = d1,NvRCoNo.dll
+dll     = d1,NvRCoPl.dll
+dll     = d1,NvRCoPt.dll
+dll     = d1,NvRCoPtb.dll
+dll     = d1,NvRCoRu.dll
+dll     = d1,NvRCoSk.dll
+dll     = d1,NvRCoSl.dll
+dll     = d1,NvRCoSv.dll
+dll     = d1,NvRCoTh.dll
+dll     = d1,NvRCoTr.dll
+dll     = d1,NvRCoZhc.dll
+dll     = d1,NvRCoZht.dll
+
+[Config.BUSDRV]
+value = parameters\PnpInterface,5,REG_DWORD,1
+
+[HardwareIds.scsi.BUSDRV]
+id = "PCI\VEN_10DE&DEV_0036", "nvgts"
+id = "PCI\VEN_10DE&DEV_003E", "nvgts"
+id = "PCI\VEN_10DE&DEV_0054", "nvgts"
+id = "PCI\VEN_10DE&DEV_0055", "nvgts"
+id = "PCI\VEN_10DE&DEV_0266", "nvgts"
+id = "PCI\VEN_10DE&DEV_0267", "nvgts"
+id = "PCI\VEN_10DE&DEV_037E", "nvgts"
+id = "PCI\VEN_10DE&DEV_037F", "nvgts"
+id = "PCI\VEN_10DE&DEV_036F", "nvgts"
+id = "PCI\VEN_10DE&DEV_03F6", "nvgts"
+id = "PCI\VEN_10DE&DEV_03F7", "nvgts"
+id = "PCI\VEN_10DE&DEV_03E7", "nvgts"
+id = "PCI\VEN_10DE&DEV_044D", "nvgts"
+id = "PCI\VEN_10DE&DEV_044E", "nvgts"
+id = "PCI\VEN_10DE&DEV_044F", "nvgts"
+id = "PCI\VEN_10DE&DEV_0554", "nvgts"
+id = "PCI\VEN_10DE&DEV_0555", "nvgts"
+id = "PCI\VEN_10DE&DEV_0556", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F4", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F5", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F6", "nvgts"
+id = "PCI\VEN_10DE&DEV_07F7", "nvgts"
+id = "PCI\VEN_10DE&DEV_0768", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AD5", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AD4", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AB9", "nvgts"
+id = "PCI\VEN_10DE&DEV_0AB8", "nvgts"
+id = "PCI\VEN_10DE&DEV_0BCC", "nvgts"
+id = "PCI\VEN_10DE&DEV_0BCD", "nvgts"

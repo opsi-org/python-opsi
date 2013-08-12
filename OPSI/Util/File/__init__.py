@@ -4,29 +4,29 @@
    = = = = = = = = = = = = = = = = = = =
    =    opsi python library - File     =
    = = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2006, 2007, 2008, 2009 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
@@ -34,17 +34,22 @@
 
 __version__ = "4.0.2"
 
-import os, codecs, re, ConfigParser, StringIO, locale, base64
+import codecs
+import ConfigParser
+import locale
+import os
+import re
+import StringIO
 
 if (os.name == 'posix'):
-	import fcntl, grp, pwd
-
+	import fcntl
+	import grp
+	import pwd
 elif (os.name == 'nt'):
 	import win32con
 	import win32file
 	import pywintypes
 
-# OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.System import which, execute
@@ -53,24 +58,25 @@ from OPSI.Util import ipAddressInNetwork
 # Get logger instance
 logger = Logger()
 
+
 class File(object):
 	def __init__(self, filename):
 		self._filename = forceFilename(filename)
 		self._fileHandle = None
-		
+
 	def getFilename(self):
 		return self._filename
-	
+
 	def setFilename(self, filename):
 		self._filename = forceFilename(filename)
-	
+
 	def exists(self):
 		return os.path.exists(self._filename)
-			
+
 	def delete(self):
 		if os.path.exists(self._filename):
 			os.unlink(self._filename)
-	
+
 	def chown(self, user, group):
 		if (os.name == 'nt'):
 			logger.warning(u"Not implemented on windows")
@@ -84,7 +90,7 @@ class File(object):
 				uid = pwd.getpwnam(user)[2]
 			except KeyError:
 				raise Exception(u"Unknown user '%s'" % user)
-		
+
 		gid = -1
 		if type(group) is int:
 			if (group > -1):
@@ -94,39 +100,39 @@ class File(object):
 				gid = grp.getgrnam(group)[2]
 			except KeyError:
 				raise Exception(u"Unknown group '%s'" % group)
-		
+
 		os.chown(self._filename, uid, gid)
-	
+
 	def chmod(self, mode):
 		mode = forceOct(mode)
 		os.chmod(self._filename, mode)
-	
+
 	def create(self, user = None, group = None, mode = None):
 		if not os.path.exists(self._filename):
 			self.open('w')
 			self.close()
-		
+
 		if not user is None or not group is None:
 			self.chown(user, group)
 		if not mode is None:
 			self.chmod(mode)
-	
+
 	def open(self, mode = 'r'):
 		self._fileHandle = __builtins__['open'](self._filename, mode)
 		return self._fileHandle
-		
+
 	def close(self):
 		if not self._fileHandle:
 			return
 		self._fileHandle.close()
 		self._fileHandle = None
-		
+
 	def __getattr__(self, attr):
 		if self.__dict__.has_key(attr):
 			return self.__dict__[attr]
 		elif self.__dict__['_fileHandle']:
 			return getattr(self.__dict__['_fileHandle'], attr)
-		
+
 	def __getstate__(self):
 		state = self.__dict__.copy()
 		file, state['_fileHandle'], state['fileState'] = self._fileHandle, None, {}
@@ -138,7 +144,7 @@ class File(object):
 		state['fileState']['softspace'] = file.softspace
 		state['fileState']['position'] = file.tell()
 		return state
-	
+
 	def __setstate__(self, state):
 		self.__dict__, self.fileState = state.copy(), None
 		self.setFilename(state['fileState']['name'])
@@ -150,14 +156,13 @@ class File(object):
 			self.seek(state['fileState']['position'])
 
 
-
 class LockableFile(File):
 	_fileLockLock = threading.Lock()
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000):
 		File.__init__(self, filename)
 		self._lockFailTimeout = forceInt(lockFailTimeout)
-	
+
 	def open(self, mode = 'r', encoding = None, errors = 'replace'):
 		truncate = False
 		if mode in ('w', 'wb') and os.path.exists(self._filename):
@@ -176,13 +181,13 @@ class LockableFile(File):
 			self._fileHandle.seek(0)
 			self._fileHandle.truncate()
 		return self._fileHandle
-		
+
 	def close(self):
 		if not self._fileHandle:
 			return
 		self._fileHandle.flush()
 		File.close(self)
-		
+
 	def _lockFile(self, mode='r'):
 		timeout = 0
 		while (timeout < self._lockFailTimeout):
@@ -202,8 +207,7 @@ class LockableFile(File):
 						flags = win32con.LOCKFILE_FAIL_IMMEDIATELY
 					hfile = win32file._get_osfhandle(self._fileHandle.fileno())
 					win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, pywintypes.OVERLAPPED())
-				
-			except IOError, e:
+			except IOError:
 				# increase timeout counter, sleep 100 millis
 				timeout += 100
 				time.sleep(0.1)
@@ -211,11 +215,11 @@ class LockableFile(File):
 			# File successfully locked
 			logger.debug("File '%s' locked after %d millis" % (self._filename, timeout))
 			return self._fileHandle
-		
+
 		File.close(self)
 		# File lock failed => raise IOError
 		raise IOError("Failed to lock file '%s' after %d millis" % (self._filename,  self._lockFailTimeout))
-	
+
 	def _unlockFile(self):
 		if not self._fileHandle:
 			return
@@ -224,25 +228,26 @@ class LockableFile(File):
 		elif (os.name == 'nt'):
 			hfile = win32file._get_osfhandle(self._fileHandle.fileno())
 			win32file.UnlockFileEx(hfile, 0, 0x7fff0000, pywintypes.OVERLAPPED())
-		
+
+
 class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
 		self._lines = []
 		self._lineSeperator = u'\n'
-		
+
 	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
 		#self._fileHandle = LockableFile.open(mode, encoding, errors)
 		#self._lockFile(mode)
 		#return self._fileHandle
 		return LockableFile.open(self, mode, encoding, errors)
-		
+
 	def write(self, str):
 		if not self._fileHandle:
 			raise IOError("File not opened")
 		str = forceUnicode(str)
 		self._fileHandle.write(str)
-	
+
 	def readlines(self):
 		self._lines = []
 		if not self._fileHandle:
@@ -251,7 +256,7 @@ class TextFile(LockableFile):
 				if (encoding == 'replace'):
 					errors = 'replace'
 					encoding = 'utf-8'
-				
+
 				self.open(encoding = encoding, errors = errors)
 				try:
 					self._lines = self._fileHandle.readlines()
@@ -261,10 +266,10 @@ class TextFile(LockableFile):
 					self.close()
 					continue
 		return self._lines
-	
+
 	def getLines(self):
 		return self._lines
-	
+
 	def writelines(self, sequence=[]):
 		if not self._fileHandle:
 			raise IOError("File not opened")
@@ -273,6 +278,7 @@ class TextFile(LockableFile):
 		for i in range(len(self._lines)):
 			self._lines[i] += self._lineSeperator
 		self._fileHandle.writelines(self._lines)
+
 
 class ChangelogFile(TextFile):
 	'''
@@ -287,12 +293,12 @@ class ChangelogFile(TextFile):
 
 	'''
 	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
 		self._entries = []
-	
+
 	def parse(self, lines=None):
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -308,7 +314,7 @@ class ChangelogFile(TextFile):
 				if match:
 					if currentEntry:
 						self.addEntry(currentEntry)
-					
+
 					currentEntry = {
 						'package':         match.group(1),
 						'version':         match.group(2),
@@ -320,13 +326,13 @@ class ChangelogFile(TextFile):
 						'date':            None
 					}
 					continue
-				
+
 				if line.startswith(' --'):
 					if (line.find('  ') == -1):
 						raise Exception(u"maintainer must be separated from date using two spaces")
 					if not currentEntry or currentEntry['date']:
 						raise Exception(u"found trailer out of release")
-					
+
 					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
 					if (maintainer.find('<') != -1):
@@ -350,7 +356,7 @@ class ChangelogFile(TextFile):
 							buf = []
 							changelog.append(forceUnicode(l))
 					currentEntry['changelog'] = forceUnicodeList(changelog)
-					
+
 				else:
 					if not currentEntry and line.strip():
 						raise Exception(u"text not in release")
@@ -362,7 +368,7 @@ class ChangelogFile(TextFile):
 			self.addEntry(currentEntry)
 		self._parsed = True
 		return self._entries
-		
+
 	def generate(self):
 		# get current locale
 		loc = locale.getlocale()
@@ -389,18 +395,18 @@ class ChangelogFile(TextFile):
 					locale.setlocale(locale.LC_ALL, loc)
 				except:
 					pass
-		
+
 	def getEntries(self):
 		if not self._parsed:
 			self.parse()
 		return self._entries
-	
+
 	def setEntries(self, entries):
 		entries = forceList(entries)
 		self._entries = []
 		for entry in entries:
 			self.addEntry(entry)
-	
+
 	def addEntry(self, entry):
 		entry = forceDict(entry)
 		for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
@@ -415,14 +421,15 @@ class ChangelogFile(TextFile):
 		entry['maintainerEmail'] = forceEmailAddress(entry['maintainerEmail'])
 		entry['date']            = forceTime(entry['date'])
 		self._entries.append(entry)
-		
+
+
 class ConfigFile(TextFile):
 	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '#'], lstrip = True):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
 		self._lstrip = forceBool(lstrip)
 		self._parsed = False
-	
+
 	def parse(self, lines=None):
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -467,9 +474,10 @@ class ConfigFile(TextFile):
 		self._parsed = True
 		return lines
 
+
 class IniFile(ConfigFile):
 	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000, ignoreCase = True, raw = True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
 		self._ignoreCase = forceBool(ignoreCase)
@@ -478,13 +486,13 @@ class IniFile(ConfigFile):
 		self._parsed = False
 		self._sectionSequence = []
 		self._keepOrdering = False
-		
+
 	def setSectionSequence(self, sectionSequence):
 		self._sectionSequence = forceUnicodeList(sectionSequence)
-	
+
 	def setKeepOrdering(self, keepOrdering):
 		self._keepOrdering = forceBool(keepOrdering)
-		
+
 	def parse(self, lines=None, returnComments=False):
 		logger.debug(u"Parsing ini file '%s'" % self._filename)
 		start = time.time()
@@ -493,7 +501,7 @@ class IniFile(ConfigFile):
 		else:
 			self.readlines()
 		self._parsed = False
-		
+
 		lines = []
 		currentSection = None
 		comments = {}
@@ -561,20 +569,20 @@ class IniFile(ConfigFile):
 			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines)) )
 		except Exception, e:
 			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
-		
+
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
-		
+
 		self._parsed = True
 		if returnComments:
 			return (self._configParser, comments)
 		return self._configParser
-		
+
 	def generate(self, configParser, comments={}):
 		self._configParser = configParser
-		
+
 		if not self._configParser:
 			raise Exception(u"Got no data to write")
-		
+
 		sectionSequence = []
 		optionSequence = {}
 		if self._keepOrdering and os.path.exists(self._filename):
@@ -592,7 +600,7 @@ class IniFile(ConfigFile):
 					optionSequence[sectionSequence[-1]].append(option)
 		else:
 			sectionSequence = list(self._sectionSequence)
-		
+
 		sectionSequence.reverse()
 		sections = self._configParser.sections()
 		sections.sort()
@@ -602,7 +610,7 @@ class IniFile(ConfigFile):
 				sections.remove(section)
 				sections.insert(0, section)
 			logger.debug2(u"Section sequence: %s" % sections)
-		
+
 		self._lines = []
 		for section in sections:
 			section = forceUnicode(section)
@@ -640,22 +648,22 @@ class InfFile(ConfigFile):
 	acpiDeviceRegex    = re.compile('ACPI\\\(\S+)_-_(\S+)', re.IGNORECASE)
 	varRegex           = re.compile('\%([^\%]+)\%')
 	classRegex         = re.compile('class\s*=')
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
 		self._sourceDisksNames = []
 		self._devices = []
-	
+
 	def getDevices(self):
 		if not self._parsed:
 			self.parse()
 		return self._devices
-	
+
 	def getSourceDisksNames(self):
 		if not self._parsed:
 			self.parse()
 		return self._sourceDisksNames
-	
+
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		try:
 			vendorId = forceHardwareVendorId(vendorId)
@@ -669,15 +677,15 @@ class InfFile(ConfigFile):
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
 				return True
 		return False
-	
+
 	def parse(self, lines=None):
 		logger.debug(u"Parsing inf file %s" % self._filename)
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
 		self._devices = []
-		
+
 		path = os.path.dirname(self._filename)
-		
+
 		deviceClass = u'???'
 		deviceSections = []
 		appendNext = False
@@ -687,13 +695,13 @@ class InfFile(ConfigFile):
 				newLines[-1] = lines[-1][:-1] + line
 			else:
 				newLines.append(line)
-			
+
 			if line.endswith(u'\\'):
 				appendNext = True
 			else:
 				appendNext = False
 		lines = newLines
-		
+
 		# Get strings
 		logger.debug2(u"   - Getting strings")
 		strings = {}
@@ -715,7 +723,7 @@ class InfFile(ConfigFile):
 					except:
 						pass
 		logger.debug2(u"        got strings: %s" % strings)
-		
+
 		# Get source disks names
 		self._sourceDisksNames = []
 		sectionFound = False
@@ -735,7 +743,7 @@ class InfFile(ConfigFile):
 				name = strings.get(name.replace('%', '').lower(), name)
 				if not name in self._sourceDisksNames:
 					self._sourceDisksNames.append(name)
-		
+
 		# Get devices
 		logger.debug2(u"   - Getting devices")
 		section = u''
@@ -755,12 +763,12 @@ class InfFile(ConfigFile):
 								var = match.group(1).lower()
 								if strings.has_key(var):
 									deviceClass = deviceClass.replace(u'%'+var+u'%', strings[var])
-				
+
 				elif (section.lower() == u'manufacturer'):
 					if line and (line.find(u'=') != -1):
 						for d in line.split(u'=')[1].split(u','):
 							deviceSections.append(d.strip())
-		
+
 		devSections = []
 		for deviceSection in deviceSections:
 			for i in deviceSection.split('.'):
@@ -768,7 +776,7 @@ class InfFile(ConfigFile):
 					devSections.append(i)
 		deviceSections = devSections
 		logger.debug2(u"      - Device sections: %s" % ', '.join(deviceSections))
-		
+
 		def isDeviceSection(section):
 			if section in deviceSections:
 				return True
@@ -776,7 +784,7 @@ class InfFile(ConfigFile):
 				if not s in deviceSections:
 					return False
 			return True
-		
+
 		found = []
 		section = ''
 		sectionsParsed = []
@@ -831,26 +839,26 @@ class InfFile(ConfigFile):
 
 
 class PciidsFile(ConfigFile):
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'], lstrip = False)
 		self._devices = {}
 		self._vendors = {}
 		self._subDevices = {}
-		
+
 	def getVendor(self, vendorId):
 		vendorId = forceHardwareVendorId(vendorId)
 		if not self._parsed:
 			self.parse()
 		return self._vendors.get(vendorId, None)
-	
+
 	def getDevice(self, vendorId, deviceId):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		if not self._parsed:
 			self.parse()
 		return self._devices.get(vendorId, {}).get(deviceId, None)
-	
+
 	def getSubDevice(self, vendorId, deviceId, subVendorId, subDeviceId):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
@@ -859,17 +867,17 @@ class PciidsFile(ConfigFile):
 		if not self._parsed:
 			self.parse()
 		return self._subDevices.get(vendorId, {}).get(deviceId, {}).get(subVendorId + ':' + subDeviceId, None)
-	
+
 	def parse(self, lines=None):
 		logger.debug(u"Parsing ids file %s" % self._filename)
-		
+
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
-		
+
 		self._devices = {}
 		self._vendors = {}
 		self._subDevices = {}
-		
+
 		currentVendorId = None
 		currentDeviceId = None
 		for line in lines:
@@ -877,7 +885,7 @@ class PciidsFile(ConfigFile):
 				if line.startswith(u'C '):
 					# Start of list of known device classes, subclasses and programming interfaces
 					break
-				
+
 				if line.startswith(u'\t'):
 					if not currentVendorId or not self._devices.has_key(currentVendorId):
 						raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
@@ -916,7 +924,7 @@ class TxtSetupOemFile(ConfigFile):
 	configsRegex     = re.compile('^config\.(.+)$', re.IGNORECASE)
 	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
 	dllEntryRegex    = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
 		self._devices = []
@@ -927,12 +935,12 @@ class TxtSetupOemFile(ConfigFile):
 		self._serviceNames = []
 		self._driverDisks = []
 		self._configs = []
-		
+
 	def getDevices(self):
 		if not self._parsed:
 			self.parse()
 		return self._devices
-	
+
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
@@ -942,12 +950,12 @@ class TxtSetupOemFile(ConfigFile):
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
 				return True
 		return False
-	
+
 	def getDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		architecture = forceArchitecture(architecture)
-		
+
 		if not self._parsed:
 			self.parse()
 		device = None
@@ -966,20 +974,20 @@ class TxtSetupOemFile(ConfigFile):
 		if not device:
 			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
 		return device
-		
+
 	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = [], architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		fileTypes = forceUnicodeLowerList(fileTypes)
 		architecture = forceArchitecture(architecture)
-		
+
 		device = self.getDevice(vendorId = vendorId, deviceId = deviceId, deviceType = deviceType, architecture = architecture)
-		
+
 		files = []
 		diskDriverDirs = {}
 		for d in self._driverDisks:
 			diskDriverDirs[d["diskName"]] = d["driverDir"]
-		
+
 		for f in self._files:
 			if (f['componentName'] != device['componentName']) or (f['componentId'] != device['componentId']):
 				continue
@@ -989,13 +997,13 @@ class TxtSetupOemFile(ConfigFile):
 				raise Exception(u"Driver disk for file %s not found in txtsetup.oem file '%s'" % (f, self._filename))
 			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
 		return files
-	
+
 	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
-		
+
 		device = self.getDevice(vendorId = vendorId, deviceId = deviceId, deviceType = deviceType, architecture = architecture)
-		
+
 		for componentOptions in self._componentOptions:
 			if (componentOptions['componentName'] == device['componentName']) and (componentOptions["componentId"] == device['componentId']):
 				return componentOptions
@@ -1003,7 +1011,7 @@ class TxtSetupOemFile(ConfigFile):
 			if (componentOptions['componentName'].lower() == device['componentName'].lower()) and (componentOptions["componentId"].lower() == device['componentId'].lower()):
 				return componentOptions
 		raise Exception(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
-		
+
 	def applyWorkarounds(self):
 		if not self._parsed:
 			self.parse()
@@ -1018,13 +1026,13 @@ class TxtSetupOemFile(ConfigFile):
 				continue
 			files.append(f)
 		self._files = files
-		
+
 	def parse(self, lines=None):
 		logger.debug(u"Parsing txtsetup.oem file %s" % self._filename)
-		
+
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
-		
+
 		self._devices = []
 		self._files = []
 		self._componentNames = []
@@ -1033,7 +1041,7 @@ class TxtSetupOemFile(ConfigFile):
 		self._serviceNames = []
 		self._driverDisks = []
 		self._configs = []
-		
+
 		sections = {}
 		section = None
 		for line in lines:
@@ -1044,7 +1052,7 @@ class TxtSetupOemFile(ConfigFile):
 				sections[section] = []
 			elif section:
 				sections[section].append(line)
-		
+
 		# Search for component options
 		logger.info(u"Searching for component names and options")
 		for (section, lines) in sections.items():
@@ -1068,10 +1076,10 @@ class TxtSetupOemFile(ConfigFile):
 				if not componentName in self._componentNames:
 					self._componentNames.append(componentName)
 				self._componentOptions.append({"componentName": componentName, "description": description, "componentId": componentId, "optionName": optionName })
-				
+
 		logger.info(u"Component names found: %s" % self._componentNames)
 		logger.info(u"Component options found: %s" % self._componentOptions)
-		
+
 		# Search for default component ids
 		logger.info(u"Searching for default component ids")
 		for (section, lines) in sections.items():
@@ -1080,10 +1088,10 @@ class TxtSetupOemFile(ConfigFile):
 			for line in lines:
 				(componentName, componentId) = line.split('=', 1)
 				self._defaultComponentIds.append({ 'componentName': componentName.strip(), 'componentId': componentId.strip() })
-		
+
 		if self._defaultComponentIds:
 			logger.info(u"Found default component ids: %s" % self._defaultComponentIds)
-		
+
 		# Search for hardware ids
 		logger.info(u"Searching for devices")
 		for (section, lines) in sections.items():
@@ -1119,13 +1127,13 @@ class TxtSetupOemFile(ConfigFile):
 							'componentName': componentName, 'componentId': componentId } )
 				if not serviceName in self._serviceNames:
 					self._serviceNames.append(serviceName)
-		
+
 		if not self._devices:
 			raise Exception(u"No devices found in txtsetup file '%s'" % self._filename)
-		
+
 		logger.info(u"Found services: %s" % self._serviceNames)
 		logger.debug(u"Found devices: %s" % self._devices)
-		
+
 		# Search for disks
 		logger.info(u"Searching for disks")
 		for (section, lines) in sections.items():
@@ -1148,7 +1156,7 @@ class TxtSetupOemFile(ConfigFile):
 		if not self._driverDisks:
 			raise Exception(u"No driver disks found in txtsetup file '%s'" % self._filename)
 		logger.info(u"Found driver disks: %s" % self._driverDisks)
-		
+
 		# Search for files
 		logger.info(u"Searching for files")
 		for (section, lines) in sections.items():
@@ -1169,8 +1177,8 @@ class TxtSetupOemFile(ConfigFile):
 					optionName = parts[2].strip()
 				self._files.append({ 'fileType': fileType, 'diskName': diskName, 'filename': filename, 'componentName': componentName, 'componentId': componentId, 'optionName': optionName })
 		logger.debug(u"Found files: %s" % self._files)
-		
-		
+
+
 		# Search for configs
 		logger.info(u"Searching for configs")
 		for (section, lines) in sections.items():
@@ -1189,7 +1197,7 @@ class TxtSetupOemFile(ConfigFile):
 				self._configs.append({ 'keyName': keyName.strip(), 'valueName': valueName.strip(), 'valueType': valueType.strip(), 'value': value.strip(), 'componentId': componentId })
 		logger.debug(u"Found configs: %s" % self._configs)
 		self._parsed = True
-		
+
 	def generate(self):
 		lines = []
 		lines.append(u'[Disks]\r\n')
@@ -1199,7 +1207,7 @@ class TxtSetupOemFile(ConfigFile):
 		lines.append(u'[Defaults]\r\n')
 		for default in self._defaultComponentIds:
 			lines.append(u'%s = %s\r\n' % (default["componentName"], default["componentId"]))
-		
+
 		for name in self._componentNames:
 			lines.append(u'\r\n')
 			lines.append(u'[%s]\r\n' % name)
@@ -1210,7 +1218,7 @@ class TxtSetupOemFile(ConfigFile):
 				if options["optionName"]:
 					line += u', %s' % options["optionName"]
 				lines.append(line + u'\r\n')
-		
+
 		for name in self._componentNames:
 			for options in self._componentOptions:
 				if (options["componentName"] != name):
@@ -1224,7 +1232,7 @@ class TxtSetupOemFile(ConfigFile):
 					if f["optionName"]:
 						line += u', %s' % f["optionName"]
 					lines.append(line + u'\r\n')
-		
+
 		for name in self._componentNames:
 			for options in self._componentOptions:
 				if (options["componentName"] != name):
@@ -1234,7 +1242,7 @@ class TxtSetupOemFile(ConfigFile):
 				for dev in self._devices:
 					if (dev['componentName'] != name) or (dev['componentId'] != options["componentId"]):
 						continue
-					
+
 					line = u'id = "%s\\VEN_%s' % (dev['type'], dev['vendor'])
 					if dev['device']:
 						line += u'&DEV_%s' % dev['device']
@@ -1244,7 +1252,7 @@ class TxtSetupOemFile(ConfigFile):
 						line = line.replace(u'VEN_', u'VID_').replace(u'DEV_', u'PID_')
 					line += '", "%s"' % dev['serviceName']
 					lines.append(line + u'\r\n')
-		
+
 		configComponents = {}
 		for config in self._configs:
 			if not configComponents.has_key(config['componentId']):
@@ -1255,7 +1263,7 @@ class TxtSetupOemFile(ConfigFile):
 			lines.append(u'[Config.%s]\r\n' % componentId)
 			for conf in configs:
 				lines.append(u'value = %s, %s, %s, %s\r\n' % (conf['keyName'], conf['valueName'], conf['valueType'], conf['value']))
-		
+
 		self._lines = lines
 		self._fileHandle = codecs.open(self._filename, 'w', 'cp1250')
 		self.writelines()
@@ -1267,12 +1275,12 @@ class ZsyncFile(LockableFile):
 		self._header = {}
 		self._data = ''
 		self._parsed = False
-		
+
 	def parse(self, lines=None):
 		logger.debug(u"Parsing zsync file %s" % self._filename)
-		
+
 		self._parsed = False
-		
+
 		f = open(self._filename, 'rb')
 		while True:
 			line = f.readline().strip()
@@ -1283,7 +1291,7 @@ class ZsyncFile(LockableFile):
 		self._data = f.read()
 		f.close()
 		self._parsed = True
-		
+
 	def generate(self, dataFile=None):
 		if dataFile:
 			execute(u"%s -u '%s' -o '%s' '%s'" % (which('zsyncmake'), os.path.basename(dataFile), self._filename, dataFile))
@@ -1296,13 +1304,13 @@ class ZsyncFile(LockableFile):
 		f.write('\n')
 		f.write(self._data)
 		f.close()
-	
+
 class DHCPDConf_Component(object):
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
 		self.endLine = startLine
 		self.parentBlock = parentBlock
-	
+
 	def getShifting(self):
 		shifting = u''
 		if not self.parentBlock:
@@ -1312,19 +1320,19 @@ class DHCPDConf_Component(object):
 			shifting += u'\t'
 			parentBlock = parentBlock.parentBlock
 		return shifting
-	
+
 	def asText(self):
 		return self.getShifting()
-	
+
 	def __unicode__(self):
 		return u'<%s line %d-%d>' % (self.__class__.__name__, self.startLine, self.endLine)
-	
+
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")
-	
+
 	def __repr__(self):
 		return self.__str__()
-	
+
 class DHCPDConf_Parameter(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -1335,7 +1343,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 				self.value = True
 			elif self.value.lower() in [u'no', u'false', u'off']:
 				self.value = False
-	
+
 	def asText(self):
 		value = self.value
 		if type(value) is bool:
@@ -1349,10 +1357,10 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 		     self.key.endswith(u'-name'):
 			value = u'"%s"' % value
 		return u"%s%s %s;" % (self.getShifting(), self.key, value)
-	
+
 	def asHash(self):
 		return { self.key: self.value }
-	
+
 class DHCPDConf_Option(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -1390,22 +1398,22 @@ class DHCPDConf_Option(DHCPDConf_Component):
 				value += u', '
 			text += value
 		return text + u';'
-	
+
 	def asHash(self):
 		return { self.key: self.value }
-	
+
 class DHCPDConf_Comment(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, data):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self._data = data
-	
+
 	def asText(self):
 		return self.getShifting() + u'#%s' % self._data
-	
+
 class DHCPDConf_EmptyLine(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
-	
+
 class DHCPDConf_Block(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, type, settings = []):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -1413,21 +1421,21 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		self.settings = settings
 		self.lineRefs = {}
 		self.components = []
-		
+
 	def getComponents(self):
 		return self.components
-	
+
 	def removeComponents(self):
 		logger.debug(u"Removing components: %s" % self.components)
 		for c in forceList(self.components):
 			self.removeComponent(c)
-		
+
 	def addComponent(self, component):
 		self.components.append(component)
 		if not self.lineRefs.has_key(component.startLine):
 			self.lineRefs[component.startLine] = []
 		self.lineRefs[component.startLine].append(component)
-	
+
 	def removeComponent(self, component):
 		index = -1
 		for i in range(len(self.components)):
@@ -1438,7 +1446,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 			raise BackendMissingDataError(u"Component '%s' not found")
 		del self.components[index]
 		index = -1
-		
+
 		if self.lineRefs.has_key(component.startLine):
 			for i in range(len(self.lineRefs[component.startLine])):
 				if (self.lineRefs[component.startLine][i] == component):
@@ -1446,57 +1454,57 @@ class DHCPDConf_Block(DHCPDConf_Component):
 					break
 		if (index >= 0):
 			del self.lineRefs[component.startLine][index]
-		
+
 	def getOptions_hash(self, inherit = None):
 		options = {}
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Option):
 				continue
 			options[component.key] = component.value
-		
+
 		if inherit and (self.type != inherit) and self.parentBlock:
 			for (key, value) in self.parentBlock.getOptions_hash(inherit).items():
 				if not options.has_key(key):
 					options[key] = value
 		return options
-	
+
 	def getOptions(self, inherit = None):
 		options = []
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Option):
 				continue
 			options.append(component)
-		
+
 		if inherit and (self.type != inherit) and self.parentBlock:
 			options.extend(self.parentBlock.getOptions(inherit))
-		
+
 		return options
-	
+
 	def getParameters_hash(self, inherit = None):
 		parameters = {}
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Parameter):
 				continue
 			parameters[component.key] = component.value
-		
+
 		if inherit and (self.type != inherit) and self.parentBlock:
 			for (key, value) in self.parentBlock.getParameters_hash(inherit).items():
 				if not parameters.has_key(key):
 					parameters[key] = value
 		return parameters
-	
+
 	def getParameters(self, inherit = None):
 		parameters = []
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Parameter):
 				continue
 			options.append(component)
-		
+
 		if inherit and (self.type != inherit) and self.parentBlock:
 			parameters.extend(self.parentBlock.getParameters(inherit))
-		
+
 		return parameters
-	
+
 	def getBlocks(self, type, recursive = False):
 		blocks = []
 		for component in self.components:
@@ -1507,13 +1515,13 @@ class DHCPDConf_Block(DHCPDConf_Component):
 			if recursive:
 				blocks.extend(component.getBlocks(type, recursive))
 		return blocks
-	
+
 	def asText(self):
 		text = u''
 		shifting = self.getShifting()
 		if not isinstance(self, DHCPDConf_GlobalBlock):
 			text += shifting + u' '.join(self.settings) + u' {\n'
-		
+
 		notWritten = self.components
 		lineNumber = self.startLine
 		if (lineNumber < 1): lineNumber = 1
@@ -1531,25 +1539,25 @@ class DHCPDConf_Block(DHCPDConf_Component):
 					notWritten.remove(self.lineRefs[lineNumber][i])
 			text += u'\n'
 			lineNumber += 1
-		
+
 		for component in notWritten:
 			text += component.asText() + u'\n'
-		
+
 		if not isinstance(self, DHCPDConf_GlobalBlock):
 			# Write '}' to close block
 			text += shifting + u'}'
-		
+
 		return text
-		
+
 class DHCPDConf_GlobalBlock(DHCPDConf_Block):
 	def __init__(self):
 		DHCPDConf_Block.__init__(self, 1, None, u'global')
 
 class DHCPDConfFile(TextFile):
-	
+
 	def __init__(self, filename, lockFailTimeout = 2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
-		
+
 		self._currentLine = 0
 		self._currentToken = None
 		self._currentIndex = -1
@@ -1557,12 +1565,12 @@ class DHCPDConfFile(TextFile):
 		self._currentBlock = None
 		self._globalBlock = None
 		self._parsed = False
-		
+
 		logger.debug(u"Parsing dhcpd conf file '%s'" % self._filename)
-	
+
 	def getGlobalBlock(self):
 		return self._globalBlock
-		
+
 	def parse(self, lines=None):
 		self._currentLine = 0
 		self._currentToken = None
@@ -1570,13 +1578,13 @@ class DHCPDConfFile(TextFile):
 		self._data = u''
 		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._parsed = False
-		
+
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
 		self._globalBlock.endLine = len(self._lines)
-		
+
 		minIndex = 0
 		while True:
 			self._currentToken = None
@@ -1609,15 +1617,15 @@ class DHCPDConfFile(TextFile):
 			elif (self._currentToken == '}'):
 				self._parse_rbracket()
 		self._parsed = True
-		
+
 	def generate(self):
 		if not self._globalBlock:
 			raise Exception(u"Got no data to write")
-		
+
 		self.open('w')
 		self.write(self._globalBlock.asText())
 		self.close()
-	
+
 	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters = {}):
 		if not parameters: parameters = {}
 		hostname        = forceHostname(hostname)
@@ -1625,10 +1633,10 @@ class DHCPDConfFile(TextFile):
 		ipAddress       = forceIPAddress(ipAddress)
 		fixedAddress    = forceUnicodeLower(fixedAddress)
 		parameters      = forceDict(parameters)
-		
+
 		if not self._parsed:
 			self.parse()
-		
+
 		existingHost = None
 		for block in self._globalBlock.getBlocks('host', recursive = True):
 			if (block.settings[1].lower() == hostname):
@@ -1642,22 +1650,22 @@ class DHCPDConfFile(TextFile):
 		if existingHost:
 			logger.info(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
 			self.deleteHost(hostname)
-		
+
 		logger.notice(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'" % \
 					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename) )
-		
+
 		for (key, value) in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
-		
+
 		# Default parent block is global
 		parentBlock = self._globalBlock
-		
+
 		# Search the right subnet block
 		for block in self._globalBlock.getBlocks('subnet', recursive = True):
 			if ipAddressInNetwork(ipAddress, u'%s/%s' % (block.settings[1], block.settings[3])):
 				logger.debug(u"Choosing subnet %s/%s for host %s" % (block.settings[1], block.settings[3], hostname))
 				parentBlock = block
-		
+
 		# Search the right group for the host
 		bestGroup = None
 		bestMatchCount = 0
@@ -1673,21 +1681,21 @@ class DHCPDConfFile(TextFile):
 						matchCount += 1
 					else:
 						matchCount -= 1
-			
+
 			if (matchCount > bestMatchCount) or (matchCount >= 0 and not bestGroup):
 				matchCount = bestMatchCount
 				bestGroup = block
-		
+
 		if bestGroup:
 			parentBlock = bestGroup
-		
+
 		# Remove parameters which are already defined in parents
 		blockParameters = parentBlock.getParameters_hash(inherit = 'global')
 		if blockParameters:
 			for (key, value) in blockParameters.items():
 				if parameters.has_key(key) and (parameters[key] == value):
 					del parameters[key]
-		
+
 		hostBlock = DHCPDConf_Block(
 					startLine = -1,
 					parentBlock = parentBlock,
@@ -1698,26 +1706,26 @@ class DHCPDConfFile(TextFile):
 		for (key, value) in parameters.items():
 			hostBlock.addComponent(
 				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
-		
+
 		parentBlock.addComponent(hostBlock)
-		
+
 	def getHost(self, hostname):
 		hostname = forceHostname(hostname)
-		
+
 		if not self._parsed:
 			self.parse()
-		
+
 		for block in self._globalBlock.getBlocks('host', recursive = True):
 			if (block.settings[1] == hostname):
 				return block.getParameters_hash()
 		return None
-		
+
 	def deleteHost(self, hostname):
 		hostname = forceHostname(hostname)
-		
+
 		if not self._parsed:
 			self.parse()
-		
+
 		logger.notice(u"Deleting host '%s' from dhcpd config file '%s'" % (hostname, self._filename))
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive = True):
@@ -1730,19 +1738,19 @@ class DHCPDConfFile(TextFile):
 		if not hostBlocks:
 			logger.warning(u"Failed to remove host '%s': not found" % hostname)
 			return
-		
+
 		for block in hostBlocks:
 			block.parentBlock.removeComponent(block)
-	
+
 	def modifyHost(self, hostname, parameters):
 		hostname   = forceHostname(hostname)
 		parameters = forceDict(parameters)
-		
+
 		if not self._parsed:
 			self.parse()
-		
+
 		logger.notice(u"Modifying host '%s' in dhcpd config file '%s'" % (hostname, self.filename))
-		
+
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive = True):
 			if (block.settings[1] == hostname):
@@ -1755,30 +1763,30 @@ class DHCPDConfFile(TextFile):
 						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
 		if (len(hostBlocks) != 1):
 			raise BackendBadValueError(u"Host '%s' found %d times" % (hostname, len(hostBlocks)))
-		
+
 		hostBlock = hostBlocks[0]
 		hostBlock.removeComponents()
-		
+
 		for (key, value) in parameters.items():
 			parameters[key] = Parameter(-1, None, key, value).asHash()[key]
-		
+
 		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
 			if not parameters.has_key(key):
 				continue
 			if (parameters[key] == value):
 				del parameters[key]
-		
+
 		for (key, value) in parameters.items():
 			hostBlock.addComponent(
 				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
-		
+
 	def _getNewData(self):
 		if (self._currentLine >= len(self._lines)):
 			return False
 		self._data += self._lines[self._currentLine]
 		self._currentLine += 1
 		return True
-	
+
 	def _parse_emptyline(self):
 		logger.debug(u"_parse_emptyline")
 		self._currentBlock.addComponent(
@@ -1788,7 +1796,7 @@ class DHCPDConfFile(TextFile):
 			)
 		)
 		self._data = self._data[:self._currentIndex]
-	
+
 	def _parse_comment(self):
 		logger.debug(u"_parse_comment")
 		self._currentBlock.addComponent(
@@ -1799,12 +1807,12 @@ class DHCPDConfFile(TextFile):
 			)
 		)
 		self._data = self._data[:self._currentIndex]
-		
+
 	def _parse_semicolon(self):
 		logger.debug(u"_parse_semicolon")
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex+1:]
-		
+
 		key = data.split()[0]
 		if (key != 'option'):
 			# Parameter
@@ -1820,7 +1828,7 @@ class DHCPDConfFile(TextFile):
 				)
 			)
 			return
-		
+
 		# Option
 		key = data.split()[1]
 		value = u' '.join(data.split()[2:]).strip()
@@ -1856,7 +1864,7 @@ class DHCPDConfFile(TextFile):
 				current += l
 		if current:
 			values.append(current.strip())
-		
+
 		self._currentBlock.addComponent(
 			DHCPDConf_Option(
 				startLine   = self._currentLine,
@@ -1865,7 +1873,7 @@ class DHCPDConfFile(TextFile):
 				value       = values
 			)
 		)
-		
+
 	def _parse_lbracket(self):
 		logger.debug(u"_parse_lbracket")
 		# Start of a block
@@ -1882,7943 +1890,12 @@ class DHCPDConfFile(TextFile):
 		)
 		self._currentBlock.addComponent(block)
 		self._currentBlock = block
-		
+
 	def _parse_rbracket(self):
 		logger.debug(u"_parse_rbracket")
 		# End of a block
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex+1:]
-		
+
 		self._currentBlock.endLine = self._currentLine
 		self._currentBlock = self._currentBlock.parentBlock
-	
-	
-infTestData = [
-'''
-;-----------------------------------------------
-;----------1002181718-8.593.100-100210a-095952E-ATI
-;-----------------------------------------------
-; ATI Display Information file : ATIIXPAG.INF
-; Installation INF for the ATI display driver.
-; Copyright(C) 1998-2004 ATI Technologies Inc.
-; Windows XP
-; Base INF Last Updated 2005/11/01
-
-[Version]
-Signature="$Windows NT$"
-Provider=%ATI%
-ClassGUID={4D36E968-E325-11CE-BFC1-08002BE10318}
-Class=Display
-DriverVer=02/10/2010, 8.593.100.0000
-CatalogFile=CX_95952.CAT
-
-[DestinationDirs]
-DefaultDestDir      = 11
-ati2mtag.OGL        = 10  ;Windows
-ati2mtag.Miniport   = 12  ; drivers
-ati2mtag.Display    = 11  ; system32
-ati2mtag.OD	    = 11  ; system32
-
-[ControlFlags]
-ExcludeFromSelect=*
-;
-; Driver information
-;
-
-[Manufacturer]
-%ATI% = ATI.Mfg, NTx86
-
-[ATI.Mfg.NTx86]
-"ATI Radeon X1050" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001002
-"ATI Radeon X1050 " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001002
-"ATI Radeon X1050  " = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001002
-"ATI Radeon X1050   " = ati2mtag_RV360, PCI\VEN_1002&DEV_4152&SUBSYS_30001002
-"ATI Radeon X1050 Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011002
-"ATI Radeon X1050 Secondary " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011002
-"ATI Radeon X1050 Secondary  " = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011002
-"ATI Radeon X1050 Secondary   " = ati2mtag_RV360, PCI\VEN_1002&DEV_4172&SUBSYS_30011002
-"ATI Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001002
-"ATI Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001002
-"ATI Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011002
-"ATI Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011002
-"ATI Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001002
-"ATI Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001002
-"ATI Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011002
-"ATI Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011002
-"Radeon X1800 CrossFire Edition" = ati2mtag_R520, PCI\VEN_1002&DEV_7109&SUBSYS_0D021002
-"Radeon X1800 CrossFire Edition Secondary" = ati2mtag_R520, PCI\VEN_1002&DEV_7129&SUBSYS_0D031002
-"Radeon X1900 CrossFire Edition" = ati2mtag_R580, PCI\VEN_1002&DEV_7249&SUBSYS_0D021002
-"Radeon X1900 CrossFire Edition Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_7269&SUBSYS_0D031002
-"Radeon X1950 CrossFire Edition" = ati2mtag_R580, PCI\VEN_1002&DEV_7240&SUBSYS_0D021002
-"Radeon X1950 CrossFire Edition Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_7260&SUBSYS_0D031002
-"Radeon X800 CrossFire Edition" = ati2mtag_R430, PCI\VEN_1002&DEV_554D&SUBSYS_0D021002
-"Radeon X800 CrossFire Edition Secondary" = ati2mtag_R430, PCI\VEN_1002&DEV_556D&SUBSYS_0D031002
-"RADEON X850 CrossFire Edition" = ati2mtag_R480, PCI\VEN_1002&DEV_5D52&SUBSYS_0D021002
-"RADEON X850 CrossFire Edition Secondary" = ati2mtag_R480, PCI\VEN_1002&DEV_5D72&SUBSYS_0D031002
-"ATI RADEON XPRESS 1100 Series" = ati2mtag_RC410, PCI\VEN_1002&DEV_5A61&SUBSYS_2A4B103C
-"Asus Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001043
-"Asus Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011043
-"ASUS Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001043
-"ASUS Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001043
-"ASUS Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011043
-"ASUS Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011043
-"ASUS Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001043
-"ASUS Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001043
-"ASUS Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011043
-"ASUS Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011043
-"ASUS X550 Series" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_31001043
-"ASUS X550 Series Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_31011043
-"ATI Radeon X1050    " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001043
-"ATI Radeon X1050     " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001043
-"ATI Radeon X1050 Secondary    " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011043
-"ATI Radeon X1050 Secondary     " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011043
-"RADEON X800 GTO" = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_01381043
-"RADEON X800 GTO Secondary" = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_01391043
-"Diamond Radeon X1050" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001092
-"Diamond Radeon X1050 " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001092
-"Diamond Radeon X1050  " = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001092
-"Diamond Radeon X1050 Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011092
-"Diamond Radeon X1050 Secondary " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011092
-"Diamond Radeon X1050 Secondary  " = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011092
-"Diamond Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001092
-"Diamond Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001092
-"Diamond Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011092
-"Diamond Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011092
-"Diamond Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001092
-"Diamond Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001092
-"Diamond Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011092
-"Diamond Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011092
-"ATI Radeon X1050      " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001458
-"ATI Radeon X1050       " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001458
-"ATI Radeon X1050 Secondary      " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011458
-"ATI Radeon X1050 Secondary       " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011458
-"GigaByte Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001458
-"GigaByte Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011458
-"GIGABYTE Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001458
-"GIGABYTE Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001458
-"GIGABYTE Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011458
-"GIGABYTE Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011458
-"GIGABYTE Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001458
-"GIGABYTE Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001458
-"GIGABYTE Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011458
-"GIGABYTE Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011458
-"RADEON X800 GTO " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_21361458
-"RADEON X800 GTO Secondary " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_21371458
-"ATI Radeon X1050        " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001462
-"ATI Radeon X1050         " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001462
-"ATI Radeon X1050 Secondary        " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011462
-"ATI Radeon X1050 Secondary         " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011462
-"MSI Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001462
-"MSI Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011462
-"MSI Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001462
-"MSI Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001462
-"MSI Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011462
-"MSI Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011462
-"MSI Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001462
-"MSI Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001462
-"MSI Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011462
-"MSI Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011462
-"RADEON X800 GTO  " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_09721462
-"RADEON X800 GTO Secondary  " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_09731462
-"ABIT Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_3000147B
-"ABIT Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_3001147B
-"ABIT Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_3001147B
-"ABIT Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_3000147B
-"ABIT Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_3000147B
-"ABIT Radeon X1550 Series  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_3000147B
-"ABIT Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_3001147B
-"ABIT Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_3001147B
-"ATI Radeon X1050          " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_3000147B
-"ATI Radeon X1050           " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_3000147B
-"ATI Radeon X1050 Secondary          " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_3001147B
-"ATI Radeon X1050 Secondary           " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_3001147B
-"ATI Radeon X1050            " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_3000148C
-"ATI Radeon X1050             " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_3000148C
-"ATI Radeon X1050 Secondary            " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_3001148C
-"ATI Radeon X1050 Secondary             " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_3001148C
-"PowerColor Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_3000148C
-"PowerColor Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_3001148C
-"PowerColor Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_3000148C
-"PowerColor Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_3000148C
-"PowerColor Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_3001148C
-"PowerColor Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_3001148C
-"PowerColor Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_3000148C
-"PowerColor Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_3000148C
-"PowerColor Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_3001148C
-"PowerColor Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_3001148C
-"Radeon X700 Series" = ati2mtag_RV410, PCI\VEN_1002&DEV_564F&SUBSYS_148C148C
-"Radeon X700 Series Secondary" = ati2mtag_RV410, PCI\VEN_1002&DEV_566F&SUBSYS_148D148C
-"RADEON X800 GTO   " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_2160148C
-"RADEON X800 GTO    " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_2160148C
-"RADEON X800 GTO     " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_2160148C
-"RADEON X800 GTO Secondary   " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_2161148C
-"RADEON X800 GTO Secondary    " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_2161148C
-"RADEON X800 GTO Secondary     " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_2161148C
-"VisionTek Radeon X1050" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001545
-"VisionTek Radeon X1050 " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001545
-"VisionTek Radeon X1050  " = ati2mtag_RV360, PCI\VEN_1002&DEV_4152&SUBSYS_30001545
-"VisionTek Radeon X1050 AGP" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001545
-"VisionTek Radeon X1050 AGP Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011545
-"VisionTek Radeon X1050 Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011545
-"VisionTek Radeon X1050 Secondary " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011545
-"VisionTek Radeon X1050 Secondary  " = ati2mtag_RV360, PCI\VEN_1002&DEV_4172&SUBSYS_30011545
-"VisionTek Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001545
-"VisionTek Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001545
-"VisionTek Radeon X1550 Series  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001545
-"VisionTek Radeon X1550 Series   " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001545
-"VisionTek Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011545
-"VisionTek Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011545
-"VisionTek Radeon X1550 Series Secondary  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011545
-"VisionTek Radeon X1550 Series Secondary   " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011545
-"ATI Radeon X1050              " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001569
-"ATI Radeon X1050               " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001569
-"ATI Radeon X1050 Secondary              " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011569
-"ATI Radeon X1050 Secondary               " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011569
-"Palit Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001569
-"Palit Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011569
-"PALIT Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001569
-"PALIT Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001569
-"PALIT Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011569
-"PALIT Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011569
-"PALIT Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001569
-"PALIT Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001569
-"PALIT Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011569
-"PALIT Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011569
-"RADEON X550 Series" = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4F&SUBSYS_5E4F1569
-"RADEON X550 Series Secondary" = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6F&SUBSYS_5E501569
-"RADEON X550XT" = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4F&SUBSYS_1E4F1569
-"RADEON X550XT Secondary" = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6F&SUBSYS_1E4E1569
-"ATI Radeon X1050                " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_3000174B
-"ATI Radeon X1050                 " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_3000174B
-"ATI Radeon X1050 Secondary                " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_3001174B
-"ATI Radeon X1050 Secondary                 " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_3001174B
-"Radeon X1050" = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_3490174B
-"Radeon X1050 " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_3500174B
-"Radeon X1050 Secondary" = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_3491174B
-"Radeon X1050 Secondary " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_3501174B
-"Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_5920174B
-"Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_5940174B
-"Radeon X1550 Series  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_5940174B
-"Radeon X1550 Series   " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_5920174B
-"Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_5921174B
-"Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_5941174B
-"Radeon X1550 Series Secondary  " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_5941174B
-"Radeon X1550 Series Secondary   " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_5921174B
-"Radeon X1650 GTO" = ati2mtag_RV530, PCI\VEN_1002&DEV_71C0&SUBSYS_E160174B
-"Radeon X1650 GTO Secondary" = ati2mtag_RV530, PCI\VEN_1002&DEV_71E0&SUBSYS_E161174B
-"Radeon X1650 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7181&SUBSYS_5920174B
-"Radeon X1650 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_71A1&SUBSYS_5921174B
-"Radeon X550XTX" = ati2mtag_M26, PCI\VEN_1002&DEV_564F&SUBSYS_0490174B
-"Radeon X550XTX " = ati2mtag_M26, PCI\VEN_1002&DEV_564F&SUBSYS_0500174B
-"Radeon X550XTX  " = ati2mtag_M26, PCI\VEN_1002&DEV_564F&SUBSYS_0580174B
-"Radeon X550XTX   " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_0530174B
-"Radeon X550XTX    " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_0800174B
-"Radeon X550XTX     " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_0490174B
-"Radeon X550XTX      " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_0580174B
-"Radeon X550XTX       " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_0500174B
-"Radeon X550XTX        " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_0750174B
-"Radeon X550XTX Secondary   " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_0531174B
-"Radeon X550XTX Secondary    " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_0801174B
-"Radeon X550XTX Secondary     " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_0491174B
-"Radeon X550XTX Secondary      " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_0581174B
-"Radeon X550XTX Secondary       " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_0501174B
-"Radeon X550XTX Secondary        " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_0751174B
-"RADEON X800 GTO      " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_1590174B
-"RADEON X800 GTO       " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_1590174B
-"RADEON X800 GTO        " = ati2mtag_R420, PCI\VEN_1002&DEV_4A49&SUBSYS_2620174B
-"RADEON X800 GTO         " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_1600174B
-"RADEON X800 GTO          " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_1600174B
-"RADEON X800 GTO           " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_1600174B
-"RADEON X800 GTO Secondary      " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_1591174B
-"RADEON X800 GTO Secondary       " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_1591174B
-"RADEON X800 GTO Secondary        " = ati2mtag_R420, PCI\VEN_1002&DEV_4A69&SUBSYS_2621174B
-"RADEON X800 GTO Secondary         " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_1601174B
-"RADEON X800 GTO Secondary          " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_1601174B
-"RADEON X800 GTO Secondary           " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_1601174B
-"RADEON X800GT" = ati2mtag_R420, PCI\VEN_1002&DEV_4A4A&SUBSYS_2610174B
-"RADEON X800GT Secondary" = ati2mtag_R420, PCI\VEN_1002&DEV_4A6A&SUBSYS_2611174B
-"Sapphire Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_3000174B
-"Sapphire Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_3001174B
-"SAPPHIRE Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_3000174B
-"SAPPHIRE Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_3000174B
-"SAPPHIRE Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_3001174B
-"SAPPHIRE Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_3001174B
-"SAPPHIRE Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_3000174B
-"SAPPHIRE Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_3000174B
-"SAPPHIRE Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_3001174B
-"SAPPHIRE Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_3001174B
-"ATI Radeon X1050                  " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_30001787
-"ATI Radeon X1050                   " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_30001787
-"ATI Radeon X1050                    " = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_30001787
-"ATI Radeon X1050 Secondary                  " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_30011787
-"ATI Radeon X1050 Secondary                   " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_30011787
-"ATI Radeon X1050 Secondary                    " = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_30011787
-"ATI Radeon X1300/X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7143&SUBSYS_30001787
-"ATI Radeon X1300/X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7163&SUBSYS_30011787
-"ATI Radeon X1550  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_30001787
-"ATI Radeon X1550   " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_30001787
-"ATI Radeon X1550 Secondary  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_30011787
-"ATI Radeon X1550 Secondary   " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_30011787
-"ATI Radeon X1550 Series  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_30001787
-"ATI Radeon X1550 Series   " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_30001787
-"ATI Radeon X1550 Series Secondary  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_30011787
-"ATI Radeon X1550 Series Secondary   " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_30011787
-"Radeon X1550 Series    " = ati2mtag_RV515, PCI\VEN_1002&DEV_7140&SUBSYS_30001787
-"Radeon X1550 Series Secondary    " = ati2mtag_RV515, PCI\VEN_1002&DEV_7160&SUBSYS_30011787
-"RADEON X550XT " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4F&SUBSYS_1E4F1787
-"RADEON X550XT Secondary " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6F&SUBSYS_1E4E1787
-"RADEON X700 Series " = ati2mtag_RV410, PCI\VEN_1002&DEV_5657&SUBSYS_06571787
-"RADEON X700 Series Secondary " = ati2mtag_RV410, PCI\VEN_1002&DEV_5677&SUBSYS_06561787
-"RADEON X800 GTO            " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_15491787
-"RADEON X800 GTO             " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_154F1787
-"RADEON X800 GTO              " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_1D4F1787
-"RADEON X800 GTO Secondary            " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_154A1787
-"RADEON X800 GTO Secondary             " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_15501787
-"RADEON X800 GTO Secondary              " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_1D501787
-"RADEON X800 GTO Secondary               " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_15481787
-"RADEON X800 GTO Secondary                " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_15501787
-"RADEON X800 GTO Secondary                 " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_154E1787
-"RADEON X800 GTO Secondary                  " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_1D4E1787
-"ATI RADEON 9600/X1050 Series" = ati2mtag_RV350, PCI\VEN_1002&DEV_4150&SUBSYS_300017AF
-"ATI RADEON 9600/X1050 Series Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4170&SUBSYS_300117AF
-"ATI Radeon X1050                     " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_300017AF
-"ATI Radeon X1050                      " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_300017AF
-"ATI Radeon X1050 Secondary                     " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_300117AF
-"ATI Radeon X1050 Secondary                      " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_300117AF
-"ATI Radeon X1050 Series" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_201E17AF
-"ATI Radeon X1050 Series Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_201F17AF
-"ATI Radeon X1300/X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7143&SUBSYS_300017AF
-"ATI Radeon X1300/X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_7163&SUBSYS_300117AF
-"HIS Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_300017AF
-"HIS Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_300117AF
-"HIS Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_300017AF
-"HIS Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_300017AF
-"HIS Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_300117AF
-"HIS Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_300117AF
-"HIS Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_300017AF
-"HIS Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_300017AF
-"HIS Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_300117AF
-"HIS Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_300117AF
-"RADEON X800 GTO               " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_204617AF
-"RADEON X800 GTO                " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_204617AF
-"RADEON X800 GTO                 " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_204617AF
-"RADEON X800 GTO Secondary                   " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_204717AF
-"RADEON X800 GTO Secondary                    " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_204717AF
-"RADEON X800 GTO Secondary                     " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_204717AF
-"ATI Radeon X1050                       " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_300017EE
-"ATI Radeon X1050                        " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_300017EE
-"ATI Radeon X1050 Secondary                       " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_300117EE
-"ATI Radeon X1050 Secondary                        " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_300117EE
-"Connect3D Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_300017EE
-"Connect3D Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_300117EE
-"Connect3D Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_300017EE
-"Connect3D Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_300017EE
-"Connect3D Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_300117EE
-"Connect3D Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_300117EE
-"Connect3D Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_300017EE
-"Connect3D Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_300017EE
-"Connect3D Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_300117EE
-"Connect3D Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_300117EE
-"ATI Radeon X1050                         " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63&SUBSYS_300018BC
-"ATI Radeon X1050                          " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60&SUBSYS_300018BC
-"ATI Radeon X1050 Secondary                         " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73&SUBSYS_300118BC
-"ATI Radeon X1050 Secondary                          " = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70&SUBSYS_300118BC
-"GECUBE Radeon X1050" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153&SUBSYS_300018BC
-"GECUBE Radeon X1050 Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173&SUBSYS_300118BC
-"GeCube Radeon X1550" = ati2mtag_RV515, PCI\VEN_1002&DEV_7142&SUBSYS_300018BC
-"GeCube Radeon X1550 " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183&SUBSYS_300018BC
-"GeCube Radeon X1550 Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7162&SUBSYS_300118BC
-"GeCube Radeon X1550 Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3&SUBSYS_300118BC
-"GeCube Radeon X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146&SUBSYS_300018BC
-"GeCube Radeon X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187&SUBSYS_300018BC
-"GeCube Radeon X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166&SUBSYS_300118BC
-"GeCube Radeon X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7&SUBSYS_300118BC
-"RADEON X800 GTO                  " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_145018BC
-"RADEON X800 GTO                   " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_145218BC
-"RADEON X800 GTO                    " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_149018BC
-"RADEON X800 GTO                     " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_149218BC
-"RADEON X800 GTO                      " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_153018BC
-"RADEON X800 GTO                       " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_153218BC
-"RADEON X800 GTO                        " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_157018BC
-"RADEON X800 GTO                         " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_157218BC
-"RADEON X800 GTO                          " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_161018BC
-"RADEON X800 GTO                           " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_161218BC
-"RADEON X800 GTO                            " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_165018BC
-"RADEON X800 GTO                             " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_165218BC
-"RADEON X800 GTO Secondary                      " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_145118BC
-"RADEON X800 GTO Secondary                       " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_145318BC
-"RADEON X800 GTO Secondary                        " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_149118BC
-"RADEON X800 GTO Secondary                         " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_149318BC
-"RADEON X800 GTO Secondary                          " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_153118BC
-"RADEON X800 GTO Secondary                           " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_153318BC
-"RADEON X800 GTO Secondary                            " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_157118BC
-"RADEON X800 GTO Secondary                             " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_157318BC
-"RADEON X800 GTO Secondary                              " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_161118BC
-"RADEON X800 GTO Secondary                               " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_161318BC
-"RADEON X800 GTO Secondary                                " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_165118BC
-"RADEON X800 GTO Secondary                                 " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_165318BC
-"RADEON X800 GTO                              " = ati2mtag_R423, PCI\VEN_1002&DEV_5549&SUBSYS_1089196D
-"RADEON X800 GTO                               " = ati2mtag_R430, PCI\VEN_1002&DEV_554F&SUBSYS_1089196D
-"RADEON X800 GTO                                " = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F&SUBSYS_1089196D
-"RADEON X800 GTO Secondary                                  " = ati2mtag_R423, PCI\VEN_1002&DEV_5569&SUBSYS_1088196D
-"RADEON X800 GTO Secondary                                   " = ati2mtag_R430, PCI\VEN_1002&DEV_556F&SUBSYS_1088196D
-"RADEON X800 GTO Secondary                                    " = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F&SUBSYS_1088196D
-"ATI MOBILITY RADEON XPRESS 200" = ati2mtag_RS480M, PCI\VEN_1002&DEV_5955
-"ATI Radeon 2100" = ati2mtag_RS690, PCI\VEN_1002&DEV_796E
-"ATI Radeon 9550 / X1050 Series" = ati2mtag_RV350, PCI\VEN_1002&DEV_4153
-"ATI Radeon 9550 / X1050 Series Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4173
-"ATI Radeon 9600 / X1050 Series" = ati2mtag_RV360, PCI\VEN_1002&DEV_4152
-"ATI Radeon 9600 / X1050 Series Secondary" = ati2mtag_RV360, PCI\VEN_1002&DEV_4172
-"ATI Radeon 9600/9550/X1050 Series" = ati2mtag_RV350, PCI\VEN_1002&DEV_4150
-"ATI Radeon 9600/9550/X1050 Series " = ati2mtag_RV350, PCI\VEN_1002&DEV_4E51
-"ATI Radeon 9600/9550/X1050 Series - Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4170
-"ATI Radeon 9600/9550/X1050 Series Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4E71
-"ATI Radeon X1200 Series" = ati2mtag_RS690, PCI\VEN_1002&DEV_791E
-"ATI Radeon X1200 Series " = ati2mtag_RS690M, PCI\VEN_1002&DEV_791F
-"ATI Radeon X1300 Series" = ati2mtag_RV515PCI, PCI\VEN_1002&DEV_714E
-"ATI Radeon X1300 Series " = ati2mtag_RV515PCI, PCI\VEN_1002&DEV_718F
-"ATI Radeon X1300/X1550 Series  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7143
-"ATI Radeon X1300/X1550 Series Secondary  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7163
-"ATI Radeon X1650 Series" = ati2mtag_R580, PCI\VEN_1002&DEV_7293
-"ATI Radeon X1650 Series Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_72B3
-"ATI Radeon X1950 GT" = ati2mtag_R580, PCI\VEN_1002&DEV_7288
-"ATI Radeon X1950 GT Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_72A8
-"ATI Radeon X300/X550/X1050 Series" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B60
-"ATI Radeon X300/X550/X1050 Series " = ati2mtag_RV380x, PCI\VEN_1002&DEV_5B62
-"ATI Radeon X300/X550/X1050 Series Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B70
-"ATI Radeon X300/X550/X1050 Series Secondary " = ati2mtag_RV380x, PCI\VEN_1002&DEV_5B72
-"ATI Radeon Xpress 1150" = ati2mtag_RS482, PCI\VEN_1002&DEV_5974
-"ATI Radeon Xpress 1150 Secondary" = ati2mtag_RS482, PCI\VEN_1002&DEV_5874
-"ATI Radeon Xpress 1200 Series" = ati2mtag_RS600, PCI\VEN_1002&DEV_7941
-"ATI Radeon Xpress 1200 Series " = ati2mtag_RS600, PCI\VEN_1002&DEV_793F
-"ATI RADEON XPRESS 200 Series" = ati2mtag_RC410, PCI\VEN_1002&DEV_5A61
-"ATI RADEON XPRESS 200 Series " = ati2mtag_RS400, PCI\VEN_1002&DEV_5A41
-"ATI RADEON XPRESS 200 Series  " = ati2mtag_RS480, PCI\VEN_1002&DEV_5954
-"ATI RADEON XPRESS 200 Series Secondary" = ati2mtag_RS400, PCI\VEN_1002&DEV_5A43
-"ATI RADEON XPRESS 200 Series Secondary " = ati2mtag_RS480, PCI\VEN_1002&DEV_5854
-"ATI RADEON XPRESS 200 Series Secondary  " = ati2mtag_RC410, PCI\VEN_1002&DEV_5A63
-"Radeon  X1300XT/X1600Pro/X1650 Series" = ati2mtag_RV530, PCI\VEN_1002&DEV_71CE
-"RADEON 9500" = ati2mtag_R300, PCI\VEN_1002&DEV_4144
-"RADEON 9500 - Secondary" = ati2mtag_R300, PCI\VEN_1002&DEV_4164
-"RADEON 9500 PRO / 9700" = ati2mtag_R300, PCI\VEN_1002&DEV_4E45
-"RADEON 9500 PRO / 9700 - Secondary" = ati2mtag_R300, PCI\VEN_1002&DEV_4E65
-"RADEON 9600 SERIES" = ati2mtag_RV350, PCI\VEN_1002&DEV_4151
-"RADEON 9600 Series " = ati2mtag_RV350, PCI\VEN_1002&DEV_4155
-"RADEON 9600 SERIES - Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4171
-"RADEON 9600 Series Secondary" = ati2mtag_RV350, PCI\VEN_1002&DEV_4175
-"RADEON 9600 TX" = ati2mtag_R300, PCI\VEN_1002&DEV_4E46
-"RADEON 9600 TX - Secondary" = ati2mtag_R300, PCI\VEN_1002&DEV_4E66
-"RADEON 9700 PRO" = ati2mtag_R300, PCI\VEN_1002&DEV_4E44
-"RADEON 9700 PRO - Secondary" = ati2mtag_R300, PCI\VEN_1002&DEV_4E64
-"RADEON 9800" = ati2mtag_R350, PCI\VEN_1002&DEV_4E49
-"RADEON 9800 - Secondary" = ati2mtag_R350, PCI\VEN_1002&DEV_4E69
-"RADEON 9800 PRO" = ati2mtag_R350, PCI\VEN_1002&DEV_4E48
-"RADEON 9800 PRO - Secondary" = ati2mtag_R350, PCI\VEN_1002&DEV_4E68
-"RADEON 9800 SERIES" = ati2mtag_R350, PCI\VEN_1002&DEV_4148
-"RADEON 9800 SERIES - Secondary" = ati2mtag_R350, PCI\VEN_1002&DEV_4168
-"RADEON 9800 XT" = ati2mtag_R360, PCI\VEN_1002&DEV_4E4A
-"RADEON 9800 XT - Secondary" = ati2mtag_R360, PCI\VEN_1002&DEV_4E6A
-"Radeon X1300 / X1600 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7140
-"Radeon X1300 / X1600 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7160
-"Radeon X1300 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_714D
-"Radeon X1300 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_716D
-"Radeon X1300/X1550 Series" = ati2mtag_RV515, PCI\VEN_1002&DEV_7146
-"Radeon X1300/X1550 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7142
-"Radeon X1300/X1550 Series  " = ati2mtag_RV515, PCI\VEN_1002&DEV_7183
-"Radeon X1300/X1550 Series   " = ati2mtag_RV515, PCI\VEN_1002&DEV_7187
-"Radeon X1300/X1550 Series Secondary" = ati2mtag_RV515, PCI\VEN_1002&DEV_7166
-"Radeon X1300/X1550 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_7162
-"Radeon X1300/X1550 Series Secondary  " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A3
-"Radeon X1300/X1550 Series Secondary   " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A7
-"Radeon X1300XT/X1600Pro/X1650 Series Secondary" = ati2mtag_RV530, PCI\VEN_1002&DEV_71EE
-"Radeon X1550 Series     " = ati2mtag_RV515, PCI\VEN_1002&DEV_7147
-"Radeon X1550 Series      " = ati2mtag_RV515, PCI\VEN_1002&DEV_715F
-"Radeon X1550 Series       " = ati2mtag_RV515, PCI\VEN_1002&DEV_7193
-"Radeon X1550 Series        " = ati2mtag_RV515, PCI\VEN_1002&DEV_719F
-"Radeon X1550 Series Secondary     " = ati2mtag_RV515, PCI\VEN_1002&DEV_7167
-"Radeon X1550 Series Secondary      " = ati2mtag_RV515, PCI\VEN_1002&DEV_717F
-"Radeon X1550 Series Secondary       " = ati2mtag_RV515, PCI\VEN_1002&DEV_71B3
-"Radeon X1600 Series" = ati2mtag_RV530, PCI\VEN_1002&DEV_71C0
-"Radeon X1600 Series " = ati2mtag_RV515, PCI\VEN_1002&DEV_7181
-"Radeon X1600 Series Secondary" = ati2mtag_RV530, PCI\VEN_1002&DEV_71E0
-"Radeon X1600 Series Secondary " = ati2mtag_RV515, PCI\VEN_1002&DEV_71A1
-"Radeon X1600/1650 Series" = ati2mtag_RV535, PCI\VEN_1002&DEV_71C3
-"Radeon X1600/1650 Series Secondary" = ati2mtag_RV530, PCI\VEN_1002&DEV_71E2
-"Radeon X1600/1650 Series Secondary " = ati2mtag_RV535, PCI\VEN_1002&DEV_71E3
-"Radeon X1600/X1650 Series" = ati2mtag_RV530, PCI\VEN_1002&DEV_71CD
-"Radeon X1600/X1650 Series " = ati2mtag_RV530, PCI\VEN_1002&DEV_71C2
-"Radeon X1600/X1650 Series Secondary" = ati2mtag_RV530, PCI\VEN_1002&DEV_71ED
-"Radeon X1650 Series " = ati2mtag_RV530, PCI\VEN_1002&DEV_71C6
-"Radeon X1650 Series  " = ati2mtag_RV535, PCI\VEN_1002&DEV_71C1
-"Radeon X1650 Series   " = ati2mtag_R580, PCI\VEN_1002&DEV_7291
-"Radeon X1650 Series    " = ati2mtag_RV535, PCI\VEN_1002&DEV_71C7
-"Radeon X1650 Series Secondary " = ati2mtag_RV530, PCI\VEN_1002&DEV_71E6
-"Radeon X1650 Series Secondary  " = ati2mtag_RV535, PCI\VEN_1002&DEV_71E1
-"Radeon X1650 Series Secondary   " = ati2mtag_R580, PCI\VEN_1002&DEV_72B1
-"Radeon X1650 Series Secondary    " = ati2mtag_RV535, PCI\VEN_1002&DEV_71E7
-"Radeon X1800 GTO" = ati2mtag_R520, PCI\VEN_1002&DEV_710A
-"Radeon X1800 GTO Secondary" = ati2mtag_R520, PCI\VEN_1002&DEV_712A
-"Radeon X1800 Series" = ati2mtag_R520, PCI\VEN_1002&DEV_7100
-"Radeon X1800 Series " = ati2mtag_R520, PCI\VEN_1002&DEV_7109
-"Radeon X1800 Series Secondary" = ati2mtag_R520, PCI\VEN_1002&DEV_7120
-"Radeon X1800 Series Secondary " = ati2mtag_R520, PCI\VEN_1002&DEV_7129
-"Radeon X1900 GT" = ati2mtag_R580, PCI\VEN_1002&DEV_724B
-"Radeon X1900 GT Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_726B
-"Radeon X1900 Series" = ati2mtag_R580, PCI\VEN_1002&DEV_7249
-"Radeon X1900 Series Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_7269
-"Radeon X1950 Pro" = ati2mtag_R580, PCI\VEN_1002&DEV_7280
-"Radeon X1950 Pro Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_72A0
-"Radeon X1950 Series" = ati2mtag_R580, PCI\VEN_1002&DEV_7240
-"Radeon X1950 Series " = ati2mtag_R580, PCI\VEN_1002&DEV_7248
-"Radeon X1950 Series  " = ati2mtag_R580, PCI\VEN_1002&DEV_7244
-"Radeon X1950 Series Secondary" = ati2mtag_R580, PCI\VEN_1002&DEV_7260
-"Radeon X1950 Series Secondary " = ati2mtag_R580, PCI\VEN_1002&DEV_7268
-"Radeon X1950 Series Secondary  " = ati2mtag_R580, PCI\VEN_1002&DEV_7264
-"Radeon X300/X550/X1050 Series" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B63
-"Radeon X300/X550/X1050 Series Secondary" = ati2mtag_RV370, PCI\VEN_1002&DEV_5B73
-"Radeon X550/X700 Series" = ati2mtag_RV410, PCI\VEN_1002&DEV_5657
-"Radeon X550/X700 Series " = ati2mtag_M26, PCI\VEN_1002&DEV_564F
-"Radeon X550/X700 Series Secondary" = ati2mtag_RV410, PCI\VEN_1002&DEV_5677
-"RADEON X600/X550 Series" = ati2mtag_RV380, PCI\VEN_1002&DEV_3E50
-"RADEON X600/X550 Series Secondary" = ati2mtag_RV380, PCI\VEN_1002&DEV_3E70
-"RADEON X700 SE" = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4F
-"RADEON X700 SE Secondary" = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6F
-"RADEON X700 Series  " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4B
-"RADEON X700 Series   " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4D
-"RADEON X700 Series    " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E4C
-"RADEON X700 Series Secondary  " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6B
-"RADEON X700 Series Secondary   " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6D
-"RADEON X700 Series Secondary    " = ati2mtag_RV410, PCI\VEN_1002&DEV_5E6C
-"RADEON X800 PRO/GTO" = ati2mtag_R420, PCI\VEN_1002&DEV_4A49
-"RADEON X800 PRO/GTO Secondary" = ati2mtag_R420, PCI\VEN_1002&DEV_4A69
-"RADEON X800 Series" = ati2mtag_R420, PCI\VEN_1002&DEV_4A4B
-"RADEON X800 Series " = ati2mtag_R420, PCI\VEN_1002&DEV_4A50
-"RADEON X800 Series  " = ati2mtag_R423, PCI\VEN_1002&DEV_5549
-"RADEON X800 Series   " = ati2mtag_R420, PCI\VEN_1002&DEV_4A4A
-"RADEON X800 Series    " = ati2mtag_R430, PCI\VEN_1002&DEV_554F
-"RADEON X800 Series     " = ati2mtag_R430, PCI\VEN_1002&DEV_554D
-"RADEON X800 Series - Secondary" = ati2mtag_R430, PCI\VEN_1002&DEV_556D
-"RADEON X800 Series -Secondary" = ati2mtag_R430, PCI\VEN_1002&DEV_556F
-"RADEON X800 Series Secondary" = ati2mtag_R420, PCI\VEN_1002&DEV_4A6B
-"RADEON X800 Series Secondary " = ati2mtag_R420, PCI\VEN_1002&DEV_4A70
-"RADEON X800 Series Secondary  " = ati2mtag_R423, PCI\VEN_1002&DEV_5569
-"RADEON X800 Series Secondary   " = ati2mtag_R420, PCI\VEN_1002&DEV_4A6A
-"RADEON X800 XT" = ati2mtag_R423, PCI\VEN_1002&DEV_5D57
-"RADEON X800 XT Platinum Edition" = ati2mtag_R423, PCI\VEN_1002&DEV_554A
-"RADEON X800 XT Platinum Edition Secondary" = ati2mtag_R423, PCI\VEN_1002&DEV_556A
-"RADEON X800 XT Secondary" = ati2mtag_R423, PCI\VEN_1002&DEV_5D77
-"RADEON X800/X850 Series" = ati2mtag_R480, PCI\VEN_1002&DEV_5D4F
-"RADEON X800/X850 Series - Secondary" = ati2mtag_R480, PCI\VEN_1002&DEV_5D6F
-"RADEON X800GT " = ati2mtag_R423, PCI\VEN_1002&DEV_554B
-"RADEON X800GT Secondary " = ati2mtag_R423, PCI\VEN_1002&DEV_556B
-"RADEON X850 Series" = ati2mtag_R480, PCI\VEN_1002&DEV_5D4D
-"RADEON X850 Series " = ati2mtag_R480, PCI\VEN_1002&DEV_5D52
-"RADEON X850 Series  " = ati2mtag_R481, PCI\VEN_1002&DEV_4B4B
-"RADEON X850 Series   " = ati2mtag_R481, PCI\VEN_1002&DEV_4B49
-"RADEON X850 Series    " = ati2mtag_R481, PCI\VEN_1002&DEV_4B4C
-"RADEON X850 Series - Secondary" = ati2mtag_R480, PCI\VEN_1002&DEV_5D6D
-"RADEON X850 Series - Secondary " = ati2mtag_R480, PCI\VEN_1002&DEV_5D72
-"RADEON X850 Series - Secondary  " = ati2mtag_R481, PCI\VEN_1002&DEV_4B6B
-"RADEON X850 Series - Secondary   " = ati2mtag_R481, PCI\VEN_1002&DEV_4B69
-"RADEON X850 Series - Secondary    " = ati2mtag_R481, PCI\VEN_1002&DEV_4B6C
-;
-; General installation section
-;
-
-[ati2mtag_R300]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R300_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R350]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R350_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R360]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R360_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV350]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV350_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV360]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV360_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV370]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV370_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV380x]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV380x_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV380]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV380_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV410]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV410_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R4x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R420]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R420_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R4x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R423]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R423_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R4x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R430]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R430_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R4x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R480]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R480_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R4x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R481]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R481_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R4x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R520]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R520_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R5x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_R580]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_R580_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R5x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV515]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV515_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R5x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV515PCI]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV515_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_PCI_SoftwareDeviceSettings, ati2mtag_R5x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV530]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV530_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R5x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RV535]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RV535_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings, ati2mtag_R5x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS400]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS400_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RC410]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RC410_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS480]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS480_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS482]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS482_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS600]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS600_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS690]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS690_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Desktop_SoftwareDeviceSettings, ati2mtag_LargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_M26]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, Uninstall.CopyFiles, FGL_OGL.sys, ati2mtag.OGL, ati2mtag.ORCA ;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, FGL_OGL.sys, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_M26_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, atioglgl_WsOpenGLSoftwareSettings, ati2mtag_Mobile_SoftwareDeviceSettings, ati2mtag_MobileLargeDesktopSettings, ati2mtag_R3x_SoftwareDeviceSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS480M]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS480M_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Mobile_SoftwareDeviceSettings, ati2mtag_MobileLargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RS690M]
-Include=msdv.inf
-CopyFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, Uninstall.CopyFiles, ati2mtag.OGL, ati2mtag.ORCA;, DVCR.CopyCodec
-AddReg=Uninstall.AddReg
-DelFiles=ati2mtag_DelFiles
-;UpdateInis=DVCR.UpdateIni
-UninstallFiles=Uninstall.CopyFiles
-UninstallReg=Uninstall.AddReg
-CleanFiles=ati2mtag.Miniport, ati2mtag.Display, ati2mtag.OpenGL, ati2mtag.OGL, ati2mtag.ORCA
-CleanReg=ati2mtag_SoftwareDeviceSettings, ati2mtag_RS690M_SoftwareDeviceSettings, atioglxx_OpenGLSoftwareSettings, ati2mtag_Mobile_SoftwareDeviceSettings, ati2mtag_MobileLargeDesktopSettings
-CleanService=ati2mtag_RemoveService
-
-[ati2mtag_RemoveService]
-ati2mtag
-Ati HotKey Poller
-;
-; File sections
-;
-
-[Uninstall.CopyFiles]
-atiiiexx.dll
-
-[ati2mtag.Miniport]
-ati2mtag.sys
-ati2erec.dll
-
-[ati2mtag.Display]
-ati2dvag.dll
-ati2cqag.dll
-Ati2mdxx.exe
-ati3duag.dll
-ativvaxx.dll
-atiicdxx.dat
-ativva5x.dat
-ativva6x.dat
-amdpcom32.dll
-atiadlxx.dll
-ativvaxx.cap
-ATIDDC.DLL
-atitvo32.dll
-ativcoxx.dll
-ati2evxx.exe
-ati2evxx.dll
-atipdlxx.dll
-Oemdspif.dll
-ati2edxx.dll
-atikvmag.dll
-atifglpf.xml
-ATIDEMGX.dll
-aticaldd.dll
-aticalrt.dll
-aticalcl.dll
-atibrtmon.exe
-
-[ati2mtag.OGL]
-atiogl.xml
-atiogl.xml
-
-[ati2mtag.OpenGL]
-atiok3x2.dll
-atiok3x2.dll
-atioglxx.dll
-
-[FGL_OGL.sys]
-atiok3x2.dll
-atioglxx.dll
-
-[ati2mtag.ORCA]
-atiok3x2.dll
-atioglxx.dll
-
-[Uninstall.AddReg]
-HKLM,"Software\Microsoft\Windows\CurrentVersion\Uninstall\ATI Display Driver",DisplayName,,"ATI Display Driver"
-HKLM,"Software\Microsoft\Windows\CurrentVersion\Uninstall\ATI Display Driver",UninstallString,,"rundll32 %11%\atiiiexx.dll,_InfEngUnInstallINFFile_RunDLL@16 -force_restart -flags:0x2010001 -inf_class:DISPLAY -clean"
-HKLM,"SOFTWARE\ATI Technologies\Installed Drivers\ATI Display Driver"
-HKLM,"Software\Microsoft\Windows\CurrentVersion\Uninstall\ATI Display Driver",DisplayVersion,,"8.593.100-100210a-095952E-ATI"
-
-[ati2mtag_DelFiles]
-amdcalcl.dll
-amdcaldd.dll
-amdcalrt.dll
-;
-; Service Installation
-;
-
-[ati2mtag_R300.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R350.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R360.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV350.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV360.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV370.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV380x.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV380.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV410.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R420.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R423.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R430.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R480.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R481.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R520.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_R580.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV515.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV515PCI.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-
-[ati2mtag_RV530.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RV535.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS400.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RC410.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS600.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS690.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS480.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS482.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_M26.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS480M.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_RS690M.Services]
-AddService = ati2mtag, 0x00000002, ati2mtag_Service_Inst, ati2mtag_EventLog_Inst
-AddService = Ati HotKey Poller,, Ati2evxx_Generic_Service_Inst, Ati2evxx_EventLog_Inst
-
-[ati2mtag_Service_Inst]
-ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
-StartType      = 3                  ; SERVICE_DEMAND_START
-ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE
-LoadOrderGroup = Video
-ServiceBinary  = %12%\ati2mtag.sys
-
-[ati2mtag_EventLog_Inst]
-AddReg = ati2mtag_EventLog_AddReg
-
-[ati2mtag_EventLog_AddReg]
-HKR,,EventMessageFile,0x00020000,"%SystemRoot%\System32\IoLogMsg.dll;%SystemRoot%\System32\drivers\ati2erec.dll;%SystemRoot%\System32\drivers\ati2mtag.sys"
-HKR,,TypesSupported,0x00010001,7
-HKR,, CategoryMessageFile, 0x00020000, "%SystemRoot%\System32\drivers\ati2erec.dll"
-HKR,, CategoryCount, 0x00010001, 63
-
-[Ati2evxx_Generic_Service_Inst]
-ServiceType    = 0x110
-StartType      = 2
-ErrorControl   = 1
-ServiceBinary  = %11%\Ati2evxx.exe
-LoadOrderGroup = Event log
-
-[Ati2evxx_EventLog_Inst]
-AddReg=Ati2evxx_EventLog_AddReg
-
-[Ati2evxx_EventLog_AddReg]
-HKR,,EventMessageFile,0x00020000,"%11%\Ati2evxx.exe"
-HKR,,TypesSupported,0x00010001,7
-;
-; Software Installation
-;
-
-[ati2mtag_R300.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R300_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R350.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R350_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R360.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R360_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV350.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV350_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV360.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV360_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV370.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV370_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV380x.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV380x_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV380.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV380_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV410.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV410_SoftwareDeviceSettings
-AddReg = ati2mtag_R4x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R420.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R420_SoftwareDeviceSettings
-AddReg = ati2mtag_R4x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R423.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R423_SoftwareDeviceSettings
-AddReg = ati2mtag_R4x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R430.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R430_SoftwareDeviceSettings
-AddReg = ati2mtag_R4x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R480.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R480_SoftwareDeviceSettings
-AddReg = ati2mtag_R4x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R481.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R481_SoftwareDeviceSettings
-AddReg = ati2mtag_R4x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R520.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R520_SoftwareDeviceSettings
-AddReg = ati2mtag_R5x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_R580.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_R580_SoftwareDeviceSettings
-AddReg = ati2mtag_R5x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV515.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV515_SoftwareDeviceSettings
-AddReg = ati2mtag_R5x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV515PCI.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV515_SoftwareDeviceSettings
-AddReg = ati2mtag_R5x_SoftwareDeviceSettings
-AddReg = ati2mtag_PCI_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV530.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV530_SoftwareDeviceSettings
-AddReg = ati2mtag_R5x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RV535.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RV535_SoftwareDeviceSettings
-AddReg = ati2mtag_R5x_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RS400.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS400_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RC410.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RC410_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RS480.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS480_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RS482.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS482_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RS600.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS600_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_RS690.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS690_SoftwareDeviceSettings
-AddReg = ati2mtag_Desktop_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_LargeDesktopSettings
-
-[ati2mtag_M26.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_M26_SoftwareDeviceSettings
-AddReg = ati2mtag_R3x_SoftwareDeviceSettings
-AddReg = ati2mtag_Mobile_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_MobileLargeDesktopSettings
-
-[ati2mtag_RS480M.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS480M_SoftwareDeviceSettings
-AddReg = ati2mtag_Mobile_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_MobileLargeDesktopSettings
-
-[ati2mtag_RS690M.SoftwareSettings]
-AddReg = ati2mtag_SoftwareDeviceSettings
-AddReg = ati2mtag_RS690M_SoftwareDeviceSettings
-AddReg = ati2mtag_Mobile_SoftwareDeviceSettings
-AddReg = atioglxx_OpenGLSoftwareSettings
-DelReg = ati2mtag_RemoveDeviceSettings
-AddReg = ati2mtag_MobileLargeDesktopSettings
-
-[ati2mtag_R300_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,06,40,04,80,00,00,01,60,06,40,04,80,00,00,02,00,08,00,06,00,00,00,01,60,08,00,06,00,00,00,02,00,10,24,07,68,00,00,01,50,10,24,07,68,00,00,01,60,10,24,07,68,00,00,02,00,12,80,10,24,00,00,01,60
-HKR,, DALRestrictedModesBCD2, %REG_BINARY%,12,80,10,24,00,00,02,00,16,00,12,00,00,00,01,00,16,00,12,00,00,00,01,20,17,92,13,44,00,00,00,90,17,92,13,44,00,00,01,00,18,00,14,40,00,00,00,90,18,00,14,40,00,00,01,00,19,20,12,00,00,00,00,85
-HKR,, DALRestrictedModesBCD3, %REG_BINARY%,19,20,14,40,00,00,00,85,19,20,14,40,00,00,01,00,20,48,15,36,00,00,00,66
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R350_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R360_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV350_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,60,12,80,08,00,00,00,00,75,12,80,08,00,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV360_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV370_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, ASTT_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,08,00,06,00,00,00,00,43,08,00,06,00,00,00,00,47
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, DisableVLD,        %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV380x_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,12,80,09,60,00,00,00,00,17,92,13,44,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV380_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq,    %REG_BINARY%,   50,c3,00,00
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1 
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,08,00,06,00,00,00,00,43,08,00,06,00,00,00,00,47
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, DisableVLD,        %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV410_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,00,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,08,00,06,00,00,00,00,43,08,00,06,00,00,00,00,47
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R420_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,12,80,09,60,00,00,00,00
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R423_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,12,80,09,60,00,00,00,00
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R430_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,12,80,09,60,00,00,00,00
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R480_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,00,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R481_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, GCORULE_FracFbDivSupport,      %REG_DWORD%, 0
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,00,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R520_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_DEF, %REG_SZ%, 0
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown, %REG_SZ%, 0
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, 0
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 0
-HKR,, GI_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,00,04,80,00,00,00,60,08,00,04,80,00,00,00,70,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,13,60,07,68,00,00,00,70,13,60,07,68,00,00,00,72,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,14,40,09,00,00,00,00,00,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,16,80,10,50,00,00,01,00,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,38,40,10,80,00,00,00,30,38,40,10,80,00,00,00,41,38,40,10,80,00,00,00,60
-HKR,, DALNonStandardModesBCD6, %REG_BINARY%,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_R580_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_DEF, %REG_SZ%, 0
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown, %REG_SZ%, 0
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, 0
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 0
-HKR,, GI_NA, %REG_SZ%, 1
-HKR,, DisableWorkstation,               %REG_DWORD%,    1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,70,07,20,05,76,00,00,00,00,08,00,04,80,00,00,00,60,08,00,04,80,00,00,00,70,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,60,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,70
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,13,60,07,68,00,00,00,72,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,14,40,09,00,00,00,00,00,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,16,80,10,50,00,00,01,00
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,38,40,10,80,00,00,00,30,38,40,10,80,00,00,00,41,38,40,10,80,00,00,00,60,12,80,09,60,00,00,00,00
-HKR,, DALNonStandardModesBCD6, %REG_BINARY%,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV515_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_DEF, %REG_SZ%, 0
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown, %REG_SZ%, 0
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, 0
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 0
-HKR,, GI_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,00,04,80,00,00,00,60,08,00,04,80,00,00,00,70,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,13,60,07,68,00,00,00,70,13,60,07,68,00,00,00,72,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,14,40,09,00,00,00,00,00,25,60,16,00,00,00,00,59,25,60,16,00,00,00,00,60,38,40,10,80,00,00,00,30
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,38,40,10,80,00,00,00,41,38,40,10,80,00,00,00,60,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,08,00,06,00,00,00,00,43,08,00,06,00,00,00,00,47
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, GXODisablePllFracFbDiv,      %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, DALRULE_EnableOverdriveNoThermalChip,      %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV530_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_DEF, %REG_SZ%, 0
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown, %REG_SZ%, 0
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, 0
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 0
-HKR,, GI_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,00,04,80,00,00,00,60,08,00,04,80,00,00,00,70,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,12,80,08,00,00,00,00,59
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,13,60,07,68,00,00,00,60
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,13,60,07,68,00,00,00,70,13,60,07,68,00,00,00,72,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,14,40,09,00,00,00,00,00,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,25,60,16,00,00,00,00,59
-HKR,, DALNonStandardModesBCD5, %REG_BINARY%,25,60,16,00,00,00,00,60,38,40,10,80,00,00,00,30,38,40,10,80,00,00,00,41,38,40,10,80,00,00,00,60,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00
-HKR,, DALNonStandardModesBCD6, %REG_BINARY%,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,08,00,06,00,00,00,00,43,08,00,06,00,00,00,00,47
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, DALRULE_EnableOverdriveNoThermalChip,      %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RV535_SoftwareDeviceSettings]
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, GCOOPTION_DigitalCrtInfo,    %REG_BINARY%,   A3,38,61,C1,A3,38,61,B1
-HKR,, PrimaryTiling,                 %REG_SZ%,    1
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_DEF, %REG_SZ%, 0
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown, %REG_SZ%, 0
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, 0
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 0
-HKR,, GI_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,70,08,00,04,80,00,00,00,60,08,00,04,80,00,00,00,70,12,80,08,00,00,00,00,59,12,80,08,00,00,00,00,60,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,70
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,13,60,07,68,00,00,00,72,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,14,40,09,00,00,00,00,00,38,40,10,80,00,00,00,30,38,40,10,80,00,00,00,41,38,40,10,80,00,00,00,60,12,80,07,68,00,00,00,00
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DALRestrictedModesBCD1, %REG_BINARY%,08,00,06,00,00,00,00,43,08,00,06,00,00,00,00,47
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, DALRULE_EnableOverdriveNoThermalChip,      %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RS400_SoftwareDeviceSettings]
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,    %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, ASTT_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,12,80,07,68,00,00,00,00,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, GCORULE_PPUseBIOSVideoPlaybackAdjustment,      %REG_DWORD%,    0
-HKR,, GCORULE_PPEnableVideoPlaybackSupport,      %REG_DWORD%,    0
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RC410_SoftwareDeviceSettings]
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,    %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, ASTT_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,12,80,07,68,00,00,00,00,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, GCORULE_PPUseBIOSVideoPlaybackAdjustment,      %REG_DWORD%,    0
-HKR,, GCORULE_PPEnableVideoPlaybackSupport,      %REG_DWORD%,    0
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RS480_SoftwareDeviceSettings]
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,    %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, R6GxO_UseI2cLayer,      %REG_DWORD%,    1
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, ASTT_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, ExtEvent_VideoPlaybackCpuThrottle,        %REG_DWORD%,    0x64
-HKR,, GCORULE_PPUseBIOSVideoPlaybackAdjustment,      %REG_DWORD%,    0
-HKR,, GCORULE_PPEnableVideoPlaybackSupport,      %REG_DWORD%,    0
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RS482_SoftwareDeviceSettings]
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,    %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, R6GxO_UseI2cLayer,      %REG_DWORD%,    1
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, ASTT_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,07,20,04,80,00,00,00,60,07,20,04,80,00,00,00,75,07,20,04,80,00,00,00,85,07,20,05,76,00,00,00,00,08,48,04,80,00,00,00,60,08,48,04,80,00,00,00,75,08,48,04,80,00,00,00,85,12,80,07,20,00,00,00,60
-HKR,, DALNonStandardModesBCD2, %REG_BINARY%,12,80,07,20,00,00,00,75,12,80,07,20,00,00,00,85,12,80,07,68,00,00,00,60,12,80,07,68,00,00,00,75,12,80,07,68,00,00,00,85,13,60,07,68,00,00,00,60,13,60,07,68,00,00,00,75,13,60,07,68,00,00,00,85
-HKR,, DALNonStandardModesBCD3, %REG_BINARY%,13,60,10,24,00,00,00,60,13,60,10,24,00,00,00,75,13,60,10,24,00,00,00,85,14,40,09,00,00,00,00,60,14,40,09,00,00,00,00,75,14,40,09,00,00,00,00,85,16,80,10,50,00,00,00,60,16,80,10,50,00,00,00,75
-HKR,, DALNonStandardModesBCD4, %REG_BINARY%,16,80,10,50,00,00,00,85,19,20,10,80,00,00,00,30,19,20,10,80,00,00,00,85,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, ExtEvent_VideoPlaybackCpuThrottle,        %REG_DWORD%,    0x64
-HKR,, GCORULE_PPUseBIOSVideoPlaybackAdjustment,      %REG_DWORD%,    0
-HKR,, GCORULE_PPEnableVideoPlaybackSupport,      %REG_DWORD%,    0
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RS600_SoftwareDeviceSettings]
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,    %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, "1"
-HKR,, 3to2Pulldown, %REG_SZ%, 0
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, 0
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 0
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, DXVA_NOHDDECODE, %REG_SZ%, "1"
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, ColorVibrance_NA, %REG_SZ%, "1"
-HKR,, Fleshtone_NA, %REG_SZ%, "1"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,12,80,07,68,00,00,00,00,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RS690_SoftwareDeviceSettings]
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,    %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, "1"
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, DXVA_NOHDDECODE, %REG_SZ%, "1"
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, ColorVibrance_NA, %REG_SZ%, "1"
-HKR,, Fleshtone_NA, %REG_SZ%, "1"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,10,24,07,68,00,00,00,00,12,80,07,68,00,00,00,00,12,80,09,60,00,00,00,00,16,00,12,00,00,00,00,70,17,92,13,44,00,00,00,00,18,00,14,40,00,00,00,00,18,56,13,92,00,00,00,00
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT, %REG_DWORD%, 1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, CVRULE_ENABLEPALTIMINGSUPPORT,      %REG_DWORD%,    1
-HKR,, ExtEvent_VideoPlaybackCpuThrottle,        %REG_DWORD%,    0x64
-HKR,, 3to2Pulldown, %REG_SZ%, "0"
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, "0"
-HKR,, 3to2Pulldown_NA, %REG_SZ%, "0"
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_M26_SoftwareDeviceSettings]
-HKR,, DALRULE_NOTVANDLCDONCRTC,             %REG_DWORD%,    1
-HKR,, WmAgpMaxIdleClk,			    %REG_DWORD%,    0x20
-HKR,, DisableIDCT,                          %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,                  %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00
-HKR,, DisableFullAdapterInit,      %REG_DWORD%,    0
-HKR,, MemInitLatencyTimer,         %REG_DWORD%,    0x775771BF
-HKR,, GCORULE_FlickerWA,             %REG_DWORD%, 1
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION HD"
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,08,00,04,80,00,00,00,60,10,24,04,80,00,00,00,60,10,24,06,00,00,00,00,60,12,80,07,68,00,00,00,60,14,00,10,50,00,00,00,60
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, ExtEvent_EnablePolling,      %REG_DWORD%,    1
-HKR,, ExtEvent_BroadcastDispChange,      %REG_DWORD%,    0
-HKR,, ExtEvent_UpdateAdapterInfoOnHK,      %REG_DWORD%,    1
-HKR,, GCORULE_DisableHotKeyIfDDExclusiveMode,          %REG_DWORD%,    0
-HKR,, ExtEvent_LCDSetMaxResOnDockChg,      %REG_DWORD%,    0
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, HDTVRULE_HDTVGDOENABLE,        %REG_DWORD%,    1
-HKR,, HDTVRULE_HDTVSIGNALFORMAT,   %REG_DWORD%,    1
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, OVShiftOddDown,                         %REG_DWORD%,    0
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, DALRULE_POWERPLAYOPTIONCOLORDEPTHREDUCTION,      %REG_DWORD%,    0
-HKR,, DALRULE_POWERPLAYOPTIONCOLORDEPTHREDUCTION,      %REG_DWORD%,    0
-HKR,, R6LCD_FOLLOWLIDSTATE,   %REG_DWORD%,    0
-HKR,, DisableFakeOSDualViewNotify,      %REG_DWORD%,    1
-HKR,, DisableSWInterrupt,      		   %REG_DWORD%,    1
-HKR,, ExtEvent_BIOSEventByInterrupt,      %REG_DWORD%,    0
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, ExtEvent_EnableChgLCDResOnHotKey,                  %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DisableDalValidateChild,        %REG_DWORD%,    0
-HKR,, DALRULE_ENABLESHOWACSLIDER,                  %REG_DWORD%,    1
-HKR,, DALRULE_ENABLESHOWDCLOWSLIDER,                  %REG_DWORD%,    1
-HKR,, R6LCD_RETURNALLBIOSMODES,              %REG_DWORD%,    0
-HKR,, ExtEvent_RestoreLargeDesktopOnResume,      %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DfpUsePixSlip,                  %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-HKR,, CurrentProfile_DEF, %REG_SZ%, "Default"
-HKR,, Capabilities_DEF, %REG_DWORD%, 0x00000000
-HKR,, CapabilitiesEx_DEF, %REG_DWORD%, 0
-HKR,, VisualEnhancements_Capabilities_DEF, %REG_DWORD%, 0
-
-[ati2mtag_RS480M_SoftwareDeviceSettings]
-HKR,, DALRULE_NOTVANDLCDONCRTC,             %REG_DWORD%,    1
-HKR,, WmAgpMaxIdleClk,                      %REG_DWORD%,    0x20
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,                  %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00 
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, R6GxO_UseI2cLayer,      %REG_DWORD%,    1
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, R6GxO_UseI2cLayer, %REG_DWORD%, 1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, 3to2Pulldown_NA, %REG_SZ%, 1
-HKR,, Transcode_NA, %REG_SZ%, 1
-HKR,, ASTT_NA, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,08,00,04,80,00,00,00,60,10,24,04,80,00,00,00,60,10,24,06,00,00,00,00,60,12,80,06,00,00,00,00,60,12,80,07,68,00,00,00,60,14,00,10,50,00,00,00,60
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, ExtEvent_EnablePolling,      %REG_DWORD%,    1
-HKR,, ExtEvent_BroadcastDispChange,      %REG_DWORD%,    0
-HKR,, GCORULE_DisableHotKeyIfDDExclusiveMode,          %REG_DWORD%,    0
-HKR,, ExtEvent_LCDSetMaxResOnDockChg,      %REG_DWORD%,    0
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, DALRULE_POWERPLAYOPTIONCOLORDEPTHREDUCTION,      %REG_DWORD%,    0
-HKR,, R6LCD_FOLLOWLIDSTATE,   %REG_DWORD%,    0
-HKR,, DisableSWInterrupt,      		   %REG_DWORD%,    1
-HKR,, ExtEvent_BIOSEventByInterrupt,      %REG_DWORD%,    0
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, ExtEvent_EnableChgLCDResOnHotKey,                  %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, TVM6Flag,   %REG_DWORD%,    0
-HKR,, DALRULE_ENABLESHOWACSLIDER,                  %REG_DWORD%,    1
-HKR,, DALRULE_ENABLESHOWDCLOWSLIDER,                  %REG_DWORD%,    1
-HKR,, R6LCD_RETURNALLBIOSMODES,              %REG_DWORD%,    0
-HKR,, ExtEvent_RestoreLargeDesktopOnResume,      %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALRULE_DISABLEDISPLAYSWITCHINGIFDDEXCLUSIVEMODE,      %REG_DWORD%,    1
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, ExtEvent_VideoPlaybackCpuThrottle,        %REG_DWORD%,    0x64
-HKR,, GCORULE_PPUseBIOSVideoPlaybackAdjustment,      %REG_DWORD%,    0
-HKR,, GCORULE_PPEnableVideoPlaybackSupport,      %REG_DWORD%,    0
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_RS690M_SoftwareDeviceSettings]
-HKR,, DALRestrictedModesBCD, %REG_BINARY%,20,48,15,36,00,32,00,85, 20,48,15,36,00,32,00,75, 20,48,15,36,00,32,00,70, 19,20,14,40,00,32,00,85, 19,20,12,00,00,32,00,85
-HKR,, DALRULE_NOTVANDLCDONCRTC,             %REG_DWORD%,    1
-HKR,, WmAgpMaxIdleClk,                      %REG_DWORD%,    0x20
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DALR6 CRT_MaxModeInfo,                  %REG_BINARY%,00,00,00,00,40,06,00,00,B0,04,00,00,00,00,00,00,3C,00,00,00 
-HKR,, SMOOTHVISION_NAME, %REG_SZ%, "SMOOTHVISION 2.1"
-HKR,, DisableQuickApply3D,                %REG_DWORD%,    1
-HKR,, R6GxO_UseI2cLayer, %REG_DWORD%, 1
-HKR,, GI_DEF, %REG_SZ%, 0
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, ASD_DEF, %REG_SZ%, 1
-HKR,, AreaAniso_NA, %REG_SZ%, "1"
-HKR,, AreaAniso_NA, %REG_SZ%, 1
-HKR,, SameOnAllUsingStandardInVideoTheaterCloneMode, %REG_SZ%, "1"
-HKR,, VIDEO_NAME_SUFFIX, %REG_SZ%, "Avivo(TM)"
-HKR,, DXVA_NOHDDECODE, %REG_SZ%, "1"
-HKR,, AntiAliasMapping_SET, %REG_SZ%, "0(0:0,1:0) 2(0:2,1:2) 4(0:4,1:4,2:8,3:10) 6(0:6,1:6,2:12,3:14)"
-HKR,, ASTT_DEF, %REG_SZ%, 0
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, ColorVibrance_NA, %REG_SZ%, "1"
-HKR,, Fleshtone_NA, %REG_SZ%, "1"
-HKR,, DALNonStandardModesBCD1, %REG_BINARY%,08,00,04,80,00,00,00,60,10,24,04,80,00,00,00,60,10,24,06,00,00,00,00,60,12,80,06,00,00,00,00,60,12,80,07,68,00,00,00,60,14,00,10,50,00,00,00,60
-HKR,, DisableDualView,                 %REG_DWORD%,    0
-HKR,, DisableDualviewWithHotKey,    %REG_DWORD%,    1
-HKR,, ExtEvent_EnablePolling,      %REG_DWORD%,    1
-HKR,, ExtEvent_BroadcastDispChange,      %REG_DWORD%,    0
-HKR,, GCORULE_DisableHotKeyIfDDExclusiveMode,          %REG_DWORD%,    0
-HKR,, ExtEvent_LCDSetMaxResOnDockChg,      %REG_DWORD%,    0
-HKR,, GCORULE_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER,      %REG_DWORD%,    1
-HKR,, GCORULE_IntTMDSReduceBlankTiming,      %REG_DWORD%,    1
-HKR,, TVDisableModes,   %REG_DWORD%,    0
-HKR,, GCORULE_ENABLERMXFILTER, %REG_DWORD%,   1
-HKR,, DALRULE_RESTRICT2ACTIVEDISPLAYS,      %REG_DWORD%,    0
-HKR,, DALRULE_POWERPLAYOPTIONCOLORDEPTHREDUCTION,      %REG_DWORD%,    0
-HKR,, R6LCD_FOLLOWLIDSTATE,   %REG_DWORD%,    0
-HKR,, DisableSWInterrupt,      		   %REG_DWORD%,    1
-HKR,, ExtEvent_BIOSEventByInterrupt,      %REG_DWORD%,    0
-HKR,, DisableD3DExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, DisableOpenGLExclusiveModeChange,             %REG_DWORD%,    1
-HKR,, ExtEvent_EnableChgLCDResOnHotKey,                  %REG_DWORD%,    0
-HKR,, DisableDalValidateChild,        %REG_DWORD%,    0
-HKR,, DALRULE_ENABLESHOWACSLIDER,                  %REG_DWORD%,    1
-HKR,, R6LCD_RETURNALLBIOSMODES,              %REG_DWORD%,    0
-HKR,, ExtEvent_RestoreLargeDesktopOnResume,      %REG_DWORD%,    0
-HKR,, ExtEvent_OverDriveSupport,      %REG_DWORD%,    1
-HKR,, DXVA_WMV_DEF,                 %REG_SZ%,    1
-HKR,, DXVA_WMV,                 %REG_SZ%,    1
-HKR,, DALOPTION_MaxResBCD,                  %REG_BINARY%,   00,00,00,00,00,00,00,85
-HKR,, Gxo50HzTimingSupport,          %REG_DWORD%,    1
-HKR,, CVRULE_ENABLEPALTIMINGSUPPORT,      %REG_DWORD%,    1
-HKR,, ExtEvent_VideoPlaybackCpuThrottle,        %REG_DWORD%,    0x64
-HKR,, 3to2Pulldown, %REG_SZ%, "0"
-HKR,, 3to2Pulldown_DEF, %REG_SZ%, "0"
-HKR,, 3to2Pulldown_NA, %REG_SZ%, "0"
-HKR,, Main3D_DEF, %REG_SZ%, 3
-HKR,, AntiAlias_DEF, %REG_SZ%, 1
-HKR,, AntiAliasSamples_DEF, %REG_SZ%, 0
-HKR,, AnisoType_DEF, %REG_SZ%, 0
-HKR,, AnisoDegree_DEF, %REG_SZ%, 0
-HKR,, TextureOpt_DEF, %REG_SZ%, 0
-HKR,, TextureLod_DEF, %REG_SZ%, 0
-HKR,, TruformMode_DEF, %REG_SZ%, 0
-HKR,, VSyncControl_DEF, %REG_SZ%, 1
-HKR,, SwapEffect_DEF, %REG_SZ%, 0
-HKR,, TemporalAAMultiplier_DEF, %REG_SZ%, 0
-HKR,, ExportCompressedTex_DEF, %REG_SZ%, 1
-HKR,, PixelCenter_DEF, %REG_SZ%, 0
-HKR,, ForceZBufferDepth_DEF, %REG_SZ%, 0
-HKR,, EnableTripleBuffering_DEF, %REG_SZ%, 0
-HKR,, ColourDesktopGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourDesktopBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourDesktopContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenGamma_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, ColourFullscreenBrightness_DEF, %REG_SZ%, "0 0 0"
-HKR,, ColourFullscreenContrast_DEF, %REG_SZ%, "1.0 1.0 1.0"
-HKR,, 3D_Refresh_Rate_Override_DEF, %REG_DWORD%, 0
-HKR,, Display_Detection_DEF, %REG_DWORD%, 0
-HKR,, Panning_Mode_DEF, %REG_DWORD%, 0
-HKR,, Mouse_Track_Orientation_DEF, %REG_DWORD%, 1
-HKR,, Force_TV_Detection_DEF, %REG_DWORD%, 0
-HKR,, CatalystAI_DEF, %REG_SZ%, 1
-
-[ati2mtag_SoftwareDeviceSettings]
-HKR,, DDC2Disabled,                         %REG_DWORD%,    0
-HKR,, DisableBlockWrite,                    %REG_DWORD%,    1
-HKR,, DisableDMACopy,                       %REG_DWORD%,    0
-HKR,, InstalledDisplayDrivers,              %REG_MULTI_SZ%, ati2dvag
-HKR,, MultiFunctionSupported,               %REG_DWORD%,    1
-HKR,, TestEnv,                              %REG_DWORD%,    0
-HKR,, TimingSelection,                      %REG_DWORD%,    0
-HKR,, VgaCompatible,                        %REG_DWORD%,    0
-HKR,,"Adaptive De-interlacing",             %REG_DWORD%,    1
-HKR,,"VPE Adaptive De-interlacing",         %REG_DWORD%,    1
-HKR,, GCOOPTION_DisableGPIOPowerSaveMode,   %REG_DWORD%,    1
-HKLM,"Software\ATI Technologies\CBT",ReleaseVersion,,"8.593.100-100210a-095952E-ATI"
-HKR,, ReleaseVersion,,"8.593.100-100210a-095952E-ATI"
-HKR,, BuildNumber,,"95952"
-HKR,, drv,, "ati2dvag.dll"
-HKR,, DALGameGammaScale,       %REG_DWORD%,   0x00646464
-HKR,"ATI WDM Configurations","PnP ID Version",%REG_SZ%,"34"
-HKR,, UseNewOGLRegPath,      %REG_DWORD%,    1
-HKR,, DALRULE_DYNAMICFIXEDDISPLAYMODEREPORTING,      %REG_DWORD%,    1
-HKR,, SwapEffect_NA, %REG_SZ%, 1
-HKR,, GXOPPUseExclusiveExecution,  %REG_DWORD%,    1
-HKLM,"SYSTEM\CurrentControlSet\Control\GraphicsDrivers\EnableMapIOSpaceProtection"
-HKR,, OvlTheaterModeType_DEF, %REG_SZ%,"0"
-HKR,, LRTCCoef_DEF, %REG_SZ%,"0"
-HKR,, ColorVibrance_NA, %REG_SZ%, "1"
-HKR,, Fleshtone_NA, %REG_SZ%, "1"
-HKR,, LRTCEnable, %REG_SZ%, "0"
-HKR,, LRTCEnable_DEF, %REG_SZ%, "0"
-HKR,, ATMS_NA, %REG_SZ%, 1
-HKR,, DI_METHOD_DEF, %REG_SZ%, "-1"
-HKR,, Force_CV_Detection_DEF,      %REG_DWORD%, 0
-HKR,, DefaultSettings.BitsPerPel,           %REG_DWORD%, 32
-HKR,, DefaultSettings.XResolution,          %REG_DWORD%, 800
-HKR,, DefaultSettings.YResolution,          %REG_DWORD%, 600
-HKR,, DefaultSettings.VRefresh,             %REG_DWORD%, 75
-HKR,, DALDefaultModeBCD,           %REG_BINARY%,   08,00,06,00,00,32,00,75
-HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",ATIModeChange,,"Ati2mdxx.exe"
-HKR,, DisableTimeStampWriteBack,   %REG_DWORD%,    0
-HKR,, DALRULE_GETVGAEXPANSIONATBOOT,                  %REG_DWORD%,    0
-HKLM, "Software\CLASSES\CLSID\{EBB5845F-CA80-11CF-BD3C-008029E89281}\InProcServer32",,,"atitvo32.dll"
-HKLM, "Software\CLASSES\CLSID\{EBB5845F-CA80-11CF-BD3C-008029E89281}\InProcServer32",ThreadingModel,,"Both"
-HKR,, DisableTiling,                        %REG_DWORD%,    0
-HKR,, DALRULE_ENABLEDALRESUMESUPPORT, %REG_DWORD%,   1
-HKR,, ExtEvent_EnableHotPlug,      %REG_DWORD%,    1
-HKR,, DisableHotPlugDFP,	%REG_DWORD%,	0
-HKR,, ExtEvent_EnableMouseRotation,      %REG_DWORD%,    0
-HKR,, ExtEvent_EnableAlpsMouseOrientation,      %REG_DWORD%,    0
-HKR,, ExtEvent_SafeEscapeSupport,   %REG_DWORD%,    1
-HKR,, DFPRULE_HotplugSupported, %REG_DWORD%, 1
-HKR,, DALRULE_DISABLEPSEUDOLARGEDESKTOP,      %REG_DWORD%,    0
-HKR,, OvlTheaterMode, %REG_BINARY%, 00,00,00,00
-HKR,, DisableOvlTheaterMode,%REG_DWORD%,0
-HKR,, UseVMRPitch,                        %REG_DWORD%,    1
-HKR,, DisableMMSnifferCode,               %REG_DWORD%,    0
-HKR,, DisableProgPCILatency,               %REG_DWORD%,    0
-HKR,, DALRULE_NOTVANDCRTONSAMECONTROLLER,   %REG_DWORD%,    0
-HKR,, DALRULE_GetTVFakeEDID,        %REG_DWORD%,    1
-HKR,, Catalyst_Version,,"10.2"
-HKR,, DALRULE_REGISTRYACCESS,      %REG_DWORD%,    0
-HKR,, DALRULE_RESTRICTCRTANALOGDETECTIONONEDIDMISMATCH,   %REG_DWORD%,    0
-HKR,, DALRULE_ENABLEDRIVERMODEPRUNNING,   %REG_DWORD%,    0
-HKR,, GCORULE_ENABLETILEDMEMORYCALCULATION,               %REG_DWORD%,    1
-HKR,, DALRULE_MACROVISIONINFOREPORT,      %REG_DWORD%,    0
-HKR,, DALRULE_BANDWIDTHMODEENUM, %REG_DWORD%, 1
-HKR,, DALRULE_NOCRTANDLCDONSAMECONTROLLER, %REG_DWORD%, 0
-HKR,, ExtEvent_LCDSetNativeModeOnResume,      %REG_DWORD%,    0
-HKR,, DALRULE_LIMITTMDSMODES ,      %REG_DWORD%,    0
-HKR,, DALRULE_RESTRICT640x480MODE,        %REG_DWORD%,    0
-HKR,, DALRULE_DISPLAYSRESTRICTMODES,   %REG_DWORD%,    0
-HKR,, DALRULE_RESTRICT8BPPON2NDDRV,      %REG_DWORD%,    0
-HKR,, TVForceDetection,   %REG_DWORD%,    0
-HKR,, DALRULE_ADAPTERBANDWIDTHMODEENUM,      %REG_DWORD%,    0
-HKR,, GCOOPTION_MinMemEff,      %REG_DWORD%,    0
-HKR,, GCORULE_IncreaseMinMemEff,      %REG_DWORD%,    0
-HKR,, DALRULE_DISABLECWDDEDETECTION,      %REG_DWORD%,    0
-HKR,, DALRULE_SELECTION_SCHEME, %REG_DWORD%, 0
-HKR,, DALRULE_NOCRTANDDFPACTIVESIMULTANEOUSLY,      %REG_DWORD%,    0
-HKR,, DisableTabletPCRotation,      %REG_DWORD%,    1
-HKR,, VPUEnableSubmissionBox,      %REG_SZ%,    "0"
-HKR,, VPUEnableSubmissionBox_NA,      %REG_SZ%,    "1"
-HKR,, DisableSmartSave_DEF,      %REG_DWORD%,    0
-HKR,, VPUEnableSubmissionBox_DEF,      %REG_SZ%,    "1"
-HKR,, DisableSmartSave,      %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",DLLName,,"Ati2evxx.dll"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Asynchronous,      %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Impersonate,      %REG_DWORD%,    1
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Lock,,"AtiLockEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Logoff,,"AtiLogoffEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Logon,,"AtiLogonEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Disconnect,,"AtiDisConnectEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Reconnect,, "AtiReConnectEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Safe,      %REG_DWORD%,    0
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Shutdown,, "AtiShutdownEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",StartScreenSaver,, "AtiStartScreenSaverEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",StartShell,,"AtiStartShellEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Startup,,"AtiStartupEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",StopScreenSaver,,"AtiStopScreenSaverEvent"
-HKLM,"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\AtiExtEvent",Unlock,,"AtiUnLockEvent"
-HKR,, ExtEvent_EnableMultiSessions,      %REG_DWORD%,    1
-HKR,, TVEnableOverscan,      %REG_DWORD%,    1
-HKR,, DALRULE_NOFORCEBOOT,       %REG_DWORD%,    1
-HKR,, DALRULE_DYNAMICMODESUPPORT,                  %REG_DWORD%,    1
-HKR,, CVRULE_CUSTOMIZEDMODESENABLED,      %REG_DWORD%,    1
-HKR,, DALRULE_ADDNATIVEMODESTOMODETABLE,    %REG_DWORD%,    1
-HKR,, DALRULE_CUSTOMODSUPPORT,    %REG_DWORD%,    1
-HKR,, Denoise_NA, %REG_SZ%, 1
-HKR,, Detail_NA, %REG_SZ%, 1
-HKR,, AutoColorDepthReduction_NA,   %REG_DWORD%,    1
-HKLM,"SYSTEM\CurrentControlSet\Services\Atierecord",eRecordEnable,          %REG_DWORD%,    1
-HKLM,"SYSTEM\CurrentControlSet\Services\Atierecord",eRecordEnablePopups,          %REG_DWORD%,    1
-HKR,, DisableOGLx2Loader, %REG_DWORD%, 0x00000000
-
-[ati2mtag_PCI_SoftwareDeviceSettings]
-HKR,, 3D_Preview, %REG_SZ%, "StaticPreview.bmp"
-
-[ati2mtag_Mobile_SoftwareDeviceSettings]
-HKR,, DALRULE_LCDSHOWRESOLUTIONCHANGEMESSAGE, %REG_DWORD%, 0
-HKR,, DALRULE_GETLCDFAKEEDID, %REG_DWORD%, 0
-HKR,, DisableEnumAllChilds,        %REG_DWORD%,    0
-HKR,, DALRULE_SETMODEAFTERPOWERSTATECHANGE, %REG_DWORD%, 0
-HKR,, DALRULE_USEOLDPOWERPLAYINTERFACE,               %REG_DWORD%,    0
-HKR,, DALRULE_USEOLDPOWERPLAYPROPERTYPAGE,               %REG_DWORD%,    0
-HKR,, DALOPTION_MinResBCD,  %REG_BINARY%, 00,00,00,00,00,00,00,60
-HKR,, ExtEvent_EnableADCLogicalMapping,      %REG_DWORD%,    1
-
-[ati2mtag_Desktop_SoftwareDeviceSettings]
-HKR,, DisableEnumAllChilds,        %REG_DWORD%,    1
-
-[ati2mtag_R3x_SoftwareDeviceSettings]
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-
-[ati2mtag_R4x_SoftwareDeviceSettings]
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "1"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-
-[ati2mtag_R5x_SoftwareDeviceSettings]
-HKR,, Denoise_DEF, %REG_SZ%, "50"
-HKR,, Denoise_ENABLE_DEF, %REG_SZ%, "1"
-HKR,, Detail_ENABLE_DEF, %REG_SZ%, "0"
-HKR,, ColorVibrance_ENABLE_DEF, %REG_SZ%, "0"
-HKR,, Fleshtone_ENABLE_DEF, %REG_SZ%, "0"
-HKR,, DynamicContrast_NA, %REG_SZ%, "1"
-HKR,, Detail_NA, %REG_SZ%, "1"
-HKR,, Denoise_NA, %REG_SZ%, "0"
-HKR,, MainVideo_SET, %REG_SZ%, "0 1 2 3 4"
-HKR,, MainVideo_TBL, %REG_SZ%, "1:Brightness=0.0,Contrast=1.0,Saturation=1.0,Gamma=0.0,Hue=0.0;2:Brightness=-3.0,Contrast=1.16,Saturation=1.25,Gamma=0.0,Hue=0.0;3:Brightness=-3.0,Contrast=1.07,Saturation=1.10,Gamma=0.0,Hue=0.0;4:Brightness=7.0,Contrast=1.25,Saturation=0.96,Gamma=0.0,Hue=0.0"
-HKR,, DisplayCrossfireLogo_NA, %REG_SZ%, 1
-HKR,, CVRULE_ENABLEPALTIMINGSUPPORT,      %REG_DWORD%,    1
-HKR,, Gxo24HzTimingSupport,          %REG_DWORD%,    1
-
-[atioglxx_OpenGLSoftwareSettings]
-HKLM, "Software\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\ati2dvag", Version, %REG_DWORD%, 2
-HKLM, "Software\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\ati2dvag", DriverVersion, %REG_DWORD%, 1
-HKLM, "Software\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\ati2dvag", Flags, %REG_DWORD%, 1
-HKLM, "Software\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\ati2dvag", Dll, %REG_SZ%, atioglxx.dll
-
-[atioglgl_WsOpenGLSoftwareSettings]
-HKR,, Capabilities, %REG_DWORD%, 0x00000000
-
-[ati2mtag_LargeDesktopSettings]
-HKR,, DALRULE_AUTOGENERATELARGEDESKTOPMODES,     %REG_DWORD%,    1
-
-[ati2mtag_MobileLargeDesktopSettings]
-HKR,, DALRULE_AUTOGENERATELARGEDESKTOPMODES,     %REG_DWORD%,    1
-
-[ati2mtag_RemoveDeviceSettings]
-HKR,"Desktop",NoAtipta
-HKR,, ActiveBusCaps
-HKR,, Adaptive De-interlacing
-HKR,, AgpLevel
-HKR,, AntiAlias
-HKR,, ATIPoll
-HKR,, DALCurrentObjectData
-HKR,, DALLastConnected
-HKR,, DALLastSelected
-HKR,, DALLastTypes
-HKR,, DALNonStandardModesBCD
-HKR,, DALNonStandardModesBCD1
-HKR,, DALNonStandardModesBCD2
-HKR,, DALNonStandardModesBCD3
-HKR,, DALNonStandardModesBCD4
-HKR,, DALNonStandardModesBCD5
-HKR,, DALObjectData
-HKR,, DALObjectData0
-HKR,, DALObjectData1
-HKR,, DALR6 CRT_MaxModeInfo
-HKR,, DALR6 CRT2_MaxModeInfo
-HKR,, DALR6 DFP_MaxModeInfo
-HKR,, DALR6 DFPx_MaxModeInfo
-HKR,, DALR6 GCO_Index0
-HKR,, DALRestrictedModesBCD
-HKR,, DALRestrictedModesBCD1
-HKR,, DALRestrictedModesBCD2
-HKR,, DALRestrictedModesBCD3
-HKR,, DALRestrictedModesBCD4
-HKR,, DALRestrictedModesBCD5
-HKR,, DALRULE_ADDNATIVEMODESTOMODETABLE
-HKR,, DALRULE_CRTSUPPORTSALLMODES
-HKR,, DALRULE_DISABLEBANDWIDTH
-HKR,, DALRULE_DISPLAYSRESTRICTMODES
-HKR,, DALRULE_NOCRTANDLCDONSAMECONTROLLER
-HKR,, DALRULE_NOFORCEBOOT
-HKR,, DALRULE_NOTVANDCRTONSAMECONTROLLER
-HKR,, DALRULE_RESTRICTUNKNOWNMONITOR
-HKR,, DALRULE_SAVEPANLOCK
-HKR,, DALSelectObjectData0
-HKR,, DALSelectObjectData1
-HKR,, DDC2Disabled
-HKR,, DefaultMode
-HKR,, DFPRULE_HotplugSupported
-HKR,, DisableAGP
-HKR,, DisableAGPDFB
-HKR,, DisableAGPPM4
-HKR,, DisableAGPTexture
-HKR,, DisableAGPWrite
-HKR,, DisableBlockWrite
-HKR,, DisableD3D
-HKR,, DisableDMA
-HKR,, DisableDMACopy
-HKR,, DisableDrvAlphaBlend
-HKR,, DisableDrvStretchBlt
-HKR,, DisableDynamicEnableMode
-HKR,, DisableEngine
-HKR,, DisableEnumAllChilds
-HKR,, DisableFullAdapterInit
-HKR,, DisableHierarchicalZ
-HKR,, DisableHWAAFonts
-HKR,, DisableIDCT
-HKR,, DisableLCD
-HKR,, DisableMMLIB
-HKR,, DisableOpenGLScrAccelerate
-HKR,, DisablePllInit
-HKR,, DisablePrimaryTiling
-HKR,, DisableRptrWriteBack
-HKR,, DisableTCL
-HKR,, DisableTiling
-HKR,, DisableTimeStampWriteBack
-HKR,, DisableUSWC
-HKR,, DisableVideoUSWC
-HKR,, DisableVPE
-HKR,, EnableWaitUntilIdxTriList2
-HKR,, ExtEvent_BroadcastDispChange
-HKR,, ExtEvent_DriverMessageSupport
-HKR,, ExtEvent_EnableChgLCDResOnHotKey
-HKR,, ExtEvent_EnableHotPlug
-HKR,, ExtEvent_EnableMouseRotation
-HKR,, ExtEvent_EnablePolling
-HKR,, ExtEvent_EnablePowerPlay
-HKR,, ExtEvent_LCDSetMaxResOnDockChg
-HKR,, ExtEvent_UpdateAdapterInfoOnHK
-HKR,, GCORULE_HIGHDISPRI
-HKR,, GCORULE_R200TVPLLWA
-HKR,, LVB
-HKR,, MaxAgpVb
-HKR,, MaxAGPVB
-HKR,, MaxLocalVb
-HKR,, MaxLocalVB
-HKR,, MemInitLatencyTimer
-HKR,, QSindirectBufferLocation
-HKR,, QSringBufferLocation
-HKR,, RequestedBusCaps
-HKR,, SubmitOnDraw
-HKR,, TestedBusCaps
-HKR,, TestEnv
-HKR,, TimingSelection
-HKR,, TVR200Flag
-HKR,, VgaCompatible
-HKR,, VPE Adaptive De-interlacing
-HKR,, DALInstallFlag
-HKR,, FireGLRocketScience
-HKLM, "Software\Microsoft\Windows NT\CurrentVersion\OpenGLDrivers\atifglws"
-HKR,, CurrentProfile
-HKR,, RebootFlags
-HKR,, RebootFlagsEx
-HKR,, Capabilities
-HKR,, CapabilitiesEx
-HKR,, DALPowerPlayOptions
-HKR,, DALRULE_NOCRTANDDFPONSAMECONTROLLER
-HKR,, DALRULE_NOCRTANDLCDONSAMECONTROLLER
-HKR,, GCORULE_DISABLETMDSREDUCEDBLANKING
-HKR,, GCORULE_IntTMDSReduceBlankTiming
-HKR,, GCORULE_R200TVPLLWA
-HKR,, TVR200Flag
-HKR,, AntiAlias
-HKR,, GCORULE_DisableHotKeyIfOverlayAllocated
-HKR,, DisableDualView
-HKR,, DisableDualviewWithHotKey
-HKR,"OpenGL",OGLEnableSharedBackZ
-HKR,, DALRULE_LARGEPANELSUPPORT
-HKR,, DFPRULE_ResyncCRTCs
-HKR,, GCORULE_SameDividersForIntAndExtTMDS
-HKR,, DALOPTION_MinResBCD
-HKR,, DALOPTION_MaxResBCD
-HKR,, DALOPTION_MinRes2BCD
-HKR,, DALOPTION_MaxRes2BCD
-HKR,, DALRULE_MOBILEFEATURES
-HKR,, GCORULE_ForceCoherentTMDSForHighMode
-HKR,, DALRV100TMDSiReducedBlanking
-HKR,, DALRV200TMDSiReducedBlanking
-HKR,, DALR200TMDSiReducedBlanking
-HKR,, DALRV250TMDSiReducedBlanking
-HKR,, DALRV280TMDSiReducedBlanking
-HKR,, DALRV350TMDSiReducedBlanking
-HKR,, DALR300TMDSiReducedBlanking
-HKR,, DALR350TMDSiReducedBlanking
-HKR,, DALR360TMDSiReducedBlanking
-HKR,, DALATI M6TMDSiReducedBlanking
-HKR,, DALATI M7TMDSiReducedBlanking
-HKR,, DALATI M9TMDSiReducedBlanking
-HKR,, DALATI M9 PLUSTMDSiReducedBlanking
-HKR,, DALM10TMDSiReducedBlanking
-HKR,, DALRV380TMDSiReducedBlanking
-HKR,, DALR420TMDSiReducedBlanking
-HKR,, DALM18TMDSiReducedBlanking
-HKR,, DALM24TMDSiReducedBlanking
-HKR,, DALR300TMDSiCoherentMode
-HKR,, DALR350TMDSiCoherentMode
-HKR,, DALR360TMDSiCoherentMode
-HKR,, DALRV280TMDSiCoherentMode
-HKR,, DALRV350TMDSiCoherentMode
-HKR,, DALATI M9 PLUSTMDSiCoherentMode
-HKR,, DALM10TMDSiCoherentMode
-HKR,, DALRV380TMDSiCoherentMode
-HKR,, DALR420TMDSiCoherentMode
-HKR,, DALM18TMDSiCoherentMode
-HKR,, DALM24TMDSiCoherentMode
-HKR,, DALRULE_MODESUPPORTEDSIMPLECHECK
-HKR,, DALRULE_DISPLAYSRESTRICTMODESLARGEDESKTOP
-HKR,, OptimalNB
-HKR,, OptimalPamac0
-HKR,, OptimalPamac1
-HKR,, GCOOPTION_MaxTmdsPllOutFreq
-HKR,, DAL2ndDisplayDefaultMode
-HKR,, R6LCD_RETURNALLBIOSMODES
-HKR,, VPUEnableSubmissionBox
-HKR,, VPUEnableSubmissionBox_NA
-HKR,, VPURecover_NA
-HKR,, DisplaysManagerRotation_NA
-HKR,, GCORULE_MemoryClockGraduallyChange
-HKR,, DALRULE_AUTOGENERATELARGEDESKTOPMODES
-HKR,, UseCentredCVTiming
-HKR,, GCORULE_R200TVPLLWA
-HKR,, TVR200Flag
-HKR,, DALRULE_POWERPLAYFORCEREFRESHSCREEN
-HKR,, GI
-HKR,, DALR6 CRT_INFO
-HKR,, DefaultSettings.BitsPerPel
-HKR,, DefaultSettings.XResolution
-HKR,, DefaultSettings.YResolution
-HKR,, DefaultSettings.VRefresh
-HKR,, TruformMode_NA
-HKR,, 3D_Preview
-HKR,, VPURecover_NA
-HKR,, SMARTGART_NA
-HKR,, OGL_Specific_NA
-HKR,, TemporalAAMultiplier_NA
-HKR,, CatalystAI_NA
-HKR,, SwapEffect_NA
-HKR,, AutoColorDepthReduction_NA
-HKR,, "3D_Preview"
-HKR,, 3D_Refresh_Rate_Override_DEF
-HKR,, ACE
-HKR,, ACE_Copy
-HKR,, AnisoDegree_DEF
-HKR,, AnisoType_DEF
-HKR,, AntiAlias_DEF
-HKR,, AntiAliasSamples_DEF
-HKR,, Capabilities_DEF
-HKR,, CapabilitiesEx_DEF
-HKR,, CatalystAI_DEF
-HKR,, ColourDesktopBrightness_DEF
-HKR,, ColourDesktopContrast_DEF
-HKR,, ColourDesktopGamma_DEF
-HKR,, ColourFullscreenBrightness_DEF
-HKR,, ColourFullscreenContrast_DEF
-HKR,, ColourFullscreenGamma_DEF
-HKR,, CurrentProfile_DEF
-HKR,, DisableSmartSave_DEF
-HKR,, DisableSmartSave
-HKR,, Display_Detection_DEF
-HKR,, DitherAlpha_DEF
-HKR,, EnableTripleBuffering_DEF
-HKR,, ExportCompressedTex_DEF
-HKR,, Force_TV_Detection_DEF
-HKR,, ForceZBufferDepth_DEF
-HKR,, FSAAPerfMode_DEF
-HKR,, GI_DEF
-HKR,, Main3D_DEF
-HKR,, Mouse_Track_Orientation_DEF
-HKR,, Panning_Mode_DEF
-HKR,, PixelCenter_DEF
-HKR,, SwapEffect_DEF
-HKR,, TemporalAAMultiplier_DEF
-HKR,, TextureLod_DEF
-HKR,, TextureOpt_DEF
-HKR,, TruformMode_DEF
-HKR,, VisualEnhancements_Capabilities_DEF
-HKR,, VPUEnableSubmissionBox_DEF
-HKR,, VSyncControl_DEF
-HKR,, ZFormats_DEF
-HKR,, DALRULE_ONEDISPLAYBOOTDEFAULT
-HKR,, DisableSWInterrupt
-HKR,, ExtEvent_BIOSEventByInterrupt
-HKR,, DisableDirectDraw
-HKLM,"SYSTEM\CurrentControlSet\Services\Atierecord",eRecordEnable
-HKLM,"SYSTEM\CurrentControlSet\Services\Atierecord",eRecordEnablePopups
-HKR,, DALVariBrightStatus
-HKR,, GI_NA
-HKR,, RotationSupportLevel
-HKR,, NewRotation
-HKR,, SGCountDown
-HKR,, TVM6Flag
-HKR,, TheaterMode_NA
-HKR,, ASTT_NA
-HKR,, DisableDFB
-HKR, "UMD\DXVA", DXVA_NOHDDECODE
-HKR,, PP_PhmUseDummyBackEnd
-HKR,, SORTOverrideFPSCaps
-HKR,, SORTOverrideVidSizeCaps
-HKR,, DXVA_Only24FPS1080MPEG2
-HKR,, DXVA_Only24FPS1080H264
-HKR,, DXVA_Only24FPS1080VC1
-HKR,, DisableCFExtendedDesktop
-HKR,, ATMS_DEF
-HKR,, AAAMethod_DEF
-HKR,, TestEnv
-HKR,, PP_DisablePPLib
-HKR,, FrameBufferMode
-HKR,, EnableUnifiedGartSegment
-HKR,, EnablePDMA
-HKR,, PP_PhmUseDummyBackEnd
-HKR,, DisableRejectCf
-HKR,, PP_GFXClockGatingEnabled
-HKR,, DisablePCIEGen2Support
-HKR,, DynamicContrast_ENABLE_DEF
-HKR,, DynamicContrast_NA
-HKR,, DynamicContrast_DEF
-HKR,, DP_EnableSSByDefault
-HKR,, DXVA_WMV_DEF
-HKR,, DXVA_WMV
-HKR,, DisableCfSpSupport
-HKR,, AntiAliasMapping_SET
-HKR,, DisableMultiMonEnum
-HKR,, DALRULE_ALLOWNONDDCCRTALLMODESUPTO1600x1200
-HKR,, ATIPOLLINTERVAL
-HKR,"OpenGL",OGLEnableSharedBackZ
-HKR,"Desktop\UIO\Color",DefaultGammaDesktop
-HKR,, ExtEvent_EnableFjsuMouseOrientation
-HKR,, ExtEvent_EnablePowerPlay
-HKR,, ExtEvent_DriverMessageSupport
-HKR,, TVContrastDefaultNTSC
-HKR,, GCORULE_DisableHotKeyIfOverlayAllocated
-HKR,, DisableFlush2DCache
-HKR,, HDTVRULE_HDTVGDOENABLE
-HKR,, HDTVRULE_HDTVSIGNALFORMAT
-HKR,, DALRULE_NOEDIDTOOS
-HKR,, GCORULE_TMDSiCoherentMode
-HKR,, GCOHOOK_TMDSiCoherentMode
-HKR,, DALRULE_POWERPLAYSUSPENDSUPPORT
-HKR,, DALRULE_POWERPLAYOPTIONENABLEDBYDEFAULT
-HKR,, DALRULE_USECMOSDISPLAYSETTINGS
-HKR,, TabletPCRotateClockwise
-HKR,, ExtEvent_EnableAutoDisplayConfig
-HKR,, DALRULE_USERDEVICEPROFILEUPDATE
-HKR,, ExtEvent_EnableMpAtLogon
-HKR,, ExtEvent_NonExtendedADCProfileOnHotKey
-HKR,, ExtEvent_EnableMpAtDocking
-HKR,, ExtEvent_EnableMpAtSessionChange
-HKR,, ExtEvent_EnableMpAtLidSwitch
-HKR,, ExtEvent_EnableMpAtHotPlug
-HKR,, ExtEvent_EnableMpAtHotKeyAcpi
-HKR,, ExtEvent_EnableMpAtHotKeyExtEvent
-HKR,, DALRULE_OTHEREXPANSIONMODEDEFAULT
-HKR,, DisableOSModePruning
-HKR,, DALRULE_WADSUPPORT
-HKR,, GCORULE_WADSUPPORT
-HKR,, DALRULE_RESTRICTNONDDCCRTTO1024x768
-HKR,, DALRULE_ALLOWNONDDCCRTALLMODESUPTO1024x768
-HKR,, DALRULE_ALLOWNONDDCCRTALLMODESUPTO1920x1200
-HKR,, DisablePM4TSInterrupt
-HKR,, GCORule_ForceSingleController
-HKR,, DALRULE_DISABLEDISPLAYSWITCHINGIFOVERLAYALLOCATED
-HKR,, ExtEvent_ApplyADCAtFUS
-HKLM,"Software\ATI Technologies\WDMCapture",Keep704AspectRatio
-HKR,, ExtEvent_SaveProfileBySelected
-HKR,, ExtEvent_ApplyADCAtSBiosRequest
-HKR,, DALRULE_EDIDPROFILE
-HKR,, DALRULE_DONOTTURNONTVBYDEFAULT
-HKR,, TVLumaFlicker
-HKR,, TVDotCrawl
-HKR,, TVCompositeFilter
-HKR,, DALDisplayPrioritySequence
-HKR,, DALRULE_SETNONDDCCRTPREFERREDMODE800x600
-HKR,, DALRULE_DISABLEPOWERPLAYMESSAGES
-HKR,, ExtEvent_EnableADCRotationSupport
-HKR,, ExtEvent_SaveADCProfileGlobally
-HKR,, ApplyRotationDefaultMode
-HKR,, ExtEvent_NonExtendedADCProfileOnHotKey
-HKR,, DALRULE_ADDEXTDESKTOPTOPROFILEKEY
-HKR,, ExtEvent_DeviceTypeBasedADCProfile
-HKR,, DALRULE_DEVICETYPEBASEDPROFILEKEY
-HKR,, GCORULE_PPForceBlankDisplays
-HKR,, ExtEvent_SaveExpansionInADCProfile
-HKR,, DALRULE_DISABLEOVERDRIVE
-HKR,, DALOverdrive
-HKR,, ExtEvent_OverDriveSupport
-HKR,, DALRULE_GETDEFAULTTVFORMATATBOOT
-HKR,, HibernationPatch
-HKR,, DALRULE_CVALLOCOV480IONLY
-HKR,, DALRULE_USEENABLEDATBOOTSCHEME
-HKR,, DisableCursor
-HKR,, DALRULE_UNRESTRICTSXGAPCRTONOWNCRTC
-HKR,, GCOOPTION_RemoveOverscanBorder
-HKR,, DALRULE_USERESTRICTEDNATIVETIMING
-HKR,, DFPOption_MaxFreq
-HKR,, DALRestrictedModesCRTC2BCD1
-HKR,, GCORULE_ModeBWException
-HKR,, DXVA_HWSP_1CRTC
-HKR,, DisableAGPFW
-HKR,, UseBT601CSC
-HKR,, ExtEvent_EnableADCAtUndocking
-HKR,, DALRULE_SETCRTANDDFPTYPESONPRIMARYCONTROLLER
-HKR,, BootInLandscape
-HKR,, BootInLandscapeDefaultModeBCD
-HKR,, DALRULE_LCDENABLEDONPRIMARYCONTROLLER
-HKR,, CVRULE_CENTRETIMINGDISABLED
-HKR,, DAL2ndDrvMin1stMode
-HKR,, GCORULE_CloneModeBWException
-HKR,, DALRULE_DISABLEPOWERPLAYSWITCHATRESUME
-HKR,, CRTRULE_FORCECRTDAC1DETECTED
-HKR,, CRTRULE_FORCECRTDAC2DETECTED
-HKR,, CRTRULE_FORCECRTDACTYPESDETECTED
-HKR,, DisableAGPSizeOverride
-HKR,, DALRULE_NOTVANDDVIACTIVESIMULTANEOUSLY
-HKR,, GCORULE_PowerPlayClearMemBase
-HKR,, DALRULE_PROFILEPREFERREDMODEBASEDONEXTDEVICE
-HKR,, GCORULE_TMDSReducedBlankingUseCVT
-HKR,, LRTCEnable
-HKR,, GSettingControl
-HKR,, DisableDTM
-HKR,, DFPOption_SingleLink
-HKR,, DFPXOption_SingleLink
-HKR,, TVContrastDefaultNTSCJ
-HKR,, TVContrastDefaultPAL
-HKR,, R6LCD_ALLOWDISABLELOWREFRESHBYUSER
-HKR,, ExtEvent_SaveProfileAtShutdown
-HKR,, TVDACSettings
-HKR,, DALRULE_ALLOWMONITORRANGELIMITMODES
-HKR,, DALRULE_ALLOWMONITORRANGELIMITMODESCRT
-HKR,, GCORULE_TMDSForceReducedBlanking
-HKR,, ExtEvent_EnableADCExclusiveModeHandling
-HKR,, DXVA_ELEGANT
-HKR,, ExtEvent_EnableChgCVResOnHotKey
-HKR,, GCOOPTION_DefaultOvlBrightness
-HKR,, GCOOPTION_DefaultOvlSaturation
-HKR,, GCOOPTION_DefaultOvlContrast
-HKR,, DAL_CRTRestrictedModesBCD
-HKR,, RegKeyLight
-HKR,, PP_GFXClockGatingEnabled
-HKR,, DisableFBCSupport
-HKR,, GXODFPxDVODDRSupport
-HKR,, DeltaAgpPoolSize
-HKR,, InitialAgpPoolSize
-HKR,, DALRULE_NOCRTANDTVACTIVESIMULTANEOUSLY
-HKR,, GCORULE_ExtTMDSReduceBlankTiming
-HKR,, GCOOPTION_ExtTMDSMaxTMDSClockSpeed
-HKR,, OverDrive3_NA
-HKR,, OverDrive2_NA
-HKR,, CRTRULE_EIAJ_TRANSLATION
-HKR,, DAL_CvRestrictedModesBCD
-HKR,, CRTRULE_480PALWAYSSUPPORTED
-HKR,, DFPRULE_ExtTMDSEncoderSupport
-HKR,, AutoClockConfig_NA
-HKR,, Acceleration.Level
-HKR,, DALRULE_DISABLEVARIBRIGHTBYDEFAULT
-HKR,, DALRULE_HIDEVARIBRIGHT
-HKR,, DALRULE_DONTSHOWWADOPTION
-HKR,, NotSupportedRotationModesExt
-HKR,, ExtEvent_SetDefault32BppOn2ndDrv
-HKR,, OvlRotation
-HKR,, GCORULE_EnableOption
-HKR,, OvlDisableOverlay
-HKR,, DALRULE_DONOTUSECUSTOMISEDMODEFORCVPANNING
-HKR,, RotationAngle
-HKR,, DefaultSettings.Orientation
-HKR,, DALRULE_SENDCONTROLLERCONFIGCHANGEMESSAGE
-HKR,, maMethod
-HKR,, GCORULE_CvImproveClkPrecision
-HKR,, DisableSkippingS5Dpms
-HKR,, GCORULE_X1DETECT
-HKR,, LimitDFBCreation
-HKR,, DALDefaultCvModeBCD
-HKR,, DALRULE_CVUSEOPTIMODEASDEFAULT
-HKR,, DALDefaultCEDTVModeBCD
-HKR,, DALRULE_CEDTVUSEOPTIMODEASDEFAULT
-HKR,, DALRULE_ADDEDIDSTANDARDMODESTOMODETABLE
-HKR,, DisableConditionalMutex
-HKR,, DAL_CVDeviceData
-HKR,, GXONoLineReplication
-HKR,, GXOM5XDisableLaneSwitch
-HKR,, DisableTurnOnAllDisplaysAtResume
-HKR,, GXOPPDCDEFAULTTOBALANCEDMODE
-HKR,, GXOPPDCLOWDEFAULTTOBALANCEDMODE
-HKR,, DisableMFunction
-HKR,, GXODisableDefaultVideoPowerSwitch
-HKR,, MVPUAllowCompatibleAFR
-HKR,, DALRULE_LIMITEDGREYSCALESUPPORT
-HKR,, Extevent_HotplugUseCurrentMapping
-HKR,, DALRULE_ALWAYSREPORTLARGEDESKTOPMODES
-HKR,, DAL_TVRestrictedModesBCD
-HKR,, Disable5299
-HKR,, HWUVD_DisableH264
-HKR,, HWUVD_DisableVC1
-HKR,, DisableVForceMode
-HKR,, PP_ForceReportOverdrive4
-HKR,, EnablePPSMSupport
-HKR,, PPSMSupportLevel
-HKR,, EnableSPSurface
-HKR,, PP_DeferFirstStateSwitch
-HKR,, GXODontDisableVGAAtResume
-HKR,, PP_RS780CGINTGFXMISC2
-HKR,, EnableGeminiAutoLink
-HKR,, DisableFBCSupport
-HKR,, FBCSupportLevel
-HKR,, HDTVRULE_HDTVGDOENABLE
-HKR,, HDTVRULE_HDTVSIGNALFORMAT
-HKR,, ForceHigh3DClocks_NA
-HKR,, TMDS_DisableDither
-HKR,, DigitalHDTVDefaultUnderscan
-HKR,, PP_VariBrightFeatureEnable
-HKR,, GXODFPxDVODDRSupport
-HKR,,   DisableVLDForSingleFireMVAsic
-HKR,, DALRULE_AllowNonCEModes
-HKR,, DisableOGL10BitPixelFormats
-HKR,, DALRULE_AllowNativeModeAsDefaultModes
-HKR,, GXODFPxDVODDRSupport
-HKR,, GXOUseSclkforProgrammableDispClk
-HKR,, DALDefaultACPowerState
-HKR,, DALDCLowThresholdValue
-HKR,, PO_SwRi
-HKR,, DALPanelPatchByID
-HKR,, GXOTwoDigitalPanelPLLWa
-HKR,, GxoAllCvFormatSupportedAtBoot
-HKR,, DALRULE_ENABLEMONITORTIMEOUTPWRSTATE
-HKR,, Gxo30BppPanels
-HKR,, GXODFPDefaultCoherentMode
-HKR,, GXODFP2DefaultCoherentMode
-HKR,, GXODFPXDefaultCoherentMode
-HKR,, DisplayCrossfireLogo_DEF
-HKR,, DALRULE_SkipEDIDReadForNoSink
-HKR,, DisablePCIEx1LaneUVD
-HKR,, PP_DCPowerSourceUIMapping_Default
-HKR,, MaxDPMClock
-HKR,, Disable8435
-HKR,, GCOOPTION_MaxOverlayBandwidth
-HKR,, Gxo_AdapterOverlayBandwidth
-HKR,, CRTRULE_R520FORCECRTDAC2DETECTED
-HKR,, DisableTearFreeDesktop
-HKR,, Disable3dOptVSync
-HKR,, PP_DisableODStateInDC
-HKR,, PP_DisableDCODT
-HKR,, DisableConsumerStretchRotation
-HKR,, DisableIGPDirectAccess
-HKR,, ExtEvent_ADCApplyCurrentModeWhenNothingConnected
-
-[ati2mtag_R300.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R350.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R360.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV350.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV360.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV370.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV380x.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV380.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV410.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R420.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R423.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R430.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R480.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R481.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R520.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=512
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_R580.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=512
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV515.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV515PCI.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV530.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RV535.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=256
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS400.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RC410.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS480.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS482.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS600.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS690.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_M26.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS480M.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[ati2mtag_RS690M.GeneralConfigData]
-MaximumDeviceMemoryConfiguration=128
-MaximumNumberOfDevices=4
-SessionImageSize = 16
-
-[SourceDisksNames.x86]
-1 = %DiskId%,,,.\B_95503
-
-[SourceDisksNames.ia64]
-1 = %DiskID%,,,.\B_95503
-
-[SourceDisksFiles]
-amdpcom32.dll=1
-ati2cqag.dll=1
-ati2dvag.dll=1
-ati2edxx.dll=1
-ati2erec.dll=1
-ati2evxx.dll=1
-ati2evxx.exe=1
-ati2mdxx.exe=1
-ati2mtag.sys=1
-ati3duag.dll=1
-atiadlxx.dll=1
-atibrtmon.exe=1
-aticalcl.dll=1
-aticaldd.dll=1
-aticalrt.dll=1
-atiddc.dll=1
-atidemgx.dll=1
-atifglpf.xml=1
-atiicdxx.dat=1
-atiiiexx.dll=1
-atikvmag.dll=1
-atiogl.xml=1
-atioglxx.dll=1
-atiok3x2.dll=1
-atipdlxx.dll=1
-atitvo32.dll=1
-ativcoxx.dll=1
-ativva5x.dat=1
-ativva6x.dat=1
-ativvaxx.cap=1
-ativvaxx.dll=1
-oemdspif.dll=1
-
-[Strings]
-;
-; Non-Localizable Strings
-;
-REG_SZ         ="0x00000000"
-REG_MULTI_SZ   ="0x00010000"
-REG_EXPAND_SZ  ="0x00020000"
-REG_BINARY     ="0x00000001"
-REG_DWORD      ="0x00010001"
-SERVICEROOT    ="System\CurrentControlSet\Services"
-;
-; Localizable Strings
-;
-DiskId       = "ATI Technologies Inc. Installation DISK (VIDEO)"
-GraphAdap    = "Graphics Adapter"
-ATI          = "ATI Technologies Inc."
-ATIR200="Chaplin (R200)" 
-; Driver Information Entries
-; These items will be set by IHV...
-DriverMfgr="ATI Technologies Inc."			; IHV name
-DriverVersionID="7.xx"					; The IHV driver version
-BaseDriverFileName="ati2mtag.sys" 			; Key file for version 
-BaseDriverFileVersion="5.13.01.3210" 			; version of key file 
-; These items will be set by IHV and updated by OEM 
-DriverOEM="ATI Technologies Inc."			; name of the OEM 
-DriverFamily="Video" 					; device family (NIC, Storage, Video...)
-DriverProduct="ATI Radeon" 				; Specific Name of device (chipset, for example)
-DriverDescription="Graphics Driver" 			; Description of device (product name, OS or system supported)
-DriverOEMVersion="Centralized Build"                    ; OEM-specified version 
-''',
-'''
-; SMBUSati.inf
-;
-; Installation file (.inf) for the ATI SMBus device.
-;
-; (c) Copyright 2002-2006 ATI Technologies Inc
-;
-
-[Version]
-Signature="$CHICAGO$"
-Provider=%ATI%
-ClassGUID={4d36e97d-e325-11ce-bfc1-08002be10318}
-Class=System
-CatalogFile=SMbusati.cat
-DriverVer=02/26/2007,5.10.1000.8
-
-[DestinationDirs]
-DefaultDestDir   = 12
-
-;
-; Driver information
-;
-
-[Manufacturer]
-%ATI%   = ATI.Mfg, NTamd64
-
-
-[ATI.Mfg]
-%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4353
-%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4363
-%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4372
-%ATI.DeviceDesc0% = ATISMBus, PCI\VEN_1002&DEV_4385
-
-[ATI.Mfg.NTamd64]
-%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4353
-%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4363
-%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4372
-%ATI.DeviceDesc0% = ATISMBus64, PCI\VEN_1002&DEV_4385
-
-;
-; General installation section
-;
-
-[ATISMBus]
-AddReg=Install.AddReg
-
-[ATISMBus64]
-AddReg=Install.AddReg.NTamd64
-
-;
-; Service Installation
-;                     
-
-[ATISMBus.Services]
-AddService = , 0x00000002
-
-[ATISMBus64.Services]
-AddService = , 0x00000002
-
-[ATISMBus_Service_Inst]
-ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
-StartType      = 3                  ; SERVICE_DEMAND_START 
-ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE
-LoadOrderGroup = Pointer Port
-
-[ATISMBus_EventLog_Inst]
-AddReg = ATISMBus_EventLog_AddReg
-
-[ATISMBus_EventLog_AddReg]
-
-[Install.AddReg]
-HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",DisplayName,,"ATI SMBus"
-HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",Version,,"5.10.1000.8"
-HKLM,"Software\ATI Technologies\Install\South Bridge\SMBus",Install,,"Success"
-
-[Install.AddReg.NTamd64]
-HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",DisplayName,,"ATI SMBus"
-HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",Version,,"5.10.1000.8"
-HKLM,"Software\Wow6432Node\ATI Technologies\Install\South Bridge\SMBus",Install,,"Success"
-
-;
-; Source file information
-;
-
-[SourceDisksNames]
-1 = %DiskId1%,,,
-
-[SourceDisksFiles]
-; Files for disk ATI Technologies Inc Installation Disk #1 (System)
-
-[Strings]
-
-;
-; Non-Localizable Strings
-;
-
-REG_SZ         = 0x00000000
-REG_MULTI_SZ   = 0x00010000
-REG_EXPAND_SZ  = 0x00020000
-REG_BINARY     = 0x00000001
-REG_DWORD      = 0x00010001
-SERVICEROOT    = "System\CurrentControlSet\Services"
-
-;
-; Localizable Strings
-;
-
-ATI.DeviceDesc0 = "ATI SMBus"
-DiskId1 = "ATI Technologies Inc Installation Disk #1 (System)"
-ATI = "ATI Technologies Inc"
-''',
-'''
-[Version]
-Signature="$WINDOWS NT$"
-Class=Processor
-ClassGuid={50127DC3-0F36-415e-A6CC-4CB3BE910B65}
-Provider=%AMD%
-DriverVer=10/26/2004, 1.2.2.0
-CatalogFile=AmdK8.cat
-
-[DestinationDirs]
-DefaultDestDir = 12
-
-[SourceDisksNames]
-1 = %DiskDesc%,,, 
-
-[SourceDisksFiles]
-AmdK8.sys = 1
-
-[ControlFlags]
-;
-; Exclude all devices from Select Device list
-;
-ExcludeFromSelect = *
-
-[ClassInstall32]
-AddReg=Processor_Class_Addreg
-
-[Processor_Class_Addreg]
-HKR,,,0,%ProcessorClassName%
-HKR,,NoInstallClass,,1
-HKR,,Icon,,"-28"
-
-[Manufacturer]
-%AMD%=AmdK8
-
-[AmdK8]
-%AmdK8.DeviceDesc% = AmdK8_Inst,ACPI\AuthenticAMD_-_x86_Family_15
-%AmdK8.DeviceDesc% = AmdK8_Inst,ACPI\AuthenticAMD_-_AMD64_Family_15
-
-[AmdK8_Inst.NT]
-Copyfiles = @AmdK8.sys
-
-[AmdK8_Inst.NT.Services]
-AddService = AmdK8,%SPSVCINST_ASSOCSERVICE%,AmdK8_Service_Inst,AmdK8_EventLog_Inst
-
-[AmdK8_Service_Inst]
-DisplayName    = %AmdK8.SvcDesc%
-ServiceType    = %SERVICE_KERNEL_DRIVER%
-StartType      = %SERVICE_SYSTEM_START%
-ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\AmdK8.sys
-LoadOrderGroup = Extended Base
-AddReg         = AmdK8_Inst_AddReg
-
-[AmdK8_Inst_AddReg]
-HKR,"Parameters",Capabilities,0x00010001,0x80
-
-[AmdK8_EventLog_Inst]
-AddReg = AmdK8_EventLog_AddReg
-
-[AmdK8_EventLog_AddReg]
-HKR,,EventMessageFile,0x00020000,"%%SystemRoot%%\System32\IoLogMsg.dll;%%SystemRoot%%\System32\drivers\AmdK8.sys"
-HKR,,TypesSupported,0x00010001,7
-
-[strings]
-AMD                   = "Advanced Micro Devices"
-ProcessorClassName    = "Processors"
-AmdK8.DeviceDesc      = "AMD K8 Processor"
-AmdK8.SvcDesc         = "AMD Processor Driver"
-DiskDesc              = "AMD Processor Driver Disk"
-
-SPSVCINST_ASSOCSERVICE= 0x00000002
-SERVICE_KERNEL_DRIVER = 1
-SERVICE_SYSTEM_START  = 1
-SERVICE_ERROR_NORMAL  = 1
-''',
-'''
-;
-; SYMMPI.INF - version XP.10 (Windows XP)
-;
-; This is the INF file for Windows XP for the SYMMPI based PCI MPI
-; environment
-;
-; ********************************************************************
-;                                                                    *
-;   Copyright 2005 LSI Logic, Inc. All rights reserved.              *
-;                                                                    *
-;   This file is property of LSI Logic, Inc. and is licensed for     *
-;   use as is.  The receipt of or possession of this file does not   *
-;   convey any rights to modify its contents, in whole, or in part,  *
-;   without the specific written consent of LSI Logic, Inc.          *
-;                                                                    *
-; ********************************************************************
-
-[version]
-signature="$Windows NT$"
-Class=SCSIAdapter
-ClassGUID={4D36E97B-E325-11CE-BFC1-08002BE10318}
-Provider=%LSI%
-DriverVer=08/04/2006,1.21.25.00
-CatalogFile.ntx86=mpixp32.cat
-
-[DestinationDirs]
-DefaultDestDir = 12 ; DIRID_DRIVERS
-
-[SourceDisksFiles.x86]
-symmpi.sys = 1
-lsipseud.inf = 1
-
-[SourceDisksNames]
-1 = %DiskDesc%,,
-
-[Manufacturer]
-%LSI%=LSI
-%DELL%=DELL
-
-[LSI]
-%DevDesc2% = SYMMPI_Inst, PCI\VEN_1000&DEV_0622
-%DevDesc3% = SYMMPI_Inst, PCI\VEN_1000&DEV_0624
-%DevDesc4% = SYMMPI_Inst, PCI\VEN_1000&DEV_0626
-%DevDesc5% = SYMMPI_Inst, PCI\VEN_1000&DEV_0628
-%DevDesc6% = SYMMPI_Inst, PCI\VEN_1000&DEV_0030
-%DevDesc7% = SYMMPI_Inst, PCI\VEN_1000&DEV_0032
-%DevDesc8% = SYMMPI_Inst, PCI\VEN_1000&DEV_0050
-%DevDesc9% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054
-%DevDesc10% = SYMMPI_Inst, PCI\VEN_1000&DEV_0058
-%DevDesc11% = SYMMPI_Inst, PCI\VEN_1000&DEV_0056
-%DevDesc12% = SYMMPI_Inst, PCI\VEN_1000&DEV_0640
-%DevDesc13% = SYMMPI_Inst, PCI\VEN_1000&DEV_0646
-%DevDesc14% = SYMMPI_Inst, PCI\VEN_1000&DEV_0062
-
-[DELL]
-%DevDescD1% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054&SUBSYS_1F041028
-%DevDescD2% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054&SUBSYS_1F051028
-%DevDescD3% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054&SUBSYS_1F061028
-%DevDescD4% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054&SUBSYS_1F071028
-%DevDescD5% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054&SUBSYS_1F081028
-%DevDescD6% = SYMMPI_Inst, PCI\VEN_1000&DEV_0054&SUBSYS_1F091028
-%DevDescD7% = SYMMPI_Inst, PCI\VEN_1000&DEV_0058&SUBSYS_1F0E1028
-%DevDescD8% = SYMMPI_Inst, PCI\VEN_1000&DEV_0058&SUBSYS_1F0F1028
-%DevDescD9% = SYMMPI_Inst, PCI\VEN_1000&DEV_0058&SUBSYS_1F101028
-
-[ControlFlags]
-ExcludeFromSelect = *
-
-[SYMMPI_Inst]
-CopyFiles = SYMMPI_CopyFiles
-AddReg = SYMMPI_AddReg
-CopyINF = lsipseud.inf
-
-[SYMMPI_Inst.HW]
-AddReg = Shutdown_addreg
-DelReg = LegacyScsiportValues
-
-[SYMMPI_Inst.Services]
-AddService = SYMMPI, %SPSVCINST_ASSOCSERVICE%, SYMMPI_Service_Inst, Miniport_EventLog_Inst
-
-[SYMMPI_Service_Inst]
-ServiceType    = %SERVICE_KERNEL_DRIVER%
-StartType      = %SERVICE_BOOT_START%
-ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\symmpi.sys
-LoadOrderGroup = SCSI Miniport
-AddReg         = pnpsafe_pci_addreg
-AddReg         = bus_type_scsi
-
-[SYMMPI_CopyFiles]
-symmpi.sys,,,1
-
-[SYMMPI_AddReg]
-HKLM,SYSTEM\CurrentControlSet\Services\Symmpi\Parameters\Device,DriverParameter,0x00000002,"EnablePseudoDevice=1;"
-HKLM,SYSTEM\CurrentControlSet\Services\Symmpi\Parameters\Device,MaximumSGList,0x00010001,0xFF
-HKLM,SYSTEM\CurrentControlSet\Services\Symmpi\Parameters\Device,NumberOfRequests,0x00010001,0xFF
-
-[Shutdown_addreg]
-HKR,"ScsiPort","NeedsSystemShutdownNotification",0x00010001,1
-
-[LegacyScsiportValues]
-HKR,Scsiport,BusNumber
-HKR,Scsiport,LegacyInterfaceType
-HKR,Scsiport,SlotNumber
-
-[pnpsafe_pci_addreg]
-HKR, "Parameters\PnpInterface", "5", 0x00010001, 0x00000001
-
-[bus_type_scsi]
-HKR, "Parameters", "BusType", 0x00010001, 0x00000001
-
-[Miniport_EventLog_Inst]
-AddReg = Miniport_EventLog_AddReg
-
-[Miniport_EventLog_AddReg]
-HKR,,EventMessageFile,%REG_EXPAND_SZ%,"%%SystemRoot%%\System32\IoLogMsg.dll"
-HKR,,TypesSupported,%REG_DWORD%,7
-
-[Strings]
-LSI = "LSI Logic"
-DELL = "Dell"
-DiskDesc = "LSI Logic PCI Fusion-MPT Driver Install Disk"
-DevDesc2 = "LSI Adapter, 2Gb FC, models 44929, G2 with 929"
-DevDesc3 = "LSI Adapter, 2Gb FC, models 40919 with 919"
-DevDesc4 = "LSI Adapter, 2Gb FC, models 7202,7402 with 929X"
-DevDesc5 = "LSI Adapter, 2Gb FC, models 7102 with 919X"
-DevDesc6 = "LSI Adapter, Ultra320 SCSI 2000 series, w/1020/1030"
-DevDesc7 = "LSI Adapter, Ultra320 SCSI RAID series, w/1035"
-DevDesc8 = "LSI Adapter, SAS 3000 series, 4-port with 1064"
-DevDesc9 = "LSI Adapter, SAS 3000 series, 8-port with 1068"
-DevDesc10 = "LSI Adapter, SAS 3000 series, 8-port with 1068E"
-DevDesc11 = "LSI Adapter, SAS 3000 series, 4-port with 1064E"
-DevDesc12 = "LSI Adapter, 4Gb FC, models 7104,7204,7404 with 949X"
-DevDesc13 = "LSI Adapter, 4Gb FC, models 7104,7204,7404 with 949E"
-DevDesc14 = "LSI Adapter, SAS RAID-on-Chip, 8-port with 1078"
-DevDescD1 = "Dell SAS 5/E Adapter"
-DevDescD2 = "Dell SAS 5/i Adapter"
-DevDescD3 = "Dell SAS 5/i Integrated"
-DevDescD4 = "Dell SAS 5/iR Integrated D/C"
-DevDescD5 = "Dell SAS 5/iR Integrated Emb"
-DevDescD6 = "Dell SAS 5/iR Adapter"
-DevDescD7 = "Dell SAS 6/iR Adapter"
-DevDescD8 = "Dell SAS 6/iR Integrated"
-DevDescD9 = "Dell SAS 6/i Integrated"
-
-;*******************************************
-;Handy macro substitutions (non-localizable)
-SPSVCINST_ASSOCSERVICE = 0x00000002
-SERVICE_KERNEL_DRIVER  = 1
-SERVICE_BOOT_START     = 0
-SERVICE_ERROR_NORMAL   = 1
-REG_EXPAND_SZ          = 0x00020000
-REG_DWORD              = 0x00010001
-'''
-,
-'''
-;
-;   SER2PL.INF (for Windows 2000)
-;
-;   Copyright (c) 2000, Prolific Technology Inc.
-
-[version]
-signature="$Windows NT$"
-Class=Ports
-ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
-Provider=%Pro%
-catalogfile=pl2303.cat
-DriverVer=12/31/2002,2.0.0.7
-
-[SourceDisksNames]
-1=%Pro.Disk%,,,
-
-[ControlFlags]
-ExcludeFromSelect = USB\VID_067b&PID_2303
-
-[SourceDisksFiles]
-ser2pl.sys=1
-
-[DestinationDirs]
-DefaultDestDir=12
-ComPort.NT.Copy=12
-
-[Manufacturer]
-%Pro%=Pro
-
-[Pro]
-%DeviceDesc% = ComPort, USB\VID_067B&PID_2303
-
-[ComPort.NT]
-CopyFiles=ComPort.NT.Copy
-AddReg=ComPort.NT.AddReg
-
-[ComPort.NT.HW]
-AddReg=ComPort.NT.HW.AddReg
-
-[ComPort.NT.Copy]
-ser2pl.sys
-
-[ComPort.NT.AddReg]
-HKR,,DevLoader,,*ntkern
-HKR,,NTMPDriver,,ser2pl.sys
-HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
-
-[ComPort.NT.HW.AddReg]
-HKR,,"UpperFilters",0x00010000,"serenum"
-
-[ComPort.NT.Services]
-AddService = Ser2pl, 0x00000002, Serial_Service_Inst
-AddService = Serenum,,Serenum_Service_Inst
-
-[Serial_Service_Inst]
-DisplayName    = %Serial.SVCDESC%
-ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
-StartType      = 3               ; SERVICE_SYSTEM_START (this driver may do detection)
-ErrorControl   = 1               ; SERVICE_ERROR_IGNORE
-ServiceBinary  = %12%\ser2pl.sys
-LoadOrderGroup = Base
-
-[Serenum_Service_Inst]
-DisplayName    = %Serenum.SVCDESC%
-ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
-StartType      = 3               ; SERVICE_DEMAND_START
-ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
-ServiceBinary  = %12%\serenum.sys
-LoadOrderGroup = PNP Filter
-
-[linji]
-Pro = "Prolific"
-Pro.Disk="USB-Serial Cable Diskette"
-DeviceDesc = "Prolific USB-to-Serial Comm Port"
-Serial.SVCDESC   = "Prolific Serial port driver"
-Serenum.SVCDESC = "Serenum Filter Driver"
-'''
-,
-'''
-[Version]
-CatalogFile=RTHDMI32.cat
-Signature = "$chicago$"
-Class=MEDIA
-ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
-Provider=%OrganizationName%
-DriverPackageType=PlugAndPlay
-DriverPackageDisplayName=%PackageDisplayName%
-DriverVer=03/02/2007, 5.10.0.5368
-
-[Manufacturer]
-%MfgName% = AzaliaManufacturerID
-
-[ControlFlags]
-ExcludeFromSelect = *
-
-[AzaliaManufacturerID]
-"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_791A
-"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_793C
-"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA01
-"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA09
-"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA11
-"ATI HDMI Audio" = RtAzAudModel, HDAUDIO\FUNC_01&VEN_1002&DEV_AA19
-
-[SourceDisksNames]
-222="Realtek HD Audio Installation Disk",,,
-
-[SourceDisksFiles]
-RtHDMI.sys=222
-RtkUpd.exe=222
-
-[DestinationDirs]
-DefaultDestDir=10; dirid = \system32\drivers
-RtAzAudModelCopyFiles = 10,system32\drivers
-RTUninstall.CopyList = 10           ;; WINDOWS
-
-[RtAzAudModelCopyFiles]
-RtHDMI.sys
-
-[RTUninstall.CopyList]
-RtkUpd.exe
-
-[RtAzAudModel.NTX86]
-Include=ks.inf,wdmaudio.inf
-Needs=KS.Registration,WDMAUDIO.Registration
-CopyFiles = RtAzAudModelCopyFiles, RTUninstall.CopyList
-AddReg    = RtAzAudModelAddReg, DS3DConfiguration.AddReg, RTUninstall.AddReg
-
-[RtAzAudModel.NTX86.HW]
-AddReg=HdAudSecurity.AddReg
-
-[RtAzAudModel.NTX86.Services]
-AddService = RTHDMIAzAudService, 0x00000002, RTHDMIAzAudServiceInstall
-
-[RTHDMIAzAudServiceInstall]
-DisplayName   = "Service for HDMI"
-ServiceType   = 1
-StartType     = 3
-ErrorControl  = 1
-ServiceBinary = %10%\system32\drivers\RtHDMI.sys
-
-
-[RtAzAudModel.NTX86.Interfaces]
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifWave%, RtAzAudModel.RtSpdifWave
-AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifWave%, RtAzAudModel.RtSpdifWave
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifTopo%, RtAzAudModel.RtSpdifTopo
-AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifTopo%, RtAzAudModel.RtSpdifTopo
-
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifHDMIWave%, RtAzAudModel.RtSpdifHDMIWave
-AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifHDMIWave%, RtAzAudModel.RtSpdifHDMIWave
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifHDMITopo%, RtAzAudModel.RtSpdifHDMITopo
-AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifHDMITopo%, RtAzAudModel.RtSpdifHDMITopo
-
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifRCAWave%, RtAzAudModel.RtSpdifRCAWave
-AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifRCAWave%, RtAzAudModel.RtSpdifRCAWave
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifRCATopo%, RtAzAudModel.RtSpdifRCATopo
-AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifRCATopo%, RtAzAudModel.RtSpdifRCATopo
-
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifOptWave%, RtAzAudModel.RtSpdifOptWave
-AddInterface=%KSCATEGORY_RENDER%,%KSNAME_RtSpdifOptWave%, RtAzAudModel.RtSpdifOptWave
-AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RtSpdifOptTopo%, RtAzAudModel.RtSpdifOptTopo
-AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_RtSpdifOptTopo%, RtAzAudModel.RtSpdifOptTopo
-
-[DS3DConfiguration.AddReg]
-HKR,DS3D,ForwardSpeakerConfiguration,0x00010001,0
-HKR,DS3D,IgnoreDSSpeakerConfiguration,0x00010001,1
-HKR,"DS3D\OldArch",ForwardSpeakerConfiguration,0x00010001,0
-HKR,"DS3D\OldArch",IgnoreDSSpeakerConfiguration,0x00010001,1
-
-[RTUninstall.AddReg]
-HKLM,%RT_UNINSTALL%,DisplayName,,"Realtek High Definition Audio Driver"
-HKLM,%RT_UNINSTALL%,UninstallString,,"RtkUpd.exe -r -m"
-
-[HdAudSecurity.AddReg]
-HKR,,DeviceType,0x10001,0x0000001D
-
-[RtAzAudModelAddReg]
-HKR,,AssociatedFilters,,"wdmaud,swmidi,redbook"
-HKR,,Driver,,RtHDMI.sys
-
-HKR,Drivers,SubClasses,,"wave,midi,mixer,aux"
-
-HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
-HKR,Drivers\midi\wdmaud.drv,Driver,,wdmaud.drv
-HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
-HKR,Drivers\aux\wdmaud.drv,Driver,,wdmaud.drv
-
-HKR,Drivers\wave\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
-HKR,Drivers\midi\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
-HKR,Drivers\mixer\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
-HKR,Drivers\aux\wdmaud.drv,Description,,%IntcAzAudioDeviceDescription%
-
-HKR,,SetupPreferredAudioDevices,3,01,00,00,00
-
-[RtAzAudModel.RtSpdifWave]
-AddReg = RtAzAudModel.RtSpdifWave.AddReg
-[RtAzAudModel.RtSpdifWave.AddReg]
-HKR,,FriendlyName,,%RtSpdifWaveDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-[RtAzAudModel.RtSpdifTopo]
-AddReg = RtAzAudModel.RtSpdifTopo.AddReg
-[RtAzAudModel.RtSpdifTopo.AddReg]
-HKR,,FriendlyName,,%RtSpdifTopoDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-
-[RtAzAudModel.RtSpdifHDMIWave]
-AddReg = RtAzAudModel.RtSpdifHDMIWave.AddReg
-[RtAzAudModel.RtSpdifHDMIWave.AddReg]
-HKR,,FriendlyName,,%RtSpdifHDMIWaveDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-[RtAzAudModel.RtSpdifHDMITopo]
-AddReg = RtAzAudModel.RtSpdifHDMITopo.AddReg
-
-[RtAzAudModel.RtSpdifHDMITopo.AddReg]
-HKR,,FriendlyName,,%RtSpdifHDMITopoDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-
-HKLM,%MediaCategories%\%GUID.RTSPDIFOut%,Name,,%Node.RTSPDIFOut%
-HKLM,%MediaCategories%\%GUID.RTSPDIFOut%,Display,1,00,00,00,00
-HKLM,%MediaCategories%\%GUID.RTHDMIOut%,Name,,%Node.RTHDMIOut%
-HKLM,%MediaCategories%\%GUID.RTHDMIOut%,Display,1,00,00,00,00
-HKLM,%MediaCategories%\%GUID.RTSPDIFOutRCA%,Name,,%Node.RTSPDIFOutRCA%
-HKLM,%MediaCategories%\%GUID.RTSPDIFOutRCA%,Display,1,00,00,00,00
-HKLM,%MediaCategories%\%GUID.RTSPDIFOutOpt%,Name,,%Node.RTSPDIFOutOpt%
-HKLM,%MediaCategories%\%GUID.RTSPDIFOutOpt%,Display,1,00,00,00,00
-
-[RtAzAudModel.RtSpdifRCAWave]
-AddReg = RtAzAudModel.RtSpdifRCAWave.AddReg
-[RtAzAudModel.RtSpdifRCAWave.AddReg]
-HKR,,FriendlyName,,%RtSpdifRCAWaveDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-[RtAzAudModel.RtSpdifRCATopo]
-AddReg = RtAzAudModel.RtSpdifRCATopo.AddReg
-[RtAzAudModel.RtSpdifRCATopo.AddReg]
-HKR,,FriendlyName,,%RtSpdifRCATopoDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-
-[RtAzAudModel.RtSpdifOptWave]
-AddReg = RtAzAudModel.RtSpdifOptWave.AddReg
-[RtAzAudModel.RtSpdifOptWave.AddReg]
-HKR,,FriendlyName,,%RtSpdifOptWaveDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-[RtAzAudModel.RtSpdifOptTopo]
-AddReg = RtAzAudModel.RtSpdifOptTopo.AddReg
-[RtAzAudModel.RtSpdifOptTopo.AddReg]
-HKR,,FriendlyName,,%RtSpdifOptTopoDeviceName%
-HKR,,CLSID,,%Proxy.CLSID%
-
-[Strings]
-MfgName="Realtek"
-MediaCategories="SYSTEM\CurrentControlSet\Control\MediaCategories"
-
-OrganizationName="Realtek Semiconductor Corp."
-PackageDisplayName="HD Audio Driver"
-IntcAzAudioDeviceDescription = "Realtek High Definition Audio"
-
-RT_UNINSTALL="Software\Microsoft\Windows\CurrentVersion\Uninstall\{F132AF7F-7BCA-4EDE-8A7C-958108FE7DBC}"
-
-KSNAME_RtSpdifWave="RtSpdifWave"
-KSNAME_RtSpdifTopo="RtSpdifTopo"
-KSNAME_RtSpdifHDMIWave="RtSpdifHDMIWave"
-KSNAME_RtSpdifHDMITopo="RtSpdifHDMITopo"
-KSNAME_RtSpdifRCAWave="RtSpdifRCAWave"
-KSNAME_RtSpdifRCATopo="RtSpdifRCATopo"
-KSNAME_RtSpdifOptWave="RtSpdifOptWave"
-KSNAME_RtSpdifOptTopo="RtSpdifOptTopo"
-
-RtSpdifWaveDeviceName="Realtek HDA SPDIF Out"
-RtSpdifTopoDeviceName="Realtek HDA SPDIF Out Mixer"
-RtSpdifHDMIWaveDeviceName="Realtek HDA HDMI Out"
-RtSpdifHDMITopoDeviceName="Realtek HDA HDMI Out Mixer"
-RtSpdifRCAWaveDeviceName="Realtek HDA SPDIF RCA Out"
-RtSpdifRCATopoDeviceName="Realtek HDA SPDIF RCA Out Mixer"
-RtSpdifOptWaveDeviceName="Realtek HDA SPDIF Optical Out"
-RtSpdifOptTopoDeviceName="Realtek HDA SPDIF Optical Out Mixer"
-
-
-KSCATEGORY_AUDIO = "{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
-KSCATEGORY_RENDER="{65E8773E-8F56-11D0-A3B9-00A0C9223196}"
-KSCATEGORY_CAPTURE="{65E8773D-8F56-11D0-A3B9-00A0C9223196}"
-KSCATEGORY_TOPOLOGY="{DDA54A40-1E4C-11D1-A050-405705C10000}"
-Proxy.CLSID ="{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
-
-GUID.RTSPDIFOut			="{8FD300D2-FFE1-44f3-A9EB-6F4395D73C9F}"
-Node.RTSPDIFOut			="Realtek Digital Output"
-GUID.RTHDMIOut			="{9C8E490E-877D-48fe-9EF1-AD83C91CC057}"
-Node.RTHDMIOut			="Realtek HDMI Output"
-GUID.RTSPDIFOutRCA		="{3FF4EDB6-3FF3-4b5a-B164-10FFF0367547}"
-Node.RTSPDIFOutRCA		="Realtek Digital Output(RCA)"
-GUID.RTSPDIFOutOpt		="{94FCA009-B26E-4cdc-AC75-051613EF01BB}"
-Node.RTSPDIFOutOpt		="Realtek Digital Output(Optical)"
-'''
-,
-'''
-; Copyright (C) 2002-2008  NVIDIA Corporation
-; Unauthorized copying or use without explicit permission of NVIDIA
-; is prohibited
-;
-[Version] 
-Signature = "$Windows NT$" 
-Class=HDC
-ClassGUID={4d36e96a-e325-11ce-bfc1-08002be10318} 
-Provider=%NVIDIA% 
-CatalogFile=nvata.cat
-DriverVer=11/12/2008,10.3.0.46
-
-[DestinationDirs] 
-NVStor.Files.x86_12 = 12 
-NVStor.CoInstFiles = 11
-
-
-[SourceDisksNames.x86]
-0=%Desc_x860%
-
-[SourceDisksFiles.x86]
-nvgts.sys=0
-nvraidco.dll=0
-NvRCoAr.dll=0
-NvRCoCs.dll=0
-NvRCoDa.dll=0
-NvRCoDe.dll=0
-NvRCoEl.dll=0
-NvRCoEng.dll=0
-NvRCoENU.dll=0
-NvRCoEs.dll=0
-NvRCoEsm.dll=0
-NvRCoFi.dll=0
-NvRCoFr.dll=0
-NvRCoHe.dll=0
-NvRCoHu.dll=0
-NvRCoIt.dll=0
-NvRCoJa.dll=0
-NvRCoKo.dll=0
-NvRCoNl.dll=0
-NvRCoNo.dll=0
-NvRCoPl.dll=0
-NvRCoPt.dll=0
-NvRCoPtb.dll=0
-NvRCoRu.dll=0
-NvRCoSk.dll=0
-NvRCoSl.dll=0
-NvRCoSv.dll=0
-NvRCoTh.dll=0
-NvRCoTr.dll=0
-NvRCoZhc.dll=0
-NvRCoZht.dll=0
-
-[Manufacturer] 
-%NVIDIA%=NVIDIA, ntx86, ntx86.6.0
-
-
-[NVIDIA.ntx86.6.0]
-
-[NVIDIA]
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0054&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0055&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0266&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0267&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_037F&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_03F6&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_044D&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0554&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0555&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_07F4&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AD5&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AD4&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AB9&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AB8&CC_0106
-
-[NVIDIA.ntx86]
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0054&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0055&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0266&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0267&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_037F&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_03F6&CC_0101
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_044D&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0554&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0555&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_07F4&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AD5&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AD4&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AB9&CC_0106
-%NVSTOR_DESC%=NVStor_Inst,PCI\VEN_10DE&DEV_0AB8&CC_0106
-
-                                           
-[NVStor_Inst.ntx86] 
-CopyFiles = NVStor.Files.x86_12
-
-[NVStor_Inst.ntx86.HW] 
-AddReg=NVStor_Inst.ntx86.AddReg.HW
-
-[NVStor_Inst.ntx86.AddReg.HW]
-; allow access from system and administrator only
-HKR,,"Security",,"D:P(A;;GA;;;SY)(A;;GA;;;BA)"
-
-[NVStor_Inst.ntx86.CoInstallers]
-CopyFiles = NVStor.CoInstFiles
-AddReg = NVStor_Inst.CoInst_AddReg
-
-[NVStor_Inst.CoInst_AddReg]
-HKR,,CoInstallers32,0x00010000,		\
-	"nvraiins.dll,NvRaidCoInstaller"
-
-
-HKR, Uninstall, Script,0,"nvide.nvu"
-HKR, Uninstall, Name,0,"NVIDIA IDE Driver"
-HKR, Uninstall, INFSrcDir, 0, %01% 
-HKR, Uninstall, Uninstaller,0,"nvuide.exe"
-
-[NVStor_Inst.ntx86.Services] 
-AddService = nvgts,0x00000002,NVStor_Service_Instx86,NVStor_EventLog_Instx86
-
-[NVStor_Service_Instx86] 
-ServiceType = %SERVICE_KERNEL_DRIVER% 
-StartType = %SERVICE_BOOT_START% 
-ErrorControl = %SERVICE_ERROR_CRITICAL% 
-ServiceBinary = %12%\nvgts.sys
-LoadOrderGroup = "SCSI Miniport"
-AddReg = NVStor_DisableFltCache_AddReg
-AddReg = pnpsafe_pci_addreg
-
-[NVStor_EventLog_Instx86]
-AddReg = NVStor_EventLog_AddReg
-
-[NVStor_EventLog_AddReg]
-HKR,,EventMessageFile,0x00020000,"%%SystemRoot%%\System32\IoLogMsg.dll;%%SystemRoot%%\System32\drivers\nvgts.sys"
-HKR,,TypesSupported,0x00010001,7 
-
-[NVStor_DisableFltCache_AddReg]
-HKR,,DisableFilterCache,0x00010001,1
-
-[pnpsafe_pci_addreg]
-HKR, "Parameters\PnpInterface", "5", %REG_DWORD%, 0x00000001
-HKR, "Parameters", "BusType", %REG_DWORD%, 0x00000003 ;; bus type =  ATA (0x3)
-
-
-[NVStor.Files.x86_12] 
-nvgts.sys
-
-[NVStor.CoInstFiles]
-nvraidco.dll
-nvraiins.dll,nvraidco.dll
-NvRCoAr.dll
-NvRCoCs.dll
-NvRCoDa.dll
-NvRCoDe.dll
-NvRCoEl.dll
-NvRCoEng.dll
-NvRCoENU.dll
-NvRCoEs.dll
-NvRCoEsm.dll
-NvRCoFi.dll
-NvRCoFr.dll
-NvRCoHe.dll
-NvRCoHu.dll
-NvRCoIt.dll
-NvRCoJa.dll
-NvRCoKo.dll
-NvRCoNl.dll
-NvRCoNo.dll
-NvRCoPl.dll
-NvRCoPt.dll
-NvRCoPtb.dll
-NvRCoRu.dll
-NvRCoSk.dll
-NvRCoSl.dll
-NvRCoSv.dll
-NvRCoTh.dll
-NvRCoTr.dll
-NvRCoZhc.dll
-NvRCoZht.dll
-
-
-
-[Strings] 
-
-;  *******Localizable Strings******* 
-NVIDIA= "NVIDIA Corporation" 
-Desc_x860= "SRCDATA" 
-NVSTOR_DESC= "NVIDIA nForce Serial ATA Controller"
-
-;  *******Non Localizable Strings******* 
-
-SERVICE_BOOT_START = 0x0 
-SERVICE_SYSTEM_START = 0x1 
-SERVICE_AUTO_START = 0x2 
-SERVICE_DEMAND_START = 0x3 
-SERVICE_DISABLED = 0x4 
-
-SERVICE_KERNEL_DRIVER = 0x1 
-SERVICE_ERROR_IGNORE = 0x0 
-SERVICE_ERROR_NORMAL = 0x1 
-SERVICE_ERROR_SEVERE = 0x2 
-SERVICE_ERROR_CRITICAL = 0x3 
-
-REG_EXPAND_SZ = 0x00020000 
-REG_DWORD = 0x00010001 
-''',
-'''
-;*******************************************************************************
-; Copyright 2001-2008 Broadcom Corporation.
-;
-; INF for 64-bit AMD platform (Net server 2003).
-;
-; InfVersion   10.85.0.0
-;
-;*******************************************************************************
-
-
-[Version]
-Signature   = "$Windows NT$"
-Class       = Net
-ClassGUID   = {4d36e972-e325-11ce-bfc1-08002be10318}
-CatalogFile = b57amd64.cat
-Provider    = %BRCM%
-DriverVer   = 06/19/2008,10.85.0.0
-
-
-[Manufacturer]
-%BRCM% = Broadcom, NTamd64, NTamd64.6.0
-
-[ControlFlags]
-ExcludeFromSelect = *
-
-[Broadcom]
-
-[Broadcom.NTamd64.6.0]
-%BCM5701%           =  BCM5701G.XpInst,          PCI\VEN_14e4&DEV_1645
-%BCM5701FA%         =  BCM5701FA.XpInst,         PCI\VEN_14e4&DEV_1645&SUBSYS_000714e4
-%BCM5702%           =  BCM5702.XpInst,           PCI\VEN_14e4&DEV_1646
-%BCM5702%           =  BCM5702.XpInst,           PCI\VEN_14e4&DEV_16a6
-%BCM5702%           =  BCM5702.XpInst,           PCI\VEN_14e4&DEV_16C6
-
-[Broadcom.NTamd64]
-%3C1000BT%          =  3C1000BT.XpInst,          PCI\VEN_14e4&DEV_16A6&SUBSYS_110010B7
-%3C1000BT%          =  3C1000BT.XpInst,          PCI\VEN_14e4&DEV_16C6&SUBSYS_110010B7
-%3C1000T%           =  3C1000T.XpInst,           PCI\VEN_14e4&DEV_1645&SUBSYS_100710B7
-%3C940BR01%         =  3C940BR01.XpInst,         PCI\VEN_14e4&DEV_1645&SUBSYS_100810B7
-%3C996BT%           =  3C996BT.XpInst,           PCI\VEN_14e4&DEV_1645&SUBSYS_100610B7
-%3C996SX%           =  3C996SX.XpInst,           PCI\VEN_14e4&DEV_1645&SUBSYS_100410B7
-%3C998SX%           =  3C998SX.XpInst,           PCI\VEN_14e4&DEV_16A8&SUBSYS_200110B7
-%3C998T%            =  3C998T.XpInst,            PCI\VEN_14e4&DEV_1648&SUBSYS_200010B7
-%3C999T%            =  3C999T.XpInst,            PCI\VEN_14e4&DEV_1648&SUBSYS_300010B7
-%BCM5701%           =  BCM5701G.XpInst,           PCI\VEN_14e4&DEV_1645
-%BCM5701FA%         =  BCM5701FA.XpInst,         PCI\VEN_14e4&DEV_1645&SUBSYS_000714e4
-%BCM5702%           =  BCM5702.XpInst,           PCI\VEN_14e4&DEV_1646
-%BCM5702%           =  BCM5702.XpInst,           PCI\VEN_14e4&DEV_16a6
-%BCM5702%           =  BCM5702.XpInst,           PCI\VEN_14e4&DEV_16C6
-%BCM5703%           =  BCM5703G.XpInst,           PCI\VEN_14e4&DEV_1647
-%BCM5703%           =  BCM5703G.XpInst,           PCI\VEN_14e4&DEV_16a7
-%BCM5703%           =  BCM5703G.XpInst,           PCI\VEN_14e4&DEV_16C7
-%BCM5703S%          =  BCM5703SW.XpInst,         PCI\VEN_14e4&DEV_16A7&SUBSYS_02811014
-%BCM5703S%          =  BCM5703S.XpInst,          PCI\VEN_14e4&DEV_1647&SUBSYS_000a14e4
-%BCM5703S%          =  BCM5703S.XpInst,          PCI\VEN_14e4&DEV_16a7&SUBSYS_000a14e4
-%BCM5703S%          =  BCM5703S.XpInst,          PCI\VEN_14e4&DEV_16C7&SUBSYS_000a14e4
-%BCM5704%           =  BCM5704G.XpInst,           PCI\VEN_14e4&DEV_1648
-%BCM5704S%          =  BCM5704S.XpInst,          PCI\VEN_14e4&DEV_16A8
-%BCM5704SW%         =  BCM5704SW.XpInst,         PCI\VEN_14e4&DEV_16A8&SUBSYS_029c1014
-%BCM5704SW%         =  BCM5704SW.XpInst,         PCI\VEN_14e4&DEV_16A8&SUBSYS_02a81014
-%BCM5704SW%         =  BCM5704SW.XpInst,         PCI\VEN_14e4&DEV_16A8&SUBSYS_02e81014
-%BCM5704SW%         =  BCM5704SW.XpInst,         PCI\VEN_14e4&DEV_16A8&SUBSYS_02e91014
-%BCM5704SW%         =  BCM5704SW.XpInst,         PCI\VEN_14e4&DEV_16A8&SUBSYS_03011014
-%BCM5705%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1654
-%BCM5705%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1654&SUBSYS_02b51014
-%BCM5705%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1654&SUBSYS_02b61014
-%BCM5705%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1654&SUBSYS_02D81014
-%BCM5705%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1654&SUBSYS_02D91014
-%BCM5705%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1654&SUBSYS_02F81014
-%BCM5705%           =  BCM5705.XpInst,           PCI\VEN_14e4&DEV_1653
-%BCM5705F%          =  BCM5705F.XpInst,          PCI\VEN_14e4&DEV_166e
-%BCM5705F%          =  BCM5705F.XpInst,          PCI\VEN_14e4&DEV_166e&SUBSYS_3000103c
-%BCM5705F%          =  BCM5705F.XpInst,          PCI\VEN_14e4&DEV_166e&SUBSYS_1700103c
-%BCM5705F%          =  BCM5705F.XpInst,          PCI\VEN_14e4&DEV_166e&SUBSYS_1703103c
-%BCM5705M%          =  BCM5705MA2F2.XpInst,      PCI\VEN_14e4&DEV_1654&SUBSYS_12f810cf
-%BCM5705M%          =  BCM5705MA2F2.XpInst,      PCI\VEN_14e4&DEV_165E&SUBSYS_127910cf
-%BCM5705M%          =  BCM5705MA2F2MFD.XpInst,      PCI\VEN_14e4&DEV_1654&SUBSYS_82581033
-%BCM5705M%          =  BCM5705MA2F2MFD.XpInst,      PCI\VEN_14e4&DEV_1654&SUBSYS_825c1033
-%BCM5705M%          =  BCM5705MA2F2MFD.XpInst,      PCI\VEN_14e4&DEV_165e&SUBSYS_82c51033
-%BCM5705M%          =  BCM5705MA2.XpInst,        PCI\VEN_14e4&DEV_165E
-%BCM5705M%          =  BCM5705MA2.XpInst,        PCI\VEN_14e4&DEV_165E&SUBSYS_05721014
-%BCM5705M%          =  BCM5705MA2.XpInst,        PCI\VEN_14e4&DEV_165E&SUBSYS_0727152d
-%BCM5705M%          =  BCM5705M.XpInst,          PCI\VEN_14e4&DEV_165D
-%BCM5714%           =  BCM5714G.XpInst,           PCI\VEN_14e4&DEV_1668
-%BCM5714%           =  BCM5714.XpInst,           PCI\VEN_14e4&DEV_166A&SUBSYS_03131014
-%BCM5714%           =  BCM5780.XpInst,           PCI\VEN_14e4&DEV_166A
-%BCM5714%           =  BCM5780.XpInst,           PCI\VEN_14e4&DEV_166A&SUBSYS_107F1734
-%BCM5714%           =  BCM5714G.XpInst,           PCI\VEN_14e4&DEV_1678
-%BCM5714%           =  BCM5714.XpInst,           PCI\VEN_14e4&DEV_1678&SUBSYS_032a1014
-%BCM5714%           =  BCM5714.XpInst,           PCI\VEN_14e4&DEV_1678&SUBSYS_108C1734
-%BCM5714S%          =  BCM5714S.XpInst,          PCI\VEN_14e4&DEV_1669
-%BCM5714%           =  BCM5714SHAL.XpInst,       PCI\VEN_14e4&DEV_1669&SUBSYS_03281014
-%BCM5714%           =  BCM5714SHAL.XpInst,       PCI\VEN_14e4&DEV_1679&SUBSYS_03671014
-%BCM5714%           =  BCM5714SHAL.XpInst,       PCI\VEN_14e4&DEV_1669&SUBSYS_03861014
-%BCM5714%           =  BCM5714SHAL.XpInst,       PCI\VEN_14e4&DEV_1669&SUBSYS_03871014
-%BCM5714S%          =  BCM5714S.XpInst,          PCI\VEN_14e4&DEV_166B
-%BCM5714S%          =  BCM5714S.XpInst,          PCI\VEN_14e4&DEV_1679
-%BCM5714S%          =  BCM5714SWol.XpInst,       PCI\VEN_14e4&DEV_1679&SUBSYS_399710f1
-%BCM5722%             =  BCM5750A1G.XpInst,         PCI\VEN_14e4&DEV_165A
-%BCM5750A1%         =  BCM5750A1F3MEstarDefWolAuto.XpInst,      PCI\VEN_14e4&DEV_167D&SUBSYS_130010cf
-%BCM5750A1%         =  BCM5750A1F3MEstarDefWolAuto.XpInst,      PCI\VEN_14e4&DEV_167D&SUBSYS_131510cf
-%BCM5750A1%         =  BCM5750A1F3EstarA.XpInst,       PCI\VEN_14e4&DEV_1677&SUBSYS_128810cf
-%BCM5750A1%         =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_167D&SUBSYS_82c31033
-%BCM5750A1%         =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_167D&SUBSYS_832a1033
-%BCM5750A1%         =  BCM5750A1F3MFD.XpInst,       PCI\VEN_14e4&DEV_1677&SUBSYS_82d31033
-%BCM5750A1%         =  BCM5750A1F3MFD.XpInst,       PCI\VEN_14e4&DEV_1677&SUBSYS_82ee1033
-%BCM5750A1%         =  BCM5750A1MeStar.XpInst,        PCI\VEN_14e4&DEV_1601
-%BCM5750A1%         =  BCM5750A1MeStar.XpInst,        PCI\VEN_14e4&DEV_167D
-%BCM5750A1%         =  BCM5750A1M.XpInst,        PCI\VEN_14e4&DEV_16FD
-%BCM5750A1%         =  BCM5750A1MeStar.XpInst,        PCI\VEN_14e4&DEV_16FF
-;%BCM5750A1%        =  BCM5750A1SPECIAL.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_81AA104D
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_5047107b
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_5048107b
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_0280107b
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_0215107b
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_0460107b
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_0604107b
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_3010103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_3011103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_3012103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1600&SUBSYS_3016103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1658
-%BCM5750A1%         =  BCM5750A1G.XpInst,         PCI\VEN_14e4&DEV_1659
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1659&SUBSYS_02c61014
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1659&SUBSYS_02FE1014
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1659&SUBSYS_02C61014
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1659&SUBSYS_10611734
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1676
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1677
-;%BCM5750A1%        =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_00631025
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_02F71014
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_105D1734
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_10961734
-%BCM5750A1%         =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_267610f1
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3001103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3003103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3004103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3005103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3006103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3007103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_3009103c
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_167C
-%BCM5750A1%         =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_16F7
-%BCM5750A1%         =  BCM5750MHALeStar.XpInst,       PCI\VEN_14e4&DEV_167D&SUBSYS_05771014
-%BCM5750A1%         =  BCM5750MHALeStar.XpInst,       PCI\VEN_14e4&DEV_167D&SUBSYS_208117AA
-%BCM5750A1DDT%      =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01751028
-%BCM5750A1DDT%      =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01761028
-%BCM5750A1DDT%      =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01771028
-%BCM5750A1DDT%      =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01781028
-%BCM5750A1DDT%      =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01791028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01A71028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01A81028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01AD1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01C01028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01C11028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01CF1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01C81028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01C21028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01CC1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01D61028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_1600&SUBSYS_01CE1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01821028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01861028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01871028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01881028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_018f1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_019c1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01a01028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01a31028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01A81028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01A91028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01AD1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_01E01028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_16F7&SUBSYS_01BF1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_167A&SUBSYS_01da1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_167A&SUBSYS_02311028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_167A&SUBSYS_024E1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DESTAR.XpInst,  PCI\VEN_14e4&DEV_167B&SUBSYS_01da1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_167A&SUBSYS_01de1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_167A&SUBSYS_01e11028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_167A&SUBSYS_01ec1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMOBILE.XpInst,  PCI\VEN_14e4&DEV_1677&SUBSYS_02071028
-%BCM5750A1F%        =  BCM5750A1F.XpInst,        PCI\VEN_14e4&DEV_167E&SUBSYS_02F71014
-%BCM5750A1F%        =  BCM5750A1F.XpInst,        PCI\VEN_14e4&DEV_167E&SUBSYS_01E41028
-%BCM5750A1F%        =  BCM5750A1F.XpInst,        PCI\VEN_14e4&DEV_167E&SUBSYS_057D1014&REV_01
-%BCM5750A1F%        =  BCM5750FHAL.XpInst,       PCI\VEN_14e4&DEV_167E&SUBSYS_057D1014
-%BCM5750A1F%        =  BCM5750A1F.XpInst,        PCI\VEN_14e4&DEV_167E
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_1658&REV_00
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_1659&REV_00
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_1676&REV_00
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_1677&REV_00
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_167C&REV_00
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_167D&REV_00
-%BCM5750%           =  BCM5750.XpInst,           PCI\VEN_14e4&DEV_167D&SUBSYS_05771014&REV_01
-%BCM5754%           =  BCM5750A1MeStar.XpInst,        PCI\VEN_14e4&DEV_1672
-%BCM5755%           =  BCM5750A1MeStar.XpInst,        PCI\VEN_14e4&DEV_1673
-%BCM5750A1DMOBILE%           =  BCM5750A1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1600&SUBSYS_02011028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1672&SUBSYS_02021028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_01f91028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_01fa1028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_01fe1028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_02001028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_024A1028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_01ff1028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1673&SUBSYS_02061028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1672&SUBSYS_01f71028
-%BCM5750A1DMOBILE%           =  BCM5750A1DESTAR.XpInst,        PCI\VEN_14e4&DEV_169B&SUBSYS_02201028
-%BCM5750A1DMOBILE%           =  BCM5750A1DESTAR.XpInst,        PCI\VEN_14e4&DEV_167A&SUBSYS_021D1028
-%BCM5750A1DMOBILE%           =  BCM5750A1DESTAR.XpInst,        PCI\VEN_14e4&DEV_167A&SUBSYS_021E1028
-%BCM5750A1DMOBILE%           =  BCM5750A1DESTAR.XpInst,        PCI\VEN_14e4&DEV_167A&SUBSYS_02141028
-
-%BCM5787%           =  BCM5787MA1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1693&SUBSYS_02541028
-%BCM5787%           =  BCM5787MA1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1693&SUBSYS_02551028
-%BCM5787%           =  BCM5787MA1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1693&SUBSYS_02561028
-%BCM5787%           =  BCM5787MA1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1693&SUBSYS_02571028
-%BCM5787%           =  BCM5787MA1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1693&SUBSYS_025A1028
-%BCM5787%           =  BCM5787MA1DESTAR.XpInst,        PCI\VEN_14e4&DEV_1693&SUBSYS_025B1028
-
-
-%BCM5755%           =  BCM5750A1MeStar.XpInst,        PCI\VEN_14e4&DEV_1674
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1674&SUBSYS_01f81028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1674&SUBSYS_02041028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1674&SUBSYS_02621028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1674&SUBSYS_02631028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1674&SUBSYS_02641028
-%BCM5750A1DMOBILE%           =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1674&SUBSYS_02651028
-
-%BCM5755%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_167B
-%BCM5755%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_167B&SUBSYS_10B21734
-%BCM5755%           =  BCM5750A1.XpInst,    PCI\VEN_14e4&DEV_167B&SUBSYS_2808103c
-%BCM5755%           =  BCM5750A1.XpInst,    PCI\VEN_14e4&DEV_167B&SUBSYS_280A103c
-%BCM5755%           =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_167B&SUBSYS_280C103c
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_100C17AA
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_100F17AA
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_101017AA
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_101117AA
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_101317AA
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_101c17AA
-%BCM5755%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_167B&SUBSYS_866917AA
-%BCM5754%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_167A
-%BCM5754%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_167A&SUBSYS_10fe1734
-%BCM5782%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1696
-%BCM5782%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1696&SUBSYS_12bb103c
-%BCM5782%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1696&SUBSYS_12bc103c
-%BCM5782%           =  BCM5705A2.XpInst,         PCI\VEN_14e4&DEV_1696&SUBSYS_000c103c
-
-%BCM5761%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1680
-%BCM5761%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1681
-
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1680&SUBSYS_02621028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1680&SUBSYS_02631028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1680&SUBSYS_02641028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1680&SUBSYS_02651028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1680&SUBSYS_02511028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1681&SUBSYS_02931028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1681&SUBSYS_026D1028
-%BCM5750A1DMOBILE%  =  BCM5750A1DMESTAR.XpInst,        PCI\VEN_14e4&DEV_1681&SUBSYS_026E1028
-
-
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_01391025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_013B1025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_013C1025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_013D1025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_01421025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_01451025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_01471025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_01481025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_01491025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_014A1025
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1684&SUBSYS_014B1025
-
-%BCM5750A1DMOBILE%  =  BCM5764DMESTAR.XpInst,          PCI\VEN_14e4&DEV_1684&SUBSYS_02811028
-
-%BCM5764%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_165b
-
-%BCM5787%           =  BCM5750A1MeStar.XpInst,         PCI\VEN_14e4&DEV_1693
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_011A1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_011B1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_011C1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_011D1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_011E1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_011F1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01211025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01221025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01231025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01241025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01251025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01261025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01271025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01281025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01291025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_012A1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_012B1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_012C1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_012D1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_012E1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_012F1025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01301025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01311025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01341025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01351025
-%BCM5787%           =  BCM5750A1BDFS.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_01361025
-%BCM5787%           =  BCM5750A1F3MEstarDefWolAuto.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_139910cf
-%BCM5787%           =  BCM5750A1F3MMFDCQ29902.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88741033
-%BCM5787%           =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88111033
-%BCM5787%           =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88121033
-%BCM5787%           =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88361033
-%BCM5787%           =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88421033
-%BCM5787%           =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88611033
-%BCM5787%           =  BCM5750A1F3MMFDEstar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88831033
-%BCM5787%           =  BCM5750A1F3MMFDeStar_NoLSO.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88921033
-%BCM5787%           =  BCM5750A1F3MMFDeStar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88A11033
-%BCM5787%           =  BCM5750A1F3MMFDeStar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88A21033
-%BCM5787%           =  BCM5750A1F3MMFDeStar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88A51033
-%BCM5787%           =  BCM5750A1F3MMFDeStar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88A91033
-%BCM5787%           =  BCM5750A1F3MMFDeStar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88B01033
-%BCM5787%           =  BCM5750A1F3MMFDeStar.XpInst,      PCI\VEN_14e4&DEV_1693&SUBSYS_88B91033
-%BCM5787%           =  BCM5750MHALeStar.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_20D517AA
-%BCM5787%           =  BCM5750MHALeStar.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_386017AA
-%BCM5787%           =  BCM5750MHALeStar.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_3D7F17AA
-%BCM5787%           =  BCM5750MHALeStar.XpInst,         PCI\VEN_14e4&DEV_1693&SUBSYS_3A2617AA
-%BCM5786%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_169A
-%BCM5786%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_169A&SUBSYS_101517aa
-%BCM5786%           =  BCM5750A1F3EstarA.XpInst,      PCI\VEN_14e4&DEV_169A&SUBSYS_13ee10cf
-%BCM5786%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_169A&SUBSYS_101f17AA
-%BCM5787%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_169B
-%BCM5787%           =  BCM5750A1eStar.XpInst,         PCI\VEN_14e4&DEV_169B&SUBSYS_11291734
-%BCM5787%           =  BCM5750A1F3EstarA.XpInst,       PCI\VEN_14e4&DEV_169B&SUBSYS_139810cf
-%BCM5787%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_169B&SUBSYS_203017AA
-%BCM5787%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_169B&SUBSYS_100D17AA
-%BCM5787%           =  BCM5750HALe.XpInst,       PCI\VEN_14e4&DEV_169B&SUBSYS_100E17AA
-%BCM5787F%          =  BCM5750A1FeStar.XpInst,        PCI\VEN_14e4&DEV_167F
-%BCM5788%           =  BCM5788.XpInst,           PCI\VEN_14e4&DEV_169c
-%BCM5788%           =  BCM5788FJ.XpInst,         PCI\VEN_14e4&DEV_169c&SUBSYS_123c10cf
-%BCM5788%           =  BCM5788FJ.XpInst,         PCI\VEN_14e4&DEV_169c&SUBSYS_12f710cf
-%BCM5788%           =  BCM5788MFD.XpInst,         PCI\VEN_14e4&DEV_169c&SUBSYS_82fa1033
-%BCM5788%           =  BCM5788MFD.XpInst,         PCI\VEN_14e4&DEV_169c&SUBSYS_83011033
-%BCM5789%           =  BCM5789FJ.XpInst,         PCI\VEN_14e4&DEV_169d&SUBSYS_12ff10cf
-%BCM5788%           =  BCM5788.XpInst,           PCI\VEN_14e4&DEV_169c&SUBSYS_099c103c
-%BCM5788%           =  BCM5788.XpInst,           PCI\VEN_14e4&DEV_169c&SUBSYS_101717aa
-%BCM5788%           =  BCM5788.XpInst,           PCI\VEN_14e4&DEV_169c&SUBSYS_101817aa
-%BCM5788%           =  BCM5788.XpInst,           PCI\VEN_14e4&DEV_169c&SUBSYS_101a17aa
-%BCM5788%           =  BCM5788.XpInst,           PCI\VEN_14e4&DEV_169c&SUBSYS_101b17aa
-%BCM5789%           =  BCM5789.XpInst,           PCI\VEN_14e4&DEV_169D
-%BCM5789%           =  BCM5789.XpInst,           PCI\VEN_14e4&DEV_16DD
-%BCM5789%           =  BCM5789FJ.XpInst,         PCI\VEN_14e4&DEV_169d&SUBSYS_83101033
-%BCM5789%           =  BCM5789FJ.XpInst,         PCI\VEN_14e4&DEV_169d&SUBSYS_83321033
-%BCM5789%           =  BCM5789FJ.XpInst,         PCI\VEN_14e4&DEV_169d&SUBSYS_833a1033
-%BCM5789%           =  BCM5789FJ.XpInst,         PCI\VEN_14e4&DEV_169d&SUBSYS_881b1033
-%BCM5789%           =  BCM5789FJ.XpInst,         PCI\VEN_14e4&DEV_169d&SUBSYS_881c1033
-%BCM5789%           =  BCM5789.XpInst,           PCI\VEN_14e4&DEV_169D&SUBSYS_0280107b
-%BCM5789%           =  BCM5789.XpInst,           PCI\VEN_14e4&DEV_169D&SUBSYS_100317AA
-%BCM5789%           =  BCM5789.XpInst,           PCI\VEN_14e4&DEV_169D&SUBSYS_100517AA
-%BCM5789%           =  BCM5789.XpInst,           PCI\VEN_14e4&DEV_169D&SUBSYS_060017FF
-%BCM5901%           =  BCM5901.XpInst,           PCI\VEN_14e4&DEV_170D
-%BCM5901%           =  BCM5901.XpInst,           PCI\VEN_14e4&DEV_170D&SUBSYS_05451014
-%BCM5901%           =  BCM5901.XpInst,           PCI\VEN_14e4&DEV_170E
-%BCM5901%           =  BCM5901.XpInst,           PCI\VEN_14e4&DEV_170E&SUBSYS_05451014
-%BCM5906%           =  BCM5906eStar.XpInst,           PCI\VEN_14e4&DEV_1712
-%BCM5906%           =  BCM5906MeStar.XpInst,          PCI\VEN_14e4&DEV_1713
-%BCM5906%           =  BCM5906MLEN.XpInst,       PCI\VEN_14e4&DEV_1713&SUBSYS_386117AA
-%BCM5906%           =  BCM5906MLEN.XpInst,       PCI\VEN_14e4&DEV_1713&SUBSYS_3D7E17AA
-%BCM5906%           =  BCM5906MLEN.XpInst,       PCI\VEN_14e4&DEV_1713&SUBSYS_3C2C17AA
-%BCM5906%           =  BCM5906MLEN.XpInst,       PCI\VEN_14e4&DEV_1713&SUBSYS_400617AA
-%BCM5906%           =  BCM5906MLEN.XpInst,       PCI\VEN_14e4&DEV_1713&SUBSYS_3A2317AA
-%BCM5906%           =  BCM5906MFJ.XpInst,        PCI\VEN_14e4&DEV_1713&SUBSYS_143410CF
-%BCM5906%           =  BCM5906MDESTAR.XpInst,    PCI\VEN_14e4&DEV_1713&SUBSYS_01F31028
-%BCM5906%           =  BCM5906MDESTAR.XpInst,    PCI\VEN_14e4&DEV_1713&SUBSYS_02091028
-%BCM5906%           =  BCM5906MDESTAR.XpInst,    PCI\VEN_14e4&DEV_1713&SUBSYS_02861028
-%BCM5906%           =  BCM5906MDESTAR.XpInst,    PCI\VEN_14e4&DEV_1713&SUBSYS_02271028
-%OEM1_DEV4%         =  OEM1_DEV4.XpInst,         PCI\VEN_14e4&DEV_16A6&SUBSYS_81261028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165D&SUBSYS_019c1028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165D&SUBSYS_20031028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165D&SUBSYS_865d1028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165e&SUBSYS_015a1028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165e&SUBSYS_01711028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165e&SUBSYS_017c1028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165e&SUBSYS_01AA1028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165E&SUBSYS_20031028
-%OEM1_DEV5%         =  OEM1_DEV5.XpInst,         PCI\VEN_14e4&DEV_165E&SUBSYS_865d1028
-;%OEM1_DEV6%        =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1659&SUBSYS_01841028
-;%OEM1_DEV6%        =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1659&SUBSYS_01851028
-;%OEM1_DEV6%        =  BCM5750A1.XpInst,         PCI\VEN_14e4&DEV_1677&SUBSYS_01801028
-%OEM1_DEV6%         =  OEM1_DEV6.XpInst,         PCI\VEN_14e4&DEV_1653&SUBSYS_86531028
-;*******************************************************************************
-; 64-bit Windows XP Install sections.
-;*******************************************************************************
-
-[BCM5701.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5701.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5701G.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.ParamsC
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC1G, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5701G.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5702.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5702.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5702.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-[BCM5703.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5703.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5703.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5703G.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.ParamsC
-AddReg          = Xp64AddReg, BCM5703.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC1G, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5703G.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5704.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.WolS
-AddReg          = Xp64AddReg, BCM5704.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOLNS, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5704.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5704G.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.WolS, DelReg.ParamsC
-AddReg          = Xp64AddReg, BCM5704.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC1G, ParamsWOLNS, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5704G.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5705.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5705.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5788.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5788.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5788.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-[BCM5788FJ.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5788.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOL , ParamsLogOptions, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5788FJ.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5788MFD.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5788.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL , ParamsLogOptions, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5788MFD.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-
-[BCM5789FJ.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo , DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5788.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOL , ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5789FJ.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-
-[BCM5789.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo , DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5789.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5750.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLShasta, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-[BCM5750A1.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1G.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.ParamsC
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC1G, ParamsWOL, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1G.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-[BCM5750A1eStar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1eStar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1MeStar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar, ParamsWireSpeed, ParamsLgSnd, ParamsM
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1MeStar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5764DMESTAR.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.Wol, DelReg.Jumbo, DelReg.WireSpeed, DelReg.TaskOffload
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xDE, ParamsC, DMobile.Params, ParamsWOLNS, Estar, ParamsM
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5764DMESTAR.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1BDFS.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1BDFS.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5906.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC100, ParamsWOL
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5906eStar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC100, ParamsWOLeStar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906eStar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5906MDESTAR.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd, DelReg.Wol, DelReg.LAA, DelReg.TaskOffload
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xDE, ParamsC100, ParamsWOLNS, 5906DMobile.Params, eStar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-[BCM5906MDESTAR.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5906MLEN.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906MLEN.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5906MFJ.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOLeStar, ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906MFJ.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5714.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.LgSnd
-DelReg          = DelReg.Wol
-DelReg          = DelReg.WolMagic
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWireSpeed, ParamsLgSndJumboCombo, ParamsWOL
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5714.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5714G.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.LgSnd
-DelReg          = DelReg.Wol
-DelReg          = DelReg.WolMagic, DelReg.ParamsC
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC1G, ParamsWireSpeed, ParamsLgSndJumboCombo, ParamsWOL
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5714G.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5780.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsWireSpeed, ParamsLgSndJumboCombo
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5780.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5714S.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsLgSndJumboCombo
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5714S.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5714SWol.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.LgSnd
-DelReg          = DelReg.Wol
-DelReg          = DelReg.WolMagic
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNT8021p, ParamsNtW9x, ParamsLgSndJumboCombo, ParamsWOLTbi
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5714SWol.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5714SHAL.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsLgSndJumboCombo  , ParamsWOLTbi
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5714SHAL.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-
-[BCM5750A1F3.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOL , ParamsLgSnd , ParamsWireSpeed , ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1F3Estar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOLeStar , ParamsLgSnd , ParamsWireSpeed , ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3Estar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5750A1F3EstarA.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOLeStar, ParamsLgSnd , ParamsWireSpeed , ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3EstarA.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5750A1F3MFD.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar , ParamsLgSnd , ParamsWireSpeed , ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3MFD.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-[BCM5750A1F3M.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOLeStar , ParamsLogOptions, ParamsM
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3M.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1F3MEstarDefWolAuto.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOLeStar , ParamsLogOptions, ParamsM
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3MEstarDefWolAuto.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5750A1F3MMFD.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLogOptions, ParamsM, ParamsWireSpeed, ParamsLgSnd, ParamsNT
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3MMFD.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1F3MMFDEstar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLEstar , ParamsLogOptions, ParamsM, ParamsWireSpeed, ParamsLgSnd, ParamsNT
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3MMFDEstar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1F3MMFDEstar_NoLSO.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.LgSnd_all
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLEstar , ParamsLogOptions, ParamsM, ParamsWireSpeed, ParamsNT
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3MMFDEstar_NoLSO.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1F3MMFDCQ29902.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-DelReg          = DelReg.ClockControl
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLEstar , ParamsLogOptions, ParamsM, ParamsCQ29902
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F3MMFDCQ29902.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5750A1M.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsM, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1M.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5906M.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906M.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5906MeStar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906MeStar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5906MDMESTAR.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed, DelReg.LgSnd
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, Estar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5906MDMESTAR.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5750MHAL.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsM,  ParamsWOLLink, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750MHAL.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750MHALeStar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar, ParamsM,  ParamsWOLLink, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750MHALeStar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750HALe.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOLeStar,  ParamsWOLLink, ParamsWireSpeed, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750HALe.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1F.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC100, ParamsWOL, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1F.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1FeStar.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC100, ParamsWOLeStar, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1FeStar.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-[BCM5750FHAL.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9x, ParamsC100, ParamsWOL, ParamsWOLLink, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750FHAL.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5750A1DMOBILE.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xDE, ParamsC, ParamsWOLNS, DMobile.Params
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1DMOBILE.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-[BCM5750A1DMESTAR.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.Wol, DelReg.Jumbo, DelReg.WireSpeed, DelReg.TaskOffload
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xDE, ParamsC, DMobile.Params, ParamsWOLNS, Estar, ParamsM
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1DMESTAR.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5750A1DESTAR.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.Wol, DelReg.WireSpeed, DelReg.TaskOffload
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xDE, ParamsC, DMobile.Params, ParamsWOLNS, Estar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5750A1DESTAR.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5787MA1DESTAR.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.Wol, DelReg.WireSpeed, DelReg.TaskOffload
-AddReg          = Xp64AddReg, BCM5750.Params, ParamsNt8021p, ParamsNtW9xDE, ParamsC, DMobile.Params, ParamsWOLNS, ParamsM, Estar
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5787MA1DESTAR.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5705MA2F2.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed
-AddReg          = Xp64AddReg, BCM5705MA2.Params, ParamsNt, ParamsNt8021p, ParamsNtW9xFJ, ParamsC, ParamsWOL, ParamsLgSnd, ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705MA2F2.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5705MA2F2MFD.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed
-AddReg          = Xp64AddReg, BCM5705MA2.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd, ParamsLogOptions
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705MA2F2MFD.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-
-[BCM5705M.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5705M.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705M.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[BCM5705A2.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed
-AddReg          = Xp64AddReg, BCM5705A2.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705A2.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5705F.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed
-AddReg          = Xp64AddReg, BCM5705F.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705F.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5705MA2.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo, DelReg.WireSpeed
-AddReg          = Xp64AddReg, BCM5705MA2.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5705MA2.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5901.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5901.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsC, ParamsWOL, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5901.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5701FA.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.RequestedMediaType, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5701FA.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5703S.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.RequestedMediaType, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5703.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5703S.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5703SW.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.RequestedMediaType, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5703.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsLgSnd, ParamsWOLTbi
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5703SW.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5704S.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.RequestedMediaType, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5704.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5704S.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[BCM5704SW.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.RequestedMediaType, DelReg.Wol, DelReg.WireSpeed
-AddReg          = Xp64AddReg, BCM5704.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsWOLTbi
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[BCM5704SW.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C996SX.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.RequestedMediaType, DelReg.Wol
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsLgSnd
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C996SX.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C996BT.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C996BT.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C1000T.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C1000T.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C940BR01.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C940BR01.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-[3C998T.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C998T.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C998SX.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C998SX.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C999T.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5701.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C999T.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[3C1000BT.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5702.Params, ParamsNt, ParamsNt8021p, ParamsNtW9x, ParamsJumbo, ParamsC, ParamsWOL, ParamsLgSnd, ParamsWireSpeed
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[3C1000BT.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[OEM1_DEV4.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-AddReg          = Xp64AddReg, BCM5702.Params, ParamsNt8021p, ParamsC, ParamsWOLNS, ParamsNtW9xDE, DMobile.Params
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[OEM1_DEV4.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-[OEM1_DEV5.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5705M.Params, ParamsNt, ParamsNt8021p, ParamsNtW9xDE, ParamsC, ParamsWOLNS, DMobile.Params
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[OEM1_DEV5.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-
-[OEM1_DEV6.XpInst.NTamd64]
-Characteristics = 0x84 ; NCF_HAS_UI | NCF_PHYSICAL
-DelReg          = DelReg.Jumbo
-AddReg          = Xp64AddReg, BCM5705M.Params, ParamsNt, ParamsNt8021p, ParamsNtW9xDE, ParamsC, ParamsWOLNS, DMobile.Params
-CopyFiles       = CopyFile.XpSys64
-BusType         = 5
-
-[OEM1_DEV6.XpInst.NTamd64.Services]
-AddService = b57nd, 2, BCM5701.Xp64AddService, Xp64EventLog
-
-
-
-;*******************************************************************************
-; 64-bit Windows Xp common sections.
-;*******************************************************************************
-
-[Xp64AddReg]
-HKR, Ndi,            Service,    0, "b57nd"
-HKR, Ndi\Interfaces, UpperRange, 0, "ndis5"
-HKR, Ndi\Interfaces, LowerRange, 0, "ethernet"
-
-[Xp64EventLog]
-AddReg = Xp64AddEventLogReg
-
-[Xp64AddEventLogReg]
-HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll;%%SystemRoot%%\System32\drivers\b57amd64.sys"
-HKR, , TypesSupported  , 0x00010001, 7
-
-
-[BCM5701.Xp64AddService]
-DisplayName    = %BCM5701%
-ServiceType    = 1
-StartType      = 3
-ErrorControl   = 1
-ServiceBinary  = %12%\b57amd64.sys
-LoadOrderGroup = NDIS
-Addreg         = bcmPnpInstallReg
-
-[bcmPnpInstallReg]
-HKR,,product_version,0,"12.4.0"
-
-;*******************************************************************************
-; Registry parameters.
-;*******************************************************************************
-
-[BCM5701.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-
-[BCM5702.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-
-[BCM5703.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5704.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5705.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5705M.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5705A2.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5705F.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5705MA2.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5788.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-[BCM5750.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-
-[BCM5901.Params]
-HKR, , TxPacketDescCnt,          0, "200"
-HKR, , RxStdDescCnt,             0, "200"
-HKR, , RxCoalescingTicks,        0, "10"
-HKR, , TxCoalescingTicks,        0, "30"
-HKR, , RxMaxCoalescedFrames,     0, "5"
-HKR, , TxMaxCoalescedFrames,     0, "200"
-
-
-[DMobile.Params]
-HKR, , TaskOffloadCap,           0, "21"
-HKR, , RxMtu,                    0, "1500"
-HKR, , WolSpeed,                 0, "0"
-HKR, , WireSpeed,                0, "1"
-HKR, , LargeSendOffload,         0, "1"
-
-[5906DMobile.Params]
-HKR, , TaskOffloadCap,           0, "21"
-HKR, , RxMtu,                    0, "1500"
-
-
-[ParamsNt]
-HKR, Ndi\Params\TaskOffloadCap,      ParamDesc, , %TaskOffload%
-HKR, Ndi\Params\TaskOffloadCap,      default,   , "63"
-HKR, Ndi\Params\TaskOffloadCap,      type,      , "enum"
-HKR, Ndi\Params\TaskOffloadCap\enum, 0,         , %TaskOffload_None%
-HKR, Ndi\Params\TaskOffloadCap\enum, 42,        , %TaskOffload_Rx_Chksum%
-HKR, Ndi\Params\TaskOffloadCap\enum, 21,        , %TaskOffload_Tx_Chksum%
-HKR, Ndi\Params\TaskOffloadCap\enum, 63,        , %TaskOffload_Rx_Tx_Chksum%
-
-
-[ParamsNtW9xFJ]
-HKR, Ndi\Params\FlowControlCap,      ParamDesc,  , %FlowControl%
-HKR, Ndi\Params\FlowControlCap,      default,    , "0"
-HKR, Ndi\Params\FlowControlCap,      type,       , "enum"
-HKR, Ndi\Params\FlowControlCap\enum, 0,          , %FlowControl_Disable%
-HKR, Ndi\Params\FlowControlCap\enum, 1,          , %FlowControl_Rx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 2,          , %FlowControl_Tx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 3,          , %FlowControl_Rx_Tx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 2147483648, , %FlowControl_Auto%
-
-HKR, Ndi\params\NetworkAddress,        ParamDesc,  0, %NetworkAddress%
-HKR, Ndi\params\NetworkAddress,        Default,    0, ""
-HKR, Ndi\params\NetworkAddress,        type,       0, "edit"
-HKR, NDI\params\NetworkAddress,        LimitText,  0, "12"
-HKR, NDI\params\NetworkAddress,        UpperCase,  0, "1"
-HKR, NDI\params\NetworkAddress,        optional,   0, "1"
-
-
-
-
-[ParamsNt8021p]
-HKR, Ndi\Params\Enable8021p,      ParamDesc, , %QOS_8021p%
-HKR, Ndi\Params\Enable8021p,      default,   , "0"
-HKR, Ndi\Params\Enable8021p,      type,      , "enum"
-HKR, Ndi\Params\Enable8021p\enum, 0,         , %QOS_8021p_Disable%
-HKR, Ndi\Params\Enable8021p\enum, 1,         , %QOS_8021p_Enable%
-
-
-[ParamsNtW9x]
-HKR, Ndi\Params\FlowControlCap,      ParamDesc,  , %FlowControl%
-HKR, Ndi\Params\FlowControlCap,      default,    , "2147483648"
-HKR, Ndi\Params\FlowControlCap,      type,       , "enum"
-HKR, Ndi\Params\FlowControlCap\enum, 0,          , %FlowControl_Disable%
-HKR, Ndi\Params\FlowControlCap\enum, 1,          , %FlowControl_Rx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 2,          , %FlowControl_Tx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 3,          , %FlowControl_Rx_Tx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 2147483648, , %FlowControl_Auto%
-
-HKR, Ndi\params\NetworkAddress,        ParamDesc,  0, %NetworkAddress%
-HKR, Ndi\params\NetworkAddress,        Default,    0, ""
-HKR, Ndi\params\NetworkAddress,        type,       0, "edit"
-HKR, NDI\params\NetworkAddress,        LimitText,  0, "12"
-HKR, NDI\params\NetworkAddress,        UpperCase,  0, "1"
-HKR, NDI\params\NetworkAddress,        optional,   0, "1"
-
-[ParamsNtW9xDE]
-HKR, Ndi\Params\FlowControlCap,      ParamDesc,  , %FlowControl%
-HKR, Ndi\Params\FlowControlCap,      default,    , "2147483648"
-HKR, Ndi\Params\FlowControlCap,      type,       , "enum"
-HKR, Ndi\Params\FlowControlCap\enum, 0,          , %FlowControl_Disable%
-HKR, Ndi\Params\FlowControlCap\enum, 1,          , %FlowControl_Rx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 2,          , %FlowControl_Tx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 3,          , %FlowControl_Rx_Tx_Pause%
-HKR, Ndi\Params\FlowControlCap\enum, 2147483648, , %FlowControl_Auto%
-
-
-
-[ParamsJumbo]
-HKR, Ndi\Params\RxMtu, ParamDesc, , %JumboMtu%
-HKR, Ndi\Params\RxMtu, default,   , "1500"
-HKR, Ndi\Params\RxMtu, type,      , "dword"
-HKR, Ndi\Params\RxMtu, min,       , "1500"
-HKR, Ndi\Params\RxMtu, max,       , "9000"
-HKR, Ndi\Params\RxMtu, step,      , "500"
-HKR, Ndi\Params\RxMtu, base,      , "10"
-
-[ParamsWireSpeed]
-HKR, Ndi\Params\WireSpeed,        ParamDesc, , %WireSpeed%
-HKR, Ndi\Params\WireSpeed,        default,   , "1"
-HKR, Ndi\Params\WireSpeed,        type,      , "enum"
-HKR, Ndi\Params\WireSpeed\enum,   0,         , %WireSpeed_Disable%
-HKR, Ndi\Params\WireSpeed\enum,   1,         , %WireSpeed_Enable%
-
-
-
-[ParamsWOLLink]
-HKR, Ndi\Params\WakeOnLink,        ParamDesc, , %WakeOnLink%
-HKR, Ndi\Params\WakeOnLink,        default,   , "0"
-HKR, Ndi\Params\WakeOnLink,        type,      , "enum"
-HKR, Ndi\Params\WakeOnLink\enum,   0,         , %WakeOnLink_Disable%
-HKR, Ndi\Params\WakeOnLink\enum,   1,         , %WakeOnLink_Enable%
-
-
-
-
-[ParamsLogOptions]
-HKR, Ndi\Params\LogLevelInfo,        ParamDesc, , %LogLevelInfo%
-HKR, Ndi\Params\LogLevelInfo,        default,   , "0"
-HKR, Ndi\Params\LogLevelInfo,        type,      , "enum"
-HKR, Ndi\Params\LogLevelInfo\enum,   0,         , %LogLevelInfo_Disable%
-HKR, Ndi\Params\LogLevelInfo\enum,   1,         , %LogLevelInfo_Enable%
-HKR, Ndi\Params\LogLevelWarn,        ParamDesc, , %LogLevelWarn%
-HKR, Ndi\Params\LogLevelWarn,        default,   , "0"
-HKR, Ndi\Params\LogLevelWarn,        type,      , "enum"
-HKR, Ndi\Params\LogLevelWarn\enum,   0,         , %LogLevelWarn_Disable%
-HKR, Ndi\Params\LogLevelWarn\enum,   1,         , %LogLevelWarn_Enable%
-
-
-[ParamsM]
-HKR, , ClockControl,          0, "1"
-
-[ParamsCQ29902]
-HKR, , CQ29902Errata,          0, "0"
-
-[ParamsWireSpeed]
-HKR, Ndi\Params\WireSpeed,        ParamDesc, , %WireSpeed%
-HKR, Ndi\Params\WireSpeed,        default,   , "1"
-HKR, Ndi\Params\WireSpeed,        type,      , "enum"
-HKR, Ndi\Params\WireSpeed\enum,   0,         , %WireSpeed_Disable%
-HKR, Ndi\Params\WireSpeed\enum,   1,         , %WireSpeed_Enable%
-
-
-[ParamsC]
-HKR, Ndi\Params\RequestedMediaType,      ParamDesc, , %Speed_Duplex%
-HKR, Ndi\Params\RequestedMediaType,      default,   , "0"
-HKR, Ndi\Params\RequestedMediaType,      type,      , "enum"
-HKR, Ndi\Params\RequestedMediaType\enum, 0,         , %Speed_Duplex_Auto%
-HKR, Ndi\Params\RequestedMediaType\enum, 3,         , %Speed_Duplex_10Mb_Hd%
-HKR, Ndi\Params\RequestedMediaType\enum, 4,         , %Speed_Duplex_10Mb_Fd%
-HKR, Ndi\Params\RequestedMediaType\enum, 5,         , %Speed_Duplex_100Mb_Hd%
-HKR, Ndi\Params\RequestedMediaType\enum, 6,         , %Speed_Duplex_100Mb_Fd%
-
-
-
-[ParamsC100]
-HKR, Ndi\Params\RequestedMediaType,      ParamDesc, , %Speed_Duplex%
-HKR, Ndi\Params\RequestedMediaType,      default,   , "0"
-HKR, Ndi\Params\RequestedMediaType,      type,      , "enum"
-HKR, Ndi\Params\RequestedMediaType\enum, 0,         , %Speed_Duplex_Auto%
-HKR, Ndi\Params\RequestedMediaType\enum, 3,         , %Speed_Duplex_10Mb_Hd%
-HKR, Ndi\Params\RequestedMediaType\enum, 4,         , %Speed_Duplex_10Mb_Fd%
-HKR, Ndi\Params\RequestedMediaType\enum, 5,         , %Speed_Duplex_100Mb_Hd%
-HKR, Ndi\Params\RequestedMediaType\enum, 6,         , %Speed_Duplex_100Mb_Fd%
-[ParamsC1G]
-HKR, Ndi\Params\RequestedMediaType,      ParamDesc, , %Speed_Duplex%
-HKR, Ndi\Params\RequestedMediaType,      default,   , "0"
-HKR, Ndi\Params\RequestedMediaType,      type,      , "enum"
-HKR, Ndi\Params\RequestedMediaType\enum, 0,         , %Speed_Duplex_Auto%
-HKR, Ndi\Params\RequestedMediaType\enum, 3,         , %Speed_Duplex_10Mb_Hd%
-HKR, Ndi\Params\RequestedMediaType\enum, 4,         , %Speed_Duplex_10Mb_Fd%
-HKR, Ndi\Params\RequestedMediaType\enum, 5,         , %Speed_Duplex_100Mb_Hd%
-HKR, Ndi\Params\RequestedMediaType\enum, 6,         , %Speed_Duplex_100Mb_Fd%
-HKR, Ndi\Params\RequestedMediaType\enum, 8200,      , %Speed_Duplex_1000Mb_Fd%
-
-
-[ParamsWOL]
-HKR, Ndi\Params\WakeUpModeCap,       ParamDesc, , %WakeUpMode%
-HKR, Ndi\Params\WakeUpModeCap,       default,   , "3"
-HKR, Ndi\Params\WakeUpModeCap,       type,      , "enum"
-HKR, Ndi\Params\WakeUpModeCap\enum,  0,         , %WakeUpMode_None%
-HKR, Ndi\Params\WakeUpModeCap\enum,  1,         , %WakeUpMode_Magic%
-HKR, Ndi\Params\WakeUpModeCap\enum,  2,         , %WakeUpMode_Pattern%
-HKR, Ndi\Params\WakeUpModeCap\enum,  3,         , %WakeUpMode_Both%
-
-HKR, Ndi\Params\WolSpeed,       ParamDesc, , %WolSpeed%
-HKR, Ndi\Params\WolSpeed,       default,   , "0"
-HKR, Ndi\Params\WolSpeed,       type,      , "enum"
-HKR, Ndi\Params\WolSpeed\enum,  0,         , %WolSpeed_Auto%
-HKR, Ndi\Params\WolSpeed\enum,  1,         , %WolSpeed_10mb%
-HKR, Ndi\Params\WolSpeed\enum,  2,         , %WolSpeed_100mb%
-
-
-[ParamsWOLeStar]
-HKR, Ndi\Params\WakeUpModeCap,       ParamDesc, , %WakeUpMode%
-HKR, Ndi\Params\WakeUpModeCap,       default,   , "3"
-HKR, Ndi\Params\WakeUpModeCap,       type,      , "enum"
-HKR, Ndi\Params\WakeUpModeCap\enum,  0,         , %WakeUpMode_None%
-HKR, Ndi\Params\WakeUpModeCap\enum,  1,         , %WakeUpMode_Magic%
-HKR, Ndi\Params\WakeUpModeCap\enum,  2,         , %WakeUpMode_Pattern%
-HKR, Ndi\Params\WakeUpModeCap\enum,  3,         , %WakeUpMode_Both%
-
-HKR, Ndi\Params\WolSpeed,       ParamDesc, , %WolSpeed%
-HKR, Ndi\Params\WolSpeed,       default,   , "256"
-HKR, Ndi\Params\WolSpeed,       type,      , "enum"
-HKR, Ndi\Params\WolSpeed\enum,  0,         , %WolSpeed_Auto%
-HKR, Ndi\Params\WolSpeed\enum,  1,         , %WolSpeed_10mb%
-HKR, Ndi\Params\WolSpeed\enum,  2,         , %WolSpeed_100mb%
-HKR, Ndi\Params\WolSpeed\enum,  256,         , %WolSpeed_LowestAvail%
-
-HKR, , WolSpeed,                 0, "256"
-
-[Estar]
-HKR, , WolSpeed,                 0, "256"
-
-[ParamsWOLeStarDefWolAuto]
-HKR, Ndi\Params\WakeUpModeCap,       ParamDesc, , %WakeUpMode%
-HKR, Ndi\Params\WakeUpModeCap,       default,   , "3"
-HKR, Ndi\Params\WakeUpModeCap,       type,      , "enum"
-HKR, Ndi\Params\WakeUpModeCap\enum,  0,         , %WakeUpMode_None%
-HKR, Ndi\Params\WakeUpModeCap\enum,  1,         , %WakeUpMode_Magic%
-HKR, Ndi\Params\WakeUpModeCap\enum,  2,         , %WakeUpMode_Pattern%
-HKR, Ndi\Params\WakeUpModeCap\enum,  3,         , %WakeUpMode_Both%
-
-HKR, Ndi\Params\WolSpeed,       ParamDesc, , %WolSpeed%
-HKR, Ndi\Params\WolSpeed,       default,   , "0"
-HKR, Ndi\Params\WolSpeed,       type,      , "enum"
-HKR, Ndi\Params\WolSpeed\enum,  0,         , %WolSpeed_Auto%
-HKR, Ndi\Params\WolSpeed\enum,  1,         , %WolSpeed_10mb%
-HKR, Ndi\Params\WolSpeed\enum,  2,         , %WolSpeed_100mb%
-HKR, Ndi\Params\WolSpeed\enum,  256,         , %WolSpeed_LowestAvail%
-HKR, , WolSpeed,                 0, "0"
-
-[ParamsWOLShasta]
-HKR, Ndi\Params\WakeUpModeCap,       ParamDesc, , %WakeUpMode%
-HKR, Ndi\Params\WakeUpModeCap,       default,   , "1"
-HKR, Ndi\Params\WakeUpModeCap,       type,      , "enum"
-HKR, Ndi\Params\WakeUpModeCap\enum,  0,         , %WakeUpMode_None%
-HKR, Ndi\Params\WakeUpModeCap\enum,  1,         , %WakeUpMode_Magic%
-; HKR, Ndi\Params\WakeUpModeCap\enum,  2,         , %WakeUpMode_Pattern%
-; HKR, Ndi\Params\WakeUpModeCap\enum,  3,         , %WakeUpMode_Both%
-
-HKR, Ndi\Params\WolSpeed,       ParamDesc, , %WolSpeed%
-HKR, Ndi\Params\WolSpeed,       default,   , "0"
-HKR, Ndi\Params\WolSpeed,       type,      , "enum"
-HKR, Ndi\Params\WolSpeed\enum,  0,         , %WolSpeed_Auto%
-HKR, Ndi\Params\WolSpeed\enum,  1,         , %WolSpeed_10mb%
-HKR, Ndi\Params\WolSpeed\enum,  2,         , %WolSpeed_100mb%
-;HKR, Ndi\Params\WolSpeed\enum,  3,         , %WolSpeed_1000mb%
-HKR, Ndi\Params\WolSpeed\enum,  256,       , %WolSpeed_LowestAvail%
-
-[ParamsWOLTbi]
-HKR, Ndi\Params\WakeUpModeCap,       ParamDesc, , %WakeUpMode%
-HKR, Ndi\Params\WakeUpModeCap,       default,   , "1"
-HKR, Ndi\Params\WakeUpModeCap,       type,      , "enum"
-HKR, Ndi\Params\WakeUpModeCap\enum,  0,         , %WakeUpMode_None%
-HKR, Ndi\Params\WakeUpModeCap\enum,  1,         , %WakeUpMode_Magic%
-HKR, , TbiWol,                   0, "1"
-
-[ParamsLgSnd]
-HKR, Ndi\Params\LargeSendOffload,    ParamDesc, , %TaskOffload_LargeSend%
-HKR, Ndi\Params\LargeSendOffload,    default,   , "1"
-HKR, Ndi\Params\LargeSendOffload,      type,     , "enum"
-HKR, Ndi\Params\LargeSendOffload\enum, 0,        , %TaskOffload_LargeSend_Disable%
-HKR, Ndi\Params\LargeSendOffload\enum, 1,        , %TaskOffload_LargeSend_Enable%
-
-[ParamsWOLNS]
-HKR, Ndi\Params\WakeUpModeCap,       ParamDesc, , %WakeUpMode%
-HKR, Ndi\Params\WakeUpModeCap,       default,   , "3"
-HKR, Ndi\Params\WakeUpModeCap,       type,      , "enum"
-HKR, Ndi\Params\WakeUpModeCap\enum,  0,         , %WakeUpMode_None%
-HKR, Ndi\Params\WakeUpModeCap\enum,  1,         , %WakeUpMode_Magic%
-HKR, Ndi\Params\WakeUpModeCap\enum,  2,         , %WakeUpMode_Pattern%
-HKR, Ndi\Params\WakeUpModeCap\enum,  3,         , %WakeUpMode_Both%
-
-
-[ParamsLgSndJumboCombo]
-HKR, Ndi\Params\LargeSendOffloadJumboCombo,    ParamDesc, , %TaskOffload_LargeSend_Jumbo%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo,    default,   , "1"
-HKR, Ndi\Params\LargeSendOffloadJumboCombo,      type,     , "enum"
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 0,        , %TaskOffload_LargeSend_Disable_Both%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 1,        , %TaskOffload_LargeSend_Enable_JumboDisable%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 2,        , %TaskOffload_LargeSend_Disable_JumboEnable3000%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 3,        , %TaskOffload_LargeSend_Disable_JumboEnable4500%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 4,        , %TaskOffload_LargeSend_Disable_JumboEnable6000%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 5,        , %TaskOffload_LargeSend_Disable_JumboEnable7500%
-HKR, Ndi\Params\LargeSendOffloadJumboCombo\enum, 6,        , %TaskOffload_LargeSend_Disable_JumboEnable9000%
-
-
-;*******************************************************************************
-; Keys to remove.
-;*******************************************************************************
-
-[DelReg.RequestedMediaType]
-HKR, Ndi\Params\RequestedMediaType
-
-[DelReg.Wol]
-HKR, Ndi\Params\WakeUpModeCap
-HKR, Ndi\Params\WolSpeed
-
-[DelReg.WolS]
-HKR, Ndi\Params\WolSpeed
-
-[DelReg.WolMagic]
-HKR, Ndi\Params\WakeUpModeCap
-HKR, Ndi\Params\WolSpeed
-
-[DelReg.Jumbo]
-HKR, Ndi\Params\RxMtu
-
-[DelReg.LgSnd]
-HKR, Ndi\Params\LargeSendOffload
-
-[DelReg.LgSnd_all]
-HKR, Ndi\Params\LargeSendOffload
-HKR, ,LargeSendOffload
-
-[DelReg.WireSpeed]
-HKR, Ndi\Params\WireSpeed
-
-[DelReg.ClockControl]
-HKR, ,ClockControl
-
-[DelReg.LAA]
-HKR, Ndi\params\NetworkAddress
-HKR, , NetworkAddress
-
-[DelReg.TaskOffload]
-HKR, Ndi\Params\TaskOffloadCap
-
-[DelReg.ParamsC]
-HKR, Ndi\Params\RequestedMediaType
-
-;*******************************************************************************
-; Destination directories
-;*******************************************************************************
-
-[DestinationDirs]
-DefaultDestDir   = 11
-CopyFile.XpSys64 = 12
-
-[SourceDisksNames]
-1 = %DISK_DESC%,,,
-
-[SourceDisksFiles]
-b57amd64.sys = 1
-
-[CopyFile.XpSys64]
-b57amd64.sys,,,1
-
-
-
-;*******************************************************************************
-; Localizable strings
-;*******************************************************************************
-
-[Strings]
-BRCM                = "Broadcom"
-DISK_DESC           = "Broadcom NetXtreme Installation Media"
-
-BCM5700FB           = "Broadcom NetXtreme Gigabit Fiber"
-BCM5700FA           = "Broadcom NetXtreme Gigabit Fiber"
-BCM5701FA           = "Broadcom NetXtreme Gigabit Fiber"
-BCM5701             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5702             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5703             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5703S            = "Broadcom NetXtreme Gigabit Fiber"
-BCM5703SW           = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5704             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5704S            = "Broadcom NetXtreme Gigabit Fiber"
-BCM5704SW           = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5705             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5705M            = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5705F            = "Broadcom 570x 10/100 Integrated Controller"
-BCM5750            = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5750A1        = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5750A1F        = "Broadcom NetXtreme Fast Ethernet"
-BCM5714               = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5714S            = "Broadcom NetXtreme Gigabit Fiber"
-BCM5722             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5750A1STSP    = "Embedded Broadcom NetXtreme 5721 PCI-E Gigabit NIC"
-BCM5750B0           = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5750B0F          = "Broadcom NetXtreme Fast Ethernet"
-BCM5754             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5755             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5782             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5761             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5764             = "Broadcom NetXtreme Gigabit Ethernet"
-BCM5786             = "Broadcom NetLink (TM) Gigabit Ethernet"
-BCM5787             = "Broadcom NetLink (TM) Gigabit Ethernet"
-BCM5787F            = "Broadcom NetLink (TM) Fast Ethernet"
-BCM5788             = "Broadcom NetLink (TM) Gigabit Ethernet"
-BCM5789             = "Broadcom NetLink (TM) Gigabit Ethernet"
-BCM5901             = "Broadcom NetXtreme Fast Ethernet"
-BCM5906             = "Broadcom NetLink (TM) Fast Ethernet"
-
-
-3C996T              = "3Com 3C996 10/100/1000 Server NIC"
-3C996SX             = "3Com 3C996 Gigabit Fiber-SX Server NIC"
-3C996BT             = "3Com 3C996B Gigabit Server NIC"
-3C1000T             = "3Com 3C1000 Gigabit NIC"
-3C940BR01           = "3Com 3C940 Gigabit LOM"
-3C998T              = "3Com Dual Port 10/100/1000 PCI-X Server NIC"
-3C998SX             = "3Com Dual Port 1000-SX PCI-X Server NIC"
-3C999T              = "3Com Quad Port 10/100/1000 PCI-X Server NIC"
-3C1000BT            = "3Com 10/100/1000 PCI"
-
-OEM1_DEV1           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM1_DEV2           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM1_DEV3           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM1_DEV4           = "Broadcom 570x Gigabit Integrated Controller"
-OEM1_DEV5           = "Broadcom 570x Gigabit Integrated Controller"
-OEM1_DEV6           = "Broadcom NetXtreme Gigabit Ethernet"
-
-OEM2_DEV1           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM2_DEV2           = "Broadcom NetXtreme Fast Ethernet"
-OEM2_DEV3           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM2_DEV4           = "Broadcom NetXtreme Fast Ethernet"
-
-OEM3_DEV1           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM3_DEV2           = "Broadcom NetXtreme Gigabit Ethernet"
-OEM3_DEV3           = "Broadcom NetXtreme Gigabit Ethernet"
-
-BCM5750A1DSF      = "Broadcom NetXtreme 5751 Gigabit Controller"
-BCM5750A1DSSF    = "Broadcom NetXtreme 5721 Gigabit Controller"
-BCM5750A1DDT      = "Broadcom NetXtreme 57xx Gigabit Controller"
-BCM5750A1DMOBILE =  "Broadcom NetXtreme 57xx Gigabit Controller"
-
-
-; These items will be set by IHV...
-DriverMfgr            = "Broadcom"                  ; IHV name
-DriverVersionID       = "5.00"                      ; The IHV driver version
-BaseDriverFileVersion = "10.85"
-BaseDriverFileName    = "b57amd64.sys"               ; Key file for version
-
-; These items will be set by IHV and updated by OEM
-DriverOEM         = "Dell"      ; name of the OEM
-DriverFamily      = "NIC"       ; device family (NIC, Storage, Video...)
-DriverProduct     = "BCM5700"   ; Specific Name of device (chipset, for example)
-DriverDescription = "Broadcom NetXtreme Gigabit Ethernet"  ; Description of device (product name, OS or system supported)
-DriverOEMVersion  = "A00"       ; OEM-specified version
-
-
-JumboMtu = "Jumbo Mtu"
-
-FlowControl             = "Flow Control"
-FlowControl_Disable     = "Disable"
-FlowControl_Rx_Pause    = "Rx PAUSE"
-FlowControl_Tx_Pause    = "Tx PAUSE"
-FlowControl_Rx_Tx_Pause = "Rx/Tx PAUSE"
-FlowControl_Auto        = "Auto"
-
-Speed_Duplex          = "Speed & Duplex"
-Speed_Duplex_Auto     = "Auto"
-Speed_Duplex_10Mb_Hd  = "10 Mb Half"
-Speed_Duplex_10Mb_Fd  = "10 Mb Full"
-Speed_Duplex_100Mb_Hd = "100 Mb Half"
-Speed_Duplex_100Mb_Fd = "100 Mb Full"
-Speed_Duplex_1000Mb_Fd = "1 Gb Full Auto"
-
-QOS_8021p         = "802.1p QOS"
-QOS_8021p_Disable = "Disable"
-QOS_8021p_Enable  = "Enable"
-
-WireSpeed         = "Ethernet@WireSpeed"
-WireSpeed_Disable = "Disable"
-WireSpeed_Enable  = "Enable"
-
-WakeOnLink         = "Wake On Link"
-WakeOnLink_Disable = "Disable"
-WakeOnLink_Enable  = "Enable"
-TaskOffload              = "Checksum Offload"
-TaskOffload_None         = "None"
-TaskOffload_Rx_Chksum    = "Rx TCP/IP Checksum"
-TaskOffload_Tx_Chksum    = "Tx TCP/IP Checksum"
-TaskOffload_Rx_Tx_Chksum = "Tx/Rx TCP/IP Checksum"
-
-TaskOffload_LargeSend           = "Large Send Offload"
-TaskOffload_LargeSend_Disable   = "Disable"
-TaskOffload_LargeSend_Enable    = "Enable"
-`
-TaskOffload_LargeSend_Jumbo                           = "LSO & Jumbo Frames"
-TaskOffload_LargeSend_Disable_Both                = "Both Disabled"
-TaskOffload_LargeSend_Enable_JumboDisable   = "LSO Enabled,Jumbo Off"
-TaskOffload_LargeSend_Disable_JumboEnable3000   = "LSO Off,Jumbo 3000"
-TaskOffload_LargeSend_Disable_JumboEnable4500   = "LSO Off,Jumbo 4500"
-TaskOffload_LargeSend_Disable_JumboEnable6000   = "LSO Off,Jumbo 6000"
-TaskOffload_LargeSend_Disable_JumboEnable7500   = "LSO Off,Jumbo 7500"
-TaskOffload_LargeSend_Disable_JumboEnable9000   = "LSO Off,Jumbo 9000"
-
-WakeUpMode         = "Wake Up Capabilities"
-WakeUpMode_None    = "None"
-WakeUpMode_Magic   = "Magic Packet"
-WakeUpMode_Pattern = "Wake Up Frame"
-WakeUpMode_Both    = "Both"
-
-WolSpeed       = "WOL Speed"
-WolSpeed_Auto  = "Auto"
-WolSpeed_10mb  = "10 Mb"
-WolSpeed_100mb = "100 Mb"
-WolSpeed_1000mb = "1000 Mb"
-WolSpeed_LowestAvail = "Lowest Speed Advertised"
-
-NetworkAddress           = "Locally Administered Address"
-
-
-LogLevelInfo    = "Log Information Messages"
-LogLevelWarn  = "Log Warning Messages"
-LogLevelInfo_Disable  =  "Disable"
-LogLevelInfo_Enable  =  "Enable"
-LogLevelWarn_Disable  =  "Disable"
-LogLevelWarn_Enable  =  "Enable"
-'''
-]
-
-txtsetupoemTestData = \
-[
-'''
-;
-; format for txtsetup.oem.
-;
-; Follow this format for non-PNP adapters ISA
-;
-; Follow the txtsetup.oem in initio for PNP adapters like PCI and ISAPNP
-;
-; Txtsetup.oem is a generic way to install Storage adapters to get them through
-; textmode setup.  Do as little as possible and allow GUI mode setup to do the 
-; remaining work using the supplied inf.
-;
-; General format:
-;
-; [section]
-; key = value1,value2,...
-;
-;
-; The hash ('#') or semicolon (';') introduces a comment.
-; Strings with embedded spaces, commas, or hashes should be double-quoted
-;
-
-
-; This section lists all disks in the disk set.
-;
-; <description> is a descriptive name for a disk, used when
-;   prompting for the disk
-; <tagfile> is a file whose presence allows setup to recognize
-;   that the disk is inserted.
-; <directory> is where the files are located on the disk.
-;
-[Disks]
-d1 = "NVIDIA AHCI DRIVER (SCSI)",\\disk1,\\testdir
-
-; This section lists the default selection for each 'required'
-; hardware component.  If a line is not present for a component,
-; the default defaults to the first item in the [<component_name>]
-; section (see below).
-;
-; <component_name> is one of computer, display, keyboard, mouse, scsi
-; <id> is a unique <within the component> string to be associated
-;   with an option.
-[Defaults]
-
-
-; This section lists the options available for a particular component.
-;
-; <id> is the unique string for the option
-; <description> is a text string, presented to the user in a menu
-; <key_name> gives the name of the key to be created for the component in
-;   HKEY_LOCAL_MACHINE\ControlSet001\Services
-[scsi]
-BUSDRV = "NVIDIA nForce Storage Controller (required)"
-
-
-; This section lists the files that should be copied if the user
-; selects a particular component option.
-;
-; <file_type> is one of driver, port, class, dll, hal, inf, or detect.
-;   See below.
-; <source_disk> identifies where the file is to be copied from, and must
-;   match en entry in the [Disks] section.
-; <filename> is the name of the file. This will be appended to the
-;   directory specified for the disk in the [Disks] section to form the
-;   full path of the file on the disk.
-; <driverkey> this is the name that will show under the services\driver key
-; this should be the same name as the driver that is being installed.
-
-[Files.scsi.BUSDRV]
-driver = d1,nvgts.sys,BUSDRV
-inf    = d1, nvgts.inf
-catalog = d1, nvata.cat
-dll    = d1,nvraidco.dll
-dll     = d1,NvRCoENU.dll
-dll     = d1,NvRCoAr.dll
-dll     = d1,NvRCoCs.dll
-dll     = d1,NvRCoDa.dll
-dll     = d1,NvRCoDe.dll
-dll     = d1,NvRCoEl.dll
-dll     = d1,NvRCoEng.dll
-dll     = d1,NvRCoEs.dll
-dll     = d1,NvRCoEsm.dll
-dll     = d1,NvRCoFi.dll
-dll     = d1,NvRCoFr.dll
-dll     = d1,NvRCoHe.dll
-dll     = d1,NvRCoHu.dll
-dll     = d1,NvRCoIt.dll
-dll     = d1,NvRCoJa.dll
-dll     = d1,NvRCoKo.dll
-dll     = d1,NvRCoNl.dll
-dll     = d1,NvRCoNo.dll
-dll     = d1,NvRCoPl.dll
-dll     = d1,NvRCoPt.dll
-dll     = d1,NvRCoPtb.dll
-dll     = d1,NvRCoRu.dll
-dll     = d1,NvRCoSk.dll
-dll     = d1,NvRCoSl.dll
-dll     = d1,NvRCoSv.dll
-dll     = d1,NvRCoTh.dll
-dll     = d1,NvRCoTr.dll
-dll     = d1,NvRCoZhc.dll
-dll     = d1,NvRCoZht.dll
-
-; This section specifies values to be set in the registry for
-; particular component options.  Required values in the services\\xxx
-; key are created automatically -- use this section to specify additional
-; keys to be created in services\\xxx and values in services\\xxx and
-; services\\xxx\\yyy.
-;
-; This section must be filled out for storage controllers that 
-; are PNP adapters like PCI and ISA PNP adapters.  Failure to do this 
-; can cause the driver to fail to load. Must also add the section
-; [HardwareIds.scsi.ID] to identify the supported ID's.
-;
-; <value_name> specifies the value to be set within the key
-; <value_type> is a string like REG_DWORD.  See below.
-; <value> specifies the actual value; its format depends on <value_type>
-;
-
-[Config.BUSDRV]
-value = parameters\PnpInterface,5,REG_DWORD,1
-
-; A HardwareIds.scsi.Service section specifies the hardware IDs of 
-; the devices that a particular mass-storage driver supports. 
-;
-; [HardwareIds.scsi.Service]
-; id = "deviceID","service"
-;
-; HardwareIds.scsi.Service 
-;   Service specifies the service to be installed. 
-;
-; <deviceId > Specifies the device ID for a mass-storage device. 
-; <service > Specifies the service to be installed for the device. 
-;The following example excerpt shows a HardwareIds.scsi.Service section for a disk device:
-;
-
-
-[HardwareIds.scsi.BUSDRV]
-id = "PCI\VEN_10DE&DEV_0036", "nvgts"
-id = "PCI\VEN_10DE&DEV_003E", "nvgts"
-id = "PCI\VEN_10DE&DEV_0054", "nvgts"
-id = "PCI\VEN_10DE&DEV_0055", "nvgts"
-id = "PCI\VEN_10DE&DEV_0266", "nvgts"
-id = "PCI\VEN_10DE&DEV_0267", "nvgts"
-id = "PCI\VEN_10DE&DEV_037E", "nvgts"
-id = "PCI\VEN_10DE&DEV_037F", "nvgts"
-id = "PCI\VEN_10DE&DEV_036F", "nvgts"
-id = "PCI\VEN_10DE&DEV_03F6", "nvgts"
-id = "PCI\VEN_10DE&DEV_03F7", "nvgts"
-id = "PCI\VEN_10DE&DEV_03E7", "nvgts"
-id = "PCI\VEN_10DE&DEV_044D", "nvgts"
-id = "PCI\VEN_10DE&DEV_044E", "nvgts"
-id = "PCI\VEN_10DE&DEV_044F", "nvgts"
-id = "PCI\VEN_10DE&DEV_0554", "nvgts"
-id = "PCI\VEN_10DE&DEV_0555", "nvgts"
-id = "PCI\VEN_10DE&DEV_0556", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F4", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F5", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F6", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F7", "nvgts"
-id = "PCI\VEN_10DE&DEV_0768", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AD5", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AD4", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AB9", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AB8", "nvgts"
-id = "PCI\VEN_10DE&DEV_0BCC", "nvgts"
-id = "PCI\VEN_10DE&DEV_0BCD", "nvgts"
-
-#--The following lines give additional USB floppy support
-id = "USB\VID_03F0&PID_2001", "usbstor" #--HP
-id = "USB\VID_054C&PID_002C", "usbstor" #--Sony
-id = "USB\VID_057B&PID_0001", "usbstor" #--Y-E Data
-id = "USB\VID_0409&PID_0040", "usbstor" #--NEC
-id = "USB\VID_0424&PID_0FDC", "usbstor" #--SMSC
-id = "USB\VID_08BD&PID_1100", "usbstor" #--Iomega
-id = "USB\VID_055D&PID_2020", "usbstor" #--Samsung
-
-id = "USB\VID_03EE&PID_6901", "usbstor" #--Mitsumi
-''',
-'''
-# txtsetup.oem - version XP.8 for SYMMPI Windows XP driver
-#
-# ***********************************************************************
-#                                                                       *
-#   Copyright 2004 LSI Logic, Corp.  All rights reserved.               *
-#                                                                       *
-#   This file is property of LSI Logic, Corp. and is licensed for       *
-#   use as is.  The receipt of or posession of this file does not       *
-#   convey any rights to modify its contents, in whole, or in part,     *
-#   without the specific written consent of LSI Logic, Corp.            *
-#                                                                       *
-# ***********************************************************************
-#
-# format for txtsetup.oem.
-#
-# General format:
-#
-# [section]
-# key = value1,value2,...
-#
-#
-# The hash ('#') introduces a comment.
-# Strings with embedded spaces, commas, or hashes should be double-quoted
-#
-
-
-[Disks]
-
-# This section lists all disks in the disk set.
-#
-# <description> is a descriptive name for a disk, used when
-#   prompting for the disk
-# <tagfile> is a file whose presence allows setup to recognize
-#   that the disk is inserted.
-# <directory> is where the files are located on the disk.
-#
-
-d1 = "LSI Logic PCI Fusion-MPT Miniport Driver",\symmpi.tag,\
-
-
-[Defaults]
-
-# This section lists the default selection for each 'required'
-# hardware component.  If a line is not present for a component,
-# the default defaults to the first item in the [<component_name>]
-# section (see below).
-#
-# <component_name> is one of computer, display, keyboard, mouse, scsi
-# <id> is a unique <within the component> string to be associated
-#   with an option.
-
-scsi = SYMMPI_32
-
-
-[scsi]
-
-# This section lists the options available for a particular component.
-#
-# <id> is the unique string for the option
-# <description> is a text string, presented to the user in a menu
-# <key_name> gives the name of the key to be created for the component in
-#   HKEY_LOCAL_MACHINE\ControlSet001\Services
-
-SYMMPI_32    = "LSI Logic PCI Fusion-MPT Driver (XP 32-bit)",symmpi
-
-
-[HardwareIds.scsi.SYMMPI_32]
-
-id = "PCI\VEN_1000&DEV_0622", "symmpi"
-id = "PCI\VEN_1000&DEV_0624", "symmpi"
-id = "PCI\VEN_1000&DEV_0626", "symmpi"
-id = "PCI\VEN_1000&DEV_0628", "symmpi"
-id = "PCI\VEN_1000&DEV_0030", "symmpi"
-id = "PCI\VEN_1000&DEV_0032", "symmpi"
-id = "PCI\VEN_1000&DEV_0050", "symmpi"
-id = "PCI\VEN_1000&DEV_0054", "symmpi"
-id = "PCI\VEN_1000&DEV_0058", "symmpi"
-id = "PCI\VEN_1000&DEV_005E", "symmpi"
-id = "PCI\VEN_1000&DEV_0056", "symmpi"
-id = "PCI\VEN_1000&DEV_005A", "symmpi"
-id = "PCI\VEN_1000&DEV_0640", "symmpi"
-id = "PCI\VEN_1000&DEV_0646", "symmpi"
-id = "PCI\VEN_1000&DEV_0062", "symmpi"
-
-
-# This section lists the files that should be copied if the user
-# selects a particular component option.
-#
-# <file_type> is one of driver, port, class, dll, hal, inf, or detect.
-#   See below.
-# <source_disk> identifies where the file is to be copied from, and must
-#   match en entry in the [Disks] section.
-# <filename> is the name of the file. This will be appended to the
-#   directory specified for the disk in the [Disks] section to form the
-#   full path of the file on the disk.
-
-[Files.scsi.SYMMPI_32]
-driver  = d1,symmpi.sys,SYMMPI
-inf     = d1,symmpi.inf
-inf     = d1,lsipseud.inf
-catalog = d1,mpixp32.cat
-
-
-[Config.SYMMPI]
-
-# This section specifies values to be set in the registry for
-# particular component options.  Required values in the services\\xxx
-# key are created automatically -- use this section to specify additional
-# keys to be created in services\\xxx and values in services\\xxx and
-# services\\xxx\\yyy.
-#
-# <key_name> is relative to the services node for this device.
-#   If it is empty, then it refers to the services node.
-#   If specified, the key is created first.
-# <value_name> specifies the value to be set within the key
-# <value_type> is a string like REG_DWORD.  See below.
-# <value> specifies the actual value; its format depends on <value_type>
-value = Parameters\PnpInterface,5,REG_DWORD,1
-''',
-'''
-[Disks]
-d1 = "NVIDIA AHCI DRIVER (SCSI)",\disk1,\
-
-[Defaults]
-
-[scsi]
-BUSDRV = "NVIDIA nForce Storage Controller (required)"
-
-[Files.scsi.BUSDRV]
-driver = d1,nvgts.sys,BUSDRV
-inf    = d1, nvgts.inf
-catalog = d1, nvata.cat
-dll    = d1,nvraidco.dll
-dll     = d1,NvRCoENU.dll
-dll     = d1,NvRCoAr.dll
-dll     = d1,NvRCoCs.dll
-dll     = d1,NvRCoDa.dll
-dll     = d1,NvRCoDe.dll
-dll     = d1,NvRCoEl.dll
-dll     = d1,NvRCoEng.dll
-dll     = d1,NvRCoEs.dll
-dll     = d1,NvRCoEsm.dll
-dll     = d1,NvRCoFi.dll
-dll     = d1,NvRCoFr.dll
-dll     = d1,NvRCoHe.dll
-dll     = d1,NvRCoHu.dll
-dll     = d1,NvRCoIt.dll
-dll     = d1,NvRCoJa.dll
-dll     = d1,NvRCoKo.dll
-dll     = d1,NvRCoNl.dll
-dll     = d1,NvRCoNo.dll
-dll     = d1,NvRCoPl.dll
-dll     = d1,NvRCoPt.dll
-dll     = d1,NvRCoPtb.dll
-dll     = d1,NvRCoRu.dll
-dll     = d1,NvRCoSk.dll
-dll     = d1,NvRCoSl.dll
-dll     = d1,NvRCoSv.dll
-dll     = d1,NvRCoTh.dll
-dll     = d1,NvRCoTr.dll
-dll     = d1,NvRCoZhc.dll
-dll     = d1,NvRCoZht.dll
-
-[Config.BUSDRV]
-value = parameters\PnpInterface,5,REG_DWORD,1
-
-[HardwareIds.scsi.BUSDRV]
-id = "PCI\VEN_10DE&DEV_0036", "nvgts"
-id = "PCI\VEN_10DE&DEV_003E", "nvgts"
-id = "PCI\VEN_10DE&DEV_0054", "nvgts"
-id = "PCI\VEN_10DE&DEV_0055", "nvgts"
-id = "PCI\VEN_10DE&DEV_0266", "nvgts"
-id = "PCI\VEN_10DE&DEV_0267", "nvgts"
-id = "PCI\VEN_10DE&DEV_037E", "nvgts"
-id = "PCI\VEN_10DE&DEV_037F", "nvgts"
-id = "PCI\VEN_10DE&DEV_036F", "nvgts"
-id = "PCI\VEN_10DE&DEV_03F6", "nvgts"
-id = "PCI\VEN_10DE&DEV_03F7", "nvgts"
-id = "PCI\VEN_10DE&DEV_03E7", "nvgts"
-id = "PCI\VEN_10DE&DEV_044D", "nvgts"
-id = "PCI\VEN_10DE&DEV_044E", "nvgts"
-id = "PCI\VEN_10DE&DEV_044F", "nvgts"
-id = "PCI\VEN_10DE&DEV_0554", "nvgts"
-id = "PCI\VEN_10DE&DEV_0555", "nvgts"
-id = "PCI\VEN_10DE&DEV_0556", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F4", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F5", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F6", "nvgts"
-id = "PCI\VEN_10DE&DEV_07F7", "nvgts"
-id = "PCI\VEN_10DE&DEV_0768", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AD5", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AD4", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AB9", "nvgts"
-id = "PCI\VEN_10DE&DEV_0AB8", "nvgts"
-id = "PCI\VEN_10DE&DEV_0BCC", "nvgts"
-id = "PCI\VEN_10DE&DEV_0BCD", "nvgts"
-''',
-'''
-[Disks] 
-disk0 = "AMD AHCI Compatible RAID Controller Driver Diskette", \\ahcix86, \\
-disk1 = "AMD AHCI Compatible RAID Controller Driver Diskette", \\ahcix86, \\x86
-disk2 = "AMD AHCI Compatible RAID Controller Driver Diskette", \\ahcix64, \\x64
-
-[Defaults] 
-SCSI = Napa_i386_ahci8086
-
-[SCSI] 
-Napa_i386_ahci8086 = "AMD AHCI Compatible RAID Controller-x86 platform", ahcix86 
-Napa_amd64_ahci    = "AMD AHCI Compatible RAID Controller-x64 platform", ahcix64
-
-[Files.SCSI.Napa_i386_ahci8086] 
-inf	= disk1, ahcix86.inf
-driver	= disk1, ahcix86.sys, ahcix86
-catalog = disk1, ahcix86.cat
-
-[Files.SCSI.Napa_amd64_ahci] 
-inf	= disk2, ahcix64.inf
-driver	= disk2, ahcix64.sys, ahcix64
-catalog = disk2, ahcix64.cat
-
-[HardwareIds.SCSI.Napa_i386_ahci8086] 
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_280A103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_2814103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_3029103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_3029103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E08105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E08105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_C2151631", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_C2151631", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2191631", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2191631", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2171631", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2171631", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE10105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE11105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE13105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE14105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0E105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0F105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_76401558", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_76411558", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_2A6E103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_2A6E103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E13105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E13105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E14105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E14105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_A7051478", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_A7051478", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_55021565", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_55021565", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_700116F3", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_700116F3", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_31331297", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_31331297", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_100415BD", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_100415BD", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014C1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014C1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_75011462", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_75011462", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_73021462", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_73021462", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_73041462", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_73041462", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01551025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01551025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02591028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_02591028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_027E1028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_82EF1043", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_82EF1043", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF6A1179", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF621179", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113E1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113E1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113A1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113A1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113B1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113B1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113D1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113D1734", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_88AD1033", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01471025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01471025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014B1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014B1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01481025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01481025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01491025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01491025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E3103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F2103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30F2103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_3600103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_3600103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F1103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E4103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30E4103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FB103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FB103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FE103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FE103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FC103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FC103C", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_149210CF", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_43901019", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_43901019", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_82881043", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_82881043", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_025B1028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_025A1028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02571028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_02571028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02551028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911849", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921849", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931849", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_B0021458", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_B0021458", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014E1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014E1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014F1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014F1025", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_303617AA", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_303617AA", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_303F17AA", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_303F17AA", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF501179", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02641028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02651028", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0E105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0F105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E10105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E11105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0E105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0F105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E10105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E11105B", "ahcix86"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911002", "ahcix86"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921002", "ahcix86"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931002", "ahcix86"
-id = "PCI\VEN_1002&DEV_4381&SUBSYS_43811002", "ahcix86"
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_43821002", "ahcix86"
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_43811002", "ahcix86" 
-
-[HardwareIds.SCSI.Napa_amd64_ahci] 
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_280A103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_2814103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_3029103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_3029103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E08105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E08105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_C2151631", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_C2151631", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2191631", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2191631", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_E2171631", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_E2171631", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE10105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE11105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE13105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE14105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0E105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_OE0F105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_76401558", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_76411558", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_2A6E103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_2A6E103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E13105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E13105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E14105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E14105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_A7051478", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_A7051478", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_55021565", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_55021565", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_700116F3", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_700116F3", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_31331297", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_31331297", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_100415BD", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_100415BD", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014C1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014C1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_75011462", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_75011462", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_73021462", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_73021462", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_73041462", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_73041462", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01551025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01551025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02591028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_02591028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_027E1028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_82EF1043", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_82EF1043", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF6A1179", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF621179", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113E1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113E1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113A1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113A1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113B1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113B1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_113D1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_113D1734", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_88AD1033", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01471025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01471025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014B1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014B1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01481025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01481025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_01491025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_01491025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E3103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F2103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30F2103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_3600103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_3600103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30F1103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30E4103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30E4103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FB103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FB103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FE103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FE103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_30FC103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_30FC103C", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_149210CF", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_43901019", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_43901019", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_82881043", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_82881043", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_025B1028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_025A1028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02571028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_02571028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02551028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911849", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921849", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931849", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_B0021458", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_B0021458", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014E1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014E1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_014F1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_014F1025", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_303617AA", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_303617AA", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_303F17AA", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_303F17AA", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_FF501179", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02641028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_02651028", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0E105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E0F105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E10105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_0E11105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0E105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E0F105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E10105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_0E11105B", "ahcix64"
-id = "PCI\VEN_1002&DEV_4391&SUBSYS_43911002", "ahcix64"
-id = "PCI\VEN_1002&DEV_4392&SUBSYS_43921002", "ahcix64"
-id = "PCI\VEN_1002&DEV_4393&SUBSYS_43931002", "ahcix64"
-id = "PCI\VEN_1002&DEV_4381&SUBSYS_43811002", "ahcix64"
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_43821002", "ahcix64"
-id = "PCI\VEN_1002&DEV_4380&SUBSYS_43811002", "ahcix64"
-
-[Config.ahcix86]
-value = "", Tag, REG_DWORD, 1
-
-[Config.ahcix64]
-value = "", Tag, REG_DWORD, 1
-''',
-'''
-[Disks]
-d1 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\
-d2 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\i386
-d3 = "Promise FastTrak TX4310 Driver Diskette", \\fttxr5_O, \\x86_64
-
-[Defaults]
-scsi = fttxr5_O_i386
-
-[scsi]
-fttxr5_O_i386 = "Promise FastTrak TX4310 (tm) Controller-Intel x86", fttxr5_O
-fttxr5_O_x86_64 = "Promise FastTrak TX4310 (tm) Controller-x86_64", fttxr5_O
-
-[Files.scsi.fttxr5_O_i386]
-driver = d2, fttxr5_O.sys, fttxr5_O
-;driver = d2, bb_run.sys, bb_run
-;driver = d1, DontGo.sys, dontgo
-;dll = d1, ftutil2.dll
-inf    = d2, fttxr5_O.inf
-catalog= d2, fttxr5_O.cat
-
-[Files.scsi.fttxr5_O_x86_64]
-driver = d3, fttxr5_O.sys, fttxr5_O
-;driver = d3, bb_run.sys, bb_run
-;driver = d1, DontGo.sys, dontgo
-;dll = d1, ftutil2.dll
-inf    = d3, fttxr5_O.inf
-catalog= d3, fttxr5_O.cat
-
-
-
-[HardwareIds.scsi.fttxr5_O_i386]
-id="PCI\VEN_105A", "fttxr5_O"
-
-[HardwareIds.scsi.fttxr5_O_x86_64]
-id="PCI\VEN_105A", "fttxr5_O"
-
-
-[Config.fttxr5_O]
-value = "", Tag, REG_DWORD, 1
-''',
-'''
-; Copyright (c) 2003-09 Intel Corporation
-;#############################################################################
-;#
-;#    Filename:  TXTSETUP.OEM
-;#
-;#############################################################################
-[Disks]
-disk1 = "Intel Matrix Storage Manager driver", iaStor.sys, \\
-
-[Defaults]
-scsi = iaStor_ICH8MEICH9ME
-;scsi = iaAHCI_ICH8
-
-;#############################################################################
-[scsi]
-
-; iaAHCI.inf
-iaAHCI_ESB2               = "Intel(R) ESB2 SATA AHCI Controller"
-iaAHCI_ICH7RDH            = "Intel(R) ICH7R/DH SATA AHCI Controller"
-iaAHCI_ICH7MMDH           = "Intel(R) ICH7M/MDH SATA AHCI Controller"
-iaAHCI_ICH8               = "Intel(R) 82801HB SATA AHCI Controller (Desktop ICH8)"
-iaAHCI_ICH8RDHDO          = "Intel(R) ICH8R/DH/DO SATA AHCI Controller"
-iaAHCI_ICH8MEM            = "Intel(R) ICH8M-E/M SATA AHCI Controller"
-iaAHCI_ICH9RDODH          = "Intel(R) ICH9R/DO/DH SATA AHCI Controller"
-iaAHCI_ICH9MEM            = "Intel(R) ICH9M-E/M SATA AHCI Controller"
-iaAHCI_ICH10DDO           = "Intel(R) ICH10D/DO SATA AHCI Controller"
-iaAHCI_ICH10R             = "Intel(R) ICH10R SATA AHCI Controller"
-
-; iaStor.inf
-iaStor_ESB2               = "Intel(R) ESB2 SATA RAID Controller"
-iaStor_ICH7RDH            = "Intel(R) ICH7R/DH SATA RAID Controller"
-iaStor_ICH7MDH            = "Intel(R) ICH7MDH SATA RAID Controller"
-iaStor_ICH8RICH9RICH10RDO = "Intel(R) ICH8R/ICH9R/ICH10R/DO SATA RAID Controller"
-iaStor_ICH8MEICH9ME       = "Intel(R) ICH8M-E/ICH9M-E SATA RAID Controller"
-
-;#############################################################################
-
-; iaAHCI.inf
-[Files.scsi.iaAHCI_ESB2]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH7RDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH7MMDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH8]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH8RDHDO]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH8MEM]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH9RDODH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH9MEM]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH10DDO]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-[Files.scsi.iaAHCI_ICH10R]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-
-
-; iaStor.inf
-[Files.scsi.iaStor_ESB2]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-
-[Files.scsi.iaStor_ICH7RDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-
-[Files.scsi.iaStor_ICH7MDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-
-[Files.scsi.iaStor_ICH8RICH9RICH10RDO]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-
-[Files.scsi.iaStor_ICH8MEICH9ME]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-
-
-;#############################################################################
-[Config.iaStor]
-value = "", tag, REG_DWORD, 1b
-value = "", ErrorControl, REG_DWORD, 1
-value = "", Group, REG_SZ, "SCSI Miniport"
-value = "", Start, REG_DWORD, 0
-value = "", Type, REG_DWORD, 1
-
-;#############################################################################
-
-; iaAHCI.inf
-[HardwareIds.scsi.iaAHCI_ESB2]
-id = "PCI\VEN_8086&DEV_2681&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH7RDH]
-id = "PCI\VEN_8086&DEV_27C1&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH7MMDH]
-id = "PCI\VEN_8086&DEV_27C5&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH8RDHDO]
-id = "PCI\VEN_8086&DEV_2821&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH8]
-id = "PCI\VEN_8086&DEV_2824&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH8MEM]
-id = "PCI\VEN_8086&DEV_2829&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH9RDODH]
-id = "PCI\VEN_8086&DEV_2922&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH9MEM]
-id = "PCI\VEN_8086&DEV_2929&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH10DDO]
-id = "PCI\VEN_8086&DEV_3A02&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_ICH10R]
-id = "PCI\VEN_8086&DEV_3A22&CC_0106","iaStor"
-
-
-; iaStor.inf
-[HardwareIds.scsi.iaStor_ESB2]
-id = "PCI\VEN_8086&DEV_2682&CC_0104","iaStor"
-
-[HardwareIds.scsi.iaStor_ICH7RDH]
-id = "PCI\VEN_8086&DEV_27C3&CC_0104","iaStor"
-
-[HardwareIds.scsi.iaStor_ICH7MDH]
-id = "PCI\VEN_8086&DEV_27C6&CC_0104","iaStor"
-
-[HardwareIds.scsi.iaStor_ICH8RICH9RICH10RDO]
-id = "PCI\VEN_8086&DEV_2822&CC_0104","iaStor"
-
-[HardwareIds.scsi.iaStor_ICH8MEICH9ME]
-id = "PCI\VEN_8086&DEV_282A&CC_0104","iaStor"
-
-
-''',
-'''
-[Disks]
-disk1 = "Intel(R) Rapid Storage Technology Driver", iaStor.sys, \\
-[Defaults]
-scsi = iaStor_8ME9ME5
-[scsi]
-iaAHCI_ESB2       = "Intel(R) ESB2 SATA AHCI Controller"
-iaAHCI_7RDH       = "Intel(R) ICH7R/DH SATA AHCI Controller"
-iaAHCI_7MMDH      = "Intel(R) ICH7M/MDH SATA AHCI Controller"
-iaAHCI_8RDHDO     = "Intel(R) ICH8R/DH/DO SATA AHCI Controller"
-iaAHCI_8MEM       = "Intel(R) ICH8M-E/M SATA AHCI Controller"
-iaAHCI_9RDODH     = "Intel(R) ICH9R/DO/DH SATA AHCI Controller"
-iaAHCI_9MEM       = "Intel(R) ICH9M-E/M SATA AHCI Controller"
-iaAHCI_10DDO      = "Intel(R) ICH10D/DO SATA AHCI Controller"
-iaAHCI_10R        = "Intel(R) ICH10R SATA AHCI Controller"
-iaAHCI_5          = "Intel(R) 5 Series 4 Port SATA AHCI Controller"
-iaAHCI_5_1        = "Intel(R) 5 Series 6 Port SATA AHCI Controller"
-iaAHCI_5_1_1      = "Intel(R) 5 Series/3400 Series SATA AHCI Controller"
-iaStor_ESB2       = "Intel(R) ESB2 SATA RAID Controller"
-iaStor_7RDH       = "Intel(R) ICH7R/DH SATA RAID Controller"
-iaStor_7MDH       = "Intel(R) ICH7MDH SATA RAID Controller"
-iaStor_8R9R10RDO5 = "Intel(R) ICH8R/ICH9R/ICH10R/DO/5 Series/3400 Series SATA RAID Controller"
-iaStor_8ME9ME5    = "Intel(R) ICH8M-E/ICH9M-E/5 Series SATA RAID Controller"
-[Files.scsi.iaAHCI_ESB2]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_7RDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_7MMDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_8RDHDO]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_8MEM]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_9RDODH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_9MEM]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_10DDO]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_10R]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_5]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_5_1]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaAHCI_5_1_1]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaAHCI.inf
-catalog = disk1, iaAHCI.cat
-[Files.scsi.iaStor_ESB2]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-[Files.scsi.iaStor_7RDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-[Files.scsi.iaStor_7MDH]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-[Files.scsi.iaStor_8R9R10RDO5]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-[Files.scsi.iaStor_8ME9ME5]
-driver = disk1, iaStor.sys, iaStor
-inf = disk1, iaStor.inf
-catalog = disk1, iaStor.cat
-[Config.iaStor]
-value = "", tag, REG_DWORD, 1b
-value = "", ErrorControl, REG_DWORD, 1
-value = "", Group, REG_SZ, "SCSI Miniport"
-value = "", Start, REG_DWORD, 0
-value = "", Type, REG_DWORD, 1
-[HardwareIds.scsi.iaAHCI_ESB2]
-id = "PCI\VEN_8086&DEV_2681&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_7RDH]
-id = "PCI\VEN_8086&DEV_27C1&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_7MMDH]
-id = "PCI\VEN_8086&DEV_27C5&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_8RDHDO]
-id = "PCI\VEN_8086&DEV_2821&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_8MEM]
-id = "PCI\VEN_8086&DEV_2829&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_9RDODH]
-id = "PCI\VEN_8086&DEV_2922&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_9MEM]
-id = "PCI\VEN_8086&DEV_2929&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_10DDO]
-id = "PCI\VEN_8086&DEV_3A02&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_10R]
-id = "PCI\VEN_8086&DEV_3A22&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_5]
-id = "PCI\VEN_8086&DEV_3B29&CC_0106","iaStor"
-[HardwareIds.scsi.iaAHCI_5_1]
-id = "PCI\VEN_8086&DEV_3B2F&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaAHCI_5_1_1]
-id = "PCI\VEN_8086&DEV_3B22&CC_0106","iaStor"
-
-[HardwareIds.scsi.iaStor_ESB2]
-id = "PCI\VEN_8086&DEV_2682&CC_0104","iaStor"
-[HardwareIds.scsi.iaStor_7RDH]
-id = "PCI\VEN_8086&DEV_27C3&CC_0104","iaStor"
-[HardwareIds.scsi.iaStor_7MDH]
-id = "PCI\VEN_8086&DEV_27C6&CC_0104","iaStor"
-[HardwareIds.scsi.iaStor_8R9R10RDO5]
-id = "PCI\VEN_8086&DEV_2822&CC_0104","iaStor"
-[HardwareIds.scsi.iaStor_8ME9ME5]
-id = "PCI\VEN_8086&DEV_282A&CC_0104","iaStor"
-'''
-]
-
-iniTestData = [
-'''
-#[section1]
-# abc = def
-
-[section2]
-abc = def # comment
-
-[section3]
-key = value ;comment ; comment2
-
-[section4]
-key = value \; no comment \# comment2 ;# comment3
-
-[section5]
-key = \;\;\;\;\;\;\;\;\;\;\;\;
-'''
-]
-if (__name__ == "__main__"):
-	#logger.setConsoleLevel(LOG_DEBUG2)
-	logger.setConsoleLevel(LOG_INFO)
-	logger.setConsoleColor(True)
-	
-	
-	#for data in infTestData:
-	data = infTestData[-1]
-	infFile = InfFile('/tmp/test.inf')
-	infFile.parse(data.split('\n'))
-	devices = infFile.getDevices()
-	if not devices:
-		logger.error(u"No devices found!")
-	for dev in devices:
-		logger.notice(u"Found device: %s" % dev)
-	
-	#for data in txtsetupoemTestData:
-	#	print "============================================================================================================="
-	#	try:
-	#		txtSetupOemFile = TxtSetupOemFile('/tmp/txtsetup.oem')
-	#		txtSetupOemFile.parse(data.split('\n'))
-	#		#print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0AD4')
-	#		#for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '0AD4', fileTypes = []):
-	#		#	print f
-	#		##for f in txtSetupOemFile.getFilesForDevice(vendorId = '10DE', deviceId = '07F6', fileTypes = []):
-	#		##	print f
-	#		#print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = '10DE', deviceId = '0754')
-	#		#print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = '10DE', deviceId = '0AD4')['description']
-	#		
-	#		for (vendorId, deviceId) in (('8086', '3B22'), ('1002', '4391'), ('10DE', '07F6')):
-	#			print "isDeviceKnown:", txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId)
-	#			if txtSetupOemFile.isDeviceKnown(vendorId = vendorId, deviceId = deviceId):
-	#				print "Files:"
-	#				for f in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = []):
-	#					print f
-	#				print "description:", txtSetupOemFile.getComponentOptionsForDevice(vendorId = vendorId, deviceId = deviceId)['description']
-	#				
-	#				txtSetupOemFile.applyWorkarounds()
-	#				txtSetupOemFile.generate()
-	#				print "Fixed files:"
-	#				for f in txtSetupOemFile.getFilesForDevice(vendorId = vendorId, deviceId = deviceId, fileTypes = []):
-	#					print f
-	#		
-	#		txtSetupOemFile.generate()
-	#		#for line in txtSetupOemFile._lines:
-	#		#	print line.rstrip()
-	#		
-	#	except Exception, e:
-	#		logger.logException(e)
-	#		continue
-	#	
-	#	#devices = txtSetupOemFile.getDevices()
-	#	#if not devices:
-	#	#	logger.error(u"No devices found!")
-	#	#for dev in devices:
-	#	#	logger.notice(u"Found device: %s" % dev)
-	#
-	##for data in iniTestData:
-	##	iniFile = IniFile('/tmp/test.ini')
-	##	iniFile.parse(data.split('\n'))
-	
-	
-	
-	
-	
-	
