@@ -152,6 +152,18 @@ class ApplyingWorkaroundsTestsMixin(object):
                         'line: {l}'.format(i=commaIndex, l=line)
                     )
 
+    def testApplyingWorkaroundsChangesContents(self):
+        with open(self.txtSetupOemFile.getFilename()) as setupfile:
+            before = setupfile.readlines()
+
+        self.txtSetupOemFile.applyWorkarounds()
+        self.txtSetupOemFile.generate()
+
+        with open(self.txtSetupOemFile.getFilename()) as setupfile:
+            after = setupfile.readlines()
+
+        self.assertNotEqual(before, after)
+
 
 class ApplyingWorkaroundsForExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
     EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
