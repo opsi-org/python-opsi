@@ -2,6 +2,8 @@
 #-*- coding: utf-8 -*-
 
 import os
+import shutil
+import tempfile
 import unittest
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile
@@ -30,6 +32,14 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
         iniFile.parse(iniTestData.split('\n'))
 
 
+def copyTestfileToTemporaryFolder(filename):
+    temporary_folder = tempfile.mkdtemp()
+    shutil.copy(filename, temporary_folder)
+
+    (_, new_filename) = os.path.split(filename)
+
+    return os.path.join(temporary_folder, new_filename)
+
 class ParseInfFileTestCase(unittest.TestCase):
     def setUp(self):
         pathToConfig = os.path.join(os.path.dirname(__file__), 'testdata',
@@ -56,17 +66,31 @@ class ParseInfFileTestCase(unittest.TestCase):
             self.assertNotEqual(None, dev['device'])
 
 
-class SetupOemTestCase1(unittest.TestCase):
+class CopySetupOemFileTestCase(unittest.TestCase):
+    TEST_DATA_FOLDER = os.path.join(
+        os.path.dirname(__file__), 'testdata', 'util', 'file',
+    )
+    ORIGINAL_SETUP_FILE = None
+
     def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_1.oem')
+        oemSetupFile = copyTestfileToTemporaryFolder(
+            os.path.join(self.TEST_DATA_FOLDER, self.ORIGINAL_SETUP_FILE)
+        )
 
         self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
         self.txtSetupOemFile.parse()
 
     def tearDown(self):
+        testDirectory = os.path.dirname(self.txtSetupOemFile.getFilename())
+        if (os.path.exists(testDirectory)
+            and (os.path.normpath(self.TEST_DATA_FOLDER) !=
+                 os.path.normpath(testDirectory))):
+            shutil.rmtree(testDirectory)
+
         del self.txtSetupOemFile
+
+class SetupOemTestCase1(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_1.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
@@ -121,17 +145,8 @@ class SetupOemTestCase1(unittest.TestCase):
             self.assertNotEqual(None, device['device'])
 
 
-class SetupOemTestCase2(unittest.TestCase):
-    def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_2.oem')
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    def tearDown(self):
-        del self.txtSetupOemFile
+class SetupOemTestCase2(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_2.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
@@ -185,17 +200,8 @@ class SetupOemTestCase2(unittest.TestCase):
             self.assertNotEqual(None, device['device'])
 
 
-class SetupOemTestCase3(unittest.TestCase):
-    def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_3.oem')
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    def tearDown(self):
-        del self.txtSetupOemFile
+class SetupOemTestCase3(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_3.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
@@ -250,17 +256,8 @@ class SetupOemTestCase3(unittest.TestCase):
             self.assertNotEqual(None, device['device'])
 
 
-class SetupOemTestCase4(unittest.TestCase):
-    def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_4.oem')
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    def tearDown(self):
-        del self.txtSetupOemFile
+class SetupOemTestCase4(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_4.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
@@ -357,17 +354,8 @@ class SetupOemTestCase4(unittest.TestCase):
             self.assertNotEqual(None, device['device'])
 
 
-class SetupOemTestCase5(unittest.TestCase):
-    def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_5.oem')
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    def tearDown(self):
-        del self.txtSetupOemFile
+class SetupOemTestCase5(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_5.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
@@ -455,17 +443,8 @@ class SetupOemTestCase5(unittest.TestCase):
             self.assertEqual('fttxr5_O', device['serviceName'])
 
 
-class SetupOemTestCase6(unittest.TestCase):
-    def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_6.oem')
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    def tearDown(self):
-        del self.txtSetupOemFile
+class SetupOemTestCase6(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_6.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
@@ -530,17 +509,8 @@ class SetupOemTestCase6(unittest.TestCase):
             self.assertNotEqual(None, device['device'])
 
 
-class SetupOemTestCase7(unittest.TestCase):
-    def setUp(self):
-        oemSetupFile = os.path.join(os.path.dirname(__file__), 'testdata',
-                                    'util', 'file',
-                                    'txtsetupoem_testdata_7.oem')
-
-        self.txtSetupOemFile = TxtSetupOemFile(oemSetupFile)
-        self.txtSetupOemFile.parse()
-
-    def tearDown(self):
-        del self.txtSetupOemFile
+class SetupOemTestCase7(CopySetupOemFileTestCase):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_7.oem'
 
     def testDevicesAreRead(self):
         devices = self.txtSetupOemFile.getDevices()
