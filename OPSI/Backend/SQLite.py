@@ -4,29 +4,29 @@
    = = = = = = = = = = = = = = = = = = =
    =   opsi python library - SQLite    =
    = = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2010 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
@@ -34,21 +34,17 @@
 
 __version__ = '4.0'
 
-# Imports
-import os, threading
-try:
-	from apsw import *
-except:
-	pass
+import threading
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
+				  SQLITE_OPEN_READWRITE, Connection)
+
+from OPSI.Logger import Logger
+from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
-from OPSI.Backend.SQL import *
+from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-# Get logger instance
 logger = Logger()
 
 
@@ -58,7 +54,7 @@ class SQLite(SQL):
 	ESCAPED_BACKSLASH  = "\\"
 	ESCAPED_APOSTROPHE = "''"
 	ESCAPED_ASTERISK   = "**"
-	
+
 	def __init__(self, **kwargs):
 		self._database        = ":memory:"
 		self._synchronous     = True
@@ -71,12 +67,12 @@ class SQLite(SQL):
 				self._synchronous = forceBool(value)
 			elif option in ('databasecharset',):
 				self._databaseCharset = str(value)
-			
+
 		self._connection = None
 		self._cursor = None
 		self._transactionLock = threading.Lock()
 		logger.debug(u'SQLite created: %s' % self)
-	
+
 	def connect(self):
 		#self._transactionLock.acquire()
 		try:
@@ -95,7 +91,7 @@ class SQLite(SQL):
 					for i in range(len(row)):
 						valueSet[names[i][0]] = row[i]
 					return valueSet
-				
+
 				self._cursor = self._connection.cursor()
 				if not self._synchronous:
 					self._cursor.execute('PRAGMA synchronous=OFF')
@@ -108,7 +104,7 @@ class SQLite(SQL):
 		except:
 			#self._transactionLock.release()
 			raise
-		
+
 	def close(self, conn, cursor):
 		pass
 		#try:
@@ -116,7 +112,7 @@ class SQLite(SQL):
 		#except:
 		#	pass
 		#cursor.close()
-	
+
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
 		(conn, cursor) = self.connect()
@@ -130,7 +126,7 @@ class SQLite(SQL):
 		finally:
 			self.close(conn, cursor)
 		return valueSet
-		
+
 	def getRow(self, query):
 		logger.debug2(u"getRow: %s" % query)
 		(conn, cursor) = self.connect()
@@ -149,7 +145,7 @@ class SQLite(SQL):
 		finally:
 			self.close(conn, cursor)
 		return row
-	
+
 	def insert(self, table, valueHash):
 		(conn, cursor) = self.connect()
 		result = -1
@@ -170,17 +166,17 @@ class SQLite(SQL):
 					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
 					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
-				
+
 			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 			logger.debug2(u"insert: %s" % query)
-			
+
 			self.execute(query, conn, cursor)
 			#result = conn.changes()
 			result = conn.last_insert_rowid()
 		finally:
 			self.close(conn, cursor)
 		return result
-		
+
 	def update(self, table, where, valueHash, updateWhereNone=False):
 		(conn, cursor) = self.connect()
 		result = 0
@@ -205,7 +201,7 @@ class SQLite(SQL):
 					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
 					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
-			
+
 			query = u'%s WHERE %s;' % (query[:-2], where)
 			logger.debug2(u"update: %s" % query)
 			self.execute(query, conn, cursor)
@@ -213,7 +209,7 @@ class SQLite(SQL):
 		finally:
 			self.close(conn, cursor)
 		return result
-	
+
 	def delete(self, table, where):
 		(conn, cursor) = self.connect()
 		result = 0
@@ -225,7 +221,7 @@ class SQLite(SQL):
 		finally:
 			self.close(conn, cursor)
 		return result
-		
+
 	def execute(self, query, conn=None, cursor=None):
 		res = None
 		needClose = False
@@ -241,7 +237,7 @@ class SQLite(SQL):
 			if needClose:
 				self.close(conn, cursor)
 		return res
-		
+
 	def getTables(self):
 		tables = {}
 		logger.debug(u"Current tables:")
@@ -253,56 +249,28 @@ class SQLite(SQL):
 				logger.debug2(u"      %s" % j)
 				tables[tableName].append(j['name'])
 		return tables
-	
+
 	def getTableCreationOptions(self, table):
 		return u''
 
+
 class SQLiteBackend(SQLBackend):
-	
+
 	def __init__(self, **kwargs):
 		self._name = 'sqlite'
-		
+
 		SQLBackend.__init__(self, **kwargs)
-		
+
 		self._sql = SQLite(**kwargs)
-		
+
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
 		logger.debug(u'SQLiteBackend created: %s' % self)
-	
-	
+
+
 class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
 	def __init__(self, **kwargs):
 		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
 		self._sql = SQLite(**kwargs)
 		self._createTables()
-
-
-if (__name__ == "__main__"):
-	logger.setConsoleLevel(LOG_DEBUG)
-	logger.setConsoleColor(True)
-	backend = SQLiteBackend()
-	backend.backend_createBase()
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
