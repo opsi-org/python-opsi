@@ -9,6 +9,15 @@ import unittest
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile
 
 
+def copyTestfileToTemporaryFolder(filename):
+    temporary_folder = tempfile.mkdtemp()
+    shutil.copy(filename, temporary_folder)
+
+    (_, new_filename) = os.path.split(filename)
+
+    return os.path.join(temporary_folder, new_filename)
+
+
 class ParseIniFileTestCase(unittest.TestCase):
     def test_parsing_does_not_fail(self):
         iniTestData = '''
@@ -31,14 +40,6 @@ key = \;\;\;\;\;\;\;\;\;\;\;\;
         iniFile = IniFile('filename_is_irrelevant_for_this')
         iniFile.parse(iniTestData.split('\n'))
 
-
-def copyTestfileToTemporaryFolder(filename):
-    temporary_folder = tempfile.mkdtemp()
-    shutil.copy(filename, temporary_folder)
-
-    (_, new_filename) = os.path.split(filename)
-
-    return os.path.join(temporary_folder, new_filename)
 
 class ParseInfFileTestCase(unittest.TestCase):
     def setUp(self):
@@ -66,7 +67,7 @@ class ParseInfFileTestCase(unittest.TestCase):
             self.assertNotEqual(None, dev['device'])
 
 
-class CopySetupOemFileTestCase(unittest.TestCase):
+class CopySetupOemFileTestsMixin(object):
     TEST_DATA_FOLDER = os.path.join(
         os.path.dirname(__file__), 'testdata', 'util', 'file',
     )
@@ -89,22 +90,81 @@ class CopySetupOemFileTestCase(unittest.TestCase):
 
         del self.txtSetupOemFile
 
-class SetupOemTestCase1(CopySetupOemFileTestCase):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_1.oem'
+    def testGenerationDoesNotFail(self):
+        self.txtSetupOemFile.generate()
 
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
 
-        self.assertTrue(bool(devices), 'No devices found!')
+class ApplyingWorkaroundsTestsMixin(object):
+    COMMENT_CHARACTERS = (';', '#')
+
+    def testApplyingWorkaroundsRemovesComments(self):
+        self.txtSetupOemFile.applyWorkarounds()
+        self.txtSetupOemFile.generate()
+
+        with open(self.txtSetupOemFile.getFilename()) as setupfile:
+            for line in setupfile:
+                for comment_char in self.COMMENT_CHARACTERS:
+                    self.assertFalse(
+                        line.startswith(';'),
+                        'Line starts with character "{c}"" but should not: '
+                        '{line}'.format(line=line, c=comment_char)
+                    )
+
+    def testApplyingWorkaroundsCreatesDisksSection(self):
+        self.txtSetupOemFile.applyWorkarounds()
+        self.txtSetupOemFile.generate()
+
+        self.searchForSection('[Disks]')
+
+    def searchForSection(self, sectionName):
+        sectionFound = False
+
+        with open(self.txtSetupOemFile.getFilename()) as setupfile:
+            for line in setupfile:
+                sectionFound = sectionName in line
+
+                if sectionFound:
+                    break
+
+        self.assertTrue(
+            sectionFound,
+            'Expected sektion "{0}" inside the setup file.'.format(sectionName)
+        )
+
+    def testApplyingWorkaroundsCreatesDefaultsSection(self):
+        self.txtSetupOemFile.applyWorkarounds()
+        self.txtSetupOemFile.generate()
+
+        self.searchForSection('[Defaults]')
+
+    def testCommasAreFollowdBySpace(self):
+        self.txtSetupOemFile.applyWorkarounds()
+        self.txtSetupOemFile.generate()
+
+        with open(self.txtSetupOemFile.getFilename()) as setupfile:
+            for line in setupfile:
+                if ',' in line:
+                    commaIndex = line.index(',')
+                    self.assertEqual(
+                        ' ',
+                        line[commaIndex + 1],
+                        'Expected a space after the comma at position {i} in '
+                        'line: {l}'.format(i=commaIndex, l=line)
+                    )
+
+
+class ApplyingWorkaroundsForExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
+    EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
 
     def testReadingInSpecialDevicesAndApplyingFixes(self):
-        for (vendorId, deviceId) in (('10DE', '07F6'), ):
+        for (vendorId, deviceId) in self.EXISTING_VENDOR_AND_DEVICE_IDS:
             self.assertTrue(
                 self.txtSetupOemFile.isDeviceKnown(
                     vendorId=vendorId,
                     deviceId=deviceId
                 ),
-                'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
+                'No device found for vendor "{0}" and device ID '
+                '"{1}"'.format(vendorId, deviceId)
             )
 
             self.assertNotEqual(
@@ -113,7 +173,9 @@ class SetupOemTestCase1(CopySetupOemFileTestCase):
                     vendorId=vendorId,
                     deviceId=deviceId,
                     fileTypes=[]
-                )
+                ),
+                'Could not find files for vendor "{0}" and device ID '
+                '"{1}"'.format(vendorId, deviceId)
             )
 
             self.assertTrue(
@@ -134,33 +196,17 @@ class SetupOemTestCase1(CopySetupOemFileTestCase):
                 )
             )
 
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
-
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        for device in devices:
-            self.assertNotEqual(None, device['vendor'])
-            self.assertNotEqual(None, device['device'])
-
-
-class SetupOemTestCase2(CopySetupOemFileTestCase):
-    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_2.oem'
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
+class ApplyingWorkaroundsForNonExistingIDsMixin(ApplyingWorkaroundsTestsMixin):
+    NON_EXISTING_VENDOR_AND_DEVICE_IDS = ((None, None), )  # example to show format
 
     def testReadingInSpecialDevicesAndApplyingFixes(self):
-        for (vendorId, deviceId) in (('10DE', '07F6'), ):
+        for (vendorId, deviceId) in self.NON_EXISTING_VENDOR_AND_DEVICE_IDS:
             self.assertFalse(
                 self.txtSetupOemFile.isDeviceKnown(
                     vendorId=vendorId,
                     deviceId=deviceId
                 ),
-                'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
+                'Device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
             )
 
             self.assertRaises(
@@ -189,80 +235,54 @@ class SetupOemTestCase2(CopySetupOemFileTestCase):
                 fileTypes=[]
             )
 
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
 
+class DeviceDataTestsMixin(object):
     def testDevicesContents(self):
         devices = self.txtSetupOemFile.getDevices()
 
         for device in devices:
-            self.assertNotEqual(None, device['vendor'])
+            self.assertNotEqual(None, device['vendor'],
+                'The vendor should be set but isn\'t: {0}'.format(device))
             self.assertNotEqual(None, device['device'])
 
+    def testDevicesAreRead(self):
+        devices = self.txtSetupOemFile.getDevices()
 
-class SetupOemTestCase3(CopySetupOemFileTestCase):
+        self.assertTrue(bool(devices), 'No devices found!')
+
+
+class SetupOemTestCase1(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForExistingIDsMixin,
+                        DeviceDataTestsMixin):
+
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_1.oem'
+    EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
+
+
+class SetupOemTestCase2(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForNonExistingIDsMixin,
+                        DeviceDataTestsMixin):
+    ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_2.oem'
+    NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
+
+
+class SetupOemTestCase3(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForExistingIDsMixin,
+                        DeviceDataTestsMixin):
+
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_3.oem'
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
-
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        for (vendorId, deviceId) in (('10DE', '07F6'), ):
-            self.assertTrue(
-                self.txtSetupOemFile.isDeviceKnown(
-                    vendorId=vendorId,
-                    deviceId=deviceId
-                ),
-                'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
-            )
-
-            self.assertNotEqual(
-                [],
-                self.txtSetupOemFile.getFilesForDevice(
-                    vendorId=vendorId,
-                    deviceId=deviceId,
-                    fileTypes=[]
-                )
-            )
-
-            self.assertTrue(
-                bool(
-                    self.txtSetupOemFile.getComponentOptionsForDevice(vendorId=vendorId, deviceId=deviceId)['description']
-                )
-            )
-
-            self.txtSetupOemFile.applyWorkarounds()
-            self.txtSetupOemFile.generate()
-
-            self.assertNotEqual(
-                [],
-                self.txtSetupOemFile.getFilesForDevice(
-                    vendorId=vendorId,
-                    deviceId=deviceId,
-                    fileTypes=[]
-                )
-            )
-
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
-
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        for device in devices:
-            self.assertNotEqual(None, device['vendor'])
-            self.assertNotEqual(None, device['device'])
+    EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
 
 
-class SetupOemTestCase4(CopySetupOemFileTestCase):
+class SetupOemTestCase4(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForExistingIDsMixin,
+                        DeviceDataTestsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_4.oem'
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
+    EXISTING_VENDOR_AND_DEVICE_IDS = (('1002', '4391'), )
 
     def testReadingDataFromTextfile(self):
         self.assertFalse(
@@ -302,65 +322,12 @@ class SetupOemTestCase4(CopySetupOemFileTestCase):
             deviceId = '0AD4'
         )
 
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        (vendorId, deviceId) = ('1002', '4391')
 
-        self.assertTrue(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId=vendorId,
-                deviceId=deviceId
-            ),
-            'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
-        )
-
-        self.assertNotEqual(
-            [],
-            self.txtSetupOemFile.getFilesForDevice(
-                vendorId=vendorId,
-                deviceId=deviceId,
-                fileTypes=[]
-            )
-        )
-
-        self.assertTrue(
-            bool(
-                self.txtSetupOemFile.getComponentOptionsForDevice(vendorId=vendorId, deviceId=deviceId)['description']
-            )
-        )
-
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        self.assertNotEqual(
-            [],
-            self.txtSetupOemFile.getFilesForDevice(
-                vendorId=vendorId,
-                deviceId=deviceId,
-                fileTypes=[]
-            )
-        )
-
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
-
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        for device in devices:
-            self.assertNotEqual(
-                None,
-                device['vendor'],
-                'The vendor should be set but isn\'t: {0}'.format(device))
-            self.assertNotEqual(None, device['device'])
-
-
-class SetupOemTestCase5(CopySetupOemFileTestCase):
+class SetupOemTestCase5(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForNonExistingIDsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_5.oem'
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
+    NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
 
     def testReadingDataFromTextfile(self):
         self.assertFalse(
@@ -392,64 +359,21 @@ class SetupOemTestCase5(CopySetupOemFileTestCase):
             deviceId = '0AD4'
         )
 
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        vendorId, deviceId = ('10DE', '07F6')
-
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId=vendorId,
-                deviceId=deviceId
-            ),
-            'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId=vendorId,
-            deviceId=deviceId,
-            fileTypes=[]
-        )
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getComponentOptionsForDevice,
-            vendorId=vendorId,
-            deviceId=deviceId
-        )
-
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        self.assertRaises(
-            Exception,
-            self.txtSetupOemFile.getFilesForDevice,
-            vendorId=vendorId,
-            deviceId=deviceId,
-            fileTypes=[]
-        )
-
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
-
     def testDevicesContents(self):
         devices = self.txtSetupOemFile.getDevices()
 
         for device in devices:
-            self.assertNotEqual(
-                None,
-                device['vendor'],
+            self.assertNotEqual(None, device['vendor'],
                 'The vendor should be set but isn\'t: {0}'.format(device))
             self.assertEqual('fttxr5_O', device['serviceName'])
 
 
-class SetupOemTestCase6(CopySetupOemFileTestCase):
+class SetupOemTestCase6(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForNonExistingIDsMixin,
+                        DeviceDataTestsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_6.oem'
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
+    NON_EXISTING_VENDOR_AND_DEVICE_IDS = (('10DE', '07F6'), )
 
     def testReadingDataFromTextfile(self):
         self.assertFalse(
@@ -487,35 +411,13 @@ class SetupOemTestCase6(CopySetupOemFileTestCase):
             deviceId = '0AD4'
         )
 
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        (vendorId, deviceId) = ('10DE', '07F6')
 
-        self.assertFalse(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId=vendorId,
-                deviceId=deviceId
-            ),
-            'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
-        )
-
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
-
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        for device in devices:
-            self.assertNotEqual(None, device['vendor'])
-            self.assertNotEqual(None, device['device'])
-
-
-class SetupOemTestCase7(CopySetupOemFileTestCase):
+class SetupOemTestCase7(CopySetupOemFileTestsMixin,
+                        unittest.TestCase,
+                        ApplyingWorkaroundsForExistingIDsMixin,
+                        DeviceDataTestsMixin):
     ORIGINAL_SETUP_FILE = 'txtsetupoem_testdata_7.oem'
-
-    def testDevicesAreRead(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        self.assertTrue(bool(devices), 'No devices found!')
+    EXISTING_VENDOR_AND_DEVICE_IDS = (('8086', '3B22'), )
 
     def testReadingDataFromTextfile(self):
         self.assertFalse(
@@ -552,51 +454,6 @@ class SetupOemTestCase7(CopySetupOemFileTestCase):
             vendorId='10DE',
             deviceId = '0AD4'
         )
-
-    def testReadingInSpecialDevicesAndApplyingFixes(self):
-        (vendorId, deviceId) = ('8086', '3B22')
-
-        self.assertTrue(
-            self.txtSetupOemFile.isDeviceKnown(
-                vendorId=vendorId,
-                deviceId=deviceId
-            ),
-            'No device found for vendor "{0}" and device ID "{1}"'.format(vendorId, deviceId)
-        )
-
-        filesBeforeWorkarounds = self.txtSetupOemFile.getFilesForDevice(
-            vendorId=vendorId,
-            deviceId=deviceId,
-            fileTypes=[]
-        )
-        self.assertNotEqual([],filesBeforeWorkarounds)
-
-        self.assertNotEqual(
-            '',
-            self.txtSetupOemFile.getComponentOptionsForDevice(vendorId=vendorId, deviceId=deviceId)['description']
-        )
-
-        self.txtSetupOemFile.applyWorkarounds()
-        self.txtSetupOemFile.generate()
-
-        filesAfterWorkarounds = self.txtSetupOemFile.getFilesForDevice(
-            vendorId=vendorId,
-            deviceId=deviceId,
-            fileTypes=[]
-        )
-
-        self.assertNotEqual([], filesAfterWorkarounds)
-        self.assertEqual(filesBeforeWorkarounds, filesAfterWorkarounds)
-
-    def testGenerationDoesNotFail(self):
-        self.txtSetupOemFile.generate()
-
-    def testDevicesContents(self):
-        devices = self.txtSetupOemFile.getDevices()
-
-        for device in devices:
-            self.assertNotEqual(None, device['vendor'])
-            self.assertNotEqual(None, device['device'])
 
 
 if __name__ == '__main__':
