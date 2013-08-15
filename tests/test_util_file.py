@@ -403,6 +403,7 @@ class SetupOemTestCase6(CopySetupOemFileTestsMixin,
         )
 
         self.assertRaises(
+            Exception,
             self.txtSetupOemFile.getFilesForDevice,
             vendorId='10DE',
             deviceId='07F6',
