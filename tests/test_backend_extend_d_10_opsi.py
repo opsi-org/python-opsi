@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import grp
 import os
+import pwd
 import shutil
 import tempfile
 import unittest
@@ -58,6 +60,11 @@ class BackendExtendedThroughOPSITestCase(unittest.TestCase):
         baseDir = os.path.join(backendDirectory, 'baseDir', 'config')
         hostKeyDir = os.path.join(backendDirectory, 'keyFiles')
 
+        currentGroupId = os.getgid()
+        groupName = grp.getgrgid(currentGroupId)[0]
+
+        userName = pwd.getpwuid(os.getuid())[0]
+
         config_file = os.path.join(backendDirectory, cls.BACKEND_SUBFOLDER, 'backends', 'file.conf')
         with open(config_file, 'w') as config:
             new_configuration = """
@@ -65,10 +72,12 @@ class BackendExtendedThroughOPSITestCase(unittest.TestCase):
 
 module = 'File'
 config = {{
-    "baseDir":     u"{basedir}",
+    "baseDir": u"{basedir}",
     "hostKeyFile": u"{keydir}",
+    "fileGroupName": u"{groupName}",
+    "fileUserName": u"{userName}",
 }}
-""".format(basedir=baseDir, keydir=hostKeyDir)
+""".format(basedir=baseDir, keydir=hostKeyDir, groupName=groupName, userName=userName)
 
             config.write(new_configuration)
 

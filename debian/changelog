@@ -1,10 +1,11 @@
-python-opsi (4.0.3.4-1ubuntu1) UNRELEASED; urgency=low
+python-opsi (4.0.3.4-1ubuntu2) UNRELEASED; urgency=low
 
   * Tar archives: make use of pigz for parallel gzip compression if available. Requires pigz version >2.2.3
   * Added missing import to prevent "opsi-setup --renew-opsiconfd-cert" from crashing
   * Bugfix: Do not fail when reading distribution information from an UCS system. 
+  * OPSI.Backend.File: Added options to configure user/group the files belong to. 
 
- -- Niko Wenselowski <wenselowski@fortytwo.uib.local>  Fri, 09 Aug 2013 09:39:48 +0200
+ -- Niko Wenselowski <wenselowski@fortytwo.uib.local>  Tue, 20 Aug 2013 11:05:45 +0200
 
 python-opsi (4.0.3.3-1) experimental; urgency=low
 

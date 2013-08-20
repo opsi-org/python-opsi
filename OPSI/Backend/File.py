@@ -70,22 +70,35 @@ class FileBackend(ConfigDataBackend):
 		self.__fileMode  = 0660
 		self.__dirGroup = u'pcpatch'
 		self.__dirUser   = u'opsiconfd'
+		self.__dirMode   = 0770
 
 		try:
 			self.__fileGroup = OpsiConfFile().getOpsiFileAdminGroup()
 			self.__dirGroup = OpsiConfFile().getOpsiFileAdminGroup()
-		except:
+		except Exception:
 			self.__fileGroup  = u'pcpatch'
 			self.__dirGroup  = u'pcpatch'
-		self.__dirMode   = 0770
 
 		# Parse arguments
+		logger.debug2('kwargs are: {0}'.format(kwargs))
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('basedir',):
+			if option in  ('basedir',):
 				self.__baseDir = forceFilename(value)
+				logger.debug2('Setting __basedir to "{0}"'.format(value))
 			elif option in ('hostkeyfile',):
 				self.__hostKeyFile = forceFilename(value)
+				logger.debug2('Setting __hostKeyFile to "{0}"'.format(value))
+			elif option in ('filegroupname', ):
+				self.__fileGroup = forceUnicode(value)
+				logger.debug2('Setting __fileGroup to "{0}"'.format(value))
+				self.__dirGroup  = forceUnicode(value)
+				logger.debug2('Setting __dirGroup to "{0}"'.format(value))
+			elif option in ('fileusername', ):
+				self.__fileUser = forceUnicode(value)
+				logger.debug2('Setting __fileUser to "{0}"'.format(value))
+				self.__dirUser = forceUnicode(value)
+				logger.debug2('Setting __dirUser to "{0}"'.format(value))
 
 		self.__fileUid = pwd.getpwnam(self.__fileUser)[2]
 		self.__fileGid = grp.getgrnam(self.__fileGroup)[2]
@@ -2096,14 +2109,3 @@ class FileBackend(ConfigDataBackend):
 			for (attribute, value) in objHash.items():
 				ini.set(sectionFound, attribute, self.__escape(value))
 		iniFile.generate(ini)
-
-
-
-
-
-
-
-
-
-
-
