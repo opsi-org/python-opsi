@@ -8,7 +8,7 @@ from OPSI.System.Posix import Distribution
 class DistributionTestCase(unittest.TestCase):
     DIST_INFO = None
     def setUp(self):
-        if self.DIST_INFO:
+        if self.DIST_INFO is not None:
             self.dist = Distribution(distribution_information=self.DIST_INFO)
         else:
             self.dist = Distribution()
@@ -19,6 +19,15 @@ class DistributionTestCase(unittest.TestCase):
     def testReadingVersionDoesNotFailAndIsNotEmpty(self):
         self.assertNotEqual(None, self.dist.version)
         self.assertNotEqual(tuple(), self.dist.version)
+
+    def test__repr__has_information(self):
+        if self.DIST_INFO is None:
+            raise unittest.SkipTest('No specific distribution information set.')
+
+        for part in self.DIST_INFO:
+            self.assertTrue(part in repr(self.dist),
+                'Expected "{0}" to be in {1}.'.format(part, self.dist)
+            )
 
 
 class DebianSqueezeTestCase(DistributionTestCase):

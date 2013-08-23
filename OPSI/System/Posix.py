@@ -2535,6 +2535,15 @@ class Distribution(object):
 	def __unicode__(self):
 		return unicode(self.__str__())
 
+	def __repr__(self):
+		return (u"Distribution(distribution_information=('{distro}', "
+				"'{version}', '{id}'))".format(
+					distro=self.distribution,
+					version=self._version,
+					id=self.id
+					)
+				)
+
 
 class SysInfo(object):
 
