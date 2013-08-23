@@ -34,15 +34,11 @@
 
 __version__ = '4.0.2.7'
 
-# Imports
-import ctypes
-import threading
 import os
 import random
 import base64
 import types
 import socket
-import httplib
 import struct
 import codecs
 
@@ -76,7 +72,6 @@ except ImportError:
 # OPSI imports
 from OPSI.Logger import Logger
 from OPSI.Types import *
-from OPSI.Util.Thread import KillableThread
 
 # Get logger instance
 logger = Logger()
