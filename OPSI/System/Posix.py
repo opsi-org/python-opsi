@@ -993,17 +993,15 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 		lines = lshwoutput
 	else:
 		lines = execute(u'%s -short -numeric' % which('lshw'))
-	'''
-	example:
-	...
-	/0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
-	/0/100/1                    bridge     82371SB PIIX3 ISA [Natoma/Triton II] [8086:7000]
-	/0/100/1.1      scsi0       storage    82371SB PIIX3 IDE [Natoma/Triton II] [8086:7010]
-	/0/100/1.1/0    /dev/sda    disk       10GB QEMU HARDDISK
-	/0/100/1.1/0/1  /dev/sda1   volume     10236MiB Windows NTFS volume
-	/0/100/1.1/1    /dev/cdrom  disk       SCSI CD-ROM
-	...
-	'''
+	# example:
+	# ...
+	# /0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
+	# /0/100/1                    bridge     82371SB PIIX3 ISA [Natoma/Triton II] [8086:7000]
+	# /0/100/1.1      scsi0       storage    82371SB PIIX3 IDE [Natoma/Triton II] [8086:7010]
+	# /0/100/1.1/0    /dev/sda    disk       10GB QEMU HARDDISK
+	# /0/100/1.1/0/1  /dev/sda1   volume     10236MiB Windows NTFS volume
+	# /0/100/1.1/1    /dev/cdrom  disk       SCSI CD-ROM
+	# ...
 	storageControllers = {}
 
 	for line in lines:
@@ -1032,16 +1030,15 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				if parts[0].startswith(hwPath + u'/'):
 					return storageControllers[hwPath]
 
-	''' emulated storage controller dirty-hack, for outputs like:
-	...
-	/0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
-	/0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
-	/0/1          scsi0       storage         (Posix.py|741)
-	/0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
-	/0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
-	...
-	In this case return the first AHCI controller, that will be found
-	'''
+	# emulated storage controller dirty-hack, for outputs like:
+	# ...
+	# /0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02] (Posix.py|741)
+	# /0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60] (Posix.py|741)
+	# /0/1          scsi0       storage         (Posix.py|741)
+	# /0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS (Posix.py|741)
+	# /0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume (Posix.py|741)
+	# ...
+	# In this case return the first AHCI controller, that will be found
 	storageControllers = {}
 
 	for line in lines:
@@ -1064,9 +1061,11 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				for hwPath in storageControllers.keys():
 					return storageControllers[hwPath]
 		else:
-			''' Quick Hack: for entry like this: /0/100/1f.2              storage        82801 SATA Controller [RAID mode] [8086:2822]
-			This Quick hack is for Bios-Generations, that will only have a choice for "RAID + AHCI", this devices will be shown as
-			RAID mode-Devices '''
+			# Quick Hack: for entry like this:
+			# /0/100/1f.2              storage        82801 SATA Controller [RAID mode] [8086:2822]
+			# This Quick hack is for Bios-Generations, that will only
+			# have a choice for "RAID + AHCI", this devices will be shown as
+			# RAID mode-Devices
 			match = re.search('^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 			if match:
 				vendorId = match.group(3)
@@ -1481,9 +1480,7 @@ class Harddisk:
 				logger.debug(u"From shred =>>> %s" % line)
 				if not line:
 					break
-				'''
-				shred: /dev/xyz: Pass 1/25 (random)...232MiB/512MiB 45%
-				'''
+				# shred: /dev/xyz: Pass 1/25 (random)...232MiB/512MiB 45%
 				match = re.search(lineRegex, line)
 				if match:
 					iteration = forceInt(match.group(1))
@@ -1555,11 +1552,9 @@ class Harddisk:
 			timeout = 0
 			while not done:
 				inp = handle.read(1024)
-				'''
-				dd_rescue: (info): ipos:    720896.0k, opos:    720896.0k, xferd:    720896.0k
-						   errs:      0, errxfer:         0.0k, succxfer:    720896.0k
-					     +curr.rate:    21843kB/s, avg.rate:    23526kB/s, avg.load: 17.4%
-				'''
+				# dd_rescue: (info): ipos:    720896.0k, opos:    720896.0k, xferd:    720896.0k
+				# 		   errs:      0, errxfer:         0.0k, succxfer:    720896.0k
+				# 	     +curr.rate:    21843kB/s, avg.rate:    23526kB/s, avg.load: 17.4%
 				if inp:
 					timeout = 0
 					skip += 1
