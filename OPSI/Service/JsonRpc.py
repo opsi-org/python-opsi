@@ -1,48 +1,50 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - JsonRpc     =
-   = = = = = = = = = = = = = = = = = = = =
-   
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
-   
-   Copyright (C) 2010 uib GmbH
-   
-   http://www.uib.de/
-   
-   All rights reserved.
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+opsi python library - JsonRpc
+
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
+
+Copyright (C) 2010-2013 uib GmbH
+
+http://www.uib.de/
+
+All rights reserved.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@author: Niko Wenselowski <n.wenselowski@uib.de>
+@license: GNU Affero General Public License version 3
 """
 
-import time, zlib, urllib, copy
+import sys
+import time
+import types
+import zlib
 
-from twisted.internet.defer import maybeDeferred, Deferred, succeed, DeferredList
+from twisted.internet.defer import maybeDeferred, DeferredList
 from twisted.internet import threads
-from twisted.python.failure import Failure
-from OPSI.Util import objectToHtml, toJson, fromJson
-from OPSI.Logger import *
-from OPSI.Types import *
-from OPSI.Object import serialize, deserialize
-from OPSI.web2 import stream
+from OPSI.Util import fromJson, deserialize
+from OPSI.Logger import Logger, LOG_INFO
+from OPSI.Types import forceUnicode, forceList, OpsiRpcError, OpsiBadRpcError
+
+
 logger = Logger()
+
 
 class JsonRpc(object):
 	def __init__(self, instance, interface, rpc):
@@ -65,23 +67,23 @@ class JsonRpc(object):
 			raise Exception(u"No transaction id ((t)id) found in rpc")
 		if not self.method:
 			raise Exception(u"No method found in rpc")
-	
+
 	def isStarted(self):
 		return bool(self.started)
-	
+
 	def hasEnded(self):
 		return bool(self.ended)
-	
+
 	def getMethodName(self):
 		if self.action:
 			return u'%s_%s' % (self.action, self.method)
 		return self.method
-	
+
 	def getDuration(self):
 		if not self.started or not self.ended:
 			return None
 		return round(self.ended - self.started, 3)
-		
+
 	def execute(self, result=None):
 		# Execute rpc
 		self.result = None
@@ -90,7 +92,7 @@ class JsonRpc(object):
 			params.append(param)
 		try:
 			self.started = time.time()
-			
+
 			methodInterface = None
 			for m in self._interface:
 				if (self.getMethodName() == m['name']):
@@ -98,7 +100,7 @@ class JsonRpc(object):
 					break
 			if not methodInterface:
 				raise OpsiRpcError(u"Method '%s' is not valid" % self.getMethodName())
-			
+
 			keywords = {}
 			if methodInterface['keywords']:
 				l = 0
@@ -111,17 +113,17 @@ class JsonRpc(object):
 						raise Exception(u"kwargs param is not a dict: %s" % params[-1])
 					for (key, value) in params.pop(-1).items():
 						keywords[str(key)] = deserialize(value)
-			
+
 			params = deserialize(params)
-			
+
 			pString = forceUnicode(params)[1:-1]
 			if keywords:
 				pString += u', ' + forceUnicode(keywords)
 			if (len(pString) > 200):
 				pString = pString[:200] + u'...'
-			
+
 			logger.notice(u"-----> Executing: %s(%s)" % (self.getMethodName(), pString))
-			
+
 			instance = self._instance
 			if keywords:
 				self.result = eval( "instance.%s(*params, **keywords)" % self.getMethodName() )
@@ -130,7 +132,7 @@ class JsonRpc(object):
 
 			logger.info(u'Got result')
 			logger.debug2("RPC ID %s: %s" %(self.tid, self.result))
-		
+
 		except Exception, e:
 			logger.logException(e, LOG_INFO)
 			logger.error(u'Execution error: %s' % forceUnicode(e))
@@ -143,7 +145,7 @@ class JsonRpc(object):
 				self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
 				tb = tb.tb_next
 		self.ended = time.time()
-		
+
 	def getResponse(self):
 		response = {}
 		if (self.type == 'rpc'):
@@ -166,8 +168,7 @@ class JsonRpc(object):
 					code = 0
 					try:
 						code = int(getattr(self.exception, 'errno'))
-					except Exception, e:
-						#logger.debug(e)
+					except Exception:
 						pass
 					response['error'] = { 'code': code, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
 				else:
@@ -185,15 +186,14 @@ class JsonRpc(object):
 		state['_instance'] = None
 		state['_interface'] = None
 		return state
-		
-	
-	
+
+
 class JsonRpcRequestProcessor(object):
-	
+
 	def __init__(self, query, callInstance, callInterface=None, gzip=False):
 		self.callInstance = callInstance
 		self.gzip = gzip
-		
+
 		if callInterface is None:
 			self.callInterface = callInstance.backend_getInterface()
 		else:
@@ -201,18 +201,16 @@ class JsonRpcRequestProcessor(object):
 		self.query = query
 		self.rpcs = []
 
-	
 	def decodeQuery(self):
 		try:
 			if self.gzip:
 				logger.debug(u"Expecting compressed data from client")
 				self.query = zlib.decompress(self.query)
 			self.query = unicode(self.query, 'utf-8')
-		except (UnicodeError, UnicodeEncodeError), e:
+		except (UnicodeError, UnicodeEncodeError):
 			self.query = unicode(self.query, 'utf-8', 'replace')
 		return self.query
-	
-	
+
 	def buildRpcs(self):
 		if not self.query:
 			return None
@@ -220,38 +218,36 @@ class JsonRpcRequestProcessor(object):
 			raise Exception(u"Call instance not defined in %s" % self)
 		if not self.callInterface:
 			raise Exception(u"Call interface not defined in %s" % self)
-		
+
 		rpcs = []
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation = True)
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
-		
+
 		except Exception, e:
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s." % e )
-		
+
 		for rpc in forceList(rpcs):
 			rpc = JsonRpc(instance = self.callInstance, interface = self.callInterface, rpc = rpc)
 			self.rpcs.append(rpc)
-		
+
 		return self.rpcs
-	
+
 	def _executeRpc(self, rpc, thread=True):
 		if thread:
 			deferred = threads.deferToThread(rpc.execute)
 		else:
 			deferred = maybeDeferred(rpc.execute)
 		return deferred
-		
+
 	def executeRpcs(self, thread=True):
 		dl = []
 		for rpc in self.rpcs:
 			d = self._executeRpc(rpc=rpc, thread=thread)
 			dl.append(d)
-		
+
 		return DeferredList(dl)
-	
+
 	def getResults(self):
 		return self.rpcs
-			
-
