@@ -1,5 +1,6 @@
 python-opsi (4.0.3.4-1ubuntu3) UNRELEASED; urgency=low
 
+  * New backend method for configed: setRights
   * Tar archives: make use of pigz for parallel gzip compression if available.
     Requires pigz version >2.2.3
   * File backend: Added options to configure user/group the files belong to.
