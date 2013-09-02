@@ -1,9 +1,12 @@
 python-opsi (4.0.3.4-1ubuntu3) UNRELEASED; urgency=low
 
-  * Tar archives: make use of pigz for parallel gzip compression if available. Requires pigz version >2.2.3
-  * Added missing import to prevent "opsi-setup --renew-opsiconfd-cert" from crashing
-  * Bugfix: Do not fail when reading distribution information from an UCS system. 
-  * OPSI.Backend.File: Added options to configure user/group the files belong to. 
+  * Tar archives: make use of pigz for parallel gzip compression if available.
+    Requires pigz version >2.2.3
+  * File backend: Added options to configure user/group the files belong to.
+  * Bugfix: Added missing import to prevent "opsi-setup --renew-opsiconfd-cert"
+    from crashing
+  * Bugfix: Do not fail when reading distribution information from an UCS
+    system.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Aug 2013 17:06:29 +0200
 
