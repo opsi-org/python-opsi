@@ -22,7 +22,11 @@ class DistributionTestCase(unittest.TestCase):
 
     def test__repr__has_information(self):
         if self.DIST_INFO is None:
-            raise unittest.SkipTest('No specific distribution information set.')
+            try:
+                raise unittest.SkipTest('No specific distribution information set.')
+            except AttributeError:
+                print('Probably running an Python < 2.7. Skipping...')
+                return
 
         for part in self.DIST_INFO:
             self.assertTrue(part in repr(self.dist),
