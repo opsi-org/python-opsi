@@ -143,7 +143,7 @@ for language in ('de', 'fr'):
 			('/usr/share/locale/{lang}/LC_MESSAGES', [target_file])
 		)
 	else:
-		print('Generating locale for "{lang}" failed. Is gettext installed?')
+		print('Generating locale for "{lang}" failed. Is gettext installed?'.format(lang=language))
 
 setup(
 	name='python-opsi',
