@@ -45,7 +45,7 @@ try:
 	from opsidistutils.commands.osc_cmd import osc_publish as osc
 	cmdclass['osc'] = osc
 except ImportError, e:
-	print "osc integration is not available on this machine. please install opsi-distutils."
+	print("osc integration is not available on this machine. please install opsi-distutils.")
 
 
 if not VERSION:
@@ -76,20 +76,30 @@ data_files=[('/etc/opsi/backendManager', ['data/backendManager/acl.conf.default'
 	    ('/etc/opsi/hwaudit/locales', ['data/hwaudit/locales/de_DE',
 					   'data/hwaudit/locales/en_US',
 					   'data/hwaudit/locales/fr_FR'])]
+
 if bool(os.getenv("RPM_BUILD_ROOT")):
 	data_files.append( ('/etc/openldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
 else:
 	data_files.append( ('/etc/ldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema']) )
 
-if not os.path.exists('locale/de/LC_MESSAGES'):
-	os.makedirs('locale/de/LC_MESSAGES')
-os.system('msgfmt -o locale/de/LC_MESSAGES/python-opsi.mo gettext/python-opsi_de.po')
-data_files.append( ('/usr/share/locale/de/LC_MESSAGES', ['locale/de/LC_MESSAGES/python-opsi.mo']) )
+for language in ('de', 'fr'):
+    output_path = os.path.join('locale', language, 'LC_MESSAGES')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-if not os.path.exists('locale/fr/LC_MESSAGES'):
-	os.makedirs('locale/fr/LC_MESSAGES')
-os.system('msgfmt -o locale/fr/LC_MESSAGES/python-opsi.mo gettext/python-opsi_fr.po')
-data_files.append( ('/usr/share/locale/fr/LC_MESSAGES', ['locale/fr/LC_MESSAGES/python-opsi.mo']) )
+    target_file = os.path.join(output_path, 'python-opsi.mo')
+    exit_code = os.system(
+        'msgfmt -o {output_file} gettext/python-opsi_{lang}.po'.format(
+            lang=language,
+            output_file=target_file
+        )
+    )
+    if not exit_code:
+        data_files.append(
+            ('/usr/share/locale/{lang}/LC_MESSAGES', [target_file])
+        )
+    else:
+        print('Generating locale for "{lang}" failed. Is gettext installed?')
 
 setup(
 	name='python-opsi',
