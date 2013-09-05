@@ -1,0 +1,11 @@
+pycrypto
+twisted
+magic
+Ldaptor
+simplejson
+pam
+pyOpenSSL
+MySQL-python
+SQLAlchemy
+M2Crypto
+
