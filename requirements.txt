@@ -1,6 +1,6 @@
 pycrypto
 twisted
-magic
+libmagic
 Ldaptor
 simplejson
 pam
