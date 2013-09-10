@@ -1,47 +1,48 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Util      =
-   = = = = = = = = = = = = = = = = = = =
+= = = = = = = = = = = = = = = = = = =
+=   opsi python library - Util      =
+= = = = = = = = = = = = = = = = = = =
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+Copyright (C) 2006, 2007, 2008 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0.2.7'
 
+import base64
+import codecs
 import os
 import random
-import base64
-import types
+import re
 import socket
 import struct
-import codecs
-
+import types
+from Crypto.Cipher import Blowfish
 from sys import version_info
 
 if (version_info >= (2, 6)):
@@ -53,31 +54,30 @@ try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
-from Crypto.Cipher import Blowfish
-
-if (os.name == 'posix'):
-	from duplicity import librsync
-if (os.name == 'nt'):
-	try:
-		import librsync
-	except Exception, e:
-		logger.error(u"Failed to import librsync: %s" % e)
 
 try:
 	import argparse
 except ImportError:
 	import _argparse as argparse
 
-
-# OPSI imports
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
+						forceIPAddress, forceNetworkAddress, forceUnicode)
 
-# Get logger instance
 logger = Logger()
 
-RANDOM_DEVICE    = u'/dev/urandom'
+if (os.name == 'posix'):
+	from duplicity import librsync
+elif (os.name == 'nt'):
+	try:
+		import librsync
+	except Exception, e:
+		logger.error(u"Failed to import librsync: %s" % e)
+
+BLOWFISH_IV = 'OPSI1234'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
+RANDOM_DEVICE = u'/dev/urandom'
+
 
 class PickleString(str):
 
@@ -86,6 +86,7 @@ class PickleString(str):
 
 	def __setstate__(self, state):
 		self = base64.standard_b64decode(state)
+
 
 def deserialize(obj, preventObjectCreation=False):
 	newObj = None
@@ -109,6 +110,7 @@ def deserialize(obj, preventObjectCreation=False):
 		return obj
 	return newObj
 
+
 def serialize(obj):
 	newObj = None
 	if type(obj) in (unicode, str):
@@ -127,6 +129,7 @@ def serialize(obj):
 		return obj
 	return newObj
 
+
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
 		return '%i' % sizeInBytes
@@ -137,14 +140,17 @@ def formatFileSize(sizeInBytes):
 	else:
 		return '%iG' % (sizeInBytes / (1024**3))
 
+
 def fromJson(obj, objectType=None, preventObjectCreation=False):
 	obj = json.loads(obj)
 	if type(obj) is dict and objectType:
 		obj['type'] = objectType
 	return deserialize(obj, preventObjectCreation = preventObjectCreation)
 
+
 def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
+
 
 def librsyncSignature(filename, base64Encoded = True):
 	#if (os.name != 'posix'):
@@ -166,10 +172,8 @@ def librsyncSignature(filename, base64Encoded = True):
 		if sf: sf.close()
 		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
 
-def librsyncPatchFile(oldfile, deltafile, newfile):
-	#if (os.name != 'posix'):
-	#	raise NotImplementedError(u"Not implemented for non-posix os")
 
+def librsyncPatchFile(oldfile, deltafile, newfile):
 	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
 	if (oldfile == newfile):
 		raise ValueError(u"Oldfile and newfile are the same file")
@@ -200,10 +204,8 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		if of: of.close()
 		raise Exception(u"Failed to patch file: %s" % forceUnicode(e))
 
-def librsyncDeltaFile(filename, signature, deltafile):
-	#if (os.name != 'posix'):
-	#	raise NotImplementedError(u"Not implemented for non-posix os")
 
+def librsyncDeltaFile(filename, signature, deltafile):
 	(f, df, ldf) = (None, None, None)
 	bufsize = 1024*1024
 	try:
@@ -224,6 +226,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 		if ldf: ldf.close()
 		raise Exception(u"Failed to write delta file: %s" % forceUnicode(e))
 
+
 def md5sum(filename):
 	f = open(filename, 'rb')
 	m = md5()
@@ -235,11 +238,13 @@ def md5sum(filename):
 	f.close()
 	return m.hexdigest()
 
+
 def randomString(length):
 	string = u''
 	for i in range(length):
 		string = string + random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	return unicode(string)
+
 
 def generateOpsiHostKey():
 	key = u''
@@ -256,6 +261,7 @@ def generateOpsiHostKey():
 			key += random.choice([u'0',u'1',u'2',u'3',u'4',u'5',u'6',u'7',u'8',u'9',u'a',u'b',u'c',u'd',u'e',u'f'])
 	return key
 
+
 def timestamp(secs=0, dateOnly=False):
 	''' Returns a timestamp of the current system time format: YYYY-mm-dd[ HH:MM:SS] '''
 	if not secs:
@@ -264,6 +270,7 @@ def timestamp(secs=0, dateOnly=False):
 		return time.strftime( u"%Y-%m-%d", time.localtime(secs) )
 	else:
 		return time.strftime( u"%Y-%m-%d %H:%M:%S", time.localtime(secs) )
+
 
 def objectToBeautifiedText(obj, level=0):
 	if (level == 0):
@@ -299,6 +306,7 @@ def objectToBeautifiedText(obj, level=0):
 	else:
 		text += toJson(obj)
 	return text
+
 
 def objectToBash(obj, bashVars = {}, level=0):
 	if (level == 0):
@@ -346,6 +354,7 @@ def objectToBash(obj, bashVars = {}, level=0):
 		bashVars[varName] += u'"%s"' % forceUnicode(obj)
 
 	return bashVars
+
 
 def objectToHtml(obj, level=0):
 	if (level == 0):
@@ -396,6 +405,7 @@ def objectToHtml(obj, level=0):
 		if isStr:
 			html += u'"'
 	return html
+
 
 def compareVersions(v1, condition, v2):
 	v1 = forceUnicode(v1)
@@ -495,7 +505,6 @@ def compareVersions(v1, condition, v2):
 	return True
 
 
-
 unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 def removeUnit(x):
 	x = forceUnicode(x)
@@ -535,8 +544,6 @@ def removeUnit(x):
 	return value
 
 
-BLOWFISH_IV = 'OPSI1234'
-
 def blowfishEncrypt(key, cleartext):
 	''' Takes cleartext string,
 	    returns hex-encoded, blowfish-encrypted string '''
@@ -548,12 +555,13 @@ def blowfishEncrypt(key, cleartext):
 		cleartext += chr(0)
 	try:
 		key = key.decode("hex")
-	except TypeError, e:
+	except TypeError:
 		raise Exception(u"Failed to hex decode key '%s'" % key)
 
 	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
 	crypt = blowfish.encrypt(cleartext)
 	return unicode(crypt.encode("hex"))
+
 
 def blowfishDecrypt(key, crypt):
 	''' Takes hex-encoded, blowfish-encrypted string,
@@ -576,6 +584,7 @@ def blowfishDecrypt(key, crypt):
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
 
+
 def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	import M2Crypto
 	f = open(filename, 'r')
@@ -594,6 +603,7 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 	finally:
 		f.close()
 
+
 def decryptWithPrivateKeyFromPEMFile(data, filename):
 	import M2Crypto
 	privateKey = M2Crypto.RSA.load_key(filename)
@@ -608,6 +618,7 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 	if (res.find('\0') != -1):
 		res = res[:res.find('\0')]
 	return res
+
 
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)
@@ -695,6 +706,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		files.append(pp)
 	return files
 
+
 def ipAddressInNetwork(ipAddress, networkAddress):
 	ipAddress = forceIPAddress(ipAddress)
 	networkAddress = forceNetworkAddress(networkAddress)
@@ -728,6 +740,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 		return True
 	return False
 
+
 def flattenSequence(sequence):
 	list = []
 	for s in sequence:
@@ -736,6 +749,7 @@ def flattenSequence(sequence):
 		else:
 			list.append(s)
 	return list
+
 
 def getfqdn(name='', conf=None):
 	if not name:
@@ -746,6 +760,7 @@ def getfqdn(name='', conf=None):
 		if hn:
 			return forceFqdn(hn)
 	return forceFqdn(socket.getfqdn(name))
+
 
 def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 	name = forceUnicode(name)
@@ -762,6 +777,7 @@ def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 		finally:
 			f.close()
 	return None
+
 
 if (__name__ == "__main__"):
 	from OPSI.Logger import LOG_DEBUG2
