@@ -6,7 +6,9 @@ import unittest
 
 from OPSI.Object import OpsiError, BackendError, OpsiClient, Host
 from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
-    forceList, forceBool, forceBoolList, forceInt, forceOct, forceOpsiTimestamp)
+    forceList, forceBool, forceBoolList, forceInt, forceOct,
+    forceOpsiTimestamp, forceHardwareAddress, forceHostId, forceIPAddress,
+    forceNetworkAddress)
 
 
 class OpsiErrorTestCase(unittest.TestCase):
@@ -208,47 +210,68 @@ class ForceTimeStampTestCase(unittest.TestCase):
     def testRaisingErrorsOnWrongInput(self):
         self.assertRaises(ValueError, forceOpsiTimestamp, 'abc')
 
+class ForceHostIdTestCase(unittest.TestCase):
+    def testForcingWithValidId(self):
+        self.assertEquals(forceHostId(u'client.uib.local'), u'client.uib.local')
+        self.assertTrue(forceHostId(u'client.uib.local'), u'client.uib.local')
 
-# assert forceHostId(u'client.uib.local') is u'client.uib.local'
-# for i in ('abc', 'abc.def', '.uib.local', 'abc.uib.x'):
-#     try:
-#         forceHostId(i)
-#     except ValueError:
-#         pass
-#     else:
-#         raise Exception(u"'%s' was accepted as hostId" % i)
-# assert forceHostId(u'client.sub.uib.local') is u'client.sub.uib.local'
+    def testInvalidHOstIdsRaiseExceptions(self):
+        self.assertRaises(ValueError, forceHostId, 'abc')
+        self.assertRaises(ValueError, forceHostId, 'abc.def')
+        self.assertRaises(ValueError, forceHostId, '.uib.local')
+        self.assertRaises(ValueError, forceHostId, 'abc.uib.x')
 
-# for i in  ('12345678ABCD', '12-34-56-78-Ab-cD', '12:34:56:78:ab:cd', '12-34-56:78AB-CD'):
-#     assert forceHardwareAddress(i) == u'12:34:56:78:ab:cd'
-#     assert type(forceHardwareAddress(i)) is unicode
-# for i in ('12345678abc', '12345678abcdef', '1-2-3-4-5-6-7', None, True):
-#     try:
-#         forceHardwareAddress(i)
-#     except ValueError:
-#         pass
-#     else:
-#         raise Exception(u"'%s' was accepted as hardwareAddress" % i)
 
-# assert forceIPAddress('192.168.101.1') == u'192.168.101.1'
-# assert type(forceIPAddress('1.1.1.1')) is unicode
-# for i in ('1922.1.1.1', None, True, '1.1.1.1.', '2.2.2.2.2', 'a.2.3.4'):
-#     try:
-#         forceIPAddress(i)
-#     except ValueError:
-#         pass
-#     else:
-#         raise Exception(u"'%s' was accepted as IPAddress" % i)
+class ForceHardwareAddressTestCase(unittest.TestCase):
+    def testForcingReturnsAddressSeperatedByColons(self):
+        self.assertEquals(forceHardwareAddress('12345678ABCD'), u'12:34:56:78:ab:cd')
+        self.assertEquals(forceHardwareAddress('12:34:56:78:ab:cd'), u'12:34:56:78:ab:cd')
 
-# assert forceNetworkAddress('192.168.0.0/16') == u'192.168.0.0/16'
-# assert type(forceNetworkAddress('10.10.10.10/32')) is unicode
-# for i in ('192.168.101.1', '192.1.1.1/40', None, True, '10.10.1/24', 'a.2.3.4/0'):
-#     try:
-#         forceNetworkAddress(i)
-#     except ValueError:
-#         pass
-#     else:
-#         raise Exception(u"'%s' was accepted as NetworkAddress" % i)
+    def testForcingReturnsLowercaseLetters(self):
+        self.assertEquals(forceHardwareAddress('12-34-56-78-Ab-cD'), u'12:34:56:78:ab:cd')
+        self.assertEquals(forceHardwareAddress('12-34-56:78AB-CD'), u'12:34:56:78:ab:cd')
+
+    def testForcingResultsInUnicode(self):
+        self.assertTrue(type(forceHardwareAddress('12345678ABCD')) is unicode)
+
+    def testForcingInvalidAddressesRaiseExceptions(self):
+        self.assertRaises(ValueError, forceHardwareAddress, '12345678abc')
+        self.assertRaises(ValueError, forceHardwareAddress, '12345678abcdef')
+        self.assertRaises(ValueError, forceHardwareAddress, '1-2-3-4-5-6-7')
+        self.assertRaises(ValueError, forceHardwareAddress, None)
+        self.assertRaises(ValueError, forceHardwareAddress, True)
+
+
+class ForceIPAdressTestCase(unittest.TestCase):
+    def testForcing(self):
+        self.assertEquals(forceIPAddress('192.168.101.1'), u'192.168.101.1')
+
+    def testForcingReturnsUnicode(self):
+        self.assertTrue(type(forceIPAddress('1.1.1.1')) is unicode)
+
+    def testForcingWithInvalidAddressesRaisesExceptions(self):
+        self.assertRaises(ValueError, forceIPAddress, '1922.1.1.1')
+        self.assertRaises(ValueError, forceIPAddress, None)
+        self.assertRaises(ValueError, forceIPAddress, True)
+        self.assertRaises(ValueError, forceIPAddress, '1.1.1.1.')
+        self.assertRaises(ValueError, forceIPAddress, '2.2.2.2.2')
+        self.assertRaises(ValueError, forceIPAddress, 'a.2.3.4')
+
+
+class ForceNetworkAddressTestCase(unittest.TestCase):
+    def testForcing(self):
+        self.assertEquals(forceNetworkAddress('192.168.0.0/16'), u'192.168.0.0/16')
+
+    def testForcingReturnsUnicode(self):
+        self.assertTrue(type(forceNetworkAddress('10.10.10.10/32')) is unicode)
+
+    def testForcingWithInvalidAddressesRaisesExceptions(self):
+        self.assertRaises(ValueError, forceNetworkAddress, '192.168.101.1')
+        self.assertRaises(ValueError, forceNetworkAddress, '192.1.1.1/40')
+        self.assertRaises(ValueError, forceNetworkAddress, None)
+        self.assertRaises(ValueError, forceNetworkAddress, True)
+        self.assertRaises(ValueError, forceNetworkAddress, '10.10.1/24')
+        self.assertRaises(ValueError, forceNetworkAddress, 'a.2.3.4/0')
 
 
 # for i in ('file:///', 'file:///path/to/file', 'smb://server/path', 'https://x:y@server.domain.tld:4447/resource'):
