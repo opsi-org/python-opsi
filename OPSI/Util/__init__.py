@@ -41,6 +41,7 @@ import random
 import re
 import socket
 import struct
+import time
 import types
 from Crypto.Cipher import Blowfish
 from sys import version_info
