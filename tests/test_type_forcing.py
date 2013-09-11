@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-
+import datetime
 import time
 import unittest
 
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
-	forceList, forceBool, forceBoolList, forceInt, forceOct,
-	forceOpsiTimestamp, forceHardwareAddress, forceHostId, forceIPAddress,
-	forceNetworkAddress, forceUrl, forceProductId, forcePackageVersion,
-	forceFilename, forceProductVersion, forceOpsiHostKey,
-	forceInstallationStatus, forceActionRequest, forceActionProgress,
-	forceLanguageCode, forceTime, forceArchitecture, forceEmailAddress)
+	forceList, forceBool, forceBoolList, forceInt, forceOct, forceIPAddress,
+	forceOpsiTimestamp, forceHardwareAddress, forceHostId, forceNetworkAddress,
+	forceUrl, forceProductId, forcePackageVersion,forceFilename, forceTime,
+	forceProductVersion, forceOpsiHostKey,forceInstallationStatus,
+	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
+	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
+	forceProductType)
 
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
@@ -80,6 +81,15 @@ class ForceUnicodeListTestCase(unittest.TestCase):
 			self.assertTrue(type(i) is unicode)
 
 
+class ForceUnicodeLowerListTestCase(unittest.TestCase):
+	def testForcingResultsInLowercase(self):
+		self.assertEqual(forceUnicodeLowerList(['X', u'YES']), ['x', 'yes'])
+
+	def testForcingResultsInUnicode(self):
+		for i in forceUnicodeLowerList([None, 1, 'X', u'y']):
+			self.assertTrue(type(i) is unicode)
+
+
 class ForceBoolTestCase(unittest.TestCase):
 	"""
 	Testing if forceBool works. Always should work case-insensitive.
@@ -130,6 +140,11 @@ class ForceIntTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceInt, 'abc')
 
 
+class ForceIntListTestCase(unittest.TestCase):
+	def testForcing(self):
+		self.assertEquals(forceIntList(['100', 1, u'2']), [100, 1 , 2])
+
+
 class ForceOctTestCase(unittest.TestCase):
 	def testForcingDoesNotChangeValue(self):
 		self.assertEquals(forceOct(0666), 0666)
@@ -144,7 +159,7 @@ class ForceOctTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceOct, 'abc')
 
 
-class ForceTimeStampTestCase(unittest.TestCase):
+class ForceOpsiTimeStampTestCase(unittest.TestCase):
 	def testForcingReturnsString(self):
 		self.assertEquals(forceOpsiTimestamp('20000202111213'), u'2000-02-02 11:12:13')
 
@@ -153,6 +168,13 @@ class ForceTimeStampTestCase(unittest.TestCase):
 
 	def testRaisingErrorsOnWrongInput(self):
 		self.assertRaises(ValueError, forceOpsiTimestamp, 'abc')
+
+	def testForcingWithAnEmptyValue(self):
+		self.assertEqual(forceOpsiTimestamp(None), '0000-00-00 00:00:00')
+
+	def testForcingWithDatetime(self):
+		self.assertEqual(forceOpsiTimestamp(datetime.datetime(2013, 9, 11, 10, 54, 23)), '2013-09-11 10:54:23')
+
 
 class ForceHostIdTestCase(unittest.TestCase):
 	def testForcingWithValidId(self):
@@ -260,6 +282,9 @@ class ForceProductVersionTestCase(unittest.TestCase):
 	def testForcingReturnsUnicode(self):
 		self.assertTrue(type(forceProductVersion('1.0')) is unicode)
 
+	def testProductVersionDoesNotContainUppercase(self):
+		self.assertRaises(ValueError, forceProductVersion, 'A1.0')
+
 
 class ForcePackageVersionTestCase(unittest.TestCase):
 	def testMethod(self):
@@ -267,6 +292,9 @@ class ForcePackageVersionTestCase(unittest.TestCase):
 
 	def testForcingReturnsUnicode(self):
 		self.assertTrue(type(forcePackageVersion('8')) is unicode)
+
+	def testPackageVersionDoesNotContainUppercase(self):
+		self.assertRaises(ValueError, forcePackageVersion, 'A')
 
 
 class ForceProductIdTestCase(unittest.TestCase):
@@ -350,7 +378,8 @@ class ForceArchitectureTestCase(unittest.TestCase):
 
 
 class ForceTimeTestCase(unittest.TestCase):
-	# TODO: Better testcases
+	def testForcingFailsWithInvalidTime(self):
+		self.assertRaises(ValueError, forceTime, 'Hello World!')
 
 	def testForcingWorksWithVariousTypes(self):
 		forceTime(time.time())
@@ -363,3 +392,17 @@ class ForceEmailAddressTestCase(unittest.TestCase):
 
 	def testForcing(self):
 		self.assertEquals(forceEmailAddress('info@uib.de'), u'info@uib.de')
+
+
+class ForceProductTypeTestCase(unittest.TestCase):
+    def testRaisingExceptionOnUnknownType(self):
+        self.assertRaises(ValueError, forceProductType, 'TrolololoProduct')
+
+    def testForcingToLocalbootProduct(self):
+    	self.assertEquals(forceProductType('LocalBootProduct'), 'LocalbootProduct')
+    	self.assertEquals(forceProductType('LOCALBOOT'), 'LocalbootProduct')
+
+    def testForcingToNetbootProduct(self):
+    	self.assertEquals(forceProductType('NetbOOtProduct'), 'NetbootProduct')
+    	self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
+
