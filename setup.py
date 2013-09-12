@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 from setuptools import setup, find_packages
 import os
 
-with open("debian/changelog") as f:
+with open(os.path.join("debian", "changelog")) as f:
 	VERSION = f.readline().split('(')[1].split('-')[0]
 
 cmdclass = {}
