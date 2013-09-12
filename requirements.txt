@@ -1,7 +1,7 @@
 pycrypto
 twisted
 libmagic
-Ldaptor
+# Ldaptor  # disabled: currently not installable via pip.
 simplejson
 pam
 pyOpenSSL
