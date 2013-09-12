@@ -8,6 +8,7 @@ python-opsi (4.0.3.4-1) UNRELEASED; urgency=low
     from crashing
   * Bugfix: Do not fail when reading distribution information from an UCS
     system.
+  * Bugfix in posix.py for precise
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 23 Aug 2013 17:06:29 +0200
 

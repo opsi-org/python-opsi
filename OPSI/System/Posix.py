@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 @license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.3.3'
+__version__ = '4.0.3.4'
 
 import codecs
 import locale
@@ -61,7 +61,7 @@ logger = Logger()
 GEO_OVERWRITE_SO     = '/usr/local/lib/geo_override.so'
 BIN_WHICH            = '/usr/bin/which'
 WHICH_CACHE          = {}
-DHCLIENT_LEASES_FILE = '/var/lib/dhcp3/dhclient.leases'
+DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 
 x86_64 = False
 try:

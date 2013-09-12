@@ -342,8 +342,10 @@ class Repository:
 			transferStartTime = time.time()
 			buf = True
 			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
+				logger.debug(">>> self._bufferSize: '%d'" % self._bufferSize)
 				buf = src.read(self._bufferSize)
 				read = len(buf)
+				logger.debug(">>> read = len(buf): '%d'" % read)
 				if (read > 0):
 					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):
 						buf = buf[:bytes-self._bytesTransfered]
