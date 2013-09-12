@@ -36,17 +36,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 from setuptools import setup, find_packages
 import os
 
+
+VERSION = None
 with open(os.path.join("debian", "changelog")) as f:
 	VERSION = f.readline().split('(')[1].split('-')[0]
-
-cmdclass = {}
-
-try:
-	from opsidistutils.commands.osc_cmd import osc_publish as osc
-	cmdclass['osc'] = osc
-except ImportError, e:
-	print("osc integration is not available on this machine. please install opsi-distutils.")
-
 
 if not VERSION:
 	raise Exception(u"Failed to get version info")
@@ -144,6 +137,15 @@ for language in ('de', 'fr'):
 		)
 	else:
 		print('Generating locale for "{lang}" failed. Is gettext installed?'.format(lang=language))
+
+
+cmdclass = {}
+
+try:
+	from opsidistutils.commands.osc_cmd import osc_publish as osc
+	cmdclass['osc'] = osc
+except ImportError, e:
+	print("osc integration is not available on this machine. please install opsi-distutils.")
 
 setup(
 	name='python-opsi',
