@@ -4,29 +4,29 @@
    = = = = = = = = = = = = = = = = = = = = = =
    =   opsi python library - HostControl     =
    = = = = = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2010 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Erol Ueluekmen <e.ueluekmen@uib.de>
    @license: GNU General Public License version 2
@@ -48,19 +48,19 @@ from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 logger = Logger()
 
 class HostControlSafeBackend(ExtendedBackend):
-	
+
 	def __init__(self, backend, **kwargs):
 		self._name = 'hostcontrolsafe'
-		
+
 		ExtendedBackend.__init__(self, backend)
-		
+
 		self._opsiclientdPort      = 4441
 		self._hostRpcTimeout       = 15
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress   = False
 		self._maxConnections       = 50
 		self._broadcastAddresses   = ["255.255.255.255"]
-		
+
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -74,10 +74,10 @@ class HostControlSafeBackend(ExtendedBackend):
 				self._maxConnections = forceInt(value)
 			elif option in ('broadcastaddresses',):
 				self._broadcastAddresses = forceUnicodeList(value)
-			
+
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
-	
+
 	def _getHostAddress(self, host):
 		address = None
 		if self._resolveHostAddress:
@@ -95,7 +95,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		if not address:
 			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
 		return address
-	
+
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
@@ -105,7 +105,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		if not timeout:
 			timeout = self._hostRpcTimeout
 		timeout = forceInt(timeout)
-		
+
 		result = {}
 		rpcts = []
 		for host in self._context.host_getObjects(id = hostIds):
@@ -122,7 +122,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						params   = params))
 			except Exception, e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
-		
+
 		runningThreads = 0
 		while rpcts:
 			newRpcts = []
@@ -157,9 +157,9 @@ class HostControlSafeBackend(ExtendedBackend):
 				newRpcts.append(rpct)
 			rpcts = newRpcts
 			time.sleep(0.1)
-		
+
 		return result
-		
+
 	def hostControlSafe_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
 		if not hostIds:
@@ -170,19 +170,19 @@ class HostControlSafeBackend(ExtendedBackend):
 			try:
 				if not host.hardwareAddress:
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
-				
+
 				mac = host.hardwareAddress.replace(':', '')
-				
+
 				# Pad the synchronization stream.
 				data = ''.join(['FFFFFFFFFFFF', mac * 16])
 				send_data = ''
-				
+
 				# Split up the hex values and pack.
 				for i in range(0, len(data), 2):
 					send_data = ''.join([
 						send_data,
 						struct.pack('B', int(data[i: i + 2], 16)) ])
-				
+
 				for broadcastAddress in self._broadcastAddresses:
 					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
 					# Broadcast it to the LAN.
@@ -195,51 +195,51 @@ class HostControlSafeBackend(ExtendedBackend):
 				logger.logException(e, LOG_DEBUG)
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 		return result
-	
+
 	def hostControlSafe_shutdown(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
-	
+
 	def hostControlSafe_reboot(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
-	
+
 	def hostControlSafe_fireEvent(self, event, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		event = forceUnicode(event)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
-	
+
 	def hostControlSafe_showPopup(self, message, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
-	
+
 	def hostControlSafe_uptime(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
-	
+
 	def hostControlSafe_getActiveSessions(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'getActiveSessions', params = [])
-	
+
 	def hostControlSafe_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
-	
+
 	def hostControlSafe_reachable(self, hostIds=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
@@ -248,7 +248,7 @@ class HostControlSafeBackend(ExtendedBackend):
 		if not timeout:
 			timeout = self._hostReachableTimeout
 		timeout = forceInt(timeout)
-		
+
 		result = {}
 		threads = []
 		for host in self._context.host_getObjects(id = hostIds):
@@ -262,7 +262,7 @@ class HostControlSafeBackend(ExtendedBackend):
 			except Exception, e:
 				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False
-		
+
 		runningThreads = 0
 		while threads:
 			newThreads = []
@@ -293,28 +293,10 @@ class HostControlSafeBackend(ExtendedBackend):
 			threads = newThreads
 			time.sleep(0.1)
 		return result
-	
+
 	def hostControlSafe_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
-		comamnd = forceUnicode(command)
+		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'execute', params = [command,waitForEnding,captureStderr,encoding,timeout])
-		
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
