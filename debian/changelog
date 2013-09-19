@@ -1,5 +1,6 @@
 python-opsi (4.0.3.4-1) UNRELEASED; urgency=low
 
+  * Minimum required Python version is now 2.6
   * New backend method for configed: setRights
   * Tar archives: make use of pigz for parallel gzip compression if available.
     Requires pigz version >2.2.3
