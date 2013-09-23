@@ -94,7 +94,6 @@ class OpsiBackup(object):
 
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
-
 	def _create(self, destination=None, mode="raw", backends=["auto"], no_configuration=False, compression="bz2", flush_logs=False, **kwargs):
 		if "all" in backends:
 			backends = ["all"]
@@ -202,30 +201,44 @@ class OpsiBackup(object):
 					fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
 		try:
-			sysInfo = SysInfo()
-			archiveInfo = archive.sysinfo
-
-			diff = {}
-
-			for key, value in archiveInfo.iteritems():
-				if str(getattr(sysInfo, key, None)) != value:
-					logger.debug(
-						'Found difference (System != Archive) at "{key}": '
-						'"{0}" vs. "{1}"'.format(
-							str(getattr(sysInfo, key, None)),
-							value,
-							key=key
-						)
-					)
-					diff[key] = value
-
-			if diff:
+			if self._getDifferencesInSysConfig(archive.sysinfo, SysInfo()):
 				return ask(WARNING_DIFF)
 
 		except OpsiError as e:
 			return ask(WARNING_SYSCONFIG % unicode(e))
 
 		return True
+
+	def _getDifferencesInSysConfig(self, archiveSysInfo, sysInfo=None):
+		"""
+		Checks system informations for differences and returns the findings.
+
+		:param archiveSysInfo: The information from the archive.
+		:type archiveSysInfo: dict
+		:param sysInfo: The information from the system. Defaults to SysInfo().
+		:type sysInfo: OPSI.System.Posix.SysInfo
+		"""
+		if sysInfo is None:
+			sysInfo = SysInfo()
+
+		archiveInfo = archiveSysInfo
+
+		diff = {}
+
+		for key, value in archiveInfo.iteritems():
+			sysValue = str(getattr(sysInfo, key, None))
+			if sysValue.strip() != value.strip():
+				logger.debug(
+					'Found difference (System != Archive) at "{key}": '
+					'"{0}" vs. "{1}"'.format(
+						sysValue,
+						value,
+						key=key
+					)
+				)
+				diff[key] = value
+
+		return diff
 
 	def _restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
 		if not backends:
