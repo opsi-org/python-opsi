@@ -8,31 +8,31 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006 - 2010 uib GmbH
+   Copyright (C) 2013 uib GmbH
    
    http://www.uib.de/
    
    All rights reserved.
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License, version 3
+   as published by the Free Software Foundation.
    
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
+      
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
    
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
+   @license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0'
+__version__ = '4.0.3.4'
 
 # Imports
 import MySQLdb, warnings, time, threading
@@ -76,6 +76,7 @@ class ConnectionPool(object):
 				return MySQLdb.connect(**kwargs)
 			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)
 			con = ConnectionPool.__instance.connect()
+			con.autocommit(False)
 			con.close()
 			
 		# Store instance reference as the only member in the handle
@@ -104,6 +105,7 @@ class MySQL(SQL):
 	ESCAPED_BACKSLASH  = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK   = "\\*"
+	doCommit = True
 	
 	def __init__(self, **kwargs):
 		
@@ -171,11 +173,39 @@ class MySQL(SQL):
 			self._transactionLock.release()
 		
 	def connect(self):
-		logger.debug2(u"Connecting to connection pool")
-		self._transactionLock.acquire()
-		logger.debug2(u"Connection pool status: %s" % self._pool.status())
-		conn = self._pool.connect()
-		cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+		myConnectionSuccess = False
+		myMaxRetryConnection = 10
+		myRetryConnectionCounter = 0
+		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
+			try:
+				if (myRetryConnectionCounter > 0):
+					self._createConnectionPool()
+				logger.debug(u"Connecting to connection pool")
+				self._transactionLock.acquire()
+				logger.debug(u"Got thread lock")
+				logger.debug(u"Connection pool status: %s" % self._pool.status())
+				conn = self._pool.connect()
+				conn.autocommit(False)
+				cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+				myConnectionSuccess = True
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e.args[0] == 2006):
+					# 2006: 'MySQL server has gone away'
+					myConnectionSuccess = False
+					if (myRetryConnectionCounter >= myMaxRetryConnection):
+						logger.error(u'MySQL server has gone away (Code 2006) - giving up after %d retries' % myRetryConnectionCounter)
+						raise
+					else:
+						logger.notice(u'MySQL server has gone away (Code 2006) - restarting Connection: retry %s' % myRetryConnectionCounter)
+						myRetryConnectionCounter = myRetryConnectionCounter +1
+						self._transactionLock.release()
+						logger.debug(u"Thread lock released")
+						time.sleep(0.1)
+				else:
+					logger.error(u'Unknown DB Error: %s' % str(e))
+					self._transactionLock.release()
+					raise
 		return (conn, cursor)
 		
 	def close(self, conn, cursor):
@@ -208,9 +238,14 @@ class MySQL(SQL):
 			self.close(conn, cursor)
 		return valueSet
 		
-	def getRow(self, query):
+	def getRow(self, query, conn=None, cursor=None):
 		logger.debug2(u"getRow: %s" % query)
-		(conn, cursor) = self.connect()
+		closeConnection = True
+		if conn and cursor:
+			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
+			closeConnection = False
+		else:
+			(conn, cursor) = self.connect()
 		row = {}
 		try:
 			try:
@@ -230,11 +265,18 @@ class MySQL(SQL):
 			else:
 				logger.debug2(u"Result: '%s'" % row)
 		finally:
-			self.close(conn, cursor)
+			if closeConnection:
+				self.close(conn, cursor)
 		return row
 		
-	def insert(self, table, valueHash):
-		(conn, cursor) = self.connect()
+	def insert(self, table, valueHash, conn=None, cursor=None):
+		
+		closeConnection = True
+		if conn and cursor:
+			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
+			closeConnection = False
+		else:
+			(conn, cursor) = self.connect()
 		result = -1
 		try:
 			colNames = values = u''
@@ -268,7 +310,8 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			result = cursor.lastrowid
 		finally:
-			self.close(conn, cursor)
+			if closeConnection:
+				self.close(conn, cursor)
 		return result
 		
 	def update(self, table, where, valueHash, updateWhereNone=False):
@@ -313,8 +356,13 @@ class MySQL(SQL):
 			self.close(conn, cursor)
 		return result
 	
-	def delete(self, table, where):
-		(conn, cursor) = self.connect()
+	def delete(self, table, where, conn, cursor):
+		closeConnection = True
+		if conn and cursor:
+			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
+			closeConnection = False
+		else:
+			(conn, cursor) = self.connect()
 		result = 0
 		try:
 			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
@@ -331,7 +379,8 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			result = cursor.rowcount
 		finally:
-			self.close(conn, cursor)
+			if closeConnection:
+				self.close(conn, cursor)
 		return result
 	
 	def execute(self, query, conn=None, cursor=None):
@@ -344,7 +393,8 @@ class MySQL(SQL):
 			query = forceUnicode(query)
 			logger.debug2(u"SQL query: %s" % query)
 			res = cursor.execute(query)
-			conn.commit()
+			if self.doCommit:
+				conn.commit()
 		finally:
 			if needClose:
 				self.close(conn, cursor)

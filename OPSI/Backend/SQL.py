@@ -8,28 +8,28 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
    
-   Copyright (C) 2006 - 2010 uib GmbH
+   Copyright (C) 2013 uib GmbH
    
    http://www.uib.de/
    
    All rights reserved.
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License, version 3
+   as published by the Free Software Foundation.
    
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
+      
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
    
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
+   @license: GNU Affero GPL version 3
 """
 
 import time
@@ -62,6 +62,7 @@ class SQL(object):
 	ESCAPED_UNDERSCORE = "\\_"
 	ESCAPED_PERCENT    = "\\%"
 	ESCAPED_ASTERISK   = "\\*"
+	doCommit = True
 	
 	def __init__(self, **kwargs):
 		pass
@@ -1238,17 +1239,116 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.insert('PRODUCT_PROPERTY', data)
 		
 		if not possibleValues is None:
-			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
+			(conn, cursor) = self._sql.connect()
+			myTransactionSuccess = False
+			myMaxRetryTransaction = 10
+			myRetryTransactionCounter = 0
+			while (not myTransactionSuccess) and (myRetryTransactionCounter < myMaxRetryTransaction):
+				try:
+					myRetryTransactionCounter += 1
+					# transaction
+					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+					self._sql.doCommit = False
+					conn.begin()
+					logger.notice(u'Start Transaction: delete from ppv %d' % myRetryTransactionCounter)
+
+					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
+					conn.commit()
+					myTransactionSuccess = True
+				except Exception, e:
+					logger.debug(u"Execute error: %s" % e)
+					if (e.args[0] == 1213):
+						# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+						# 1213: May be table locked because of concurrent access - retrying
+						myTransactionSuccess = False
+						if (myRetryTransactionCounter >= myMaxRetryTransaction):
+							logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
+							raise
+						else:
+							logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+							time.sleep(0.1)
+					else:
+						logger.error(u'Unknown DB Error: %s' % str(e))
+						raise
+
+				logger.notice(u'End Transaction')
+				self._sql.doCommit = True	
+				logger.notice(u'doCommit set to true')
+			self._sql.close(conn,cursor)
+
+
+
+		(conn, cursor) = self._sql.connect()
 		for value in possibleValues:
-			self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-					'productId': data['productId'],
-					'productVersion': data['productVersion'],
-					'packageVersion': data['packageVersion'],
-					'propertyId': data['propertyId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-					})
-	
+			try:
+				# transform arguments for sql
+				# from uniqueCondition
+				if (value in defaultValues):
+					myPPVdefault = u"`isDefault` = 1"
+				else:
+					myPPVdefault = u"`isDefault` = 0"
+
+				if type(value) is bool:
+					if value:
+						myPPVvalue = u"`value` = 1"
+					else:
+						myPPVvalue = u"`value` = 0"
+				elif type(value) in (float, long, int):
+					myPPVvalue = u"`value` = %s" % (value)
+				else:
+					myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
+				myPPVselect = u"select * from PRODUCT_PROPERTY_VALUE where " \
+					+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
+					% (data['propertyId'], data['productId'], str(data['productVersion']), str(data['packageVersion'])) \
+					+ u" AND "+myPPVvalue+u" AND "+myPPVdefault
+				myTransactionSuccess = False
+				myMaxRetryTransaction = 10
+				myRetryTransactionCounter = 0
+				while (not myTransactionSuccess) and (myRetryTransactionCounter < myMaxRetryTransaction):
+					try:
+						myRetryTransactionCounter += 1
+						# transaction
+						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+						self._sql.doCommit = False
+						conn.begin()
+						logger.notice(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
+						if not self._sql.getRow(myPPVselect , conn, cursor):
+							#self._sql.doCommit = True
+							logger.notice(u'doCommit set to true')
+							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+								'productId': data['productId'],
+								'productVersion': data['productVersion'],
+								'packageVersion': data['packageVersion'],
+								'propertyId': data['propertyId'],
+								'value': value,
+								'isDefault': (value in defaultValues)
+								}, conn, cursor)
+							conn.commit()
+						else:
+							conn.rollback()
+						myTransactionSuccess = True
+					except Exception, e:
+						logger.debug(u"Execute error: %s" % e)
+						if (e.args[0] == 1213):
+							# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
+							# 1213: May be table locked because of concurrent access - retrying
+							myTransactionSuccess = False
+							if (myRetryTransactionCounter >= myMaxRetryTransaction):
+								logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
+								raise
+							else:
+								logger.notice(u'Table locked (Code 2013) - restarting Transaction')
+								time.sleep(0.1)
+						else:
+							logger.error(u'Unknown DB Error: %s' % str(e))
+							raise
+
+				logger.notice(u'End Transaction')
+			finally:
+				self._sql.doCommit = True	
+				logger.notice(u'doCommit set to true')
+		self._sql.close(conn,cursor)
+
 	def productProperty_updateObject(self, productProperty):
 		if not self._sqlBackendModule:
 			raise Exception(u"SQL backend module disabled")
@@ -1270,14 +1370,25 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 		
 		for value in possibleValues:
-			self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-					'productId': data['productId'],
-					'productVersion': data['productVersion'],
-					'packageVersion': data['packageVersion'],
-					'propertyId': data['propertyId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-					})
+			try:
+				self._sql.doCommit = False
+				logger.notice(u'doCommit set to false')
+				if not self._sql.getRow(u"select * from PRODUCT_PROPERTY_VALUE where " \
+						+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s' AND `value` = '%s' AND `isDefault` = %s" \
+						% (data['propertyId'], data['productId'], str(data['productVersion']), str(data['packageVersion']), value, str(value in defaultValues))):
+					self._sql.doCommit = True
+					logger.notice(u'doCommit set to true')
+					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+					        'productId': data['productId'],
+					        'productVersion': data['productVersion'],
+					        'packageVersion': data['packageVersion'],
+					        'propertyId': data['propertyId'],
+					        'value': value,
+					        'isDefault': (value in defaultValues)
+					        })
+			finally:
+				self._sql.doCommit = True
+				logger.notice(u'doCommit set to true')
 	
 	def productProperty_getObjects(self, attributes=[], **filter):
 		if not self._sqlBackendModule:

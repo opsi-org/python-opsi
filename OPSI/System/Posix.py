@@ -851,9 +851,12 @@ def mount(dev, mountpoint, **options):
 			f.close()
 			options['credentials'] = credentialsFile
 			credentialsFiles.append(credentialsFile)
-
-			if not options['domain']:
-				del options['domain']
+			
+			try:
+				if not options['domain']:
+					del options['domain']
+			except:
+				pass
 			del options['username']
 			del options['password']
 		else:
