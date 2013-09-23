@@ -1,35 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - BackendManager  =
-   = = = = = = = = = = = = = = = = = = = = = =
+opsi python library - BackendManager
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+Copyright (C) 2006, 2007, 2008 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0.3.3'
@@ -88,6 +86,7 @@ try:
 except Exception, e:
 	pass
 
+
 class MessageBusNotifier(BackendModificationListener):
 	def __init__(self, startReactor=True):
 		self._startReactor = startReactor
@@ -133,6 +132,7 @@ class MessageBusNotifier(BackendModificationListener):
 		logger.info(u"Stopping message bus client")
 		self._messageBusClient.stop(stopReactor = self._startReactor)
 		self._messageBusClient.join(5)
+
 
 class BackendManager(ExtendedBackend):
 	def __init__(self, **kwargs):
@@ -279,6 +279,7 @@ class BackendManager(ExtendedBackend):
 		ExtendedBackend.backend_exit(self)
 		if self._messageBusNotifier:
 			self._messageBusNotifier.stop()
+
 
 class BackendDispatcher(Backend):
 	def __init__(self, **kwargs):
@@ -453,6 +454,7 @@ class BackendDispatcher(Backend):
 	def dispatcher_getBackendNames(self):
 		return self._backends.keys()
 
+
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		if not isinstance(backend, ExtendedBackend) and not isinstance(backend, BackendDispatcher):
@@ -515,6 +517,7 @@ class BackendExtender(ExtendedBackend):
 							setattr( self, key, new.instancemethod(val, self, self.__class__) )
 			except Exception, e:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
+
 
 class BackendAccessControl(object):
 
@@ -898,7 +901,6 @@ class BackendAccessControl(object):
 		# Filter result
 		return self._filterResult(result, acls)
 
-
 	def _filterParams(self, params, acls):
 		params = dict(params)
 		logger.debug(u"Filtering params: %s" % params)
@@ -987,21 +989,21 @@ class BackendAccessControl(object):
 			logger.warning(u"%d objects removed by acl, %d objects left" % (orilen-newlen, newlen))
 			if (newlen == 0) and exceptionIfAllRemoved:
 				raise BackendPermissionDeniedError(u"Access denied")
-		return newObjects
 
+		return newObjects
 
 
 def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 				extensionConfigDir, aclFile, depotId, postpath, context, **kwargs):
 	backendManager = None
-	if   (len(postpath) == 2) and (postpath[0] == 'backend'):
+	if (len(postpath) == 2) and (postpath[0] == 'backend'):
 		backendManager = BackendManager(
-			backend              = postpath[1],
-			accessControlContext = context,
-			backendConfigDir     = backendConfigDir,
-			aclFile              = aclFile,
-			username             = user,
-			password             = password,
+			backend=postpath[1],
+			accessControlContext=context,
+			backendConfigDir=backendConfigDir,
+			aclFile=aclFile,
+			username=user,
+			password=password,
 			**kwargs
 		)
 	elif (len(postpath) == 2) and (postpath[0] == 'extend'):
@@ -1009,45 +1011,31 @@ def backendManagerFactory(user, password, dispatchConfigFile, backendConfigDir,
 		if not re.search('^[a-zA-Z0-9\_\-]+$', extendPath):
 			raise ValueError(u"Extension config path '%s' refused" % extendPath)
 		backendManager = BackendManager(
-			dispatchConfigFile   = dispatchConfigFile,
-			backendConfigDir     = backendConfigDir,
-			extensionConfigDir   = os.path.join(extensionConfigDir, extendPath),
-			aclFile              = aclFile,
-			accessControlContext = context,
-			depotBackend         = bool(depotId),
-			hostControlBackend   = True,
-			hostControlSafeBackend   = True,
-			username             = user,
-			password             = password,
+			dispatchConfigFile=dispatchConfigFile,
+			backendConfigDir=backendConfigDir,
+			extensionConfigDir=os.path.join(extensionConfigDir, extendPath),
+			aclFile=aclFile,
+			accessControlContext=context,
+			depotBackend=bool(depotId),
+			hostControlBackend=True,
+			hostControlSafeBackend=True,
+			username=user,
+			password=password,
 			**kwargs
 		)
 	else:
 		backendManager = BackendManager(
-			dispatchConfigFile   = dispatchConfigFile,
-			backendConfigDir     = backendConfigDir,
-			extensionConfigDir   = extensionConfigDir,
-			aclFile              = aclFile,
-			accessControlContext = context,
-			depotBackend         = bool(depotId),
-			hostControlBackend   = True,
-			hostControlSafeBackend   = True,
-			username             = user,
-			password             = password,
+			dispatchConfigFile=dispatchConfigFile,
+			backendConfigDir=backendConfigDir,
+			extensionConfigDir=extensionConfigDir,
+			aclFile=aclFile,
+			accessControlContext=context,
+			depotBackend=bool(depotId),
+			hostControlBackend=True,
+			hostControlSafeBackend=True,
+			username=user,
+			password=password,
 			**kwargs
 		)
 
 	return backendManager
-
-
-
-if (__name__ == '__main__'):
-	cdb = ConfigDataBackend()
-	class TestClass(object):
-		def testMethod(self, y):
-			print "test", y, self
-		def testMethod2(self):
-			print self.backend_getOptions()
-
-	bm = BackendManager( backend = cdb, extensionClass = TestClass )
-	bm.testMethod('yyyyyyyy')
-	bm.testMethod2()
