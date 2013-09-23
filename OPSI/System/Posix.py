@@ -61,6 +61,7 @@ logger = Logger()
 BIN_WHICH            = '/usr/bin/which'
 WHICH_CACHE          = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
+DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
 
 x86_64 = False
 try:
@@ -525,6 +526,10 @@ def getDHCPResult(device):
 		raise Exception(u"No device given")
 
 	dhcpResult = {}
+	if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
+		# old style dhcp.leases handling should be work
+		# will be removed, if precise bootimage is in testing. 
+		DHCLIENT_LEASES_FILE = DHCLIENT_LEASES_FILE_OLD
 	if os.path.exists(DHCLIENT_LEASES_FILE):
 		f = None
 		try:
@@ -822,8 +827,8 @@ def mount(dev, mountpoint, **options):
 
 	fs = u''
 	
-	if not options.has_key("domain"):
-		options['domain'] = None
+	#if not options.has_key("domain"):
+	#	options['domain'] = None
 
 	credentialsFiles = []
 	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
