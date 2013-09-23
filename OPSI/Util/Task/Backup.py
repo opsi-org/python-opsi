@@ -38,20 +38,23 @@ import shutil
 import sys
 import termios
 
-from OPSI.Types import *
+from OPSI.Types import (forceList, forceUnicode, OpsiBackupFileError,
+	OpsiBackupBackendNotFound, OpsiError)
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Util.File.Opsi import OpsiBackupArchive
 from OPSI.System.Posix import SysInfo
+
+logger = Logger()
 
 try:
 	t = gettext.translation('opsi-utils', '/usr/share/locale')
 	_ = t.ugettext
 except Exception, e:
 	logger.error(u"Locale not found: %s" % e)
+
 	def _(string):
 		return string
 
-logger = Logger()
 
 WARNING_DIFF = _(u"""WARNING: Your system config is different from the one recorded with this backup.
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
@@ -79,7 +82,7 @@ class OpsiBackup(object):
 				fileobj.seek(0)
 				compression = "gz"
 			except IOError:
-				fileobj=None
+				fileobj = None
 
 			try:
 				fileobj = bz2.BZ2File(file, mode)
@@ -87,7 +90,7 @@ class OpsiBackup(object):
 				fileobj.seek(0)
 				compression = "bz2"
 			except IOError:
-				fileobj=None
+				fileobj = None
 
 		if compression not in ('none', None):
 			mode = ":".join((mode, compression))
@@ -177,28 +180,28 @@ class OpsiBackup(object):
 
 	def _verifySysconfig(self, archive):
 		def ask(q=WARNING_DIFF):
-				fd = sys.stdin.fileno()
+			fd = sys.stdin.fileno()
 
-				oldterm = termios.tcgetattr(fd)
-				newattr = termios.tcgetattr(fd)
-				newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-				termios.tcsetattr(fd, termios.TCSANOW, newattr)
+			oldterm = termios.tcgetattr(fd)
+			newattr = termios.tcgetattr(fd)
+			newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+			termios.tcsetattr(fd, termios.TCSANOW, newattr)
 
-				oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+			oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
-				self.stdout.write(q)
+			self.stdout.write(q)
 
-				try:
-					while 1:
-						try:
-							c = sys.stdin.read(1)
-							return (forceUnicode(c) in (u"y", u"Y"))
-						except IOError:
-							pass
-				finally:
-					termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-					fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+			try:
+				while 1:
+					try:
+						c = sys.stdin.read(1)
+						return (forceUnicode(c) in (u"y", u"Y"))
+					except IOError:
+						pass
+			finally:
+				termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
 		try:
 			if self._getDifferencesInSysConfig(archive.sysinfo, SysInfo()):
