@@ -14,7 +14,7 @@ Requires:       pwdutils
 %{py_requires}
 %endif
 %if 0%{?suse_version} == 1140
-# This is a twisted dependency that SUSE screwed up in 11.4... 
+# This is a twisted dependency that SUSE screwed up in 11.4...
 Requires:       python-asn1
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version}
@@ -78,7 +78,13 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INST
 %endif
 ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 
+%if 0%{?rhel_version} > 599 || 0%{?centos_version} > 599
+sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd/dhcpd.conf#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+sed -i 's#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+%else
 sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+%endif
+
 %if 0%{?sles_version}
 	sed -i 's#linux/pxelinux.0#opsi/pxelinux.0#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
