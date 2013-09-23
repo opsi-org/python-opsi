@@ -58,7 +58,6 @@ from OPSI.Util import objectToBeautifiedText, removeUnit
 logger = Logger()
 
 # Constants
-GEO_OVERWRITE_SO     = '/usr/local/lib/geo_override.so'
 BIN_WHICH            = '/usr/bin/which'
 WHICH_CACHE          = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
@@ -822,6 +821,10 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 
 	fs = u''
+	
+	if not options.has_key("domain"):
+		options['domain'] = None
+
 	credentialsFiles = []
 	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
@@ -1127,14 +1130,6 @@ class Harddisk:
 		except Exception, e:
 			logger.error(e)
 			return
-		# Don't use geo_override patch, if bootimage is in 64bit mode.
-		# If geo_override is not needed, it should removed from bootimage.
-		if not x86_64:
-			# geo_override.so will affect all devices !
-			logger.info(u"Using geo_override.so for all disks.")
-			self.ldPreload = GEO_OVERWRITE_SO
-		else:
-			logger.info(u"Don't load geo_override.so on 64bit architecture.")
 
 	def getSignature(self):
 		hd = posix.open(str(self.device), posix.O_RDONLY)
