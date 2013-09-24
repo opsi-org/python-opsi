@@ -1,38 +1,35 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Repository    =
-   = = = = = = = = = = = = = = = = = = = = =
-   
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
-   
-   Copyright (C) 2010 uib GmbH
-   
-   http://www.uib.de/
-   
-   All rights reserved.
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+	opsi python library - Repository 
+	================================
+	
+	This module is part of the desktop management solution opsi
+	(open pc server integration) http://www.opsi.org
+	
+	Copyright (C) 2006, 2007, 2008, 2009, 2010, 2013 uib GmbH <info@uib.de>
+	All rights reserved.
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Affero General Public License as
+	published by the Free Software Foundation, either version 3 of the
+	License, or (at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Affero General Public License for more details.
+
+	You should have received a copy of the GNU Affero General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	
+	@copyright: uib GmbH <info@uib.de>
+	.. codeauthor:: Jan Schneider <j.schneider@uib.de>
+	.. codeauthor:: Erol Ueluekmen <e.ueluekmen@uib.de>
+	@license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.1'
+__version__ = '4.0.4.1'
 
 # Imports
 import re, stat, base64, urllib, httplib, os, shutil, codecs, time, inspect
@@ -92,23 +89,24 @@ class Repository:
 		'''
 		maxBandwith must be in byte/s
 		'''
-		self._url                              = forceUnicode(url)
-		self._path                             = u''
-		self._maxBandwidth                     = 0
-		self._dynamicBandwidth                 = False
-		self._networkPerformanceCounter        = None
-		self._bufferSize                       = 16384
-		self._bytesTransfered                  = 0
-		self._networkBandwidth                 = 0.0
-		self._currentSpeed                     = 0.0
-		self._averageSpeed                     = 0.0
-		self._dynamicBandwidthLimit            = 0.0
-		self._dynamicBandwidthThresholdLimit   = 0.75
+		self._url = forceUnicode(url)
+		self._path = u''
+		self._maxBandwidth = 0
+		self._dynamicBandwidth = False
+		self._networkPerformanceCounter = None
+		self._lastSpeedCalcTime = None
+		self._bufferSize  = 16384
+		self._bytesTransfered = 0
+		self._networkBandwidth = 0.0
+		self._currentSpeed = 0.0
+		self._averageSpeed = 0.0
+		self._dynamicBandwidthLimit = 0.0
+		self._dynamicBandwidthThresholdLimit = 0.75
 		self._dynamicBandwidthThresholdNoLimit = 0.95
-		self._dynamicBandwidthLimitRate        = 0.2
-		self._bandwidthSleepTime               = 0.0
-		self._hooks                            = []
-		self._observers                        = []
+		self._dynamicBandwidthLimitRate = 0.2
+		self._bandwidthSleepTime = 0.0
+		self._hooks = []
+		self._observers = []
 		self.setBandwidth(
 			kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
 			kwargs.get('maxBandwidth', self._maxBandwidth),
