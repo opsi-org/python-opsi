@@ -341,11 +341,14 @@ class Repository:
 			self._bytesTransfered = 0
 			transferStartTime = time.time()
 			buf = True
+			fileSize = os.path.getsize(src.name)
 			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
-				logger.debug(">>> self._bufferSize: '%d'" % self._bufferSize)
-				buf = src.read(self._bufferSize)
+				remaining_bytes = fileSize - self._bytesTransfered
+				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
+					buf = src.read(remaining_bytes)
+				else:
+					buf = src.read(self._bufferSize)
 				read = len(buf)
-				logger.debug(">>> read = len(buf): '%d'" % read)
 				if (read > 0):
 					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):
 						buf = buf[:bytes-self._bytesTransfered]
@@ -360,6 +363,7 @@ class Repository:
 						progressSubject.addToState(read)
 					
 					self._calcSpeed(read)
+					logger.debug("Calculated Speed: '%d'" % self._currentSpeed)
 					if (self._dynamicBandwidth or self._maxBandwidth):
 						self._bandwidthLimit()
 					elif (self._currentSpeed > 1000000):
@@ -1141,7 +1145,7 @@ class CIFSRepository(FileRepository):
 			self._umount()
 		if not self._mountPoint:
 			raise ValueError(u"Mount point not defined")
-		
+		logger.info(u"Mountpoint: %s " % self._mountPoint)
 		logger.info(u"Mounting '%s' to '%s'" % (self._url, self._mountPoint))
 		if (os.name == 'posix') and not os.path.isdir(self._mountPoint):
 			os.makedirs(self._mountPoint)
@@ -1454,8 +1458,8 @@ class DepotToLocalDirectorySychronizer(object):
 
 if (__name__ == "__main__"):
 	import sys
-	#logger.setConsoleLevel(LOG_DEBUG2)
-	logger.setConsoleLevel(LOG_DEBUG)
+	logger.setConsoleLevel(LOG_DEBUG2)
+	#logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
 	
 	tempDir = '/tmp/testdir'
@@ -1463,12 +1467,22 @@ if (__name__ == "__main__"):
 	#	shutil.rmtree(tempDir)
 	if not os.path.exists(tempDir):
 		os.mkdir(tempDir)
-	
-	
-	sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxx', mount = False)
+
+	logger.notice("getRepository")	
+		
+	#sourceDepot = getRepository(url = u'smb://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxx', mount = False)
+
 	#sourceDepot.listdir()
 	#print sourceDepot.listdir()
+
+	sourceDepot = getRepository(url = u'smb://lelap530.vmnat.local/opsi_depot', username = u'pcpatch', password = u'linux123', mountPoint = tempDir,  mountOptions = { "iocharset": 'utf8' } )
 	
+
+	print sourceDepot.listdir()
+
+	sourceDepot.download(u'winxppro/i386/IEXPLORE.CH_', u'/mnt/hd/IEXPLORE.CH_')
+	sourceDepot.download(u'winxppro/i386/NTKRNLMP.EX_', u'/mnt/hd/NTKRNLMP.EX_')
+
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', dynamicBandwidth = True)#, maxBandwidth = 100000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 1000)
 	#rep = HTTPRepository(url = u'webdav://download.uib.de:80/opsi4.0', maxBandwidth = 10000)
