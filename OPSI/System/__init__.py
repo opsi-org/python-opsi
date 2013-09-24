@@ -228,13 +228,13 @@ def copy(src, dst, progressSubject=None):
 	Copy from source to destination.
 
 	The copy process will follow these rules:
-	src = file,  dst = file              => overwrite dst
-	src = file,  dst = dir               => copy into dst
-	src = file,  dst = not existent      => create dst directories, copy src to dst
-	src = dir,   dst = file              => error
-	src = dir,   dst = dir               => copy src dir into dst
-	src = dir,   dst = not existent      => create dst, copy content of src into dst
-	src = dir/*, dst = dir/not existent  => create dst if not exists, copy content of src into dst
+	* src = file, dst = file: overwrite dst
+	* src = file, dst = dir: copy into dst
+	* src = file, dst = not existent: create dst directories, copy src to dst
+	* src = dir, dst = file: Exception
+	* src = dir, dst = dir: copy src dir into dst
+	* src = dir, dst = not existent: create dst, copy content of src into dst
+	* src = dir/*, dst = dir/not existent: create dst if not exists, copy content of src into dst
 	'''
 	for hook in hooks:
 		(src, dst, progressSubject) = hook.pre_copy(src, dst, progressSubject)
