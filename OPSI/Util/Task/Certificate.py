@@ -41,8 +41,8 @@ from OPSI.System import which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
 
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
-OPSICONFD_CERTFILE = u"/etc/opsi/opsiconfd.pem"
+OPSI_GLOBAL_CONF = '/etc/opsi/global.conf'
+OPSICONFD_CERTFILE = '/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
 	"country": "DE",
 	"state": "RP",
@@ -93,14 +93,15 @@ def createCertificate(path=None, config=None):
 	:param path: The path of the certificate. \
 If this is `None` the default will be used.
 	:type path: str
-	:param config: The configuration of the certificate. If not given will use a default.
+	:param config: The configuration of the certificate. \
+If not given will use a default.
 	:type config: dict
 	"""
 	# TODO: check if path exists and give user info about it
 
 	try:
 		which("ucr")
-		LOGGER.notice(u"Don't use recreate method on UCS-Systems")
+		LOGGER.notice("Don't use recreate method on UCS-Systems")
 		return
 	except Exception:
 		pass
@@ -119,18 +120,19 @@ If this is `None` the default will be used.
 		certparams["expires"] = forceInt(certparams["expires"])
 	except Exception:
 		raise CertificateCreationError("No valid expiration date given. "
-									   "Must be an integer.")
+										"Must be an integer.")
 
 	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
-		raise CertificateCreationError("commonName must be the FQDN of the "
-									   "local server")
+		raise CertificateCreationError(
+			"commonName must be the FQDN of the local server"
+		)
 
-	LOGGER.notice(u"Creating new opsiconfd cert")
-	LOGGER.notice(u"Generating new key pair")
+	LOGGER.notice("Creating new opsiconfd cert")
+	LOGGER.notice("Generating new key pair")
 	k = crypto.PKey()
 	k.generate_key(crypto.TYPE_RSA, 1024)
 
-	LOGGER.notice(u"Generating new self-signed cert")
+	LOGGER.notice("Generating new self-signed cert")
 	cert = crypto.X509()
 	cert.get_subject().C = certparams['country']
 	cert.get_subject().ST = certparams['state']
@@ -140,28 +142,33 @@ If this is `None` the default will be used.
 	cert.get_subject().CN = certparams['commonName']
 	cert.get_subject().emailAddress = certparams['emailAddress']
 
-	LOGGER.notice(u"Generating new Serialnumber")
+	LOGGER.notice("Generating new Serialnumber")
 	#TODO: generating serial number
-	#TODO: some info on the serial number: https://tools.ietf.org/html/rfc2459#page-18
+	#TODO: some info on the serial number:
+	#      https://tools.ietf.org/html/rfc2459#page-18
 	cert.set_serial_number(1000)
-	LOGGER.notice(u"Setting new expiration date (%d years)" % certparams["expires"])
+	LOGGER.notice(
+		"Setting new expiration date (%d years)" % certparams["expires"]
+	)
 	cert.gmtime_adj_notBefore(0)
 	cert.gmtime_adj_notAfter(certparams["expires"] * 365 * 24 * 60 * 60)
 
-	LOGGER.notice(u"Filling certificate with new data")
+	LOGGER.notice("Filling certificate with new data")
 	cert.set_issuer(cert.get_subject())
 	cert.set_pubkey(k)
 	cert.set_version(2)
 
-	LOGGER.notice(u"Signing Certificate")
+	LOGGER.notice("Signing Certificate")
 	cert.sign(k, 'sha1')
 
-	certcontext = "".join((
-		crypto.dump_certificate(crypto.FILETYPE_PEM, cert),
-		crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
+	certcontext = "".join(
+		(
+			crypto.dump_certificate(crypto.FILETYPE_PEM, cert),
+			crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
+		)
 	)
 
-	LOGGER.notice(u"Beginning to write certificate.")
+	LOGGER.notice("Beginning to write certificate.")
 	with open(path, "wt") as certfile:
 		certfile.write(certcontext)
 
@@ -192,7 +199,10 @@ Uses `OPSICONFD_CERTFILE` if no path is given.
 		path = OPSICONFD_CERTFILE
 
 	if not os.path.exists(path):
-		raise NoCertificateError('No certificate found at "{path}".'.format(path=path))
+		raise NoCertificateError('No certificate found at {path}.'.format(
+				path=path
+			)
+		)
 
 	certparams = {}
 	with open(path) as data:
