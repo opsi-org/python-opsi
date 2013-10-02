@@ -64,7 +64,7 @@ class CertificateCreationError(Exception):
 	pass
 
 
-def renewCertificate(path=None, yearsUntilExpiration=2):
+def renewCertificate(path=None, yearsUntilExpiration=2, config=None):
 	"""
 	Renews an existing certificate and creates a backup of the old file
 
@@ -73,8 +73,13 @@ def renewCertificate(path=None, yearsUntilExpiration=2):
 
 	:param path: The path of the certificate.
 	:type path: str
-	:param yearsUntilExpiration: How many years will the certificate be valid?
+	:param yearsUntilExpiration: How many years will the certificate be valid? \
+Will always overwrite an existing value in ``config``.
 	:type yearsUntilExpiration: int
+	:param config: Settings for the new certificate. If this is \
+`None` the values for the configuration will be read from the \
+existing certificate.
+	:type config: dict
 	"""
 	if path is None:
 		path = OPSICONFD_CERTFILE
@@ -82,15 +87,16 @@ def renewCertificate(path=None, yearsUntilExpiration=2):
 	if not os.path.exists(path):
 		raise NoCertificateError('No certificate found at {0}'.format(path))
 
-	currentConfig = loadConfigurationFromCertificate(path)
-	currentConfig["expires"] = yearsUntilExpiration
+	if config is None:
+		config = loadConfigurationFromCertificate(path)
+	config["expires"] = yearsUntilExpiration
 
 	backupfile = ''.join((path, ".bak"))
 	LOGGER.notice("Creating backup of existing certifcate to {0}".format(backupfile))
 	shutil.copy(path, backupfile)
 
 	try:
-		createCertificate(path, currentConfig)
+		createCertificate(path, config)
 	except CertificateCreationError as error:
 		LOGGER.warning('Problem during the creation of the certificate: {0}'.format(error))
 		LOGGER.notice('Restoring backup.')
