@@ -24,8 +24,9 @@ import tempfile
 import unittest
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
-from OPSI.Util.Task.Certificate import (createCertificate,
-    loadConfigurationFromCertificate, NoCertificateError, CertificateCreationError)
+from OPSI.Util.Task.Certificate import (NoCertificateError,
+    CertificateCreationError, UnreadableCertificateError, createCertificate,
+    loadConfigurationFromCertificate)
 
 
 class CertificateCreationTestCase(unittest.TestCase):
@@ -121,6 +122,20 @@ class LoadConfigurationTestCase(unittest.TestCase):
         self.assertEqual('test', certparams["organizationalUnit"])
         self.assertEqual('niko-linux', certparams["commonName"])
         self.assertEqual('info@uib.de', certparams["emailAddress"])
+
+
+class LoadBrokenConfigurationTestCase(unittest.TestCase):
+    def testLoadingFromCorruptFileWithValidBlockSignsRaisesError(self):
+        corruptCertPath = os.path.join(os.path.dirname(__file__),
+        'testdata', 'util', 'task', 'certificate', 'corrupt.pem')
+
+        self.assertRaises(UnreadableCertificateError, loadConfigurationFromCertificate, corruptCertPath)
+
+    def testLoadingFromInvalidFileRaisesError(self):
+        corruptCertPath = os.path.join(os.path.dirname(__file__),
+        'testdata', 'util', 'task', 'certificate', 'invalid.pem')
+
+        self.assertRaises(UnreadableCertificateError, loadConfigurationFromCertificate, corruptCertPath)
 
 
 if __name__ == '__main__':

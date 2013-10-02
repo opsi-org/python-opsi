@@ -64,6 +64,10 @@ class CertificateCreationError(Exception):
 	pass
 
 
+class UnreadableCertificateError(Exception):
+	pass
+
+
 def renewCertificate(path=None, yearsUntilExpiration=2, config=None):
 	"""
 	Renews an existing certificate and creates a backup of the old file
@@ -232,7 +236,15 @@ Uses `OPSICONFD_CERTFILE` if no path is given.
 
 	certparams = {}
 	with open(path) as data:
-		cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.read())
+		try:
+			cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.read())
+		except crypto.Error as error:
+			raise UnreadableCertificateError(
+				'Could not read from {path}: {error}'.format(
+					path=path,
+					error=error
+				)
+			)
 
 		certparams["country"] = cert.get_subject().C
 		certparams["state"] = cert.get_subject().ST
