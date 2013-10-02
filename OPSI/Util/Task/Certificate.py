@@ -64,12 +64,17 @@ class CertificateCreationError(Exception):
 	pass
 
 
-def renewCertificate(path=None):
+def renewCertificate(path=None, yearsUntilExpiration=2):
 	"""
-	Renews an existing certificate.
+	Renews an existing certificate and creates a backup of the old file
+
+	If an error occurs during the creation of the new certificate the backup
+	will be restored.
 
 	:param path: The path of the certificate.
 	:type path: str
+	:param yearsUntilExpiration: How many years will the certificate be valid?
+	:type yearsUntilExpiration: int
 	"""
 	if path is None:
 		path = OPSICONFD_CERTFILE
@@ -78,17 +83,26 @@ def renewCertificate(path=None):
 		raise NoCertificateError('No certificate found at {0}'.format(path))
 
 	currentConfig = loadConfigurationFromCertificate(path)
+	currentConfig["expires"] = yearsUntilExpiration
 
 	backupfile = ''.join((path, ".bak"))
-	LOGGER.notice("Backup existing certifcate to {0}".format(backupfile))
+	LOGGER.notice("Creating backup of existing certifcate to {0}".format(backupfile))
 	shutil.copy(path, backupfile)
 
-	createCertificate(path, currentConfig)
+	try:
+		createCertificate(path, currentConfig)
+	except CertificateCreationError as error:
+		LOGGER.warning('Problem during the creation of the certificate: {0}'.format(error))
+		LOGGER.notice('Restoring backup.')
+		shutil.move(backupfile, path)
+		raise error
 
 
 def createCertificate(path=None, config=None):
 	"""
 	Creates a certificate.
+
+	Will overwrite any certificate that may exists in ``path``.
 
 	:param path: The path of the certificate. \
 If this is `None` the default will be used.
@@ -97,8 +111,6 @@ If this is `None` the default will be used.
 If not given will use a default.
 	:type config: dict
 	"""
-	# TODO: check if path exists and give user info about it
-
 	try:
 		which("ucr")
 		LOGGER.notice("Don't use recreate method on UCS-Systems")
