@@ -82,6 +82,9 @@ class CertificateCreationWithConfigTestCase(unittest.TestCase):
         self.nonDefaultConfig['commonName'] = 'this-should-not-be-hostname'
         self.assertRaises(CertificateCreationError, createCertificate, config=self.nonDefaultConfig)
 
+    def testCertificateFileExists(self):
+        self.assertTrue(os.path.exists(self.certificate_path))
+
 
 class LoadConfigurationTestCase(unittest.TestCase):
     EXAMPLE_CERTIFICATE = os.path.join(os.path.dirname(__file__),
