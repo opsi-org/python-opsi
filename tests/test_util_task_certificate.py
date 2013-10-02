@@ -85,6 +85,22 @@ class CertificateCreationWithConfigTestCase(unittest.TestCase):
     def testCertificateFileExists(self):
         self.assertTrue(os.path.exists(self.certificate_path))
 
+    def testCertificateCreationWorksWithoutMail(self):
+        del self.nonDefaultConfig['emailAddress']
+        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
+
+    def testCertificateCreationWorksWithoutOU(self):
+        del self.nonDefaultConfig['organizationalUnit']
+        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
+
+    def testCertificateCreationWorksWithEmptyMail(self):
+        del self.nonDefaultConfig['emailAddress']
+        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
+
+    def testCertificateCreationWorksWithEmptyOU(self):
+        del self.nonDefaultConfig['organizationalUnit']
+        createCertificate(self.certificate_path, config=self.nonDefaultConfig)
+
 
 class LoadConfigurationTestCase(unittest.TestCase):
     EXAMPLE_CERTIFICATE = os.path.join(os.path.dirname(__file__),

@@ -129,8 +129,6 @@ If not given will use a default.
 
 	if config is None:
 		certparams = DEFAULT_CERTIFICATE_PARAMETERS
-		certparams['emailAddress'] = 'root@localhost'
-		certparams['organizationalUnit'] = 'OPSI'
 	else:
 		certparams = config
 
@@ -156,14 +154,24 @@ If not given will use a default.
 	cert.get_subject().ST = certparams['state']
 	cert.get_subject().L = certparams['locality']
 	cert.get_subject().O = certparams['organization']
-	cert.get_subject().OU = certparams['organizationalUnit']
 	cert.get_subject().CN = certparams['commonName']
-	cert.get_subject().emailAddress = certparams['emailAddress']
+
+	if 'organizationalUnit' in certparams:
+		if certparams['organizationalUnit']:
+			cert.get_subject().OU = certparams['organizationalUnit']
+		else:
+			del certparams['organizationalUnit']
+
+	if 'emailAddress' in certparams:
+		if certparams['emailAddress']:
+			cert.get_subject().emailAddress = certparams['emailAddress']
+		else:
+			del certparams['emailAddress']
 
 	LOGGER.notice("Generating new Serialnumber")
 	#TODO: generating serial number
 	#TODO: some info on the serial number:
-	#      https://tools.ietf.org/html/rfc2459#page-18
+	#      	https://tools.ietf.org/html/rfc2459#page-18
 	cert.set_serial_number(1000)
 	LOGGER.notice(
 		"Setting new expiration date (%d years)" % certparams["expires"]
