@@ -13,6 +13,7 @@ python-opsi (4.0.4.1-1) UNRELEASED; urgency=low
   * Remove loading geo_override kernel patch
   * Fixing mountoptions handling for cifs-mount
   * Added Transaction control for sql-backends for prevent of duplicate entries in productProperty-Defaultvalues. (fixes #456)
+  * New module: OPSI.Util.Task.Certificate
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 12 Sep 2013 11:41:33 +0200
 
