@@ -4,7 +4,7 @@
 import time
 import unittest
 
-from OPSI.Object import (OpsiError, BackendError, OpsiClient, Host,
+from OPSI.Object import (OpsiError, BackendError, Host,
     getPossibleClassAttributes, OpsiConfigserver, OpsiDepotserver,
     LocalbootProduct)
 
