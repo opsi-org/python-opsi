@@ -202,11 +202,13 @@ class Repository:
 			self._lastAverageSpeedCalcBytes = 0
 		self._lastSpeedCalcBytes += read
 		self._lastAverageSpeedCalcBytes += read
-		if hasattr(self, '_lastSpeedCalcTime'):
+
+		if self._lastSpeedCalcTime is not None:
 			delta = now - self._lastSpeedCalcTime
 			if (delta > 0):
-				self._currentSpeed = float(self._lastSpeedCalcBytes)/float(delta)
+				self._currentSpeed = float(self._lastSpeedCalcBytes) / float(delta)
 				self._lastSpeedCalcBytes = 0
+
 		if not hasattr(self, '_lastAverageSpeedCalcTime'):
 			self._lastAverageSpeedCalcTime = now
 			self._averageSpeed = self._currentSpeed
@@ -344,7 +346,13 @@ class Repository:
 			self._bytesTransfered = 0
 			transferStartTime = time.time()
 			buf = True
-			fileSize = os.path.getsize(src.name)
+
+			if isinstance(src, httplib.HTTPResponse) or hasattr(src, 'length'):
+				fileSize = src.length
+			else:
+				fileSize = os.path.getsize(src.name)
+			logger.debug('Filesize is: {0}'.format(fileSize))
+
 			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
 				remaining_bytes = fileSize - self._bytesTransfered
 				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
