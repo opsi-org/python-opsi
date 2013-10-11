@@ -1,12 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-	opsi python library - Repository 
+	opsi python library - Repository
 	================================
-	
+
 	This module is part of the desktop management solution opsi
 	(open pc server integration) http://www.opsi.org
-	
+
 	Copyright (C) 2006, 2007, 2008, 2009, 2010, 2013 uib GmbH <info@uib.de>
 	All rights reserved.
 
@@ -22,7 +22,7 @@
 
 	You should have received a copy of the GNU Affero General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-	
+
 	@copyright: uib GmbH <info@uib.de>
 	.. codeauthor:: Jan Schneider <j.schneider@uib.de>
 	.. codeauthor:: Erol Ueluekmen <e.ueluekmen@uib.de>
@@ -31,14 +31,19 @@
 
 __version__ = '4.0.4.1'
 
-# Imports
-import re, stat, base64, urllib, httplib, os, shutil, codecs, time, inspect
+import base64
+import httplib
+import os
+import re
+import shutil
+import stat
+import time
+import urllib
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
 
-# OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import LOG_INFO, Logger
 from OPSI.Types import *
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
@@ -46,15 +51,12 @@ from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 from OPSI.System import *
 
-# Get Logger instance
 logger = Logger()
+
 
 def _(string):
 	return string
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       Repositories                                                                =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 def getRepository(url, **kwargs):
 	if re.search('^file://', url, re.IGNORECASE):
@@ -67,22 +69,25 @@ def getRepository(url, **kwargs):
 		return CIFSRepository(url, **kwargs)
 	raise RepositoryError(u"Repository url '%s' not supported" % url)
 
+
 class RepositoryHook(object):
 	def __init__(self):
 		pass
-	
+
 	def pre_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
 		return (source, destination, overallProgressSubject, currentProgressSubject)
-	
+
 	def post_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
 		return None
-	
+
 	def error_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):
 		pass
+
 
 class RepositoryObserver(object):
 	def dynamicBandwidthLimitChanged(self, repository, bandwidth):
 		pass
+
 
 class Repository:
 	def __init__(self, url, **kwargs):
@@ -111,14 +116,14 @@ class Repository:
 			kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
 			kwargs.get('maxBandwidth', self._maxBandwidth),
 		)
-	
+
 	def setBandwidth(self, dynamicBandwidth = False, maxBandwidth = 0):
 		''' maxBandwidth in byte/s'''
 		self._dynamicBandwidth = forceBool(dynamicBandwidth)
 		self._maxBandwidth = forceInt(maxBandwidth)
 		if (self._maxBandwidth < 0):
 			self._maxBandwidth = 0
-		
+
 		if self._dynamicBandwidth:
 			if not self._networkPerformanceCounter:
 				try:
@@ -133,39 +138,39 @@ class Repository:
 				self._networkPerformanceCounter.stop()
 			except Exception, e:
 				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % e)
-	
+
 	def setMaxBandwidth(self, maxBandwidth):
 		self.setBandwidth(dynamicBandwidth = self._dynamicBandwidth, maxBandwidth = maxBandwidth)
-	
+
 	def __unicode__(self):
 		return u'<%s %s>' % (self.__class__.__name__, self._url)
-	
+
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")
-	
+
 	def __repr__(self):
 		return self.__str__()
-	
+
 	def addHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
 		if not hook in self._hooks:
 			self._hooks.append(hook)
-	
+
 	def removeHook(self, hook):
 		if not isinstance(hook, RepositoryHook):
 			raise ValueError(u"Not a RepositoryHook: %s" % hook)
 		if hook in self._hooks:
 			self._hooks.remove(hook)
-	
+
 	def attachObserver(self, observer):
 		if not observer in self._observers:
 			self._observers.append(observer)
-	
+
 	def detachObserver(self, observer):
 		if observer in self._observers:
 			self._observers.remove(observer)
-	
+
 	def _fireEvent(self, event, *args):
 		for obs in self._observers:
 			try:
@@ -173,13 +178,13 @@ class Repository:
 				meth(self, *args)
 			except Exception, e:
 				logger.error(e)
-	
+
 	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):
 		return self._transfer('in', src, dst, progressSubject, bytes=bytes)
-		
+
 	def _transferUp(self, src, dst, progressSubject=None):
 		return self._transfer('out', src, dst, progressSubject)
-	
+
 	def _getNetworkUsage(self):
 		networkUsage = 0.0
 		if self._networkPerformanceCounter:
@@ -188,7 +193,7 @@ class Repository:
 			else:
 				networkUsage = self._networkPerformanceCounter.getBytesInPerSecond()
 		return networkUsage
-	
+
 	def _calcSpeed(self, read):
 		now = time.time()
 		if not hasattr(self, '_lastSpeedCalcBytes'):
@@ -212,11 +217,11 @@ class Repository:
 				self._lastAverageSpeedCalcBytes = 0
 				self._lastAverageSpeedCalcTime = now
 		self._lastSpeedCalcTime = now
-		
+
 	def _bandwidthLimit(self):
 		if not (self._dynamicBandwidth and self._networkPerformanceCounter) and not self._maxBandwidth:
 			return
-		
+
 		now = time.time()
 		if hasattr(self, '_lastLimitCalcTime'):
 			delta = now - self._lastLimitCalcTime
@@ -277,10 +282,10 @@ class Repository:
 												% (float(self._dynamicBandwidthLimitRate)*100, float(bwlimit)/1024))
 										self._fireEvent('dynamicBandwidthLimitChanged', self._dynamicBandwidthLimit)
 									self._networkUsageData = []
-							
+
 			if self._maxBandwidth and ((bwlimit == 0) or (bwlimit > self._maxBandwidth)):
 				bwlimit = float(self._maxBandwidth)
-			
+
 			speed = float(self._currentSpeed)
 			if (bwlimit > 0) and (speed > 0):
 				factor = 1.0
@@ -331,7 +336,7 @@ class Repository:
 		else:
 			self._lastLimitCalcTime = time.time()
 		time.sleep(self._bandwidthSleepTime)
-		
+
 	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):
 		logger.debug(u"Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s" % (transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth))
 		try:
@@ -356,17 +361,17 @@ class Repository:
 						dst.send(buf)
 					else:
 						dst.write(buf)
-					
+
 					if progressSubject:
 						progressSubject.addToState(read)
-					
+
 					self._calcSpeed(read)
 					logger.debug("Calculated Speed: '%d'" % self._currentSpeed)
 					if (self._dynamicBandwidth or self._maxBandwidth):
 						self._bandwidthLimit()
 					elif (self._currentSpeed > 1000000):
 						self._bufferSize = 262144
-					
+
 			transferTime = time.time() - transferStartTime
 			if (transferTime == 0):
 				transferTime = 0.0000001
@@ -376,19 +381,19 @@ class Repository:
 		except Exception, e:
 			logger.logException(e, LOG_INFO)
 			raise
-		
+
 	def _preProcessPath(self, path):
 		return path
-	
+
 	def content(self, source='', recursive=False):
 		raise RepositoryError(u"Not implemented")
-	
+
 	def listdir(self, source=''):
 		result = []
 		for c in self.content(source, recursive=False):
 			result.append(c['name'])
 		return result
-	
+
 	def getCountAndSize(self, source=''):
 		source = forceUnicode(source)
 		(count, size) = (0, 0)
@@ -397,7 +402,7 @@ class Repository:
 				count += 1
 				size += entry.get('size', 0)
 		return (count, size)
-	
+
 	def fileInfo(self, source):
 		source = forceUnicode(source)
 		info = {}
@@ -415,35 +420,32 @@ class Repository:
 		except Exception, e:
 			#logger.logException(e)
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
-		
+
 	def exists(self, source):
 		try:
 			self.fileInfo(source)
 		except:
 			return False
 		return True
-	
+
 	def islink(self, source):
 		return False
-	
+
 	def isfile(self, source):
 		try:
 			info = self.fileInfo(source)
 			return (info.get('type', '') == 'file')
 		except:
 			return False
-	
+
 	def isdir(self, source):
 		try:
 			info = self.fileInfo(source)
 			return (info.get('type', '') == 'dir')
 		except:
 			return False
-	
+
 	def copy(self, source, destination, overallProgressSubject=None, currentProgressSubject=None):
-		for hook in self._hooks:
-			(source, destination, overallProgressSubject, currentProgressSubject) = hook.pre_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
-		
 		'''
 		source = file,  destination = file              => overwrite destination
 		source = file,  destination = dir               => copy into destination
@@ -453,28 +455,31 @@ class Repository:
 		source = dir,   destination = not existent      => create destination, copy content of source into destination
 		source = dir/*, destination = dir/not existent  => create destination if not exists, copy content of source into destination
 		'''
+		for hook in self._hooks:
+			(source, destination, overallProgressSubject, currentProgressSubject) = hook.pre_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
+
 		try:
 			source = forceFilename(source)
 			destination = forceFilename(destination)
-			
+
 			copySrcContent = False
-			
+
 			if source.endswith('/*.*') or source.endswith('\\*.*'):
 				source = source[:-4]
 				copySrcContent = True
-				
+
 			elif source.endswith('/*') or source.endswith('\\*'):
 				source = source[:-2]
 				copySrcContent = True
-			
+
 			if copySrcContent and not self.isdir(source):
 				raise Exception(u"Source directory '%s' not found" % source)
-			
+
 			logger.info(u"Copying from '%s' to '%s'" % (source, destination))
-			
+
 			(totalFiles, size) = (0, 0)
 			info = self.fileInfo(source)
-			
+
 			if overallProgressSubject:
 				overallProgressSubject.reset()
 				if (info.get('type') == 'file'):
@@ -482,7 +487,7 @@ class Repository:
 				else:
 					(totalFiles, size) = self.getCountAndSize(source)
 				overallProgressSubject.setEnd(size)
-			
+
 			if (info.get('type') == 'file'):
 				destinationFile = destination
 				if not os.path.exists(destination):
@@ -491,7 +496,7 @@ class Repository:
 						os.makedirs(parent)
 				elif os.path.isdir(destination):
 					destinationFile = os.path.join(destination, info['name'])
-				
+
 				if overallProgressSubject:
 					sizeString = "%d Byte" % info['size']
 					if (info['size'] > 1024*1024):
@@ -508,7 +513,7 @@ class Repository:
 					logger.debug(e)
 				if overallProgressSubject:
 					overallProgressSubject.addToState(info['size'])
-				
+
 			elif (info.get('type') == 'dir'):
 				if not os.path.exists(destination):
 					os.makedirs(destination)
@@ -548,7 +553,7 @@ class Repository:
 						if targetDir and not os.path.isdir(targetDir):
 							os.makedirs(targetDir)
 						self.download(u'/'.join((source, c['path'])), os.path.join(targetDir, c['name']), currentProgressSubject)
-						
+
 						if overallProgressSubject:
 							overallProgressSubject.addToState(c['size'])
 			else:
@@ -560,45 +565,46 @@ class Repository:
 			for hook in self._hooks:
 				hook.error_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject, e)
 			raise
-		
+
 		for hook in self._hooks:
 			hook.post_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
-	
+
 	def upload(self, source, destination):
 		raise RepositoryError(u"Not implemented")
-	
+
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		raise RepositoryError(u"Not implemented")
-	
+
 	def delete(self, destination):
 		raise RepositoryError(u"Not implemented")
-	
+
 	def makeDirectory(self, destination):
 		raise RepositoryError(u"Not implemented")
-	
+
 	def disconnect(self):
 		if self._networkPerformanceCounter:
 			try:
 				self._networkPerformanceCounter.stop()
 			except:
 				pass
-	
+
 	def __del__(self):
 		try:
 			self.disconnect()
 		except:
 			pass
-	
+
+
 class FileRepository(Repository):
-	
+
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
-		
+
 		match = re.search('^file://(/[^/]+.*)$', self._url, re.IGNORECASE)
 		if not match:
 			raise RepositoryError(u"Bad file url: '%s'" % self._url)
 		self._path = match.group(1)
-	
+
 	def _preProcessPath(self, path):
 		path = forceUnicode(path)
 		if path.startswith('/'):
@@ -609,7 +615,7 @@ class FileRepository(Repository):
 		if (os.name == 'nt'):
 			path = path.replace('/', '\\')
 		return path
-	
+
 	def fileInfo(self, source):
 		source = self._preProcessPath(source)
 		try:
@@ -629,22 +635,22 @@ class FileRepository(Repository):
 		except Exception, e:
 			#logger.logException(e)
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
-	
+
 	def exists(self, source):
 		return os.path.exists(self._preProcessPath(source))
-	
+
 	def islink(self, source):
 		return os.path.islink(self._preProcessPath(source))
-		
+
 	def isfile(self, source):
 		return os.path.isfile(self._preProcessPath(source))
-	
+
 	def isdir(self, source):
 		return os.path.isdir(self._preProcessPath(source))
-	
+
 	def content(self, source='', recursive=False):
 		source = self._preProcessPath(source)
-		
+
 		content = []
 		srcLen = len(source)
 		def _recurse(path, content):
@@ -669,7 +675,7 @@ class FileRepository(Repository):
 					logger.error(e)
 			return content
 		return _recurse(path = source, content = content)
-	
+
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		'''
 		startByteNumber: position of first byte to be read
@@ -680,16 +686,16 @@ class FileRepository(Repository):
 		destination = forceUnicode(destination)
 		startByteNumber = forceInt(startByteNumber)
 		endByteNumber = forceInt(endByteNumber)
-		
+
 		if (endByteNumber > -1):
 			size -= endByteNumber
 		if (startByteNumber > -1):
 			size -= startByteNumber
-		
+
 		logger.debug(u"Length of binary data to download: %d bytes" % size)
-		
+
 		if progressSubject: progressSubject.setEnd(size)
-		
+
 		(src, dst) = (None, None)
 		try:
 			src = open(source, 'rb')
@@ -712,17 +718,17 @@ class FileRepository(Repository):
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
 						% (source, destination, forceUnicode(e)))
-	
+
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = self._preProcessPath(destination)
-		
+
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
-		
+
 		if progressSubject: progressSubject.setEnd(size)
-		
+
 		(src, dst) = (None, None)
 		try:
 			src = open(source, 'rb')
@@ -735,21 +741,22 @@ class FileRepository(Repository):
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
 						% (source, destination, e))
-	
+
 	def delete(self, destination):
 		destination = self._preProcessPath(destination)
 		os.unlink(destination)
-	
+
 	def makeDirectory(self, destination):
 		destination = self._preProcessPath(destination)
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
-	
+
+
 class HTTPRepository(Repository):
-	
+
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
-		
+
 		self._application = 'opsi repository module version %s' % __version__
 		self._username = u''
 		self._password = u''
@@ -765,7 +772,7 @@ class HTTPRepository(Repository):
 		verifyServerCert = False
 		caCertFile = None
 		verifyServerCertByCa = False
-		
+
 		for (key, value) in kwargs.items():
 			key = key.lower()
 			if   (key == 'application'):
@@ -784,9 +791,9 @@ class HTTPRepository(Repository):
 				caCertFile = forceFilename(value)
 			elif (key == 'verifyservercertbyca'):
 				verifyServerCertByCa = forceBool(value)
-			
+
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
-		
+
 		if not scheme in ('http', 'https', 'webdav', 'webdavs'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		self._protocol = scheme
@@ -794,7 +801,7 @@ class HTTPRepository(Repository):
 			self._port = port
 		elif self._protocol.endswith('s'):
 			self._port = 443
-		
+
 		self._host = host
 		self._path = baseurl
 		if not self._username and username: self._username = username
@@ -803,11 +810,11 @@ class HTTPRepository(Repository):
 		self._password = forceUnicode(self._password)
 		if self._password:
 			logger.addConfidentialString(self._password)
-		
+
 		auth = u'%s:%s' % (self._username, self._password)
 		self._auth = 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip()
 		self._proxy = None
-		
+
 		if proxy:
 			self._proxy = forceUnicode(proxy)
 			self._auth = None
@@ -831,7 +838,7 @@ class HTTPRepository(Repository):
 			self._protocol = proxyProtocol
 			self._host = proxyHost
 			self._port = proxyPort
-		
+
 		self._connectionPool = getSharedConnectionPool(
 			scheme               = self._protocol,
 			host                 = self._host,
@@ -846,7 +853,7 @@ class HTTPRepository(Repository):
 			caCertFile           = caCertFile,
 			verifyServerCertByCa = verifyServerCertByCa
 		)
-		
+
 	def _preProcessPath(self, path):
 		path = forceUnicode(path)
 		path = path.lstrip("/")
@@ -859,10 +866,10 @@ class HTTPRepository(Repository):
 			path = (u"/".join([self._path, path])).lstrip("/")
 			if not self._url.endswith("/"):
 				path = u"/" + path
-			
+
 		path = path.rstrip("/")
 		return urllib.quote(path.encode('utf-8'))
-	
+
 	def _headers(self):
 		headers = { 'user-agent': self._application }
 		if self._cookie:
@@ -870,17 +877,17 @@ class HTTPRepository(Repository):
 		if self._auth:
 			headers['authorization'] = self._auth
 		return headers
-	
+
 	def _processResponseHeaders(self, response):
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
 		if cookie:
 			# Store cookie
 			self._cookie = cookie.split(';')[0].strip()
-	
+
 	def getPeerCertificate(self, asPem=False):
 		return self._connectionPool.getPeerCertificate(asPem)
-	
+
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):
 		'''
 		startByteNumber: position of first byte to be read
@@ -890,7 +897,7 @@ class HTTPRepository(Repository):
 		startByteNumber = forceInt(startByteNumber)
 		endByteNumber = forceInt(endByteNumber)
 		source = self._preProcessPath(source)
-		
+
 		dst = None
 		try:
 			trynum = 0
@@ -898,7 +905,7 @@ class HTTPRepository(Repository):
 			while True:
 				trynum += 1
 				conn = self._connectionPool.getConnection()
-				
+
 				headers = self._headers()
 				startByteNumber += bytesTransfered
 				if (startByteNumber > -1) or (endByteNumber > -1):
@@ -909,13 +916,13 @@ class HTTPRepository(Repository):
 					if (ebn <= -1):
 						reb = ''
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
-				
+
 				conn.putrequest('GET', source)
 				for (k, v) in headers.items():
 					conn.putheader(k, v)
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
-				
+
 				httplib_response = None
 				try:
 					httplib_response = conn.getresponse()
@@ -924,9 +931,9 @@ class HTTPRepository(Repository):
 						raise Exception(httplib_response.status)
 					size = forceInt(httplib_response.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
-					
+
 					if progressSubject: progressSubject.setEnd(size)
-					
+
 					if (startByteNumber > 0) and os.path.exists(destination):
 						dst = open(destination, 'ab')
 					else:
@@ -945,63 +952,64 @@ class HTTPRepository(Repository):
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
-			
+
 		except Exception, e:
 			logger.logException(e)
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, e))
 		logger.debug2(u"HTTP download done")
-	
+
 	def disconnect(self):
 		Repository.disconnect(self)
 		if self._connectionPool:
 			self._connectionPool.free()
-	
+
+
 class WebDAVRepository(HTTPRepository):
-	
+
 	def __init__(self, url, **kwargs):
 		HTTPRepository.__init__(self, url, **kwargs)
 		parts = self._url.split('/')
 		if (len(parts) < 3) or parts[0].lower() not in ('webdav:', 'webdavs:'):
 			raise RepositoryError(u"Bad http url: '%s'" % self._url)
 		self._contentCache = {}
-	
+
 	def content(self, source='', recursive=False):
 		source = forceUnicode(source)
-		
+
 		source = self._preProcessPath(source)
 		if not source.endswith('/'):
 			source += '/'
-		
+
 		if recursive and self._contentCache.has_key(source):
 			if (time.time() - self._contentCache[source]['time'] > 60):
 				del self._contentCache[source]
 			else:
 				return self._contentCache[source]['content']
-		
+
 		content = []
-		
+
 		headers = self._headers()
 		depth = '1'
 		if recursive:
 			depth = 'infinity'
 		headers['depth'] = depth
-		
+
 		response = self._connectionPool.urlopen(method = 'PROPFIND', url = source, body = None, headers = headers, retry = True, redirect = True)
 		self._processResponseHeaders(response)
 		if (response.status != responsecode.MULTI_STATUS):
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
-		
+
 		encoding = 'utf-8'
 		contentType = response.getheader('content-type', '').lower()
 		for part in contentType.split(';'):
 			if (part.find('charset=') != -1):
 				encoding = part.split('=')[1].replace('"', '').strip()
-		
+
 		msr = davxml.WebDAVDocument.fromString(response.data)
 		if not msr.root_element.children[0].childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer).childOfType(davxml.ResourceType).children:
 			raise RepositoryError(u"Not a directory: '%s'" % source)
-		
+
 		srcLen = len(source)
 		for child in msr.root_element.children[1:]:
 			pContainer = child.childOfType(davxml.PropertyStatus).childOfType(davxml.PropertyContainer)
@@ -1015,32 +1023,32 @@ class WebDAVRepository(HTTPRepository):
 				if info['path'].endswith('/'):
 					info['path'] = info['path'][:-1]
 			content.append(info)
-		
+
 		if recursive:
 			self._contentCache[source] = {
 				'time':    time.time(),
 				'content': content
 			}
 		return content
-	
+
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = self._preProcessPath(destination)
 		self._contentCache = {}
-		
+
 		fs = os.stat(source)
 		size = fs[stat.ST_SIZE]
 		logger.debug(u"Length of binary data to upload: %d" % size)
-		
+
 		if progressSubject: progressSubject.setEnd(size)
-		
+
 		src = None
 		conn = None
 		response = None
 		try:
 			headers = self._headers()
 			headers['content-length'] = size
-			
+
 			trynum = 0
 			while True:
 				trynum += 1
@@ -1050,7 +1058,7 @@ class WebDAVRepository(HTTPRepository):
 					conn.putheader(k, v)
 				conn.endheaders()
 				conn.sock.settimeout(self._socketTimeout)
-				
+
 				httplib_response = None
 				try:
 					src = open(source, 'rb')
@@ -1070,7 +1078,7 @@ class WebDAVRepository(HTTPRepository):
 				conn = None
 				self._connectionPool.endConnection(conn)
 				break
-			
+
 			self._processResponseHeaders(response)
 			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
 				raise Exception(response.status)
@@ -1081,10 +1089,10 @@ class WebDAVRepository(HTTPRepository):
 				self._connectionPool.endConnection(None)
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" % (source, destination, forceUnicode(e)))
 		logger.debug2(u"WebDAV upload done")
-	
+
 	def delete(self, destination):
 		destination = self._preProcessPath(destination)
-		
+
 		headers = self._headers()
 		response = self._connectionPool.urlopen(method = 'DELETE', url = destination, body = None, headers = headers, retry = True, redirect = True)
 		self._processResponseHeaders(response)
@@ -1093,33 +1101,34 @@ class WebDAVRepository(HTTPRepository):
 		## Do we have to read the response?
 		#response.read()
 
+
 class CIFSRepository(FileRepository):
 	def __init__(self, url, **kwargs):
 		Repository.__init__(self, url, **kwargs)
-		
+
 		match = re.search('^(smb|cifs)://([^/]+/.+)$', self._url, re.IGNORECASE)
 		if not match:
 			raise RepositoryError(u"Bad smb/cifs url: '%s'" % self._url)
-		
+
 		if not os.name in ('posix', 'nt'):
 			raise NotImplementedError(u"CIFSRepository not yet avaliable on os '%s'" % os.name)
 
 		self._mountShare = forceBool(kwargs.get('mount', True))
 		self._mounted = False
 		self._mountPointCreated = False
-		
+
 		self._mountPoint = kwargs.get('mountPoint')
 		if not self._mountPoint:
 			if   (os.name == 'posix'):
 				self._mountPoint = u'/tmp/.cifs-mount.%s' % randomString(5)
 			elif (os.name == 'nt'):
 				self._mountPoint = getFreeDrive(startLetter = 'g')
-		
+
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
 		self._password = forceUnicode(kwargs.get('password', ''))
 		if self._password:
 			logger.addConfidentialString(self._password)
-		
+
 		self._mountOptions = kwargs.get('mountOptions', {})
 
 		if self._mountShare:
@@ -1134,10 +1143,10 @@ class CIFSRepository(FileRepository):
 		else:
 			parts = self._url.split('/')
 			self._path = u'\\\\%s\\%s%s' % (parts[2], parts[3], self._path.replace('/', '\\'))
-	
+
 	def getMountPoint(self):
 		return self._mountPoint
-	
+
 	def _mount(self):
 		if self._mounted:
 			self._umount()
@@ -1161,23 +1170,24 @@ class CIFSRepository(FileRepository):
 				except Exception, e2:
 					logger.error(e2)
 			raise e
-		
+
 	def _umount(self):
 		if not self._mounted or not self._mountPoint:
 			return
-		
+
 		logger.info(u"Umounting '%s' from '%s'" % (self._url, self._mountPoint))
-		
+
 		umount(self._mountPoint)
-		
+
 		self._mounted = False
 		if self._mountPointCreated:
 			os.rmdir(self._mountPoint)
-	
+
 	def disconnect(self):
 		FileRepository.disconnect(self)
 		self._umount()
-	
+
+
 class DepotToLocalDirectorySychronizer(object):
 	def __init__(self, sourceDepot, destinationDirectory, productIds=[], maxBandwidth=0, dynamicBandwidth=False):
 		self._sourceDepot          = sourceDepot
@@ -1186,21 +1196,21 @@ class DepotToLocalDirectorySychronizer(object):
 		if not os.path.isdir(self._destinationDirectory):
 			os.mkdir(self._destinationDirectory)
 		self._sourceDepot.setBandwidth(dynamicBandwidth = dynamicBandwidth, maxBandwidth = maxBandwidth)
-		
+
 	def _synchronizeDirectories(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination = forceUnicode(destination)
 		logger.debug(u"Syncing directory %s to %s" % (source, destination))
 		if not os.path.isdir(destination):
 			os.mkdir(destination)
-		
+
 		for f in os.listdir(destination):
 			relSource = (source + u'/' + f).split(u'/', 1)[1]
 			if (relSource == self._productId + u'.files'):
 				continue
 			if self._fileInfo.has_key(relSource):
 				continue
-			
+
 			path = os.path.join(destination, f)
 			if os.path.isdir(path) and not os.path.islink(path):
 				logger.info(u"Deleting '%s'" % relSource)
@@ -1220,7 +1230,7 @@ class DepotToLocalDirectorySychronizer(object):
 							if f2: f2.close(); f2 = None
 				logger.info(u"Deleting '%s'" % relSource)
 				os.remove(path)
-			
+
 		for f in self._sourceDepot.content(source):
 			source = forceUnicode(source)
 			(s, d) = (source + u'/' + f['name'], os.path.join(destination, f['name']))
@@ -1249,7 +1259,7 @@ class DepotToLocalDirectorySychronizer(object):
 						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
 							#if progressSubject: progressSubject.addToState(size)
 							continue
-				
+
 				if progressSubject: progressSubject.setMessage( _(u"Downloading file '%s'") % f['name'] )
 				if exists and (localSize < size):
 					partialEndFile = d + u'.opsi_sync_endpart'
@@ -1298,38 +1308,37 @@ class DepotToLocalDirectorySychronizer(object):
 					logger.error(error)
 					raise Exception(error)
 				#if progressSubject: progressSubject.addToState(size)
-				
+
 	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):
-		
 		if not self._productIds:
 			logger.info(u"Getting product dirs of depot '%s'" % self._sourceDepot)
 			for c in self._sourceDepot.content():
 				self._productIds.append(c['name'])
-		
+
 		overallProgressSubject = ProgressSubject(id = 'sync_products_overall', type = 'product_sync', end = len(self._productIds), fireAlways = True)
 		overallProgressSubject.setMessage( _(u'Synchronizing products') )
 		if overallProgressObserver: overallProgressSubject.attachObserver(overallProgressObserver)
-		
+
 		for self._productId in self._productIds:
 			productProgressSubject = ProgressSubject(id = 'sync_product_' + self._productId, type = 'product_sync', fireAlways = True)
 			productProgressSubject.setMessage( _(u"Synchronizing product %s") % self._productId )
 			if productProgressObserver: productProgressSubject.attachObserver(productProgressObserver)
 			packageContentFile = None
-			
+
 			try:
 				self._linkFiles = {}
 				logger.notice(u"Syncing product %s of depot %s with local directory %s" \
 						% (self._productId, self._sourceDepot, self._destinationDirectory))
-				
+
 				productDestinationDirectory = os.path.join(self._destinationDirectory, self._productId)
 				if not os.path.isdir(productDestinationDirectory):
 					os.mkdir(productDestinationDirectory)
-				
+
 				logger.info(u"Downloading package content file")
 				packageContentFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
 				self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
 				self._fileInfo = PackageContentFile(packageContentFile).parse()
-				
+
 				size = 0
 				for value in self._fileInfo.values():
 					if value.has_key('size'):
@@ -1337,9 +1346,9 @@ class DepotToLocalDirectorySychronizer(object):
 				productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (size/1024)) )
 				productProgressSubject.setEnd(size)
 				productProgressSubject.setEndChangable(False)
-				
+
 				self._synchronizeDirectories(self._productId, productDestinationDirectory, productProgressSubject)
-				
+
 				fs = self._linkFiles.keys()
 				fs.sort()
 				for f in fs:
@@ -1381,13 +1390,11 @@ class DepotToLocalDirectorySychronizer(object):
 				if packageContentFile and os.path.exists(packageContentFile):
 					os.unlink(packageContentFile)
 				raise
-				
+
 			overallProgressSubject.addToState(1)
 			if productProgressObserver: productProgressSubject.detachObserver(productProgressObserver)
-			
+
 		if overallProgressObserver: overallProgressSubject.detachObserver(overallProgressObserver)
-
-
 
 
 #class ProductSynchronizer(object):
@@ -1398,40 +1405,39 @@ class DepotToLocalDirectorySychronizer(object):
 #		self._productIds           = productIds
 #		self._maxBandwidth         = maxBandwidth
 #		self._dynamicBandwidth     = dynamicBandwidth
-#	
+#
 #	def synchronize(self):
 #		try:
 #			depot = self._configService.host_getObjects(id = self._depotId)[0]
 #		except Exception, e:
 #			raise Exception(u"Failed to get info for depot '%s': %s" % (self._depotId, e))
 #		depot.depotWebdavUrl
-#		
+#
 #		for productId in self._productIds:
 #			logger.notice(u"Syncing product %s from depot %s to local directory %s" \
 #						% (productId, self._sourceDepot, self._destinationDirectory))
-#				
+#
 #			productDestinationDirectory = os.path.join(self._destinationDirectory, productId)
 #			if not os.path.isdir(productDestinationDirectory):
 #				os.mkdir(productDestinationDirectory)
-#			
+#
 #			logger.info(u"Downloading package content file")
 #			packageContentFile = os.path.join(productDestinationDirectory, u'%s.files' % self._productId)
 #			self._sourceDepot.download(u'%s/%s.files' % (self._productId, self._productId), packageContentFile)
 #			self._fileInfo = PackageContentFile(packageContentFile).parse()
-#			
+#
 #			bytes = 0
 #			for value in self._fileInfo.values():
 #				if value.has_key('size'):
 #					bytes += int(value['size'])
 #			productProgressSubject.setMessage( _(u"Synchronizing product %s (%.2f kByte)") % (self._productId, (bytes/1024)) )
 #			productProgressSubject.setEnd(bytes)
-				
 
 
 #class OpsiDepot(object):
 #	def __init__(self, serviceUrl, depotId, username, password):
 #		from OPSI.Backend.JSONRPC import JSONRPCBackend
-#		
+#
 #		self._configService = JSONRPCBackend(address = serviceUrl, username = username, password = password, connectOnInit = True)
 #		self._depotId = depotId
 #		try:
@@ -1440,41 +1446,41 @@ class DepotToLocalDirectorySychronizer(object):
 #		except Exception, e:
 #			raise Exception(u"Failed to get info for depot '%s': %s" % (self._depotId, e))
 #		self._repository = getRepository(url = self._depot.depotWebdavUrl, username = username, password = password)
-#		
+#
 #	def __getattr__(self, name):
 #		if hasattr(self._repository, name):
 #			return getattr(self._repository, name)
 #		return self.__dict__[name]
-#	
+#
 #	def download(self, source, destination, progressSubject=None, rangeStart=-1, rangeEnd=-1):
 #		if os.path.exists(destination):
 #			depotLocalFile = self._depotLocalDir + source
 #			print self._configService.depot_librsyncSignature(depotLocalFile)
 #		else:
 #			return self._repository.download(source = source, destination = destination, progressSubject = progressSubject, rangeStart = rangeStart)
-#		
+#
 
 if (__name__ == "__main__"):
-	import sys
+	from OPSI.Logger import LOG_DEBUG, LOG_DEBUG2
+
+	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleLevel(LOG_DEBUG2)
-	#logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
-	
+
 	tempDir = '/tmp/testdir'
 	#if os.path.exists(tempDir):
 	#	shutil.rmtree(tempDir)
 	if not os.path.exists(tempDir):
 		os.mkdir(tempDir)
 
-	logger.notice("getRepository")	
-		
+	logger.notice("getRepository")
+
 	#sourceDepot = getRepository(url = u'smb://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxx', mount = False)
 
 	#sourceDepot.listdir()
 	#print sourceDepot.listdir()
 
 	sourceDepot = getRepository(url = u'smb://lelap530.vmnat.local/opsi_depot', username = u'pcpatch', password = u'linux123', mountPoint = tempDir,  mountOptions = { "iocharset": 'utf8' } )
-	
 
 	print sourceDepot.listdir()
 
@@ -1494,27 +1500,27 @@ if (__name__ == "__main__"):
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 1000)
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3', dynamicBandwidth = True, maxBandwidth = 100000)
 	#rep.download(u'ooffice3_3.3-2.opsi', '/tmp/ooffice3_3.3-2.opsi', progressSubject=None)
-	
+
 	#sys.exit(0)
 	#sourceDepot = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
-	
+
 	#sourceDepot = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'pcpatch', password = u'xxxxxx', mountOptions = { "iocharset": 'iso8859-1' })
 	#dtlds = DepotToLocalDirectorySychronizer(sourceDepot, destinationDirectory = tempDir, productIds=['opsi-client-agent', 'opsi-winst', 'thunderbird'], maxBandwidth=0, dynamicBandwidth=False)
 	#dtlds.synchronize()
-	
+
 	#print rep.listdir()
 	#print rep.isdir('javavm')
-	
+
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'stb-40-wks-101.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#print rep.listdir()
 	#rep.disconnect()
-	
+
 	#destination = os.path.join(tempDir, 'AdbeRdr940_de_DE.msi')
 	#rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, endByteNumber = 20000000)
 	#rep.download('/acroread9/files/AdbeRdr940_de_DE.msi', destination, startByteNumber = 20000001)
-	
+
 	#rep = getRepository(url = u'cifs://bonifax/opt_pcbin/install', username = u'', password = u'', mountOptions = { "iocharset": 'iso8859-1' })
 	#print rep.listdir()
 	#print rep.isdir('javavm')
@@ -1529,11 +1535,11 @@ if (__name__ == "__main__"):
 	#	shutil.rmtree(tempDir)
 	#if os.path.exists(tempDir2):
 	#	shutil.rmtree(tempDir2)
-	
+
 	#rep = HTTPRepository(url = u'http://download.uib.de:80', username = u'', password = u'')
 	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
 	#os.unlink(tempFile)
-	
+
 	#rep = HTTPRepository(url = u'http://download.uib.de', username = u'', password = u'')
 	#rep.download(u'press-infos/logos/opsi/opsi-Logo_4c.pdf', tempFile, progressSubject=None)
 	#os.unlink(tempFile)
@@ -1549,7 +1555,7 @@ if (__name__ == "__main__"):
 	#rep = HTTPRepository(url = u'https://forum.opsi.org:443', username = u'', password = u'')
 	#rep.download(u'/index.php', tempFile, progressSubject=None)
 	#os.unlink(tempFile)
-	
+
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/repository', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#rep.download(u'xpconfig_2.6-1.opsi', tempFile, progressSubject=None)
 	#for c in rep.content():
@@ -1564,12 +1570,12 @@ if (__name__ == "__main__"):
 	#rep.copy('shutdownwanted_1.0-2.opsi', tempDir)
 	#
 	#shutil.rmtree(tempDir)
-	
+
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#for c in rep.content('winvista-x64/installfiles', recursive=True):
 	#	print c
 	#rep.copy(source = 'winvista-x64/installfiles', destination = tempDir)
-	
+
 	#from UI import UIFactory
 	#ui = UIFactory()
 	#from Message import ProgressObserver
@@ -1578,7 +1584,7 @@ if (__name__ == "__main__"):
 	##class SimpleProgressObserver(ProgressObserver):
 	##	def messageChanged(self, subject, message):
 	##		print u"%s" % message
-	##	
+	##
 	##	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
 	##		print u"state: %s, percent: %0.2f%%, timeSpend: %0.2fs, timeLeft: %0.2fs, speed: %0.2f" \
 	##			% (state, percent, timeSpend, timeLeft, speed)
@@ -1588,23 +1594,23 @@ if (__name__ == "__main__"):
 	#copyBox.show()
 	#copyBox.setOverallProgressSubject(overallProgressSubject)
 	#copyBox.setCurrentProgressSubject(currentProgressSubject)
-	
+
 	#progressSubject.attachObserver(copyBox)
-	
+
 	#overallProgressSubject = None
 	#currentProgressSubject = None
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#for c in rep.content('swaudit', recursive=True):
 	#	print c
-	
+
 	#rep = WebDAVRepository(url = u'webdavs://192.168.1.14:4447/depot/swaudit', username = u'autotest001.uib.local', password = u'b61455728859cfc9988a3d9f3e2343b3')
 	#for c in rep.content('swaudit', recursive=True):
 	#	print c
 	#print rep.listdir()
 	#rep.copy(source = '/*', destination = tempDir, overallProgressSubject = overallProgressSubject, currentProgressSubject = currentProgressSubject)
-	
+
 	#time.sleep(1)
-	
+
 	#overallProgressSubject.reset()
 	#currentProgressSubject.reset()
 	#rep = FileRepository(url = u'file://%s' % tempDir)
@@ -1615,37 +1621,13 @@ if (__name__ == "__main__"):
 	#print rep.isfile('äää.txt')
 	#print rep.listdir()
 	#rep.copy(source = '/*', destination = tempDir2, overallProgressSubject = overallProgressSubject, currentProgressSubject = currentProgressSubject)
-	
+
 	#rep = FileRepository(url = u'file:///usr')
 	#print rep.fileInfo('')
 	#for f in rep.listdir('src'):
 	#	print rep.fileInfo('src' + '/' + f)
-	
+
 	#ui.exit()
 	#rep = FileRepository(url = u'file:///tmp')
 	#for c in rep.content('', recursive=True):
 	#	print c
-	
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
