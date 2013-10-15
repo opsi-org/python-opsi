@@ -3,6 +3,8 @@
 
 from __future__ import absolute_import
 
+import random
+import threading
 import time
 
 from .Clients import ClientsMixin
@@ -344,8 +346,10 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
 
         #self.backend.host_delete(id = [])
         #hosts = self.backend.host_getObjects()
-        #assert len(hosts) == 0q
+        #assert len(hosts) == 0
 
+
+class BackendPerformanceTest(object):
     def testBackendPerformance(self, clientCount=500, productCount=50):
         return # TODO: make real test
 
@@ -356,7 +360,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                 ip -= 255
             self.backend.host_createOpsiClient(
                 id='client%d.uib.local' % i,
-                opsiHostKey='01234567890123456789012345678912',  # None,
+                opsiHostKey='01234567890123456789012345678912',
                 description='Client %d' % i,
                 notes='No notes',
                 hardwareAddress='',
@@ -370,7 +374,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         start = time.time()
         self.backend.host_getObjects(
             attributes=['id'], ipAddress='192.168.0.100')
-        logger.notice(u"Took %.2f seconds to search ip address in %d clients" %
+        print(u"Took %.2f seconds to search ip address in %d clients" %
                       ((time.time() - start), clientCount))
 
         #start = time.time()
@@ -403,7 +407,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                 windowsSoftwareIds=None
             )
 
-        logger.notice(u"Took %.2f seconds to create %d products" %
+        print(u"Took %.2f seconds to create %d products" %
                       ((time.time() - start), productCount))
 
         #start = time.time()
@@ -422,7 +426,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                     packageVersion=product.packageVersion,
                     depotId=depotId
                 )
-        logger.notice(u"Took %.2f seconds to create %d productsOnDepot" %
+        print(u"Took %.2f seconds to create %d productsOnDepot" %
                       ((time.time() - start), nrOfproductOnDepots))
 
         start = time.time()
@@ -455,30 +459,26 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                         packageVersion=product.packageVersion,
                         modificationTime=None
                     )
-        logger.notice(
+        print(
             u"Took %.2f seconds to create %d random productsOnClient" %
             ((time.time() - start), nrOfproductOnClients))
 
-        logger.setConsoleLevel(consoleLevel)
 
+class MultiThreadingTestMixin(HostsMixin, ClientsMixin):
     def testMultithreading(self):
-        return  # TODO: enable
+        self.setUpHosts()
+        self.setUpClients()
 
-        consoleLevel = logger.getConsoleLevel()
-        if (consoleLevel > LOG_NOTICE):
-            logger.setConsoleLevel(LOG_NOTICE)
-        logger.notice(u"Starting multithreading tests")
-        import threading
+        self.createHostsOnBackend()
 
         class MultiThreadTest(threading.Thread):
-
             def __init__(self, backendTest):
                 threading.Thread.__init__(self)
                 self._backendTest = backendTest
 
             def run(self):
                 try:
-                    logger.notice(u"Thread %s started" % self)
+                    print(u"Thread %s started" % self)
                     time.sleep(1)
                     self._backendTest.backend.host_getObjects()
                     self._backendTest.backend.host_deleteObjects(
@@ -502,9 +502,9 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                     self._backendTest.backend.host_createObjects(
                         self._backendTest.client1)
                     self._backendTest.backend.host_getObjects()
-                    logger.notice(u"Thread %s done" % self)
-                except Exception, e:
-                    logger.logException(e)
+                    print(u"Thread %s done" % self)
+                except Exception as e:
+                    print(u"Test failed: {0}".format(e))
 
         self.backend.group_createObjects(self.groups)
 
@@ -515,8 +515,8 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
             mtt.start()
         for mtt in mtts:
             mtt.join()
+
         try:
             self.backend.host_createObjects(self.client1)
-        except Exception, e:
-            logger.logException(e)
-        logger.setConsoleLevel(consoleLevel)
+        except Exception as e:
+            print(u"Creating object on backend failed: {0}".format(e))
