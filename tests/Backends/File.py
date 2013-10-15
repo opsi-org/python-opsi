@@ -60,7 +60,7 @@ class FileBackendMixin(BackendMixin):
 
         userName = pwd.getpwuid(os.getuid())[0]
 
-        self.__fileBackendConfig.update(dict(basedir=baseDir, keydir=hostKeyDir, groupName=groupName, userName=userName))
+        self.__fileBackendConfig.update(dict(basedir=baseDir, hostKeyFile=hostKeyDir, fileGroupName=groupName, fileUserName=userName))
 
         config_file = os.path.join(backendDirectory, self.BACKEND_SUBFOLDER, 'backends', 'file.conf')
         with open(config_file, 'w') as config:
