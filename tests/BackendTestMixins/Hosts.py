@@ -4,6 +4,7 @@
 import socket
 from OPSI.Object import OpsiConfigserver, OpsiDepotserver
 
+
 class HostsMixin(object):
     def setUpHosts(self):
         serverId = socket.getfqdn()

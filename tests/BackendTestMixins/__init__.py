@@ -3,22 +3,15 @@
 
 from __future__ import absolute_import
 
-import time
-import random
-
-from OPSI.Logger import Logger, LOG_NOTICE
-from OPSI.Object import *
+from .Audit import AuditTestsMixin
+from .Backend import BackendTestsMixin
 from .Configs import ConfigTestsMixin, ConfigStateTestsMixin
+from .ExtendedBackend import ExtendedBackendTestsMixin
+from .Groups import GroupTestsMixin, ObjectToGroupTestsMixin
+from .Licenses import LicensesTestMixin
 from .Products import (ProductPropertiesTestMixin, ProductDependenciesTestMixin,
     ProductsTestMixin, ProductsOnClientTestsMixin,
     ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin)
-from .Licenses import LicensesTestMixin
-from .Audit import AuditTestsMixin
-from .Groups import GroupTestsMixin, ObjectToGroupTestsMixin
-from .ExtendedBackend import ExtendedBackendTestsMixin
-from .Backend import BackendTestsMixin
-
-logger = Logger()
 
 
 class BackendTestMixin(ConfigStateTestsMixin, ProductPropertiesTestMixin,
@@ -27,6 +20,9 @@ class BackendTestMixin(ConfigStateTestsMixin, ProductPropertiesTestMixin,
     ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin, GroupTestsMixin,
     ObjectToGroupTestsMixin, ExtendedBackendTestsMixin, BackendTestsMixin):
     """
-    Class collecting all possible backend tests.
+    Class collecting functional backend tests.
+
+    MultiThreadingTestMixin and BackendPerformanceTest are excluded.
+    Please inherit them manually if you feel the need.
     """
 

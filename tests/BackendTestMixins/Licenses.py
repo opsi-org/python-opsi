@@ -4,8 +4,6 @@
 from OPSI.Object import (LicenseContract, RetailSoftwareLicense,
     OEMSoftwareLicense, VolumeSoftwareLicense, ConcurrentSoftwareLicense,
     LicensePool, SoftwareLicenseToLicensePool, LicenseOnClient)
-from OPSI.Logger import Logger
-logger = Logger()
 
 
 class LicensesMixin(object):
@@ -137,7 +135,7 @@ class LicensesTestMixin(LicensesMixin):
         self.configureBackendOptions()
 
         # LicenseContracts
-        logger.notice(u"Testing licenseContract methods")
+        print(u"Testing licenseContract methods")
         self.setUpLicenseContracts()
 
         self.backend.licenseContract_createObjects(self.licenseContracts)
@@ -146,7 +144,7 @@ class LicensesTestMixin(LicensesMixin):
         self.assertEqual(len(licenseContracts), len(self.licenseContracts))
 
         # SoftwareLicenses
-        logger.notice(u"Testing softwareLicense methods")
+        print(u"Testing softwareLicense methods")
         self.setUpSoftwareLicenses()
         self.backend.softwareLicense_createObjects(self.softwareLicenses)
 
@@ -155,7 +153,7 @@ class LicensesTestMixin(LicensesMixin):
             softwareLicenses, self.softwareLicenses)
 
         # LicensePools
-        logger.notice(u"Testing licensePool methods")
+        print(u"Testing licensePool methods")
 
         self.backend.licensePool_createObjects(self.licensePools)
 
@@ -190,7 +188,7 @@ class LicensesTestMixin(LicensesMixin):
             licensePools, 0)
 
         # SoftwareLicenseToLicensePools
-        logger.notice(u"Testing softwareLicenseToLicensePool methods")
+        print(u"Testing softwareLicenseToLicensePool methods")
 
         self.backend.softwareLicenseToLicensePool_createObjects(
             self.softwareLicenseToLicensePools)
@@ -201,7 +199,7 @@ class LicensesTestMixin(LicensesMixin):
             softwareLicenseToLicensePools, len(self.softwareLicenseToLicensePools))
 
         # LicenseOnClients
-        logger.notice(u"Testing licenseOnClient methods")
+        print(u"Testing licenseOnClient methods")
 
         self.backend.licenseOnClient_createObjects(self.licenseOnClients)
 
