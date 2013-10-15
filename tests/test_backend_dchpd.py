@@ -17,6 +17,12 @@ class DHCPDConfFileTestCase(unittest.TestCase, DHCPDConfMixin):
         self.tearDownDHCPDConf()
 
     def testAddingHostsToConfig(self):
+        """
+        Adding hosts to a DHCPDConf.
+
+        If this fails on your machine with a message that 127.x.x.x is refused
+        as network address please correct your hostname settings.
+        """
         dhcpdConf = self.dhcpdConf
         dhcpdConf.parse()
 
