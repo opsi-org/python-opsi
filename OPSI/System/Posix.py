@@ -49,20 +49,22 @@ if sys.version_info < (2,6):
 else:
 	from platform import linux_distribution
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger, LOG_NONE
+from OPSI.Types import(forceDomain, forceInt, forceBool, forceUnicode,
+	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
+	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
+	forceHardwareDeviceId, forceUnicodeLower)
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
-# Get Logger instance
 logger = Logger()
 
-# Constants
-BIN_WHICH            = '/usr/bin/which'
-WHICH_CACHE          = {}
+BIN_WHICH = '/usr/bin/which'
+WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 DHCLIENT_LEASES_FILE_OLD = '/var/lib/dhcp3/dhclient.leases'
 
+hooks = []
 x86_64 = False
 try:
 	if "64bit" in platform.architecture():
@@ -304,16 +306,18 @@ class SystemSpecificHook(object):
 	def error_auditHardware(self, config, hostId, progressSubject, exception):
 		pass
 
-hooks = []
+
 def addSystemHook(hook):
 	global hooks
 	if not hook in hooks:
 		hooks.append(hook)
 
+
 def removeSystemHook(hook):
 	global hooks
 	if hook in hooks:
 		hooks.remove(hook)
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                               INFO                                                -
@@ -342,7 +346,8 @@ def getKernelParams():
 		cmdline = cmdline.strip()
 		f.close()
 	except IOError, e:
-		if f: f.close()
+		if f:
+			f.close()
 		raise Exception(u"Error reading '/proc/cmdline': %s" % e)
 	if cmdline:
 		for option in cmdline.split():
@@ -352,6 +357,7 @@ def getKernelParams():
 			else:
 				params[keyValue[0].strip().lower()] = keyValue[1].strip()
 	return params
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            NETWORK                                                -
@@ -436,7 +442,7 @@ def getNetworkDeviceConfig(device):
 			x += 0xfff
 		x = "%x" % x
 		result['deviceId'] = forceHardwareDeviceId(((4-len(x))*'0') + x)
-	except Exception, e:
+	except Exception:
 		logger.warning(u"Failed to get vendor/device id for network device %s" % device)
 	return result
 
@@ -1091,7 +1097,6 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 				if storageControllers:
 					for hwPath in storageControllers.keys():
 						return storageControllers[hwPath]
-
 
 	return None
 
@@ -3220,11 +3225,11 @@ def daemonize():
 	sys.stderr = logger.getStderr()
 
 
-def locateDHCPDConfig(default = None):
-
-	locations = (u"/etc/dhcpd.conf",	# suse / redhat / centos
-		     u"/etc/dhcp/dhcpd.conf",	# newer debian / ubuntu
-		     u"/etc/dhcp3/dhcpd.conf"	# older debian / ubuntu
+def locateDHCPDConfig(default=None):
+	locations = (
+		u"/etc/dhcpd.conf",  # suse / redhat / centos
+		u"/etc/dhcp/dhcpd.conf",  # newer debian / ubuntu
+		u"/etc/dhcp3/dhcpd.conf"  # older debian / ubuntu
 	)
 
 	for file in locations:
@@ -3235,11 +3240,11 @@ def locateDHCPDConfig(default = None):
 	raise RuntimeError(u"Could not locate dhcpd.conf.")
 
 
-def locateDHCPDInit(default = None):
-
-	locations = (u"/etc/init.d/dhcpd",		# suse / redhat / centos
-		     u"/etc/init.d/isc-dhcp-server",	# newer debian / ubuntu
-		     u"/etc/init.d/dhcp3-server"	# older debian / ubuntu
+def locateDHCPDInit(default=None):
+	locations = (
+		u"/etc/init.d/dhcpd",  # suse / redhat / centos
+		u"/etc/init.d/isc-dhcp-server",  # newer debian / ubuntu
+		u"/etc/init.d/dhcp3-server"  # older debian / ubuntu
 	)
 
 	for file in locations:
@@ -3248,20 +3253,3 @@ def locateDHCPDInit(default = None):
 	if default is not None:
 		return default
 	raise RuntimeError(u"Could not locate dhcpd init file.")
-
-
-if (__name__ == "__main__"):
-	logger.setConsoleLevel(LOG_DEBUG)
-	logger.setConsoleColor(True)
-	#testcase = []
-	#testcase.append('/0/100/1f.2               storage        82801JD/DO (ICH10 Family) SATA AHCI Controller [8086:3A02]')
-	#testcase.append('/0/100/1f.3               bus            82801JD/DO (ICH10 Family) SMBus Controller [8086:3A60]')
-	#testcase.append('/0/1          scsi0       storage')
-	#testcase.append('/0/1/0.0.0    /dev/sda    disk           500GB ST3500418AS')
-	#testcase.append('/0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume')
-	#print getBlockDeviceContollerInfo('dev/sda', testcase)
-	#print getBlockDeviceContollerInfo('/dev/sda')
-	#print getNetworkDeviceConfig(getDefaultNetworkInterfaceName())
-	#print getNetworkDeviceConfig('eth0')
-	disks = getHarddisks()
-	disks[0].readPartitionTable()
