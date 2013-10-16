@@ -528,7 +528,7 @@ def getDHCPResult(device):
 	dhcpResult = {}
 	if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
 		# old style dhcp.leases handling should be work
-		# will be removed, if precise bootimage is in testing. 
+		# will be removed, if precise bootimage is in testing.
 		DHCLIENT_LEASES_FILE = DHCLIENT_LEASES_FILE_OLD
 	if os.path.exists(DHCLIENT_LEASES_FILE):
 		f = None
@@ -826,7 +826,7 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 
 	fs = u''
-	
+
 	#if not options.has_key("domain"):
 	#	options['domain'] = None
 
@@ -856,7 +856,7 @@ def mount(dev, mountpoint, **options):
 			f.close()
 			options['credentials'] = credentialsFile
 			credentialsFiles.append(credentialsFile)
-			
+
 			try:
 				if not options['domain']:
 					del options['domain']
