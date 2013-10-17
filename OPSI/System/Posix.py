@@ -2694,6 +2694,7 @@ def hardwareExtendedInventory(config, opsiValues = {}, progressSubject=None):
 						continue
 				match = re.search(valuesregex, pythonline)
 				if match:
+					result = None
 					srcfields = match.group(2)
 					fieldsdict = eval(srcfields)
 					attr = ''
@@ -2708,8 +2709,8 @@ def hardwareExtendedInventory(config, opsiValues = {}, progressSubject=None):
 
 					if type(result) is unicode:
 						result = result.encode('utf-8')
-					if not opsiValues.has_key(opsiName):
-						opsiValues[opsiName].appen({})
+					if not opsiName in opsiValues:
+						opsiValues[opsiName].append({})
 					for i in range(len(opsiValues[opsiName])):
 						opsiValues[opsiName][i][item['Opsi']] = result
 
