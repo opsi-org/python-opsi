@@ -356,7 +356,7 @@ class MySQL(SQL):
 			self.close(conn, cursor)
 		return result
 	
-	def delete(self, table, where, conn, cursor):
+	def delete(self, table, where, conn=None, cursor=None):
 		closeConnection = True
 		if conn and cursor:
 			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
