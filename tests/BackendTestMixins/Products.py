@@ -169,7 +169,9 @@ class ProductsMixin(object):
 
         self.product9 = LocalbootProduct(
             id='product9',
-            name=u'Product 9',
+            name=(u'This is a very long name with 128 characters to test the '
+                  u'creation of long product names that should work now but '
+                  u'were limited b4'),
             productVersion="1.0",
             packageVersion=2,
             licenseRequired=False,
