@@ -39,7 +39,7 @@ import socket
 import struct
 import time
 
-from OPSI.Logger import *
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
