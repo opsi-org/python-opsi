@@ -1,44 +1,44 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - HostControl     =
-   = = = = = = = = = = = = = = = = = = = = = =
-   
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
-   
-   Copyright (C) 2010 uib GmbH
-   
-   http://www.uib.de/
-   
-   All rights reserved.
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
-   @license: GNU General Public License version 2
+opsi python library - Backend - HostControl
+
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
+
+Copyright (C) 2010-2013 uib GmbH
+
+http://www.uib.de/
+
+All rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0.2.7'
 
-# Imports
-import socket, threading, httplib, base64, time, struct
+import base64
+import httplib
+import socket
+import struct
+import time
 
-# OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
 from OPSI.Object import *
@@ -47,7 +47,6 @@ from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
 
-# Get logger instance
 logger = Logger()
 
 
@@ -65,16 +64,16 @@ class RpcThread(KillableThread):
 		self.result   = None
 		self.started  = 0
 		self.ended    = 0
-		
+
 	def run(self):
 		try:
 			self.started = time.time()
 			timeout = self.hostControlBackend._hostRpcTimeout
 			if (timeout < 0):
 				timeout = 0
-			
+
 			query = toJson({ 'id': 1, 'method': self.method, 'params': self.params }).encode('utf-8')
-			
+
 			connection = httplib.HTTPSConnection(self.address, self.hostControlBackend._opsiclientdPort)
 			non_blocking_connect_https(connection, timeout)
 			connection.putrequest('POST', '/opsiclientd')
@@ -84,11 +83,11 @@ class RpcThread(KillableThread):
 			connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip())
 			connection.endheaders()
 			connection.send(query)
-			
+
 			response = connection.getresponse()
 			response = response.read()
 			response = fromJson(unicode(response, 'utf-8'))
-			
+
 			if response and type(response) is dict:
 				self.error  = response.get('error')
 				self.result = response.get('result')
@@ -97,6 +96,7 @@ class RpcThread(KillableThread):
 		except Exception, e:
 			self.error = forceUnicode(e)
 		self.ended = time.time()
+
 
 class ConnectionThread(KillableThread):
 	def __init__(self, hostControlBackend, hostId, address):
@@ -107,14 +107,14 @@ class ConnectionThread(KillableThread):
 		self.result   = False
 		self.started  = 0
 		self.ended    = 0
-	
+
 	def run(self):
 		try:
 			self.started = time.time()
 			timeout = self.hostControlBackend._hostReachableTimeout
 			if (timeout < 0):
 				timeout = 0
-				
+
 			logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
 			conn = httplib.HTTPSConnection(host = self.address, port = self.hostControlBackend._opsiclientdPort)
 			non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
@@ -131,20 +131,21 @@ class ConnectionThread(KillableThread):
 			logger.debug(e)
 		self.ended = time.time()
 
+
 class HostControlBackend(ExtendedBackend):
-	
+
 	def __init__(self, backend, **kwargs):
 		self._name = 'hostcontrol'
-		
+
 		ExtendedBackend.__init__(self, backend)
-		
+
 		self._opsiclientdPort      = 4441
 		self._hostRpcTimeout       = 15
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress   = False
 		self._maxConnections       = 50
 		self._broadcastAddresses   = ["255.255.255.255"]
-		
+
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -158,10 +159,10 @@ class HostControlBackend(ExtendedBackend):
 				self._maxConnections = forceInt(value)
 			elif option in ('broadcastaddresses',):
 				self._broadcastAddresses = forceUnicodeList(value)
-			
+
 		if (self._maxConnections < 1):
 			self._maxConnections = 1
-	
+
 	def _getHostAddress(self, host):
 		address = None
 		if self._resolveHostAddress:
@@ -179,7 +180,7 @@ class HostControlBackend(ExtendedBackend):
 		if not address:
 			raise Exception(u"Failed to get ip address for host '%s'" % host.id)
 		return address
-	
+
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
@@ -189,7 +190,7 @@ class HostControlBackend(ExtendedBackend):
 		if not timeout:
 			timeout = self._hostRpcTimeout
 		timeout = forceInt(timeout)
-		
+
 		result = {}
 		rpcts = []
 		for host in self._context.host_getObjects(id = hostIds):
@@ -206,7 +207,7 @@ class HostControlBackend(ExtendedBackend):
 						params   = params))
 			except Exception, e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
-		
+
 		runningThreads = 0
 		while rpcts:
 			newRpcts = []
@@ -241,9 +242,9 @@ class HostControlBackend(ExtendedBackend):
 				newRpcts.append(rpct)
 			rpcts = newRpcts
 			time.sleep(0.1)
-		
+
 		return result
-		
+
 	def hostControl_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
 		hosts = self._context.host_getObjects(attributes = ['hardwareAddress'], id = hostIds)
@@ -252,19 +253,19 @@ class HostControlBackend(ExtendedBackend):
 			try:
 				if not host.hardwareAddress:
 					raise BackendMissingDataError(u"Failed to get hardware address for host '%s'" % host.id)
-				
+
 				mac = host.hardwareAddress.replace(':', '')
-				
+
 				# Pad the synchronization stream.
 				data = ''.join(['FFFFFFFFFFFF', mac * 16])
 				send_data = ''
-				
+
 				# Split up the hex values and pack.
 				for i in range(0, len(data), 2):
 					send_data = ''.join([
 						send_data,
 						struct.pack('B', int(data[i: i + 2], 16)) ])
-				
+
 				for broadcastAddress in self._broadcastAddresses:
 					logger.debug(u"Sending data to network broadcast %s [%s]" % (broadcastAddress, data))
 					# Broadcast it to the LAN.
@@ -277,41 +278,41 @@ class HostControlBackend(ExtendedBackend):
 				logger.logException(e, LOG_DEBUG)
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 		return result
-	
+
 	def hostControl_shutdown(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No host ids given")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'shutdown', params = [])
-	
+
 	def hostControl_reboot(self, hostIds=[]):
 		if not hostIds:
 			raise BackendMissingDataError(u"No host ids given")
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'reboot', params = [])
-	
+
 	def hostControl_fireEvent(self, event, hostIds=[]):
 		event = forceUnicode(event)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'fireEvent', params = [ event ])
-	
+
 	def hostControl_showPopup(self, message, hostIds=[]):
 		message = forceUnicode(message)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'showPopup', params = [ message ])
-	
+
 	def hostControl_uptime(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'uptime', params = [])
-	
+
 	def hostControl_getActiveSessions(self, hostIds=[]):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'getActiveSessions', params = [])
-	
+
 	def hostControl_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
-	
+
 	def hostControl_reachable(self, hostIds=[], timeout=None):
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		if not hostIds:
@@ -320,7 +321,7 @@ class HostControlBackend(ExtendedBackend):
 		if not timeout:
 			timeout = self._hostReachableTimeout
 		timeout = forceInt(timeout)
-		
+
 		result = {}
 		threads = []
 		for host in self._context.host_getObjects(id = hostIds):
@@ -334,7 +335,7 @@ class HostControlBackend(ExtendedBackend):
 			except Exception, e:
 				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False
-		
+
 		runningThreads = 0
 		while threads:
 			newThreads = []
@@ -365,26 +366,8 @@ class HostControlBackend(ExtendedBackend):
 			threads = newThreads
 			time.sleep(0.1)
 		return result
-	
+
 	def hostControl_execute(self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300):
 		comamnd = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
 		return self._opsiclientdRpc(hostIds = hostIds, method = 'execute', params = [command,waitForEnding,captureStderr,encoding,timeout])
-		
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
