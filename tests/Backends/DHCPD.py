@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import codecs
 import os
 import tempfile
 
 from OPSI.Util.File import DHCPDConfFile
+from . import BackendMixin
 
 
-class DHCPDConfMixin(object):
+class DHCPDConfMixin(BackendMixin):
     def setUpDHCPDConf(self):
         testData = '''
 ddns-update-style none;
