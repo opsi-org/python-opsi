@@ -1,4 +1,4 @@
-python-opsi (4.0.4.1-1) UNRELEASED; urgency=low
+python-opsi (4.0.4.1-1) testing; urgency=low
 
   * Minimum required Python version is now 2.6
   * New backend method for configed: setRights
