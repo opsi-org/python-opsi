@@ -7,7 +7,7 @@ from OPSI.Logger import *
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from OPSI.Backend.Object import *
+from OPSI.Object import *
 from backend import *
 
 logger = Logger()
@@ -47,19 +47,19 @@ def check(one, two):
 	for objectType in ('host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup'):
 		oneIdents = []
 		twoIdents = []
-		
+
 		oneObjects = eval('%s.%s_getObjects()' % (one, objectType))
 		twoObjects = eval('%s.%s_getObjects()' % (two, objectType))
-		
+
 		for oneObject in oneObjects:
 			oneIdents.append(oneObject.getIdent(returnType = 'unicode'))
 		for twoObject in twoObjects:
 			twoIdents.append(twoObject.getIdent(returnType = 'unicode'))
-		
+
 		logger.warning(u"assert length %s\noneIdents: '%s'\ntwoIdents: '%s'" \
 			% (objectType, oneIdents, twoIdents))
 		assert len(oneIdents) == len(twoIdents)
-		
+
 		for oneIdent in oneIdents:
 			isSameIdent = False
 			for twoIdent in twoIdents:
@@ -68,7 +68,7 @@ def check(one, two):
 					break
 			logger.warning(u"assert oneIdent '%s' is in twoIdents: '%s'" % (oneIdent, isSameIdent))
 			assert isSameIdent
-		
+
 
 
 
@@ -110,12 +110,12 @@ fileBackend.objectToGroup_deleteObjects(         fileBackend.objectToGroup_getOb
 
 for objectType in ('host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup'):
 	idents = []
-	
+
 	objects = eval('fileBackend.%s_getObjects()' % objectType)
-	
+
 	for obj in objects:
 		idents.append(obj.getIdent(returnType = 'unicode'))
-	
+
 	logger.warning(u"assert length %s-idents: '%s'" \
 		% (objectType, idents))
 	assert len(idents) == 0
