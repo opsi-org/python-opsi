@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 """
    Copyright (C) 2010 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope thatf it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright: uib GmbH <info@uib.de>
    @author: Christian Kampka <c.kampka@uib.de>
    @license: GNU General Public License version 2
@@ -26,9 +26,9 @@
 
 import os, pwd, grp, socket, MySQLdb, random, time
 
-from fixtures import TempDir, MonkeyPatch
+from fixtures import TempDir
 
-from OPSI.tests.helper.fixture import Fixture, FQDNFixture, ConfigFixture, HwAuditConfigFixture
+from OPSI.tests.helper.fixture import Fixture, FQDNFixture, HwAuditConfigFixture
 from OPSI.tests.helper.testcase import TestCase
 
 from OPSI.Backend.File import FileBackend
@@ -38,44 +38,10 @@ from OPSI.Backend.LDAP import LDAPBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 from OPSI.Object import *
-from OPSI.Util import randomString
-
-
-class FileBackendConfigFixture(Fixture):
-	
-	name = "file.conf"
-	template = """# -*- coding: utf-8 -*-
-module = 'File'
-config = {
-    "baseDir":     u"#baseDir#",
-    "hostKeyFile": u"#hostKeyFile#"
-}
-"""
-	
-	def __init__(self, baseDir=None, hostKeyFile=None, prefix="backends", configDir=None):
-		super(FileBackendConfigFixture, self).__init__(prefix=prefix, dir=configDir)
-		
-		self.baseDir = baseDir
-		self.hostKeyFile = hostKeyFile
-	
-	def setUp(self):
-		super(FileBackendConfigFixture, self).setUp()
-		
-		if not self.baseDir:
-			self.basedir = self.useFixture(TempDir()).path
-		
-		if not self.hostKeyFile:
-			self.hostKeyFile = os.path.join(self.useFixture(TempDir()).path, "pckeys")
-		
-		s = self.template
-		s = s.replace("#baseDir#", self.baseDir)
-		s = s.replace("#hostKeyFile#", self.hostKeyFile)
-		
-		self._write(s)
 
 
 class _BackendFixture(Fixture):
-	
+
 	defaultOptions = {
 			'processProductPriorities':            False,
 			'processProductDependencies':          False,
@@ -86,7 +52,7 @@ class _BackendFixture(Fixture):
 			'returnObjectsOnUpdateAndCreate':      False
 	}
 	licenseManagement = False
-	
+
 	def __init__(self):
 		super(_BackendFixture, self).__init__()
 		self.options = self.defaultOptions.copy()
@@ -96,35 +62,35 @@ class _BackendFixture(Fixture):
 
 	def setUp(self):
 		super(_BackendFixture, self).setUp()
-		
+
 		self.setupBackend()
-		
+
 		self.addCleanup(self.backend.backend_exit)
 		self.backend.backend_setOptions(self.options)
 
 		self.backend.backend_createBase()
-		
+
 	def setupBackend(self):
 		raise NotImplementedError()
 
 class BackendContentFixture(Fixture):
-	
+
 	def __init__(self, backend, licenseManagement=False):
-		
+
 		self.backend = backend
 		self.licenseManagement = licenseManagement
 
-		
+
 	def setUp(self):
 		super(BackendContentFixture, self).setUp()
 		self.addCleanup(self.backend.backend_deleteBase)
 		self.serverId = socket.getfqdn('')
-	
+
 		self.hwconf = self.backend.auditHardware_getConfig()
 		AuditHardware.setHardwareConfig(self.hwconf)
 		AuditHardwareOnHost.setHardwareConfig(self.hwconf)
-		
-		
+
+
 		self.hosts = []
 		self.configserver1 = OpsiConfigserver(
 			id                  = self.serverId,
@@ -143,7 +109,7 @@ class BackendContentFixture(Fixture):
 		)
 		self.configservers = [ self.configserver1 ]
 		self.hosts.extend(self.configservers)
-		
+
 		self.depotserver1 = OpsiDepotserver(
 			id                  = 'depotserver1.uib.local',
 			opsiHostKey         = '19012334567845645678901232789012',
@@ -160,7 +126,7 @@ class BackendContentFixture(Fixture):
 			maxBandwidth        = 10000,
 			isMasterDepot       = True
 		)
-		
+
 		self.depotserver2 = OpsiDepotserver(
 			id                  = 'depotserver2.uib.local',
 			opsiHostKey         = '93aa22f38a678c64ef678a012d2e82f2',
@@ -177,10 +143,10 @@ class BackendContentFixture(Fixture):
 			maxBandwidth        = 240000,
 			isMasterDepot       = True
 		)
-		
+
 		self.depotservers = [ self.depotserver1, self.depotserver2]
 		self.hosts.extend(self.depotservers)
-		
+
 		self.client1 = OpsiClient(
 			id              = 'client1.uib.local',
 			description     = 'Test client 1',
@@ -191,7 +157,7 @@ class BackendContentFixture(Fixture):
 			opsiHostKey     = '45656789789012789012345612340123',
 			inventoryNumber = "$$4"
 		)
-		
+
 		self.client2 = OpsiClient(
 			id              = 'client2.uib.local',
 			description     = 'Test client 2',
@@ -201,38 +167,38 @@ class BackendContentFixture(Fixture):
 			inventoryNumber = '00000000003',
 			oneTimePassword = 'logmein'
 		)
-		
+
 		self.client3 = OpsiClient(
 			id              = 'client3.uib.local',
 			description     = 'Test client 3',
 			notes           = '#############',
 			inventoryNumber = 'XYZABC_1200292'
 		)
-		
+
 		self.client4 = OpsiClient(
 			id              = 'client4.uib.local',
 			description     = 'Test client 4',
 		)
-		
+
 		self.client5 = OpsiClient(
 			id              = 'client5.uib.local',
 			description     = 'Test client 5',
 			oneTimePassword = 'abe8327kjdsfda'
 		)
-		
+
 		self.client6 = OpsiClient(
 			id              = 'client6.uib.local',
 			description     = 'Test client 6',
 		)
-		
+
 		self.client7 = OpsiClient(
 			id              = 'client7.uib.local',
 			description     = 'Test client 7',
 		)
-		
+
 		self.clients = [ self.client1, self.client2, self.client3, self.client4, self.client5, self.client6, self.client7 ]
 		self.hosts.extend(self.clients)
-		
+
 		# Configs
 		self.config1 = UnicodeConfig(
 			id             = u'opsi-linux-bootimage.cmdline.reboot',
@@ -240,41 +206,41 @@ class BackendContentFixture(Fixture):
 			possibleValues = ['w', 'c', 'b', 'h', 'b,c'],
 			defaultValues  = ['b,c']
 		)
-		
+
 		self.config2 = BoolConfig(
 			id            = u'opsi-linux-bootimage.cmdline.bool',
 			description   = 'Bool?',
 			defaultValues = 'on'
 		)
-		
+
 		self.config3 = UnicodeConfig(
 			id             = u'some.products',
 			description    = u'Install this products',
 			possibleValues = ['product1', 'product2', 'product3', 'product4'],
 			defaultValues  = ['product1', 'product3']
 		)
-		
+
 		self.config4 = UnicodeConfig(
 			id             = u'clientconfig.depot.id',
 			description    = u'Depotserver to use',
 			possibleValues = [],
 			defaultValues  = [ self.depotserver1.id ]
 		)
-		
+
 		self.config5 = UnicodeConfig(
 			id             = u'some.other.products',
 			description    = u'Some other product ids',
 			possibleValues = ['product3', 'product4', 'product5'],
 			defaultValues  = ['product3']
 		)
-		
+
 		self.config6 = UnicodeConfig(
 			id             = u'%username%',
 			description    = u'username',
 			possibleValues = None,
 			defaultValues  = ['opsi']
 		)
-		
+
 		self.config7 = UnicodeConfig(
 			id             = u'product_sort_algorithm',
 			description    = u'product_sort_algorithm',
@@ -283,52 +249,52 @@ class BackendContentFixture(Fixture):
 			editable       = False
 		)
 		self.configs = [ self.config1, self.config2, self.config3, self.config4, self.config5, self.config6, self.config7 ]
-		
+
 		# ConfigStates
 		self.configState1 = ConfigState(
 			configId = self.config1.getId(),
 			objectId = self.client1.getId(),
 			values   = ['w']
 		)
-		
+
 		self.configState2 = ConfigState(
 			configId = self.config2.getId(),
 			objectId = self.client1.getId(),
 			values   = [False]
 		)
-		
+
 		self.configState3 = ConfigState(
 			configId = self.config2.getId(),
 			objectId = self.client2.getId(),
 			values   = [False]
 		)
-		
+
 		self.configState4 = ConfigState(
 			configId = self.config6.getId(),
 			objectId = self.client2.getId(),
 			values   = ["-------- test --------\n4: %4\n1: %1\n2: %2\n5: %5"]
 		)
-		
+
 		self.configState5 = ConfigState(
 			configId = self.config4.getId(),
 			objectId = self.client5.getId(),
 			values   = self.depotserver2.id
 		)
-		
+
 		self.configState6 = ConfigState(
 			configId = self.config4.getId(),
 			objectId = self.client6.getId(),
 			values   = self.depotserver2.id
 		)
-		
+
 		self.configState7 = ConfigState(
 			configId = self.config4.getId(),
 			objectId = self.client7.getId(),
 			values   = self.depotserver2.id
 		)
-		
+
 		self.configStates = [ self.configState1, self.configState2, self.configState3, self.configState4, self.configState5, self.configState6, self.configState7 ]
-		
+
 		# Products
 		self.products = []
 		self.product1 = NetbootProduct(
@@ -351,7 +317,7 @@ class BackendContentFixture(Fixture):
 		)
 		self.netbootProducts = [ self.product1 ]
 		self.products.extend(self.netbootProducts)
-		
+
 		self.product2 = LocalbootProduct(
 			id                 = 'product2',
 			name               = u'Product 2',
@@ -369,7 +335,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = ['{98723-7898adf2-287aab}', 'xxxxxxxx']
 		)
-		
+
 		self.product3 = LocalbootProduct(
 			id                 = 'product3',
 			name               = u'Product 3',
@@ -387,7 +353,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.product4 = LocalbootProduct(
 			id                 = 'product4',
 			name               = u'Product 4',
@@ -405,7 +371,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.product5 = LocalbootProduct(
 			id                 = 'product5',
 			name               = u'Product 5',
@@ -423,7 +389,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.product6 = LocalbootProduct(
 			id                 = 'product6',
 			name               = u'Product 6',
@@ -441,7 +407,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.product7 = LocalbootProduct(
 			id                 = 'product7',
 			name               = u'Product 7',
@@ -459,7 +425,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.product8 = LocalbootProduct(
 			id                 = 'product7',
 			name               = u'Product 7',
@@ -478,7 +444,7 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.product9 = LocalbootProduct(
 			id                 = 'product9',
 			name               = u'Product 9',
@@ -497,10 +463,10 @@ class BackendContentFixture(Fixture):
 			productClassIds    = [],
 			windowsSoftwareIds = []
 		)
-		
+
 		self.localbootProducts = [ self.product2, self.product3, self.product4, self.product5, self.product6, self.product7, self.product8, self.product9 ]
 		self.products.extend(self.localbootProducts)
-		
+
 		# ProductProperties
 		self.productProperty1 = UnicodeProductProperty(
 			productId      = self.product1.id,
@@ -513,7 +479,7 @@ class BackendContentFixture(Fixture):
 			editable       = True,
 			multiValue     = True
 		)
-		
+
 		self.productProperty2 = BoolProductProperty(
 			productId      = self.product1.id,
 			productVersion = self.product1.productVersion,
@@ -522,7 +488,7 @@ class BackendContentFixture(Fixture):
 			description    = 'Test product property 2 (bool)',
 			defaultValues  = True
 		)
-		
+
 		self.productProperty3 = BoolProductProperty(
 			productId      = self.product3.id,
 			productVersion = self.product3.productVersion,
@@ -531,7 +497,7 @@ class BackendContentFixture(Fixture):
 			description    = u'Test product property 3 (bool)',
 			defaultValues  = False
 		)
-		
+
 		self.productProperty4 = UnicodeProductProperty(
 			productId      = self.product1.id,
 			productVersion = self.product1.productVersion,
@@ -543,9 +509,9 @@ class BackendContentFixture(Fixture):
 			editable       = True,
 			multiValue     = False
 		)
-		
+
 		self.productProperties = [ self.productProperty1, self.productProperty2, self.productProperty3, self.productProperty4 ]
-		
+
 		# ProductDependencies
 		self.productDependency1 = ProductDependency(
 			productId                  = self.product2.id,
@@ -559,7 +525,7 @@ class BackendContentFixture(Fixture):
 			requiredInstallationStatus = None,
 			requirementType            = 'before'
 		)
-		
+
 		self.productDependency2 = ProductDependency(
 			productId                  = self.product2.id,
 			productVersion             = self.product2.productVersion,
@@ -572,7 +538,7 @@ class BackendContentFixture(Fixture):
 			requiredInstallationStatus = 'installed',
 			requirementType            = 'before'
 		)
-		
+
 		self.productDependency3 = ProductDependency(
 			productId                  = self.product4.id,
 			productVersion             = self.product4.productVersion,
@@ -585,7 +551,7 @@ class BackendContentFixture(Fixture):
 			requiredInstallationStatus = 'installed',
 			requirementType            = 'before'
 		)
-		
+
 		self.productDependency4 = ProductDependency(
 			productId                  = self.product6.id,
 			productVersion             = self.product6.productVersion,
@@ -598,7 +564,7 @@ class BackendContentFixture(Fixture):
 			requiredInstallationStatus = 'installed',
 			requirementType            = 'after'
 		)
-		
+
 		self.productDependency5 = ProductDependency(
 			productId                  = self.product7.id,
 			productVersion             = self.product7.productVersion,
@@ -611,9 +577,9 @@ class BackendContentFixture(Fixture):
 			requiredInstallationStatus = 'installed',
 			requirementType            = 'after'
 		)
-		
+
 		self.productDependencies = [ self.productDependency1, self.productDependency2, self.productDependency3, self.productDependency4, self.productDependency5 ]
-		
+
 		# ProductOnDepots
 		self.productOnDepot1 = ProductOnDepot(
 			productId      = self.product1.getId(),
@@ -623,7 +589,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot2 = ProductOnDepot(
 			productId      = self.product2.getId(),
 			productType    = self.product2.getType(),
@@ -632,7 +598,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot3 = ProductOnDepot(
 			productId      = self.product3.getId(),
 			productType    = self.product3.getType(),
@@ -641,7 +607,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot4 = ProductOnDepot(
 			productId      = self.product3.getId(),
 			productType    = self.product3.getType(),
@@ -650,7 +616,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.configserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot4 = ProductOnDepot(
 			productId      = self.product3.getId(),
 			productType    = self.product3.getType(),
@@ -667,7 +633,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.configserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot6 = ProductOnDepot(
 			productId      = self.product6.getId(),
 			productType    = self.product6.getType(),
@@ -676,7 +642,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot7 = ProductOnDepot(
 			productId      = self.product6.getId(),
 			productType    = self.product6.getType(),
@@ -685,7 +651,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver2.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot8 = ProductOnDepot(
 			productId      = self.product7.getId(),
 			productType    = self.product7.getType(),
@@ -694,7 +660,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot9 = ProductOnDepot(
 			productId      = self.product8.getId(),
 			productType    = self.product8.getType(),
@@ -703,7 +669,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver2.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot10 = ProductOnDepot(
 			productId      = self.product9.getId(),
 			productType    = self.product9.getType(),
@@ -712,7 +678,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot11 = ProductOnDepot(
 			productId      = self.product9.getId(),
 			productType    = self.product9.getType(),
@@ -721,7 +687,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver2.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot12 = ProductOnDepot(
 			productId      = self.product4.getId(),
 			productType    = self.product4.getType(),
@@ -730,7 +696,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.configserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot13 = ProductOnDepot(
 			productId      = self.product4.getId(),
 			productType    = self.product4.getType(),
@@ -739,7 +705,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot14 = ProductOnDepot(
 			productId      = self.product4.getId(),
 			productType    = self.product4.getType(),
@@ -748,7 +714,7 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver2.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepot15 = ProductOnDepot(
 			productId      = self.product5.getId(),
 			productType    = self.product5.getType(),
@@ -757,11 +723,11 @@ class BackendContentFixture(Fixture):
 			depotId        = self.depotserver1.getId(),
 			locked         = False
 		)
-		
+
 		self.productOnDepots = [ self.productOnDepot1, self.productOnDepot2, self.productOnDepot3, self.productOnDepot4, self.productOnDepot5,
 					 self.productOnDepot6, self.productOnDepot7, self.productOnDepot8, self.productOnDepot9, self.productOnDepot10,
 					 self.productOnDepot11, self.productOnDepot12, self.productOnDepot13, self.productOnDepot14, self.productOnDepot15 ]
-		
+
 		# ProductOnClients
 		self.productOnClient1 = ProductOnClient(
 			productId          = self.product1.getId(),
@@ -774,7 +740,7 @@ class BackendContentFixture(Fixture):
 			packageVersion     = self.product1.getPackageVersion(),
 			modificationTime   = '2009-07-01 12:00:00'
 		)
-		
+
 		self.productOnClient2 = ProductOnClient(
 			productId          = self.product2.getId(),
 			productType        = self.product2.getType(),
@@ -785,7 +751,7 @@ class BackendContentFixture(Fixture):
 			productVersion     = self.product2.getProductVersion(),
 			packageVersion     = self.product2.getPackageVersion()
 		)
-		
+
 		self.productOnClient3 = ProductOnClient(
 			productId          = self.product2.getId(),
 			productType        = self.product2.getType(),
@@ -796,7 +762,7 @@ class BackendContentFixture(Fixture):
 			productVersion     = self.product2.getProductVersion(),
 			packageVersion     = self.product2.getPackageVersion()
 		)
-		
+
 		self.productOnClient4 = ProductOnClient(
 			productId           = self.product1.getId(),
 			productType         = self.product1.getType(),
@@ -810,9 +776,9 @@ class BackendContentFixture(Fixture):
 			productVersion      = self.product1.getProductVersion(),
 			packageVersion      = self.product1.getPackageVersion()
 		)
-		
+
 		self.productOnClients = [ self.productOnClient1, self.productOnClient2, self.productOnClient3, self.productOnClient4 ]
-		
+
 		# ProductPropertyStates
 		self.productPropertyState1 = ProductPropertyState(
 			productId  = self.productProperty1.getProductId(),
@@ -820,44 +786,44 @@ class BackendContentFixture(Fixture):
 			objectId   = self.depotserver1.getId(),
 			values     = 'unicode-depot-default'
 		)
-		
+
 		self.productPropertyState2 = ProductPropertyState(
 			productId  = self.productProperty2.getProductId(),
 			propertyId = self.productProperty2.getPropertyId(),
 			objectId   = self.depotserver1.getId(),
 			values     = [ True ]
 		)
-		
+
 		self.productPropertyState3 = ProductPropertyState(
 			productId  = self.productProperty2.getProductId(),
 			propertyId = self.productProperty2.getPropertyId(),
 			objectId   = self.depotserver2.getId(),
 			values     = False
 		)
-		
+
 		self.productPropertyState4 = ProductPropertyState(
 			productId  = self.productProperty1.getProductId(),
 			propertyId = self.productProperty1.getPropertyId(),
 			objectId   = self.client1.getId(),
 			values     = 'unicode1'
 		)
-		
+
 		self.productPropertyState5 = ProductPropertyState(
 			productId  = self.productProperty2.getProductId(),
 			propertyId = self.productProperty2.getPropertyId(),
 			objectId   = self.client1.getId(),
 			values     = [ False ]
 		)
-		
+
 		self.productPropertyState6 = ProductPropertyState(
 			productId  = self.productProperty2.getProductId(),
 			propertyId = self.productProperty2.getPropertyId(),
 			objectId   = self.client2.getId(),
 			values     = True
 		)
-		
+
 		self.productPropertyStates = [ self.productPropertyState1, self.productPropertyState2, self.productPropertyState3, self.productPropertyState4, self.productPropertyState5, self.productPropertyState6 ]
-		
+
 		# Groups
 		self.group1 = HostGroup(
 			id            = 'host_group_1',
@@ -865,83 +831,83 @@ class BackendContentFixture(Fixture):
 			notes         = 'First group',
 			parentGroupId = None
 		)
-		
+
 		self.group2 = HostGroup(
 			id            = u'host group 2',
 			description   = 'Group 2',
 			notes         = 'Test\nTest\nTest',
 			parentGroupId = 'host_group_1'
 		)
-		
+
 		self.group3 = HostGroup(
 			id            = u'group xxxxxx',
 			description   = 'HostGroup xxxxxx',
 			notes         = '',
 			parentGroupId = None
 		)
-		
+
 		self.group4 = ProductGroup(
 			id            = u'product group 1',
 			description   = 'Product Group 1',
 			notes         = '----------- notes --------------',
 			parentGroupId = None
 		)
-		
+
 		self.group5 = ProductGroup(
 			id            = u'product group 2',
 			description   = 'Product Group 2',
 			notes         = None,
 			parentGroupId = u'product group 1',
 		)
-		
+
 		self.group6 = ProductGroup(
 			id            = u'group xxxxxx',
 			description   = 'ProductGroup xxxxxx',
 			notes         = '',
 			parentGroupId = None
 		)
-		
+
 		self.groups = [ self.group1, self.group2, self.group3, self.group4, self.group5, self.group6 ]
-		
+
 		# ObjectToGroups
 		self.objectToGroup1 = ObjectToGroup(
 			groupType = self.group1.getType(),
 			groupId   = self.group1.getId(),
 			objectId  = self.client1.getId()
 		)
-		
+
 		self.objectToGroup2 = ObjectToGroup(
 			groupType = self.group1.getType(),
 			groupId   = self.group1.getId(),
 			objectId  = self.client2.getId()
 		)
-		
+
 		self.objectToGroup3 = ObjectToGroup(
 			groupType = self.group2.getType(),
 			groupId   = self.group2.getId(),
 			objectId  = self.client2.getId()
 		)
-		
+
 		self.objectToGroup4 = ObjectToGroup(
 			groupType = self.group4.getType(),
 			groupId   = self.group4.getId(),
 			objectId  = self.product1.getId()
 		)
-		
+
 		self.objectToGroup5 = ObjectToGroup(
 			groupType = self.group4.getType(),
 			groupId   = self.group4.getId(),
 			objectId  = self.product2.getId()
 		)
-		
+
 		self.objectToGroup6 = ObjectToGroup(
 			groupType = self.group6.getType(),
 			groupId   = self.group6.getId(),
 			objectId  = self.product3.getId()
 		)
-		
+
 		self.objectToGroups = [ self.objectToGroup1, self.objectToGroup2, self.objectToGroup3, self.objectToGroup4, self.objectToGroup5, self.objectToGroup6 ]
-		
+
 		# LicenseContracts
 		self.licenseContract1 = LicenseContract(
 			id               = u'license contract 1',
@@ -952,7 +918,7 @@ class BackendContentFixture(Fixture):
 			notificationDate = None,
 			expirationDate   = None
 		)
-		
+
 		self.licenseContract2 = LicenseContract(
 			id               = u'license contract 2',
 			description      = u'license contract with company x',
@@ -963,7 +929,7 @@ class BackendContentFixture(Fixture):
 			expirationDate   = '2011-01-01 00:00:00',
 		)
 		self.licenseContracts = [ self.licenseContract1, self.licenseContract2 ]
-		
+
 		# SoftwareLicenses
 		self.softwareLicense1 = RetailSoftwareLicense(
 			id                = u'software license 1',
@@ -972,7 +938,7 @@ class BackendContentFixture(Fixture):
 			boundToHost       = None,
 			expirationDate    = self.licenseContract1.getExpirationDate()
 		)
-		
+
 		self.softwareLicense2 = OEMSoftwareLicense(
 			id                = u'software license 2',
 			licenseContractId = self.licenseContract1.getId(),
@@ -980,7 +946,7 @@ class BackendContentFixture(Fixture):
 			boundToHost       = self.client1.getId(),
 			expirationDate    = self.licenseContract1.getExpirationDate()
 		)
-		
+
 		self.softwareLicense3 = VolumeSoftwareLicense(
 			id                = u'software license 3',
 			licenseContractId = self.licenseContract2.getId(),
@@ -988,7 +954,7 @@ class BackendContentFixture(Fixture):
 			boundToHost       = None,
 			expirationDate    = self.licenseContract2.getExpirationDate()
 		)
-		
+
 		self.softwareLicense4 = ConcurrentSoftwareLicense(
 			id                = u'software license 4',
 			licenseContractId = self.licenseContract2.getId(),
@@ -997,47 +963,47 @@ class BackendContentFixture(Fixture):
 			expirationDate    = self.licenseContract2.getExpirationDate()
 		)
 		self.softwareLicenses = [ self.softwareLicense1, self.softwareLicense2, self.softwareLicense3, self.softwareLicense4 ]
-		
+
 		# LicensePools
 		self.licensePool1 = LicensePool(
 			id                 = u'license_pool_1',
 			description        = u'licenses for product1',
 			productIds         = self.product1.getId()
 		)
-		
+
 		self.licensePool2 = LicensePool(
 			id                 = u'license_pool_2',
 			description        = u'licenses for product2',
 			productIds         = self.product2.getId()
 		)
 		self.licensePools = [ self.licensePool1, self.licensePool2 ]
-		
+
 		# SoftwareLicenseToLicensePools
 		self.softwareLicenseToLicensePool1 = SoftwareLicenseToLicensePool(
 			softwareLicenseId  = self.softwareLicense1.getId(),
 			licensePoolId      = self.licensePool1.getId(),
 			licenseKey         = 'xxxxx-yyyyy-zzzzz-aaaaa-bbbbb'
 		)
-		
+
 		self.softwareLicenseToLicensePool2 = SoftwareLicenseToLicensePool(
 			softwareLicenseId  = self.softwareLicense2.getId(),
 			licensePoolId      = self.licensePool1.getId(),
 			licenseKey         = ''
 		)
-		
+
 		self.softwareLicenseToLicensePool3 = SoftwareLicenseToLicensePool(
 			softwareLicenseId  = self.softwareLicense3.getId(),
 			licensePoolId      = self.licensePool2.getId(),
 			licenseKey         = '12345-56789-00000-11111-aaaaa'
 		)
-		
+
 		self.softwareLicenseToLicensePool4 = SoftwareLicenseToLicensePool(
 			softwareLicenseId  = self.softwareLicense4.getId(),
 			licensePoolId      = self.licensePool2.getId(),
 			licenseKey         = None
 		)
 		self.softwareLicenseToLicensePools = [ self.softwareLicenseToLicensePool1, self.softwareLicenseToLicensePool2, self.softwareLicenseToLicensePool3, self.softwareLicenseToLicensePool4 ]
-		
+
 		# LicenseOnClients
 		self.licenseOnClient1 = LicenseOnClient(
 			softwareLicenseId  = self.softwareLicenseToLicensePool1.getSoftwareLicenseId(),
@@ -1046,7 +1012,7 @@ class BackendContentFixture(Fixture):
 			licenseKey         = self.softwareLicenseToLicensePool1.getLicenseKey(),
 			notes              = None
 		)
-		
+
 		self.licenseOnClient2 = LicenseOnClient(
 			softwareLicenseId  = self.softwareLicenseToLicensePool1.getSoftwareLicenseId(),
 			licensePoolId      = self.softwareLicenseToLicensePool1.getLicensePoolId(),
@@ -1055,7 +1021,7 @@ class BackendContentFixture(Fixture):
 			notes              = u'Installed manually'
 		)
 		self.licenseOnClients = [self.licenseOnClient1, self.licenseOnClient2]
-		
+
 		# AuditSoftwares
 		self.auditSoftware1 = AuditSoftware(
 			name                  = 'A software',
@@ -1068,7 +1034,7 @@ class BackendContentFixture(Fixture):
 			windowsDisplayVersion = '1.0.21',
 			installSize           = 129012992
 		)
-		
+
 		self.auditSoftware2 = AuditSoftware(
 			name                  = self.product2.getName(),
 			version               = self.product2.getProductVersion(),
@@ -1080,7 +1046,7 @@ class BackendContentFixture(Fixture):
 			windowsDisplayVersion = self.product2.getProductVersion(),
 			installSize           = 217365267
 		)
-		
+
 		self.auditSoftware3 = AuditSoftware(
 			name                  = 'my software',
 			version               = '',
@@ -1092,7 +1058,7 @@ class BackendContentFixture(Fixture):
 			windowsDisplayVersion = '',
 			installSize           = -1
 		)
-		
+
 		self.auditSoftware4 = AuditSoftware(
 			name                  = 'söftwäre\n;?&%$$$§$§§$$$§$',
 			version               = u'\\0012',
@@ -1104,9 +1070,9 @@ class BackendContentFixture(Fixture):
 			windowsDisplayVersion = '\n\r',
 			installSize           = -1
 		)
-		
+
 		self.auditSoftwares = [self.auditSoftware1, self.auditSoftware2, self.auditSoftware3, self.auditSoftware4]
-		
+
 		# AuditSoftwareToLicensePools
 		self.auditSoftwareToLicensePool1 = AuditSoftwareToLicensePool(
 			name          = self.auditSoftware1.name,
@@ -1116,7 +1082,7 @@ class BackendContentFixture(Fixture):
 			architecture  = self.auditSoftware1.architecture,
 			licensePoolId = self.licensePool1.id
 		)
-		
+
 		self.auditSoftwareToLicensePool2 = AuditSoftwareToLicensePool(
 			name          = self.auditSoftware2.name,
 			version       = self.auditSoftware2.version,
@@ -1125,9 +1091,9 @@ class BackendContentFixture(Fixture):
 			architecture  = self.auditSoftware2.architecture,
 			licensePoolId = self.licensePool2.id
 		)
-		
+
 		self.auditSoftwareToLicensePools = [self.auditSoftwareToLicensePool1, self.auditSoftwareToLicensePool2]
-		
+
 		# AuditSoftwareOnClients
 		self.auditSoftwareOnClient1 = AuditSoftwareOnClient(
 			name            = self.auditSoftware1.getName(),
@@ -1144,7 +1110,7 @@ class BackendContentFixture(Fixture):
 			usageFrequency  = 2,
 			lastUsed        = '2009-02-12 09:48:22'
 		)
-		
+
 		self.auditSoftwareOnClient2 = AuditSoftwareOnClient(
 			name            = self.auditSoftware2.getName(),
 			version         = self.auditSoftware2.getVersion(),
@@ -1160,7 +1126,7 @@ class BackendContentFixture(Fixture):
 			usageFrequency  = None,
 			lastUsed        = None
 		)
-		
+
 		self.auditSoftwareOnClient3 = AuditSoftwareOnClient(
 			name            = self.auditSoftware3.getName(),
 			version         = self.auditSoftware3.getVersion(),
@@ -1175,7 +1141,7 @@ class BackendContentFixture(Fixture):
 			usageFrequency  = 0,
 			lastUsed        = '2009-08-01 14:11:00'
 		)
-		
+
 		self.auditSoftwareOnClient4 = AuditSoftwareOnClient(
 			name            = self.auditSoftware2.getName(),
 			version         = self.auditSoftware2.getVersion(),
@@ -1190,8 +1156,8 @@ class BackendContentFixture(Fixture):
 			lastUsed        = None
 		)
 		self.auditSoftwareOnClients = [self.auditSoftwareOnClient1, self.auditSoftwareOnClient2, self.auditSoftwareOnClient3, self.auditSoftwareOnClient4]
-		
-		
+
+
 		# AuditHardwares
 		self.auditHardware1 = AuditHardware(
 			hardwareClass       = 'COMPUTER_SYSTEM',
@@ -1199,14 +1165,14 @@ class BackendContentFixture(Fixture):
 			vendor              = 'Dell',
 			model               = 'xyz',
 		)
-		
+
 		self.auditHardware2 = AuditHardware(
 			hardwareClass       = 'COMPUTER_SYSTEM',
 			description         =  None,
 			vendor              = 'HP',
 			model               = '0815',
 		)
-		
+
 		self.auditHardware3 = AuditHardware(
 			hardwareClass       = 'BASE_BOARD',
 			name                = 'MSI 2442',
@@ -1215,28 +1181,28 @@ class BackendContentFixture(Fixture):
 			model               = 'äüöüöäüöüäüööüö11',
 			product             = None
 		)
-		
+
 		self.auditHardware4 = AuditHardware(
 			hardwareClass       = 'CHASSIS',
 			name                = 'Manufacturer XX-112',
 			description         = 'A chassis',
 			chassisType         = 'Desktop'
 		)
-		
+
 		self.auditHardware5 = AuditHardware(
 			hardwareClass       = 'PROCESSOR',
 			name                = '0',
 			description         = 'processor long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long'
 		)
-		
+
 		self.auditHardware6 = AuditHardware(
 			hardwareClass       = 'PROCESSOR',
 			name                = '0',
 			description         = None
 		)
-		
+
 		self.auditHardwares = [ self.auditHardware1, self.auditHardware2, self.auditHardware3, self.auditHardware4, self.auditHardware5, self.auditHardware6 ]
-		
+
 		# AuditHardwareOnHosts
 		self.auditHardwareOnHost1 = AuditHardwareOnHost(
 			hostId              = self.client1.getId(),
@@ -1244,36 +1210,36 @@ class BackendContentFixture(Fixture):
 			description         = self.auditHardware1.description,
 			vendor              = self.auditHardware1.vendor,
 			model               = self.auditHardware1.model,
-			
+
 			serialNumber        = '843391034-2192',
 			systemType          = 'Desktop',
 			totalPhysicalMemory = 1073741824
 		)
-		
+
 		self.auditHardwareOnHost2 = AuditHardwareOnHost(
 			hostId              = self.client2.getId(),
 			hardwareClass       = 'COMPUTER_SYSTEM',
 			description         = self.auditHardware1.description,
 			vendor              = self.auditHardware1.vendor,
 			model               = self.auditHardware1.model,
-			
+
 			serialNumber        = '142343234-9571',
 			systemType          = 'Desktop',
 			totalPhysicalMemory = 1073741824
 		)
-		
+
 		self.auditHardwareOnHost3 = AuditHardwareOnHost(
 			hostId              = self.client3.getId(),
 			hardwareClass       = 'COMPUTER_SYSTEM',
 			description         = self.auditHardware2.description,
 			vendor              = self.auditHardware2.vendor,
 			model               = self.auditHardware2.model,
-			
+
 			serialNumber        = 'a63c09dd234a213',
 			systemType          = None,
 			totalPhysicalMemory = 536870912
 		)
-		
+
 		self.auditHardwareOnHost4 = AuditHardwareOnHost(
 			hostId              = self.client1.getId(),
 			hardwareClass       = 'BASE_BOARD',
@@ -1282,10 +1248,10 @@ class BackendContentFixture(Fixture):
 			vendor              = self.auditHardware3.vendor,
 			model               = self.auditHardware3.model,
 			product             = self.auditHardware3.product,
-			
+
 			serialNumber        = 'xxxx-asjdks-sll3kf03-828112'
 		)
-		
+
 		self.auditHardwareOnHost5 = AuditHardwareOnHost(
 			hostId              = self.client2.getId(),
 			hardwareClass       = 'BASE_BOARD',
@@ -1294,10 +1260,10 @@ class BackendContentFixture(Fixture):
 			vendor              = self.auditHardware3.vendor,
 			model               = self.auditHardware3.model,
 			product             = self.auditHardware3.product,
-			
+
 			serialNumber        = 'xxxx-asjdks-sll3kf03-213791'
 		)
-		
+
 		self.auditHardwareOnHost6 = AuditHardwareOnHost(
 			hostId              = self.client3.getId(),
 			hardwareClass       = 'BASE_BOARD',
@@ -1306,19 +1272,19 @@ class BackendContentFixture(Fixture):
 			vendor              = self.auditHardware3.vendor,
 			model               = self.auditHardware3.model,
 			product             = self.auditHardware3.product,
-			
+
 			serialNumber        = 'xxxx-asjdks-sll3kf03-132290'
 		)
-		
+
 		self.auditHardwareOnHost7 = AuditHardwareOnHost(
 			hostId              = self.client3.getId(),
 			hardwareClass       = 'PROCESSOR',
 			name                = self.auditHardware5.name,
 			description         = self.auditHardware5.description,
-			
+
 			serialNumber        = '4325345325132290'
 		)
-		
+
 		self.auditHardwareOnHosts = [ self.auditHardwareOnHost1, self.auditHardwareOnHost2, self.auditHardwareOnHost3,
 						self.auditHardwareOnHost4, self.auditHardwareOnHost5, self.auditHardwareOnHost6, self.auditHardwareOnHost7 ]
 		self.backend.host_createObjects( self.hosts )
@@ -1345,28 +1311,28 @@ class BackendContentFixture(Fixture):
 			self.backend.licenseOnClient_createObjects(self.licenseOnClients)
 
 class FileBackendConfigFixtire(Fixture):
-	
-	template = None 
+
+	template = None
 
 
 class FileBackendFixture(_BackendFixture):
-	
+
 	def __init__(self, baseDir=None, hostKeyFile=None):
-		
+
 		super(FileBackendFixture, self).__init__()
-		
+
 		self.env = os.environ.copy()
 		self.uid = self.gid = self.env["USER"]
-	
+
 		self.baseDir = baseDir
 		self.hostKeyFile = hostKeyFile
-		
+
 	def setupBackend(self):
-		
+
 		hw = HwAuditConfigFixture()
 
 		self.useFixture(hw)
-		
+
 		if self.baseDir is None:
 			bd = self.useFixture(TempDir())
 			self.baseDir = bd.path
@@ -1374,9 +1340,9 @@ class FileBackendFixture(_BackendFixture):
 			hkf = self.useFixture(TempDir())
 			self.hostKeyFile = os.path.join(hkf.path, "pckeys")
 
-		
+
 		self.backend = FileBackend(baseDir=self.baseDir, hostKeyFile=self.hostKeyFile, audithardwareconfigfile=hw.path)
-		
+
 		self.test.patch(self.backend, "__fileUid", pwd.getpwnam(self.uid)[2])
 		self.test.patch(self.backend, "__fileGid", grp.getgrnam(self.gid)[2])
 		self.test.patch(self.backend, "__dirUid", pwd.getpwnam(self.uid)[2])
@@ -1386,7 +1352,7 @@ class FileBackendFixture(_BackendFixture):
 		self.test.patch(self.backend, "__fileGroup", self.gid)
 		self.test.patch(self.backend, "__dirUser", self.uid)
 		self.test.patch(self.backend, "__dirGroup", self.gid)
-		
+
 		self.extend()
 
 	def setOptions(self, options):
@@ -1394,7 +1360,7 @@ class FileBackendFixture(_BackendFixture):
 		self.backend.backend_setOptions(self.options)
 
 class SQLiteBackendFixture(_BackendFixture):
-	
+
 	defaultOptions = {
 			'processProductPriorities':            True,
 			'processProductDependencies':          True,
@@ -1405,48 +1371,48 @@ class SQLiteBackendFixture(_BackendFixture):
 			'returnObjectsOnUpdateAndCreate':      False
 	}
 	licenseManagement = True
-	
+
 	def __init__(self, database=":memory:"):
 		super(SQLiteBackendFixture, self).__init__()
-		
+
 		self.database = database
 		self.backend = None
-		
+
 	def setupBackend(self):
-		
+
 		hw = HwAuditConfigFixture()
 
 		self.useFixture(hw)
-		
+
 		if not self.database:
 			bd = self.useFixture(TempDir())
 			self.baseDir = bd.path
 			self.database = os.path.join(self.baseDir, "opsi.sqlite")
-		
+
 		self.backend = SQLiteBackend(database=self.database, audithardwareconfigfile=hw.path)
 		self.extend()
 
 class SQLiteModificationTrackerFixture(Fixture):
-	
+
 	def __init__(self, database=":memory:"):
 		super(SQLiteModificationTrackerFixture, self).setUp()
-		
+
 		self.database = database
 		self.tracker = None
-		
+
 	def setUp(self):
 		super(SQLiteModificationTrackerFixture, self).setUp()
 		if not self.database:
 			bd = self.useFixture(TempDir())
 			self.baseDir = bd.path
 			self.database = os.path.join(self.baseDir, "tracker.sqlite")
-		
+
 		self.tracker = SQLiteObjectBackendModificationTracker(database = self.database)
-		
-		
-		
+
+
+
 class MySQLBackendFixture(_BackendFixture):
-	
+
 	defaultOptions = {
 			'processProductPriorities':            True,
 			'processProductDependencies':          True,
@@ -1457,14 +1423,14 @@ class MySQLBackendFixture(_BackendFixture):
 			'returnObjectsOnUpdateAndCreate':      False
 	}
 	licenseManagement = True
-	
+
 	def __init__(self, username, password, database=None, hostname="localhost"):
 		super(MySQLBackendFixture, self).__init__()
 		self.username = username
 		self.password = password
 		self.database = database
 		self.hostname = hostname
-		
+
 
 	def setupBackend(self):
 
@@ -1478,11 +1444,11 @@ class MySQLBackendFixture(_BackendFixture):
 		con = MySQLdb.connect(user=self.username, passwd=self.password)
 		c = con.cursor()
 		c.execute("CREATE DATABASE %s" % self.database)
-		
+
 		c.close()
 		con.close()
 		self.addCleanup(self._dropDatabase)
-		
+
 		self.backend = self.mb = MySQLBackend(
 						username = self.username,
 						password = self.password,
@@ -1501,28 +1467,28 @@ class MySQLBackendFixture(_BackendFixture):
 		self.database = None
 		self.mb._sql._pool.destroy()
 		del self.mb._sql._pool
-		
+
 
 class LDAPBackendFixture(_BackendFixture):
-	
+
 	baseDn = u'dc=uib,dc=local'
-	
+
 	def __init__(self, username="admin", password="linux123", address="stb-40-srv-050", opsiBaseDn="opsi-test", hostsContainerDN="hosts"):
-		
+
 		super(LDAPBackendFixture, self).__init__()
-		
+
 		self.username = u"cn=%s,%s" % (username, self.baseDn)
 		self.password = password
 		self.address = address
-		
+
 		self.opsiBaseDn = u"cn=%s,%s" % (opsiBaseDn,self.baseDn)
 		self.hostsContainerDn = u"cn=%s,%s" % (hostsContainerDN, self.opsiBaseDn)
 
 	def setupBackend(self):
-		
+
 		hw = HwAuditConfigFixture()
 		self.useFixture(hw)
-		
+
 		self.backend = LDAPBackend(
 					username         = self.username,
 					password         = self.password,
@@ -1532,11 +1498,11 @@ class LDAPBackendFixture(_BackendFixture):
 					audithardwareconfigfile=hw.path
 					)
 		self.addCleanup(self.backend.backend_deleteBase)
-		
+
 		self.extend()
 
 class BackendTestCase(TestCase):
-	
+
 	inventoryHistory = False
 
 	def setUp(self):
