@@ -18,10 +18,10 @@ class FileBackendMixin(BackendMixin):
     BACKEND_SUBFOLDER = 'data'
 
     def setUpBackend(self):
-        self.__fileBackendConfig = {}
-        self.__fileTempDir = self._copyOriginalBackendToTemporaryLocation()
+        self._fileBackendConfig = {}
+        self._fileTempDir = self._copyOriginalBackendToTemporaryLocation()
 
-        self.backend = ExtendedConfigDataBackend(FileBackend(**self.__fileBackendConfig))
+        self.backend = ExtendedConfigDataBackend(FileBackend(**self._fileBackendConfig))
         # TODO: Make use of a BackendManager Backend.
         # This is to easily check if we have a file backend in the tests.
         # With such a check we can easily skip tests.
@@ -60,7 +60,7 @@ class FileBackendMixin(BackendMixin):
 
         userName = pwd.getpwuid(os.getuid())[0]
 
-        self.__fileBackendConfig.update(dict(basedir=baseDir, hostKeyFile=hostKeyDir, fileGroupName=groupName, fileUserName=userName))
+        self._fileBackendConfig.update(dict(basedir=baseDir, hostKeyFile=hostKeyDir, fileGroupName=groupName, fileUserName=userName))
 
         config_file = os.path.join(backendDirectory, self.BACKEND_SUBFOLDER, 'backends', 'file.conf')
         with open(config_file, 'w') as config:
@@ -88,7 +88,7 @@ config = {{
         configDir = os.path.join(targetDirectory, 'data', 'backends')
         dispatchConfigPath = os.path.join(configDir, 'dispatch.conf')
 
-        self.__fileBackendConfig['dispatchConfig'] = dispatchConfigPath
+        self._fileBackendConfig['dispatchConfig'] = dispatchConfigPath
 
         with open(dispatchConfigPath, 'w') as dpconf:
             dpconf.write(
@@ -100,5 +100,5 @@ config = {{
     def tearDownBackend(self):
         self.backend.backend_deleteBase()
 
-        if os.path.exists(self.__fileTempDir):
-            shutil.rmtree(self.__fileTempDir)
+        if os.path.exists(self._fileTempDir):
+            shutil.rmtree(self._fileTempDir)
