@@ -468,7 +468,7 @@ class SQLBackend(ConfigDataBackend):
 		if not 'PRODUCT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT')
 			table = u'''CREATE TABLE `PRODUCT` (
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`type` varchar(32) NOT NULL,
@@ -498,7 +498,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
 			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					PRIMARY KEY (`windowsSoftwareId`, `productId`)
 				) %s;
 				''' % self._sql.getTableCreationOptions('WINDOWS_SOFTWARE_ID_TO_PRODUCT')
@@ -508,7 +508,7 @@ class SQLBackend(ConfigDataBackend):
 		if not 'PRODUCT_ON_DEPOT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
 			table = u'''CREATE TABLE `PRODUCT_ON_DEPOT` (
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`depotId` varchar(50) NOT NULL,
@@ -526,7 +526,7 @@ class SQLBackend(ConfigDataBackend):
 		if not 'PRODUCT_PROPERTY' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY` (
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`propertyId` varchar(200) NOT NULL,
@@ -546,7 +546,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT_PROPERTY_VALUE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
 					`product_property_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`propertyId` varchar(200) NOT NULL,
@@ -562,11 +562,11 @@ class SQLBackend(ConfigDataBackend):
 		if not 'PRODUCT_DEPENDENCY' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_DEPENDENCY')
 			table = u'''CREATE TABLE `PRODUCT_DEPENDENCY` (
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
 					`productAction` varchar(16) NOT NULL,
-					`requiredProductId` varchar(50) NOT NULL,
+					`requiredProductId` varchar(255) NOT NULL,
 					`requiredProductVersion` varchar(32),
 					`requiredPackageVersion` varchar(16),
 					`requiredAction` varchar(16),
@@ -583,7 +583,7 @@ class SQLBackend(ConfigDataBackend):
 		if not 'PRODUCT_ON_CLIENT' in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
 			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`clientId` varchar(255) NOT NULL,
 					`productType` varchar(16) NOT NULL,
 					`targetConfiguration` varchar(16),
@@ -607,7 +607,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT_PROPERTY_STATE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
 					`product_property_state_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
-					`productId` varchar(50) NOT NULL,
+					`productId` varchar(255) NOT NULL,
 					`propertyId` varchar(200) NOT NULL,
 					`objectId` varchar(255) NOT NULL,
 					`values` text,
@@ -717,7 +717,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(u'Creating table PRODUCT_ID_TO_LICENSE_POOL')
 			table = u'''CREATE TABLE `PRODUCT_ID_TO_LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
-					`productId` VARCHAR(100) NOT NULL,
+					`productId` VARCHAR(255) NOT NULL,
 					PRIMARY KEY (`licensePoolId`, `productId`),
 					FOREIGN KEY (`licensePoolId`) REFERENCES `LICENSE_POOL` (`licensePoolId`)
 				) %s;
@@ -763,7 +763,7 @@ class SQLBackend(ConfigDataBackend):
 					`clientId` varchar(255) NOT NULL,
 					`priority` integer DEFAULT 0,
 					`description` varchar(200),
-					`netbootProductId` varchar(100),
+					`netbootProductId` varchar(255),
 					`pxeTemplate` varchar(255),
 					`options` varchar(255),
 					`disk` integer,
