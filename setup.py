@@ -119,7 +119,7 @@ else:
 		)
 	)
 
-for language in ('de', 'fr'):
+for language in ('de', 'fr', 'da'):
 	output_path = os.path.join('locale', language, 'LC_MESSAGES')
 	if not os.path.exists(output_path):
 		os.makedirs(output_path)
