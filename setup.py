@@ -38,14 +38,16 @@ import os
 
 
 VERSION = None
-with open(os.path.join("debian", "changelog")) as f:
-	VERSION = f.readline().split('(')[1].split('-')[0]
+f = open(os.path.join("debian", "changelog"))
+VERSION = f.readline().split('(')[1].split('-')[0]
+f.close()
 
 if not VERSION:
 	raise Exception(u"Failed to get version info")
 
-with open("data/version", "w") as f:
-	f.write(VERSION)
+f = open("data/version", "w")
+f.write(VERSION)
+f.close()
 
 data_files = [
 	(
