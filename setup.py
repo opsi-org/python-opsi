@@ -128,17 +128,14 @@ for language in ('de', 'fr', 'da'):
 
 	target_file = os.path.join(output_path, 'python-opsi.mo')
 	exit_code = os.system(
-		'msgfmt -o {output_file} gettext/python-opsi_{lang}.po'.format(
-			lang=language,
-			output_file=target_file
-		)
+		'msgfmt -o %s gettext/python-opsi_%s.po' % (language,target_file)
 	)
 	if not exit_code:
 		data_files.append(
-			('/usr/share/locale/{lang}/LC_MESSAGES'.format(lang=language), [target_file])
+			('/usr/share/locale/%s/LC_MESSAGES' % language, [target_file])
 		)
 	else:
-		print('Generating locale for "{lang}" failed. Is gettext installed?'.format(lang=language))
+		print('Generating locale for "%s" failed. Is gettext installed?' % language)
 
 
 cmdclass = {}
