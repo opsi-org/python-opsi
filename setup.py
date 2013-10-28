@@ -133,7 +133,7 @@ for language in ('de', 'fr', 'da'):
 	)
 	if not exit_code:
 		data_files.append(
-			('/usr/share/locale/{lang}/LC_MESSAGES', [target_file])
+			('/usr/share/locale/{lang}/LC_MESSAGES'.format(lang=language), [target_file])
 		)
 	else:
 		print('Generating locale for "{lang}" failed. Is gettext installed?'.format(lang=language))
