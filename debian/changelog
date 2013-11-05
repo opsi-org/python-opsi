@@ -1,3 +1,9 @@
+python-opsi (4.0.4.1-2) testing; urgency=low
+
+  * modify version for buildservice
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Tue, 05 Nov 2013 15:12:38 +0100
+
 python-opsi (4.0.4.1-1) testing; urgency=low
 
   * Minimum required Python version is now 2.6
