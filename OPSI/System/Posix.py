@@ -59,6 +59,8 @@ from OPSI.Util import objectToBeautifiedText, removeUnit
 
 logger = Logger()
 
+# Constants
+GEO_OVERWRITE_SO     = '/usr/local/lib/geo_override.so'
 BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
@@ -1143,6 +1145,12 @@ class Harddisk:
 		except Exception, e:
 			logger.error(e)
 			return
+		# geo_override.so will affect all devices !
+		if not x86_64:
+			logger.info(u"Using geo_override.so for all disks.")
+			self.ldPreload = GEO_OVERWRITE_SO
+		else:
+			logger.info(u"Don't load geo_override.so on 64bit architecture.")
 
 	def getSignature(self):
 		hd = posix.open(str(self.device), posix.O_RDONLY)

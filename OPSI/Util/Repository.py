@@ -374,7 +374,6 @@ class Repository:
 						progressSubject.addToState(read)
 
 					self._calcSpeed(read)
-					logger.debug("Calculated Speed: '%d'" % self._currentSpeed)
 					if (self._dynamicBandwidth or self._maxBandwidth):
 						self._bandwidthLimit()
 					elif (self._currentSpeed > 1000000):

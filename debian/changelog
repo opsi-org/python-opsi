@@ -1,3 +1,10 @@
+python-opsi (4.0.4.2-1) testing; urgency=low
+
+  * added geo_override patch for older bios (opsi-linux-bootimage)
+  * removed debug outputs from repository.py
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 06 Nov 2013 13:22:18 +0100
+
 python-opsi (4.0.4.1-2) testing; urgency=low
 
   * modify version for buildservice
