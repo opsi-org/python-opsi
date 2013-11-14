@@ -35,8 +35,8 @@ import socket
 import threading
 
 # OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import forceBool, forceHostId, forceObjectClass, forceUnicode
 from OPSI.Object import *
 from OPSI import System
 from OPSI.Backend.Backend import *
