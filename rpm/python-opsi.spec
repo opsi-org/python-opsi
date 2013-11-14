@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2010 uib GmbH.
+# Copyright (c) 2013 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -109,6 +109,10 @@ fi
 
 if [ -z "`getent passwd pcpatch`" ]; then
 	useradd -u 992 -g 992 -d /var/lib/opsi -s /bin/bash pcpatch
+fi
+
+if [ -z "`getent passwd opsiconfd`" ]; then
+	useradd -u 993 -g 992 -d /var/lib/opsi -s /bin/bash opsiconfd
 fi
 
 if [ -z "`getent group opsiadmin`" ]; then
