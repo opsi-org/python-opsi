@@ -1,35 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =    opsi python library - File     =
-   = = = = = = = = = = = = = = = = = = =
+opsi python library - Util - File
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008, 2009 uib GmbH
+Copyright (C) 2006-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+:author: Jan Schneider <j.schneider@uib.de>
+:license: GNU General Public License version 2
 """
 
 __version__ = "4.0.2"
@@ -50,7 +47,7 @@ elif (os.name == 'nt'):
 	import win32file
 	import pywintypes
 
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
@@ -640,6 +637,7 @@ class IniFile(ConfigFile):
 		self.writelines()
 		self.close()
 
+
 class InfFile(ConfigFile):
 	sectionRegex       = re.compile('\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex     = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
@@ -915,6 +913,7 @@ class PciidsFile(ConfigFile):
 		self._parsed = True
 
 UsbidsFile = PciidsFile
+
 
 class TxtSetupOemFile(ConfigFile):
 	sectionRegex     = re.compile('\[\s*([^\]]+)\s*\]')
@@ -1269,6 +1268,7 @@ class TxtSetupOemFile(ConfigFile):
 		self.writelines()
 		self.close()
 
+
 class ZsyncFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
@@ -1332,6 +1332,7 @@ class DHCPDConf_Component(object):
 
 	def __repr__(self):
 		return self.__str__()
+
 
 class DHCPDConf_Parameter(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
@@ -1402,6 +1403,7 @@ class DHCPDConf_Option(DHCPDConf_Component):
 	def asHash(self):
 		return { self.key: self.value }
 
+
 class DHCPDConf_Comment(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, data):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -1410,9 +1412,11 @@ class DHCPDConf_Comment(DHCPDConf_Component):
 	def asText(self):
 		return self.getShifting() + u'#%s' % self._data
 
+
 class DHCPDConf_EmptyLine(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+
 
 class DHCPDConf_Block(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, type, settings = []):
@@ -1549,9 +1553,11 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		return text
 
+
 class DHCPDConf_GlobalBlock(DHCPDConf_Block):
 	def __init__(self):
 		DHCPDConf_Block.__init__(self, 1, None, u'global')
+
 
 class DHCPDConfFile(TextFile):
 
