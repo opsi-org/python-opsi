@@ -1,57 +1,56 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = =
-   =   opsi python library - SQL   =
-   = = = = = = = = = = = = = = = = =
+opsi python library - Backend - SQL
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2013 uib GmbH
+Copyright (C) 2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License, version 3
-   as published by the Free Software Foundation.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License, version 3
+as published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Affero General Public License for more details.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
-   @license: GNU Affero GPL version 3
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@license: GNU Affero GPL version 3
 """
 
 import time
 from twisted.conch.ssh import keys
 from sys import version_info
+
 if (version_info >= (2,6)):
 	import json
 else:
 	import simplejson as json
+
 try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
 
-# OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 
-# Get logger instance
 logger = Logger()
+
 
 class SQL(object):
 
@@ -114,6 +113,7 @@ class SQL(object):
 
 	def escapeAsterisk(self, string):
 		return string.replace('*', self.ESCAPED_ASTERISK)
+
 
 class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def __init__(self, **kwargs):
@@ -180,6 +180,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def objectsDeleted(self, backend, objs):
 		for obj in forceList(objs):
 			self._trackModification('delete', obj)
+
 
 class SQLBackend(ConfigDataBackend):
 
@@ -917,7 +918,6 @@ class SQLBackend(ConfigDataBackend):
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
 
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -956,7 +956,6 @@ class SQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting host %s" % host)
 			where = self._uniqueCondition(host)
 			self._sql.delete('HOST', where)
-
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
@@ -1120,7 +1119,6 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(configState)
 			self._sql.delete('CONFIG_STATE', where)
 
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1213,7 +1211,6 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % product.getId())
 			self._sql.delete('PRODUCT', where)
 
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1275,8 +1272,6 @@ class SQLBackend(ConfigDataBackend):
 				self._sql.doCommit = True
 				logger.notice(u'doCommit set to true')
 			self._sql.close(conn,cursor)
-
-
 
 		(conn, cursor) = self._sql.connect()
 		for value in possibleValues:
@@ -2150,11 +2145,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(auditSoftwareOnClient)
 			self._sql.delete('SOFTWARE_CONFIG', where)
 
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 	def _uniqueAuditHardwareCondition(self, auditHardware):
 		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
@@ -2551,24 +2544,3 @@ class SQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting bootConfiguration %s" % bootConfiguration)
 			where = self._uniqueCondition(bootConfiguration)
 			self._sql.delete('BOOT_CONFIGURATION', where)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
