@@ -60,7 +60,7 @@ from OPSI.Util import objectToBeautifiedText, removeUnit
 logger = Logger()
 
 # Constants
-GEO_OVERWRITE_SO     = '/usr/local/lib/geo_override.so'
+GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'
 BIN_WHICH = '/usr/bin/which'
 WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
@@ -1106,29 +1106,28 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 class Harddisk:
 
 	def __init__(self, device):
-		''' Harddisk constructor. '''
-		self.device           = forceFilename(device)
-		self.model            = u''
-		self.signature        = None
-		self.biosDevice       = None
-		self.totalCylinders   = 0
-		self.cylinders        = 0
-		self.heads            = 0
-		self.sectors          = 0
-		self.label            = None
-		self.size             = -1
-		self.partitions       = []
-		self.ldPreload        = None
+		self.device = forceFilename(device)
+		self.model = u''
+		self.signature = None
+		self.biosDevice = None
+		self.totalCylinders = 0
+		self.cylinders = 0
+		self.heads = 0
+		self.sectors = 0
+		self.label  = None
+		self.size = -1
+		self.partitions = []
+		self.ldPreload = None
 		self.dosCompatibility = True
-		self.blockAlignment     = False
+		self.blockAlignment = False
 
 		self.useBIOSGeometry()
 		self.readPartitionTable()
 
-	def setDosCompatibility(self, comp = True):
+	def setDosCompatibility(self, comp=True):
 		self.dosCompatibility = bool(comp)
 
-	def setBlockAlignment(self, align = False):
+	def setBlockAlignment(self, align=False):
 		self.blockAlignment = bool(align)
 
 	def getBusType(self):
@@ -1139,7 +1138,6 @@ class Harddisk:
 
 	def useBIOSGeometry(self):
 		# Make sure your kernel supports edd (CONFIG_EDD=y/m) and module is loaded if not compiled in
-
 		try:
 			execute(u'%s edd' % which('modprobe'))
 		except Exception, e:
@@ -1308,17 +1306,21 @@ class Harddisk:
 						except:
 							pass
 
-						self.partitions.append( { 'device':	forceFilename(match.group(1) + match.group(2)),
-									  'number':	forceInt(match.group(2)),
-									  'cylStart':	forceInt(match.group(4)),
-									  'cylEnd':	forceInt(match.group(5)),
-									  'cylSize':	forceInt(match.group(6)),
-									  'start':	forceInt(match.group(4)) * self.bytesPerCylinder,
-									  'end':	(forceInt(match.group(5))+1) * self.bytesPerCylinder,
-									  'size':	forceInt(match.group(6)) * self.bytesPerCylinder,
-									  'type':	forceUnicodeLower(match.group(8)),
-									  'fs':		fs,
-									  'boot': 	boot } )
+						self.partitions.append(
+							{
+								'device': forceFilename(match.group(1) + match.group(2)),
+								'number': forceInt(match.group(2)),
+								'cylStart': forceInt(match.group(4)),
+								'cylEnd': forceInt(match.group(5)),
+								'cylSize': forceInt(match.group(6)),
+								'start': forceInt(match.group(4)) * self.bytesPerCylinder,
+								'end': (forceInt(match.group(5))+1) * self.bytesPerCylinder,
+								'size': forceInt(match.group(6)) * self.bytesPerCylinder,
+								'type': forceUnicodeLower(match.group(8)),
+								'fs': fs,
+								'boot': boot
+							}
+						)
 
 						logger.debug(u"Partition found =>>> number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
 								% (	self.partitions[-1]['number'],
@@ -1481,10 +1483,10 @@ class Harddisk:
 			cmd = u"%s -v -n %d %s 2>&1" % (which('shred'), iterations, dev)
 
 			lineRegex = re.compile('\s(\d+)\/(\d+)\s\(([^\)]+)\)\.\.\.(.*)$')
-			posRegex  = re.compile('([^\/]+)\/(\S+)\s+(\d+)%')
-			handle    = execute(cmd, getHandle=True)
-			position  = u''
-			error     = u''
+			posRegex = re.compile('([^\/]+)\/(\S+)\s+(\d+)%')
+			handle = execute(cmd, getHandle=True)
+			position = u''
+			error = u''
 			if progressSubject:
 				progressSubject.setEnd(100)
 			while True:
@@ -1524,7 +1526,6 @@ class Harddisk:
 
 		for hook in hooks:
 			hook.post_Harddisk_shred(self, partition, iterations, progressSubject)
-
 
 	def zeroFill(self, partition=0, progressSubject=None):
 		self.fill(forceInt(partition), u'/dev/zero', progressSubject)
@@ -1797,16 +1798,16 @@ class Harddisk:
 				return part
 		raise Exception(u'Partition %s does not exist' % number)
 
-	def createPartition(self, start, end, fs, type = u'primary', boot = False, lba = False, number = None):
+	def createPartition(self, start, end, fs, type=u'primary', boot=False, lba=False, number=None):
 		for hook in hooks:
 			(start, end, fs, type, boot, lba) = hook.pre_Harddisk_createPartition(self, start, end, fs, type, boot, lba)
 		try:
 			start = forceUnicodeLower(start)
-			end   = forceUnicodeLower(end)
-			fs    = forceUnicodeLower(fs)
-			type  = forceUnicodeLower(type)
-			boot  = forceBool(boot)
-			lba   = forceBool(lba)
+			end = forceUnicodeLower(end)
+			fs = forceUnicodeLower(fs)
+			type = forceUnicodeLower(type)
+			boot = forceBool(boot)
+			lba = forceBool(lba)
 
 			partId = u'00'
 			if re.search('^[a-f0-9]{2}$', fs):
@@ -1832,7 +1833,7 @@ class Harddisk:
 			start = start.replace(u' ', u'')
 			end   = end.replace(u' ', u'')
 
-			if   start.endswith(u'm') or start.endswith(u'mb'):
+			if start.endswith(u'm') or start.endswith(u'mb'):
 				match = re.search('^(\d+)\D', start)
 				if self.blockAlignment:
 					start = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
@@ -1866,7 +1867,7 @@ class Harddisk:
 				if self.blockAlignment:
 					start = int(round( ((float(start) * self.bytesPerCylinder) / self.bytesPerSector) ))
 
-			if   end.endswith(u'm') or end.endswith(u'mb'):
+			if end.endswith(u'm') or end.endswith(u'mb'):
 				match = re.search('^(\d+)\D', end)
 				if self.blockAlignment:
 					end = int(round( (int(match.group(1))*1024*1024) / self.bytesPerSector ))
@@ -1959,8 +1960,9 @@ class Harddisk:
 				if (end >= nextstart):
 					# Partitions overlap
 					end = nextstart-1
-			except:
+			except Exception:
 				pass
+
 			if (unit == 'sec'):
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s sec, end: %s sec." \
 							% (self.device, number, type, fs, start, end))
@@ -1968,18 +1970,21 @@ class Harddisk:
 				if (number < 1) or (number > 4):
 					raise Exception(u'Cannot create partition %s' % number)
 
-				self.partitions.append( { 'number':	number,
-							  'secStart':	start,
-							  'secEnd':	end,
-							  'secSize':	end-start+1,
-							  'start':	start * self.bytesPerSector,
-							  'end':	end * self.bytesPerSector,
-							  'size':	(end-start+1) * self.bytesPerSector,
-							  'type':	partId,
-							  'fs':		fs,
-							  'boot':	boot,
-							  'lba':	lba } )
-
+				self.partitions.append(
+					{
+						'number': number,
+						'secStart': start,
+						'secEnd': end,
+						'secSize': end-start+1,
+						'start': start * self.bytesPerSector,
+						'end': end * self.bytesPerSector,
+						'size': (end-start+1) * self.bytesPerSector,
+						'type': partId,
+						'fs': fs,
+						'boot': boot,
+						'lba': lba
+					}
+				)
 			else:
 				logger.info(u"Creating partition on '%s': number: %s, type '%s', filesystem '%s', start: %s cyl, end: %s cyl." \
 							% (self.device, number, type, fs, start, end))
@@ -1987,17 +1992,21 @@ class Harddisk:
 				if (number < 1) or (number > 4):
 					raise Exception(u'Cannot create partition %s' % number)
 
-				self.partitions.append( { 'number':	number,
-							  'cylStart':	start,
-							  'cylEnd':	end,
-							  'cylSize':	end-start+1,
-							  'start':	start * self.bytesPerCylinder,
-							  'end':	end * self.bytesPerCylinder,
-							  'size':	(end-start+1) * self.bytesPerCylinder,
-							  'type':	partId,
-							  'fs':		fs,
-							  'boot':	boot,
-							  'lba':	lba } )
+				self.partitions.append(
+					{
+						'number': number,
+						'cylStart': start,
+						'cylEnd': end,
+						'cylSize': end-start+1,
+						'start': start * self.bytesPerCylinder,
+						'end': end * self.bytesPerCylinder,
+						'size': (end-start+1) * self.bytesPerCylinder,
+						'type': partId,
+						'fs': fs,
+						'boot': boot,
+						'lba': lba
+					}
+				)
 
 			self.writePartitionTable()
 			self.readPartitionTable()
@@ -2661,13 +2670,12 @@ def auditHardware(config, hostId, progressSubject=None):
 	return auditHardwareOnHosts
 
 
-def hardwareExtendedInventory(config, opsiValues = {}, progressSubject=None):
+def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):
 	if not config:
 		logger.error(u"hardwareInventory: no config given")
 		return {}
 
 	for hwClass in config:
-
 		if not hwClass.get('Class') or not hwClass['Class'].get('Opsi'):
 			continue
 
@@ -2819,12 +2827,12 @@ def hardwareInventory(config, progressSubject=None):
 	currentKey = None
 	status = False
 
-	devRegex             = re.compile('^Bus\s+(\d+)\s+Device\s+(\d+)\:\s+ID\s+([\da-fA-F]{4})\:([\da-fA-F]{4})\s*(.*)$')
-	descriptorRegex      = re.compile('^(\s*)(.*)\s+Descriptor\:\s*$')
-	deviceStatusRegex    = re.compile('^(\s*)Device\s+Status\:\s+(\S+)\s*$')
+	devRegex = re.compile('^Bus\s+(\d+)\s+Device\s+(\d+)\:\s+ID\s+([\da-fA-F]{4})\:([\da-fA-F]{4})\s*(.*)$')
+	descriptorRegex = re.compile('^(\s*)(.*)\s+Descriptor\:\s*$')
+	deviceStatusRegex = re.compile('^(\s*)Device\s+Status\:\s+(\S+)\s*$')
 	deviceQualifierRegex = re.compile('^(\s*)Device\s+Qualifier\s+.*\:\s*$')
-	keyRegex             = re.compile('^(\s*)([^\:]+)\:\s*$')
-	keyValueRegex        = re.compile('^(\s*)(\S+)\s+(.*)$')
+	keyRegex = re.compile('^(\s*)([^\:]+)\:\s*$')
+	keyValueRegex = re.compile('^(\s*)(\S+)\s+(.*)$')
 
 	try:
 		for line in execute(u"%s -v" % which("lsusb")):
