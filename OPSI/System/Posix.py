@@ -1213,9 +1213,9 @@ class Harddisk:
 					id = u'83'
 				elif (id == u'linux-swap'):
 					id = u'82'
-				elif (fs == u'fat32'):
+				elif (id == u'fat32'):
 					id = u'0c'
-				elif (fs == u'ntfs'):
+				elif (id == u'ntfs'):
 					id = u'07'
 				else:
 					raise Exception(u"Partition type '%s' not supported!" % id)
