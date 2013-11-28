@@ -1121,9 +1121,11 @@ class Harddisk:
 		self.ldPreload = None
 		self.dosCompatibility = True
 		self.blockAlignment = False
+		self.rotational = True
 
 		self.useBIOSGeometry()
 		self.readPartitionTable()
+		self.readRotational()
 
 	def setDosCompatibility(self, comp=True):
 		self.dosCompatibility = bool(comp)
@@ -1150,6 +1152,29 @@ class Harddisk:
 			self.ldPreload = GEO_OVERWRITE_SO
 		else:
 			logger.info(u"Don't load geo_override.so on 64bit architecture.")
+
+	def readRotational(self):
+		"""
+		Checks if a disk is rotational.
+
+		The result of the check is saved in the attribute *rotational*.
+
+		.. versionadded:: 4.0.4.2
+		"""
+		devicename = self.device.split("/")[2]
+
+		try:
+			for line in execute(u'cat /sys/block/{0}/queue/rotational'.format(devicename)):
+				try:
+					self.rotational = forceBool(int(line.strip()))
+					break
+				except Exception:
+					pass
+		except Exception as error:
+			logger.error(
+				'Checking if the device {name} is rotational failed: '
+				'{error}'.format(name=self.device, error=error)
+			)
 
 	def getSignature(self):
 		hd = posix.open(str(self.device), posix.O_RDONLY)
