@@ -1601,7 +1601,7 @@ class Harddisk:
 						done = True
 
 				elif (timeout >= 10):
-					raise Exception(_(u"Failed (timed out)"))
+					raise Exception(u"Failed (timed out)")
 
 				else:
 					timeout += 1
