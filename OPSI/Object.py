@@ -204,9 +204,6 @@ class BaseObject(object):
 	def isGeneratedDefault(self):
 		return self._isGeneratedDefault
 
-	def __unicode__(self):
-		return u"<%s>" % self.getType()
-
 	def toHash(self):
 		# FIXME: Do we need deepcopy here? slow!
 		#hash = pycopy.deepcopy(self.__dict__)
