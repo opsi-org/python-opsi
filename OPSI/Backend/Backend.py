@@ -1,35 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Backend   =
-   = = = = = = = = = = = = = = = = = = =
+opsi python library - Backend
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008, 2009, 2010 uib GmbH
+Copyright (C) 2006-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0'
@@ -73,9 +71,6 @@ OPSI_GLOBAL_CONF  = u'/etc/opsi/global.conf'
 LOG_DIR           = u'/var/log/opsi'
 MAX_LOGFILE_SIZE  = 5000000
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                                                                                    =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
 def getArgAndCallString(method):
 	argString = u''
@@ -2857,7 +2852,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		pocFilter = dict(filter)
 
 		defaultMatchesFilter = \
-				    (not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
+					(not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
 				and (not filter.get('actionRequest')      or 'none'          in forceList(filter['actionRequest'])) \
 				and (not filter.get('productVersion')     or None            in forceList(filter['productVersion'])) \
 				and (not filter.get('packageVersion')     or None            in forceList(filter['packageVersion'])) \
