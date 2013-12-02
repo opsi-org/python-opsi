@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 __version__ = '4.0'
 
 import base64
+import codecs
 import copy as pycopy
 import inspect
 import new
