@@ -393,34 +393,7 @@ class SQLBackend(ConfigDataBackend):
 
 		# Host table
 		if not 'HOST' in tables.keys():
-			logger.debug(u'Creating table HOST')
-			table = u'''CREATE TABLE `HOST` (
-					`hostId` varchar(255) NOT NULL,
-					`type` varchar(30),
-					`description` varchar(100),
-					`notes` varchar(500),
-					`hardwareAddress` varchar(17),
-					`ipAddress` varchar(15),
-					`inventoryNumber` varchar(30),
-					`created` TIMESTAMP,
-					`lastSeen` TIMESTAMP,
-					`opsiHostKey` varchar(32),
-					`oneTimePassword` varchar(32),
-					`maxBandwidth` integer,
-					`depotLocalUrl` varchar(128),
-					`depotRemoteUrl` varchar(255),
-					`depotWebdavUrl` varchar(255),
-					`repositoryLocalUrl` varchar(128),
-					`repositoryRemoteUrl` varchar(255),
-					`networkAddress` varchar(31),
-					`isMasterDepot` bool,
-					`masterDepotId` varchar(255),
-					PRIMARY KEY (`hostId`)
-				) %s;
-				''' % self._sql.getTableCreationOptions('HOST')
-			logger.debug(table)
-			self._sql.execute(table)
-			self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
+			self._createTableHosts()
 
 		if not 'CONFIG' in tables.keys():
 			logger.debug(u'Creating table CONFIG')
@@ -917,6 +890,35 @@ class SQLBackend(ConfigDataBackend):
 			if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
+
+	def _createTableHosts(self):
+		logger.debug(u'Creating table HOST')
+		table = u'''CREATE TABLE `HOST` (
+				`hostId` varchar(255) NOT NULL,
+				`type` varchar(30),
+				`description` varchar(100),
+				`notes` varchar(500),
+				`hardwareAddress` varchar(17),
+				`ipAddress` varchar(15),
+				`inventoryNumber` varchar(30),
+				`created` TIMESTAMP,
+				`lastSeen` TIMESTAMP,
+				`opsiHostKey` varchar(32),
+				`oneTimePassword` varchar(32),
+				`maxBandwidth` integer,
+				`depotLocalUrl` varchar(128),
+				`depotRemoteUrl` varchar(255),
+				`depotWebdavUrl` varchar(255),
+				`repositoryLocalUrl` varchar(128),
+				`repositoryRemoteUrl` varchar(255),
+				`networkAddress` varchar(31),
+				`isMasterDepot` bool,
+				`masterDepotId` varchar(255),
+				PRIMARY KEY (`hostId`)
+			) %s;''' % self._sql.getTableCreationOptions('HOST')
+		logger.debug(table)
+		self._sql.execute(table)
+		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
