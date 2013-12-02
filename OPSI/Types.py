@@ -41,7 +41,7 @@ import sys
 import time
 import types
 
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()
