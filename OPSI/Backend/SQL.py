@@ -891,7 +891,7 @@ class SQLBackend(ConfigDataBackend):
 				logger.debug(hardwareConfigTable)
 				self._sql.execute(hardwareConfigTable)
 
-	def _createTableHosts(self):
+	def _createTableHost(self):
 		logger.debug(u'Creating table HOST')
 		table = u'''CREATE TABLE `HOST` (
 				`hostId` varchar(255) NOT NULL,
