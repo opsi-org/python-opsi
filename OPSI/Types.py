@@ -46,10 +46,12 @@ from OPSI.Logger import Logger
 encoding = sys.getfilesystemencoding()
 logger = Logger()
 
+
 def forceList(var):
 	if not type(var) in (types.ListType, types.TupleType):
 		return [ var ]
 	return list(var)
+
 
 def forceDict(var):
 	if var is None:
@@ -57,6 +59,7 @@ def forceDict(var):
 	if not type(var) is types.DictType:
 		raise ValueError(u"Bad dict value '%s'" % var)
 	return dict(var)
+
 
 def forceUnicode(var):
 	if type(var) is types.UnicodeType:
@@ -81,11 +84,14 @@ def forceUnicode(var):
 		return unicode(var, 'utf-8', 'replace')
 	return unicode(var)
 
+
 def forceUnicodeLower(var):
 	return forceUnicode(var).lower()
 
+
 def forceUnicodeUpper(var):
 	return forceUnicode(var).upper()
+
 
 def forceUnicodeList(var):
 	var = forceList(var)
@@ -93,17 +99,20 @@ def forceUnicodeList(var):
 		var[i] = forceUnicode(var[i])
 	return var
 
+
 def forceDictList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceDict(var[i])
 	return var
 
+
 def forceUnicodeLowerList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceUnicodeLower(var[i])
 	return var
+
 
 def forceBool(var):
 	if type(var) is types.BooleanType:
@@ -115,11 +124,13 @@ def forceBool(var):
 			return False
 	return bool(var)
 
+
 def forceBoolList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceBool(var[i])
 	return var
+
 
 def forceInt(var):
 	if type(var) is types.IntType:
@@ -129,17 +140,20 @@ def forceInt(var):
 	except Exception, e:
 		raise ValueError(u"Bad int value '%s': %s" % (var, e))
 
+
 def forceIntList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceInt(var[i])
 	return var
 
+
 def forceUnsignedInt(var):
 	var = forceInt(var)
 	if (var < 0):
 		var = var*(-1)
 	return var
+
 
 def forceOct(var):
 	if type(var) is types.IntType:
@@ -159,6 +173,7 @@ def forceOct(var):
 	except Exception, e:
 		raise ValueError(u"Bad oct value '%s': %s" % (var, e))
 
+
 def forceFloat(var):
 	if type(var) is types.FloatType:
 		return var
@@ -166,6 +181,7 @@ def forceFloat(var):
 		return float(var)
 	except Exception, e:
 		raise ValueError(u"Bad float value '%s': %s" % (var, e))
+
 
 def forceDict(var):
 	if type(var) is types.DictType:
@@ -180,6 +196,7 @@ def forceTime(var):
 		return time.localtime(var)
 	raise ValueError(u"Not a time '%s'" % var)
 
+
 hardwareIdRegex = re.compile('^[a-fA-F0-9]{4}$')
 def forceHardwareVendorId(var):
 	var = forceUnicodeUpper(var)
@@ -187,11 +204,13 @@ def forceHardwareVendorId(var):
 		raise ValueError(u"Bad hardware vendor id '%s'" % var)
 	return var
 
+
 def forceHardwareDeviceId(var):
 	var = forceUnicodeUpper(var)
 	if not re.search(hardwareIdRegex, var):
 		raise ValueError(u"Bad hardware device id '%s'" % var)
 	return var
+
 
 opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
 opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
@@ -209,6 +228,7 @@ def forceOpsiTimestamp(var):
 		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
+
 fqdnRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceFqdn(var):
 	var = forceObjectId(var)
@@ -220,11 +240,13 @@ def forceFqdn(var):
 	return var
 forceHostId = forceFqdn
 
+
 def forceHostIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceHostId(var[i])
 	return var
+
 
 hardwareAddressRegex = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
 def forceHardwareAddress(var):
@@ -236,6 +258,7 @@ def forceHardwareAddress(var):
 		raise ValueError(u"Bad hardware address: %s" % var)
 	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
+
 ipAddressRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceIPAddress(var):
 	var = forceUnicodeLower(var)
@@ -243,6 +266,7 @@ def forceIPAddress(var):
 		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
 forceIpAddress = forceIPAddress
+
 
 def forceHostAddress(var):
 	var = forceUnicodeLower(var)
@@ -258,12 +282,14 @@ def forceHostAddress(var):
 		raise ValueError(u"Bad host address: '%s'" % var)
 	return var
 
+
 netmaskRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceNetmask(var):
 	var = forceUnicodeLower(var)
 	if not re.search(netmaskRegex, var):
 		raise ValueError(u"Bad netmask: '%s'" % var)
 	return var
+
 
 networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
@@ -272,6 +298,7 @@ def forceNetworkAddress(var):
 		raise ValueError(u"Bad network address: '%s'" % var)
 	return var
 
+
 urlRegex = re.compile('^[a-z0-9]+://[/a-z0-9]')
 def forceUrl(var):
 	var = forceUnicodeLower(var)
@@ -279,12 +306,14 @@ def forceUrl(var):
 		raise ValueError(u"Bad url: '%s'" % var)
 	return var
 
+
 opsiHostKeyRegex = re.compile('^[0-9a-f]{32}$')
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(opsiHostKeyRegex, var):
 		raise ValueError(u"Bad opsi host key: '%s'" % var)
 	return var
+
 
 productVersionRegex = re.compile('^[a-z0-9\.]{1,32}$')
 def forceProductVersion(var):
@@ -294,11 +323,13 @@ def forceProductVersion(var):
 		raise ValueError(u"Bad product version: '%s'" % var)
 	return var
 
+
 def forceProductVersionList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceProductVersion(var[i])
 	return var
+
 
 packageVersionRegex = re.compile('^[a-z0-9\.]{1,16}$')
 def forcePackageVersion(var):
@@ -308,11 +339,13 @@ def forcePackageVersion(var):
 		raise ValueError(u"Bad package version: '%s'" % var)
 	return var
 
+
 def forcePackageVersionList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forcePackageVersion(var[i])
 	return var
+
 
 productIdRegex = re.compile('^[a-z0-9-_\.]{1,128}$')
 def forceProductId(var):
@@ -325,11 +358,13 @@ def forceProductId(var):
 		raise ValueError(u"Bad product id: '%s'" % var)
 	return var
 
+
 def forceProductIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceProductId(var[i])
 	return var
+
 
 packageCustomNameRegex = re.compile('^[a-zA-Z0-9]+$')
 def forcePackageCustomName(var):
@@ -338,6 +373,7 @@ def forcePackageCustomName(var):
 	if not match:
 		raise ValueError(u"Bad package custom name: '%s'" % var)
 	return var
+
 
 def forceProductType(var):
 	v = forceUnicodeLower(var)
@@ -349,6 +385,7 @@ def forceProductType(var):
 		raise ValueError(u"Unknown product type: '%s'" % var)
 	return var
 
+
 productPropertyIdRegex = re.compile('^\S+$')
 def forceProductPropertyId(var):
 	var = forceUnicodeLower(var)
@@ -357,6 +394,7 @@ def forceProductPropertyId(var):
 		raise ValueError(u"Bad product property id: '%s'" % var)
 	return var
 
+
 configIdRegex = re.compile('^\S+$')
 def forceConfigId(var):
 	var = forceUnicodeLower(var)
@@ -364,6 +402,7 @@ def forceConfigId(var):
 	if not match:
 		raise ValueError(u"Bad config id: '%s'" % var)
 	return var
+
 
 def forceProductPropertyType(var):
 	v = forceUnicodeLower(var)
@@ -375,11 +414,13 @@ def forceProductPropertyType(var):
 		raise ValueError(u"Unknown product property type: '%s'" % var)
 	return var
 
+
 def forceProductPriority(var):
 	var = forceInt(var)
 	if (var < -100): var = -100
 	if (var >  100): var =  100
 	return var
+
 
 def forceBootConfigurationPriority(var):
 	var = forceInt(var)
@@ -387,8 +428,10 @@ def forceBootConfigurationPriority(var):
 	if (var > 100): var = 100
 	return var
 
+
 def forceFilename(var):
 	return forceUnicode(var)
+
 
 def forceProductTargetConfiguration(var):
 	var = forceUnicodeLower(var)
@@ -396,11 +439,13 @@ def forceProductTargetConfiguration(var):
 		raise ValueError(u"Bad product target configuration: '%s'" % var)
 	return var
 
+
 def forceInstallationStatus(var):
 	var = forceUnicodeLower(var)
 	if var and var not in ('installed', 'not_installed', 'unknown'):
 		raise ValueError(u"Bad installation status: '%s'" % var)
 	return var
+
 
 def forceActionRequest(var):
 	var = forceUnicodeLower(var)
@@ -411,20 +456,24 @@ def forceActionRequest(var):
 			raise ValueError(u"Bad action request: '%s'" % var)
 	return var
 
+
 def forceActionRequestList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceActionRequest(var[i])
 	return var
 
+
 def forceActionProgress(var):
 	return forceUnicode(var)
+
 
 def forceActionResult(var):
 	var = forceUnicodeLower(var)
 	if var and var not in ('failed', 'successful', 'none'):
 		raise ValueError(u"Bad action result: '%s'" % var)
 	return var
+
 
 def forceRequirementType(var):
 	var = forceUnicodeLower(var)
@@ -433,6 +482,7 @@ def forceRequirementType(var):
 	if not var in ('before', 'after'):
 		raise ValueError(u"Bad requirement type: '%s'" % var)
 	return var
+
 
 def forceObjectClass(var, objectClass):
 	import OPSI.Object
@@ -462,11 +512,13 @@ def forceObjectClass(var, objectClass):
 			raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
 	return var
 
+
 def forceObjectClassList(var, objectClass):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceObjectClass(var[i], objectClass)
 	return var
+
 
 groupIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceGroupId(var):
@@ -475,6 +527,7 @@ def forceGroupId(var):
 	if not match:
 		raise ValueError(u"Bad group id: '%s'" % var)
 	return var
+
 
 def forceGroupType(var):
 	v = forceUnicodeLower(var)
@@ -486,17 +539,20 @@ def forceGroupType(var):
 		raise ValueError(u"Unknown group type: '%s'" % var)
 	return var
 
+
 def forceGroupTypeList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceGroupType(var[i])
 	return var
 
+
 def forceGroupIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceGroupId(var[i])
 	return var
+
 
 objectIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceObjectId(var):
@@ -506,13 +562,14 @@ def forceObjectId(var):
 		raise ValueError(u"Bad object id: '%s'" % var)
 	return var
 
+
 def forceObjectIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceObjectId(var[i])
 	return var
 
-#emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w{1,63}\.[a-zA-Z]{2,16}\.?$')
+
 emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
@@ -520,6 +577,7 @@ def forceEmailAddress(var):
 	if not match:
 		raise ValueError(u"Bad email address: '%s'" % var)
 	return var
+
 
 domainRegex = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceDomain(var):
@@ -529,6 +587,7 @@ def forceDomain(var):
 		raise ValueError(u"Bad domain: '%s'" % var)
 	return var
 
+
 hostnameRegex = re.compile('^[a-z0-9][a-z0-9\-]*$')
 def forceHostname(var):
 	var = forceUnicodeLower(var)
@@ -536,6 +595,7 @@ def forceHostname(var):
 	if not match:
 		raise ValueError(u"Bad hostname: '%s'" % var)
 	return var
+
 
 licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicenseContractId(var):
@@ -545,11 +605,13 @@ def forceLicenseContractId(var):
 		raise ValueError(u"Bad license contract id: '%s'" % var)
 	return var
 
+
 def forceLicenseContractIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceLicenseContractId(var[i])
 	return var
+
 
 softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceSoftwareLicenseId(var):
@@ -559,11 +621,13 @@ def forceSoftwareLicenseId(var):
 		raise ValueError(u"Bad software license id: '%s'" % var)
 	return var
 
+
 def forceSoftwareLicenseIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceSoftwareLicenseId(var[i])
 	return var
+
 
 licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicensePoolId(var):
@@ -573,17 +637,20 @@ def forceLicensePoolId(var):
 		raise ValueError(u"Bad license pool id: '%s'" % var)
 	return var
 
+
 def forceLicensePoolIdList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceLicensePoolId(var[i])
 	return var
 
+
 def forceAuditState(var):
 	var = forceInt(var)
 	if var not in (0, 1):
 		raise ValueError(u"Bad audit state value '%s': %s" % (var, e))
 	return var
+
 
 languageCodeRegex = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 def forceLanguageCode(var):
@@ -598,11 +665,13 @@ def forceLanguageCode(var):
 		var += u'-' + match.group(3).upper()
 	return var
 
+
 def forceLanguageCodeList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceLanguageCode(var[i])
 	return var
+
 
 architectureRegex = re.compile('^(x86|x64)$')
 def forceArchitecture(var):
@@ -611,11 +680,13 @@ def forceArchitecture(var):
 		raise ValueError(u"Bad architecture: '%s'" % var)
 	return var
 
+
 def forceArchitectureList(var):
 	var = forceList(var)
 	for i in range(len(var)):
 		var[i] = forceArchitecture(var[i])
 	return var
+
 
 def forceUniqueList(_list):
 	l = []
@@ -623,6 +694,7 @@ def forceUniqueList(_list):
 		if entry not in l:
 			l.append(entry)
 	return l
+
 
 def args(*vars, **typeVars):
 	"""Function to populate an object with passed on keyword args.
@@ -677,10 +749,7 @@ def args(*vars, **typeVars):
 	return wrapper
 
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                      EXCEPTION CLASSES                                             =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
-
+# EXCEPTION CLASSES
 class OpsiError(Exception):
 	""" Base class for OPSI Backend exceptions. """
 
@@ -709,93 +778,119 @@ class OpsiError(Exception):
 			self._message = forceUnicode(message)
 		return property(get, set)
 
+
 class OpsiBackupFileError(OpsiError):
 	ExceptionShortDescription = u"Opsi backup file error"
+
 
 class OpsiBackupFileNotFound(OpsiBackupFileError):
 	ExceptionShortDescription = u"Opsi backup file not found"
 
+
 class OpsiBackupBackendNotFound(OpsiBackupFileError):
 	ExceptionShortDescription = u"Opsi backend not found in backup"
+
 
 class OpsiAuthenticationError(OpsiError):
 	ExceptionShortDescription = u"Opsi authentication error"
 
+
 class OpsiServiceVerificationError(OpsiError):
 	ExceptionShortDescription = u"Opsi service verification error"
+
 
 class OpsiBadRpcError(OpsiError):
 	ExceptionShortDescription = u"Opsi bad rpc error"
 
+
 class OpsiRpcError(OpsiError):
 	ExceptionShortDescription = u"Opsi rpc error"
+
 
 class OpsiConnectionError(OpsiError):
 	ExceptionShortDescription = u"Opsi connection error"
 
+
 class OpsiTimeoutError(OpsiError):
 	ExceptionShortDescription = u"Opsi timeout error"
+
 
 class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
+
 class OpsiVersionError(OpsiError):
 	ExceptionShortDescription = u"Opsi version error"
+
 
 class BackendError(OpsiError):
 	""" Exception raised if there is an error in the backend. """
 	ExceptionShortDescription = u"Backend error"
 
+
 class BackendIOError(OpsiError):
 	""" Exception raised if there is a read or write error in the backend. """
 	ExceptionShortDescription = u"Backend I/O error"
+
 
 class BackendConfigurationError(OpsiError):
 	""" Exception raised if a configuration error occurs in the backend. """
 	ExceptionShortDescription = u"Backend configuration error"
 
+
 class BackendReferentialIntegrityError(OpsiError):
 	""" Exception raised if there is a referential integration error occurs in the backend. """
 	ExceptionShortDescription = u"Backend referential integrity error"
+
 
 class BackendBadValueError(OpsiError):
 	""" Exception raised if a malformed value is found. """
 	ExceptionShortDescription = u"Backend bad value error"
 
+
 class BackendMissingDataError(OpsiError):
 	""" Exception raised if expected data not found. """
 	ExceptionShortDescription = u"Backend missing data error"
+
 
 class BackendAuthenticationError(OpsiAuthenticationError):
 	""" Exception raised if authentication failes. """
 	ExceptionShortDescription = u"Backend authentication error"
 
+
 class BackendPermissionDeniedError(OpsiError):
 	""" Exception raised if a permission is denied. """
 	ExceptionShortDescription = u"Backend permission denied error"
+
 
 class BackendTemporaryError(OpsiError):
 	""" Exception raised if a temporary error occurs. """
 	ExceptionShortDescription = u"Backend temporary error"
 
+
 class BackendUnaccomplishableError(OpsiError):
 	""" Exception raised if a temporary error occurs. """
 	ExceptionShortDescription = u"Backend unaccomplishable error"
+
 
 class BackendModuleDisabledError(OpsiError):
 	""" Exception raised if a needed module is disabled. """
 	ExceptionShortDescription = u"Backend module disabled error"
 
+
 class LicenseConfigurationError(OpsiError):
 	""" Exception raised if a configuration error occurs in the license data base. """
 	ExceptionShortDescription = u"License configuration error"
+
 
 class LicenseMissingError(OpsiError):
 	""" Exception raised if a license is requested but cannot be found. """
 	ExceptionShortDescription = u"License missing error"
 
+
 class RepositoryError(OpsiError):
 	ExceptionShortDescription = u"Repository error"
+
 
 class CanceledException(Exception):
 	ExceptionShortDescription = u"CanceledException"
