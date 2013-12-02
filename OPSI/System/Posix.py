@@ -33,6 +33,7 @@ Functions and classes for the use with a POSIX operating system.
 __version__ = '4.0.3.4'
 
 import codecs
+import fcntl
 import locale
 import os
 import platform
