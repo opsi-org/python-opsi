@@ -5,6 +5,10 @@ python-opsi (4.0.4.2-1) testing; urgency=low
   * SQL backend: tables PRODUCT_PROPERTY and BOOT_CONFIGURATION now use type
     TEXT for column 'description'
   * Harddisks have a new attribute 'rotational'.
+  * MySQL backend: table 'HOST': using DEFAULT value for column 'created' to
+    avoid using the values given by MySQL. These values did result in a
+    unwanted misbehaviour where clients always updated their 'created' 
+    attribute to the time of the last update.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 06 Nov 2013 13:22:18 +0100
 
