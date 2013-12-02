@@ -32,33 +32,40 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 __version__ = '4.0.0.2'
 
-import os, sys, codecs, re, ConfigParser, tarfile, tempfile, datetime, socket, StringIO, shutil, bz2, gzip
+import bz2
+import datetime
+import gzip
+import os
+import re
+import sys
+import tarfile
+import tempfile
+import shutil
+import socket
+import StringIO
 from subprocess import Popen, PIPE, STDOUT
 
 if sys.version_info < (2,5):
 	import sha as sha1
 else:
 	from hashlib import sha1
-	
+
 if (os.name == 'posix'):
 	import fcntl
+	import grp
+	import pwd
 	from OPSI.System.Posix import SysInfo
-	import pwd, grp
-
 elif (os.name == 'nt'):
 	import win32con
 	import win32file
 	import pywintypes
 
-
-# OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Object import *
 from OPSI.Types import *
 from OPSI.Util.File import *
 from OPSI.Util import md5sum, toJson, fromJson
 
-# Get logger instance
 logger = Logger()
 
 class HostKeyFile(ConfigFile):
