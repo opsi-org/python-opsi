@@ -646,7 +646,7 @@ def forceLicensePoolIdList(var):
 def forceAuditState(var):
 	var = forceInt(var)
 	if var not in (0, 1):
-		raise ValueError(u"Bad audit state value '%s': %s" % (var, e))
+		raise ValueError(u"Bad audit state value: {0}".format(var))
 	return var
 
 
