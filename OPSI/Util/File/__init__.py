@@ -37,6 +37,7 @@ import locale
 import os
 import re
 import StringIO
+import threading
 
 if (os.name == 'posix'):
 	import fcntl
