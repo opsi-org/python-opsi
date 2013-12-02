@@ -242,7 +242,8 @@ class Entity(BaseObject):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Entity'
+		if not 'type' in hash:
+			hash['type'] = 'Entity'
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
@@ -282,7 +283,8 @@ class Relationship(BaseObject):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Relationship'
+		if not 'type' in hash:
+			hash['type'] = 'Relationship'
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
@@ -355,7 +357,8 @@ class Object(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Object'
+		if not 'type' in hash:
+			hash['type'] = 'Object'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -413,7 +416,8 @@ class Host(Object):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Host'
+		if not 'type' in hash:
+			hash['type'] = 'Host'
 		return Object.fromHash(hash)
 
 	@staticmethod
@@ -479,7 +483,8 @@ class OpsiClient(Host):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'OpsiClient'
+		if not 'type' in hash:
+			hash['type'] = 'OpsiClient'
 		return Host.fromHash(hash)
 
 	@staticmethod
@@ -599,7 +604,8 @@ class OpsiDepotserver(Host):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'OpsiDepotserver'
+		if not hash.has_key('type'):
+			hash['type'] = 'OpsiDepotserver'
 		return Host.fromHash(hash)
 
 	@staticmethod
@@ -628,7 +634,8 @@ class OpsiConfigserver(OpsiDepotserver):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'OpsiConfigserver'
+		if not hash.has_key('type'):
+			hash['type'] = 'OpsiConfigserver'
 		return OpsiDepotserver.fromHash(hash)
 
 	@staticmethod
@@ -739,7 +746,8 @@ class Config(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Config'
+		if not 'type' in hash:
+			hash['type'] = 'Config'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -776,7 +784,8 @@ class UnicodeConfig(Config):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'UnicodeConfig'
+		if not 'type' in hash:
+			hash['type'] = 'UnicodeConfig'
 		return Config.fromHash(hash)
 
 	@staticmethod
@@ -812,7 +821,8 @@ class BoolConfig(Config):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'BoolConfig'
+		if not 'type' in hash:
+			hash['type'] = 'BoolConfig'
 		return Config.fromHash(hash)
 
 	@staticmethod
@@ -858,7 +868,8 @@ class ConfigState(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ConfigState'
+		if not 'type' in hash:
+			hash['type'] = 'ConfigState'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1072,7 +1083,8 @@ class Product(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Product'
+		if not 'type' in hash:
+			hash['type'] = 'Product'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -1099,7 +1111,8 @@ class LocalbootProduct(Product):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'LocalbootProduct'
+		if not 'type' in hash:
+			hash['type'] = 'LocalbootProduct'
 		return Product.fromHash(hash)
 
 	@staticmethod
@@ -1134,7 +1147,8 @@ class NetbootProduct(Product):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'NetbootProduct'
+		if not 'type' in hash:
+			hash['type'] = 'NetbootProduct'
 		return Product.fromHash(hash)
 
 	@staticmethod
@@ -1265,7 +1279,8 @@ class ProductProperty(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductProperty'
+		if not 'type' in hash:
+			hash['type'] = 'ProductProperty'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -1305,7 +1320,8 @@ class UnicodeProductProperty(ProductProperty):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'UnicodeProductProperty'
+		if not 'type' in hash:
+			hash['type'] = 'UnicodeProductProperty'
 		return ProductProperty.fromHash(hash)
 
 	@staticmethod
@@ -1341,7 +1357,8 @@ class BoolProductProperty(ProductProperty):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'BoolProductProperty'
+		if not 'type' in hash:
+			hash['type'] = 'BoolProductProperty'
 		return ProductProperty.fromHash(hash)
 
 	@staticmethod
@@ -1441,7 +1458,8 @@ class ProductDependency(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductDependency'
+		if not 'type' in hash:
+			hash['type'] = 'ProductDependency'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1511,7 +1529,8 @@ class ProductOnDepot(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductOnDepot'
+		if not 'type' in hash:
+			hash['type'] = 'ProductOnDepot'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1653,7 +1672,8 @@ class ProductOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'
+		if not 'type' in hash:
+			hash['type'] = 'ProductOnClient'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1710,7 +1730,8 @@ class ProductPropertyState(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductPropertyState'
+		if not 'type' in hash:
+			hash['type'] = 'ProductPropertyState'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1752,7 +1773,8 @@ class Group(Object):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'Group'
+		if not 'type' in hash:
+			hash['type'] = 'Group'
 		return Object.fromHash(hash)
 
 	@staticmethod
@@ -1775,7 +1797,8 @@ class HostGroup(Group):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'HostGroup'
+		if not 'type' in hash:
+			hash['type'] = 'HostGroup'
 		return Group.fromHash(hash)
 
 	@staticmethod
@@ -1795,7 +1818,8 @@ class ProductGroup(Group):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ProductGroup'
+		if not 'type' in hash:
+			hash['type'] = 'ProductGroup'
 		return Group.fromHash(hash)
 
 	@staticmethod
@@ -1836,7 +1860,8 @@ class ObjectToGroup(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ObjectToGroup'
+		if not 'type' in hash:
+			hash['type'] = 'ObjectToGroup'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1938,7 +1963,8 @@ class LicenseContract(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'LicenseContract'
+		if not 'type' in hash:
+			hash['type'] = 'LicenseContract'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2008,7 +2034,8 @@ class SoftwareLicense(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'SoftwareLicense'
+		if not 'type' in hash:
+			hash['type'] = 'SoftwareLicense'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2032,7 +2059,8 @@ class RetailSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'RetailSoftwareLicense'
+		if not 'type' in hash:
+			hash['type'] = 'RetailSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2063,7 +2091,8 @@ class OEMSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'OEMSoftwareLicense'
+		if not 'type' in hash:
+			hash['type'] = 'OEMSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2085,7 +2114,8 @@ class VolumeSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'VolumeSoftwareLicense'
+		if not 'type' in hash:
+			hash['type'] = 'VolumeSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2105,7 +2135,8 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'ConcurrentSoftwareLicense'
+		if not 'type' in hash:
+			hash['type'] = 'ConcurrentSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2156,7 +2187,8 @@ class LicensePool(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'LicensePool'
+		if not 'type' in hash:
+			hash['type'] = 'LicensePool'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2231,7 +2263,8 @@ class AuditSoftwareToLicensePool(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'AuditSoftwareToLicensePool'
+		if not 'type' in hash:
+			hash['type'] = 'AuditSoftwareToLicensePool'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2280,7 +2313,8 @@ class SoftwareLicenseToLicensePool(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'SoftwareLicenseToLicensePool'
+		if not 'type' in hash:
+			hash['type'] = 'SoftwareLicenseToLicensePool'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2347,7 +2381,8 @@ class LicenseOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'LicenseOnClient'
+		if not 'type' in hash:
+			hash['type'] = 'LicenseOnClient'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2454,7 +2489,8 @@ class AuditSoftware(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'AuditSoftware'
+		if not 'type' in hash:
+			hash['type'] = 'AuditSoftware'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2613,7 +2649,8 @@ class AuditSoftwareOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'AuditSoftwareOnClient'
+		if not 'type' in hash:
+			hash['type'] = 'AuditSoftwareOnClient'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -3067,7 +3104,8 @@ class BootConfiguration(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'): hash['type'] = 'BootConfiguration'
+		if not 'type' in hash:
+			hash['type'] = 'BootConfiguration'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
