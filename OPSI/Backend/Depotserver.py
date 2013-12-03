@@ -38,12 +38,14 @@ import os
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower, forceProductId)
-from OPSI.Types import BackendIOError, BackendError, BackendTemporaryError, BackendMissingDataError, BackendBadValueError
+from OPSI.Types import (BackendIOError, BackendError, BackendTemporaryError,
+	BackendMissingDataError, BackendBadValueError)
 from OPSI.Object import *
 from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
-from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDeltaFile, getfqdn
+from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
+	librsyncPatchFile, librsyncDeltaFile)
 from OPSI.Util.File import ZsyncFile
 
 logger = Logger()
