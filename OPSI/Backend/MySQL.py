@@ -41,6 +41,7 @@ from MySQLdb.converters import conversions
 from _mysql_exceptions import *
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
+
 try:
 	from hashlib import md5
 except ImportError:
@@ -53,8 +54,8 @@ from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Backend.SQL import *
 
-# Get logger instance
 logger = Logger()
+
 
 class ConnectionPool(object):
 	# Storage for the instance reference
@@ -94,9 +95,6 @@ class ConnectionPool(object):
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
 
-# ======================================================================================================
-# =                                       CLASS MYSQL                                                  =
-# ======================================================================================================
 
 class MySQL(SQL):
 
@@ -418,6 +416,7 @@ class MySQL(SQL):
 			return u'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 
+
 class MySQLBackend(SQLBackend):
 
 	def __init__(self, **kwargs):
@@ -529,4 +528,3 @@ class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker)
 		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
 		self._sql = MySQL(**kwargs)
 		self._createTables()
-
