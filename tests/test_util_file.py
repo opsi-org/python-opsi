@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import os
 import shutil
-import tempfile
 import unittest
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile
 
-
-def copyTestfileToTemporaryFolder(filename):
-    temporary_folder = tempfile.mkdtemp()
-    shutil.copy(filename, temporary_folder)
-
-    (_, new_filename) = os.path.split(filename)
-
-    return os.path.join(temporary_folder, new_filename)
+from helpers import copyTestfileToTemporaryFolder
 
 
 class ParseIniFileTestCase(unittest.TestCase):
