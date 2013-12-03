@@ -350,7 +350,6 @@ class WorkerOpsi:
 
 	def _getSessionId(self):
 		# Get session id from cookie request header
-		userAgent = self._getUserAgent()
 		sessionId = u''
 		try:
 			for (k, v) in self.request.headers.getAllRawHeaders():
