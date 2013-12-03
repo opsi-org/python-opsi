@@ -383,6 +383,10 @@ class WorkerOpsi:
 		sessionId = self._getSessionId()
 
 		# Get Session object
+		if self.request.headers.hasHeader("x-forwarded-for"):
+			#overloading request because proxy detected
+			self.request.remoteAddr.host = self.request.headers.getRawHeaders("x-forwarded-for")[0]
+		
 		self.session = sessionHandler.getSession(sessionId, self.request.remoteAddr.host)
 		if (sessionId == self.session.uid):
 			logger.info(u"Reusing session for client '%s', application '%s'" % (self.request.remoteAddr.host, userAgent))
@@ -396,7 +400,10 @@ class WorkerOpsi:
 			self.session = sessionHandler.getSession()
 
 		# Set ip
-		self.session.ip = self.request.remoteAddr.host
+		if self.request.headers.hasHeader("x-forwarded-for"):
+			self.session.ip = self.request.headers.getRawHeaders("x-forwarded-for")[0]
+		else:
+			self.session.ip = self.request.remoteAddr.host
 
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
