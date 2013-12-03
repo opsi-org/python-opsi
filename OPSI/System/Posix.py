@@ -38,6 +38,7 @@ import locale
 import os
 import platform
 import posix
+import re
 import socket
 import sys
 import subprocess
