@@ -334,7 +334,7 @@ class LoggerImplementation:
 
 	def setSyslogLevel(self, level = LOG_NONE):
 		''' Maximum level of messages to log by syslog.
-		    Set LOG_NONE to disable syslog (default) '''
+		Set LOG_NONE to disable syslog (default)'''
 
 		if (level < LOG_NONE):
 			level = LOG_NONE
@@ -371,7 +371,7 @@ class LoggerImplementation:
 
 	def setConsoleLevel(self, level = LOG_NONE):
 		''' Maximum level of messages to print to stderr
-		    Set LOG_NONE to disable output to stderr (default) '''
+		Set LOG_NONE to disable output to stderr (default)'''
 		if (level < LOG_NONE):  level = LOG_NONE
 		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
 		self.__consoleLevel = level
@@ -431,7 +431,7 @@ class LoggerImplementation:
 
 	def setFileLevel(self, level = LOG_NONE):
 		''' Maximum level of messages to appear in logfile
-		    Set LOG_NONE to disable output to logfile (default) '''
+		Set LOG_NONE to disable output to logfile (default)'''
 		if (level < LOG_NONE):  level = LOG_NONE
 		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
 		self.__fileLevel = level
@@ -481,11 +481,11 @@ class LoggerImplementation:
 		''' Log a message '''
 		try:
 			if (level > self.__messageSubjectLevel and
-			    level > self.__consoleLevel and
-			    level > self.__fileLevel and
-			    level > self.__syslogLevel and
-			    not self.univentionLogger_priv):
-				    return
+				level > self.__consoleLevel and
+				level > self.__fileLevel and
+				level > self.__syslogLevel and
+				not self.univentionLogger_priv):
+					return
 
 			if not type(message) is unicode:
 				if not type(message) is str:
