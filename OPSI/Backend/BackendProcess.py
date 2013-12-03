@@ -1,62 +1,53 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = = =
-   =   opsi configuration daemon (opsiconfd)   =
-   = = = = = = = = = = = = = = = = = = = = = = =
-   
-   opsiconfd is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
-   
-   Copyright (C) 2010 uib GmbH
-   
-   http://www.uib.de/
-   
-   All rights reserved.
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Christian Kampka <c.kampka@uib.de>
-   @license: GNU General Public License version 2
+opsi configuration daemon (opsiconfd)
+
+opsiconfd is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
+
+Copyright (C) 2010-2013 uib GmbH
+
+http://www.uib.de/
+
+All rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+@copyright:	uib GmbH <info@uib.de>
+@author: Christian Kampka <c.kampka@uib.de>
+@license: GNU General Public License version 2
 """
-
-import re, os, sys, time, base64
-
-if sys.version_info >= (2,5):
-	import functools
-	from hashlib import md5
-else:
-	from OPSI.Util import _functools as functools
-	from md5 import md5
-
-
-
+import os
+import time
+import base64
+import functools
+from hashlib import md5
 
 from twisted.application.service import Service
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor, defer
 from twisted.conch.ssh import keys
-from twisted.python.failure import Failure
 
 from OPSI.Backend.BackendManager import BackendManager, backendManagerFactory
 from OPSI.Service.Process import OpsiPyDaemon
 from OPSI.Util.Configuration import BaseConfiguration
-from OPSI.Util.AMP import OpsiProcessProtocolFactory, RemoteDaemonProxy, OpsiProcessConnector, USE_BUFFERED_RESPONSE
+from OPSI.Util.AMP import OpsiProcessProtocolFactory, OpsiProcessConnector
 from OPSI.Util.Twisted import ResetableLoop
 from OPSI.Service.JsonRpc import JsonRpcRequestProcessor
-from OPSI.Logger import *
+from OPSI.Logger import LOG_WARNING, Logger
+
 logger = Logger()
 
 
