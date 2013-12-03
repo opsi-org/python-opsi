@@ -127,6 +127,7 @@ def objectsDiffer(obj1, obj2, excludeAttributes = []):
 				return True
 	return False
 
+
 class BaseObject(object):
 	subClasses = {}
 	identSeparator = u';'
@@ -152,7 +153,7 @@ class BaseObject(object):
 				v = getattr(self, attr)
 				if v is None:
 					v = u''
-			except AttributeError, e:
+			except AttributeError:
 				v = u''
 			identValues.append(forceUnicode(v))
 		if returnType in ('list',):
@@ -273,6 +274,7 @@ class Entity(BaseObject):
 
 BaseObject.subClasses['Entity'] = Entity
 
+
 class Relationship(BaseObject):
 	subClasses = {}
 
@@ -314,6 +316,7 @@ class Relationship(BaseObject):
 		return fromJson(jsonString, 'Relationship')
 
 BaseObject.subClasses['Relationship'] = Relationship
+
 
 class Object(Entity):
 	subClasses = {}
@@ -367,6 +370,7 @@ class Object(Entity):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Entity.subClasses['Object'] = Object
+
 
 class Host(Object):
 	subClasses = {}
@@ -426,6 +430,7 @@ class Host(Object):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Object.subClasses['Host'] = Host
+
 
 class OpsiClient(Host):
 	subClasses = {}
@@ -493,6 +498,7 @@ class OpsiClient(Host):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Host.subClasses['OpsiClient'] = OpsiClient
+
 
 class OpsiDepotserver(Host):
 	subClasses = {}
@@ -615,6 +621,7 @@ class OpsiDepotserver(Host):
 
 Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
 
+
 class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
@@ -642,6 +649,7 @@ class OpsiConfigserver(OpsiDepotserver):
 
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 Host.subClasses['OpsiConfigserver'] = OpsiConfigserver
+
 
 class Config(Entity):
 	subClasses = {}
@@ -757,6 +765,7 @@ class Config(Entity):
 
 Entity.subClasses['Config'] = Config
 
+
 class UnicodeConfig(Config):
 	subClasses = {}
 
@@ -791,6 +800,7 @@ class UnicodeConfig(Config):
 		return fromJson(jsonString, 'UnicodeConfig')
 
 Config.subClasses['UnicodeConfig'] = UnicodeConfig
+
 
 class BoolConfig(Config):
 	subClasses = {}
@@ -828,6 +838,7 @@ class BoolConfig(Config):
 		return fromJson(jsonString, 'BoolConfig')
 
 Config.subClasses['BoolConfig'] = BoolConfig
+
 
 class ConfigState(Relationship):
 	subClasses = {}
@@ -878,6 +889,7 @@ class ConfigState(Relationship):
 		return u"<%s configId '%s', objectId '%s'>" % (self.getType(), self.configId, self.objectId)
 
 Relationship.subClasses['ConfigState'] = ConfigState
+
 
 class Product(Entity):
 	subClasses = {}
@@ -1094,6 +1106,7 @@ class Product(Entity):
 
 Entity.subClasses['Product'] = Product
 
+
 class LocalbootProduct(Product):
 	subClasses = {}
 
@@ -1118,6 +1131,7 @@ class LocalbootProduct(Product):
 		return fromJson(jsonString, 'LocalbootProduct')
 
 Product.subClasses['LocalbootProduct'] = LocalbootProduct
+
 
 class NetbootProduct(Product):
 	subClasses = {}
@@ -1154,6 +1168,7 @@ class NetbootProduct(Product):
 		return fromJson(jsonString, 'NetbootProduct')
 
 Product.subClasses['NetbootProduct'] = NetbootProduct
+
 
 class ProductProperty(Entity):
 	subClasses = {}
@@ -1291,6 +1306,7 @@ class ProductProperty(Entity):
 
 Entity.subClasses['ProductProperty'] = ProductProperty
 
+
 class UnicodeProductProperty(ProductProperty):
 	subClasses = {}
 
@@ -1328,6 +1344,7 @@ class UnicodeProductProperty(ProductProperty):
 
 ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
 
+
 class BoolProductProperty(ProductProperty):
 	subClasses = {}
 
@@ -1364,6 +1381,7 @@ class BoolProductProperty(ProductProperty):
 		return fromJson(jsonString, 'BoolProductProperty')
 
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
+
 
 class ProductDependency(Relationship):
 	subClasses = {}
@@ -1469,6 +1487,7 @@ class ProductDependency(Relationship):
 			% (self.getType(), self.productId, self.productVersion, self.packageVersion, self.productAction, self.requiredProductId)
 
 Relationship.subClasses['ProductDependency'] = ProductDependency
+
 
 class ProductOnDepot(Relationship):
 	subClasses = {}
@@ -1684,6 +1703,7 @@ class ProductOnClient(Relationship):
 
 Relationship.subClasses['ProductOnClient'] = ProductOnClient
 
+
 class ProductPropertyState(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productPropertyState'
@@ -1742,6 +1762,7 @@ class ProductPropertyState(Relationship):
 
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
 
+
 class Group(Object):
 	subClasses = {}
 	foreignIdAttributes = Object.foreignIdAttributes + ['groupId']
@@ -1784,6 +1805,7 @@ class Group(Object):
 
 Object.subClasses['Group'] = Group
 
+
 class HostGroup(Group):
 	subClasses = {}
 
@@ -1805,6 +1827,7 @@ class HostGroup(Group):
 
 Group.subClasses['HostGroup'] = HostGroup
 
+
 class ProductGroup(Group):
 	subClasses = {}
 
@@ -1825,6 +1848,7 @@ class ProductGroup(Group):
 		return fromJson(jsonString, 'ProductGroup')
 
 Group.subClasses['ProductGroup'] = ProductGroup
+
 
 class ObjectToGroup(Relationship):
 	subClasses = {}
@@ -1873,9 +1897,6 @@ class ObjectToGroup(Relationship):
 Relationship.subClasses['ObjectToGroup'] = ObjectToGroup
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# -   License management                                                                        -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class LicenseContract(Entity):
 	subClasses = {}
 	foreignIdAttributes = Entity.foreignIdAttributes + ['licenseContractId']
@@ -1975,6 +1996,7 @@ class LicenseContract(Entity):
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
+
 class SoftwareLicense(Entity):
 	subClasses = {}
 	foreignIdAttributes = Entity.foreignIdAttributes + ['softwareLicenseId']
@@ -2046,6 +2068,7 @@ class SoftwareLicense(Entity):
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
+
 class RetailSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
@@ -2066,6 +2089,7 @@ class RetailSoftwareLicense(SoftwareLicense):
 		return fromJson(jsonString, 'RetailSoftwareLicense')
 
 SoftwareLicense.subClasses['RetailSoftwareLicense'] = RetailSoftwareLicense
+
 
 class OEMSoftwareLicense(SoftwareLicense):
 	subClasses = {}
@@ -2099,6 +2123,7 @@ class OEMSoftwareLicense(SoftwareLicense):
 
 SoftwareLicense.subClasses['OEMSoftwareLicense'] = OEMSoftwareLicense
 
+
 class VolumeSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
@@ -2122,6 +2147,7 @@ class VolumeSoftwareLicense(SoftwareLicense):
 
 SoftwareLicense.subClasses['VolumeSoftwareLicense'] = VolumeSoftwareLicense
 
+
 class ConcurrentSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
@@ -2142,6 +2168,7 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 		return fromJson(jsonString, 'ConcurrentSoftwareLicense')
 
 SoftwareLicense.subClasses['ConcurrentSoftwareLicense'] = ConcurrentSoftwareLicense
+
 
 class LicensePool(Entity):
 	subClasses = {}
@@ -2198,6 +2225,7 @@ class LicensePool(Entity):
 			% (self.getType(), self.id, self.description)
 
 Entity.subClasses['LicensePool'] = LicensePool
+
 
 class AuditSoftwareToLicensePool(Relationship):
 	subClasses = {}
@@ -2275,6 +2303,7 @@ class AuditSoftwareToLicensePool(Relationship):
 
 Relationship.subClasses['AuditSoftwareToLicensePool'] = AuditSoftwareToLicensePool
 
+
 class SoftwareLicenseToLicensePool(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'softwareLicenseToLicensePool'
@@ -2324,6 +2353,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 			% (self.getType(), self.softwareLicenseId, self.licensePoolId)
 
 Relationship.subClasses['SoftwareLicenseToLicensePool'] = SoftwareLicenseToLicensePool
+
 
 class LicenseOnClient(Relationship):
 	subClasses = {}
@@ -2392,8 +2422,6 @@ class LicenseOnClient(Relationship):
 			% (self.getType(), self.softwareLicenseId, self.licensePoolId, self.clientId)
 
 Relationship.subClasses['LicenseOnClient'] = LicenseOnClient
-
-
 
 
 class AuditSoftware(Entity):
@@ -2660,8 +2688,6 @@ class AuditSoftwareOnClient(Relationship):
 			% (self.getType(), self.name, self.version, self.subVersion, self.language, self.architecture, self.clientId)
 
 Relationship.subClasses['AuditSoftwareOnClient'] = AuditSoftwareOnClient
-
-
 
 
 class AuditHardware(Entity):
@@ -2962,6 +2988,7 @@ class AuditHardwareOnHost(Relationship):
 
 
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
+
 
 class BootConfiguration(Relationship):
 	subClasses = {}
