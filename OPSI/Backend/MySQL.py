@@ -32,11 +32,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __version__ = '4.0.3.4'
 
-# Imports
-import MySQLdb, warnings, time, threading
+import base64
+import warnings
+import time
+import threading
+
+import MySQLdb
 from MySQLdb.constants import FIELD_TYPE
 from MySQLdb.converters import conversions
-from _mysql_exceptions import *
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
 
@@ -45,12 +48,10 @@ try:
 except ImportError:
 	from md5 import md5
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
-from OPSI.Object import *
-from OPSI.Backend.Backend import *
-from OPSI.Backend.SQL import *
+from OPSI.Logger import Logger
+from OPSI.Types import BackendIOError, BackendBadValueError
+from OPSI.Types import forceInt, forceUnicode
+from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
 logger = Logger()
 
