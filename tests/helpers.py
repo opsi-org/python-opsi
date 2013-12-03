@@ -5,9 +5,6 @@ import os
 import shutil
 import tempfile
 
-# FAILED (SKIP=1, errors=28, failures=6)
-
-
 
 def copyTestfileToTemporaryFolder(filename):
     temporary_folder = tempfile.mkdtemp()
