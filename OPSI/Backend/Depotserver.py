@@ -32,15 +32,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 __version__ = '4.0.2.1'
 
-# Imports
-import socket, shutil, os
+import shutil
+import os
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
+	forceUnicode, forceUnicodeLower, forceProductId)
+from OPSI.Types import BackendIOError, BackendError, BackendTemporaryError, BackendMissingDataError, BackendBadValueError
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
-from OPSI.System import getDiskSpaceUsage, execute, which
+from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
+from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import md5sum, librsyncSignature, librsyncPatchFile, librsyncDeltaFile, getfqdn
 from OPSI.Util.File import ZsyncFile
