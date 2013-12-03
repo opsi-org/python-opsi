@@ -40,7 +40,7 @@ from OPSI.Types import (forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower, forceProductId)
 from OPSI.Types import (BackendIOError, BackendError, BackendTemporaryError,
 	BackendMissingDataError, BackendBadValueError)
-from OPSI.Object import *
+from OPSI.Object import ProductOnDepot, ProductPropertyState
 from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
