@@ -393,7 +393,7 @@ class SQLBackend(ConfigDataBackend):
 
 		# Host table
 		if not 'HOST' in tables.keys():
-			self._createTableHosts()
+			self._createTableHost()
 
 		if not 'CONFIG' in tables.keys():
 			logger.debug(u'Creating table CONFIG')
