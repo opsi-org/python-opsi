@@ -9,6 +9,7 @@ python-opsi (4.0.4.2-1) testing; urgency=low
     avoid using the values given by MySQL. These values did result in a
     unwanted misbehaviour where clients always updated their 'created' 
     attribute to the time of the last update.
+  * Removed workarounds for Python versions prior to 2.6
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 06 Nov 2013 13:22:18 +0100
 
