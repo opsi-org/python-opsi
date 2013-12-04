@@ -4,46 +4,44 @@
    = = = = = = = = = = = = = = = = = = = =
    =   opsi python library - MessageBus  =
    = = = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2011 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
 
-import threading, sys, base64, os
+import base64
+import json
+import os
+import sys
+import threading
+
 from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, defer
-#from twisted.internet.endpoints import SSL4ClientEndpoint
 from twisted.internet._sslverify import OpenSSLCertificateOptions
-
-from sys import version_info
-if (version_info >= (2,6)):
-	import json
-else:
-	import simplejson as json
 
 from Queue import Queue, Empty, Full
 from OpenSSL import SSL
@@ -72,17 +70,17 @@ class MessageQueue(threading.Thread):
 		self.poll = forceFloat(poll)
 		self.additionalTransportArgs = forceList(additionalTransportArgs)
 		self.stopped = False
-		
+
 	def stop(self):
 		self.stopped = True
-		
+
 	def add(self, message):
 		if self.stopped:
 			raise Exception(u"MessageQueue stopped")
 		logger.debug(u'Adding message %s to queue %s (current queue size: %d)' % (message, self, self.queue.qsize()))
 		self.queue.put(message, block = True)
 		logger.debug2(u'Added message %s to queue' % message)
-	
+
 	def run(self):
 		logger.debug(u"MessageQueue started")
 		while not self.stopped or not self.queue.empty():
@@ -109,22 +107,22 @@ class MessageQueue(threading.Thread):
 class MessageBusServerProtocol(LineReceiver):
 	def connectionMade(self):
 		self.factory.connectionMade(self)
-		
+
 	def connectionLost(self, reason):
 		self.factory.connectionLost(self, reason)
-	
+
 	def lineReceived(self, line):
 		self.factory.lineReceived(line)
-	
+
 class MessageBusServerFactory(ServerFactory):
 	protocol = MessageBusServerProtocol
-	
+
 	def __init__(self):
 		self.clients = {}
-	
+
 	def connectionCount(self):
 		return len(self.clients.keys())
-	
+
 	def connectionMade(self, client, readonly = False):
 		logger.debug(u"Client connection made")
 		clientId = randomString(16)
@@ -133,7 +131,7 @@ class MessageBusServerFactory(ServerFactory):
 		logger.notice(u"%s client connection made (%s), %d client(s) connected" % (self.__class__.__name__, clientId, self.connectionCount()))
 		messageQueue.start()
 		self.sendMessage({"message_type": "init", "client_id": clientId}, clientId = clientId)
-		
+
 	def connectionLost(self, client, reason):
 		logger.debug(u"Client connection lost")
 		clientId = u'unknown'
@@ -145,7 +143,7 @@ class MessageBusServerFactory(ServerFactory):
 				del self.clients[cid]
 				break
 		logger.notice(u"%s client connection lost (%s), %d client(s) connected" % (self.__class__.__name__, clientId, self.connectionCount()))
-		
+
 	def lineReceived(self, line):
 		try:
 			logger.debug(u"Line received: '%s'" % line)
@@ -154,7 +152,7 @@ class MessageBusServerFactory(ServerFactory):
 					client = self.clients.get(message.get('client_id'))
 					if client:
 						client['connection'].transport.loseConnection()
-					
+
 				if (message.get('message_type') == 'register_for_object_events'):
 					clientId = message.get('client_id')
 					if not clientId:
@@ -174,7 +172,7 @@ class MessageBusServerFactory(ServerFactory):
 					}
 					logger.info(u"Client '%s' now registered for object_types %s, operations %s" \
 							% (clientId, object_types, operations))
-				
+
 				elif (message.get('message_type') == 'object_event'):
 					clientId = message.get('client_id', 'unknown')
 					try:
@@ -190,7 +188,7 @@ class MessageBusServerFactory(ServerFactory):
 		except Exception, e:
 			logger.error(u"Received line '%s'" % line)
 			logger.logException(e)
-	
+
 	def _sendObjectEvent(self, object_type, ident, operation):
 		if not operation in ('created', 'updated', 'deleted'):
 			logger.error(u"Unknown operation '%s'" % operation)
@@ -210,7 +208,7 @@ class MessageBusServerFactory(ServerFactory):
 			if object_types and not object_type in object_types:
 				continue
 			self.clients[clientId]['messageQueue'].add(message)
-		
+
 	def sendMessage(self, message, clientId = None):
 		if clientId:
 			client = self.clients.get(clientId)
@@ -221,7 +219,7 @@ class MessageBusServerFactory(ServerFactory):
 		else:
 			for client in self.clients.values():
 				client['messageQueue'].add(message)
-		
+
 	def transmitMessages(self, messages, clientId):
 		logger.debug(u"Transmitting messages to client '%s'" % clientId)
 		messages = json.dumps(messages)
@@ -230,10 +228,10 @@ class MessageBusServerFactory(ServerFactory):
 			logger.error(u"Failed to send message: client '%s' not connected" % clientId)
 			return
 		client['connection'].sendLine(messages)
-		
+
 	def sendError(self, errorMessage, clientId = None):
 		self.sendMessage({'message_type': 'error', 'message': forceUnicode(errorMessage)}, clientId)
-	
+
 class MessageBusServer(threading.Thread):
 	def __init__(self, port = None,):
 		threading.Thread.__init__(self)
@@ -244,10 +242,10 @@ class MessageBusServer(threading.Thread):
 		self._server = None
 		self._startReactor = False
 		self._stopping = False
-	
+
 	def isStopping(self):
 		return self._stopping
-	
+
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
 		logger.notice(u"Creating unix socket '%s'" % self._port)
@@ -256,7 +254,7 @@ class MessageBusServer(threading.Thread):
 			os.unlink(self._port)
 		self._server = reactor.listenUNIX(self._port, self._factory)
 		threading.Thread.start(self)
-		
+
 	def run(self):
 		logger.info(u"Notification server starting")
 		try:
@@ -267,7 +265,7 @@ class MessageBusServer(threading.Thread):
 					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
-		
+
 	def stop(self, stopReactor=True):
 		self._stopping = True
 		self._server.stopListening()
@@ -278,29 +276,29 @@ class MessageBusServer(threading.Thread):
 				pass
 		if os.path.exists(self._port):
 			os.unlink(self._port)
-	
+
 class MessageBusClientProtocol(LineReceiver):
 	def connectionMade(self):
 		logger.debug(u"Connection made")
 		self.factory.messageBusClient.connectionMade(self)
-		
+
 	def connectionLost(self, reason):
 		logger.debug(u"Connection lost")
 		self.factory.messageBusClient.connectionLost(reason)
-	
+
 	def lineReceived(self, line):
 		logger.debug(u"Line received")
 		self.factory.messageBusClient.lineReceived(line)
 
 class MessageBusClientFactory(ClientFactory):
 	protocol = MessageBusClientProtocol
-	
+
 	def __init__(self, messageBusClient):
 		self.messageBusClient = messageBusClient
-	
+
 	def clientConnectionFailed(self, client, reason):
 		self.messageBusClient.connectionFailed(reason)
-	
+
 class MessageBusClient(threading.Thread):
 	def __init__(self, port = None, autoReconnect = True):
 		threading.Thread.__init__(self)
@@ -320,25 +318,25 @@ class MessageBusClient(threading.Thread):
 		self._registeredForObjectEvents = {}
 		self._startReactor = False
 		self._initialized = threading.Event()
-	
+
 	def isStopping(self):
 		return self._stopping
-	
+
 	def start(self, startReactor=True):
 		self._startReactor = startReactor
 		threading.Thread.start(self)
-	
+
 	def connectionFailed(self, reason):
 		if self._reconnecting:
 			logger.debug(u"Failed to reconnect %s '%s': %s" % (self._client, self._port, reason))
 		else:
 			logger.error(u"Failed to connect %s '%s': %s" % (self._client, self._port, reason))
 			self.stop()
-		
+
 	def _connect(self):
 		logger.info(u"Connecting to socket: %s" % self._port)
 		self._client = reactor.connectUNIX(self._port, self._factory, timeout=1)
-	
+
 	def run(self):
 		logger.info(u"MessageBus client is starting")
 		self._connect()
@@ -351,16 +349,16 @@ class MessageBusClient(threading.Thread):
 					time.sleep(1)
 		except Exception, e:
 			logger.logException(e)
-		
+
 		logger.debug2(u"MessageBus client stopping messageQueue %s" % self._messageQueue)
 		self._messageQueue.stop()
 		self._messageQueue.join(5)
 		logger.debug2(u"MessageBus client exiting")
-	
+
 	def _disconnect(self):
 		logger.debug(u"MessageBusClient disconnecting (%s)" % self._client)
 		reactor.callFromThread(self._client.disconnect)
-		
+
 	def stop(self, stopReactor=True):
 		self._stopping = True
 		logger.debug(u"MessageBusClient is stopping")
@@ -372,12 +370,12 @@ class MessageBusClient(threading.Thread):
 		elif stopReactor and reactor and reactor.running:
 			logger.debug(u"MessageBusClient is stopping reactor")
 			reactor.stop()
-	
+
 	def connectionMade(self, connection):
 		logger.debug(u"Connected to socket %s" % self._port)
 		self._connection = connection
 		self._reconnecting = False
-		
+
 	def connectionLost(self, reason):
 		logger.info(u"Connection to server lost, stopping: %s, auto reconnect: %s" % (self.isStopping(), self._autoReconnect))
 		self._initialized.clear()
@@ -391,17 +389,17 @@ class MessageBusClient(threading.Thread):
 		if not self.isStopping() and self._autoReconnect:
 			self._reconnecting = True
 			reactor.callLater(1, self._reconnect)
-	
+
 	def waitInitialized(self, timeout = 0.0):
 		return self._initialized.wait(timeout = timeout)
-	
+
 	def isInitialized(self):
 		return self._initialized.isSet()
-	
+
 	def initialized(self):
 		logger.info(u"Initialized")
 		self._initialized.set()
-	
+
 	def _reconnect(self):
 		logger.debug2(u"Reconnect")
 		self._reconnecting = True
@@ -416,7 +414,7 @@ class MessageBusClient(threading.Thread):
 		except Exception, e:
 			pass
 		reactor.callLater(self._reconnectionAttemptInterval, self._reconnect)
-	
+
 	def lineReceived(self, line):
 		if self.isStopping():
 			return
@@ -439,21 +437,21 @@ class MessageBusClient(threading.Thread):
 		except Exception, e:
 			logger.error(line)
 			logger.logException(e)
-	
+
 	def objectEventReceived(self, object_type, ident, operation):
 		pass
-	
+
 	def sendLine(self, line):
 		if not self._connection:
 			if self.isStopping():
 				return
 			raise Exception(u"Cannot send line: not connected")
 		self._connection.sendLine(line)
-	
+
 	def transmitMessages(self, messages):
 		logger.info(u"Transmitting messages: %s" % messages)
 		self.sendLine(json.dumps(messages))
-		
+
 	def notifyObjectEvent(self, operation, obj):
 		if self.isStopping():
 			return
@@ -464,16 +462,16 @@ class MessageBusClient(threading.Thread):
 			"object_type":  obj.getType(),
 			"ident":        obj.getIdent('dict')
 		})
-		
+
 	def notifyObjectCreated(self, obj):
 		self.notifyObjectEvent('created', obj)
-	
+
 	def notifyObjectUpdated(self, obj):
 		self.notifyObjectEvent('updated', obj)
-	
+
 	def notifyObjectDeleted(self, obj):
 		self.notifyObjectEvent('deleted', obj)
-	
+
 	def registerForObjectEvents(self, object_types = [], operations = []):
 		if self.isStopping():
 			return
@@ -488,14 +486,14 @@ class MessageBusClient(threading.Thread):
 class MessageBusWebsocketClientProtocol(MessageBusClientProtocol):
 	def rawDataReceived(self, data):
 		self.lineReceived(hybi10Decode(data))
-	
+
 	def lineReceived(self, line):
 		logger.debug(u"Line received")
 		line = line.rstrip()
 		self.factory.messageBusClient.lineReceived(line)
 		if self.line_mode and self.factory.messageBusClient.isWebsocketHandshakeDone():
 			self.setRawMode()
-	
+
 class MessageBusWebsocketClientFactory(MessageBusClientFactory):
 	protocol = MessageBusWebsocketClientProtocol
 
@@ -508,12 +506,12 @@ class MessageBusWebsocketClient(MessageBusClient):
 		self.__wsVersion = 8
 		self.__wsHandshakeDone = False
 		self.__headers = {}
-		
+
 		(self._scheme, self._host, self._port, self._baseUrl, self.__username, self.__password) = urlsplit(self._url)
-		
+
 	def isWebsocketHandshakeDone(self):
 		return self.__wsHandshakeDone
-	
+
 	def _connect(self):
 		logger.info(u"Connecting to host: %s" % self._host)
 		contextFactory = OpenSSLCertificateOptions(
@@ -529,14 +527,14 @@ class MessageBusWebsocketClient(MessageBusClient):
 			enableSessions      = False,
 			fixBrokenPeers      = True)
 		self._client = reactor.connectSSL(self._host, self._port, self._factory, contextFactory, timeout = 10)
-		
+
 	def connectionMade(self, connection):
 		logger.debug(u"Connected to host: %s" % self._host)
 		self._connection = connection
 		self.__wsHandshakeDone = False
-		
+
 		self.__wsKey = base64.b64encode(os.urandom(16))
-		
+
 		headers = 'GET %s HTTP/1.1\r\n' % self._baseUrl
 		if self.__username and self.__password:
 			auth = (self.__username + u':' + self.__password).encode('latin-1')
@@ -547,12 +545,12 @@ class MessageBusWebsocketClient(MessageBusClient):
 		headers += 'Sec-WebSocket-Origin: %s%s:%d%s\r\n' % (self._scheme, self._host, self._port, self._baseUrl)
 		headers += 'Sec-WebSocket-Key: %s\r\n' % self.__wsKey
 		headers += 'Sec-WebSocket-Version: %d\r\n' % self.__wsVersion
-		
+
 		self.sendLine(str(headers))
-	
+
 	def _websocketHandshake(self):
 		self.__wsHandshakeDone = True
-	
+
 	def lineReceived(self, line):
 		line = line.rstrip()
 		#logger.debug2("lineReceived: %s" % line)
@@ -569,12 +567,12 @@ class MessageBusWebsocketClient(MessageBusClient):
 				self._websocketHandshake()
 		else:
 			MessageBusClient.lineReceived(self, line)
-	
+
 	def sendLine(self, line):
 		if self.isWebsocketHandshakeDone():
 			line = hybi10Encode(line)
 		MessageBusClient.sendLine(self, line)
-	
+
 if (__name__ == '__main__'):
 	import signal
 	mb = None
@@ -587,10 +585,10 @@ if (__name__ == '__main__'):
 			return
 		if signo in (signal.SIGHUP, signal.SIGINT):
 			mb.stop()
-	
+
 	signal.signal(signal.SIGHUP, signalHandler)
 	signal.signal(signal.SIGINT, signalHandler)
-	
+
 	if (len(sys.argv) > 1) and (sys.argv[1] == 'server'):
 		mb = MessageBusServer()
 	else:
@@ -598,21 +596,21 @@ if (__name__ == '__main__'):
 		#class PrintingMessageBusClient(MessageBusClient):
 			def objectEventReceived(self, object_type, ident, operation):
 				print u"%s %s %s" % (object_type, ident, operation)
-			
+
 			def initialized(self):
 				MessageBusClient.initialized(self)
 				self._register()
-			
+
 			def _register(self):
 				self.registerForObjectEvents(object_types = ['OpsiClient'], operations = ['updated', 'created'])
-		
+
 		mb = PrintingMessageBusClient(url = 'https://192.168.1.14:4447/omb')
 	mb.start()
 	while not mb.isStopping():
 		time.sleep(1)
 	mb.join()
-	
-	
-	
-	
-	
+
+
+
+
+

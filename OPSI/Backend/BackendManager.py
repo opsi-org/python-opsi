@@ -360,13 +360,8 @@ class BackendDispatcher(Backend):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
 			l["config"]["context"] = self
-			if (sys.version_info >= (2,5)):
-				b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
-				self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
-			else:
-				exec('from %s import %sBackend' % (l['module'], l['module']))
-				exec('b = %sBackend(**l["config"])' % l['module'])
-				self._backends[backend]["instance"] = b
+			b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
+			self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")

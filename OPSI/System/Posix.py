@@ -46,11 +46,7 @@ import threading
 import time
 import copy as pycopy
 from signal import *
-
-if sys.version_info < (2,6):
-	from platform import dist as linux_distribution
-else:
-	from platform import linux_distribution
+from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import(forceDomain, forceInt, forceBool, forceUnicode,

@@ -36,6 +36,7 @@ __version__ = '4.0.2.7'
 
 import base64
 import codecs
+import json
 import os
 import random
 import re
@@ -44,12 +45,6 @@ import struct
 import time
 import types
 from Crypto.Cipher import Blowfish
-from sys import version_info
-
-if (version_info >= (2, 6)):
-	import json
-else:
-	import simplejson as json
 
 try:
 	from hashlib import md5

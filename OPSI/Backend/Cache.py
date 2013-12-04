@@ -4,40 +4,38 @@
    = = = = = = = = = = = = = = = = = =
    =   opsi python library - Cache   =
    = = = = = = = = = = = = = = = = = =
-   
+
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
-   
+
    Copyright (C) 2010 uib GmbH
-   
+
    http://www.uib.de/
-   
+
    All rights reserved.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
    published by the Free Software Foundation.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-   
+
    @copyright:	uib GmbH <info@uib.de>
    @author: Jan Schneider <j.schneider@uib.de>
    @license: GNU General Public License version 2
 """
 
-import inspect, time, codecs, threading
-from sys import version_info
-if (version_info >= (2,6)):
-	import json
-else:
-	import simplejson as json
+import codecs
+import inspect
+import json
+import time
 
 from OPSI.Logger import *
 from OPSI.Types import *
@@ -49,17 +47,17 @@ from OPSI.Util import blowfishDecrypt
 logger = Logger()
 
 class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
-	
+
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
-		
+
 		self._workBackend = None
 		self._masterBackend = None
 		self._snapshotBackend = None
 		self._clientId = None
 		self._depotId = None
 		self._backendChangeListeners = []
-		
+
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if   option in ('workbackend',):
@@ -74,7 +72,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				self._depotId = forceHostId(value)
 			elif option in ('backendinfo',):
 				self._backendInfo = value
-		
+
 		if not self._workBackend:
 			raise Exception(u"Work backend undefined")
 		if not self._snapshotBackend:
@@ -83,24 +81,24 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			raise Exception(u"Client id undefined")
 		if not self._depotId:
 			raise Exception(u"Depot id undefined")
-		
+
 		self._workBackend._setContext(self)
 		self._backend = self._workBackend
 		self._createInstanceMethods()
-	
+
 	def log_write(self, logType, data, objectId=None, append=False):
 		pass
-	
+
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		licenseOnClients = self._workBackend.licenseOnClient_getObjects(attributes, **filter)
 		for licenseOnClient in licenseOnClients:
 			# Recreate for later sync to server
 			self.licenseOnClient_insertObject(licenseOnClient)
 		return licenseOnClients
-		
+
 	def _setMasterBackend(self, masterBackend):
 		self._masterBackend = masterBackend
-	
+
 	def _syncModifiedObjectsWithMaster(self, objectClass, modifiedObjects, getFilter, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction):
 		masterObjects = {}
 		deleteObjects = []
@@ -110,7 +108,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			masterObjects[obj.getIdent()] = obj
 		for mo in modifiedObjects:
 			masterObj = masterObjects.get(mo['object'].getIdent())
-			
+
 			if (mo['command'].lower() == 'delete'):
 				if not masterObj:
 					logger.info(u"No need to delete object %s because object has been deleted on server since last sync" % mo['object'])
@@ -126,11 +124,11 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					continue
 				logger.debug(u"Object %s marked for deletion" % mo['object'])
 				deleteObjects.append(mo['object'])
-			
+
 			elif mo['command'].lower() in ('update', 'insert'):
 				logger.debug(u"Modified object: %s" % mo['object'].toHash())
 				updateObj = createUpdateObjectFunction(mo['object'])
-				
+
 				if masterObj:
 					logger.debug(u"Master object: %s" % masterObj.toHash())
 					meth = getattr(self._snapshotBackend, '%s_getObjects' % objectClass.backendMethodPrefix)
@@ -148,7 +146,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		if updateObjects:
 			meth = getattr(self._masterBackend, '%s_updateObjects' % objectClass.backendMethodPrefix)
 			meth(updateObjects)
-		
+
 	def _updateMasterFromWorkBackend(self, modifications = []):
 		modifiedObjects = {}
 		for modification in modifications:
@@ -169,65 +167,65 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			except Exception, e:
 				logger.error(u"Failed to sync backend modification %s: %s" % (modification, e))
 				continue
-		
+
 		if modifiedObjects.has_key('AuditHardwareOnHost'):
 			self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
 			objects = []
 			for mo in modifiedObjects['AuditHardwareOnHost']:
 				objects.append(mo['object'])
 			self._masterBackend.auditHardwareOnHost_updateObjects(objects)
-			
+
 		if modifiedObjects.has_key('AuditSoftware'):
 			objects = []
 			for mo in modifiedObjects['AuditSoftware']:
 				objects.append(mo['object'])
 			self._masterBackend.auditSoftware_updateObjects(objects)
-		
+
 		if modifiedObjects.has_key('AuditSoftwareOnClient'):
 			self._masterBackend.auditSoftwareOnClient_setObsolete(self._clientId)
 			objects = []
 			for mo in modifiedObjects['AuditSoftwareOnClient']:
 				objects.append(mo['object'])
 			self._masterBackend.auditSoftwareOnClient_updateObjects(objects)
-		
+
 		if modifiedObjects.has_key('ProductOnClient'):
 			def objectsDifferFunction(snapshotObj, masterObj):
 				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult', 'lastAction'])
-			
+
 			def createUpdateObjectFunction(modifiedObj):
 				updateObj = modifiedObj.clone(identOnly = False)
 				return updateObj
-			
+
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
 				if (snapshotObj.actionRequest != masterObj.actionRequest):
 					logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
 					updateObj.actionRequest = None
 					updateObj.targetConfiguration = None
 				return updateObj
-				
+
 			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
-		
+
 		if modifiedObjects.has_key('LicenseOnClient'):
 			def objectsDifferFunction(snapshotObj, masterObj):
 				result = objectsDiffer(snapshotObj, masterObj)
 				return result
-			
+
 			def createUpdateObjectFunction(modifiedObj):
 				updateObj = modifiedObj.clone(identOnly = False)
 				return updateObj
-			
+
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
 				return updateObj
-				
+
 			self._syncModifiedObjectsWithMaster(LicenseOnClient, modifiedObjects['LicenseOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
-		
+
 		for objectClassName in ('ProductPropertyState', 'ConfigState'):
 			def objectsDifferFunction(snapshotObj, masterObj):
 				return objectsDiffer(snapshotObj, masterObj)
-			
+
 			def createUpdateObjectFunction(modifiedObj):
 				return modifiedObj.clone()
-			
+
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
 				if (len(snapshotObj.values) != len(masterObj.values)):
 					logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
@@ -243,16 +241,16 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 							logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
 							return None
 				return updateObj
-			
+
 			if modifiedObjects.has_key(objectClassName):
 				self._syncModifiedObjectsWithMaster(eval(objectClassName), modifiedObjects[objectClassName], {"objectId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
-		
+
 	def _replicateMasterToWorkBackend(self):
 		if not self._masterBackend:
 			raise Exception(u"Master backend undefined")
-		
+
 		self._cacheBackendInfo(self._masterBackend.backend_info())
-		
+
 		self._workBackend.backend_deleteBase()
 		self._workBackend.backend_createBase()
 		br = BackendReplicator(readBackend = self._masterBackend, writeBackend = self._workBackend)
@@ -265,9 +263,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			productTypes = [ 'LocalbootProduct' ],
 			audit        = False,
 			license      = False)
-		
+
 		self._snapshotBackend.backend_deleteBase()
-		
+
 		licenseOnClients = self._masterBackend.licenseOnClient_getObjects(clientId = self._clientId)
 		for productOnClient in self._workBackend.productOnClient_getObjects(clientId = self._clientId):
 			if productOnClient.actionRequest in (None, 'none'):
@@ -298,14 +296,14 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 						self._workBackend.licenseContract_insertObject(licenseContract)
 					self._workBackend.softwareLicense_insertObject(softwareLicense)
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
-				
+
 			except Exception, e:
 				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
-		
+
 		self._snapshotBackend.backend_createBase()
 		br = BackendReplicator(readBackend = self._workBackend, writeBackend = self._snapshotBackend)
 		br.replicate()
-		
+
 		password = self._masterBackend.user_getCredentials(username = 'pcpatch', hostId = self._clientId)['password']
 		opsiHostKey = self._workBackend.host_getObjects(id = self._clientId)[0].getOpsiHostKey()
 		logger.notice(u"Creating opsi passwd file '%s'" % self._opsiPasswdFile)
@@ -319,7 +317,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		f.close()
 		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
 		self._workBackend.backend_createBase()
-		
+
 	def _createInstanceMethods(self):
 		for Class in (Backend, ConfigDataBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
@@ -327,13 +325,13 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write', 'licenseOnClient_getObjects'):
 				#if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
 					continue
-				
+
 				(argString, callString) = getArgAndCallString(member[1])
-				
+
 				logger.debug2(u"Adding method '%s' to execute on work backend" % methodName)
 				exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
-	
+
 	def _cacheBackendInfo(self, backendInfo):
 		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')
 		modules = backendInfo['modules']
@@ -343,7 +341,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				continue
 			if helpermodules.has_key(module):
 				state = helpermodules[module]
-			else:	
+			else:
 				if state:
 					state = 'yes'
 				else:
@@ -356,34 +354,34 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		f = codecs.open(self._opsiVersionFile, 'w', 'utf-8')
 		f.write(backendInfo.get('opsiVersion', '').strip())
 		f.close()
-		
+
 if (__name__ == '__main__'):
 	from OPSI.Backend.SQLite import SQLiteBackend
 	from OPSI.Backend.JSONRPC import JSONRPCBackend
-	
+
 	logger.setConsoleColor(True)
 	logger.setConsoleLevel(LOG_NOTICE)
-	
+
 	workBackend = SQLiteBackend(database = ':memory:')
 	#workBackend = SQLiteBackend(database = '/tmp/opsi-cache.sqlite')
-	
+
 	serviceBackend = JSONRPCBackend(
 		address  = 'https://bonifax.uib.local:4447/rpc',
 		username = 'cachetest.uib.local',
 		password = '12c1e40a6d3038d3eb2b4d489e978973')
-	
+
 	cb = ClientCacheBackend(
 		workBackend   = workBackend,
 		masterBackend = serviceBackend,
 		depotId       = 'bonifax.uib.local',
 		clientId      = 'cachetest.uib.local'
 	)
-	
+
 	#workBackend._sql.execute('PRAGMA synchronous=OFF')
 	cb._replicateMasterToWorkBackend()
-	
+
 	be = ExtendedConfigDataBackend(cb)
-	
+
 	#cb.host_insertObject( OpsiClient(id = 'cachetest.uib.local', description = 'description') )
 	#print cb.host_getObjects()
 	#print workBackend._sql.getSet('select * from HOST')
@@ -391,27 +389,27 @@ if (__name__ == '__main__'):
 	#	print productPropertyState.toHash()
 	#for productOnClient in cb.productOnClient_getObjects(clientId = 'cachetest.uib.local'):
 	#	print productOnClient.toHash()
-	
+
 	print be.licenseOnClient_getOrCreateObject(clientId = 'cachetest.uib.local', productId = 'license-test-oem')
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

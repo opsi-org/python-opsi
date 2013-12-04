@@ -43,12 +43,8 @@ import tempfile
 import shutil
 import socket
 import StringIO
+from hashlib import sha1
 from subprocess import Popen, PIPE, STDOUT
-
-if sys.version_info < (2,5):
-	import sha as sha1
-else:
-	from hashlib import sha1
 
 if (os.name == 'posix'):
 	import fcntl
@@ -1090,11 +1086,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			for entry in os.listdir(path):
 				self._addContent(os.path.join(path, entry), sub=sub)
 		else:
-
-			if sys.version_info < (2, 5):
-				checksum = sha1.new()
-			else:
-				checksum = sha1()
+			checksum = sha1()
 
 			f = open(path)
 			chunk = True
@@ -1138,11 +1130,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			if member.isfile() and member.name.startswith(self.CONTENT_DIR):
 
 				checksum = self._filemap[member.name]
-
-				if sys.version_info < (2, 5):
-					filesum = sha1.new()
-				else:
-					filesum = sha1()
+				filesum = sha1()
 
 				count = 0
 				chunk = True
@@ -1174,11 +1162,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		try:
 			checksum = self._filemap[member.name]
-
-			if sys.version_info < (2, 5):
-				filesum = sha1.new()
-			else:
-				filesum = sha1()
+			filesum = sha1()
 
 			chunk = True
 			fp = self.extractfile(member.name)

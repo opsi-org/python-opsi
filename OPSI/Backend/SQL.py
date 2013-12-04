@@ -32,12 +32,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
 from twisted.conch.ssh import keys
-from sys import version_info
-
-if (version_info >= (2,6)):
-	import json
-else:
-	import simplejson as json
 
 try:
 	from hashlib import md5

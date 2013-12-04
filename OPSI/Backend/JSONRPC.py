@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __version__ = '4.0.2'
 
 import base64
+import json
 import new
 import socket
 import time
@@ -42,11 +43,6 @@ import zlib
 from Queue import Queue, Empty
 from twisted.conch.ssh import keys
 from sys import version_info
-
-if version_info >= (2, 6):
-	import json
-else:
-	import simplejson as json
 
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,

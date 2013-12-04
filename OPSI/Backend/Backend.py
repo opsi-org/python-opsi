@@ -36,6 +36,7 @@ import base64
 import codecs
 import copy as pycopy
 import inspect
+import json
 import new
 import os
 import threading
@@ -46,12 +47,6 @@ try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
-
-from sys import version_info
-if (version_info >= (2,6)):
-	import json
-else:
-	import simplejson as json
 
 if (os.name == 'posix'):
 	from ldaptor.protocols import pureldap
