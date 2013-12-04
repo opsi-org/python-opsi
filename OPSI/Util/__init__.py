@@ -45,11 +45,7 @@ import struct
 import time
 import types
 from Crypto.Cipher import Blowfish
-
-try:
-	from hashlib import md5
-except ImportError:
-	from md5 import md5
+from hashlib import md5
 
 try:
 	import argparse

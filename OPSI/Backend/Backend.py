@@ -41,12 +41,8 @@ import new
 import os
 import threading
 import types
+from hashlib import md5
 from twisted.conch.ssh import keys
-
-try:
-	from hashlib import md5
-except ImportError:
-	from md5 import md5
 
 if (os.name == 'posix'):
 	from ldaptor.protocols import pureldap

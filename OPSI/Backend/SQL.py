@@ -31,12 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import time
+from hashlib import md5
 from twisted.conch.ssh import keys
-
-try:
-	from hashlib import md5
-except ImportError:
-	from md5 import md5
 
 from OPSI.Logger import Logger
 from OPSI.Types import *

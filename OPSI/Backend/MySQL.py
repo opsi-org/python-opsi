@@ -36,17 +36,13 @@ import base64
 import warnings
 import time
 import threading
+from hashlib import md5
 
 import MySQLdb
 from MySQLdb.constants import FIELD_TYPE
 from MySQLdb.converters import conversions
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
-
-try:
-	from hashlib import md5
-except ImportError:
-	from md5 import md5
 
 from OPSI.Logger import Logger
 from OPSI.Types import BackendIOError, BackendBadValueError
