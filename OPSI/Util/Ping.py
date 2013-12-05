@@ -197,7 +197,8 @@ def ping(dest_addr, timeout = 2):
 	icmp = socket.getprotobyname("icmp")
 	try:
 		my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-	except socket.error, (errno, msg):
+	except socket.error, error:
+		(errno, msg) = error
 		if errno == 1:
 			# Operation not permitted
 			msg = msg + (
