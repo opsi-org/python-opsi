@@ -36,7 +36,20 @@ import inspect
 import types
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import BackendBadValueError, BackendConfigurationError
+from OPSI.Types import (forceActionProgress, forceActionRequest,
+	forceActionResult, forceArchitecture, forceAuditState, forceBool,
+	forceBoolList, forceBootConfigurationPriority, forceConfigId, forceDict,
+	forceFilename, forceFloat, forceGroupId, forceGroupType,
+	forceHardwareAddress, forceHardwareVendorId, forceHostId,
+	forceInstallationStatus, forceInt, forceIPAddress, forceLanguageCode,
+	forceLicenseContractId,
+	forceLicensePoolId, forceList, forceNetworkAddress, forceObjectId,
+	forceOpsiHostKey, forceOpsiTimestamp, forcePackageVersion, forceProductId,
+	forceProductIdList, forceProductPriority, forceProductPropertyId,
+	forceProductTargetConfiguration, forceProductType, forceProductVersion,
+	forceRequirementType, forceSoftwareLicenseId, forceUnicode,
+	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
 logger = Logger()
