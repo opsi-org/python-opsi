@@ -269,11 +269,10 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		return d
 
 	def maybeStopped(self, result):
-
 		if 'backend_exit' in map((lambda x: x.method), result):
-				d = self.stop()
-				d.addCallback(lambda x: result)
-				return d
+			d = self.stop()
+			d.addCallback(lambda x: result)
+			return d
 		else:
 			return defer.succeed(result)
 

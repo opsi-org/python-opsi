@@ -260,7 +260,7 @@ class TextFile(LockableFile):
 					self._lines = self._fileHandle.readlines()
 					self.close()
 					break
-				except ValueError as e:
+				except ValueError:
 					self.close()
 					continue
 		return self._lines
@@ -281,14 +281,13 @@ class TextFile(LockableFile):
 class ChangelogFile(TextFile):
 	'''
 	package (version) distribution(s); urgency=urgency
-	    [optional blank line(s), stripped]
+		[optional blank line(s), stripped]
 	  * change details
-	     more change details
-	      [blank line(s), included]
+		 more change details
+		  [blank line(s), included]
 	  * even more change details
-	      [optional blank line(s), stripped]
+		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
-
 	'''
 	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
 
@@ -1354,9 +1353,9 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 			else:
 				value = u'off'
 		elif self.key in [u'filename', u'ddns-domainname'] or \
-		     re.match('.*[\'/\\\].*', value) or \
-		     re.match('^\w+\.\w+$', value) or \
-		     self.key.endswith(u'-name'):
+			 re.match('.*[\'/\\\].*', value) or \
+			 re.match('^\w+\.\w+$', value) or \
+			 self.key.endswith(u'-name'):
 			value = u'"%s"' % value
 		return u"%s%s %s;" % (self.getShifting(), self.key, value)
 

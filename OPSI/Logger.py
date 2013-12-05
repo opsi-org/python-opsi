@@ -485,7 +485,8 @@ class LoggerImplementation:
 				level > self.__fileLevel and
 				level > self.__syslogLevel and
 				not self.univentionLogger_priv):
-					return
+
+				return
 
 			if not type(message) is unicode:
 				if not type(message) is str:

@@ -48,15 +48,15 @@ class _BaseProfiler(AppRunner):
 class ProfileRunner(_BaseProfiler):
 
 	def _getProfiler(self):
-			import profile
-			return profile.Profile()
+		import profile
+		return profile.Profile()
 
 
 class CProfileRunner(_BaseProfiler):
 
 	def _getProfiler(self):
-			import cProfile
-			return cProfile.Profile()
+		import cProfile
+		return cProfile.Profile()
 
 
 class Application(object):

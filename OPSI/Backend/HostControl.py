@@ -352,16 +352,16 @@ class HostControlBackend(ExtendedBackend):
 				else:
 					timeRunning = time.time() - thread.started
 					if (timeRunning >= timeout +5):
-							# thread still alive 5 seconds after timeout => kill
-							logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
-							result[thread.hostId] = False
-							if not thread.ended:
-								try:
-									thread.terminate()
-								except Exception as e:
-									logger.error(u"Failed to terminate reachable thread: %s" % e)
-							runningThreads -= 1
-							continue
+						# thread still alive 5 seconds after timeout => kill
+						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
+						result[thread.hostId] = False
+						if not thread.ended:
+							try:
+								thread.terminate()
+							except Exception as e:
+								logger.error(u"Failed to terminate reachable thread: %s" % e)
+						runningThreads -= 1
+						continue
 				newThreads.append(thread)
 			threads = newThreads
 			time.sleep(0.1)
