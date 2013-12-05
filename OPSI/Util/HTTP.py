@@ -34,16 +34,20 @@
    @license: GNU General Public License version 2
 """
 
+import base64
+import os
+import random
+import re
+import socket
+import time
 from Queue import Queue, Empty, Full
-from httplib import HTTPConnection, HTTPSConnection, HTTPException, FakeSocket
+from httplib import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
-import socket, time, base64, os, re, random
 import ssl as ssl_module
-
 from OpenSSL import crypto
 
 from OPSI.Types import *
-from OPSI.Logger import *
+from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
 from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 logger = Logger()
 
@@ -681,17 +685,16 @@ def destroyPool(pool):
 			break
 
 
-
-
 if (__name__ == '__main__'):
+	from OPSI.Logger import LOG_DEBUG2
+	import string
+
 	logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleColor(True)
 
-	import string
-	import random
+
 	def string_generator(size):
 		return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(size))
-
 
 	randstring = u'[{"operations": ["created", "deleted", "updated"], "message_type": "register_for_object_events", "client_id": "nJ87nTA7Fph8n29C", "object_types": ["OpsiClient", "ProductOnClient", "BootConfiguration", "ProductOnDepot", "ConfigState"]}]'
 	randstring = randstring.encode('utf-8')
