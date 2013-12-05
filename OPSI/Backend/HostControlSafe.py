@@ -32,17 +32,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 __version__ = '4.0.3.1'
 
-# Imports
-import socket, threading, httplib, base64, time, struct
+import socket
+import time
+import struct
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
+	forceUnicode, forceUnicodeList)
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
-# Get logger instance
 logger = Logger()
 
 
