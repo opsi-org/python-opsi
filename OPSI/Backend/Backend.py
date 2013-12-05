@@ -235,7 +235,7 @@ class Backend:
 				else:
 					matchedAll = False
 					break
-			except Exception, e:
+			except Exception as e:
 				raise Exception(u"Testing match of filter '%s' of attribute '%s' with value '%s' failed: %s" \
 							% (filter[attribute], attribute, value, e))
 		return matchedAll
@@ -300,7 +300,7 @@ class Backend:
 			f = codecs.open(self._opsiVersionFile, 'r', 'utf-8')
 			opsiVersion = f.readline().strip()
 			f.close()
-		except Exception, e:
+		except Exception as e:
 			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
 
 		modules = {}
@@ -359,7 +359,7 @@ class Backend:
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
-		except Exception, e:
+		except Exception as e:
 			logger.warning(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, e))
 
 		return {
@@ -602,7 +602,7 @@ class ConfigDataBackend(Backend):
 				f = open(idRsa, 'r')
 				result['rsaPrivateKey'] = f.read()
 				f.close()
-			except Exception, e:
+			except Exception as e:
 				logger.debug(e)
 		if hostId:
 			host  = self._context.host_getObjects(id = hostId)
@@ -1309,7 +1309,7 @@ class ConfigDataBackend(Backend):
 				result = json.loads(f.read())
 				f.close()
 				return result
-			except Exception, e:
+			except Exception as e:
 				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 				return []
 
@@ -1331,7 +1331,7 @@ class ConfigDataBackend(Backend):
 					continue
 				(k, v) = line.split('=', 1)
 				locale[k.strip()] = v.strip()
-		except Exception, e:
+		except Exception as e:
 			logger.error(u"Failed to read translation file for language %s: %s" % (language, e))
 
 		def __inheritFromSuperClasses(classes, c, scname=None):
@@ -1398,9 +1398,9 @@ class ConfigDataBackend(Backend):
 								ccopy['Values'][j]['UI'] = ccopy['Values'][j]['Opsi']
 
 						classes.append(ccopy)
-				except Exception, e:
+				except Exception as e:
 					logger.error(u"Error in config file '%s': %s" % (self._auditHardwareConfigFile, e))
-		except Exception, e:
+		except Exception as e:
 			logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 
 		return classes
@@ -1490,7 +1490,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
-		except Exception, e:
+		except Exception as e:
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
 
@@ -1703,7 +1703,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						else:
 							result = res
 						logger.debug("Result: %s" % result)
-					except Exception, e:
+					except Exception as e:
 						logger.logException(e)
 						raise BackendBadValueError(u"Failed to process search filter '%s': %s" % (repr(f), e))
 
@@ -4048,7 +4048,7 @@ class ModificationTrackingBackend(ExtendedBackend):
 			try:
 				meth = getattr(bcl, event)
 				meth(self, *args)
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 
 	def _executeMethod(self, methodName, **kwargs):

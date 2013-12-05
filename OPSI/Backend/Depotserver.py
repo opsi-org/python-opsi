@@ -76,25 +76,25 @@ class DepotserverBackend(ExtendedBackend):
 			res = md5sum(filename)
 			logger.info(u"MD5sum of file '%s' is '%s'" % (filename, res))
 			return res
-		except Exception, e:
+		except Exception as e:
 			raise BackendIOError(u"Failed to get md5sum: %s" % e)
 
 	def depot_librsyncSignature(self, filename):
 		try:
 			return librsyncSignature(filename)
-		except Exception, e:
+		except Exception as e:
 			raise BackendIOError(u"Failed to get librsync signature: %s" % e)
 
 	def depot_librsyncPatchFile(self, oldfile, deltafile, newfile):
 		try:
 			return librsyncPatchFile(oldfile, deltafile, newfile)
-		except Exception, e:
+		except Exception as e:
 			raise BackendIOError(u"Failed to patch file: %s" % e)
 
 	def depot_librsyncDeltaFile(self, filename, signature, deltafile):
 		try:
 			librsyncDeltaFile(filename, signature, deltafile)
-		except Exception, e:
+		except Exception as e:
 			raise BackendIOError(u"Failed to create librsync delta file: %s" % e)
 
 	def depot_getDiskSpaceUsage(self, path):
@@ -103,7 +103,7 @@ class DepotserverBackend(ExtendedBackend):
 
 		try:
 			return getDiskSpaceUsage(path)
-		except Exception, e:
+		except Exception as e:
 			raise BackendIOError(u"Failed to get disk space usage: %s" % e)
 
 	def depot_installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None):
@@ -297,7 +297,7 @@ class DepotserverPackageManager(object):
 					if propertyDefaultValues.has_key(productPropertyState.propertyId):
 						try:
 							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
-						except Exception, e:
+						except Exception as e:
 							logger.error(u"Failed to set default values to %s for productPropertyState %s: %s" \
 									% (propertyDefaultValues[productPropertyState.propertyId], productPropertyState, e) )
 				self._depotBackend._context.productPropertyState_createObjects(productPropertyStates)
@@ -381,14 +381,14 @@ class DepotserverPackageManager(object):
 						if updateProductPropertyStates:
 							self._depotBackend._context.productPropertyState_updateObjects(updateProductPropertyStates)
 
-			except Exception, e:
+			except Exception as e:
 				try:
 					ppf.cleanup()
-				except Exception, e2:
+				except Exception as e2:
 					logger.error(e2)
 				raise
 
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to install package '%s' on depot '%s': %s" % (filename, depotId, e))
 
@@ -435,7 +435,7 @@ class DepotserverPackageManager(object):
 
 			self._depotBackend._context.productOnDepot_deleteObjects(productOnDepot)
 
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, e))
 

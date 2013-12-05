@@ -164,7 +164,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				meth = getattr(self._workBackend, ObjectClass.backendMethodPrefix + '_getObjects')
 				modification['object'] = meth(**filter)[0]
 				modifiedObjects[modification['objectClass']].append(modification)
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Failed to sync backend modification %s: %s" % (modification, e))
 				continue
 
@@ -297,7 +297,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 					self._workBackend.softwareLicense_insertObject(softwareLicense)
 				self._workBackend.licenseOnClient_insertObject(licenseOnClient)
 
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Failed to acquire license for product '%s': %s" % (productOnClient.productId, e))
 
 		self._snapshotBackend.backend_createBase()

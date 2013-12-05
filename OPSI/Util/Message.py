@@ -487,7 +487,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 
 			else:
 				raise ValueError(u"unknown method '%s'" % method)
-		except Exception, e:
+		except Exception as e:
 			logger.error(u"Failed to execute rpc: %s" % e)
 
 	def messageChanged(self, subject, message):
@@ -611,7 +611,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			if not reactor.running:
 				logger.info(u"Starting reactor")
 				reactor.run(installSignalHandlers=0)
-		except Exception, e:
+		except Exception as e:
 			self._error = forceUnicode(e)
 			logger.logException(e)
 
@@ -640,7 +640,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		if stopReactor and reactor and reactor.running:
 			try:
 				reactor.stop()
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Failed to stop reactor: %s" % e)
 		logger.info(u"Notification server stopped")
 
@@ -703,7 +703,7 @@ class NotificationClientFactory(ClientFactory):
 				else:
 					logger.debug( "self._observer.%s(*params)" % method )
 					eval( "self._observer.%s(*params)" % method )
-		except Exception, e:
+		except Exception as e:
 			logger.error(e)
 
 	def execute(self, method, params):
@@ -749,7 +749,7 @@ class NotificationClient(threading.Thread):
 		for endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
 			try:
 				endConnectionRequestedCallback()
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 
 	def getFactory(self):
@@ -762,7 +762,7 @@ class NotificationClient(threading.Thread):
 			reactor.connectTCP(self._address, self._port, self._factory)
 			if not reactor.running:
 				reactor.run(installSignalHandlers=0)
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 
 	def stop(self, stopReactor=True):

@@ -129,14 +129,14 @@ class Repository:
 				try:
 					from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
 					self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
-				except Exception, e:
+				except Exception as e:
 					logger.logException(e)
 					logger.critical(u"Failed to enable dynamic bandwidth: %s" % e)
 					self._dynamicBandwidth = False
 		elif self._networkPerformanceCounter:
 			try:
 				self._networkPerformanceCounter.stop()
-			except Exception, e:
+			except Exception as e:
 				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % e)
 
 	def setMaxBandwidth(self, maxBandwidth):
@@ -176,7 +176,7 @@ class Repository:
 			try:
 				meth = getattr(obs, event)
 				meth(self, *args)
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 
 	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):
@@ -385,7 +385,7 @@ class Repository:
 			logger.info( u"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s" % \
 				( (float(self._bytesTransfered)/1024), (float(transferTime)/60), (float(self._bytesTransfered)/transferTime)/1024) )
 			return self._bytesTransfered
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e, LOG_INFO)
 			raise
 
@@ -424,7 +424,7 @@ class Repository:
 					info = c
 					return info
 			raise Exception(u'File not found')
-		except Exception, e:
+		except Exception as e:
 			#logger.logException(e)
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
 
@@ -513,7 +513,7 @@ class Repository:
 					overallProgressSubject.setMessage(u"[1/1] %s (%s)" % (info['name'], sizeString ) )
 				try:
 					self.download(source, destinationFile, currentProgressSubject)
-				except OSError, e:
+				except OSError as e:
 					if (e.errno != 1):
 						raise
 					# Operation not permitted
@@ -568,7 +568,7 @@ class Repository:
 			logger.info(u'Copy done')
 			if overallProgressSubject:
 				overallProgressSubject.setState(size)
-		except Exception, e:
+		except Exception as e:
 			for hook in self._hooks:
 				hook.error_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject, e)
 			raise
@@ -639,7 +639,7 @@ class FileRepository(Repository):
 			if os.path.isfile(source):
 				info['size'] = os.path.getsize(source)
 			return info
-		except Exception, e:
+		except Exception as e:
 			#logger.logException(e)
 			raise RepositoryError(u"Failed to get file info for '%s': %s" % (source, e))
 
@@ -678,7 +678,7 @@ class FileRepository(Repository):
 						content.append(info)
 						if recursive:
 							_recurse(path = entry, content = content)
-				except Exception, e:
+				except Exception as e:
 					logger.error(e)
 			return content
 		return _recurse(path = source, content = content)
@@ -720,7 +720,7 @@ class FileRepository(Repository):
 			self._transferDown(src, dst, progressSubject, bytes = bytes)
 			src.close()
 			dst.close()
-		except Exception, e:
+		except Exception as e:
 			if src: src.close()
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" \
@@ -743,7 +743,7 @@ class FileRepository(Repository):
 			self._transferUp(src, dst, progressSubject)
 			src.close()
 			dst.close()
-		except Exception, e:
+		except Exception as e:
 			if src: src.close()
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to upload '%s' to '%s': %s" \
@@ -947,7 +947,7 @@ class HTTPRepository(Repository):
 						dst = open(destination, 'wb')
 					bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
 					dst.close()
-				except Exception, e:
+				except Exception as e:
 					conn = None
 					self._connectionPool.endConnection(conn)
 					if dst: dst.close()
@@ -960,7 +960,7 @@ class HTTPRepository(Repository):
 				self._connectionPool.endConnection(conn)
 				break
 
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			if dst: dst.close()
 			raise RepositoryError(u"Failed to download '%s' to '%s': %s" % (source, destination, e))
@@ -1073,7 +1073,7 @@ class WebDAVRepository(HTTPRepository):
 					src.close()
 					src = None
 					httplib_response = conn.getresponse()
-				except Exception, e:
+				except Exception as e:
 					conn = None
 					self._connectionPool.endConnection(conn)
 					if src: src.close()
@@ -1089,7 +1089,7 @@ class WebDAVRepository(HTTPRepository):
 			self._processResponseHeaders(response)
 			if (response.status != responsecode.CREATED) and (response.status != responsecode.NO_CONTENT):
 				raise Exception(response.status)
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			if src: src.close()
 			if conn:
@@ -1170,11 +1170,11 @@ class CIFSRepository(FileRepository):
 			mountOptions['password'] = self._password
 			mount(self._url, self._mountPoint, **mountOptions)
 			self._mounted = True
-		except Exception, e:
+		except Exception as e:
 			if self._mountPointCreated:
 				try:
 					os.rmdir(self._mountPoint)
-				except Exception, e2:
+				except Exception as e2:
 					logger.error(e2)
 			raise e
 
@@ -1392,7 +1392,7 @@ class DepotToLocalDirectorySychronizer(object):
 							os.symlink(t, f)
 					finally:
 						os.chdir(cwd)
-			except Exception, e:
+			except Exception as e:
 				productProgressSubject.setMessage( _(u"Failed to sync product %s: %s") % (self._productId, e) )
 				if packageContentFile and os.path.exists(packageContentFile):
 					os.unlink(packageContentFile)

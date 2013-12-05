@@ -49,10 +49,11 @@ from signal import *
 from platform import linux_distribution
 
 from OPSI.Logger import Logger, LOG_NONE
-from OPSI.Types import(forceDomain, forceInt, forceBool, forceUnicode,
+from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 	forceFilename, forceHostname, forceHostId, forceNetmask, forceIpAddress,
 	forceIPAddress, forceHardwareVendorId, forceHardwareAddress,
 	forceHardwareDeviceId, forceUnicodeLower)
+from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
 
@@ -346,7 +347,7 @@ def getKernelParams():
 		cmdline = f.readline()
 		cmdline = cmdline.strip()
 		f.close()
-	except IOError, e:
+	except IOError as e:
 		if f:
 			f.close()
 		raise Exception(u"Error reading '/proc/cmdline': %s" % e)
@@ -574,7 +575,7 @@ def getDHCPResult(device):
 					dhcpResult['rebind'] = line.split(' ', 1)[-1]
 				elif line.startswith('expire '):
 					dhcpResult['expire'] = line.split(' ', 1)[-1]
-		except Exception, e:
+		except Exception as e:
 			logger.warning(e)
 		if f:
 			f.close()
@@ -597,7 +598,7 @@ def getDHCPResult(device):
 				# Some DHCP-Servers are returning multiple domain names seperated by whitespace,
 				# so we split all values at whitespace and take the first element
 				dhcpResult[keyValue[0].replace(u' ',u'').lower()] = keyValue[1].strip().split()[0]
-		except Exception, e:
+		except Exception as e:
 			logger.warning(e)
 	return dhcpResult
 
@@ -624,7 +625,7 @@ def reboot(wait = 10):
 		#execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
 		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
 		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
-	except Exception, e:
+	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
 		raise
@@ -645,7 +646,7 @@ def halt(wait = 10):
 			execute(u'%s -h now' % which('shutdown'), nowait = True)
 		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
 		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
-	except Exception, e:
+	except Exception as e:
 		for hook in hooks:
 			hook.error_halt(wait, e)
 		raise
@@ -733,7 +734,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 					chunk = proc.stdout.read()
 					if (len(chunk) > 0):
 						data += chunk
-				except IOError, e:
+				except IOError as e:
 					if (e.errno != 11):
 						raise
 
@@ -744,7 +745,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 							if exitOnStderr:
 								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk) )
 							data += chunk
-					except IOError, e:
+					except IOError as e:
 						if (e.errno != 11):
 							raise
 
@@ -770,7 +771,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 					logger.debug(u'>>> %s' % line)
 					result.append(line)
 
-	except (os.error, IOError), e:
+	except (os.error, IOError) as e:
 		# Some error occured during execution
 		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e) )
 
@@ -948,7 +949,7 @@ def mount(dev, mountpoint, **options):
 
 	try:
 		result = execute(u"%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint))
-	except Exception, e:
+	except Exception as e:
 		for f in credentialsFiles:
 			os.remove(f)
 		logger.error(u"Failed to mount '%s': %s" % (dev, e))
@@ -961,7 +962,7 @@ def umount(devOrMountpoint):
 	cmd = u"%s %s" % (which('umount'), devOrMountpoint)
 	try:
 		result = execute(cmd)
-	except Exception, e:
+	except Exception as e:
 		logger.error(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 		raise Exception(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 
@@ -1141,7 +1142,7 @@ class Harddisk:
 		# Make sure your kernel supports edd (CONFIG_EDD=y/m) and module is loaded if not compiled in
 		try:
 			execute(u'%s edd' % which('modprobe'))
-		except Exception, e:
+		except Exception as e:
 			logger.error(e)
 			return
 		# geo_override.so will affect all devices !
@@ -1223,7 +1224,7 @@ class Harddisk:
 			f.seek(offset)
 			f.write(chr(id))
 			f.close()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setPartitionId(self, partition, id, e)
 			raise
@@ -1248,7 +1249,7 @@ class Harddisk:
 			else:
 				f.write(chr(0x00))
 			f.close()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setPartitionBootable(self, partition, bootable, e)
 			raise
@@ -1396,7 +1397,7 @@ class Harddisk:
 
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_readPartitionTable(self, e)
 			raise
@@ -1435,7 +1436,7 @@ class Harddisk:
 						cmd += u'%s,%s,%s' % (part['cylStart'], part['cylSize'], part['type'])
 					if part['boot']:
 						cmd += u',*'
-				except Exception, e:
+				except Exception as e:
 					logger.debug(u"Partition %d not found: %s" % ((p+1), e))
 					cmd += u'0,0'
 
@@ -1455,7 +1456,7 @@ class Harddisk:
 				os.unsetenv("LD_PRELOAD")
 			self._forceReReadPartionTable()
 			time.sleep(2)
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_writePartitionTable(self, e)
 			raise
@@ -1484,7 +1485,7 @@ class Harddisk:
 			self.label = None
 			self.partitions = []
 			self.readPartitionTable()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_deletePartitionTable(self, e)
 			raise
@@ -1543,7 +1544,7 @@ class Harddisk:
 			if ret:
 				raise Exception(u"Command '%s' failed: %s" % (cmd, error))
 
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_shred(self, partition, iterations, progressSubject, e)
 			raise
@@ -1628,7 +1629,7 @@ class Harddisk:
 				progressSubject.setState(100)
 			time.sleep(3)
 			if handle: handle.close
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_fill(self, partition, infile, progressSubject, e)
 			raise
@@ -1644,7 +1645,7 @@ class Harddisk:
 			f = open(self.device, 'rb')
 			mbr = f.read(512)
 			f.close()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_readMasterBootRecord(self, e)
 			raise
@@ -1696,10 +1697,10 @@ class Harddisk:
 				result = execute(cmd)
 				if self.ldPreload:
 					os.unsetenv("LD_PRELOAD")
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Failed to write mbr: %s" % e)
 				raise Exception(u"Failed to write mbr: %s" % e)
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_writeMasterBootRecord(self, system, e)
 			raise
@@ -1715,7 +1716,7 @@ class Harddisk:
 			f = open(self.getPartition(partition)['device'], 'rb')
 			pbr = f.read(512)
 			f.close()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_readPartitionBootRecord(self, partition, e)
 			raise
@@ -1748,10 +1749,10 @@ class Harddisk:
 				if (result[0].find(u'successfully') == -1):
 					raise Exception(result)
 
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Cannot write partition boot record: %s" % e)
 				raise Exception(u"Cannot write partition boot record: %s" % e)
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_writePartitionBootRecord(self, partition, fsType, e)
 			raise
@@ -1804,7 +1805,7 @@ class Harddisk:
 						% ( hex(ord(start[0])), hex(ord(start[1])),
 						    hex(ord(start[2])), hex(ord(start[3])) ) )
 			posix.close(hd)
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_setNTFSPartitionStartSector(self, partition, sector, e)
 			raise
@@ -2034,7 +2035,7 @@ class Harddisk:
 
 			self.writePartitionTable()
 			self.readPartitionTable()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_createPartition(self, start, end, fs, type, boot, lba, e)
 			raise
@@ -2076,7 +2077,7 @@ class Harddisk:
 						break
 					time.sleep(1)
 					timeout -= 1
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_deletePartition(self, partition, e)
 			raise
@@ -2091,7 +2092,7 @@ class Harddisk:
 			partition = forceInt(partition)
 			mountpoint = forceFilename(mountpoint)
 			mount(self.getPartition(partition)['device'], mountpoint, **options)
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_mountPartition(self, partition, mountpoint, e, **options)
 			raise
@@ -2105,7 +2106,7 @@ class Harddisk:
 		try:
 			partition = forceInt(partition)
 			umount(self.getPartition(partition)['device'])
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_umountPartition(self, partition, e)
 			raise
@@ -2159,7 +2160,7 @@ class Harddisk:
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
 			self.readPartitionTable()
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_createFilesystem(self, partition, fs, e)
 			raise
@@ -2198,7 +2199,7 @@ class Harddisk:
 
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_resizeFilesystem(self, partition, size, fs, e)
 			raise
@@ -2317,7 +2318,7 @@ class Harddisk:
 
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_saveImage(self, partition, imageFile, progressSubject, e)
 			raise
@@ -2547,7 +2548,7 @@ class Harddisk:
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
 
-		except Exception, e:
+		except Exception as e:
 			for hook in hooks:
 				hook.error_Harddisk_restoreImage(self, partition, imageFile, progressSubject, e)
 			raise
@@ -2683,7 +2684,7 @@ def auditHardware(config, hostId, progressSubject=None):
 					data[str(attribute)] = value
 				data['hostId'] = hostId
 				auditHardwareOnHosts.append( AuditHardwareOnHost.fromHash(data) )
-	except Exception, e:
+	except Exception as e:
 		for hook in hooks:
 			hook.error_auditHardware(config, hostId, progressSubject, e)
 		raise
@@ -2953,7 +2954,7 @@ def hardwareInventory(config, progressSubject=None):
 
 		logger.debug2(u"Parsed lsusb info:")
 		logger.debug2(objectToBeautifiedText(lsusb))
-	except Exception, e:
+	except Exception as e:
 		logger.error(e)
 
 	# Read output from dmidecode
@@ -2993,7 +2994,7 @@ def hardwareInventory(config, progressSubject=None):
 						else:
 							dmidecode[dmiType][-1][option] = []
 					dmidecode[dmiType][-1][option].append(removeUnit(line.strip()))
-		except Exception, e:
+		except Exception as e:
 			logger.error(u"Error while parsing dmidecode output '%s': %s" % (line.strip(), e))
 	logger.debug2(u"Parsed dmidecode info:")
 	logger.debug2(objectToBeautifiedText(dmidecode))
@@ -3124,7 +3125,7 @@ def hardwareInventory(config, progressSubject=None):
 							try:
 								logger.debug(u"Eval: %s.%s" % (data, method))
 								data = eval("data.%s" % method)
-							except Exception, e:
+							except Exception as e:
 								logger.error(u"Failed to excecute '%s.%s': %s" % (data, method, e))
 						logger.debug2(u"Data: %s" % data)
 						opsiValues[opsiClass][i][attribute['Opsi']] = data
@@ -3158,7 +3159,7 @@ def hardwareInventory(config, progressSubject=None):
 								try:
 									logger.debug(u"Eval: %s.%s" % (dev.get(aname, ''), method))
 									device[attribute['Opsi']] = eval("dev.get(aname, '').%s" % method)
-								except Exception, e:
+								except Exception as e:
 									device[attribute['Opsi']] = u''
 									logger.error(u"Failed to excecute '%s.%s': %s" % (dev.get(aname, ''), method, e))
 							else:
@@ -3178,7 +3179,7 @@ def hardwareInventory(config, progressSubject=None):
 
 					try:
 						device[attribute['Opsi']] = dev[attribute['Linux']]
-					except Exception, e:
+					except Exception as e:
 						logger.warning(e)
 						device[attribute['Opsi']] = u''
 				opsiValues[opsiClass].append(device)
@@ -3209,7 +3210,7 @@ def hardwareInventory(config, progressSubject=None):
 								value = eval("value.%s" % method)
 
 						device[attribute['Opsi']] = value
-					except Exception, e:
+					except Exception as e:
 						logger.warning(e)
 						device[attribute['Opsi']] = u''
 				opsiValues[opsiClass].append(device)
@@ -3230,7 +3231,7 @@ def daemonize():
 		if (pid > 0):
 			# Parent exits
 			sys.exit(0)
-	except OSError, e:
+	except OSError as e:
 		raise Exception(u"First fork failed: %e" % e)
 
 	# Do not hinder umounts
@@ -3243,7 +3244,7 @@ def daemonize():
 		pid = os.fork()
 		if (pid > 0):
 			sys.exit(0)
-	except OSError, e:
+	except OSError as e:
 		raise Exception(u"Second fork failed: %e" % e)
 
 	logger.setConsoleLevel(LOG_NONE)

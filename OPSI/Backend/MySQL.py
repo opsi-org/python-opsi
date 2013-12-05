@@ -159,7 +159,7 @@ class MySQL(SQL):
 						timeout      = self._connectionPoolTimeout,
 						conv         = conv
 				)
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e)
 				raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
 		finally:
@@ -181,7 +181,7 @@ class MySQL(SQL):
 				conn.autocommit(False)
 				cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 				myConnectionSuccess = True
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e.args[0] == 2006):
 					# 2006: 'MySQL server has gone away'
@@ -215,7 +215,7 @@ class MySQL(SQL):
 		try:
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -243,7 +243,7 @@ class MySQL(SQL):
 		try:
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -293,7 +293,7 @@ class MySQL(SQL):
 			logger.debug2(u"insert: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -336,7 +336,7 @@ class MySQL(SQL):
 			logger.debug2(u"update: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -362,7 +362,7 @@ class MySQL(SQL):
 			logger.debug2(u"delete: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away

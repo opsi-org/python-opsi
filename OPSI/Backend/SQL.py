@@ -369,7 +369,7 @@ class SQLBackend(ConfigDataBackend):
 				try:
 					logger.debug(u'DROP TABLE `%s`;' % i)
 					self._sql.execute(u'DROP TABLE `%s`;' % i)
-				except Exception, e:
+				except Exception as e:
 					logger.error(e)
 					done = False
 					errors += 1
@@ -1244,7 +1244,7 @@ class SQLBackend(ConfigDataBackend):
 					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
 					conn.commit()
 					myTransactionSuccess = True
-				except Exception, e:
+				except Exception as e:
 					logger.debug(u"Execute error: %s" % e)
 					if (e.args[0] == 1213):
 						# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
@@ -1314,7 +1314,7 @@ class SQLBackend(ConfigDataBackend):
 						else:
 							conn.rollback()
 						myTransactionSuccess = True
-					except Exception, e:
+					except Exception as e:
 						logger.debug(u"Execute error: %s" % e)
 						if (e.args[0] == 1213):
 							# 1213: 'Deadlock found when trying to get lock; try restarting transaction'

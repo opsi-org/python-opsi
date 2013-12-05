@@ -63,7 +63,7 @@ if (os.name == 'posix'):
 elif (os.name == 'nt'):
 	try:
 		import librsync
-	except Exception, e:
+	except Exception as e:
 		logger.error(u"Failed to import librsync: %s" % e)
 
 BLOWFISH_IV = 'OPSI1234'
@@ -87,7 +87,7 @@ def deserialize(obj, preventObjectCreation=False):
 			import OPSI.Object
 			c = eval('OPSI.Object.%s' % obj['type'])
 			newObj = c.fromHash(obj)
-		except Exception, e:
+		except Exception as e:
 			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, forceUnicode(e)))
 			return obj
 	elif type(obj) is list:
@@ -159,7 +159,7 @@ def librsyncSignature(filename, base64Encoded = True):
 		f.close()
 		sf.close()
 		return sig
-	except Exception, e:
+	except Exception as e:
 		if f: f.close()
 		if sf: sf.close()
 		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
@@ -189,7 +189,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		pf.close()
 		df.close()
 		of.close()
-	except Exception, e:
+	except Exception as e:
 		if nf: nf.close()
 		if pf: pf.close()
 		if df: df.close()
@@ -212,7 +212,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 		df.close()
 		f.close()
 		ldf.close()
-	except Exception, e:
+	except Exception as e:
 		if df:  df.close()
 		if f:   f.close()
 		if ldf: ldf.close()
@@ -562,7 +562,7 @@ def blowfishDecrypt(key, crypt):
 	crypt = forceUnicode(crypt)
 	try:
 		key = key.decode("hex")
-	except TypeError, e:
+	except TypeError as e:
 		raise Exception(u"Failed to hex decode key '%s'" % key)
 	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
@@ -572,7 +572,7 @@ def blowfishDecrypt(key, crypt):
 		cleartext = cleartext[:cleartext.find('\0')]
 	try:
 		return unicode(cleartext, 'utf-8')
-	except Exception, e:
+	except Exception as e:
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
 

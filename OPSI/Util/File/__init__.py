@@ -260,7 +260,7 @@ class TextFile(LockableFile):
 					self._lines = self._fileHandle.readlines()
 					self.close()
 					break
-				except ValueError, e:
+				except ValueError as e:
 					self.close()
 					continue
 		return self._lines
@@ -360,7 +360,7 @@ class ChangelogFile(TextFile):
 						raise Exception(u"text not in release")
 					if currentEntry:
 						currentEntry['changelog'].append(line.rstrip())
-			except Exception, e:
+			except Exception as e:
 				raise Exception(u"Parse error in line %d: %s" % (lineNum, e))
 		if currentEntry:
 			self.addEntry(currentEntry)
@@ -565,7 +565,7 @@ class IniFile(ConfigFile):
 			self._configParser = ConfigParser.SafeConfigParser()
 		try:
 			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines)) )
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
@@ -667,7 +667,7 @@ class InfFile(ConfigFile):
 		try:
 			vendorId = forceHardwareVendorId(vendorId)
 			deviceId = forceHardwareDeviceId(deviceId)
-		except Exception, e:
+		except Exception as e:
 			logger.error(e)
 			return False
 		if not self._parsed:
@@ -832,7 +832,7 @@ class InfFile(ConfigFile):
 									self._devices.append( { 'path': path, 'class': deviceClass, 'vendor': vendor, 'device': device, 'type': type } )
 						except IndexError:
 							logger.warning(u"Skipping bad line '%s' in file %s" % (line, self._filename))
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Parse error in inf file '%s' line '%s': %s" % (self._filename, line, e))
 		self._parsed = True
 
@@ -909,7 +909,7 @@ class PciidsFile(ConfigFile):
 					if not self._subDevices.has_key(vendorId):
 						self._subDevices[vendorId] = {}
 					self._vendors[vendorId] = vendorName.strip()
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 		self._parsed = True
 

@@ -2740,13 +2740,13 @@ class AuditHardware(Entity):
 				elif (attrType.find('int') != -1):
 					try:
 						kwargs[attribute] = forceInt(value)
-					except Exception, e:
+					except Exception as e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				elif (attrType == 'double'):
 					try:
 						kwargs[attribute] = forceFloat(value)
-					except Exception, e:
+					except Exception as e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				else:
@@ -2865,13 +2865,13 @@ class AuditHardwareOnHost(Relationship):
 				elif (attrType.find('int') != -1):
 					try:
 						kwargs[attribute] = forceInt(value)
-					except Exception, e:
+					except Exception as e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				elif (attrType == 'double'):
 					try:
 						kwargs[attribute] = forceFloat(value)
-					except Exception, e:
+					except Exception as e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				else:

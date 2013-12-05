@@ -132,7 +132,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 				raise OpsiTimeoutError(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(lastError)))
 			sock.connect((self.host, self.port))
 			break
-		except socket.error, e:
+		except socket.error as e:
 			logger.logException(e, LOG_DEBUG)
 			logger.debug(e)
 			if e[0] in (106, 10056):
@@ -144,6 +144,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	sock.settimeout(None)
 	self.sock = sock
 
+
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
 	if verifyByCaCertsFile:
@@ -151,6 +152,7 @@ def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None)
 		logger.debug(u"Server verified by CA")
 	else:
 		self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_NONE)
+
 
 def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM = True):
 	try:
@@ -161,21 +163,25 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM = True):
 		if not asPEM:
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
-	except Exception, e:
+	except Exception as e:
 		logger.debug(u"Failed to get peer cert: %s" % e)
 		return None
+
 
 class HTTPError(Exception):
 	"Base exception used by this module."
 	pass
 
+
 class TimeoutError(HTTPError):
 	"Raised when a socket timeout occurs."
 	pass
 
+
 class HostChangedError(HTTPError):
 	"Raised when an existing pool gets a request for a foreign host."
 	pass
+
 
 class HTTPResponse(object):
 	"""
@@ -206,7 +212,7 @@ class HTTPResponse(object):
 					self.version = 11
 				self.status = int(status.strip())
 				self.reason = reason.strip()
-			except Exception, e:
+			except Exception:
 				pass
 		elif (header.count(':') > 0):
 			(k, v) = header.split(':', 1)
@@ -314,7 +320,7 @@ class HTTPConnectionPool(object):
 						except:
 							pass
 					time.sleep(0.001)
-				except Empty, e:
+				except Empty:
 					break
 
 	def adjustSize(self, maxsize):
@@ -348,7 +354,7 @@ class HTTPConnectionPool(object):
 		conn = None
 		try:
 			conn = self.pool.get(block=self.block, timeout=timeout)
-		except Empty, e:
+		except Empty:
 			pass # Oh well, we'll create a new connection then
 
 		return conn or self._new_conn()
@@ -364,7 +370,7 @@ class HTTPConnectionPool(object):
 			self.pool.put(conn, block=False)
 			if conn is None:
 				self.num_connections -= 1
-		except Full, e:
+		except Full:
 			# This should never happen if self.block == True
 			logger.warning(u"HttpConnectionPool is full, discarding connection: %s" % self.host)
 
@@ -454,7 +460,7 @@ class HTTPConnectionPool(object):
 							value = base64.decodestring(value).strip()
 							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
 							headers[key] = 'Opsi ' + base64.encodestring(encodedAuth).strip()
-				except Exception, e:
+				except Exception as e:
 					logger.logException(e, LOG_INFO)
 					logger.critical(u"Cannot verify server based on certificate file '%s': %s" % (self.serverCertFile, e))
 					randomKey = None
@@ -481,7 +487,7 @@ class HTTPConnectionPool(object):
 						raise Exception(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
 					self.serverVerified = True
 					logger.notice(u"Service verified by opsi-service-verification-key")
-				except Exception, e:
+				except Exception as e:
 					logger.error(u"Service verification failed: %s" % e)
 					raise OpsiServiceVerificationError(u"Service verification failed: %s" % e)
 
@@ -493,7 +499,7 @@ class HTTPConnectionPool(object):
 					f = open(self.serverCertFile, 'w')
 					f.write(self.peerCertificate)
 					f.close()
-				except Exception, e:
+				except Exception as e:
 					logger.error(u"Failed to create server cert file '%s': %s" % (self.serverCertFile, e))
 
 			# Put the connection back to be reused
@@ -509,7 +515,7 @@ class HTTPConnectionPool(object):
 				except:
 					pass
 
-		except (SocketTimeout, Empty, HTTPException, SocketError), e:
+		except (SocketTimeout, Empty, HTTPException, SocketError) as e:
 			try:
 				logger.debug(u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s (%s)" \
 					% (self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, forceUnicode(e)))
@@ -561,6 +567,7 @@ class HTTPConnectionPool(object):
 
 		return response
 
+
 class HTTPSConnectionPool(HTTPConnectionPool):
 	"""
 	Same as HTTPConnectionPool, but HTTPS.
@@ -579,7 +586,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
 				if not self.verifyServerCertByCa:
 					self.serverVerified = True
-			except Exception, e:
+			except Exception as e:
 				logger.debug(e)
 				if (e.__class__.__name__ != 'SSLError') or self.verifyServerCertByCa:
 					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % e)
@@ -610,6 +617,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				raise
 		return conn
 
+
 def urlsplit(url):
 	url = forceUnicode(url)
 	scheme = None
@@ -632,6 +640,7 @@ def urlsplit(url):
 		(host, port) = host.split(':', 1)
 		port = int(port)
 	return (scheme, host, port, baseurl, username, password)
+
 
 def getSharedConnectionPoolFromUrl(url, **kw):
 	"""
@@ -684,6 +693,7 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 			connectionPools[poolKey].adjustSize(maxsize)
 	return connectionPools[poolKey]
 
+
 def destroyPool(pool):
 	global connectionPools
 	for (k, p) in connectionPools.items():
@@ -734,6 +744,3 @@ if (__name__ == '__main__'):
 	#print resp.version
 	#print resp.reason
 	#print resp.strict
-
-
-

@@ -281,7 +281,7 @@ class FileBackend(ConfigDataBackend):
 					os.chown(path, self.__dirUid, self.__dirGid)
 				else:
 					os.chown(path, -1, self.__dirGid)
-		except Exception, e:
+		except Exception as e:
 			logger.warning(u"Failed to set rights for path '%s': %s" % (path, e))
 
 	def _mkdir(self, path):
@@ -546,7 +546,7 @@ class FileBackend(ConfigDataBackend):
 					objectId = None
 					try:
 						objectId = forceHostId(entry[:-4])
-					except Exception, e:
+					except Exception as e:
 						logger.warning(u"Ignoring invalid file '%s': %s" % filename, e)
 						continue
 
@@ -627,7 +627,7 @@ class FileBackend(ConfigDataBackend):
 									'objectId':  option
 									}
 								)
-							except Exception, e:
+							except Exception as e:
 								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
 									% (option, section, p['filename'], e))
 					else:

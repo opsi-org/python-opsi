@@ -95,7 +95,7 @@ class MessageQueue(threading.Thread):
 			if messages:
 				try:
 					reactor.callFromThread(self.transport.transmitMessages, messages, *self.additionalTransportArgs)
-				except Exception, e:
+				except Exception as e:
 					logger.logException(e)
 					logger.error(u"Failed to transmit, requeuing messages")
 					for message in messages:
@@ -178,14 +178,14 @@ class MessageBusServerFactory(ServerFactory):
 					try:
 						if self.clients[clientId]['readonly']:
 							raise Exception('readonly')
-					except Exception, e:
+					except Exception as e:
 						logger.warning("Read only client '%s' passed object_event" % clientId)
 						return
 					object_type = forceUnicode(message.get('object_type'))
 					ident = message.get('ident')
 					operation = forceUnicode(message.get('operation'))
 					self._sendObjectEvent(object_type, ident, operation)
-		except Exception, e:
+		except Exception as e:
 			logger.error(u"Received line '%s'" % line)
 			logger.logException(e)
 
@@ -263,7 +263,7 @@ class MessageBusServer(threading.Thread):
 			else:
 				while not self._stopping:
 					time.sleep(1)
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 
 	def stop(self, stopReactor=True):
@@ -347,7 +347,7 @@ class MessageBusClient(threading.Thread):
 			else:
 				while not self.isStopping():
 					time.sleep(1)
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 
 		logger.debug2(u"MessageBus client stopping messageQueue %s" % self._messageQueue)
@@ -411,7 +411,7 @@ class MessageBusClient(threading.Thread):
 			return
 		try:
 			self._connect()
-		except Exception, e:
+		except Exception as e:
 			pass
 		reactor.callLater(self._reconnectionAttemptInterval, self._reconnect)
 
@@ -434,7 +434,7 @@ class MessageBusClient(threading.Thread):
 					ident = message.get('ident')
 					logger.info(u"Object event received: %s %s %s" % (object_type, forceUnicode(ident), operation))
 					self.objectEventReceived(object_type, ident, operation)
-		except Exception, e:
+		except Exception as e:
 			logger.error(line)
 			logger.logException(e)
 

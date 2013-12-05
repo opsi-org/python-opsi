@@ -412,7 +412,7 @@ class MultiplexBackend(object):
 						if asoc:
 							try:
 								dispatcher.auditSoftwareOnClient_createObjects(asoc)
-							except Exception, e:
+							except Exception as e:
 								logger.error(u"Failed do create auditSoftwareOnClients: %s" % e)
 
 						ahoc = source.auditHardwareOnHost_getObjects(clientId = configState.objectId)

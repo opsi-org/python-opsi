@@ -120,7 +120,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						password = host.opsiHostKey,
 						method   = method,
 						params   = params))
-			except Exception, e:
+			except Exception as e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 
 		runningThreads = 0
@@ -150,7 +150,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						if not rpct.ended:
 							try:
 								rpct.terminate()
-							except Exception, e:
+							except Exception as e:
 								logger.error(u"Failed to terminate rpc thread: %s" % e)
 						runningThreads -= 1
 						continue
@@ -191,7 +191,7 @@ class HostControlSafeBackend(ExtendedBackend):
 					sock.sendto(send_data, (broadcastAddress, 12287))
 					sock.close()
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e, LOG_DEBUG)
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 		return result
@@ -259,7 +259,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						hostControlBackend = self,
 						hostId             = host.id,
 						address            = address))
-			except Exception, e:
+			except Exception as e:
 				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False
 
@@ -285,7 +285,7 @@ class HostControlSafeBackend(ExtendedBackend):
 							if not thread.ended:
 								try:
 									thread.terminate()
-								except Exception, e:
+								except Exception as e:
 									logger.error(u"Failed to terminate reachable thread: %s" % e)
 							runningThreads -= 1
 							continue

@@ -111,7 +111,7 @@ class DHCPDBackend(ConfigDataBackend):
 					for line in result:
 						if (line.find(u'error') != -1):
 							raise Exception(u'\n'.join(result))
-				except Exception, e:
+				except Exception as e:
 					logger.critical("Failed to restart dhcpd: %s" % e)
 				self._reloadLock.release()
 				self._reloadEvent.set()
@@ -133,7 +133,7 @@ class DHCPDBackend(ConfigDataBackend):
 									address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
 									username = self._depotId,
 									password = self._opsiHostKey)
-			except Exception, e:
+			except Exception as e:
 				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, e))
 
 		return self._depotConnections[depotId]
@@ -176,7 +176,7 @@ class DHCPDBackend(ConfigDataBackend):
 				logger.info(u"Ip addess of client %s unknown, trying to get host by name" % host)
 				ipAddress = socket.gethostbyname(host.id)
 				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
-			except Exception, e:
+			except Exception as e:
 				raise BackendIOError(u"Cannot update dhcpd configuration for client %s: ip address unknown and failed to get host by name" % host.id)
 
 		fixedAddress = ipAddress
@@ -189,7 +189,7 @@ class DHCPDBackend(ConfigDataBackend):
 				depot = self._context.host_getObjects(id = self._getResponsibleDepotId(host.id))[0]
 				if depot.ipAddress:
 					parameters['next-server'] = depot.ipAddress
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Failed to get depot info: %s" % e)
 
 		self._reloadLock.acquire()
@@ -210,7 +210,7 @@ class DHCPDBackend(ConfigDataBackend):
 				fixedAddress    = fixedAddress,
 				parameters      = parameters)
 			self._dhcpdConfFile.generate()
-		except Exception, e:
+		except Exception as e:
 			logger.error(e)
 		self._reloadLock.release()
 		self._triggerReload()
@@ -234,7 +234,7 @@ class DHCPDBackend(ConfigDataBackend):
 				return
 			self._dhcpdConfFile.deleteHost(host.id.split('.')[0])
 			self._dhcpdConfFile.generate()
-		except Exception, e:
+		except Exception as e:
 			logger.error(e)
 		self._reloadLock.release()
 		self._triggerReload()
@@ -257,7 +257,7 @@ class DHCPDBackend(ConfigDataBackend):
 		logger.debug(u"host_updateObject %s" % host)
 		try:
 			self._dhcpd_updateHost(host)
-		except Exception, e:
+		except Exception as e:
 			logger.info(e)
 
 	def host_deleteObjects(self, hosts):
@@ -269,7 +269,7 @@ class DHCPDBackend(ConfigDataBackend):
 				continue
 			try:
 				self._dhcpd_deleteHost(host)
-			except Exception, e:
+			except Exception as e:
 				errors.append(forceUnicode(e))
 		if errors:
 			raise Exception(u', '.join(errors))

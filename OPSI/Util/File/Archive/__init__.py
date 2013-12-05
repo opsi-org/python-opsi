@@ -135,7 +135,7 @@ class BaseArchive(object):
 			if self._progressSubject:
 				self._progressSubject.setState(fileCount)
 
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			raise
 
@@ -277,7 +277,7 @@ class TarArchive(BaseArchive, PigzMixin):
 				if line:
 					names.append(unicode(line))
 			return names
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
 	def extract(self, targetPath='.', patterns=[]):
@@ -287,7 +287,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)
-				except Exception, e:
+				except Exception as e:
 					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
 
 			options = u''
@@ -312,7 +312,7 @@ class TarArchive(BaseArchive, PigzMixin):
 								match = True
 								break
 							fileCount += 1
-						except Exception, e:
+						except Exception as e:
 							raise Exception(u"Bad pattern '%s': %s" % (p, e))
 				if match:
 					fileCount += 1
@@ -322,7 +322,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			command = u'%s %s --directory "%s" --extract --verbose --file "%s"' % (System.which('tar'), options, targetPath, self._filename)
 			self._extract(command, fileCount)
 
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
 	def create(self, fileList, baseDir='.', dereference=False):
@@ -348,7 +348,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			self._create(fileList, baseDir, command)
 
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 
@@ -373,7 +373,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				if line:
 					names.append(unicode(line))
 			return names
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
 	def extract(self, targetPath='.', patterns=[]):
@@ -383,7 +383,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)
-				except Exception, e:
+				except Exception as e:
 					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
 
 			cat = System.which('cat')
@@ -408,7 +408,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 								match = True
 								break
 							fileCount += 1
-						except Exception, e:
+						except Exception as e:
 							raise Exception(u"Bad pattern '%s': %s" % (p, e))
 				if match:
 					fileCount += 1
@@ -424,7 +424,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
 	def create(self, fileList, baseDir='.', dereference=False):
@@ -450,7 +450,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			self._create(fileList, baseDir, command)
 
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 

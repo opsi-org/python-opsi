@@ -90,7 +90,7 @@ class HostKeyFile(ConfigFile):
 				if self._opsiHostKeys.has_key(hostId):
 					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
 				self._opsiHostKeys[hostId] = opsiHostKey
-			except BackendBadValueError, e:
+			except BackendBadValueError as e:
 				logger.error(u"Found bad formatted line '%s' in pckey file '%s': %s" % (line, self._filename, e))
 		self._parsed = True
 		return self._opsiHostKeys
@@ -342,7 +342,7 @@ class PackageContentFile(TextFile):
 					self._lines.append( "%s '%s' %s '%s'" % (type, filename.replace(u'\'', u'\\\''), size, target.replace(u'\'', u'\\\'')) )
 				else:
 					self._lines.append( "%s '%s' %s %s" % (type, filename.replace(u'\'', u'\\\''), size, md5) )
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e)
 
 		self.open('w')
@@ -524,7 +524,7 @@ class PackageControlFile(TextFile):
 								if not v in tmp:
 									tmp.append(v)
 							value = tmp
-					   	except Exception, e:
+					   	except Exception as e:
 					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
@@ -987,7 +987,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		try:
 			self._backends = self._readBackendConfiguration()
-		except OpsiBackupFileError, e:
+		except OpsiBackupFileError as e:
 			if self.mode.startswith("w"):
 				raise e
 			self._backends = None
@@ -1000,7 +1000,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			try:
 				for list in map(lambda x: x[1], BackendDispatchConfigFile(self.DISPATCH_CONF).parse()):
 					dispatch.extend(list)
-			except Exception, e:
+			except Exception as e:
 				logger.warning(u"Could not read dispatch configuration: %s" % unicode(e))
 				dispatch = []
 
@@ -1014,7 +1014,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					try:
 						execfile(os.path.join(self.BACKEND_CONF_DIR, entry), b)
 						backends[name] = {"name": name, "config": b["config"], "module": b['module'], "dispatch": (name in dispatch)}
-					except Exception, e:
+					except Exception as e:
 						logger.warning(u"Failed to read backend config %s: %s" %(file, e))
 			return backends
 

@@ -135,7 +135,7 @@ def forceInt(var):
 		return var
 	try:
 		return int(var)
-	except Exception, e:
+	except Exception as e:
 		raise ValueError(u"Bad int value '%s': %s" % (var, e))
 
 
@@ -168,7 +168,7 @@ def forceOct(var):
 			var += str(x)
 		var = eval(var)
 		return var
-	except Exception, e:
+	except Exception as e:
 		raise ValueError(u"Bad oct value '%s': %s" % (var, e))
 
 
@@ -177,7 +177,7 @@ def forceFloat(var):
 		return var
 	try:
 		return float(var)
-	except Exception, e:
+	except Exception as e:
 		raise ValueError(u"Bad float value '%s': %s" % (var, e))
 
 
@@ -272,11 +272,11 @@ def forceHostAddress(var):
 		try:
 			try:
 				var = forceIpAddress(var)
-			except Exception, e:
+			except Exception as e:
 				var = forceFqdn(var)
-		except Exception, e:
+		except Exception as e:
 			var = forceHostname(var)
-	except Exception, e:
+	except Exception as e:
 		raise ValueError(u"Bad host address: '%s'" % var)
 	return var
 
@@ -489,7 +489,7 @@ def forceObjectClass(var, objectClass):
 	if type(var) in (types.UnicodeType, types.StringType) and var.lstrip() and var.lstrip().startswith('{'):
 		try:
 			var = fromJson(var)
-		except Exception, e:
+		except Exception as e:
 			exception = e
 			logger.debug(u"Failed to get object from json '%s': %s" % (var, e))
 	if type(var) is types.DictType:
@@ -499,7 +499,7 @@ def forceObjectClass(var, objectClass):
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
 				var = c.fromHash(var)
-		except Exception, e:
+		except Exception as e:
 			exception = e
 			logger.debug(u"Failed to get object from dict '%s': %s" % (var, e))
 

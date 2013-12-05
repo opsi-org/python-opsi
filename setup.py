@@ -143,7 +143,7 @@ cmdclass = {}
 try:
 	from opsidistutils.commands.osc_cmd import osc_publish as osc
 	cmdclass['osc'] = osc
-except ImportError, e:
+except ImportError:
 	print("osc integration is not available on this machine. please install opsi-distutils.")
 
 setup(

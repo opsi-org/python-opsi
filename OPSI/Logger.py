@@ -426,7 +426,7 @@ class LoggerImplementation:
 			if os.path.exists(linkFile):
 				os.unlink(linkFile)
 			os.symlink(logFile, linkFile)
-		except Exception, e:
+		except Exception as e:
 			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, e))
 
 	def setFileLevel(self, level = LOG_NONE):
@@ -634,7 +634,7 @@ class LoggerImplementation:
 					lf = None
 					try:
 						lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
-					except Exception, e:
+					except Exception as e:
 						pass
 
 					if lf:
@@ -651,7 +651,7 @@ class LoggerImplementation:
 								elif (os.name == 'posix'):
 									# Flags for exclusive, non-blocking lock
 									fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-							except IOError, e:
+							except IOError as e:
 								# Locking failed
 								# increase timeout counter, sleep 100 millis
 								timeout += 100
@@ -745,7 +745,7 @@ class LoggerImplementation:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
 				elif (level == LOG_COMMENT):
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-		except Exception, e:
+		except Exception as e:
 			if raiseException:
 				raise
 
@@ -769,7 +769,7 @@ class LoggerImplementation:
 				c = f.f_code
 				self.log(logLevel, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
 				tb = tb.tb_next
-		except Exception, e:
+		except Exception as e:
 			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
 
 	def logWarnings(self):
