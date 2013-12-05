@@ -2,7 +2,7 @@
 
 from OPSI.Logger import Logger
 
-logger = Logger()
+LOGGER = Logger()
 
 
 class AppRunner(object):
@@ -23,24 +23,26 @@ class _BaseProfiler(AppRunner):
 	def run(self):
 		try:
 			import pstats
-			p = self._getProfiler()
-			p.runcall(self._app.run)
+			profiler = self._getProfiler()
+			profiler.runcall(self._app.run)
 
 			out = self._config.get("profile")
 
-			f = open(out,"w")
-			try:
-				s = pstats.Stats(p, stream=f)
-				s.strip_dirs()
-				s.sort_stats(-1)
-				s.print_stats()
+			with open(out, "w") as outputfile:
+				statistics = pstats.Stats(profiler, stream=outputfile)
+				statistics.strip_dirs()
+				statistics.sort_stats(-1)
+				statistics.print_stats()
 
-			finally:
-				f.close()
-
-		except ImportError as e:
-			logger.error(u"Failed to load profiler %s. Make sure the profiler module is installed on your system. (%s)" % (self._config.get("profiler"), e))
-			raise e
+		except ImportError as error:
+			LOGGER.error(
+				u"Failed to load profiler {name}. Make sure the profiler "
+				u"module is installed on your system. ({error})".format(
+					name=self._config.get("profiler"),
+					error=error
+				)
+			)
+			raise error
 
 
 class ProfileRunner(_BaseProfiler):
@@ -59,8 +61,10 @@ class CProfileRunner(_BaseProfiler):
 
 class Application(object):
 
-	profiler = {	"profiler": ProfileRunner,
-			"cprofiler": CProfileRunner}
+	profiler = {
+		"profiler": ProfileRunner,
+		"cprofiler": CProfileRunner
+	}
 
 	def __init__(self, config):
 		self._config = config
@@ -75,7 +79,11 @@ class Application(object):
 			profiler = self._config.get("profiler", "profiler").lower()
 			if profiler in self.profiler:
 				return self.profiler[profiler](self._app, self._config)
-			raise NotImplementedError(u"Profiler %s is not supported." % profiler)
+
+			raise NotImplementedError(
+				u"Profiler {0}is not supported.".format(profiler)
+			)
+
 		return AppRunner(self._app, self._config)
 
 	def setup(self):
