@@ -51,8 +51,12 @@ from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
 from OPSI.Util import encryptWithPublicKeyFromX509CertificatePEMFile, randomString
 logger = Logger()
 
+
 connectionPools = {}
 totalRequests = 0
+
+# This could be an import - but support for pycurl is currently not fully implrement
+pycurl = None
 
 def hybi10Encode(data):
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
@@ -75,6 +79,7 @@ def hybi10Encode(data):
 	for i in range(len(frame)):
 		encodedData += chr(frame[i])
 	return encodedData
+
 
 def hybi10Decode(data):
 	if (len(data.strip()) < 2):
@@ -111,6 +116,7 @@ def hybi10Decode(data):
 		else:
 			decodedData = data[2:]
 	return decodedData
+
 
 def non_blocking_connect_http(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
@@ -645,13 +651,14 @@ def getSharedConnectionPoolFromUrl(url, **kw):
 			port = 80
 	return getSharedConnectionPool(scheme, host, port, **kw)
 
+
 def getSharedConnectionPool(scheme, host, port, **kw):
 	scheme = forceUnicodeLower(scheme)
 	host = forceUnicode(host)
 	port = forceInt(port)
 	curl = False
-	if kw.has_key('preferCurl'):
-		if kw['preferCurl'] and pycurl:
+	if 'preferCurl' in kw:
+		if kw['preferCurl'] and pycurl is not None:
 			curl = True
 		del kw['preferCurl']
 	global connectionPools
