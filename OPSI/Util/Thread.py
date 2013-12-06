@@ -1,52 +1,52 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Thread    =
-   = = = = = = = = = = = = = = = = = = =
+opsi python library - Thread
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+Copyright (C) 2010 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:  uib GmbH <info@uib.de>
-   @author: Christian Kampka <c.kampka@uib.de>, Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:  uib GmbH <info@uib.de>
+@author: Christian Kampka <c.kampka@uib.de>, Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0'
 
-# imports
 import threading
 import inspect
 import ctypes
-import time
 from Queue import Queue, Empty
 
-# OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 
 logger = Logger()
-
 GlobalPool = None
+
+
+class ThreadPoolException(Exception):
+	pass
+
+
 def getGlobalThreadPool(*args, **kwargs):
 	global GlobalPool
 	if not GlobalPool:
@@ -57,6 +57,7 @@ def getGlobalThreadPool(*args, **kwargs):
 		if (GlobalPool.size < size):
 			GlobalPool.adjustSize(size)
 	return GlobalPool
+
 
 def _async_raise(tid, exctype):
 	"""raises the exception, performs cleanup if needed"""
@@ -71,6 +72,7 @@ def _async_raise(tid, exctype):
 		# and you should call it again with exc=NULL to revert the effect"""
 		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
 		raise SystemError("PyThreadState_SetAsyncExc failed")
+
 
 class KillableThread(threading.Thread):
 	def _get_my_tid(self):
@@ -99,8 +101,6 @@ class KillableThread(threading.Thread):
 			return
 		self.raise_exc(SystemExit)
 
-class ThreadPoolException(Exception):
-	pass
 
 class ThreadPool(object):
 
@@ -138,15 +138,15 @@ class ThreadPool(object):
 			self.size = size
 			if self.started:
 				if (len(self.worker) > self.size):
-					self.__deleteWorkers(num = len(self.worker) - self.size)
+					self.__deleteWorkers(num=len(self.worker) - self.size)
 				if (len(self.worker) < self.size):
-					self.__createWorkers(num = self.size - len(self.worker))
+					self.__createWorkers(num=self.size - len(self.worker))
 		finally:
 			self.workerLock.release()
 
 	def __deleteWorker(self, wait=False):
 		logger.debug(u"Deleting a worker")
-		self.__deleteWorkers(1, wait = wait)
+		self.__deleteWorkers(1, wait=wait)
 
 	def __deleteWorkers(self, num, wait=False):
 		logger.debug(u"Deleting %d workers" % num)
@@ -200,9 +200,10 @@ class ThreadPool(object):
 		self.workerLock.acquire()
 		self.started = False
 		try:
-			self.__deleteWorkers(num = len(self.worker), wait = True)
+			self.__deleteWorkers(num=len(self.worker), wait=True)
 		finally:
 			self.workerLock.release()
+
 
 class Worker(threading.Thread):
 	def __init__(self, threadPool, name=None):
@@ -218,7 +219,7 @@ class Worker(threading.Thread):
 			if self.stopped:
 				break
 			try:
-				object = self.threadPool.jobQueue.get(block = True, timeout = 1)
+				object = self.threadPool.jobQueue.get(block=True, timeout=1)
 				if object:
 					self.busy = True
 					(function, callback, args, kwargs) = object
