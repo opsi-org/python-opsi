@@ -4,3 +4,4 @@
 .project
 .pydevproject
 *.egg-info
+*.sublime-*
