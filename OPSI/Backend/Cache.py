@@ -37,14 +37,15 @@ import inspect
 import json
 import time
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import LOG_NOTICE, Logger
+from OPSI.Types import forceHostId
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import ConfigDataBackend, ModificationTrackingBackend
 from OPSI.Backend.Replicator import BackendReplicator
 from OPSI.Util import blowfishDecrypt
 
 logger = Logger()
+
 
 class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
@@ -355,6 +356,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 		f.write(backendInfo.get('opsiVersion', '').strip())
 		f.close()
 
+
 if (__name__ == '__main__'):
 	from OPSI.Backend.SQLite import SQLiteBackend
 	from OPSI.Backend.JSONRPC import JSONRPCBackend
@@ -391,25 +393,3 @@ if (__name__ == '__main__'):
 	#	print productOnClient.toHash()
 
 	print be.licenseOnClient_getOrCreateObject(clientId = 'cachetest.uib.local', productId = 'license-test-oem')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
