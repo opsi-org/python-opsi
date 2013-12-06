@@ -34,6 +34,7 @@ __version__ = '4.0.1'
 
 import json
 import threading
+import time
 from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, defer
@@ -231,15 +232,15 @@ class ProgressSubject(MessageSubject):
 
 	def reset(self):
 		MessageSubject.reset(self)
-		self._end          = 0
+		self._end = 0
 		self._endChangable = True
-		self._percent      = 0
-		self._state        = 0
-		self._timeStarted  = time.time()
-		self._timeSpend    = 0
-		self._timeLeft     = 0
-		self._timeFired    = 0
-		self._speed        = 0
+		self._percent = 0
+		self._state = 0
+		self._timeStarted = time.time()
+		self._timeSpend = 0
+		self._timeLeft = 0
+		self._timeFired = 0
+		self._speed = 0
 		self._notifyEndChanged()
 		self._notifyProgressChanged()
 
