@@ -1,14 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-= = = = = = = = = = = = = = = = = = =
-=   opsi python library - Util      =
-= = = = = = = = = = = = = = = = = = =
+opsi python library - Util
 
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006, 2007, 2008 uib GmbH
+Copyright (C) 2006-2013 uib GmbH
 
 http://www.uib.de/
 
@@ -27,12 +25,13 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-@copyright:	uib GmbH <info@uib.de>
-@author: Jan Schneider <j.schneider@uib.de>
-@license: GNU General Public License version 2
+:copyright:	uib GmbH <info@uib.de>
+:author: Jan Schneider <j.schneider@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
+:license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.7'
+__version__ = '4.0.4.2'
 
 import base64
 import codecs
@@ -69,6 +68,11 @@ elif (os.name == 'nt'):
 BLOWFISH_IV = 'OPSI1234'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 RANDOM_DEVICE = u'/dev/urandom'
+_ACCEPTED_CHARACTERS = (
+	"abcdefghijklmnopqrstuvwxyz"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	"0123456789"
+)
 
 
 class PickleString(str):
@@ -232,10 +236,8 @@ def md5sum(filename):
 
 
 def randomString(length):
-	string = u''
-	for i in range(length):
-		string = string + random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	return unicode(string)
+	string = [random.choice(_ACCEPTED_CHARACTERS) for _ in range(length)]
+	return forceUnicode(u''.join(string))
 
 
 def generateOpsiHostKey():
