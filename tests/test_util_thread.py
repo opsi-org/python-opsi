@@ -75,8 +75,7 @@ class ThreadTestCase(unittest.TestCase):
 
         self.assertTrue(result[0], "Expected callback success to be 'True', but got %s"%result[0])
         self.assertEqual(result[1], 'test', "Expected callback result to be 'test', but got %s"%result[1])
-        self.assertIsNone(result[2], "Expected function to run successfully, but got error %s"% result[2])
-
+        self.assertEqual(None, result[2], "Expected function to run successfully, but got error %s"% result[2])
 
     def test_workerCallbackWithException(self):
         self.pool.adjustSize(2)
@@ -97,8 +96,8 @@ class ThreadTestCase(unittest.TestCase):
         time.sleep(1)
 
         self.assertFalse(result[0], "Expected callback success to be 'False', but got %s"%result[0])
-        self.assertIsNone(result[1], "Expected callback to return no result, but got %s"%result[1])
-        self.assertIsNotNone(result[2], "Expected function to run successfully, but got error %s"% result[2])
+        self.assertEqual(None, result[1], "Expected callback to return no result, but got %s"%result[1])
+        self.assertNotEqual(None, result[2], "Expected function to run successfully, but got error %s"% result[2])
 
     def test_invalidThreadPoolSize(self):
         try:
