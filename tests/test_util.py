@@ -5,8 +5,7 @@ import random
 import unittest
 
 from OPSI.Util import (ipAddressInNetwork, objectToHtml, flattenSequence,
-    formatFileSize)
-from OPSI.Util import getfqdn, randomString
+    formatFileSize, randomString)
 from OPSI.Object import LocalbootProduct
 
 
@@ -65,6 +64,11 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual('1K', formatFileSize(1234))
         self.assertEqual('1M', formatFileSize(1234567))
         self.assertEqual('1G', formatFileSize(1234567890))
+
+    def testRandomString(self):
+        self.assertEqual(10, len(randomString(10)))
+        self.assertNotEqual('', randomString(1).strip())
+        self.assertEqual('', randomString(0).strip())
 
 
 if __name__ == '__main__':
