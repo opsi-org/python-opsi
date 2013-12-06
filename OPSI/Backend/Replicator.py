@@ -1,55 +1,45 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Replicator  =
-   = = = = = = = = = = = = = = = = = = = =
+opsi python library - Replicator
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+Copyright (C) 2010-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright: uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0'
 
-# Imports
-import time
-
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Object import *
-from OPSI.Util.Message import *
+from OPSI.Util.Message import ProgressSubject
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
-# Get logger instance
 logger = Logger()
 
-# ======================================================================================================
-# =                                 CLASS BACKENDREPLICATOR                                            =
-# ======================================================================================================
 
 class BackendReplicator:
 	OBJECT_CLASSES = [
@@ -77,28 +67,28 @@ class BackendReplicator:
 	]
 
 	def __init__(self, readBackend, writeBackend, newServerId=None, oldServerId=None, cleanupFirst=True):
-		self.__readBackend  = readBackend
+		self.__readBackend = readBackend
 		self.__writeBackend = writeBackend
 
 		self._extendedReadBackend = ExtendedConfigDataBackend(self.__readBackend)
 		self._extendedWriteBackend = ExtendedConfigDataBackend(self.__writeBackend)
 
-		self.__newServerId  = None
+		self.__newServerId = None
 		if newServerId:
 			self.__newServerId = forceHostId(newServerId)
-		self.__oldServerId  = None
+		self.__oldServerId = None
 		if oldServerId:
 			self.__oldServerId = forceHostId(oldServerId)
 		self.__cleanupFirst = forceBool(cleanupFirst)
-		self.__strict       = False
-		self.__serverIds    = []
-		self.__depotIds     = []
-		self.__clientIds    = []
-		self.__groupIds     = []
-		self.__productIds   = []
+		self.__strict = False
+		self.__serverIds = []
+		self.__depotIds = []
+		self.__clientIds = []
+		self.__groupIds = []
+		self.__productIds = []
 
-		self.__overallProgressSubject = ProgressSubject(id = u'overall_replication', title = u'Replicating', end=100, fireAlways=True)
-		self.__currentProgressSubject = ProgressSubject(id = u'current_replication', fireAlways = True)
+		self.__overallProgressSubject = ProgressSubject(id=u'overall_replication', title=u'Replicating', end=100, fireAlways=True)
+		self.__currentProgressSubject = ProgressSubject(id=u'current_replication', fireAlways=True)
 
 	def getCurrentProgressSubject(self):
 		return self.__currentProgressSubject
@@ -112,14 +102,14 @@ class BackendReplicator:
 		An empty list passed as a param means: replicate all known
 		None as the only element of a list means: replicate none
 		'''
-		serverIds    = forceList(serverIds)
-		depotIds     = forceList(depotIds)
-		clientIds    = forceList(clientIds)
-		groupIds     = forceList(serverIds)
-		productIds   = forceList(productIds)
+		serverIds = forceList(serverIds)
+		depotIds = forceList(depotIds)
+		clientIds = forceList(clientIds)
+		groupIds = forceList(serverIds)
+		productIds = forceList(productIds)
 		productTypes = forceList(productTypes)
-		audit        = forceBool(audit)
-		license      = forceBool(license)
+		audit = forceBool(audit)
+		license = forceBool(license)
 
 		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, productTypes=%s, audit: %s, license: %s" \
 				% (serverIds, depotIds, clientIds, groupIds, productIds, productTypes, audit, license))
@@ -163,23 +153,7 @@ class BackendReplicator:
 				end += 1
 			self.__overallProgressSubject.setEnd(end)
 
-			#wb.backend_createBase()
 			if self.__cleanupFirst:
-				#classSequence = list(self.OBJECT_CLASSES)
-				#classSequence.reverse()
-				#self.__currentProgressSubject.reset()
-				#self.__currentProgressSubject.setTitle(u"Cleaning up")
-				#self.__currentProgressSubject.setEnd(len(self.OBJECT_CLASSES))
-				#for objClass in classSequence:
-				#	Class = eval(objClass)
-				#	self.__currentProgressSubject.addToState(1)
-				#	meth1 = '%s_deleteObjects' % Class.backendMethodPrefix
-				#	meth1 = getattr(wb, meth1)
-				#	meth2 = '%s_getObjects' % Class.backendMethodPrefix
-				#	meth2 = getattr(wb, meth2)
-				#	meth1(meth2())
-				#self.__overallProgressSubject.setMessage(u"Cleanup done!")
-				#self.__overallProgressSubject.addToState(1)
 				wb.backend_deleteBase()
 
 			wb.backend_createBase()
@@ -349,7 +323,3 @@ class BackendReplicator:
 					wb.host_createObjects(newDepots)
 		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
-
-
-
-
