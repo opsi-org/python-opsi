@@ -136,8 +136,10 @@ class ThreadTestCase(unittest.TestCase):
         for i in range(5):
             self.pool.addJob(waitJob, callback=callback)
 
-        self.assertEquals(2, len(self.pool.worker), "Expected %s worker in pool, but got %s" % (2, len(self.pool.worker)))
-        self.assertGreater(self.pool.jobQueue.unfinished_tasks, len(self.pool.worker), "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (self.pool.jobQueue.unfinished_tasks, len(self.pool.worker)))
+        self.assertEquals(2, len(self.pool.worker),
+            "Expected %s worker in pool, but got %s" % (2, len(self.pool.worker)))
+        self.assertTrue(self.pool.jobQueue.unfinished_tasks > len(self.pool.worker),
+        "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (self.pool.jobQueue.unfinished_tasks, len(self.pool.worker)))
 
         for i in range(10):
             time.sleep(1)
