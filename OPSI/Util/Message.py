@@ -1,35 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Message   =
-   = = = = = = = = = = = = = = = = = = =
+opsi python library - Message
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008 uib GmbH
+Copyright (C) 2006, 2007, 2008 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0.1'
@@ -40,15 +38,13 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, defer
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import (forceBool, forceInt, forceIntList, forceIpAddress,
+	forceList, forceUnicode, forceUnicodeList)
 
-# Get Logger instance
 logger = Logger()
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       Subjects                                                                    =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
 class Subject(object):
 	def __init__(self, id, type=u'', title=u'', **args):
 		self._id    = forceUnicode(id)
@@ -94,6 +90,7 @@ class Subject(object):
 	def __repr__(self):
 		return self.__str__()
 
+
 class MessageSubject(Subject):
 	def __init__(self, id, type=u'', title=u'', **args):
 		Subject.__init__(self, id, type, title, **args)
@@ -129,6 +126,7 @@ class MessageSubject(Subject):
 		s['message']  = self.getMessage()
 		s['severity'] = self.getSeverity()
 		return s
+
 
 class ChoiceSubject(MessageSubject):
 	def __init__(self, id, type=u'', title=u'', **args):
@@ -202,6 +200,7 @@ class ChoiceSubject(MessageSubject):
 		s['choices']         = self.getChoices()
 		s['selectedIndexes'] = self.getSelectedIndexes()
 		return s
+
 
 class ProgressSubject(MessageSubject):
 	def __init__(self, id, type=u'', title=u'', **args):
@@ -326,15 +325,14 @@ class ProgressSubject(MessageSubject):
 		s['speed']        = self.getSpeed()
 		return s
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       Observers                                                                   =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
 class MessageObserver(object):
 	def __init__(self):
 		pass
 
 	def messageChanged(self, subject, message):
 		pass
+
 
 class ChoiceObserver(MessageObserver):
 	def __init__(self):
@@ -346,6 +344,7 @@ class ChoiceObserver(MessageObserver):
 	def choicesChanged(self, subject, choices):
 		pass
 
+
 class ProgressObserver(MessageObserver):
 	def __init__(self):
 		pass
@@ -355,6 +354,7 @@ class ProgressObserver(MessageObserver):
 
 	def endChanged(self, subject, end):
 		pass
+
 
 class SubjectsObserver(ChoiceObserver, ProgressObserver):
 	def __init__(self):
@@ -387,9 +387,6 @@ class SubjectsObserver(ChoiceObserver, ProgressObserver):
 		pass
 
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       Subject proxies                                                             =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, ChoiceObserver):
 	def __init__(self, id, type=u'', title=u'', **args):
 		ChoiceSubject.__init__(self, id, type, title, **args)
@@ -412,20 +409,16 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 	def endChanged(self, subject, end):
 		self.setEnd(end)
 
+
 class ChoiceSubjectProxy(MessageSubjectProxy):
 	def __init__(self, id, type=u'', title=u'', **args):
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
+
 
 class ProgressSubjectProxy(MessageSubjectProxy):
 	def __init__(self, id, type=u'', title=u'', **args):
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
 
-
-
-
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       Notification server                                                         =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 class NotificationServerProtocol(LineReceiver):
 	def connectionMade(self):
@@ -436,6 +429,7 @@ class NotificationServerProtocol(LineReceiver):
 
 	def lineReceived(self, line):
 		self.factory.rpc(self, line)
+
 
 class NotificationServerFactory(ServerFactory, SubjectsObserver):
 	protocol = NotificationServerProtocol
@@ -645,9 +639,6 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		logger.info(u"Notification server stopped")
 
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       Notification client                                                         =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 class NotificationClientProtocol(LineReceiver):
 	def connectionMade(self):
 		self.factory.connectionMade(self)
@@ -723,6 +714,7 @@ class NotificationClientFactory(ClientFactory):
 		rpc = {'id': None, "method": method, "params": params }
 		self.sendLine(json.dumps(rpc))
 
+
 class NotificationClient(threading.Thread):
 	def __init__(self, address, port, observer, clientId = None):
 		threading.Thread.__init__(self)
@@ -776,20 +768,3 @@ class NotificationClient(threading.Thread):
 
 	def selectChoice(self, subjectId):
 		self._factory.execute(method = 'selectChoice', params = [ subjectId ])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
