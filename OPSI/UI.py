@@ -1,53 +1,48 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = =
-   =   opsi python library - UI      =
-   = = = = = = = = = = = = = = = = = =
+opsi python library - UI
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+Copyright (C) 2010-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0'
 
-
-snackError = None
-
-# Imports
-import time, gettext, locale
-from snack import *
+import time
+import gettext
+import locale
 import signal as ui_signal
+from snack import *
 
-# OPSI imports
-from Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
-# Get Logger instance
+
 logger = Logger()
 encoding = locale.getpreferredencoding()
 
@@ -56,8 +51,11 @@ try:
 	_ = t.ugettext
 except Exception as e:
 	logger.error(u"Locale not found: %s" % e)
+
+
 	def _(string):
 		return string
+
 
 def UIFactory(type = u''):
 	type = forceUnicode(type)
@@ -72,6 +70,7 @@ def UIFactory(type = u''):
 	except Exception as e:
 		logger.warning(u"Failed to create SnackUI: %s" % e)
 		return UI()
+
 
 class UI:
 	def __init__(self):
@@ -145,6 +144,7 @@ class UI:
 	def yesno(self, text, title=_(u'Question'), okLabel=_(u'OK'), cancelLabel=_(u'Cancel'), width=-1, height=-1):
 		return True
 
+
 class MessageBox:
 	def __init__(self, ui, width=0, height=0, title=_(u'Title'), text=u''):
 		pass
@@ -172,20 +172,19 @@ class ProgressBox(MessageBox):
 	def getState(self):
 		pass
 
+
 class CopyProgressBox(ProgressBox):
 	pass
+
 
 class DualProgressBox(MessageBox):
 	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
 		pass
 
+
 class CopyDualProgressBox(DualProgressBox):
 	pass
 
-
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =       SNACK                                                                       =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 class SnackUI(UI):
 	def __init__(self):
@@ -828,6 +827,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 	def messageChanged(self, subject, message):
 		self.addText(u"%s\n" % message)
 
+
 class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
 		ProgressObserver.__init__(self)
@@ -891,6 +891,7 @@ class SnackCopyProgressBox(SnackProgressBox):
 			secLeft = '0%d' % secLeft
 		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
 		self.addText(u"%s\n" % message)
+
 
 class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 	def __init__(self, ui, width=0, height=0, total=100, title=_(u'Title'), text=u''):
@@ -974,6 +975,7 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 		elif (subject == self._currentProgressSubject):
 			self.setCurrentState(state)
 
+
 class SnackCopyDualProgressBox(SnackDualProgressBox):
 	def messageChanged(self, subject, message):
 		minLeft = 0
@@ -987,6 +989,7 @@ class SnackCopyDualProgressBox(SnackDualProgressBox):
 			secLeft = '0%d' % secLeft
 		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
 		self.addText(u"%s\n" % message)
+
 
 if (__name__ == "__main__"):
 	uiTest = UIFactory('snack')
@@ -1084,20 +1087,3 @@ if (__name__ == "__main__"):
 
 	time.sleep(2)
 	uiTest.exit()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
