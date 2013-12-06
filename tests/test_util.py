@@ -4,7 +4,9 @@
 import random
 import unittest
 
-from OPSI.Util import ipAddressInNetwork, objectToHtml
+from OPSI.Util import (ipAddressInNetwork, objectToHtml, flattenSequence,
+    formatFileSize)
+from OPSI.Util import getfqdn, randomString
 from OPSI.Object import LocalbootProduct
 
 
@@ -47,6 +49,22 @@ class ObjectToHTMLTestCase(unittest.TestCase):
           )
 
         objectToHtml(obj, level=0)
+
+
+class UtilTestCase(unittest.TestCase):
+    """
+    General tests for functions in the Util module.
+    """
+    def test_flattenSequence(self):
+        self.assertEqual([1, 2], flattenSequence((1, [2])))
+        self.assertEqual([1, 2, 3], flattenSequence((1, [2, (3, )])))
+        self.assertEqual([1, 2, 3], flattenSequence(((1, ),(2, ), 3)))
+
+    def test_formatFileSize(self):
+        self.assertEqual('123', formatFileSize(123))
+        self.assertEqual('1K', formatFileSize(1234))
+        self.assertEqual('1M', formatFileSize(1234567))
+        self.assertEqual('1G', formatFileSize(1234567890))
 
 
 if __name__ == '__main__':
