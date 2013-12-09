@@ -37,7 +37,6 @@ import datetime
 import gzip
 import os
 import re
-import sys
 import tarfile
 import tempfile
 import shutil
