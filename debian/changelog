@@ -10,6 +10,8 @@ python-opsi (4.0.4.2-1) testing; urgency=low
     unwanted misbehaviour where clients always updated their 'created' 
     attribute to the time of the last update.
   * Removed workarounds for Python versions prior to 2.6
+  * New depot selection alogrith: Select the depot with lowest latency that
+    either is or belongs to the master depot the client is attached to.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 06 Nov 2013 13:22:18 +0100
 
