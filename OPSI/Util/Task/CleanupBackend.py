@@ -198,10 +198,16 @@ def cleanupBackend():
 
 
 def _cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
-	l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
+	customLocals = {
+		'config': {},
+		'module': '',
+		'os': os,
+		'socket': socket,
+		'sys': sys,
+	}
 	LOGGER.info(u"Loading backend config '%s'" % backendConfigFile)
-	execfile(backendConfigFile, l)
-	config = l['config']
+	execfile(backendConfigFile, customLocals)
+	config = customLocals['config']
 	LOGGER.info(u"Current mysql backend config: %s" % config)
 
 	LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
@@ -215,7 +221,7 @@ def _cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
 		if ident not in found:
 			found.append(ident)
 		else:
-			if res['value'] in ('0','1') and res['product_property_id'] not in deleteIds:
+			if res['value'] in ('0', '1') and res['product_property_id'] not in deleteIds:
 				deleteIds.append(res['product_property_id'])
 
 	for ID in deleteIds:
