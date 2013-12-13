@@ -217,7 +217,7 @@ def _cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
 	deleteIds = []
 	found = []
 	for res in mysql.getSet(u"SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
-		ident = "%s;%s;%s;%s;%s" % (res['propertyId'],res['productId'],res['productVersion'] ,res['productVersion'], res['value'])
+		ident = ';'.join([res['propertyId'], res['productId'], res['productVersion'], res['productVersion'], res['value']])
 		if ident not in found:
 			found.append(ident)
 		else:
