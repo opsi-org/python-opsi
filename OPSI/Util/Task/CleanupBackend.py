@@ -101,13 +101,18 @@ def cleanupBackend():
 	LOGGER.notice(u"Cleaning up products")
 	_cleanUpProducts(backend)
 
-	LOGGER.notice(u"Cleaning up product on depots")
+	LOGGER.debug('Getting current depots...')
 	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]
+	LOGGER.debug('Depots are: {0}'.format(depotIds))
+
+	LOGGER.debug('Getting current products...')
 	productIdents = []
 	for product in backend.product_getObjects():
 		if not product.getIdent(returnType='unicode') in productIdents:
 			productIdents.append(product.getIdent(returnType='unicode'))
+	LOGGER.debug('Product idents are: {0}'.format(productIdents))
 
+	LOGGER.notice(u"Cleaning up product on depots")
 	_cleanUpProductOnDepots(backend, depotIds, productIdents)
 
 	LOGGER.notice(u"Cleaning up product on clients")
