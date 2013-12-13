@@ -64,7 +64,6 @@ def cleanupBackend():
 				usingMysqlBackend = True
 				break
 
-
 		if usingMysqlBackend:
 			LOGGER.notice(u"Mysql-backend detected. Trying to cleanup mysql-backend first")
 
@@ -97,85 +96,22 @@ def cleanupBackend():
 		LOGGER.warning(e)
 
 	LOGGER.notice(u"Cleaning up groups")
-	updatedGroups = []
-	groupIds = []
-	groups = backend.group_getObjects(type = 'HostGroup')
-	for group in groups:
-		groupIds.append(group.id)
-	for group in groups:
-		if group.getParentGroupId() and group.getParentGroupId() not in groupIds:
-			LOGGER.info(u"Removing parent group id '%s' from group '%s' because parent group does not exist" % (group.parentGroupId, group.id))
-			group.parentGroupId = None
-			updatedGroups.append(group)
-	if updatedGroups:
-		backend.group_createObjects(updatedGroups)
+	_cleanUpGroups(backend)
 
 	LOGGER.notice(u"Cleaning up products")
-	productIds = []
-	productIdents = []
-
-	for productOnDepot in backend.productOnDepot_getObjects():
-		productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
-		if not productIdent in productIdents:
-			productIdents.append(productIdent)
-	deleteProducts = []
-	for product in backend.product_getObjects():
-		if not product.getIdent(returnType='unicode') in productIdents:
-			LOGGER.info(u"Marking unreferenced product %s for deletion" % product)
-			deleteProducts.append(product)
-		else:
-			if not product.id in productIds:
-				productIds.append(product.id)
-	if deleteProducts:
-		backend.product_deleteObjects(deleteProducts)
+	_cleanUpProducts(backend)
 
 	LOGGER.notice(u"Cleaning up product on depots")
+	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]
 	productIdents = []
-	depotIds = []
-	for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"]):
-		depotIds.append(depot.id)
 	for product in backend.product_getObjects():
 		if not product.getIdent(returnType='unicode') in productIdents:
 			productIdents.append(product.getIdent(returnType='unicode'))
-	deleteProductOnDepots = []
-	for productOnDepot in backend.productOnDepot_getObjects():
-		productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
-		if not productOnDepot.depotId in depotIds:
-			LOGGER.info(u"Marking product on depot %s for deletion, because opsiDepot-Server '%s' not found" % (productOnDepot, productOnDepot.depotId))
-			deleteProductOnDepots.append(productOnDepot)
-		elif not productIdent in productIdents:
-			LOGGER.info(u"Marking product on depot %s with missing product reference for deletion" % productOnDepot)
-			deleteProductOnDepots.append(productOnDepot)
-	if deleteProductOnDepots:
-		backend.productOnDepot_deleteObjects(deleteProductOnDepots)
+
+	_cleanUpProductOnDepots(backend, depotIds, productIdents)
 
 	LOGGER.notice(u"Cleaning up product on clients")
-	deleteProductOnClients = []
-	clientIds = []
-	for client in backend.host_getObjects(type=["OpsiClient"]):
-		clientIds.append(client.id)
-	for productOnClient in backend.productOnClient_getObjects():
-		if productOnClient.clientId not in clientIds:
-			LOGGER.info(u"Marking productOnClient %s for deletion, client doesn't exists" % productOnClient)
-			deleteProductOnClients.append(productOnClient)
-		elif productOnClient.installationStatus == 'not_installed' and productOnClient.actionRequest == 'none':
-			LOGGER.info(u"Marking productOnClient %s for deletion" % productOnClient)
-			deleteProductOnClients.append(productOnClient)
-
-	if deleteProductOnClients:
-		backend.productOnClient_deleteObjects(deleteProductOnClients)
-
-	deleteProductOnClients = []
-	productIds = []
-	for product in backend.product_getObjects():
-		if not product.getId() in productIds:
-			productIds.append(product.getId())
-	for productOnClient in backend.productOnClient_getObjects():
-		if not productOnClient.productId in productIds:
-			LOGGER.info(u"Marking productOnClient %s for deletion" % productOnClient)
-			deleteProductOnClients.append(productOnClient)
-	if deleteProductOnClients:
-		backend.productOnClient_deleteObjects(deleteProductOnClients)
+	_cleanUpProductOnClients(backend)
 
 	LOGGER.notice(u"Cleaning up product properties")
 	productPropertyIdents = []
@@ -270,6 +206,106 @@ def cleanupBackend():
 			backend.productPropertyState_updateObjects(updateProductPropertyStates)
 
 	LOGGER.notice(u"Cleaning up config states")
+	_cleanUpConfigStates(backend)
+
+	LOGGER.notice(u"Cleaning up audit softwares")
+	_cleanUpAuditSoftwares(backend)
+
+	LOGGER.notice(u"Cleaning up audit software on clients")
+	_cleanUpAuditSoftwareOnClients(backend)
+
+
+def _cleanUpGroups(backend):
+	updatedGroups = []
+	groupIds = []
+	groups = backend.group_getObjects(type='HostGroup')
+	for group in groups:
+		groupIds.append(group.id)
+	for group in groups:
+		if group.getParentGroupId() and group.getParentGroupId() not in groupIds:
+			LOGGER.info(u"Removing parent group id '%s' from group '%s' because parent group does not exist" % (group.parentGroupId, group.id))
+			group.parentGroupId = None
+			updatedGroups.append(group)
+	if updatedGroups:
+		backend.group_createObjects(updatedGroups)
+
+
+def _cleanUpProducts(backend):
+	productIds = []
+	productIdents = []
+
+	for productOnDepot in backend.productOnDepot_getObjects():
+		productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+		if not productIdent in productIdents:
+			productIdents.append(productIdent)
+	deleteProducts = []
+	for product in backend.product_getObjects():
+		if not product.getIdent(returnType='unicode') in productIdents:
+			LOGGER.info(u"Marking unreferenced product %s for deletion" % product)
+			deleteProducts.append(product)
+		else:
+			if not product.id in productIds:
+				productIds.append(product.id)
+	if deleteProducts:
+		backend.product_deleteObjects(deleteProducts)
+
+
+def _cleanUpProductOnDepots(backend, depotIds, existingProductIdents):
+	"""
+	Cleaning up information about products on depots.
+
+	This deletes obsolete information if either a depot or a product is
+	not existing anymore.
+
+	:param depotIds: IDs of the existing depot.
+	:type depotIds: [str, ]
+	:param existingProductIdents: Idents of the existing products.
+	:type existingProductIdents: [str, ]
+	"""
+	deleteProductOnDepots = []
+	for productOnDepot in backend.productOnDepot_getObjects():
+		productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+		if not productOnDepot.depotId in depotIds:
+			LOGGER.info(u"Marking product on depot %s for deletion, because opsiDepot-Server '%s' not found" % (productOnDepot, productOnDepot.depotId))
+			deleteProductOnDepots.append(productOnDepot)
+		elif not productIdent in existingProductIdents:
+			LOGGER.info(u"Marking product on depot %s with missing product reference for deletion" % productOnDepot)
+			deleteProductOnDepots.append(productOnDepot)
+
+	if deleteProductOnDepots:
+		backend.productOnDepot_deleteObjects(deleteProductOnDepots)
+
+
+def _cleanUpProductOnClients(backend):
+	deleteProductOnClients = []
+	clientIds = []
+	for client in backend.host_getObjects(type=["OpsiClient"]):
+		clientIds.append(client.id)
+	for productOnClient in backend.productOnClient_getObjects():
+		if productOnClient.clientId not in clientIds:
+			LOGGER.info(u"Marking productOnClient %s for deletion, client doesn't exists" % productOnClient)
+			deleteProductOnClients.append(productOnClient)
+		elif productOnClient.installationStatus == 'not_installed' and productOnClient.actionRequest == 'none':
+			LOGGER.info(u"Marking productOnClient %s for deletion" % productOnClient)
+			deleteProductOnClients.append(productOnClient)
+
+	if deleteProductOnClients:
+		backend.productOnClient_deleteObjects(deleteProductOnClients)
+
+	deleteProductOnClients = []
+	productIds = []
+	for product in backend.product_getObjects():
+		if not product.getId() in productIds:
+			productIds.append(product.getId())
+	for productOnClient in backend.productOnClient_getObjects():
+		if not productOnClient.productId in productIds:
+			LOGGER.info(u"Marking productOnClient %s for deletion" % productOnClient)
+			deleteProductOnClients.append(productOnClient)
+	if deleteProductOnClients:
+		backend.productOnClient_deleteObjects(deleteProductOnClients)
+
+
+def _cleanUpConfigStates(backend):
 	deleteConfigStates = []
 	configIds = backend.config_getIdents()
 	for configState in backend.configState_getObjects():
@@ -279,7 +315,8 @@ def cleanupBackend():
 	if deleteConfigStates:
 		backend.configState_deleteObjects(deleteConfigStates)
 
-	LOGGER.notice(u"Cleaning up audit softwares")
+
+def _cleanUpAuditSoftwares(backend):
 	idents = []
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
@@ -292,7 +329,8 @@ def cleanupBackend():
 			LOGGER.info(u"Deleting unreferenced audit software '%s'" % ident)
 			backend.auditSoftware_delete(aso['name'], aso['version'], aso['subVersion'], aso['language'], aso['architecture'])
 
-	LOGGER.notice(u"Cleaning up audit software on clients")
+
+def _cleanUpAuditSoftwareOnClients(backend):
 	idents = []
 	for aso in backend.auditSoftware_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
