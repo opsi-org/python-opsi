@@ -66,32 +66,9 @@ def cleanupBackend():
 
 		if usingMysqlBackend:
 			LOGGER.notice(u"Mysql-backend detected. Trying to cleanup mysql-backend first")
-
-			backendConfigFile = u'/etc/opsi/backends/mysql.conf'
-
-			l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
-			LOGGER.info(u"Loading backend config '%s'" % backendConfigFile)
-			execfile(backendConfigFile, l)
-			config = l['config']
-			LOGGER.info(u"Current mysql backend config: %s" % config)
-
-			LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
-			mysql = MySQL(**config)
-
-			LOGGER.notice("Cleaning up defaultValues in productProperties")
-			deleteIds = []
-			found = []
-			for res in mysql.getSet(u"SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
-				ident = "%s;%s;%s;%s;%s" % (res['propertyId'],res['productId'],res['productVersion'] ,res['productVersion'], res['value'])
-				if ident not in found:
-					found.append(ident)
-				else:
-					if res['value'] in ('0','1') and res['product_property_id'] not in deleteIds:
-						deleteIds.append(res['product_property_id'])
-
-			for ID in deleteIds:
-				LOGGER.notice(u"Deleting PropertyValue id: %s" % ID)
-				mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '%s'" % ID )
+			# ToDo: backendConfigFile should be as dynamic as possible
+			# What if we have 2 mysql backends set up?
+			_cleanUpMySQL()
 	except Exception as e:
 		LOGGER.warning(e)
 
@@ -218,6 +195,32 @@ def cleanupBackend():
 
 	LOGGER.notice(u"Cleaning up audit software on clients")
 	_cleanUpAuditSoftwareOnClients(backend)
+
+
+def _cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
+	l = {'socket': socket, 'os': os, 'sys': sys, 'module': '', 'config': {}}
+	LOGGER.info(u"Loading backend config '%s'" % backendConfigFile)
+	execfile(backendConfigFile, l)
+	config = l['config']
+	LOGGER.info(u"Current mysql backend config: %s" % config)
+
+	LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
+	mysql = MySQL(**config)
+
+	LOGGER.notice("Cleaning up defaultValues in productProperties")
+	deleteIds = []
+	found = []
+	for res in mysql.getSet(u"SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
+		ident = "%s;%s;%s;%s;%s" % (res['propertyId'],res['productId'],res['productVersion'] ,res['productVersion'], res['value'])
+		if ident not in found:
+			found.append(ident)
+		else:
+			if res['value'] in ('0','1') and res['product_property_id'] not in deleteIds:
+				deleteIds.append(res['product_property_id'])
+
+	for ID in deleteIds:
+		LOGGER.notice(u"Deleting PropertyValue id: %s" % ID)
+		mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '%s'" % ID )
 
 
 def _cleanUpGroups(backend):
