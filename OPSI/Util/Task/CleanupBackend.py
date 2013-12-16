@@ -233,14 +233,19 @@ used MySQL backend.
 	config = customLocals['config']
 	LOGGER.info(u"Current mysql backend config: %s" % config)
 
-	LOGGER.notice(u"Connection to database '%s' on '%s' as user '%s'" % (config['database'], config['address'], config['username']))
+	LOGGER.notice(
+		"Connection to database '{database}' on '{address}' as user "
+		"'{username}'".format(**config)
+	)
 	mysql = MySQL(**config)
 
 	LOGGER.notice("Cleaning up defaultValues in productProperties")
 	deleteIds = []
 	found = []
-	for res in mysql.getSet(u"SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
-		ident = ';'.join([res['propertyId'], res['productId'], res['productVersion'], res['productVersion'], res['value']])
+	for res in mysql.getSet("SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
+		ident = ';'.join([res['propertyId'], res['productId'],
+			res['productVersion'], res['productVersion'], res['value']]
+		)
 		if ident not in found:
 			found.append(ident)
 		else:
@@ -248,8 +253,10 @@ used MySQL backend.
 				deleteIds.append(res['product_property_id'])
 
 	for ID in deleteIds:
-		LOGGER.notice(u"Deleting PropertyValue id: %s" % ID)
-		mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '%s'" % ID )
+		LOGGER.notice("Deleting PropertyValue id: {0}".format(ID))
+		mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where "
+			"`product_property_id` = '{0}'".format(ID)
+		)
 
 
 def cleanUpGroups(backend):
@@ -267,9 +274,16 @@ def cleanUpGroups(backend):
 		groupIds.append(group.id)
 	for group in groups:
 		if group.getParentGroupId() and group.getParentGroupId() not in groupIds:
-			LOGGER.info(u"Removing parent group id '%s' from group '%s' because parent group does not exist" % (group.parentGroupId, group.id))
+			LOGGER.info(
+				"Removing parent group id '{parentGroupId}' from group "
+				"'{groupId}' because parent group does not exist".format(
+					parentGroupId=group.parentGroupId,
+					groupId=group.id
+				)
+			)
 			group.parentGroupId = None
 			updatedGroups.append(group)
+
 	if updatedGroups:
 		backend.group_createObjects(updatedGroups)
 
@@ -285,17 +299,20 @@ def cleanUpProducts(backend):
 	productIdents = []
 
 	for productOnDepot in backend.productOnDepot_getObjects():
-		productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+		productIdent = ";".join([productOnDepot.productId,
+			productOnDepot.productVersion, productOnDepot.packageVersion]
+		)
 		if not productIdent in productIdents:
 			productIdents.append(productIdent)
 	deleteProducts = []
 	for product in backend.product_getObjects():
 		if not product.getIdent(returnType='unicode') in productIdents:
-			LOGGER.info(u"Marking unreferenced product %s for deletion" % product)
+			LOGGER.info("Marking unreferenced product {0} for deletion".format(product))
 			deleteProducts.append(product)
 		else:
 			if not product.id in productIds:
 				productIds.append(product.id)
+
 	if deleteProducts:
 		backend.product_deleteObjects(deleteProducts)
 
@@ -304,7 +321,6 @@ def cleanUpProductOnDepots(backend, depotIds, existingProductIdents):
 	"""
 	Deletes obsolete information that occurs if either a depot or a \
 product is not existing anymore.
-
 
 	:param backend: The backend where the data should be cleaned.
 	:type backend: OPSI.Backend.Backend
@@ -315,12 +331,22 @@ product is not existing anymore.
 	"""
 	deleteProductOnDepots = []
 	for productOnDepot in backend.productOnDepot_getObjects():
-		productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+		productIdent = ";".join([productOnDepot.productId,
+			productOnDepot.productVersion, productOnDepot.packageVersion])
 		if not productOnDepot.depotId in depotIds:
-			LOGGER.info(u"Marking product on depot %s for deletion, because opsiDepot-Server '%s' not found" % (productOnDepot, productOnDepot.depotId))
+			LOGGER.info(
+				"Marking product on depot {poc} for deletion, because "
+				"opsiDepot-Server '{depotId}' not found".format(
+					poc=productOnDepot,
+					depotId=productOnDepot.depotId
+				)
+			)
 			deleteProductOnDepots.append(productOnDepot)
 		elif not productIdent in existingProductIdents:
-			LOGGER.info(u"Marking product on depot %s with missing product reference for deletion" % productOnDepot)
+			LOGGER.info(
+				"Marking product on depot {0} with missing product reference "
+				"for deletion".format(productOnDepot)
+			)
 			deleteProductOnDepots.append(productOnDepot)
 
 	if deleteProductOnDepots:
@@ -329,7 +355,7 @@ product is not existing anymore.
 
 def cleanUpProductOnClients(backend):
 	"""
-	Delete :py:class:`productOnClient` if the client does not exist or \
+	Delete :py:class:`ProductOnClient` if the client does not exist or \
 is either *not_installed* without an action request set.
 
 	:param backend: The backend where the data should be cleaned.
@@ -341,10 +367,17 @@ is either *not_installed* without an action request set.
 		clientIds.append(client.id)
 	for productOnClient in backend.productOnClient_getObjects():
 		if productOnClient.clientId not in clientIds:
-			LOGGER.info(u"Marking productOnClient %s for deletion, client doesn't exists" % productOnClient)
+			LOGGER.info(
+				"Marking productOnClient {0} for deletion, client "
+				"doesn't exists".format(productOnClient)#
+			)
 			deleteProductOnClients.append(productOnClient)
-		elif productOnClient.installationStatus == 'not_installed' and productOnClient.actionRequest == 'none':
-			LOGGER.info(u"Marking productOnClient %s for deletion" % productOnClient)
+		elif (productOnClient.installationStatus == 'not_installed'
+				and productOnClient.actionRequest == 'none'):
+			LOGGER.info(
+				"Marking productOnClient {0} for "
+				"deletion".format(productOnClient)
+			)
 			deleteProductOnClients.append(productOnClient)
 
 	if deleteProductOnClients:
@@ -357,8 +390,12 @@ is either *not_installed* without an action request set.
 			productIds.append(product.getId())
 	for productOnClient in backend.productOnClient_getObjects():
 		if not productOnClient.productId in productIds:
-			LOGGER.info(u"Marking productOnClient %s for deletion" % productOnClient)
+			LOGGER.info(
+				"Marking productOnClient {0} for "
+				"deletion".format(productOnClient)
+			)
 			deleteProductOnClients.append(productOnClient)
+
 	if deleteProductOnClients:
 		backend.productOnClient_deleteObjects(deleteProductOnClients)
 
@@ -374,8 +411,15 @@ def cleanUpConfigStates(backend):
 	configIds = backend.config_getIdents()
 	for configState in backend.configState_getObjects():
 		if not configState.configId in configIds:
-			LOGGER.info(u"Marking configState %s of non existent config '%s' for deletion" % (configState, configState.configId))
+			LOGGER.info(
+				"Marking configState {configState} of non existent config "
+				"'{config}' for deletion".format(
+					configState=configState,
+					config=configState.configId
+				)
+			)
 			deleteConfigStates.append(configState)
+
 	if deleteConfigStates:
 		backend.configState_deleteObjects(deleteConfigStates)
 
@@ -397,7 +441,9 @@ def cleanUpAuditSoftwares(backend):
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
 		if not ident in idents:
 			LOGGER.info(u"Deleting unreferenced audit software '%s'" % ident)
-			backend.auditSoftware_delete(aso['name'], aso['version'], aso['subVersion'], aso['language'], aso['architecture'])
+			backend.auditSoftware_delete(aso['name'], aso['version'],
+				aso['subVersion'], aso['language'], aso['architecture']
+			)
 
 
 def cleanUpAuditSoftwareOnClients(backend):
@@ -417,4 +463,7 @@ def cleanUpAuditSoftwareOnClients(backend):
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
 		if not ident in idents:
 			LOGGER.info(u"Deleting audit software on client '%s'" % ident)
-			backend.auditSoftwareOnClient_delete(aso['name'], aso['version'], aso['subVersion'], aso['language'], aso['architecture'], aso['clientId'])
+			backend.auditSoftwareOnClient_delete(aso['name'], aso['version'],
+				aso['subVersion'], aso['language'], aso['architecture'],
+				aso['clientId']
+			)
