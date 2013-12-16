@@ -74,7 +74,7 @@ class BaseArchive(object):
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
-			if   fileType.lower().startswith('gzip compressed data'):
+			if fileType.lower().startswith('gzip compressed data'):
 				self._compression = u'gzip'
 			elif fileType.lower().startswith('bzip2 compressed data'):
 				self._compression = u'bzip2'
@@ -87,7 +87,9 @@ class BaseArchive(object):
 	def _extract(self, command, fileCount):
 		try:
 			logger.info(u"Executing: %s" % command )
-			proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			proc = subprocess.Popen(command,
+				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+			)
 
 			encoding = proc.stdout.encoding
 			if not encoding:
@@ -112,7 +114,7 @@ class BaseArchive(object):
 						if (filesExtracted > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
-				except:
+				except Exception:
 					pass
 				try:
 					chunk = proc.stderr.read()
@@ -122,7 +124,7 @@ class BaseArchive(object):
 						if (filesExtracted > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
-				except:
+				except Exception:
 					time.sleep(0.001)
 				ret = proc.poll()
 
@@ -134,7 +136,6 @@ class BaseArchive(object):
 				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
 				self._progressSubject.setState(fileCount)
-
 		except Exception as e:
 			logger.logException(e)
 			raise
@@ -148,7 +149,10 @@ class BaseArchive(object):
 			os.chdir(baseDir)
 
 			logger.info(u"Executing: %s" % command )
-			proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			proc = subprocess.Popen(command,
+				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE
+			)
 
 			encoding = proc.stdin.encoding
 			if not encoding:
@@ -186,7 +190,7 @@ class BaseArchive(object):
 						if (filesAdded > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesAdded)
-				except:
+				except Exception:
 					pass
 				try:
 					chunk = proc.stderr.read()
@@ -196,7 +200,7 @@ class BaseArchive(object):
 						if (filesAdded > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesAdded)
-				except:
+				except Exception:
 					time.sleep(0.001)
 
 			proc.stdin.close()
