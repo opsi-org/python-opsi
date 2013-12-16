@@ -34,15 +34,17 @@ __version__ = "4.0"
 
 import locale
 import os
+import re
 import subprocess
+import time
 
 if (os.name == 'posix'):
 	import fcntl
 	import magic
 
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI import System
-from OPSI.Types import *
+from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
 
 logger = Logger()
