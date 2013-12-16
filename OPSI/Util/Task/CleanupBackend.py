@@ -56,6 +56,20 @@ def cleanupBackend():
 	This method uses different cleanup methods to ensure that no
 	obsolete data is present in your backend.
 	"""
+	def usesMysqlBackend():
+		LOGGER.notice(u"Parsing dispatch.conf")
+		bdc = BackendDispatchConfigFile(u'/etc/opsi/backendManager/dispatch.conf')
+		dispatchConfig = bdc.parse()
+		for entry in dispatchConfig:
+			(regex, backends) = entry
+			if not re.search(regex, 'backend_createBase'):
+				continue
+
+			if 'mysql' in backends:
+				return True
+
+		return False
+
 	backend = BackendManager(
 		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
 		backendConfigDir=u'/etc/opsi/backends',
@@ -63,20 +77,8 @@ def cleanupBackend():
 		depotbackend=False
 	)
 
-	LOGGER.notice(u"Parsing dispatch.conf")
-	usingMysqlBackend = False
 	try:
-		bdc = BackendDispatchConfigFile(u'/etc/opsi/backendManager/dispatch.conf')
-		dispatchConfig = bdc.parse()
-		for entry in dispatchConfig:
-			(regex, backends) = entry
-			if not re.search(regex, 'backend_createBase'):
-				continue
-			if 'mysql' in backends:
-				usingMysqlBackend = True
-				break
-
-		if usingMysqlBackend:
+		if usesMysqlBackend():
 			LOGGER.notice(u"Mysql-backend detected. Trying to cleanup mysql-backend first")
 			# ToDo: backendConfigFile should be as dynamic as possible
 			# What if we have 2 mysql backends set up?
