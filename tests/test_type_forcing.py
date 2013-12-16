@@ -12,7 +12,7 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceProductVersion, forceOpsiHostKey,forceInstallationStatus,
 	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
 	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
-	forceProductType)
+	forceProductType, forceDict)
 
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
@@ -406,3 +406,18 @@ class ForceProductTypeTestCase(unittest.TestCase):
     	self.assertEquals(forceProductType('NetbOOtProduct'), 'NetbootProduct')
     	self.assertEquals(forceProductType('nETbOOT'), 'NetbootProduct')
 
+
+class ForceDictTestCase(unittest.TestCase):
+    def testForcingNoneTypeToDictReturnsEmptyDict(self):
+        self.assertEquals({}, forceDict(None))
+
+	def testForcingDictToDictReturnsDict(self):
+		data = {'a': 1}
+		expected = {'a': 1}
+		self.assertEquals(expected, forceDict(data))
+
+		self.assertTrue(data is expected)
+
+	def testForcingImpossibleThrowsError(self):
+		self.assertRaises(ValueError, forceDict('asdg'))
+		self.assertRaises(ValueError, forceDict(['asdg', 'asg']))

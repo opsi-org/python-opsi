@@ -51,14 +51,6 @@ def forceList(var):
 	return list(var)
 
 
-def forceDict(var):
-	if var is None:
-		var = {}
-	if not type(var) is types.DictType:
-		raise ValueError(u"Bad dict value '%s'" % var)
-	return dict(var)
-
-
 def forceUnicode(var):
 	if type(var) is types.UnicodeType:
 		return var
@@ -182,8 +174,11 @@ def forceFloat(var):
 
 
 def forceDict(var):
-	if type(var) is types.DictType:
+	if var is None:
+		return {}
+	elif type(var) is types.DictType:
 		return var
+
 	raise ValueError(u"Not a dict '%s'" % var)
 
 
