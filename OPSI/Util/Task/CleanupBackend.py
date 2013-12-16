@@ -21,6 +21,12 @@ opsi python library - Util - Task - Backend Cleanup
 
 Functionality to clean up an OPSI Backend.
 
+The aim of this module is to remove obsolete data from the backend to
+ensure having clean data.
+
+The everyday method for this job is :py:func:`cleanupBackend`.
+For more specialised cleanup you should use the corresponding methods.
+
 .. versionadded:: 4.0.4.2
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
@@ -44,6 +50,12 @@ LOGGER = Logger()
 
 
 def cleanupBackend():
+	"""
+	Clean up data from your backends.
+
+	This method uses different cleanup methods to ensure that no
+	obsolete data is present in your backend.
+	"""
 	backend = BackendManager(
 		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
 		backendConfigDir=u'/etc/opsi/backends',
@@ -68,15 +80,15 @@ def cleanupBackend():
 			LOGGER.notice(u"Mysql-backend detected. Trying to cleanup mysql-backend first")
 			# ToDo: backendConfigFile should be as dynamic as possible
 			# What if we have 2 mysql backends set up?
-			_cleanUpMySQL()
+			cleanUpMySQL()
 	except Exception as e:
 		LOGGER.warning(e)
 
 	LOGGER.notice(u"Cleaning up groups")
-	_cleanUpGroups(backend)
+	cleanUpGroups(backend)
 
 	LOGGER.notice(u"Cleaning up products")
-	_cleanUpProducts(backend)
+	cleanUpProducts(backend)
 
 	LOGGER.debug('Getting current depots...')
 	depotIds = [depot.id for depot in backend.host_getObjects(type=["OpsiConfigserver", "OpsiDepotserver"])]
@@ -90,10 +102,10 @@ def cleanupBackend():
 	LOGGER.debug('Product idents are: {0}'.format(productIdents))
 
 	LOGGER.notice(u"Cleaning up product on depots")
-	_cleanUpProductOnDepots(backend, depotIds, productIdents)
+	cleanUpProductOnDepots(backend, depotIds, productIdents)
 
 	LOGGER.notice(u"Cleaning up product on clients")
-	_cleanUpProductOnClients(backend)
+	cleanUpProductOnClients(backend)
 
 	LOGGER.notice(u"Cleaning up product properties")
 	productPropertyIdents = []
@@ -188,16 +200,25 @@ def cleanupBackend():
 			backend.productPropertyState_updateObjects(updateProductPropertyStates)
 
 	LOGGER.notice(u"Cleaning up config states")
-	_cleanUpConfigStates(backend)
+	cleanUpConfigStates(backend)
 
 	LOGGER.notice(u"Cleaning up audit softwares")
-	_cleanUpAuditSoftwares(backend)
+	cleanUpAuditSoftwares(backend)
 
 	LOGGER.notice(u"Cleaning up audit software on clients")
-	_cleanUpAuditSoftwareOnClients(backend)
+	cleanUpAuditSoftwareOnClients(backend)
 
 
-def _cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
+def cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
+	"""
+	Clean up an MySQL backend.
+
+	**This does not work with any backend other than MySQL.**
+
+	:param backendConfigFile: The configuration file of the currently \
+used MySQL backend.
+	:type backendConfigFile: str
+	"""
 	customLocals = {
 		'config': {},
 		'module': '',
@@ -229,7 +250,14 @@ def _cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
 		mysql.execute("DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '%s'" % ID )
 
 
-def _cleanUpGroups(backend):
+def cleanUpGroups(backend):
+	"""
+	This checks if a group has a parent set that does not exist and
+	removes non-existing parents.
+
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
+	"""
 	updatedGroups = []
 	groupIds = []
 	groups = backend.group_getObjects(type='HostGroup')
@@ -244,7 +272,13 @@ def _cleanUpGroups(backend):
 		backend.group_createObjects(updatedGroups)
 
 
-def _cleanUpProducts(backend):
+def cleanUpProducts(backend):
+	"""
+	This will delete any unreferenced product from the backend.
+
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
+	"""
 	productIds = []
 	productIdents = []
 
@@ -264,13 +298,14 @@ def _cleanUpProducts(backend):
 		backend.product_deleteObjects(deleteProducts)
 
 
-def _cleanUpProductOnDepots(backend, depotIds, existingProductIdents):
+def cleanUpProductOnDepots(backend, depotIds, existingProductIdents):
 	"""
-	Cleaning up information about products on depots.
+	Deletes obsolete information that occurs if either a depot or a \
+product is not existing anymore.
 
-	This deletes obsolete information if either a depot or a product is
-	not existing anymore.
 
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
 	:param depotIds: IDs of the existing depot.
 	:type depotIds: [str, ]
 	:param existingProductIdents: Idents of the existing products.
@@ -290,7 +325,14 @@ def _cleanUpProductOnDepots(backend, depotIds, existingProductIdents):
 		backend.productOnDepot_deleteObjects(deleteProductOnDepots)
 
 
-def _cleanUpProductOnClients(backend):
+def cleanUpProductOnClients(backend):
+	"""
+	Delete :py:class:`productOnClient` if the client does not exist or \
+is either *not_installed* without an action request set.
+
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
+	"""
 	deleteProductOnClients = []
 	clientIds = []
 	for client in backend.host_getObjects(type=["OpsiClient"]):
@@ -319,7 +361,13 @@ def _cleanUpProductOnClients(backend):
 		backend.productOnClient_deleteObjects(deleteProductOnClients)
 
 
-def _cleanUpConfigStates(backend):
+def cleanUpConfigStates(backend):
+	"""
+	Deletes configStates if the corresponding config is nonexisting.
+
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
+	"""
 	deleteConfigStates = []
 	configIds = backend.config_getIdents()
 	for configState in backend.configState_getObjects():
@@ -330,7 +378,13 @@ def _cleanUpConfigStates(backend):
 		backend.configState_deleteObjects(deleteConfigStates)
 
 
-def _cleanUpAuditSoftwares(backend):
+def cleanUpAuditSoftwares(backend):
+	"""
+	Deletes unreferenced audit software.
+
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
+	"""
 	idents = []
 	for aso in backend.auditSoftwareOnClient_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
@@ -344,7 +398,13 @@ def _cleanUpAuditSoftwares(backend):
 			backend.auditSoftware_delete(aso['name'], aso['version'], aso['subVersion'], aso['language'], aso['architecture'])
 
 
-def _cleanUpAuditSoftwareOnClients(backend):
+def cleanUpAuditSoftwareOnClients(backend):
+	"""
+	Deletes unreferenced auditSoftwareOnClients.
+
+	:param backend: The backend where the data should be cleaned.
+	:type backend: OPSI.Backend.Backend
+	"""
 	idents = []
 	for aso in backend.auditSoftware_getHashes():
 		ident = '%(name)s;%(version)s;%(subVersion)s;%(language)s;%(architecture)s' % aso
