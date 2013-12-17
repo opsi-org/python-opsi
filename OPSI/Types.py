@@ -267,11 +267,11 @@ def forceHostAddress(var):
 		try:
 			try:
 				var = forceIpAddress(var)
-			except Exception as e:
+			except Exception:
 				var = forceFqdn(var)
-		except Exception as e:
+		except Exception:
 			var = forceHostname(var)
-	except Exception as e:
+	except Exception:
 		raise ValueError(u"Bad host address: '%s'" % var)
 	return var
 
