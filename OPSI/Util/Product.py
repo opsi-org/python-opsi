@@ -34,32 +34,32 @@
 
 __version__ = '4.0.2.3'
 
-# Globals
-DEFAULT_TMP_DIR           = u'/tmp'
-DEFAULT_CLIENT_DATA_USER  = u'opsiconfd'
-DEFAULT_CLIENT_DATA_GROUP = u'pcpatch'
-EXCLUDE_DIRS_ON_PACK      = u'^\.svn$'
-EXCLUDE_FILES_ON_PACK     = u'~$'
-PACKAGE_SCRIPT_TIMEOUT    = 600
-
-# Imports
-import os, shutil, re
+import os
+import re
+import shutil
 
 if (os.name == 'posix'):
-	import pwd, grp
+	import pwd
+	import grp
 
 # OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import *
 from OPSI.Util import randomString, findFiles
-from OPSI.System import execute, getDiskSpaceUsage
+from OPSI.System import execute
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
 	DEFAULT_CLIENT_DATA_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except:
 	DEFAULT_CLIENT_DATA_GROUP = u'pcpatch'
+
+DEFAULT_TMP_DIR = u'/tmp'
+DEFAULT_CLIENT_DATA_USER = u'opsiconfd'
+EXCLUDE_DIRS_ON_PACK = u'^\.svn$'
+EXCLUDE_FILES_ON_PACK = u'~$'
+PACKAGE_SCRIPT_TIMEOUT = 600
 
 logger = Logger()
 
