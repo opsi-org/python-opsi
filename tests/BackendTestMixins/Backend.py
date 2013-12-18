@@ -349,7 +349,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         #assert len(hosts) == 0
 
 
-class BackendPerformanceTest(object):
+class BackendPerformanceTestMixin(object):
     def testBackendPerformance(self, clientCount=500, productCount=50):
         return # TODO: make real test
 
