@@ -4,8 +4,7 @@
 from __future__ import absolute_import
 
 from .Audit import AuditTestsMixin
-from .Backend import (BackendTestsMixin, MultiThreadingTestMixin,
-    BackendPerformanceTestMixin)
+from .Backend import BackendTestsMixin
 from .Configs import ConfigTestsMixin, ConfigStateTestsMixin
 from .ExtendedBackend import ExtendedBackendTestsMixin
 from .Groups import GroupTestsMixin, ObjectToGroupTestsMixin
@@ -25,11 +24,4 @@ class BackendTestMixin(ConfigStateTestsMixin, ProductPropertiesTestMixin,
 
     MultiThreadingTestMixin and BackendPerformanceTest are excluded.
     Please inherit them manually if you feel the need.
-    """
-
-
-class CompleteBackendTestMixin(BackendTestMixin,
-    MultiThreadingTestMixin, BackendPerformanceTestMixin):
-    """
-    Class with functional and non-functional backend tests.
     """
