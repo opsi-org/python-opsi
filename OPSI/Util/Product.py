@@ -344,17 +344,24 @@ class ProductPackageFile(object):
 				except Exception as e:
 					raise Exception(u"Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
 
+				mode = None
 				try:
 					if os.path.islink(path):
 						continue
 					elif os.path.isdir(path):
 						logger.debug(u"Setting rights on directory '%s'" % path)
-						os.chmod(path, 02770)
+						mode = 02770
 					elif os.path.isfile(path):
 						logger.debug(u"Setting rights on file '%s'" % path)
-						os.chmod(path, (os.stat(path)[0] | 0660) & 0770)
-				except Exception as e:
-					raise Exception(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, e))
+						mode = (os.stat(path)[0] | 0660) & 0770
+
+					if mode is not None:
+						os.chmod(path, mode)
+				except Exception as error:
+					if mode is None:
+						raise Exception(u"Failed to set access rights of '%s': %s" % (path, error))
+					else:
+						raise Exception(u"Failed to set access rights of '%s' to '%o': %s" % (path, mode, error))
 		except Exception as e:
 			self.cleanup()
 			raise Exception(u"Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
