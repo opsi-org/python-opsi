@@ -45,8 +45,10 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 if (os.name == 'posix'):
-	from ldaptor.protocols import pureldap
-	from ldaptor import ldapfilter
+	with warnings.catch_warnings():
+		warnings.filterwarnings("ignore", category=DeprecationWarning)
+		from ldaptor.protocols import pureldap
+		from ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
 from OPSI.Types import *

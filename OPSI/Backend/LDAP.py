@@ -34,10 +34,14 @@
 
 __version__ = '4.0.0.1'
 
-# Imports
-import ldap, ldap.modlist
-from ldaptor.protocols import pureldap
-from ldaptor import ldapfilter
+import ldap
+import ldap.modlist
+import warnings
+
+with warnings.catch_warnings():
+	warnings.filterwarnings("ignore", category=DeprecationWarning)
+	from ldaptor.protocols import pureldap
+	from ldaptor import ldapfilter
 
 # OPSI imports
 from OPSI.Logger import *
