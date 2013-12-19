@@ -1,35 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = =
-   =   opsi python library - Cache   =
-   = = = = = = = = = = = = = = = = = =
+opsi python library - Cache
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+Copyright (C) 2010-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
 import codecs
@@ -313,9 +311,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			password = blowfishDecrypt(opsiHostKey, password)
 		)
 		auditHardwareConfig = self._masterBackend.auditHardware_getConfig()
-		f = codecs.open(self._auditHardwareConfigFile, 'w', 'utf8')
-		result = f.write(json.dumps(auditHardwareConfig))
-		f.close()
+		with codecs.open(self._auditHardwareConfigFile, 'w', 'utf8') as f:
+			f.write(json.dumps(auditHardwareConfig))
+
 		self._workBackend._setAuditHardwareConfig(auditHardwareConfig)
 		self._workBackend.backend_createBase()
 
@@ -334,27 +332,26 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _cacheBackendInfo(self, backendInfo):
-		f = codecs.open(self._opsiModulesFile, 'w', 'utf-8')
-		modules = backendInfo['modules']
-		helpermodules = backendInfo['realmodules']
-		for (module, state) in modules.items():
-			if helpermodules in ('customer', 'expires'):
-				continue
-			if helpermodules.has_key(module):
-				state = helpermodules[module]
-			else:
-				if state:
-					state = 'yes'
+		with codecs.open(self._opsiModulesFile, 'w', 'utf-8') as f:
+			modules = backendInfo['modules']
+			helpermodules = backendInfo['realmodules']
+			for (module, state) in modules.items():
+				if helpermodules in ('customer', 'expires'):
+					continue
+				if helpermodules.has_key(module):
+					state = helpermodules[module]
 				else:
-					state = 'no'
-			f.write('%s = %s\n' % (module.lower(), state))
-		f.write('customer = %s\n' % modules.get('customer', ''))
-		f.write('expires = %s\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))
-		f.write('signature = %s\n' % modules.get('signature', ''))
-		f.close()
-		f = codecs.open(self._opsiVersionFile, 'w', 'utf-8')
-		f.write(backendInfo.get('opsiVersion', '').strip())
-		f.close()
+					if state:
+						state = 'yes'
+					else:
+						state = 'no'
+				f.write('%s = %s\n' % (module.lower(), state))
+			f.write('customer = %s\n' % modules.get('customer', ''))
+			f.write('expires = %s\n' % modules.get('expires', time.strftime("%Y-%m-%d", time.localtime(time.time()))))
+			f.write('signature = %s\n' % modules.get('signature', ''))
+
+		with codecs.open(self._opsiVersionFile, 'w', 'utf-8') as f:
+			f.write(backendInfo.get('opsiVersion', '').strip())
 
 
 if (__name__ == '__main__'):
