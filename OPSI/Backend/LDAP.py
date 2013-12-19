@@ -43,9 +43,9 @@ with warnings.catch_warnings():
 	from ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import forceBool, forceList, forceObjectClassList, forceUnicode
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI import System
 
 logger = Logger()
@@ -1797,7 +1797,7 @@ class LDAPSession:
 			return
 		try:
 			self._ldap.unbind()
-		except Exception as e:
+		except Exception:
 			pass
 
 	def search(self, baseDn, scope, filter, attributes):
