@@ -1,38 +1,37 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = =
-   =   opsi python library - LDAP    =
-   = = = = = = = = = = = = = = = = = =
+opsi python library - LDAP
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+Copyright (C) 2010-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Erol Ülükmen <e.ueluekmen@uib.de>, Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Erol Ülükmen <e.ueluekmen@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@license: GNU General Public License version 2
 """
 
-__version__ = '4.0.0.1'
+__version__ = '4.0.4.3'
 
 import ldap
 import ldap.modlist
@@ -43,19 +42,15 @@ with warnings.catch_warnings():
 	from ldaptor.protocols import pureldap
 	from ldaptor import ldapfilter
 
-# OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI import System
 
-# Get logger instance
 logger = Logger()
 
-# ======================================================================================================
-# =                                    CLASS LDAPBACKEND                                               =
-# ======================================================================================================
+
 class LDAPBackend(ConfigDataBackend):
 
 	def __init__(self, **kwargs):
@@ -440,11 +435,6 @@ class LDAPBackend(ConfigDataBackend):
 		self._ldap = LDAPSession(**kwargs)
 		self._ldap.connect()
 
-
-	# -------------------------------------------------
-	# -     HELPERS                                   -
-	# -------------------------------------------------
-
 	def _objectFilterToLDAPFilter(self, filter):
 
 		ldapFilter = None
@@ -555,7 +545,6 @@ class LDAPBackend(ConfigDataBackend):
 		if ldapobj.exists(self._ldap):
 			ldapobj.deleteFromDirectory(self._ldap, recursive = True)
 
-
 	def backend_createBase(self):
 		ConfigDataBackend.backend_createBase(self)
 
@@ -573,14 +562,12 @@ class LDAPBackend(ConfigDataBackend):
 		self._createOrganizationalRole(self._productPropertyStatesContainerDn)
 		#self._createOrganizationalRole(self._objectToGroupsContainerDn)
 
-
 	def backend_exit(self):
 		pass
 
 	def _ldapObjectToOpsiObject(self, ldapObject, attributes=[], ignoreLdapAttributes=[]):
 		'''
-			Method to convert ldap-Object to opsi-Object
-
+		Method to convert ldap-Object to opsi-Object
 		'''
 		self._ldapAttributeToOpsiAttribute
 		self._opsiClassToLdapClasses
@@ -655,9 +642,8 @@ class LDAPBackend(ConfigDataBackend):
 
 	def _opsiObjectToLdapObject(self, opsiObject, dn):
 		'''
-			Method to convert Opsi-Object to ldap-Object
+		Method to convert Opsi-Object to ldap-Object
 		'''
-
 		objectClasses = []
 
 		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
@@ -707,9 +693,6 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObject.setAttribute(attribute, value)
 		ldapObject.writeToDirectory(self._ldap)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Hosts                                                                                     -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _getHostDn(self, host):
 		ldapFilter = self._objectFilterToLDAPFilter( { 'type': host.getType(),'id': host.id } )
 		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
@@ -871,9 +854,6 @@ class LDAPBackend(ConfigDataBackend):
 						else:
 							ldapObj.writeToDirectory(self._ldap)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Configs                                                                                   -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
 
@@ -886,7 +866,6 @@ class LDAPBackend(ConfigDataBackend):
 		else:
 			ldapObject = self._opsiObjectToLdapObject(config, dn)
 			ldapObject.writeToDirectory(self._ldap)
-
 
 	def config_updateObject(self, config):
 		ConfigDataBackend.config_updateObject(self, config)
@@ -922,9 +901,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting config: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ConfigStates                                                                              -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
 
@@ -974,9 +950,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting configState: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Products                                                                                  -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
 
@@ -1024,9 +997,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting product: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductProperties                                                                         -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 
@@ -1043,7 +1013,6 @@ class LDAPBackend(ConfigDataBackend):
 		else:
 			ldapObject = self._opsiObjectToLdapObject(productProperty, dn)
 			ldapObject.writeToDirectory(self._ldap)
-
 
 	def productProperty_updateObject(self, productProperty):
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
@@ -1081,9 +1050,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting configState: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductDependencies                                                                       -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 
@@ -1141,9 +1107,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting productDependency: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductOnDepots                                                                           -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 
@@ -1194,9 +1157,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting productOnDepot: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductOnClients                                                                          -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 
@@ -1247,10 +1207,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting productOnClient: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductPropertyStates                                                                     -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		hosts = self.host_getObjects( id = productPropertyState.objectId )
@@ -1306,9 +1262,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting productPropertyState: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Groups                                                                                    -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
 
@@ -1378,9 +1331,6 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting group: %s" % dn)
 				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ObjectToGroups                                                                            -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 
@@ -1523,11 +1473,6 @@ class LDAPBackend(ConfigDataBackend):
 		#		logger.info(u"Deleting objectToGroup: %s" % dn)
 		#		ldapObj.deleteFromDirectory(self._ldap, recursive = True)
 
-
-
-# ======================================================================================================
-# =                                     CLASS LDAPOBJECT                                               =
-# ======================================================================================================
 
 class LDAPObject:
 	''' This class handles ldap objects. '''
@@ -1714,10 +1659,6 @@ class LDAPObject:
 		self.setAttribute(attribute, values)
 
 
-# ======================================================================================================
-# =                                  CLASS LDAPOBJECTSEARCH                                            =
-# ======================================================================================================
-
 class LDAPObjectSearch:
 	''' This class simplifies object searchs. '''
 
@@ -1783,9 +1724,6 @@ class LDAPObjectSearch:
 			return None
 		return LDAPObject(self._dns[0])
 
-# ======================================================================================================
-# =                                     CLASS LDAPSESSION                                              =
-# ======================================================================================================
 
 class LDAPSession:
 	''' This class handles the requests to a ldap server '''
