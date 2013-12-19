@@ -8,6 +8,7 @@ from OPSI.Object import (AuditSoftware, AuditSoftwareOnClient,
 
 from .Clients import ClientsMixin
 from .Products import ProductsMixin
+from .Licenses import LicensesMixin
 
 
 class AuditSoftwareMixin(ProductsMixin):
@@ -71,6 +72,8 @@ class AuditSoftwareMixin(ProductsMixin):
 
 
     def setUpAuditSoftwareToLicensePools(self):
+        self.setUpLicensePool()
+
         self.auditSoftwareToLicensePool1 = AuditSoftwareToLicensePool(
             name=self.auditSoftware1.name,
             version=self.auditSoftware1.version,
@@ -281,7 +284,7 @@ class AuditHardwareMixin(ClientsMixin):
         ]
 
 class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
-    def testInventoryObjectMethods(self, licenseManagementBackend=False, inventoryHistory=False):
+    def testInventoryObjectMethods(self, licenseManagementBackend=False):
         # AuditSoftwares
         print(u"Testing auditSoftware methods")
         self.setUpAuditSoftwares()
@@ -333,6 +336,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             assert len(auditSoftwareToLicensePools) == len(self.auditSoftwareToLicensePools), u"got: '%s', expected: '%s'" % (
                 auditSoftwareToLicensePools, len(self.auditSoftwareToLicensePools))
 
+    def testAuditSoftwareOnClientsMethods(self):
         # AuditSoftwareOnClients
         print(u"Testing auditSoftwareOnClient methods")
 
@@ -426,30 +430,52 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         assert len(auditHardwares) == len(self.auditHardwares), u"got: '%s', expected: '%s'" % (
             auditHardwares, len(self.auditHardwares))
 
-        self.backend.auditHardware_createObjects(self.auditHardwares)
+        # self.backend.auditHardware_createObjects(self.auditHardwares)
 
-        # AuditHardwareOnHosts
-        print(u"Testing auditHardwareOnHost methods")
+    def testAuditHardwareOnHostMethods(self, licenseManagementBackend=False):
+        # TODO: make it work with inventoryHistory also.
+        # maybe create another setup method and then just change the assertions
+        # depending on what is used.
+        self.setUpAuditSoftwares()
         self.setUpAuditHardwareOnHosts()
 
-        self.backend.auditHardwareOnHost_createObjects(
-            self.auditHardwareOnHosts)
+        self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHosts)
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-            auditHardwareOnHosts, len(self.auditHardwareOnHosts))
+        self.assertEqual(len(auditHardwareOnHosts), len(self.auditHardwareOnHosts),
+            u"Expected {nexpected} but got {n}: {ahoh}".format(
+                nexpected=len(auditHardwareOnHosts),
+                n=len(self.auditHardwareOnHosts),
+                ahoh=auditHardwareOnHosts
+            )
+        )
 
         auditHardwareOnHost4update = self.auditHardwareOnHost4.clone()
         auditHardwareOnHost4update.setLastseen('2000-01-01 01:01:01')
         self.backend.auditHardwareOnHost_insertObject(
             auditHardwareOnHost4update)
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if inventoryHistory:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
-                1, u"got: '%s', expected: '%s'" % (
-                    auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 1)
+
+        print('Using inventory history? {0}'.format(self.CREATES_INVENTORY_HISTORY))
+        if self.CREATES_INVENTORY_HISTORY:
+            self.assertEqual(
+                len(self.auditHardwareOnHosts) + 1,
+                len(auditHardwareOnHosts),
+                'Expected {nexpected} but got {actual}: {items}'.format(
+                    actual=len(auditHardwareOnHosts),
+                    nexpected=len(self.auditHardwareOnHosts) + 1,
+                    items=auditHardwareOnHosts
+                )
+            )
         else:
-            assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
-                auditHardwareOnHosts, len(self.auditHardwareOnHosts))
+            self.assertEqual(
+                len(self.auditHardwareOnHosts),
+                len(auditHardwareOnHosts),
+                'Expected {nexpected} but got {actual}: {items}'.format(
+                    actual=len(auditHardwareOnHosts),
+                    nexpected=len(self.auditHardwareOnHosts),
+                    items=auditHardwareOnHosts
+                )
+            )
 
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects(
             lastseen='2000-01-01 01:01:01')
@@ -460,7 +486,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.backend.auditHardwareOnHost_insertObject(
             auditHardwareOnHost4update)
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if inventoryHistory:
+        if self.CREATES_INVENTORY_HISTORY:
             assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
                 2, u"got: '%s', expected: '%s'" % (
                     auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 2)
@@ -471,7 +497,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.backend.auditHardwareOnHost_insertObject(
             auditHardwareOnHost4update)
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if inventoryHistory:
+        if self.CREATES_INVENTORY_HISTORY:
             assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
                 2, u"got: '%s', expected: '%s'" % (
                     auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 2)
@@ -483,7 +509,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         self.backend.auditHardwareOnHost_insertObject(
             auditHardwareOnHost4update)
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
-        if inventoryHistory:
+        if self.CREATES_INVENTORY_HISTORY:
             assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts) + \
                 3, u"got: '%s', expected: '%s'" % (
                     auditHardwareOnHosts, len(self.auditHardwareOnHosts) + 3)

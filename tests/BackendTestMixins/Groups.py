@@ -35,12 +35,13 @@ class GroupsMixin(object):
             )
             self.groups = [self.group1, self.group2, self.group3, self.group4]
 
+    def createGroupsOnBackend(self):
+        self.backend.group_createObjects(self.groups)
 
 class GroupTestsMixin(GroupsMixin):
     def testGroupMethods(self):
-        self.setUpObjectToGroups()
-
-        self.backend.group_createObjects(self.groups)
+        self.setUpGroups()
+        self.createGroupsOnBackend()
 
         groups = self.backend.group_getObjects()
         assert len(groups) == len(
@@ -103,6 +104,8 @@ class ObjectToGroupsMixin(GroupsMixin):
 class ObjectToGroupTestsMixin(ObjectToGroupsMixin):
         def testObjectToGroupMethods(self):
             self.setUpObjectToGroups()
+            self.createHostsOnBackend()
+            self.createGroupsOnBackend()
 
             self.backend.objectToGroup_createObjects(self.objectToGroups)
 

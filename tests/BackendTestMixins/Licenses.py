@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 from OPSI.Object import (LicenseContract, RetailSoftwareLicense,
     OEMSoftwareLicense, VolumeSoftwareLicense, ConcurrentSoftwareLicense,
     LicensePool, SoftwareLicenseToLicensePool, LicenseOnClient)
 
+from .Clients import ClientsMixin
+from .Products import ProductsMixin
 
-class LicensesMixin(object):
+
+class LicensesMixin(ClientsMixin, ProductsMixin):
     def setUpLicenseContracts(self):
         self.licenseContract1 = LicenseContract(
             id=u'license contract 1',
@@ -30,6 +35,10 @@ class LicensesMixin(object):
         self.licenseContracts = [self.licenseContract1, self.licenseContract2]
 
     def setUpSoftwareLicenses(self):
+        self.setUpLicenseContracts()
+        self.setUpClients()
+        self.createHostsOnBackend()
+
         self.softwareLicense1 = RetailSoftwareLicense(
             id=u'software license 1',
             licenseContractId=self.licenseContract1.getId(),
@@ -67,6 +76,9 @@ class LicensesMixin(object):
         ]
 
     def setUpLicensePool(self):
+        self.setUpProducts()
+        self.createProductsOnBackend()
+
         self.licensePool1 = LicensePool(
             id=u'license_pool_1',
             description=u'licenses for product1',
@@ -81,6 +93,9 @@ class LicensesMixin(object):
         self.licensePools = [self.licensePool1, self.licensePool2]
 
     def setUpSoftwareLicenseToLicensePools(self):
+        self.setUpSoftwareLicenses()
+        self.setUpLicensePool()
+
         self.softwareLicenseToLicensePool1 = SoftwareLicenseToLicensePool(
             softwareLicenseId=self.softwareLicense1.getId(),
             licensePoolId=self.licensePool1.getId(),
@@ -112,6 +127,8 @@ class LicensesMixin(object):
         ]
 
     def setUpLicenseOnClients(self):
+        self.setUpSoftwareLicenseToLicensePools()
+
         self.licenseOnClient1 = LicenseOnClient(
             softwareLicenseId=self.softwareLicenseToLicensePool1.getSoftwareLicenseId(),
             licensePoolId=self.softwareLicenseToLicensePool1.getLicensePoolId(),
@@ -131,11 +148,8 @@ class LicensesMixin(object):
 
 
 class LicensesTestMixin(LicensesMixin):
-    def testLicenseManagementObjectMethods(self):
+    def testLicenseContractMethods(self):
         self.configureBackendOptions()
-
-        # LicenseContracts
-        print(u"Testing licenseContract methods")
         self.setUpLicenseContracts()
 
         self.backend.licenseContract_createObjects(self.licenseContracts)
@@ -143,17 +157,20 @@ class LicensesTestMixin(LicensesMixin):
         licenseContracts = self.backend.licenseContract_getObjects()
         self.assertEqual(len(licenseContracts), len(self.licenseContracts))
 
-        # SoftwareLicenses
-        print(u"Testing softwareLicense methods")
+    def testSoftwareLicenseMethods(self):
+        self.configureBackendOptions()
         self.setUpSoftwareLicenses()
+        self.backend.licenseContract_createObjects(self.licenseContracts)
+
         self.backend.softwareLicense_createObjects(self.softwareLicenses)
 
         softwareLicenses = self.backend.softwareLicense_getObjects()
         assert len(softwareLicenses) == len(self.softwareLicenses), u"got: '%s', expected: '%s'" % (
             softwareLicenses, self.softwareLicenses)
 
-        # LicensePools
-        print(u"Testing licensePool methods")
+    def testLicensePoolMethods(self):
+        self.configureBackendOptions()
+        self.setUpLicensePool()
 
         self.backend.licensePool_createObjects(self.licensePools)
 
@@ -187,8 +204,12 @@ class LicensesTestMixin(LicensesMixin):
         assert len(licensePools) == 0, u"got: '%s', expected: '%s'" % (
             licensePools, 0)
 
-        # SoftwareLicenseToLicensePools
-        print(u"Testing softwareLicenseToLicensePool methods")
+    def testSoftwareLicenseToLicensePoolMethods(self):
+        self.configureBackendOptions()
+        self.setUpSoftwareLicenseToLicensePools()
+        self.backend.licenseContract_createObjects(self.licenseContracts)
+        self.backend.softwareLicense_createObjects(self.softwareLicenses)
+        self.backend.licensePool_createObjects(self.licensePools)
 
         self.backend.softwareLicenseToLicensePool_createObjects(
             self.softwareLicenseToLicensePools)
@@ -198,8 +219,15 @@ class LicensesTestMixin(LicensesMixin):
         assert len(softwareLicenseToLicensePools) == len(self.softwareLicenseToLicensePools), u"got: '%s', expected: '%s'" % (
             softwareLicenseToLicensePools, len(self.softwareLicenseToLicensePools))
 
-        # LicenseOnClients
-        print(u"Testing licenseOnClient methods")
+    def testLicenseOnClientMethods(self):
+        self.configureBackendOptions()
+        self.setUpLicenseOnClients()
+
+        self.backend.licenseContract_createObjects(self.licenseContracts)
+        self.backend.softwareLicense_createObjects(self.softwareLicenses)
+        self.backend.licensePool_createObjects(self.licensePools)
+        self.backend.softwareLicenseToLicensePool_createObjects(
+            self.softwareLicenseToLicensePools)
 
         self.backend.licenseOnClient_createObjects(self.licenseOnClients)
 

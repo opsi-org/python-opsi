@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+"""
+Backend configuration for tests.
+
+Please adjust this file to your settings and rename it to ``config.py``
+
+**DO NOT USE YOUR PRODUCTION SETTINGS HERE**
+"""
+
+# Configuration for the MySQL backend.
+# This accepts the same data as can be found in your
+# /etc/opsi/backends/mysql.conf but you should not use that database
+# for your tests because the tests will delete
+MySQLconfiguration = {
+	"address": u"localhost",
+	"database": u"opsi",
+	"username": u"opsi",
+	"password": u"someRandomPassw0rd",
+	"databaseCharset": "utf8",
+	"connectionPoolSize": 20,
+	"connectionPoolMaxOverflow": 10,
+	"connectionPoolTimeout": 30
+}

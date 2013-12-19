@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 4
 
    OPSI
+   tests
 
 
 Indices and tables

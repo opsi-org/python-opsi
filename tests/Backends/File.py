@@ -16,6 +16,7 @@ from . import BackendMixin
 
 class FileBackendMixin(BackendMixin):
     BACKEND_SUBFOLDER = 'data'
+    CREATES_INVENTORY_HISTORY = False
 
     def setUpBackend(self):
         self._fileBackendConfig = {}
