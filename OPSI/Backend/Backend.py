@@ -41,6 +41,7 @@ import new
 import os
 import threading
 import types
+import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
 
