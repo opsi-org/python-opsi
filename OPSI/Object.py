@@ -2843,7 +2843,6 @@ class AuditHardwareOnHost(Relationship):
 				else:
 					kwargs[attribute] = None
 
-
 		if self.hardwareAttributes.get(hardwareClass):
 			for (attribute, value) in kwargs.items():
 				attrType = self.hardwareAttributes[hardwareClass].get(attribute)
@@ -2897,7 +2896,6 @@ class AuditHardwareOnHost(Relationship):
 			self.deviceId = forceHardwareDeviceId(self.deviceId)
 		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
 			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
-
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
@@ -2971,9 +2969,7 @@ class AuditHardwareOnHost(Relationship):
 		return attributes
 
 	def serialize(self):
-		hash = self.toHash()
-		#hash['ident'] = self.getIdent()
-		return hash
+		return self.toHash()
 
 	@staticmethod
 	def fromHash(hash):
@@ -2991,13 +2987,18 @@ class AuditHardwareOnHost(Relationship):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
 	def __unicode__(self):
-		res = u"<%s hostId '%s'" % (self.getType(), self.hostId)
+		additional = []
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			res += u", hardwareClass '%s'" % hardwareClass
+			additional.append(u"hardwareClass='{0}'".format(hardwareClass))
 		if hasattr(self, 'name'):
-			res += u", name '%s'" % self.name
-		return res + u">"
+			additional.append(u"name='{0}'".format(self.name))
+
+		return u"<{type} hostId='{host}'{additional}>".format(
+			type=self.getType(),
+			host=self.hostId,
+			additional=' {0}'.format(', '.join(additional)) if additional else ''
+		)
 
 
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
