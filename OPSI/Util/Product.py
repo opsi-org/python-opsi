@@ -51,7 +51,7 @@ from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
 	DEFAULT_CLIENT_DATA_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except:
+except Exception:
 	DEFAULT_CLIENT_DATA_GROUP = u'pcpatch'
 
 DEFAULT_TMP_DIR = u'/tmp'
@@ -62,8 +62,10 @@ PACKAGE_SCRIPT_TIMEOUT = 600
 
 logger = Logger()
 
+
 def _(string):
 	return string
+
 
 class ProductPackageFile(object):
 
