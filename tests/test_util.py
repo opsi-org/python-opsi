@@ -4,8 +4,8 @@
 import random
 import unittest
 
-from OPSI.Util import (ipAddressInNetwork, objectToHtml, flattenSequence,
-    formatFileSize, randomString)
+from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
+    ipAddressInNetwork, objectToHtml, randomString)
 from OPSI.Object import LocalbootProduct
 
 
@@ -69,6 +69,11 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(10, len(randomString(10)))
         self.assertNotEqual('', randomString(1).strip())
         self.assertEqual('', randomString(0).strip())
+
+
+class CompareVersionTestCase(unittest.TestCase):
+    def testComparingVersionsOfSameSize(self):
+        self.assertTrue(compareVersions('1.0', '<', '2.0'))
 
 
 if __name__ == '__main__':
