@@ -402,6 +402,13 @@ def objectToHtml(obj, level=0):
 
 
 def compareVersions(v1, condition, v2):
+	if not condition:
+		condition = u'=='
+	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
+		raise Exception(u"Bad condition '%s'" % condition)
+	if (condition == u'='):
+		condition = u'=='
+
 	v1 = forceUnicode(v1)
 	v2 = forceUnicode(v2)
 
@@ -409,13 +416,6 @@ def compareVersions(v1, condition, v2):
 		v1 = v1[:v1.find("~")]
 	if "~" in v2:
 		v2 = v2[:v2.find("~")]
-
-	if not condition:
-		condition = u'=='
-	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
-		raise Exception(u"Bad condition '%s'" % condition)
-	if (condition == u'='):
-		condition = u'=='
 
 	v1ProductVersion = u'0'
 	v1PackageVersion = u'0'
@@ -471,14 +471,18 @@ def compareVersions(v1, condition, v2):
 						cv2 = match.group(1)
 						v2p[i] = match.group(2)
 
-				if (cv1 == u''): cv1 = chr(1)
-				if (cv2 == u''): cv2 = chr(1)
+				if (cv1 == u''):
+					cv1 = chr(1)
+				if (cv2 == u''):
+					cv2 = chr(1)
 				if (cv1 == cv2):
 					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
 					continue
 
-				if type(cv1) is not int: cv1 = u"'%s'" % cv1
-				if type(cv2) is not int: cv2 = u"'%s'" % cv2
+				if type(cv1) is not int:
+					cv1 = u"'%s'" % cv1
+				if type(cv2) is not int:
+					cv2 = u"'%s'" % cv2
 
 				b = eval( u"%s %s %s" % (cv1, condition, cv2) )
 				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
