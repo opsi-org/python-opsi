@@ -88,6 +88,10 @@ class CompareVersionTestCase(unittest.TestCase):
         self.assertRaises(Exception, compareVersions, '1', '<>', '2')
         self.assertRaises(Exception, compareVersions, '1', '!=', '2')
 
+    def testIgnoringVersionsWithWaveInThem(self):
+        self.assertTrue(compareVersions('1.0~20131212', '<', '2.0~20120101'))
+        self.assertTrue(compareVersions('1.0~20131212', '==', '1.0~20120101'))
+
 
 if __name__ == '__main__':
     unittest.main()
