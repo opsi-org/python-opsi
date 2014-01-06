@@ -21,16 +21,9 @@
 
 from __future__ import absolute_import
 
-from functools import wraps
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from . import BackendMixin
-
-try:
-    from unittest import SkipTest
-except ImportError:
-    # Running Python < 2.7
-    SkipTest = None
 
 try:
     from .config import MySQLconfiguration
@@ -38,34 +31,14 @@ except ImportError:
     MySQLconfiguration = None
 
 
-def skipTest(condition, reason):
-    def skipWrapper(function):
-        @wraps(function)
-        def returnedWrapper(*args, **kwargs):
-            if not condition:
-                return function(*args, **kwargs)
-
-            if SkipTest is not None:
-                raise SkipTest(reason)
-            else:
-                # def nothingFunc(*args, **kwargs):
-                print('Skipping test: {0}'.format(function.func_name))
-
-                # return nothingFunc(*args, **kwargs)
-
-        return  returnedWrapper
-
-    return skipWrapper
-
-# self.backendFixture.licenseManagement # war das True?
-#     inventoryHistory = True
-
-
 class MySQLBackendMixin(BackendMixin):
+    """
+    Backend for the use of a MySQL backend.
+    Please make sure that MySQLconfiguration holds a valid configuration.
+    """
 
     CREATES_INVENTORY_HISTORY = True
 
-    @skipTest(not MySQLconfiguration, "No MySQL configuration given.")
     def setUpBackend(self):
         self.backend = ExtendedConfigDataBackend(MySQLBackend(**MySQLconfiguration))
         self.backend.backend_createBase()

@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
-from Backends.MySQL import MySQLBackendMixin
+import Backends.MySQL as MySQLBackend
 from BackendTestMixins import BackendTestMixin
-# from BackendTestMixins import (ConfigStateTestsMixin, ProductPropertiesTestMixin,
-#     ProductDependenciesTestMixin, AuditTestsMixin,
-#     ConfigTestsMixin, ProductsTestMixin, ProductsOnClientTestsMixin,
-#     ProductsOnDepotTestsMixin, ProductPropertyStateTestsMixin, GroupTestsMixin,
-#     ObjectToGroupTestsMixin, ExtendedBackendTestsMixin, BackendTestsMixin)
 
 
-class MySQLBackendTestCase(unittest.TestCase, MySQLBackendMixin, BackendTestMixin):
+@unittest.skipIf(not MySQLBackend.MySQLconfiguration,
+    'no MySQL backend configuration given.')
+class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, BackendTestMixin):
     """
     Testing the MySQL backend.
 

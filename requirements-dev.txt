@@ -1,2 +1,2 @@
-testtools
-fixtures
+-r requirements.txt  # To include everything in that file.
+unittest2  # If testing with Python 2.6
