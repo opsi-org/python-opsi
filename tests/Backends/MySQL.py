@@ -45,11 +45,11 @@ def skipTest(condition, reason):
             if not condition:
                 return function(*args, **kwargs)
 
-            if skipTest is not None:
+            if SkipTest is not None:
                 raise SkipTest(reason)
             else:
                 # def nothingFunc(*args, **kwargs):
-                print('Skipping test: {0}')
+                print('Skipping test: {0}'.format(function.func_name))
 
                 # return nothingFunc(*args, **kwargs)
 
