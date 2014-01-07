@@ -38,6 +38,7 @@ import os
 import re
 import StringIO
 import threading
+import time
 
 if (os.name == 'posix'):
 	import fcntl
@@ -49,11 +50,15 @@ elif (os.name == 'nt'):
 	import pywintypes
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
+	forceArchitecture, forceBool, forceDict,
+	forceEmailAddress, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
+	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
+	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
-# Get logger instance
 logger = Logger()
 
 
@@ -1177,7 +1182,6 @@ class TxtSetupOemFile(ConfigFile):
 				self._files.append({ 'fileType': fileType, 'diskName': diskName, 'filename': filename, 'componentName': componentName, 'componentId': componentId, 'optionName': optionName })
 		logger.debug(u"Found files: %s" % self._files)
 
-
 		# Search for configs
 		logger.info(u"Searching for configs")
 		for (section, lines) in sections.items():
@@ -1305,6 +1309,7 @@ class ZsyncFile(LockableFile):
 		f.write(self._data)
 		f.close()
 
+
 class DHCPDConf_Component(object):
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
@@ -1361,6 +1366,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 
 	def asHash(self):
 		return { self.key: self.value }
+
 
 class DHCPDConf_Option(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
