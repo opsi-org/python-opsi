@@ -57,8 +57,13 @@ elif (os.name == 'nt'):
 
 from OPSI.Logger import Logger
 from OPSI.Object import *
-from OPSI.Types import *
-from OPSI.Util.File import *
+from OPSI.Types import (BackendBadValueError, forceActionRequest, forceBool,
+	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
+	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
+	forcePackageVersion, forceProductId, forceProductPriority,
+	forceProductPropertyType, forceProductType, forceProductVersion,
+	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
+from OPSI.Util.File import ConfigFile, IniFile, TextFile
 from OPSI.Util import md5sum, toJson, fromJson
 
 logger = Logger()
@@ -430,9 +435,12 @@ class PackageControlFile(TextFile):
 			if (sectionType == 'package' and key in \
 					['version', 'depends', 'incremental']):
 				option = key
-				if   (key == 'version'):     value = forceUnicodeLower(value)
-				elif (key == 'depends'):     value = forceUnicodeLower(value)
-				elif (key == 'incremental'): value = forceBool(value)
+				if (key == 'version'):
+					value = forceUnicodeLower(value)
+				elif (key == 'depends'):
+					value = forceUnicodeLower(value)
+				elif (key == 'incremental'):
+					value = forceBool(value)
 
 			elif (sectionType == 'product' and key in \
 					['id', 'type', 'name', 	'description', 'advice',
@@ -441,24 +449,42 @@ class PackageControlFile(TextFile):
 					 'setupscript', 'uninstallscript', 'updatescript',
 					 'alwaysscript', 'oncescript', 'customscript', 'userloginscript']):
 				option = key
-				if   (key == 'id'):                value = forceProductId(value)
-				elif (key == 'type'):              value = forceProductType(value)
-				elif (key == 'name'):              value = forceUnicode(value)
-				elif (key == 'description'):       value = forceUnicode(value)
-				elif (key == 'advice'):            value = forceUnicode(value)
-				elif (key == 'version'):           value = forceProductVersion(value)
-				elif (key == 'packageversion'):    value = forcePackageVersion(value)
-				elif (key == 'priority'):          value = forceProductPriority(value)
-				elif (key == 'licenserequired'):   value = forceBool(value)
-				elif (key == 'productclasses'):    value = forceUnicodeLower(value)
-				elif (key == 'pxeconfigtemplate'): value = forceFilename(value)
-				elif (key == 'setupscript'):       value = forceFilename(value)
-				elif (key == 'uninstallscript'):   value = forceFilename(value)
-				elif (key == 'updatescript'):      value = forceFilename(value)
-				elif (key == 'alwaysscript'):      value = forceFilename(value)
-				elif (key == 'oncescript'):        value = forceFilename(value)
-				elif (key == 'customscript'):      value = forceFilename(value)
-				elif (key == 'userloginscript'):   value = forceFilename(value)
+				if (key == 'id'):
+					value = forceProductId(value)
+				elif (key == 'type'):
+					value = forceProductType(value)
+				elif (key == 'name'):
+					value = forceUnicode(value)
+				elif (key == 'description'):
+					value = forceUnicode(value)
+				elif (key == 'advice'):
+					value = forceUnicode(value)
+				elif (key == 'version'):
+					value = forceProductVersion(value)
+				elif (key == 'packageversion'):
+					value = forcePackageVersion(value)
+				elif (key == 'priority'):
+					value = forceProductPriority(value)
+				elif (key == 'licenserequired'):
+					value = forceBool(value)
+				elif (key == 'productclasses'):
+					value = forceUnicodeLower(value)
+				elif (key == 'pxeconfigtemplate'):
+					value = forceFilename(value)
+				elif (key == 'setupscript'):
+					value = forceFilename(value)
+				elif (key == 'uninstallscript'):
+					value = forceFilename(value)
+				elif (key == 'updatescript'):
+					value = forceFilename(value)
+				elif (key == 'alwaysscript'):
+					value = forceFilename(value)
+				elif (key == 'oncescript'):
+					value = forceFilename(value)
+				elif (key == 'customscript'):
+					value = forceFilename(value)
+				elif (key == 'userloginscript'):
+					value = forceFilename(value)
 
 			elif (sectionType == 'windows' and key in \
 					['softwareids']):
@@ -469,25 +495,40 @@ class PackageControlFile(TextFile):
 					['action', 'requiredproduct', 'requiredproductversion', 'requiredpackageversion',
 					 'requiredclass', 'requiredstatus', 'requiredaction', 'requirementtype']):
 				option = key
-				if   (key == 'action'):                 value = forceActionRequest(value)
-				elif (key == 'requiredproduct'):        value = forceProductId(value)
-				elif (key == 'requiredproductversion'): value = forceProductVersion(value)
-				elif (key == 'requiredpackageversion'): value = forcePackageVersion(value)
-				elif (key == 'requiredclass'):          value = forceUnicodeLower(value)
-				elif (key == 'requiredstatus'):         value = forceInstallationStatus(value)
-				elif (key == 'requiredaction'):         value = forceActionRequest(value)
-				elif (key == 'requirementtype'):        value = forceRequirementType(value)
+				if (key == 'action'):
+					value = forceActionRequest(value)
+				elif (key == 'requiredproduct'):
+					value = forceProductId(value)
+				elif (key == 'requiredproductversion'):
+					value = forceProductVersion(value)
+				elif (key == 'requiredpackageversion'):
+					value = forcePackageVersion(value)
+				elif (key == 'requiredclass'):
+					value = forceUnicodeLower(value)
+				elif (key == 'requiredstatus'):
+					value = forceInstallationStatus(value)
+				elif (key == 'requiredaction'):
+					value = forceActionRequest(value)
+				elif (key == 'requirementtype'):
+					value = forceRequirementType(value)
 
 			elif (sectionType == 'productproperty' and key in \
 					['type', 'name', 'default', 'values', 'description', 'editable', 'multivalue']):
 				option = key
-				if   (key == 'type'):        value = forceProductPropertyType(value)
-				elif (key == 'name'):        value = forceUnicodeLower(value)
-				elif (key == 'default'):     value = forceUnicode(value)
-				elif (key == 'values'):      value = forceUnicode(value)
-				elif (key == 'description'): value = forceUnicode(value)
-				elif (key == 'editable'):    value = forceBool(value)
-				elif (key == 'multivalue'):  value = forceBool(value)
+				if (key == 'type'):
+					value = forceProductPropertyType(value)
+				elif (key == 'name'):
+					value = forceUnicodeLower(value)
+				elif (key == 'default'):
+					value = forceUnicode(value)
+				elif (key == 'values'):
+					value = forceUnicode(value)
+				elif (key == 'description'):
+					value = forceUnicode(value)
+				elif (key == 'editable'):
+					value = forceBool(value)
+				elif (key == 'multivalue'):
+					value = forceBool(value)
 
 			else:
 				value = forceUnicode(line)
@@ -589,24 +630,23 @@ class PackageControlFile(TextFile):
 			raise Exception(u"Error in control file '%s': unknown product type '%s'" % (self._filename, product.get('type')))
 
 		self._product = Class(
-			id                 = product.get('id'),
-			name               = product.get('name'),
-			productVersion     = product.get('version'),
-			packageVersion     = self._sections.get('package',[{}])[0].get('version') or product.get('packageversion'),
-			licenseRequired    = product.get('licenserequired'),
-			setupScript        = product.get('setupscript'),
-			uninstallScript    = product.get('uninstallscript'),
-			updateScript       = product.get('updatescript'),
-			alwaysScript       = product.get('alwaysscript'),
-			onceScript         = product.get('oncescript'),
-			customScript       = product.get('customscript'),
-			priority           = product.get('priority'),
-			description        = product.get('description'),
-			advice             = product.get('advice'),
-			productClassIds    = product.get('productclasses'),
-			windowsSoftwareIds = self._sections.get('windows',[{}])[0].get('softwareids', []),
-			changelog          = self._sections.get('changelog')
-
+			id=product.get('id'),
+			name=product.get('name'),
+			productVersion=product.get('version'),
+			packageVersion=self._sections.get('package',[{}])[0].get('version') or product.get('packageversion'),
+			licenseRequired=product.get('licenserequired'),
+			setupScript=product.get('setupscript'),
+			uninstallScript=product.get('uninstallscript'),
+			updateScript=product.get('updatescript'),
+			alwaysScript=product.get('alwaysscript'),
+			onceScript=product.get('oncescript'),
+			customScript=product.get('customscript'),
+			priority=product.get('priority'),
+			description=product.get('description'),
+			advice=product.get('advice'),
+			productClassIds=product.get('productclasses'),
+			windowsSoftwareIds=self._sections.get('windows',[{}])[0].get('softwareids', []),
+			changelog=self._sections.get('changelog')
 		)
 		if isinstance(self._product, NetbootProduct) and not product.get('pxeconfigtemplate') is None:
 			self._product.setPxeConfigTemplate(product.get('pxeconfigtemplate'))
@@ -619,16 +659,16 @@ class PackageControlFile(TextFile):
 		for productDependency in self._sections.get('productdependency', []):
 			self._productDependencies.append(
 				ProductDependency(
-					productId                  = self._product.getId(),
-					productVersion             = self._product.getProductVersion(),
-					packageVersion             = self._product.getPackageVersion(),
-					productAction              = productDependency.get('action'),
-					requiredProductId          = productDependency.get('requiredproduct'),
-					requiredProductVersion     = productDependency.get('requiredproductversion'),
-					requiredPackageVersion     = productDependency.get('requiredpackageversion'),
-					requiredAction             = productDependency.get('requiredaction'),
-					requiredInstallationStatus = productDependency.get('requiredstatus'),
-					requirementType            = productDependency.get('requirementtype')
+					productId=self._product.getId(),
+					productVersion=self._product.getProductVersion(),
+					packageVersion=self._product.getPackageVersion(),
+					productAction=productDependency.get('action'),
+					requiredProductId=productDependency.get('requiredproduct'),
+					requiredProductVersion=productDependency.get('requiredproductversion'),
+					requiredPackageVersion=productDependency.get('requiredpackageversion'),
+					requiredAction=productDependency.get('requiredaction'),
+					requiredInstallationStatus=productDependency.get('requiredstatus'),
+					requirementType=productDependency.get('requirementtype')
 				)
 			)
 			self._productDependencies[-1].setDefaults()
@@ -645,12 +685,12 @@ class PackageControlFile(TextFile):
 				raise Exception(u"Error in control file '%s': unknown product property type '%s'" % (self._filename, productProperty.get('type')))
 			self._productProperties.append(
 				Class(
-					productId      = self._product.getId(),
-					productVersion = self._product.getProductVersion(),
-					packageVersion = self._product.getPackageVersion(),
-					propertyId     = productProperty.get('name', u''),
-					description    = productProperty.get('description', u''),
-					defaultValues  = productProperty.get('default', [])
+					productId=self._product.getId(),
+					productVersion=self._product.getProductVersion(),
+					packageVersion=self._product.getPackageVersion(),
+					propertyId=productProperty.get('name', u''),
+					description=productProperty.get('description', u''),
+					defaultValues=productProperty.get('default', [])
 				)
 			)
 			if isinstance(self._productProperties[-1], UnicodeProductProperty):
