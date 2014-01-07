@@ -354,11 +354,17 @@ class Repository:
 			logger.debug('Filesize is: {0}'.format(fileSize))
 
 			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
+				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
+				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
+				logger.debug2("bytes: '%d'" % bytes)
+				logger.debug2("buf: %s" % buf)
 				remaining_bytes = fileSize - self._bytesTransfered
 				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
 					buf = src.read(remaining_bytes)
-				else:
+				elif (remaining_bytes > 0):
 					buf = src.read(self._bufferSize)
+				else:
+					break
 				read = len(buf)
 				if (read > 0):
 					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):

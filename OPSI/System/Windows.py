@@ -172,6 +172,11 @@ def getOpsiHotfixName():
 				os = u'win8'
 			else:
 				os = u'win8-win2012'
+		elif (minor == 3):
+			if (arch == 'x86'):
+				os = u'win81'
+			else:
+				os = u'win81-win2012r2'
 
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 

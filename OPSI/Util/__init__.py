@@ -273,32 +273,32 @@ def objectToBeautifiedText(obj, level=0):
 	hspace = level*10
 	text = u''
 	if type(obj) is types.ListType:
-		text += u' '*hspace + u'[ \n'
+		text = u'%s%s' % (text, u' '*hspace + u'[ \n')
 		for i in range( len(obj) ):
 			if not type(obj[i]) in (types.DictType, types.ListType):
-				text += u' '*hspace
-			text += objectToBeautifiedText(obj[i], level+1)
+				text = u'%s%s' % (text, u' '*hspace)
+			text = u'%s%s' % (text, objectToBeautifiedText(obj[i], level+1))
 
 			if (i < len(obj)-1):
-				text += u',\n'
-		text += u'\n' + u' '*hspace + u']'
+				text = u"%s%s" % (text, u',\n')
+		text = u'\n%s%s]' % (text, u' '*hspace)
 	elif type(obj) is types.DictType:
-		text += u' '*hspace + u'{ \n'
+		text = u'%s%s{\n' % (text, u' '*hspace)
 		i = 0
 		for (key, value) in obj.items():
-			text += u' '*hspace + u'"' + key + u'" : '
+			text = u'%s%s"%s" : ' % (text, u' '*hspace, key)
 			if type(value) in (types.DictType, types.ListType):
-				text += u'\n'
+				text = u'%s\n' % text
 			text += objectToBeautifiedText(value, level+1)
 
 			if (i < len(obj)-1):
-				text += u',\n'
+				text = u'%s,\n' % text
 			i+=1
-		text += u'\n' + u' '*hspace + u'}'
+		text = u'%s%s\n}' % (text, u' '*hspace) 
 	elif type(obj) is str:
-		text += toJson(forceUnicode(obj))
+		text = u'%s%s' % (text, toJson(forceUnicode(obj)))
 	else:
-		text += toJson(obj)
+		text = u'%s%s' % (text, toJson(obj))
 	return text
 
 
