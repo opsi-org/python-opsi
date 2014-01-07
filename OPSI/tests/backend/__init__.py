@@ -38,12 +38,10 @@ def test_suite():
 	from OPSI.tests.backend import (
 		test_acl,
 		test_modificationtracker,
-		test_sqlite
 		)
 	modules = [
 		test_acl,
 		test_modificationtracker,
-		test_sqlite
 		]
 	suites = map(lambda x: x.test_suite(), modules)
 	return unittest.TestSuite(suites)
