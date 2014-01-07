@@ -57,7 +57,8 @@ elif (os.name == 'nt'):
 
 from OPSI.Logger import Logger
 from OPSI.Object import *
-from OPSI.Types import (BackendBadValueError, forceActionRequest, forceBool,
+from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
+	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
 	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
 	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
 	forcePackageVersion, forceProductId, forceProductPriority,
