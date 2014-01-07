@@ -300,9 +300,8 @@ class Backend:
 	def backend_info(self):
 		opsiVersion = 'unknown'
 		try:
-			f = codecs.open(self._opsiVersionFile, 'r', 'utf-8')
-			opsiVersion = f.readline().strip()
-			f.close()
+			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
+				opsiVersion = f.readline().strip()
 		except Exception as e:
 			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
 
