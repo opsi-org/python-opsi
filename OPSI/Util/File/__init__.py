@@ -1774,7 +1774,7 @@ class DHCPDConfFile(TextFile):
 		hostBlock.removeComponents()
 
 		for (key, value) in parameters.items():
-			parameters[key] = Parameter(-1, None, key, value).asHash()[key]
+			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
 		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
 			if not parameters.has_key(key):
