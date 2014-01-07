@@ -12,7 +12,7 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceProductVersion, forceOpsiHostKey,forceInstallationStatus,
 	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
 	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
-	forceProductType, forceDict)
+	forceProductType, forceDict, forceUniqueList, args)
 
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
@@ -421,3 +421,54 @@ class ForceDictTestCase(unittest.TestCase):
 	def testForcingImpossibleThrowsError(self):
 		self.assertRaises(ValueError, forceDict('asdg'))
 		self.assertRaises(ValueError, forceDict(['asdg', 'asg']))
+
+
+class ForceUniqueListTestCase(unittest.TestCase):
+	def testAfterForcingItemsInListAreUnique(self):
+		self.assertEqual([1], forceUniqueList([1,1]))
+		self.assertEqual([1,2,3], forceUniqueList((1,2,2,3)))
+
+	def testForcingDoesNotChangeOrder(self):
+		self.assertEqual([2,1,3,5,4], forceUniqueList([2,2,1,3,5,4,1]))
+
+
+class ArgsDecoratorTestCase(unittest.TestCase):
+	def testDecoratorArgumentsDefaultToNone(self):
+
+		@args("somearg", "someOtherArg")
+		class SomeClass(object):
+			def __init__(self, **kwargs):
+				pass
+
+		someObj = SomeClass()
+
+		self.assertEquals(None, someObj.somearg)
+		self.assertEquals(None, someObj.someOtherArg)
+
+	def testDecoratorTakesKeywordArguments(self):
+
+		@args("somearg", someOtherArg=forceInt)
+		class SomeOtherClass(object):
+			def __init__(self, **kwargs):
+				pass
+
+		someOtherObj = SomeOtherClass(someOtherArg="5")
+
+		self.assertEquals(None, someOtherObj.somearg, "Expected somearg to be None, but got %s instead" % someOtherObj.somearg)
+		self.assertEquals(5, someOtherObj.someOtherArg, "Expected someOtherArg to be %d, but got %s instead." %(5, someOtherObj.someOtherArg))
+
+	def testDecoratorCreatesPrivateArgs(self):
+
+		@args("_somearg", "_someOtherArg")
+		class SomeClass(object):
+			def __init__(self, **kwargs):
+				pass
+
+		someObj = SomeClass(somearg=5)
+
+		self.assertEquals(5, someObj._somearg, "Expected somearg to be %d, but got %s instead" % (5, someObj._somearg))
+		self.assertEquals(None, someObj._someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj._someOtherArg)
+
+
+if __name__ == '__main__':
+    unittest.main()
