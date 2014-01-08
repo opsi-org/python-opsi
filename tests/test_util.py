@@ -102,6 +102,7 @@ class CompareVersionTestCase(unittest.TestCase):
 
     def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(self):
         self.assertTrue(compareVersions('1.1.0.1', '>', '1.1'))
+        self.assertTrue(compareVersions('1.1', '<', '1.1.0.1'))
 
     def testPackageVersionsAreComparedAswell(self):
         self.assertTrue(compareVersions('1-2', '<', '1-3'))
