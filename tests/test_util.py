@@ -80,7 +80,7 @@ class CompareVersionTestCase(unittest.TestCase):
         self.assertFalse(compareVersions('1', '', '2'))
 
     def testComparingWithOneEqualitySignWork(self):
-        self.assertTrue(compareVersions('1.0', '==', '1.0'))
+        self.assertTrue(compareVersions('1.0', '=', '1.0'))
 
     def testUsingUnknownOperatorFails(self):
         self.assertRaises(Exception, compareVersions, '1', 'asdf', '2')
