@@ -92,6 +92,21 @@ class CompareVersionTestCase(unittest.TestCase):
         self.assertTrue(compareVersions('1.0~20131212', '<', '2.0~20120101'))
         self.assertTrue(compareVersions('1.0~20131212', '==', '1.0~20120101'))
 
+    def testUsingInvalidVersionStringsFails(self):
+        self.assertRaises(Exception, compareVersions, 'abc-1.2.3-4', '==', '1.2.3-4')
+        self.assertRaises(Exception, compareVersions, '1.2.3-4', '==', 'abc-1.2.3-4')
+
+    def testComparingWorksWithLettersInVersionString(self):
+        self.assertTrue(compareVersions('1.0.a', '<', '1.0.b'))
+        self.assertTrue(compareVersions('a.b', '>', 'a.a'))
+
+    def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(self):
+        self.assertTrue(compareVersions('1.1.0.1', '>', '1.1'))
+
+    def testPackageVersionsAreComparedAswell(self):
+        self.assertTrue(compareVersions('1-2', '<', '1-3'))
+        self.assertTrue(compareVersions('1-2.0', '<', '1-2.1'))
+
 
 if __name__ == '__main__':
     unittest.main()
