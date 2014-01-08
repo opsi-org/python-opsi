@@ -294,7 +294,7 @@ def objectToBeautifiedText(obj, level=0):
 			if (i < len(obj)-1):
 				text = u'%s,\n' % text
 			i+=1
-		text = u'%s%s\n}' % (text, u' '*hspace) 
+		text = u'%s%s\n}' % (text, u' '*hspace)
 	elif type(obj) is str:
 		text = u'%s%s' % (text, toJson(forceUnicode(obj)))
 	else:
@@ -402,6 +402,29 @@ def objectToHtml(obj, level=0):
 
 
 def compareVersions(v1, condition, v2):
+	def removePartAfterWave(versionString):
+		if "~" in versionString:
+			return versionString[:versionString.find("~")]
+		else:
+			return versionString
+
+	def splitProductAndPackageVersion(versionString):
+		productVersion = packageVersion = u'0'
+
+		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
+		if not match:
+			raise Exception(u"Bad version string '%s'" % versionString)
+
+		productVersion = match.group(1)
+		if match.group(2):
+			packageVersion = match.group(2)
+
+		return (productVersion, packageVersion)
+
+	def makeEqualLength(first, second):
+		while len(first) < len(second):
+			first.append(u'0')
+
 	if not condition:
 		condition = u'=='
 	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
@@ -409,43 +432,17 @@ def compareVersions(v1, condition, v2):
 	if (condition == u'='):
 		condition = u'=='
 
-	v1 = forceUnicode(v1)
-	v2 = forceUnicode(v2)
+	v1 = removePartAfterWave(forceUnicode(v1))
+	v2 = removePartAfterWave(forceUnicode(v2))
 
-	if "~" in v1:
-		v1 = v1[:v1.find("~")]
-	if "~" in v2:
-		v2 = v2[:v2.find("~")]
-
-	v1ProductVersion = u'0'
-	v1PackageVersion = u'0'
-
-	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v1)
-	if not match:
-		raise Exception(u"Bad version string '%s'" % v1)
-
-	v1ProductVersion = match.group(1)
-	if match.group(2):
-		v1PackageVersion = match.group(2)
-
-	v2ProductVersion = u'0'
-	v2PackageVersion = u'0'
-
-	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v2)
-	if not match:
-		raise Exception(u"Bad version string '%s'" % v2)
-
-	v2ProductVersion = match.group(1)
-	if match.group(2):
-		v2PackageVersion = match.group(2)
+	(v1ProductVersion, v1PackageVersion) = splitProductAndPackageVersion(v1)
+	(v2ProductVersion, v2PackageVersion) = splitProductAndPackageVersion(v2)
 
 	for (v1, v2) in ( (v1ProductVersion, v2ProductVersion), (v1PackageVersion, v2PackageVersion) ):
 		v1p = v1.split(u'.')
 		v2p = v2.split(u'.')
-		while len(v1p) < len(v2p):
-			v1p.append(u'0')
-		while len(v2p) < len(v1p):
-			v2p.append(u'0')
+		makeEqualLength(v1p, v2p)
+		makeEqualLength(v2p, v1p)
 		for i in range(len(v1p)):
 			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
 				cv1 = u''
