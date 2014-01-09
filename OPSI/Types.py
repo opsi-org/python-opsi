@@ -694,6 +694,8 @@ def args(*vars, **typeVars):
 	This is intended to be used as a decorator.
 	Classes using this decorator must explicitly inherit from object or a subclass of object.
 
+	.. code-block:: python
+
 		@args()			#works
 		class Foo(object):
 			pass
