@@ -2,7 +2,7 @@ Source: python-opsi
 Section: opsi
 Priority: optional
 Maintainer: uib GmbH <info@uib.de>
-Build-Depends: gettext, debhelper (>= 7), python-support, python (>=2.5), python-setuptools, lsb-release
+Build-Depends: gettext, debhelper (>= 7), python-support, python (>=2.6), python-setuptools, lsb-release
 XS-Python-Version: >=2.6
 Standards-Version: 3.8.4
 
@@ -10,7 +10,7 @@ Package: python-opsi
 Section: opsi
 Architecture: all
 XB-Python-Version: ${python:Versions}
-Depends: lsb-release, python-twisted-web, python-twisted-conch, python-magic, python-crypto, python-ldap, python-simplejson, python-newt, python-pam, python-openssl | python-pyopenssl, python-support, python-mysqldb, python-sqlalchemy, iproute, duplicity, python-ldaptor, python-m2crypto, lshw, python(>=2.5), ${misc:Depends}, ${python:Depends}
+Depends: lsb-release, python-twisted-web, python-twisted-conch, python-magic, python-crypto, python-ldap, python-simplejson, python-newt, python-pam, python-openssl | python-pyopenssl, python-support, python-mysqldb, python-sqlalchemy, iproute, duplicity, python-ldaptor, python-m2crypto, lshw, python(>=2.6), ${misc:Depends}, ${python:Depends}
 Recommends: cabextract
 Provides: ${python:Provides}
 Description: opsi python library
