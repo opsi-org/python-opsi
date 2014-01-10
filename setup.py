@@ -36,6 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 from setuptools import setup, find_packages
 import os
 
+LANGUAGES = ['de', 'fr', 'da']
 
 VERSION = None
 with open(os.path.join("debian", "changelog")) as changelog:
@@ -119,15 +120,20 @@ else:
 		)
 	)
 
-for language in ('de', 'fr', 'da'):
+for language in LANGUAGES:
+	languageFile = os.path.join('gettext', 'python-opsi_{0}.po'.format(language))
+	if not os.path.exists(languageFile):
+		print("Can't find localisation file {0}. Skipping.".format(languageFile))
+		continue
+
 	output_path = os.path.join('locale', language, 'LC_MESSAGES')
 	if not os.path.exists(output_path):
 		os.makedirs(output_path)
 
 	target_file = os.path.join(output_path, 'python-opsi.mo')
 	exitCode = os.system(
-		'msgfmt --output-file {outputfile} gettext/python-opsi_{language}.po'.format(
-			language=language,
+		'msgfmt --output-file {outputfile} {langFile}'.format(
+			langFile=languageFile,
 			outputfile=target_file
 		)
 	)
