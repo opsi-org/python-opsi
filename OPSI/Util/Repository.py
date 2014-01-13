@@ -29,7 +29,7 @@
 	@license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.4.1'
+__version__ = '4.0.4.2'
 
 import base64
 import httplib
@@ -927,7 +927,7 @@ class HTTPRepository(Repository):
 					if (sbn <= -1):
 						sbn = 0
 					if (ebn <= -1):
-						reb = ''
+						ebn = ''
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 
 				conn.putrequest('GET', source)
