@@ -531,7 +531,7 @@ class JSONRPCBackend(Backend):
 
 					if realmodules.has_key(module):
 						val = realmodules[module]
-						if module = 'mysql':
+						if module == 'mysql':
 							if int(val) + 50 <= hostCount:
 								raise Exception(u"UNDERLICENSED: You have more Clients then licensed in modules file.  Disabling module:")
 							elif int(val) <= hostCount:
