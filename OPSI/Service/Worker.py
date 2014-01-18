@@ -282,14 +282,14 @@ class WorkerOpsi:
 		result.code = responsecode.INTERNAL_SERVER_ERROR
 		try:
 			failure.raiseException()
-		except OpsiAuthenticationError as e:
+		except OpsiAuthenticationError, e:
 			logger.logException(e)
 			result.code = responsecode.UNAUTHORIZED
 			result.headers.setHeader('www-authenticate', [('basic', { 'realm': self.authRealm } )])
-		except OpsiBadRpcError as e:
+		except OpsiBadRpcError, e:
 			logger.logException(e)
 			result.code = responsecode.BAD_REQUEST
-		except Exception as e:
+		except Exception, e:
 			logger.logException(e, LOG_ERROR)
 			logger.error(failure)
 		return result
@@ -300,7 +300,7 @@ class WorkerOpsi:
 		error = u'Unknown error'
 		try:
 			failure.raiseException()
-		except Exception as e:
+		except Exception, e:
 			error = forceUnicode(e)
 		result.stream = stream.IByteStream(stream.IByteStream(error.encode('utf-8')))
 		return result
@@ -330,7 +330,7 @@ class WorkerOpsi:
 					password = u':'.join(parts[1:])
 				user = user.strip()
 				logger.confidential(u"Client supplied username '%s' and password '%s'" % (user, password))
-			except Exception as e:
+			except Exception, e:
 				logger.error(u"Bad Authorization header from '%s': %s" % (self.request.remoteAddr.host, e))
 		return (user, password)
 
@@ -350,6 +350,7 @@ class WorkerOpsi:
 
 	def _getSessionId(self):
 		# Get session id from cookie request header
+		userAgent = self._getUserAgent()
 		sessionId = u''
 		try:
 			for (k, v) in self.request.headers.getAllRawHeaders():
@@ -363,7 +364,7 @@ class WorkerOpsi:
 								sessionId = forceUnicode(value.strip())
 								break
 					break
-		except Exception as e:
+		except Exception, e:
 			logger.error(u"Failed to get cookie from header: %s" % e)
 		return sessionId
 
@@ -382,10 +383,6 @@ class WorkerOpsi:
 		sessionId = self._getSessionId()
 
 		# Get Session object
-		if self.request.headers.hasHeader("x-forwarded-for"):
-			#overloading request because proxy detected
-			self.request.remoteAddr.host = self.request.headers.getRawHeaders("x-forwarded-for")[0]
-
 		self.session = sessionHandler.getSession(sessionId, self.request.remoteAddr.host)
 		if (sessionId == self.session.uid):
 			logger.info(u"Reusing session for client '%s', application '%s'" % (self.request.remoteAddr.host, userAgent))
@@ -399,10 +396,7 @@ class WorkerOpsi:
 			self.session = sessionHandler.getSession()
 
 		# Set ip
-		if self.request.headers.hasHeader("x-forwarded-for"):
-			self.session.ip = self.request.headers.getRawHeaders("x-forwarded-for")[0]
-		else:
-			self.session.ip = self.request.remoteAddr.host
+		self.session.ip = self.request.remoteAddr.host
 
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
@@ -438,7 +432,7 @@ class WorkerOpsi:
 			# Get authorization
 			(self.session.user, self.session.password) = self._getCredentials()
 			self.session.authenticated = True
-		except Exception as e:
+		except Exception, e:
 			logger.logException(e, LOG_INFO)
 			self._freeSession(result)
 			self._getSessionHandler().deleteSession(self.session.uid)
@@ -522,7 +516,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 			rpcs = fromJson(self.query, preventObjectCreation = True)
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
-		except Exception as e:
+		except Exception, e:
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s" % e)
 
 		for rpc in forceList(rpcs):
@@ -564,7 +558,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 				encoding = 'deflate'
 			if ('gzip' in self.request.headers.getHeader('Accept-Encoding')):
 				encoding = 'gzip'
-		except Exception as e:
+		except Exception, e:
 			pass
 		if not encoding:
 			try:
@@ -573,7 +567,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 						if accept.mediaType.startswith('gzip'):
 							encoding = 'gzip'
 							break
-			except Exception as e:
+			except Exception, e:
 				logger.error(u"Failed to get accepted mime types from header: %s" % e)
 
 		if encoding:
@@ -606,7 +600,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		error = u'Unknown error'
 		try:
 			failure.raiseException()
-		except Exception as e:
+		except Exception, e:
 			error = {'class': e.__class__.__name__, 'message': unicode(e)}
 			error = toJson({"id": None, "result": None, "error": error})
 		result.stream = stream.IByteStream(error.encode('utf-8'))
@@ -686,7 +680,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):
 			error = u'Unknown error'
 			try:
 				result.raiseException()
-			except Exception as e:
+			except Exception, e:
 				error = {'class': e.__class__.__name__, 'message': unicode(e)}
 				error = toJson({"id": None, "result": None, "error": error})
 			resultDiv += u'<div class="json">'

@@ -189,7 +189,7 @@ def getCountAndSize(path):
 				(c, s) = getCountAndSize(os.path.join(path, r))
 				count += c
 				size += s
-	except Exception as e:
+	except Exception, e:
 		for hook in hooks:
 			hook.error_getCountAndSize(path, (count, size), e)
 		raise
@@ -269,7 +269,7 @@ def copy(src, dst, progressSubject=None):
 		logger.info(u'Copy done')
 		if progressSubject:
 			progressSubject.setState(size)
-	except Exception as e:
+	except Exception, e:
 		for hook in hooks:
 			hook.error_copy(src, dst, progressSubject, e)
 		raise

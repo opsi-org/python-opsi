@@ -1,33 +1,35 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-opsi python library - Object
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Object    =
+   = = = = = = = = = = = = = = = = = = =
 
-This module is part of the desktop management solution opsi
-(open pc server integration) http://www.opsi.org
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+   Copyright (C) 2006, 2007, 2008 uib GmbH
 
-http://www.uib.de/
+   http://www.uib.de/
 
-All rights reserved.
+   All rights reserved.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-@copyright:	uib GmbH <info@uib.de>
-@author: Jan Schneider <j.schneider@uib.de>
-@license: GNU General Public License version 2
+   @copyright:	uib GmbH <info@uib.de>
+   @author: Jan Schneider <j.schneider@uib.de>
+   @license: GNU General Public License version 2
 """
 
 __version__ = '4.0'
@@ -36,20 +38,7 @@ import inspect
 import types
 
 from OPSI.Logger import Logger
-from OPSI.Types import BackendBadValueError, BackendConfigurationError
-from OPSI.Types import (forceActionProgress, forceActionRequest,
-	forceActionResult, forceArchitecture, forceAuditState, forceBool,
-	forceBoolList, forceBootConfigurationPriority, forceConfigId, forceDict,
-	forceFilename, forceFloat, forceGroupId, forceGroupType,
-	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
-	forceHostId, forceInstallationStatus, forceInt, forceIPAddress,
-	forceLanguageCode,	forceLicenseContractId,	forceLicensePoolId,
-	forceList, forceNetworkAddress, forceObjectId,	forceOpsiHostKey,
-	forceOpsiTimestamp, forcePackageVersion, forceProductId,
-	forceProductIdList, forceProductPriority, forceProductPropertyId,
-	forceProductTargetConfiguration, forceProductType, forceProductVersion,
-	forceRequirementType, forceSoftwareLicenseId, forceUnicode,
-	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
+from OPSI.Types import *
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
 
 logger = Logger()
@@ -140,7 +129,6 @@ def objectsDiffer(obj1, obj2, excludeAttributes = []):
 				return True
 	return False
 
-
 class BaseObject(object):
 	subClasses = {}
 	identSeparator = u';'
@@ -166,7 +154,7 @@ class BaseObject(object):
 				v = getattr(self, attr)
 				if v is None:
 					v = u''
-			except AttributeError:
+			except AttributeError, e:
 				v = u''
 			identValues.append(forceUnicode(v))
 		if returnType in ('list',):
@@ -216,6 +204,9 @@ class BaseObject(object):
 	def isGeneratedDefault(self):
 		return self._isGeneratedDefault
 
+	def __unicode__(self):
+		return u"<%s>" % self.getType()
+
 	def toHash(self):
 		# FIXME: Do we need deepcopy here? slow!
 		#hash = pycopy.deepcopy(self.__dict__)
@@ -254,8 +245,7 @@ class Entity(BaseObject):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Entity'
+		if not hash.has_key('type'): hash['type'] = 'Entity'
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
@@ -287,7 +277,6 @@ class Entity(BaseObject):
 
 BaseObject.subClasses['Entity'] = Entity
 
-
 class Relationship(BaseObject):
 	subClasses = {}
 
@@ -296,8 +285,7 @@ class Relationship(BaseObject):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Relationship'
+		if not hash.has_key('type'): hash['type'] = 'Relationship'
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
@@ -329,7 +317,6 @@ class Relationship(BaseObject):
 		return fromJson(jsonString, 'Relationship')
 
 BaseObject.subClasses['Relationship'] = Relationship
-
 
 class Object(Entity):
 	subClasses = {}
@@ -371,8 +358,7 @@ class Object(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Object'
+		if not hash.has_key('type'): hash['type'] = 'Object'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -383,7 +369,6 @@ class Object(Entity):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Entity.subClasses['Object'] = Object
-
 
 class Host(Object):
 	subClasses = {}
@@ -431,8 +416,7 @@ class Host(Object):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Host'
+		if not hash.has_key('type'): hash['type'] = 'Host'
 		return Object.fromHash(hash)
 
 	@staticmethod
@@ -443,7 +427,6 @@ class Host(Object):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Object.subClasses['Host'] = Host
-
 
 class OpsiClient(Host):
 	subClasses = {}
@@ -499,8 +482,7 @@ class OpsiClient(Host):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'OpsiClient'
+		if not hash.has_key('type'): hash['type'] = 'OpsiClient'
 		return Host.fromHash(hash)
 
 	@staticmethod
@@ -511,7 +493,6 @@ class OpsiClient(Host):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Host.subClasses['OpsiClient'] = OpsiClient
-
 
 class OpsiDepotserver(Host):
 	subClasses = {}
@@ -621,8 +602,7 @@ class OpsiDepotserver(Host):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'):
-			hash['type'] = 'OpsiDepotserver'
+		if not hash.has_key('type'): hash['type'] = 'OpsiDepotserver'
 		return Host.fromHash(hash)
 
 	@staticmethod
@@ -633,7 +613,6 @@ class OpsiDepotserver(Host):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Host.subClasses['OpsiDepotserver'] = OpsiDepotserver
-
 
 class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
@@ -652,8 +631,7 @@ class OpsiConfigserver(OpsiDepotserver):
 
 	@staticmethod
 	def fromHash(hash):
-		if not hash.has_key('type'):
-			hash['type'] = 'OpsiConfigserver'
+		if not hash.has_key('type'): hash['type'] = 'OpsiConfigserver'
 		return OpsiDepotserver.fromHash(hash)
 
 	@staticmethod
@@ -662,7 +640,6 @@ class OpsiConfigserver(OpsiDepotserver):
 
 OpsiDepotserver.subClasses['OpsiConfigserver'] = OpsiConfigserver
 Host.subClasses['OpsiConfigserver'] = OpsiConfigserver
-
 
 class Config(Entity):
 	subClasses = {}
@@ -765,8 +742,7 @@ class Config(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Config'
+		if not hash.has_key('type'): hash['type'] = 'Config'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -777,7 +753,6 @@ class Config(Entity):
 		return u"<%s id '%s'>" % (self.getType(), self.id)
 
 Entity.subClasses['Config'] = Config
-
 
 class UnicodeConfig(Config):
 	subClasses = {}
@@ -804,8 +779,7 @@ class UnicodeConfig(Config):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'UnicodeConfig'
+		if not hash.has_key('type'): hash['type'] = 'UnicodeConfig'
 		return Config.fromHash(hash)
 
 	@staticmethod
@@ -813,7 +787,6 @@ class UnicodeConfig(Config):
 		return fromJson(jsonString, 'UnicodeConfig')
 
 Config.subClasses['UnicodeConfig'] = UnicodeConfig
-
 
 class BoolConfig(Config):
 	subClasses = {}
@@ -842,8 +815,7 @@ class BoolConfig(Config):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'BoolConfig'
+		if not hash.has_key('type'): hash['type'] = 'BoolConfig'
 		return Config.fromHash(hash)
 
 	@staticmethod
@@ -851,7 +823,6 @@ class BoolConfig(Config):
 		return fromJson(jsonString, 'BoolConfig')
 
 Config.subClasses['BoolConfig'] = BoolConfig
-
 
 class ConfigState(Relationship):
 	subClasses = {}
@@ -890,8 +861,7 @@ class ConfigState(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ConfigState'
+		if not hash.has_key('type'): hash['type'] = 'ConfigState'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -902,7 +872,6 @@ class ConfigState(Relationship):
 		return u"<%s configId '%s', objectId '%s'>" % (self.getType(), self.configId, self.objectId)
 
 Relationship.subClasses['ConfigState'] = ConfigState
-
 
 class Product(Entity):
 	subClasses = {}
@@ -1106,8 +1075,7 @@ class Product(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Product'
+		if not hash.has_key('type'): hash['type'] = 'Product'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -1118,7 +1086,6 @@ class Product(Entity):
 		return u"<%s id '%s', name '%s'>" % (self.getType(), self.id, self.name)
 
 Entity.subClasses['Product'] = Product
-
 
 class LocalbootProduct(Product):
 	subClasses = {}
@@ -1135,8 +1102,7 @@ class LocalbootProduct(Product):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'LocalbootProduct'
+		if not hash.has_key('type'): hash['type'] = 'LocalbootProduct'
 		return Product.fromHash(hash)
 
 	@staticmethod
@@ -1144,7 +1110,6 @@ class LocalbootProduct(Product):
 		return fromJson(jsonString, 'LocalbootProduct')
 
 Product.subClasses['LocalbootProduct'] = LocalbootProduct
-
 
 class NetbootProduct(Product):
 	subClasses = {}
@@ -1172,8 +1137,7 @@ class NetbootProduct(Product):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'NetbootProduct'
+		if not hash.has_key('type'): hash['type'] = 'NetbootProduct'
 		return Product.fromHash(hash)
 
 	@staticmethod
@@ -1181,7 +1145,6 @@ class NetbootProduct(Product):
 		return fromJson(jsonString, 'NetbootProduct')
 
 Product.subClasses['NetbootProduct'] = NetbootProduct
-
 
 class ProductProperty(Entity):
 	subClasses = {}
@@ -1305,8 +1268,7 @@ class ProductProperty(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ProductProperty'
+		if not hash.has_key('type'): hash['type'] = 'ProductProperty'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -1318,7 +1280,6 @@ class ProductProperty(Entity):
 			% (self.getType(), self.productId, self.productVersion, self.packageVersion, self.propertyId)
 
 Entity.subClasses['ProductProperty'] = ProductProperty
-
 
 class UnicodeProductProperty(ProductProperty):
 	subClasses = {}
@@ -1347,8 +1308,7 @@ class UnicodeProductProperty(ProductProperty):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'UnicodeProductProperty'
+		if not hash.has_key('type'): hash['type'] = 'UnicodeProductProperty'
 		return ProductProperty.fromHash(hash)
 
 	@staticmethod
@@ -1356,7 +1316,6 @@ class UnicodeProductProperty(ProductProperty):
 		return fromJson(jsonString, 'UnicodeProductProperty')
 
 ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
-
 
 class BoolProductProperty(ProductProperty):
 	subClasses = {}
@@ -1385,8 +1344,7 @@ class BoolProductProperty(ProductProperty):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'BoolProductProperty'
+		if not hash.has_key('type'): hash['type'] = 'BoolProductProperty'
 		return ProductProperty.fromHash(hash)
 
 	@staticmethod
@@ -1394,7 +1352,6 @@ class BoolProductProperty(ProductProperty):
 		return fromJson(jsonString, 'BoolProductProperty')
 
 ProductProperty.subClasses['BoolProductProperty'] = BoolProductProperty
-
 
 class ProductDependency(Relationship):
 	subClasses = {}
@@ -1487,8 +1444,7 @@ class ProductDependency(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ProductDependency'
+		if not hash.has_key('type'): hash['type'] = 'ProductDependency'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1500,7 +1456,6 @@ class ProductDependency(Relationship):
 			% (self.getType(), self.productId, self.productVersion, self.packageVersion, self.productAction, self.requiredProductId)
 
 Relationship.subClasses['ProductDependency'] = ProductDependency
-
 
 class ProductOnDepot(Relationship):
 	subClasses = {}
@@ -1559,8 +1514,7 @@ class ProductOnDepot(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ProductOnDepot'
+		if not hash.has_key('type'): hash['type'] = 'ProductOnDepot'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1702,8 +1656,7 @@ class ProductOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ProductOnClient'
+		if not hash.has_key('type'): hash['type'] = 'ProductOnClient'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1715,7 +1668,6 @@ class ProductOnClient(Relationship):
 			% (self.getType(), self.clientId, self.productId, self.installationStatus, self.actionRequest)
 
 Relationship.subClasses['ProductOnClient'] = ProductOnClient
-
 
 class ProductPropertyState(Relationship):
 	subClasses = {}
@@ -1761,8 +1713,7 @@ class ProductPropertyState(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ProductPropertyState'
+		if not hash.has_key('type'): hash['type'] = 'ProductPropertyState'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1774,7 +1725,6 @@ class ProductPropertyState(Relationship):
 			% (self.getType(), self.productId, self.propertyId, self.objectId)
 
 Relationship.subClasses['ProductPropertyState'] = ProductPropertyState
-
 
 class Group(Object):
 	subClasses = {}
@@ -1805,8 +1755,7 @@ class Group(Object):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'Group'
+		if not hash.has_key('type'): hash['type'] = 'Group'
 		return Object.fromHash(hash)
 
 	@staticmethod
@@ -1817,7 +1766,6 @@ class Group(Object):
 		return u"<%s id '%s', parentGroupId '%s'>" % (self.getType(), self.id, self.parentGroupId)
 
 Object.subClasses['Group'] = Group
-
 
 class HostGroup(Group):
 	subClasses = {}
@@ -1830,8 +1778,7 @@ class HostGroup(Group):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'HostGroup'
+		if not hash.has_key('type'): hash['type'] = 'HostGroup'
 		return Group.fromHash(hash)
 
 	@staticmethod
@@ -1839,7 +1786,6 @@ class HostGroup(Group):
 		return fromJson(jsonString, 'HostGroup')
 
 Group.subClasses['HostGroup'] = HostGroup
-
 
 class ProductGroup(Group):
 	subClasses = {}
@@ -1852,8 +1798,7 @@ class ProductGroup(Group):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ProductGroup'
+		if not hash.has_key('type'): hash['type'] = 'ProductGroup'
 		return Group.fromHash(hash)
 
 	@staticmethod
@@ -1861,7 +1806,6 @@ class ProductGroup(Group):
 		return fromJson(jsonString, 'ProductGroup')
 
 Group.subClasses['ProductGroup'] = ProductGroup
-
 
 class ObjectToGroup(Relationship):
 	subClasses = {}
@@ -1895,8 +1839,7 @@ class ObjectToGroup(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ObjectToGroup'
+		if not hash.has_key('type'): hash['type'] = 'ObjectToGroup'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1910,6 +1853,9 @@ class ObjectToGroup(Relationship):
 Relationship.subClasses['ObjectToGroup'] = ObjectToGroup
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# -   License management                                                                        -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class LicenseContract(Entity):
 	subClasses = {}
 	foreignIdAttributes = Entity.foreignIdAttributes + ['licenseContractId']
@@ -1995,8 +1941,7 @@ class LicenseContract(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'LicenseContract'
+		if not hash.has_key('type'): hash['type'] = 'LicenseContract'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2008,7 +1953,6 @@ class LicenseContract(Entity):
 			% (self.getType(), self.id, self.description)
 
 Entity.subClasses['LicenseContract'] = LicenseContract
-
 
 class SoftwareLicense(Entity):
 	subClasses = {}
@@ -2067,8 +2011,7 @@ class SoftwareLicense(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'SoftwareLicense'
+		if not hash.has_key('type'): hash['type'] = 'SoftwareLicense'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2081,7 +2024,6 @@ class SoftwareLicense(Entity):
 
 Entity.subClasses['LicenseContract'] = LicenseContract
 
-
 class RetailSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
@@ -2093,8 +2035,7 @@ class RetailSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'RetailSoftwareLicense'
+		if not hash.has_key('type'): hash['type'] = 'RetailSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2102,7 +2043,6 @@ class RetailSoftwareLicense(SoftwareLicense):
 		return fromJson(jsonString, 'RetailSoftwareLicense')
 
 SoftwareLicense.subClasses['RetailSoftwareLicense'] = RetailSoftwareLicense
-
 
 class OEMSoftwareLicense(SoftwareLicense):
 	subClasses = {}
@@ -2126,8 +2066,7 @@ class OEMSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'OEMSoftwareLicense'
+		if not hash.has_key('type'): hash['type'] = 'OEMSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2135,7 +2074,6 @@ class OEMSoftwareLicense(SoftwareLicense):
 		return fromJson(jsonString, 'OEMSoftwareLicense')
 
 SoftwareLicense.subClasses['OEMSoftwareLicense'] = OEMSoftwareLicense
-
 
 class VolumeSoftwareLicense(SoftwareLicense):
 	subClasses = {}
@@ -2150,8 +2088,7 @@ class VolumeSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'VolumeSoftwareLicense'
+		if not hash.has_key('type'): hash['type'] = 'VolumeSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2159,7 +2096,6 @@ class VolumeSoftwareLicense(SoftwareLicense):
 		return fromJson(jsonString, 'VolumeSoftwareLicense')
 
 SoftwareLicense.subClasses['VolumeSoftwareLicense'] = VolumeSoftwareLicense
-
 
 class ConcurrentSoftwareLicense(SoftwareLicense):
 	subClasses = {}
@@ -2172,8 +2108,7 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'ConcurrentSoftwareLicense'
+		if not hash.has_key('type'): hash['type'] = 'ConcurrentSoftwareLicense'
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2181,7 +2116,6 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 		return fromJson(jsonString, 'ConcurrentSoftwareLicense')
 
 SoftwareLicense.subClasses['ConcurrentSoftwareLicense'] = ConcurrentSoftwareLicense
-
 
 class LicensePool(Entity):
 	subClasses = {}
@@ -2225,8 +2159,7 @@ class LicensePool(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'LicensePool'
+		if not hash.has_key('type'): hash['type'] = 'LicensePool'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2238,7 +2171,6 @@ class LicensePool(Entity):
 			% (self.getType(), self.id, self.description)
 
 Entity.subClasses['LicensePool'] = LicensePool
-
 
 class AuditSoftwareToLicensePool(Relationship):
 	subClasses = {}
@@ -2302,8 +2234,7 @@ class AuditSoftwareToLicensePool(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'AuditSoftwareToLicensePool'
+		if not hash.has_key('type'): hash['type'] = 'AuditSoftwareToLicensePool'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2315,7 +2246,6 @@ class AuditSoftwareToLicensePool(Relationship):
 			% (self.getType(), self.licensePoolId, self.name)
 
 Relationship.subClasses['AuditSoftwareToLicensePool'] = AuditSoftwareToLicensePool
-
 
 class SoftwareLicenseToLicensePool(Relationship):
 	subClasses = {}
@@ -2353,8 +2283,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'SoftwareLicenseToLicensePool'
+		if not hash.has_key('type'): hash['type'] = 'SoftwareLicenseToLicensePool'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2366,7 +2295,6 @@ class SoftwareLicenseToLicensePool(Relationship):
 			% (self.getType(), self.softwareLicenseId, self.licensePoolId)
 
 Relationship.subClasses['SoftwareLicenseToLicensePool'] = SoftwareLicenseToLicensePool
-
 
 class LicenseOnClient(Relationship):
 	subClasses = {}
@@ -2422,8 +2350,7 @@ class LicenseOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'LicenseOnClient'
+		if not hash.has_key('type'): hash['type'] = 'LicenseOnClient'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2435,6 +2362,8 @@ class LicenseOnClient(Relationship):
 			% (self.getType(), self.softwareLicenseId, self.licensePoolId, self.clientId)
 
 Relationship.subClasses['LicenseOnClient'] = LicenseOnClient
+
+
 
 
 class AuditSoftware(Entity):
@@ -2528,8 +2457,7 @@ class AuditSoftware(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'AuditSoftware'
+		if not hash.has_key('type'): hash['type'] = 'AuditSoftware'
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2688,8 +2616,7 @@ class AuditSoftwareOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'AuditSoftwareOnClient'
+		if not hash.has_key('type'): hash['type'] = 'AuditSoftwareOnClient'
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2701,6 +2628,8 @@ class AuditSoftwareOnClient(Relationship):
 			% (self.getType(), self.name, self.version, self.subVersion, self.language, self.architecture, self.clientId)
 
 Relationship.subClasses['AuditSoftwareOnClient'] = AuditSoftwareOnClient
+
+
 
 
 class AuditHardware(Entity):
@@ -2740,13 +2669,13 @@ class AuditHardware(Entity):
 				elif (attrType.find('int') != -1):
 					try:
 						kwargs[attribute] = forceInt(value)
-					except Exception as e:
+					except Exception, e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				elif (attrType == 'double'):
 					try:
 						kwargs[attribute] = forceFloat(value)
-					except Exception as e:
+					except Exception, e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				else:
@@ -2843,6 +2772,7 @@ class AuditHardwareOnHost(Relationship):
 				else:
 					kwargs[attribute] = None
 
+
 		if self.hardwareAttributes.get(hardwareClass):
 			for (attribute, value) in kwargs.items():
 				attrType = self.hardwareAttributes[hardwareClass].get(attribute)
@@ -2864,13 +2794,13 @@ class AuditHardwareOnHost(Relationship):
 				elif (attrType.find('int') != -1):
 					try:
 						kwargs[attribute] = forceInt(value)
-					except Exception as e:
+					except Exception, e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				elif (attrType == 'double'):
 					try:
 						kwargs[attribute] = forceFloat(value)
-					except Exception as e:
+					except Exception, e:
 						logger.debug2(e)
 						kwargs[attribute] = None
 				else:
@@ -2896,6 +2826,7 @@ class AuditHardwareOnHost(Relationship):
 			self.deviceId = forceHardwareDeviceId(self.deviceId)
 		if hasattr(self, 'subsystemDeviceId') and self.subsystemDeviceId:
 			self.subsystemDeviceId = forceHardwareDeviceId(self.subsystemDeviceId)
+
 
 	@staticmethod
 	def setHardwareConfig(hardwareConfig):
@@ -2969,7 +2900,9 @@ class AuditHardwareOnHost(Relationship):
 		return attributes
 
 	def serialize(self):
-		return self.toHash()
+		hash = self.toHash()
+		#hash['ident'] = self.getIdent()
+		return hash
 
 	@staticmethod
 	def fromHash(hash):
@@ -2987,22 +2920,16 @@ class AuditHardwareOnHost(Relationship):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
 	def __unicode__(self):
-		additional = []
+		res = u"<%s hostId '%s'" % (self.getType(), self.hostId)
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			additional.append(u"hardwareClass='{0}'".format(hardwareClass))
+			res += u", hardwareClass '%s'" % hardwareClass
 		if hasattr(self, 'name'):
-			additional.append(u"name='{0}'".format(self.name))
-
-		return u"<{type} hostId='{host}'{additional}>".format(
-			type=self.getType(),
-			host=self.hostId,
-			additional=' {0}'.format(', '.join(additional)) if additional else ''
-		)
+			res += u", name '%s'" % self.name
+		return res + u">"
 
 
 Relationship.subClasses['AuditHardwareOnHost'] = AuditHardwareOnHost
-
 
 class BootConfiguration(Relationship):
 	subClasses = {}
@@ -3143,8 +3070,7 @@ class BootConfiguration(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
-			hash['type'] = 'BootConfiguration'
+		if not hash.has_key('type'): hash['type'] = 'BootConfiguration'
 		return Relationship.fromHash(hash)
 
 	@staticmethod

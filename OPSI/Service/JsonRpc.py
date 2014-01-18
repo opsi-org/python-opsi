@@ -133,7 +133,7 @@ class JsonRpc(object):
 			logger.info(u'Got result')
 			logger.debug2("RPC ID %s: %s" %(self.tid, self.result))
 
-		except Exception as e:
+		except Exception, e:
 			logger.logException(e, LOG_INFO)
 			logger.error(u'Execution error: %s' % forceUnicode(e))
 			self.exception = e
@@ -225,7 +225,7 @@ class JsonRpcRequestProcessor(object):
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
 
-		except Exception as e:
+		except Exception, e:
 			raise OpsiBadRpcError(u"Failed to decode rpc: %s." % e )
 
 		for rpc in forceList(rpcs):

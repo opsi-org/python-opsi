@@ -1,55 +1,62 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-opsi python library - Backend
+   = = = = = = = = = = = = = = = = = = =
+   =   opsi python library - Backend   =
+   = = = = = = = = = = = = = = = = = = =
 
-This module is part of the desktop management solution opsi
-(open pc server integration) http://www.opsi.org
+   This module is part of the desktop management solution opsi
+   (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+   Copyright (C) 2006, 2007, 2008, 2009, 2010 uib GmbH
 
-http://www.uib.de/
+   http://www.uib.de/
 
-All rights reserved.
+   All rights reserved.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-@copyright:	uib GmbH <info@uib.de>
-@author: Jan Schneider <j.schneider@uib.de>
-@license: GNU General Public License version 2
+   @copyright:	uib GmbH <info@uib.de>
+   @author: Jan Schneider <j.schneider@uib.de>
+   @license: GNU General Public License version 2
 """
 
 __version__ = '4.0'
 
 import base64
-import codecs
 import copy as pycopy
 import inspect
-import json
 import new
 import os
 import threading
 import types
-import warnings
-from hashlib import md5
 from twisted.conch.ssh import keys
 
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
+
+from sys import version_info
+if (version_info >= (2,6)):
+	import json
+else:
+	import simplejson as json
+
 if (os.name == 'posix'):
-	with warnings.catch_warnings():
-		warnings.filterwarnings("ignore", category=DeprecationWarning)
-		from ldaptor.protocols import pureldap
-		from ldaptor import ldapfilter
+	from ldaptor.protocols import pureldap
+	from ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
 from OPSI.Types import *
@@ -66,6 +73,9 @@ OPSI_GLOBAL_CONF  = u'/etc/opsi/global.conf'
 LOG_DIR           = u'/var/log/opsi'
 MAX_LOGFILE_SIZE  = 5000000
 
+'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+=                                                                                                    =
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 
 def getArgAndCallString(method):
 	argString = u''
@@ -238,7 +248,7 @@ class Backend:
 				else:
 					matchedAll = False
 					break
-			except Exception as e:
+			except Exception, e:
 				raise Exception(u"Testing match of filter '%s' of attribute '%s' with value '%s' failed: %s" \
 							% (filter[attribute], attribute, value, e))
 		return matchedAll
@@ -300,9 +310,10 @@ class Backend:
 	def backend_info(self):
 		opsiVersion = 'unknown'
 		try:
-			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
-				opsiVersion = f.readline().strip()
-		except Exception as e:
+			f = codecs.open(self._opsiVersionFile, 'r', 'utf-8')
+			opsiVersion = f.readline().strip()
+			f.close()
+		except Exception, e:
 			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
 
 		modules = {}
@@ -361,7 +372,7 @@ class Backend:
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
-		except Exception as e:
+		except Exception, e:
 			logger.warning(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, e))
 
 		return {
@@ -604,7 +615,7 @@ class ConfigDataBackend(Backend):
 				f = open(idRsa, 'r')
 				result['rsaPrivateKey'] = f.read()
 				f.close()
-			except Exception as e:
+			except Exception, e:
 				logger.debug(e)
 		if hostId:
 			host  = self._context.host_getObjects(id = hostId)
@@ -1311,7 +1322,7 @@ class ConfigDataBackend(Backend):
 				result = json.loads(f.read())
 				f.close()
 				return result
-			except Exception as e:
+			except Exception, e:
 				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 				return []
 
@@ -1333,7 +1344,7 @@ class ConfigDataBackend(Backend):
 					continue
 				(k, v) = line.split('=', 1)
 				locale[k.strip()] = v.strip()
-		except Exception as e:
+		except Exception, e:
 			logger.error(u"Failed to read translation file for language %s: %s" % (language, e))
 
 		def __inheritFromSuperClasses(classes, c, scname=None):
@@ -1400,9 +1411,9 @@ class ConfigDataBackend(Backend):
 								ccopy['Values'][j]['UI'] = ccopy['Values'][j]['Opsi']
 
 						classes.append(ccopy)
-				except Exception as e:
+				except Exception, e:
 					logger.error(u"Error in config file '%s': %s" % (self._auditHardwareConfigFile, e))
-		except Exception as e:
+		except Exception, e:
 			logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 
 		return classes
@@ -1492,7 +1503,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		logger.info(u"=== Starting search, filter: %s" % filter)
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
-		except Exception as e:
+		except Exception, e:
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
 
@@ -1705,7 +1716,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						else:
 							result = res
 						logger.debug("Result: %s" % result)
-					except Exception as e:
+					except Exception, e:
 						logger.logException(e)
 						raise BackendBadValueError(u"Failed to process search filter '%s': %s" % (repr(f), e))
 
@@ -2846,7 +2857,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		pocFilter = dict(filter)
 
 		defaultMatchesFilter = \
-					(not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
+				    (not filter.get('installationStatus') or 'not_installed' in forceList(filter['installationStatus'])) \
 				and (not filter.get('actionRequest')      or 'none'          in forceList(filter['actionRequest'])) \
 				and (not filter.get('productVersion')     or None            in forceList(filter['productVersion'])) \
 				and (not filter.get('packageVersion')     or None            in forceList(filter['packageVersion'])) \
@@ -4050,7 +4061,7 @@ class ModificationTrackingBackend(ExtendedBackend):
 			try:
 				meth = getattr(bcl, event)
 				meth(self, *args)
-			except Exception as e:
+			except Exception, e:
 				logger.error(e)
 
 	def _executeMethod(self, methodName, **kwargs):

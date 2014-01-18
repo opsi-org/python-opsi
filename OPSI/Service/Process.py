@@ -13,20 +13,20 @@ from OPSI.Logger import *
 logger = Logger()
 
 class SupervisionProtocol(ProcessProtocol):
-
+	
 	def __init__(self, daemon, deferred = Deferred()):
 		self.daemon = daemon
 		self.deferred = deferred
 		self.pid = None
 		self.defer = None
 		self.logRegex = re.compile('^\[([0-9])\]\s*(.*)')
-
+		
 	def connectionMade(self):
 		self.pid = self.transport.pid
 		d, self.deferred = self.deferred, Deferred()
 		d.callback(self.daemon)
-
-
+		
+		
 	def stop(self):
 		if self.transport.pid:
 			self.defer = Deferred()
@@ -49,10 +49,10 @@ class SupervisionProtocol(ProcessProtocol):
 				logMessage = match.group(2)
 				logger.log(logLevel, '[worker %s] %s' % (self.pid, logMessage))
 				return
-			except Exception as e:
+			except Exception, e:
 				logger.error(e)
 		logger.warning(data)
-
+		
 	def processEnded(self, reason):
 		if self.daemon.allowRestart:
 			self.daemon.start()
@@ -70,14 +70,14 @@ class OpsiDaemon(object):
 
 		self._reactor = reactor
 		self._connector = self.connector(self.getSocket())
-
+		
 		self._env = os.environ.copy()
-
+		
 		self._process = None
 		self._args = args
 		self._checkFailures = 0
 		self._childFDs = None
-
+		
 		if os.getuid() == 0:
 			if not self.user:
 				raise RuntimeError("Subclass %s must specifie a daemon user if run as root." % self.script)
@@ -95,13 +95,13 @@ class OpsiDaemon(object):
 		d = Deferred()
 		self._process = SupervisionProtocol(self, d)
 		script = self.findScript()
-
+		
 		args = [script]
 
 		args.extend([str(arg) for arg in self._args])
-
+		
 		self._reactor.spawnProcess(self._process, script, args=args,
-					env=self._env, uid=self._uid, gid=self._gid,
+					env=self._env, uid=self._uid, gid=self._gid, 
 					childFDs=self._childFDs)
 		return d
 	def stop(self):
@@ -134,10 +134,10 @@ class OpsiDaemon(object):
 
 		connection = self._connector.connect()
 		connection.addCallback(lambda remote: getattr(remote, method)(*args, **kwargs))
-
+		
 		connection.addErrback(failure)
 		connection.addBoth(disconnect)
-
+		
 		return connection
 
 	def isRunning(self):
@@ -149,8 +149,8 @@ class OpsiDaemon(object):
 			self._process.transport.signalProcess(s)
 		d = self.isRunning()
 		d.addCallback(lambda x, s=sig: _sendSignal(s))
-
-
+	
+	
 	def getSocket(self):
 		return self.__class__.socket
 
@@ -160,10 +160,10 @@ def runOpsiService(serviceClass, configurationClass, reactorModule):
 	logger.setConsoleLevel(LOG_WARNING)
 	logger.setFileLevel(LOG_WARNING)
 	logger.setLogFormat('[%l] %M (%F|%N)')
-
+	
 	from twisted.application.service import Application
 	from twisted.application.app import startApplication
-
+	
 	config = reflect.namedAny(configurationClass)(sys.argv[1:-3])
 	service = reflect.namedAny(serviceClass)(config)
 	application = Application(service.__class__)
@@ -174,7 +174,7 @@ def runOpsiService(serviceClass, configurationClass, reactorModule):
 
 
 class OpsiPyDaemon(OpsiDaemon):
-
+	
 	MAIN = """\
 import sys
 
@@ -188,21 +188,21 @@ from OPSI.Service.Process import runOpsiService
 
 runOpsiService(sys.argv[-1],sys.argv[-2], sys.argv[-3])
 """
-
+	
 	script = sys.executable
-
+	
 	def __init__(self, socket, args = [], reactor=reactor):
-
+		
 		args.extend([reactor.__module__, reflect.qual(self.configurationClass), reflect.qual(self.serviceClass)])
 		self.socket = socket
-
+		
 		OpsiDaemon.__init__(	self,
 					args=["-c", self.MAIN] + args,
 					reactor=reactor)
-
+		
 	def findScript(self):
 		return sys.executable
-
+	
 	def getSocket(self):
 		return self.socket
 

@@ -1,12 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-opsi python library - Util
+= = = = = = = = = = = = = = = = = = =
+=   opsi python library - Util      =
+= = = = = = = = = = = = = = = = = = =
 
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006, 2007, 2008 uib GmbH
 
 http://www.uib.de/
 
@@ -25,17 +27,16 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-:copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU General Public License version 2
+@copyright:	uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@license: GNU General Public License version 2
 """
 
-__version__ = '4.0.4.2'
+__version__ = '4.0.4.3'
 
 import base64
 import codecs
-import json
 import os
 import random
 import re
@@ -44,7 +45,17 @@ import struct
 import time
 import types
 from Crypto.Cipher import Blowfish
-from hashlib import md5
+from sys import version_info
+
+if (version_info >= (2, 6)):
+	import json
+else:
+	import simplejson as json
+
+try:
+	from hashlib import md5
+except ImportError:
+	from md5 import md5
 
 try:
 	import argparse
@@ -62,17 +73,12 @@ if (os.name == 'posix'):
 elif (os.name == 'nt'):
 	try:
 		import librsync
-	except Exception as e:
+	except Exception, e:
 		logger.error(u"Failed to import librsync: %s" % e)
 
 BLOWFISH_IV = 'OPSI1234'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 RANDOM_DEVICE = u'/dev/urandom'
-_ACCEPTED_CHARACTERS = (
-	"abcdefghijklmnopqrstuvwxyz"
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"0123456789"
-)
 
 
 class PickleString(str):
@@ -91,7 +97,7 @@ def deserialize(obj, preventObjectCreation=False):
 			import OPSI.Object
 			c = eval('OPSI.Object.%s' % obj['type'])
 			newObj = c.fromHash(obj)
-		except Exception as e:
+		except Exception, e:
 			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, forceUnicode(e)))
 			return obj
 	elif type(obj) is list:
@@ -163,7 +169,7 @@ def librsyncSignature(filename, base64Encoded = True):
 		f.close()
 		sf.close()
 		return sig
-	except Exception as e:
+	except Exception, e:
 		if f: f.close()
 		if sf: sf.close()
 		raise Exception(u"Failed to get librsync signature: %s" % forceUnicode(e))
@@ -193,7 +199,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		pf.close()
 		df.close()
 		of.close()
-	except Exception as e:
+	except Exception, e:
 		if nf: nf.close()
 		if pf: pf.close()
 		if df: df.close()
@@ -216,7 +222,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 		df.close()
 		f.close()
 		ldf.close()
-	except Exception as e:
+	except Exception, e:
 		if df:  df.close()
 		if f:   f.close()
 		if ldf: ldf.close()
@@ -236,8 +242,10 @@ def md5sum(filename):
 
 
 def randomString(length):
-	string = [random.choice(_ACCEPTED_CHARACTERS) for _ in range(length)]
-	return forceUnicode(u''.join(string))
+	string = u''
+	for i in range(length):
+		string = string + random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	return unicode(string)
 
 
 def generateOpsiHostKey():
@@ -265,36 +273,35 @@ def timestamp(secs=0, dateOnly=False):
 	else:
 		return time.strftime( u"%Y-%m-%d %H:%M:%S", time.localtime(secs) )
 
-
-def objectToBeautifiedText(obj, level=0):
+def objectToBeautifiedText(obj,level=0):
 	if (level == 0):
 		obj = serialize(obj)
 
 	hspace = level*10
 	text = u''
 	if type(obj) is types.ListType:
-		text = u'%s%s' % (text, u' '*hspace + u'[ \n')
+		text = u'%s%s[ \n' % (text, u' '*hspace)
 		for i in range( len(obj) ):
 			if not type(obj[i]) in (types.DictType, types.ListType):
 				text = u'%s%s' % (text, u' '*hspace)
 			text = u'%s%s' % (text, objectToBeautifiedText(obj[i], level+1))
 
 			if (i < len(obj)-1):
-				text = u"%s%s" % (text, u',\n')
-		text = u'\n%s%s]' % (text, u' '*hspace)
+				text = u"%s,\n" % (text)
+		text = u'%s\n%s]' % (text, u' '*hspace)
 	elif type(obj) is types.DictType:
-		text = u'%s%s{\n' % (text, u' '*hspace)
+		text = u'%s%s{ \n' % (text, u' '*hspace)
 		i = 0
 		for (key, value) in obj.items():
 			text = u'%s%s"%s" : ' % (text, u' '*hspace, key)
 			if type(value) in (types.DictType, types.ListType):
 				text = u'%s\n' % text
-			text += objectToBeautifiedText(value, level+1)
+			text = u'%s%s' % (text, objectToBeautifiedText(value, level+1))
 
 			if (i < len(obj)-1):
 				text = u'%s,\n' % text
 			i+=1
-		text = u'%s%s\n}' % (text, u' '*hspace)
+		text = u'%s\n%s}' % (text, u' '*hspace)
 	elif type(obj) is str:
 		text = u'%s%s' % (text, toJson(forceUnicode(obj)))
 	else:
@@ -402,28 +409,13 @@ def objectToHtml(obj, level=0):
 
 
 def compareVersions(v1, condition, v2):
-	def removePartAfterWave(versionString):
-		if "~" in versionString:
-			return versionString[:versionString.find("~")]
-		else:
-			return versionString
+	v1 = forceUnicode(v1)
+	v2 = forceUnicode(v2)
 
-	def splitProductAndPackageVersion(versionString):
-		productVersion = packageVersion = u'0'
-
-		match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', versionString)
-		if not match:
-			raise Exception(u"Bad version string '%s'" % versionString)
-
-		productVersion = match.group(1)
-		if match.group(2):
-			packageVersion = match.group(2)
-
-		return (productVersion, packageVersion)
-
-	def makeEqualLength(first, second):
-		while len(first) < len(second):
-			first.append(u'0')
+	if "~" in v1:
+		v1 = v1[:v1.find("~")]
+	if "~" in v2:
+		v2 = v2[:v2.find("~")]
 
 	if not condition:
 		condition = u'=='
@@ -432,17 +424,35 @@ def compareVersions(v1, condition, v2):
 	if (condition == u'='):
 		condition = u'=='
 
-	v1 = removePartAfterWave(forceUnicode(v1))
-	v2 = removePartAfterWave(forceUnicode(v2))
+	v1ProductVersion = u'0'
+	v1PackageVersion = u'0'
 
-	(v1ProductVersion, v1PackageVersion) = splitProductAndPackageVersion(v1)
-	(v2ProductVersion, v2PackageVersion) = splitProductAndPackageVersion(v2)
+	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v1)
+	if not match:
+		raise Exception(u"Bad version string '%s'" % v1)
+
+	v1ProductVersion = match.group(1)
+	if match.group(2):
+		v1PackageVersion = match.group(2)
+
+	v2ProductVersion = u'0'
+	v2PackageVersion = u'0'
+
+	match = re.search('^\s*([\w\.]+)-*([\w\.]*)\s*$', v2)
+	if not match:
+		raise Exception(u"Bad version string '%s'" % v2)
+
+	v2ProductVersion = match.group(1)
+	if match.group(2):
+		v2PackageVersion = match.group(2)
 
 	for (v1, v2) in ( (v1ProductVersion, v2ProductVersion), (v1PackageVersion, v2PackageVersion) ):
 		v1p = v1.split(u'.')
 		v2p = v2.split(u'.')
-		makeEqualLength(v1p, v2p)
-		makeEqualLength(v2p, v1p)
+		while len(v1p) < len(v2p):
+			v1p.append(u'0')
+		while len(v2p) < len(v1p):
+			v2p.append(u'0')
 		for i in range(len(v1p)):
 			while (len(v1p[i]) > 0) or (len(v2p[i]) > 0):
 				cv1 = u''
@@ -468,18 +478,14 @@ def compareVersions(v1, condition, v2):
 						cv2 = match.group(1)
 						v2p[i] = match.group(2)
 
-				if (cv1 == u''):
-					cv1 = chr(1)
-				if (cv2 == u''):
-					cv2 = chr(1)
+				if (cv1 == u''): cv1 = chr(1)
+				if (cv2 == u''): cv2 = chr(1)
 				if (cv1 == cv2):
 					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
 					continue
 
-				if type(cv1) is not int:
-					cv1 = u"'%s'" % cv1
-				if type(cv2) is not int:
-					cv2 = u"'%s'" % cv2
+				if type(cv1) is not int: cv1 = u"'%s'" % cv1
+				if type(cv2) is not int: cv2 = u"'%s'" % cv2
 
 				b = eval( u"%s %s %s" % (cv1, condition, cv2) )
 				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
@@ -565,7 +571,7 @@ def blowfishDecrypt(key, crypt):
 	crypt = forceUnicode(crypt)
 	try:
 		key = key.decode("hex")
-	except TypeError as e:
+	except TypeError, e:
 		raise Exception(u"Failed to hex decode key '%s'" % key)
 	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
@@ -575,7 +581,7 @@ def blowfishDecrypt(key, crypt):
 		cleartext = cleartext[:cleartext.find('\0')]
 	try:
 		return unicode(cleartext, 'utf-8')
-	except Exception as e:
+	except Exception, e:
 		logger.error(e)
 		raise Exception(u"Failed to decrypt")
 
