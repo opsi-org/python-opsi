@@ -1,35 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = =
-   =  opsi python library - File31   =
-   = = = = = = = = = = = = = = = = = =
+opsi python library - File
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006 - 2010 uib GmbH
+Copyright (C) 2006 - 2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Arne Kerz <a.kerz@uib.de>
-   @license: GNU General Public License version 2
+:author: Arne Kerz <a.kerz@uib.de>
+:license: GNU General Public License version 2
 """
 
 __version__ = '4.0.2.3'
@@ -284,7 +281,7 @@ class FileBackend(ConfigDataBackend):
 					os.chown(path, self.__dirUid, self.__dirGid)
 				else:
 					os.chown(path, -1, self.__dirGid)
-		except Exception, e:
+		except Exception as e:
 			logger.warning(u"Failed to set rights for path '%s': %s" % (path, e))
 
 	def _mkdir(self, path):
@@ -549,7 +546,7 @@ class FileBackend(ConfigDataBackend):
 					objectId = None
 					try:
 						objectId = forceHostId(entry[:-4])
-					except Exception, e:
+					except Exception as e:
 						logger.warning(u"Ignoring invalid file '%s': %s" % filename, e)
 						continue
 
@@ -630,7 +627,7 @@ class FileBackend(ConfigDataBackend):
 									'objectId':  option
 									}
 								)
-							except Exception, e:
+							except Exception as e:
 								logger.error(u"Found invalid option '%s' in section '%s' in file '%s': %s" \
 									% (option, section, p['filename'], e))
 					else:

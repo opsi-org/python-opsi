@@ -1,35 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = =
-   =    opsi python library - File     =
-   = = = = = = = = = = = = = = = = = = =
+opsi python library - Util - File
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008, 2009 uib GmbH
+Copyright (C) 2006-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+:author: Jan Schneider <j.schneider@uib.de>
+:license: GNU General Public License version 2
 """
 
 __version__ = "4.0.2"
@@ -40,6 +37,8 @@ import locale
 import os
 import re
 import StringIO
+import threading
+import time
 
 if (os.name == 'posix'):
 	import fcntl
@@ -50,12 +49,16 @@ elif (os.name == 'nt'):
 	import win32file
 	import pywintypes
 
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
+	forceArchitecture, forceBool, forceDict,
+	forceEmailAddress, forceFilename, forceHardwareAddress,
+	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
+	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
+	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
-# Get logger instance
 logger = Logger()
 
 
@@ -262,7 +265,7 @@ class TextFile(LockableFile):
 					self._lines = self._fileHandle.readlines()
 					self.close()
 					break
-				except ValueError, e:
+				except ValueError:
 					self.close()
 					continue
 		return self._lines
@@ -283,14 +286,13 @@ class TextFile(LockableFile):
 class ChangelogFile(TextFile):
 	'''
 	package (version) distribution(s); urgency=urgency
-	    [optional blank line(s), stripped]
+		[optional blank line(s), stripped]
 	  * change details
-	     more change details
-	      [blank line(s), included]
+		 more change details
+		  [blank line(s), included]
 	  * even more change details
-	      [optional blank line(s), stripped]
+		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
-
 	'''
 	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
 
@@ -362,7 +364,7 @@ class ChangelogFile(TextFile):
 						raise Exception(u"text not in release")
 					if currentEntry:
 						currentEntry['changelog'].append(line.rstrip())
-			except Exception, e:
+			except Exception as e:
 				raise Exception(u"Parse error in line %d: %s" % (lineNum, e))
 		if currentEntry:
 			self.addEntry(currentEntry)
@@ -567,7 +569,7 @@ class IniFile(ConfigFile):
 			self._configParser = ConfigParser.SafeConfigParser()
 		try:
 			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines)) )
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
 		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
@@ -640,6 +642,7 @@ class IniFile(ConfigFile):
 		self.writelines()
 		self.close()
 
+
 class InfFile(ConfigFile):
 	sectionRegex       = re.compile('\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex     = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
@@ -668,7 +671,7 @@ class InfFile(ConfigFile):
 		try:
 			vendorId = forceHardwareVendorId(vendorId)
 			deviceId = forceHardwareDeviceId(deviceId)
-		except Exception, e:
+		except Exception as e:
 			logger.error(e)
 			return False
 		if not self._parsed:
@@ -833,7 +836,7 @@ class InfFile(ConfigFile):
 									self._devices.append( { 'path': path, 'class': deviceClass, 'vendor': vendor, 'device': device, 'type': type } )
 						except IndexError:
 							logger.warning(u"Skipping bad line '%s' in file %s" % (line, self._filename))
-			except Exception, e:
+			except Exception as e:
 				logger.error(u"Parse error in inf file '%s' line '%s': %s" % (self._filename, line, e))
 		self._parsed = True
 
@@ -910,11 +913,12 @@ class PciidsFile(ConfigFile):
 					if not self._subDevices.has_key(vendorId):
 						self._subDevices[vendorId] = {}
 					self._vendors[vendorId] = vendorName.strip()
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 		self._parsed = True
 
 UsbidsFile = PciidsFile
+
 
 class TxtSetupOemFile(ConfigFile):
 	sectionRegex     = re.compile('\[\s*([^\]]+)\s*\]')
@@ -1178,7 +1182,6 @@ class TxtSetupOemFile(ConfigFile):
 				self._files.append({ 'fileType': fileType, 'diskName': diskName, 'filename': filename, 'componentName': componentName, 'componentId': componentId, 'optionName': optionName })
 		logger.debug(u"Found files: %s" % self._files)
 
-
 		# Search for configs
 		logger.info(u"Searching for configs")
 		for (section, lines) in sections.items():
@@ -1269,6 +1272,7 @@ class TxtSetupOemFile(ConfigFile):
 		self.writelines()
 		self.close()
 
+
 class ZsyncFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout = 2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
@@ -1305,6 +1309,7 @@ class ZsyncFile(LockableFile):
 		f.write(self._data)
 		f.close()
 
+
 class DHCPDConf_Component(object):
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
@@ -1333,6 +1338,7 @@ class DHCPDConf_Component(object):
 	def __repr__(self):
 		return self.__str__()
 
+
 class DHCPDConf_Parameter(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -1352,14 +1358,15 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 			else:
 				value = u'off'
 		elif self.key in [u'filename', u'ddns-domainname'] or \
-		     re.match('.*[\'/\\\].*', value) or \
-		     re.match('^\w+\.\w+$', value) or \
-		     self.key.endswith(u'-name'):
+			 re.match('.*[\'/\\\].*', value) or \
+			 re.match('^\w+\.\w+$', value) or \
+			 self.key.endswith(u'-name'):
 			value = u'"%s"' % value
 		return u"%s%s %s;" % (self.getShifting(), self.key, value)
 
 	def asHash(self):
 		return { self.key: self.value }
+
 
 class DHCPDConf_Option(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, key, value):
@@ -1402,6 +1409,7 @@ class DHCPDConf_Option(DHCPDConf_Component):
 	def asHash(self):
 		return { self.key: self.value }
 
+
 class DHCPDConf_Comment(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, data):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
@@ -1410,9 +1418,11 @@ class DHCPDConf_Comment(DHCPDConf_Component):
 	def asText(self):
 		return self.getShifting() + u'#%s' % self._data
 
+
 class DHCPDConf_EmptyLine(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
+
 
 class DHCPDConf_Block(DHCPDConf_Component):
 	def __init__(self, startLine, parentBlock, type, settings = []):
@@ -1549,9 +1559,11 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		return text
 
+
 class DHCPDConf_GlobalBlock(DHCPDConf_Block):
 	def __init__(self):
 		DHCPDConf_Block.__init__(self, 1, None, u'global')
+
 
 class DHCPDConfFile(TextFile):
 
@@ -1768,7 +1780,7 @@ class DHCPDConfFile(TextFile):
 		hostBlock.removeComponents()
 
 		for (key, value) in parameters.items():
-			parameters[key] = Parameter(-1, None, key, value).asHash()[key]
+			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
 		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
 			if not parameters.has_key(key):

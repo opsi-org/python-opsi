@@ -69,21 +69,21 @@ try:
 	f = os.popen('lsb_release -i 2>/dev/null')
 	DISTRIBUTOR = f.read().split(':')[1].strip()
 	f.close()
-except Exception, e:
+except Exception as e:
 	pass
 DISTRIBUTION = 'unknown'
 try:
 	f = os.popen('lsb_release -d 2>/dev/null')
 	DISTRIBUTION = f.read().split(':')[1].strip()
 	f.close()
-except Exception, e:
+except Exception as e:
 	pass
 DISTRELEASE = 'unknown'
 try:
 	f = os.popen('lsb_release -r 2>/dev/null')
 	DISTRELEASE = f.read().split(':')[1].strip()
 	f.close()
-except Exception, e:
+except Exception as e:
 	pass
 
 
@@ -101,7 +101,7 @@ class MessageBusNotifier(BackendModificationListener):
 			return
 		try:
 			self._messageBusClient.notifyObjectCreated(obj)
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 
 	def objectUpdated(self, backend, obj):
@@ -111,7 +111,7 @@ class MessageBusNotifier(BackendModificationListener):
 			return
 		try:
 			self._messageBusClient.notifyObjectUpdated(obj)
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 
 	def objectsDeleted(self, backend, objs):
@@ -122,7 +122,7 @@ class MessageBusNotifier(BackendModificationListener):
 		for obj in objs:
 			try:
 				self._messageBusClient.notifyObjectDeleted(obj)
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e)
 
 	def backendModified(self, backend):
@@ -228,7 +228,7 @@ class BackendManager(ExtendedBackend):
 			hcc = {}
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 			self._backend = HostControlBackend(self._backend, **hcc)
 		if hostControlSafeBackend:
@@ -236,7 +236,7 @@ class BackendManager(ExtendedBackend):
 			hcc = {}
 			try:
 				hcc = self.__loadBackendConfig('hostcontrol')['config']
-			except Exception, e:
+			except Exception as e:
 				logger.error(e)
 			self._backend = HostControlSafeBackend(self._backend, **hcc)
 		if accessControl:
@@ -323,7 +323,7 @@ class BackendDispatcher(Backend):
 			self._dispatchConfig = BackendDispatchConfigFile(self._dispatchConfigFile).parse()
 			logger.debug(u"Read dispatch config from file '%s':" % self._dispatchConfigFile)
 			logger.debug(objectToBeautifiedText(self._dispatchConfig))
-		except Exception, e:
+		except Exception as e:
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 
 	def __loadBackends(self):
@@ -360,13 +360,8 @@ class BackendDispatcher(Backend):
 				raise BackendConfigurationError(u"Bad type for config var in backend config file '%s', has to be dict" % backendConfigFile)
 			backendInstance = None
 			l["config"]["context"] = self
-			if (sys.version_info >= (2,5)):
-				b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
-				self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
-			else:
-				exec('from %s import %sBackend' % (l['module'], l['module']))
-				exec('b = %sBackend(**l["config"])' % l['module'])
-				self._backends[backend]["instance"] = b
+			b = __import__(l['module'], globals(), locals(), "%sBackend" % l['module'], -1)
+			self._backends[backend]["instance"] = getattr(b, "%sBackend"%l['module'])(**l['config'])
 
 	def _createInstanceMethods(self):
 		logger.debug(u"BackendDispatcher is creating instance methods")
@@ -506,7 +501,7 @@ class BackendExtender(ExtendedBackend):
 						logger.info(u"Reading config file '%s'" % confFile)
 						execfile(confFile)
 
-					except Exception, e:
+					except Exception as e:
 						logger.logException(e)
 						raise Exception(u"Error reading file '%s': %s" % (confFile, e))
 
@@ -515,7 +510,7 @@ class BackendExtender(ExtendedBackend):
 						if ( type(val) == types.FunctionType ):
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 							setattr( self, key, new.instancemethod(val, self, self.__class__) )
-			except Exception, e:
+			except Exception as e:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 
 
@@ -614,7 +609,7 @@ class BackendAccessControl(object):
 				# Authentication did not throw exception => authentication successful
 				logger.info(u"Operating system authentication successful for user '%s', groups '%s'" \
 									% (self._username, ','.join(self._userGroups)))
-		except Exception, e:
+		except Exception as e:
 			raise BackendAuthenticationError(u"%s" % e)
 
 		self._createInstanceMethods()
@@ -643,7 +638,7 @@ class BackendAccessControl(object):
 			self._acl = BackendACLFile(self._aclFile).parse()
 			logger.debug(u"Read acl from file '%s':" % self._aclFile)
 			logger.debug(objectToBeautifiedText(self._acl))
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
 
@@ -716,7 +711,7 @@ class BackendAccessControl(object):
 								break
 						if (gresume == 0):
 							break
-		except Exception, e:
+		except Exception as e:
 			# Something failed => raise authentication error
 			raise BackendAuthenticationError(u"Win32security authentication failed for user '%s': %s" % (self._username, e))
 
@@ -780,7 +775,7 @@ class BackendAccessControl(object):
 						if not gn in self._userGroups:
 							self._userGroups.append(gn)
 							logger.debug(u"User '%s' is member of group '%s'" % (self._username, gn))
-		except Exception, e:
+		except Exception as e:
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 
 	def _isMemberOfGroup(self, ids):
@@ -886,7 +881,7 @@ class BackendAccessControl(object):
 				newKwargs = self._filterParams(kwargs, acls)
 				if not newKwargs:
 					raise BackendPermissionDeniedError(u"No allowed param supplied")
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e, LOG_INFO)
 				raise BackendPermissionDeniedError(u"Access to method '%s' denied for user '%s': %s" % (methodName, self._username, e))
 

@@ -1,68 +1,64 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = =
-   =   opsi python library - MySQL   =
-   = = = = = = = = = = = = = = = = = =
-   
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
-   
-   Copyright (C) 2013 uib GmbH
-   
-   http://www.uib.de/
-   
-   All rights reserved.
-   
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License, version 3
-   as published by the Free Software Foundation.
-   
-   This program is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Affero General Public License for more details.
-      
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
-   @license: GNU Affero GPL version 3
+opsi python library - MySQL
+
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
+
+Copyright (C) 2013 uib GmbH
+
+http://www.uib.de/
+
+All rights reserved.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License, version 3
+as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+@copyright: uib GmbH <info@uib.de>
+@author: Jan Schneider <j.schneider@uib.de>
+@author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@license: GNU Affero GPL version 3
 """
 
 __version__ = '4.0.3.4'
 
-# Imports
-import MySQLdb, warnings, time, threading
+import base64
+import warnings
+import time
+import threading
+from hashlib import md5
+
+import MySQLdb
 from MySQLdb.constants import FIELD_TYPE
 from MySQLdb.converters import conversions
-from _mysql_exceptions import *
 from sqlalchemy import pool
 from twisted.conch.ssh import keys
-try:
-	from hashlib import md5
-except ImportError:
-	from md5 import md5
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
-from OPSI.Object import *
-from OPSI.Backend.Backend import *
-from OPSI.Backend.SQL import *
+from OPSI.Logger import Logger
+from OPSI.Types import BackendIOError, BackendBadValueError
+from OPSI.Types import forceInt, forceUnicode
+from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
-# Get logger instance
 logger = Logger()
+
 
 class ConnectionPool(object):
 	# Storage for the instance reference
 	__instance = None
-	
+
 	def __init__(self, **kwargs):
 		""" Create singleton instance """
-		
+
 		# Check whether we already have an instance
 		if ConnectionPool.__instance is None:
 			logger.info(u"Creating ConnectionPool instance")
@@ -78,14 +74,14 @@ class ConnectionPool(object):
 			con = ConnectionPool.__instance.connect()
 			con.autocommit(False)
 			con.close()
-			
+
 		# Store instance reference as the only member in the handle
 		self.__dict__['_ConnectionPool__instance'] = ConnectionPool.__instance
-	
+
 	def destroy(self):
 		logger.notice(u"Destroying ConnectionPool instance")
 		ConnectionPool.__instance = None
-		
+
 	def __getattr__(self, attr):
 		""" Delegate access to implementation """
 		return getattr(self.__instance, attr)
@@ -93,22 +89,19 @@ class ConnectionPool(object):
 	def __setattr__(self, attr, value):
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
-	
-# ======================================================================================================
-# =                                       CLASS MYSQL                                                  =
-# ======================================================================================================
+
 
 class MySQL(SQL):
-	
+
 	AUTOINCREMENT = 'AUTO_INCREMENT'
 	ALTER_TABLE_CHANGE_SUPPORTED = True
 	ESCAPED_BACKSLASH  = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK   = "\\*"
 	doCommit = True
-	
+
 	def __init__(self, **kwargs):
-		
+
 		self._address                   = u'localhost'
 		self._username                  = u'opsi'
 		self._password                  = u'opsi'
@@ -117,7 +110,7 @@ class MySQL(SQL):
 		self._connectionPoolSize        = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout     = 30
-		
+
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -137,13 +130,13 @@ class MySQL(SQL):
 				self._connectionPoolMaxOverflow = forceInt(value)
 			elif option in ('connectionpooltimeout',):
 				self._connectionPoolTimeout = forceInt(value)
-		
+
 		self._transactionLock = threading.Lock()
 		self._pool = None
-		
+
 		self._createConnectionPool()
 		logger.debug(u'MySQL created: %s' % self)
-	
+
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
 		self._transactionLock.acquire(0)
@@ -166,12 +159,12 @@ class MySQL(SQL):
 						timeout      = self._connectionPoolTimeout,
 						conv         = conv
 				)
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e)
 				raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
 		finally:
 			self._transactionLock.release()
-		
+
 	def connect(self):
 		myConnectionSuccess = False
 		myMaxRetryConnection = 10
@@ -188,7 +181,7 @@ class MySQL(SQL):
 				conn.autocommit(False)
 				cursor = conn.cursor(MySQLdb.cursors.DictCursor)
 				myConnectionSuccess = True
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e.args[0] == 2006):
 					# 2006: 'MySQL server has gone away'
@@ -207,14 +200,14 @@ class MySQL(SQL):
 					self._transactionLock.release()
 					raise
 		return (conn, cursor)
-		
+
 	def close(self, conn, cursor):
 		try:
 			cursor.close()
 			conn.close()
 		finally:
 			self._transactionLock.release()
-	
+
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
 		(conn, cursor) = self.connect()
@@ -222,7 +215,7 @@ class MySQL(SQL):
 		try:
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -237,7 +230,7 @@ class MySQL(SQL):
 		finally:
 			self.close(conn, cursor)
 		return valueSet
-		
+
 	def getRow(self, query, conn=None, cursor=None):
 		logger.debug2(u"getRow: %s" % query)
 		closeConnection = True
@@ -250,7 +243,7 @@ class MySQL(SQL):
 		try:
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -268,9 +261,9 @@ class MySQL(SQL):
 			if closeConnection:
 				self.close(conn, cursor)
 		return row
-		
+
 	def insert(self, table, valueHash, conn=None, cursor=None):
-		
+
 		closeConnection = True
 		if conn and cursor:
 			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
@@ -295,12 +288,12 @@ class MySQL(SQL):
 					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
 					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
-				
+
 			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
 			logger.debug2(u"insert: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -313,7 +306,7 @@ class MySQL(SQL):
 			if closeConnection:
 				self.close(conn, cursor)
 		return result
-		
+
 	def update(self, table, where, valueHash, updateWhereNone=False):
 		(conn, cursor) = self.connect()
 		result = 0
@@ -338,12 +331,12 @@ class MySQL(SQL):
 					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
 					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
-			
+
 			query = u'%s WHERE %s;' % (query[:-2], where)
 			logger.debug2(u"update: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -355,7 +348,7 @@ class MySQL(SQL):
 		finally:
 			self.close(conn, cursor)
 		return result
-	
+
 	def delete(self, table, where, conn=None, cursor=None):
 		closeConnection = True
 		if conn and cursor:
@@ -369,7 +362,7 @@ class MySQL(SQL):
 			logger.debug2(u"delete: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e[0] != 2006):
 					# 2006: MySQL server has gone away
@@ -382,7 +375,7 @@ class MySQL(SQL):
 			if closeConnection:
 				self.close(conn, cursor)
 		return result
-	
+
 	def execute(self, query, conn=None, cursor=None):
 		res = None
 		needClose = False
@@ -399,7 +392,7 @@ class MySQL(SQL):
 			if needClose:
 				self.close(conn, cursor)
 		return res
-	
+
 	def getTables(self):
 		# Hardware audit database
 		tables = {}
@@ -412,40 +405,41 @@ class MySQL(SQL):
 				logger.debug2(u"      %s" % j)
 				tables[tableName].append(j['Field'])
 		return tables
-	
+
 	def getTableCreationOptions(self, table):
 		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith('HARDWARE_DEVICE_') or table.startswith('HARDWARE_CONFIG_'):
 			return u'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return u'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 
+
 class MySQLBackend(SQLBackend):
-	
+
 	def __init__(self, **kwargs):
 		self._name = 'mysql'
-		
+
 		SQLBackend.__init__(self, **kwargs)
-		
+
 		self._sql = MySQL(**kwargs)
-		
+
 		warnings.showwarning = self._showwarning
-		
+
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = False
 		self._sqlBackendModule = False
-		
+
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
-		
+
 		if not modules.get('customer'):
 			logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
-			
+
 		elif not modules.get('valid'):
 			logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
-		
+
 		elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 			logger.notice(u"Disabling mysql backend and license management module: modules file expired")
-		
+
 		else:
 			logger.info(u"Verifying modules file signature")
 			publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
@@ -455,7 +449,7 @@ class MySQLBackend(SQLBackend):
 			for module in mks:
 				if module in ('valid', 'signature'):
 					continue
-				
+
 				if helpermodules.has_key(module):
 					val = helpermodules[module]
 					if int(val) > 0:
@@ -464,32 +458,68 @@ class MySQLBackend(SQLBackend):
 					val = modules[module]
 					if (val == False): val = 'no'
 					if (val == True):  val = 'yes'
-					
+
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
 			if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
 				logger.error(u"Disabling mysql backend and license management module: modules file invalid")
 			else:
 				logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
-				
+
 				if modules.get('license_management'):
 					self._licenseManagementModule = True
-				
+
 				if modules.get('mysql_backend'):
 					self._sqlBackendModule = True
-		
+
 		logger.debug(u'MySQLBackend created: %s' % self)
-		
+
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
 		#logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))
 		if str(message).startswith('Data truncated for column'):
 			logger.error(message)
 		else:
 			logger.warning(message)
-	
+
+	def _createTableHost(self):
+		logger.debug(u'Creating table HOST')
+		# MySQL uses some defaults for a row that specifies TIMESTAMP as
+		# type without giving DEFAULT or ON UPDATE constraints that
+		# result in hosts always having the current time in created and
+		# lastSeen. We do not want this behaviour, so we need to specify
+		# our DEFAULT.
+		# More information about the defaults can be found in the MySQL
+		# handbook:
+		#   https://dev.mysql.com/doc/refman/5.1/de/timestamp-4-1.html
+		table = u'''CREATE TABLE `HOST` (
+				`hostId` varchar(255) NOT NULL,
+				`type` varchar(30),
+				`description` varchar(100),
+				`notes` varchar(500),
+				`hardwareAddress` varchar(17),
+				`ipAddress` varchar(15),
+				`inventoryNumber` varchar(30),
+				`created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				`lastSeen` TIMESTAMP,
+				`opsiHostKey` varchar(32),
+				`oneTimePassword` varchar(32),
+				`maxBandwidth` integer,
+				`depotLocalUrl` varchar(128),
+				`depotRemoteUrl` varchar(255),
+				`depotWebdavUrl` varchar(255),
+				`repositoryLocalUrl` varchar(128),
+				`repositoryRemoteUrl` varchar(255),
+				`networkAddress` varchar(31),
+				`isMasterDepot` bool,
+				`masterDepotId` varchar(255),
+				PRIMARY KEY (`hostId`)
+			) %s;''' % self._sql.getTableCreationOptions('HOST')
+		logger.debug(table)
+		self._sql.execute(table)
+		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
+
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
 	def __init__(self, **kwargs):
 		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
 		self._sql = MySQL(**kwargs)
 		self._createTables()
-

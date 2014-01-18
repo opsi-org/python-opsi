@@ -1,50 +1,50 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = =
-   =    opsi python library - File.Archive   =
-   = = = = = = = = = = = = = = = = = = = = = =
+opsi python library - File.Archive
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2006, 2007, 2008, 2009 uib GmbH
+Copyright (C) 2006-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
-   @license: GNU General Public License version 2
+:author: Jan Schneider <j.schneider@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
+:license: GNU General Public License version 2
 """
 
 __version__ = "4.0"
 
 import locale
 import os
+import re
 import subprocess
+import time
 
 if (os.name == 'posix'):
 	import fcntl
 	import magic
 
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI import System
-from OPSI.Types import *
+from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
 
 logger = Logger()
@@ -74,7 +74,7 @@ class BaseArchive(object):
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
-			if   fileType.lower().startswith('gzip compressed data'):
+			if fileType.lower().startswith('gzip compressed data'):
 				self._compression = u'gzip'
 			elif fileType.lower().startswith('bzip2 compressed data'):
 				self._compression = u'bzip2'
@@ -87,7 +87,9 @@ class BaseArchive(object):
 	def _extract(self, command, fileCount):
 		try:
 			logger.info(u"Executing: %s" % command )
-			proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			proc = subprocess.Popen(command,
+				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+			)
 
 			encoding = proc.stdout.encoding
 			if not encoding:
@@ -112,7 +114,7 @@ class BaseArchive(object):
 						if (filesExtracted > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
-				except:
+				except Exception:
 					pass
 				try:
 					chunk = proc.stderr.read()
@@ -122,7 +124,7 @@ class BaseArchive(object):
 						if (filesExtracted > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
-				except:
+				except Exception:
 					time.sleep(0.001)
 				ret = proc.poll()
 
@@ -134,8 +136,7 @@ class BaseArchive(object):
 				raise Exception(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
 				self._progressSubject.setState(fileCount)
-
-		except Exception, e:
+		except Exception as e:
 			logger.logException(e)
 			raise
 
@@ -148,7 +149,10 @@ class BaseArchive(object):
 			os.chdir(baseDir)
 
 			logger.info(u"Executing: %s" % command )
-			proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			proc = subprocess.Popen(command,
+				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE
+			)
 
 			encoding = proc.stdin.encoding
 			if not encoding:
@@ -186,7 +190,7 @@ class BaseArchive(object):
 						if (filesAdded > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesAdded)
-				except:
+				except Exception:
 					pass
 				try:
 					chunk = proc.stderr.read()
@@ -196,7 +200,7 @@ class BaseArchive(object):
 						if (filesAdded > 0):
 							if self._progressSubject:
 								self._progressSubject.addToState(filesAdded)
-				except:
+				except Exception:
 					time.sleep(0.001)
 
 			proc.stdin.close()
@@ -277,7 +281,7 @@ class TarArchive(BaseArchive, PigzMixin):
 				if line:
 					names.append(unicode(line))
 			return names
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
 	def extract(self, targetPath='.', patterns=[]):
@@ -287,7 +291,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)
-				except Exception, e:
+				except Exception as e:
 					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
 
 			options = u''
@@ -312,7 +316,7 @@ class TarArchive(BaseArchive, PigzMixin):
 								match = True
 								break
 							fileCount += 1
-						except Exception, e:
+						except Exception as e:
 							raise Exception(u"Bad pattern '%s': %s" % (p, e))
 				if match:
 					fileCount += 1
@@ -322,7 +326,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			command = u'%s %s --directory "%s" --extract --verbose --file "%s"' % (System.which('tar'), options, targetPath, self._filename)
 			self._extract(command, fileCount)
 
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
 	def create(self, fileList, baseDir='.', dereference=False):
@@ -348,7 +352,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			self._create(fileList, baseDir, command)
 
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 
@@ -373,7 +377,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				if line:
 					names.append(unicode(line))
 			return names
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
 	def extract(self, targetPath='.', patterns=[]):
@@ -383,7 +387,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)
-				except Exception, e:
+				except Exception as e:
 					raise Exception(u"Failed to create target dir '%s': %s" % (targetPath, e))
 
 			cat = System.which('cat')
@@ -408,7 +412,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 								match = True
 								break
 							fileCount += 1
-						except Exception, e:
+						except Exception as e:
 							raise Exception(u"Bad pattern '%s': %s" % (p, e))
 				if match:
 					fileCount += 1
@@ -424,7 +428,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				self._extract(command, fileCount)
 			finally:
 				os.chdir(curDir)
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
 	def create(self, fileList, baseDir='.', dereference=False):
@@ -450,7 +454,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			self._create(fileList, baseDir, command)
 
-		except Exception, e:
+		except Exception as e:
 			raise Exception(u"Failed to create archive '%s': %s" % (self._filename, e))
 
 

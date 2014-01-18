@@ -1,51 +1,50 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-   = = = = = = = = = = = = = = = = = = = = = =
-   =   opsi python library - HostControl     =
-   = = = = = = = = = = = = = = = = = = = = = =
+opsi python library - HostControl
 
-   This module is part of the desktop management solution opsi
-   (open pc server integration) http://www.opsi.org
+This module is part of the desktop management solution opsi
+(open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+Copyright (C) 2010-2013 uib GmbH
 
-   http://www.uib.de/
+http://www.uib.de/
 
-   All rights reserved.
+All rights reserved.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-   @copyright:	uib GmbH <info@uib.de>
-   @author: Erol Ueluekmen <e.ueluekmen@uib.de>
-   @license: GNU General Public License version 2
+@copyright: uib GmbH <info@uib.de>
+@author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@license: GNU General Public License version 2
 """
 
 __version__ = '4.0.3.1'
 
-# Imports
-import socket, threading, httplib, base64, time, struct
+import socket
+import time
+import struct
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
+	forceUnicode, forceUnicodeList)
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
-# Get logger instance
 logger = Logger()
+
 
 class HostControlSafeBackend(ExtendedBackend):
 
@@ -120,7 +119,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						password = host.opsiHostKey,
 						method   = method,
 						params   = params))
-			except Exception, e:
+			except Exception as e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 
 		runningThreads = 0
@@ -150,7 +149,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						if not rpct.ended:
 							try:
 								rpct.terminate()
-							except Exception, e:
+							except Exception as e:
 								logger.error(u"Failed to terminate rpc thread: %s" % e)
 						runningThreads -= 1
 						continue
@@ -191,7 +190,7 @@ class HostControlSafeBackend(ExtendedBackend):
 					sock.sendto(send_data, (broadcastAddress, 12287))
 					sock.close()
 				result[host.id] = {"result": "sent", "error": None}
-			except Exception, e:
+			except Exception as e:
 				logger.logException(e, LOG_DEBUG)
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 		return result
@@ -259,7 +258,7 @@ class HostControlSafeBackend(ExtendedBackend):
 						hostControlBackend = self,
 						hostId             = host.id,
 						address            = address))
-			except Exception, e:
+			except Exception as e:
 				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False
 
@@ -279,16 +278,16 @@ class HostControlSafeBackend(ExtendedBackend):
 				else:
 					timeRunning = time.time() - thread.started
 					if (timeRunning >= timeout +5):
-							# thread still alive 5 seconds after timeout => kill
-							logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
-							result[thread.hostId] = False
-							if not thread.ended:
-								try:
-									thread.terminate()
-								except Exception, e:
-									logger.error(u"Failed to terminate reachable thread: %s" % e)
-							runningThreads -= 1
-							continue
+						# thread still alive 5 seconds after timeout => kill
+						logger.error(u"Reachable check to host %s address %s timed out after %0.2f  seconds, terminating" % (thread.hostId, thread.address, timeRunning))
+						result[thread.hostId] = False
+						if not thread.ended:
+							try:
+								thread.terminate()
+							except Exception as e:
+								logger.error(u"Failed to terminate reachable thread: %s" % e)
+						runningThreads -= 1
+						continue
 				newThreads.append(thread)
 			threads = newThreads
 			time.sleep(0.1)
