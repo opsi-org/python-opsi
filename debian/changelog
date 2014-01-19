@@ -3,6 +3,7 @@ python-opsi (4.0.4.3-1) UNRELEASED; urgency=low
   * New module: OPSI.Util.Task.CleanupBackend
   * Suppressing DeprecationWarning from ldaptor.
   * Bugfix in HTTPRepository. 
+  * Workarround for Windows 8.1 detection.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Dec 2013 12:05:36 +0100
 

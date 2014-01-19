@@ -137,7 +137,7 @@ def getArchitecture():
 	except Exception as e:
 		logger.error("Error by determining OS-Architecture: '%s'; returning default: 'x86'")
 
-def getOpsiHotfixName():
+def getOpsiHotfixName(helper = None):
 	arch = getArchitecture()
 	major = sys.getwindowsversion()[0]
 	minor = sys.getwindowsversion()[1]
@@ -160,6 +160,9 @@ def getOpsiHotfixName():
 				os = u'win2003-winxp'
 	elif (major == 6):
 		lang = u'glb'
+		if helper:
+			result = execute(helper, shell=False)
+			minor = result[0].split(".")[1]
 		if (minor == 0):
 			os = u'vista-win2008'
 		elif (minor == 1):
