@@ -33,6 +33,9 @@ class DistributionTestCase(unittest.TestCase):
                 'Expected "{0}" to be in {1}.'.format(part, self.dist)
             )
 
+    def testDistributorIsNotNone(self):
+        self.assertNotEqual(None, self.dist.distributor)
+
 
 class DebianSqueezeTestCase(DistributionTestCase):
     DIST_INFO = ('debian', '6.0.7', '')

@@ -2567,6 +2567,8 @@ class Distribution(object):
 
 		osType, self.hostname, self.kernel, self.detailedVersion, self.arch, processor = platform.uname()
 
+		self.distributor = self._getDistributor()
+
 	@property
 	def version(self):
 		if 'errata' in self._version:
@@ -2574,6 +2576,21 @@ class Distribution(object):
 			return tuple([int(x) for x in version.split('.')])
 		else:
 			return tuple([int(x) for x in self._version.split(".")])
+
+	@staticmethod
+	def _getDistributor():
+		"""
+		Get information about the distributor.
+
+		Returns an empty string if no information can be obtained.
+		"""
+		try:
+			lsbReleaseOutput = execute('lsb_release -i', captureStderr=False)
+			distributor = lsbReleaseOutput[0].split(':')[1].strip()
+		except Exception:
+			distributor = ''
+
+		return distributor
 
 	def __str__(self):
 		return ("%s %s %s" % (self.distribution, self._version, self.id)).strip()
