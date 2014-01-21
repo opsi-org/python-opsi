@@ -678,12 +678,12 @@ class SnackUI(UI):
 
 	def yesno(self, text, title=_(u'Question'), okLabel=_(u'OK'), cancelLabel=_(u'Cancel'), width=-1, height=-1):
 		try:
-			text        = forceUnicode(text)
-			title       = forceUnicode(title)
-			okLabel     = forceUnicode(okLabel)
+			text = forceUnicode(text)
+			title = forceUnicode(title)
+			okLabel = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
-			width       = forceInt(width)
-			height      = forceInt(height)
+			width = forceInt(width)
+			height = forceInt(height)
 
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
@@ -697,8 +697,8 @@ class SnackUI(UI):
 
 			gridForm = GridForm(self._screen, title.encode(encoding, 'replace'), 1, 2)
 
-			textBox = Textbox(width = width, height = height-6, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
-			gridForm.add(textBox, col = 0, row = 0)
+			textBox = Textbox(width=width, height=height-6, text=text.encode(encoding, 'replace'), scroll=1, wrap=1)
+			gridForm.add(textBox, col=0, row=0)
 
 			grid = Grid(2, 1)
 			cancelButton = Button(cancelLabel.encode(encoding, 'replace'))
