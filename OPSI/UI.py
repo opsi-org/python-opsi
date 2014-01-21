@@ -39,7 +39,8 @@ import signal as ui_signal
 from snack import *
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
+	forceUnicodeList)
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
 
