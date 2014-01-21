@@ -34,54 +34,54 @@ from OPSI.Logger import Logger
 from OPSI.System.Posix import Distribution
 
 try:
-    from OPSI.Util.File.Opsi import OpsiConfFile
-    FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+	from OPSI.Util.File.Opsi import OpsiConfFile
+	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except Exception:
-    FILE_ADMIN_GROUP = u'pcpatch'
+	FILE_ADMIN_GROUP = u'pcpatch'
 
 logger = Logger()
 
 
 def patchSudoersFileForOpsi(sudoersFile=u'/etc/sudoers'):
-    """
-    Patches the sudoers file so opsiconfd and the OPSI file admins can \
+	"""
+	Patches the sudoers file so opsiconfd and the OPSI file admins can \
 call opsi-set-rights.
 
-    :param sudoersFile: The path to the sudoers file.
-    """
-    #get opsifileadmins groupname!!!!
-    entries = [
-        "opsiconfd ALL=NOPASSWD: %s" % "/usr/bin/opsi-set-rights",
-        "%%%s ALL=NOPASSWD: %s" % (FILE_ADMIN_GROUP, "/usr/bin/opsi-set-rights"),
-    ]
-    lines = []
-    found = False
+	:param sudoersFile: The path to the sudoers file.
+	"""
+	#get opsifileadmins groupname!!!!
+	entries = [
+		"opsiconfd ALL=NOPASSWD: %s" % "/usr/bin/opsi-set-rights",
+		"%%%s ALL=NOPASSWD: %s" % (FILE_ADMIN_GROUP, "/usr/bin/opsi-set-rights"),
+	]
+	lines = []
+	found = False
 
-    with codecs.open(sudoersFile, 'r', 'utf-8') as inputFile:
-        for line in inputFile:
-            for entry in entries:
-                if entry in line:
-                    found = True
+	with codecs.open(sudoersFile, 'r', 'utf-8') as inputFile:
+		for line in inputFile:
+			for entry in entries:
+				if entry in line:
+					found = True
 
-            lines.append(line)
+			lines.append(line)
 
-    if not found:
-        logger.notice(u"   Creating backup of %s" % sudoersFile)
-        shutil.copy(sudoersFile, sudoersFile + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
+	if not found:
+		logger.notice(u"   Creating backup of %s" % sudoersFile)
+		shutil.copy(sudoersFile, sudoersFile + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
-        logger.notice(u"   Adding sudoers entries for opsi")
-        for entry in entries:
-            lines.append("{0}\n".format(entry))
+		logger.notice(u"   Adding sudoers entries for opsi")
+		for entry in entries:
+			lines.append("{0}\n".format(entry))
 
-        distributor = Distribution().distributor
-        distributor = distributor.lower()
-        if ('scientificsl' in distributor or 'redhat' in distributor
-            or 'centos' in distributor or 'sme' in distributor):
+		distributor = Distribution().distributor
+		distributor = distributor.lower()
+		if ('scientificsl' in distributor or 'redhat' in distributor
+			or 'centos' in distributor or 'sme' in distributor):
 
-            lines.append(u"Defaults:opsiconfd !requiretty\n")
+			lines.append(u"Defaults:opsiconfd !requiretty\n")
 
-        lines.append('\n')
+		lines.append('\n')
 
-        logger.notice(u"   Writing new %s" % sudoersFile)
-        with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
-            outputFile.writelines(lines)
+		logger.notice(u"   Writing new %s" % sudoersFile)
+		with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
+			outputFile.writelines(lines)
