@@ -1,11 +1,12 @@
-python-opsi (4.0.4.3-1) UNRELEASED; urgency=low
+python-opsi (4.0.4.3-2) UNRELEASED; urgency=low
 
   * New module: OPSI.Util.Task.CleanupBackend
   * Suppressing DeprecationWarning from ldaptor.
   * Bugfix in HTTPRepository. 
   * Workarround for Windows 8.1 detection.
+  * New module: OPSI.Util.Task.Sudoers 
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 19 Dec 2013 12:05:36 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 20 Jan 2014 16:35:57 +0100
 
 python-opsi (4.0.4.2-1) testing; urgency=low
 
