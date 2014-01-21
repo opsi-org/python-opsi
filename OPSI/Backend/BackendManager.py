@@ -57,6 +57,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.System.Posix import Distribution
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
@@ -64,13 +65,8 @@ from OPSI.Util.MessageBus import MessageBusClient
 # Get logger instance
 logger = Logger()
 
-DISTRIBUTOR = 'unknown'
-try:
-	f = os.popen('lsb_release -i 2>/dev/null')
-	DISTRIBUTOR = f.read().split(':')[1].strip()
-	f.close()
-except Exception as e:
-	pass
+DISTRIBUTOR = Distribution().distributor or 'unknown'
+
 DISTRIBUTION = 'unknown'
 try:
 	f = os.popen('lsb_release -d 2>/dev/null')
