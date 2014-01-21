@@ -705,7 +705,7 @@ class SnackUI(UI):
 			grid.setField(cancelButton, 0, 0, (0, 0, 5, 0))
 			okButton = Button(okLabel.encode(encoding, 'replace'))
 			grid.setField(okButton, 1, 0, (5, 0, 0, 0))
-			gridForm.add(grid, col = 0, row = 1)
+			gridForm.add(grid, col=0, row=1)
 
 			# help line
 			helpLine = _(u"<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select") % (cancelLabel, okLabel)
