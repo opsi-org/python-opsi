@@ -717,10 +717,10 @@ class SnackUI(UI):
 			gridForm.addHotKey('ESC')
 			gridForm.draw()
 			buttonPressed = None
-			while (buttonPressed not in [ okButton, 'F12', cancelButton, 'ESC' ] ):
+			while buttonPressed not in (okButton, 'F12', cancelButton, 'ESC'):
 				buttonPressed = gridForm.run()
 			self._screen.popWindow()
-			if (buttonPressed in [ okButton, 'F12' ] ):
+			if buttonPressed in (okButton, 'F12'):
 				return True
 			return False
 		except Exception as e:
