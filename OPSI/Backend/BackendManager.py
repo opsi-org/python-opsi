@@ -57,7 +57,6 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
-from OPSI.System.Posix import Distribution
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
@@ -65,7 +64,12 @@ from OPSI.Util.MessageBus import MessageBusClient
 # Get logger instance
 logger = Logger()
 
-DISTRIBUTOR = Distribution().distributor or 'unknown'
+try:
+	from OPSI.System.Posix import Distribution
+	DISTRIBUTOR = Distribution().distributor or 'unknown'
+except ImportError:
+	# Probably running on Windows.
+	DISTRIBUTOR = 'unknown'
 
 DISTRIBUTION = 'unknown'
 try:
