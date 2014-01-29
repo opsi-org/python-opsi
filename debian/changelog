@@ -1,18 +1,9 @@
 python-opsi (4.0.4.5-1) UNRELEASED; urgency=low
 
-  * New module: OPSI.Util.Task.CleanupBackend
   * New module: OPSI.Util.Task.Sudoers
   
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 23 Jan 2014 00:03:57 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 29 Jan 2014 01:30:57 +0100
  
-python-opsi (4.0.4.4-1) testing; urgency=low
-
-  * Suppressing DeprecationWarning from ldaptor.
-  * Bugfix in HTTPRepository. 
-  * Workarround for Windows 8.1 detection.
-
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 23 Jan 2014 00:01:57 +0100
-
 python-opsi (4.0.4.4-1) testing; urgency=low
 
   * added geo_override patch for older bios (opsi-linux-bootimage)
@@ -27,8 +18,12 @@ python-opsi (4.0.4.4-1) testing; urgency=low
   * Removed workarounds for Python versions prior to 2.6
   * New depot selection alogrith: Select the depot with lowest latency that
     either is or belongs to the master depot the client is attached to.
+  * New module: OPSI.Util.Task.CleanupBackend
+  * Suppressing DeprecationWarning from ldaptor.
+  * Bugfix in HTTPRepository.
+  * Workarround for Windows 8.1 detection.
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 06 Nov 2013 13:22:18 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 29 Jan 2014 01:22:18 +0100
  
 python-opsi (4.0.4.3-1) testing; urgency=low
 
