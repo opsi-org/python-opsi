@@ -650,45 +650,45 @@ class MySQLBackend(SQLBackend):
 		self._sql.close(conn,cursor)
 
 		def productProperty_updateObject(self, productProperty):
-		if not self._sqlBackendModule:
-			raise Exception(u"SQL backend module disabled")
-
-		ConfigDataBackend.productProperty_updateObject(self, productProperty)
-		data = self._objectToDatabaseHash(productProperty)
-		where = self._uniqueCondition(productProperty)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
-		if possibleValues is None:
-			possibleValues = []
-		if defaultValues is None:
-			defaultValues = []
-		del data['possibleValues']
-		del data['defaultValues']
-		self._sql.update('PRODUCT_PROPERTY', where, data)
-
-		if not possibleValues is None:
-			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
-
-		for value in possibleValues:
-			try:
-				self._sql.doCommit = False
-				logger.notice(u'doCommit set to false')
-				if not self._sql.getRow(u"select * from PRODUCT_PROPERTY_VALUE where " \
-						+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s' AND `value` = '%s' AND `isDefault` = %s" \
-						% (data['propertyId'], data['productId'], str(data['productVersion']), str(data['packageVersion']), value, str(value in defaultValues))):
+			if not self._sqlBackendModule:
+				raise Exception(u"SQL backend module disabled")
+	
+			ConfigDataBackend.productProperty_updateObject(self, productProperty)
+			data = self._objectToDatabaseHash(productProperty)
+			where = self._uniqueCondition(productProperty)
+			possibleValues = data['possibleValues']
+			defaultValues = data['defaultValues']
+			if possibleValues is None:
+				possibleValues = []
+			if defaultValues is None:
+				defaultValues = []
+			del data['possibleValues']
+			del data['defaultValues']
+			self._sql.update('PRODUCT_PROPERTY', where, data)
+	
+			if not possibleValues is None:
+				self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
+	
+			for value in possibleValues:
+				try:
+					self._sql.doCommit = False
+					logger.notice(u'doCommit set to false')
+					if not self._sql.getRow(u"select * from PRODUCT_PROPERTY_VALUE where " \
+							+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s' AND `value` = '%s' AND `isDefault` = %s" \
+							% (data['propertyId'], data['productId'], str(data['productVersion']), str(data['packageVersion']), value, str(value in defaultValues))):
+						self._sql.doCommit = True
+						logger.notice(u'doCommit set to true')
+						self._sql.insert('PRODUCT_PROPERTY_VALUE', {
+							'productId': data['productId'],
+							'productVersion': data['productVersion'],
+							'packageVersion': data['packageVersion'],
+							'propertyId': data['propertyId'],
+							'value': value,
+							'isDefault': (value in defaultValues)
+							})
+				finally:
 					self._sql.doCommit = True
 					logger.notice(u'doCommit set to true')
-					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-					        'productId': data['productId'],
-					        'productVersion': data['productVersion'],
-					        'packageVersion': data['packageVersion'],
-					        'propertyId': data['propertyId'],
-					        'value': value,
-					        'isDefault': (value in defaultValues)
-					        })
-			finally:
-				self._sql.doCommit = True
-				logger.notice(u'doCommit set to true')
 		
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
