@@ -521,8 +521,10 @@ class LDAPBackend(ConfigDataBackend):
 		return textfilter
 
 	def _createOrganizationalRole(self, dn):
-		''' This method will add a oprganizational role object
-		    with the specified DN, if it does not already exist. '''
+		'''
+		This method will add a oprganizational role object
+		with the specified DN, if it does not already exist.
+		'''
 		organizationalRole = LDAPObject(dn)
 		if organizationalRole.exists(self._ldap):
 			logger.info(u"Organizational role '%s' already exists" % dn)
@@ -1600,10 +1602,12 @@ class LDAPObject:
 			ldapSession.addByModlist(self._dn, self._new)
 
 	def getAttributeDict(self, valuesAsList=False):
-		''' Get all attributes of object as dict.
-		    All values in self._new are lists by default,
-		    a list of length 0 becomes the value None
-		    if there is only one item the item's value is used '''
+		'''
+		Get all attributes of object as dict.
+		All values in self._new are lists by default,
+		a list of length 0 becomes the value None
+		if there is only one item the item's value is used
+		'''
 		ret = {}
 
 		for (key, values) in self._new.items():
