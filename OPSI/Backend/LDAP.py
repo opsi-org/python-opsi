@@ -82,25 +82,25 @@ class LDAPBackend(ConfigDataBackend):
 
 		ConfigDataBackend.__init__(self, **kwargs)
 
-		self._address          = u'localhost'
-		self._opsiBaseDn       = u'cn=opsi,dc=uib,dc=local'
+		self._address = u'localhost'
+		self._opsiBaseDn = u'cn=opsi,dc=uib,dc=local'
 		self._hostsContainerDn = u'cn=hosts,%s' % self._opsiBaseDn
 
-		self._hostAttributeDescription     = u'opsiDescription'
-		self._hostAttributeNotes           = u'opsiNotes'
+		self._hostAttributeDescription = u'opsiDescription'
+		self._hostAttributeNotes = u'opsiNotes'
 		self._hostAttributeHardwareAddress = u'opsiHardwareAddress'
-		self._hostAttributeIpAddress       = u'opsiIpAddress'
+		self._hostAttributeIpAddress = u'opsiIpAddress'
 		self._hostAttributeInventoryNumber = u'opsiInventoryNumber'
 
 		self._clientObjectSearchFilter = u''
-		self._createClientCommand      = u''
-		self._deleteClient             = True
-		self._deleteClientCommand      = u''
+		self._createClientCommand = u''
+		self._deleteClient = True
+		self._deleteClientCommand = u''
 
 		self._serverObjectSearchFilter = u''
-		self._createServerCommand      = u''
-		self._deleteServer             = False
-		self._deleteServerCommand      = u''
+		self._createServerCommand = u''
+		self._deleteServer = False
+		self._deleteServerCommand = u''
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -142,272 +142,265 @@ class LDAPBackend(ConfigDataBackend):
 			elif option in ('deleteservercommand',):
 				self._deleteServerCommand = forceUnicode(value)
 
-		self._configContainerDn                = u'cn=configs,%s'               % self._opsiBaseDn
-		self._configStateContainerDn           = u'cn=configStates,%s'          % self._opsiBaseDn
-		self._groupsContainerDn                = u'cn=groups,%s'                % self._opsiBaseDn
-		self._productsContainerDn              = u'cn=products,%s'              % self._opsiBaseDn
-		self._productOnDepotsContainerDn       = u'cn=productOnDepots,%s'       % self._opsiBaseDn
-		self._productOnClientsContainerDn      = u'cn=productOnClients,%s'      % self._opsiBaseDn
+		self._configContainerDn = u'cn=configs,%s' % self._opsiBaseDn
+		self._configStateContainerDn = u'cn=configStates,%s' % self._opsiBaseDn
+		self._groupsContainerDn = u'cn=groups,%s' % self._opsiBaseDn
+		self._productsContainerDn = u'cn=products,%s' % self._opsiBaseDn
+		self._productOnDepotsContainerDn = u'cn=productOnDepots,%s' % self._opsiBaseDn
+		self._productOnClientsContainerDn = u'cn=productOnClients,%s' % self._opsiBaseDn
 		self._productPropertyStatesContainerDn = u'cn=productPropertyStates,%s' % self._opsiBaseDn
-		#self._objectToGroupsContainerDn        = u'cn=objectToGroups,%s'        % self._opsiBaseDn
 
 		if self._password:
 			logger.addConfidentialString(self._password)
 
 		self._mappings = [
 				{
-					'opsiClass':     'Host',
+					'opsiClass': 'Host',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiHost' ],
+					'objectClasses': ['opsiHost'],
 					'attributes': [
-						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiHostId' },
-						{ 'opsiAttribute': 'ipAddress',       'ldapAttribute': self._hostAttributeIpAddress },
-						{ 'opsiAttribute': 'hardwareAddress', 'ldapAttribute': self._hostAttributeHardwareAddress },
-						{ 'opsiAttribute': 'description',     'ldapAttribute': self._hostAttributeDescription },
-						{ 'opsiAttribute': 'notes',           'ldapAttribute': self._hostAttributeNotes },
-						{ 'opsiAttribute': 'inventoryNumber', 'ldapAttribute': self._hostAttributeInventoryNumber }
+						{'opsiAttribute': 'id', 'ldapAttribute': 'opsiHostId'},
+						{'opsiAttribute': 'ipAddress', 'ldapAttribute': self._hostAttributeIpAddress},
+						{'opsiAttribute': 'hardwareAddress', 'ldapAttribute': self._hostAttributeHardwareAddress},
+						{'opsiAttribute': 'description', 'ldapAttribute': self._hostAttributeDescription},
+						{'opsiAttribute': 'notes', 'ldapAttribute': self._hostAttributeNotes},
+						{'opsiAttribute': 'inventoryNumber', 'ldapAttribute': self._hostAttributeInventoryNumber}
 					]
 				},
 				{
-					'opsiClass':      'OpsiClient',
+					'opsiClass': 'OpsiClient',
 					'opsiSuperClass': 'Host',
-					'objectClasses':  [ 'opsiHost', 'opsiClient' ],
+					'objectClasses': ['opsiHost', 'opsiClient'],
 					'attributes': [
-						{ 'opsiAttribute': 'created',         'ldapAttribute': 'opsiCreatedTimestamp' },
-						{ 'opsiAttribute': 'lastSeen',        'ldapAttribute': 'opsiLastSeenTimestamp' },
-						{ 'opsiAttribute': 'opsiHostKey',     'ldapAttribute': 'opsiHostKey' },
-						{ 'opsiAttribute': 'oneTimePassword', 'ldapAttribute': 'opsiOneTimePassword' }
+						{'opsiAttribute': 'created', 'ldapAttribute': 'opsiCreatedTimestamp'},
+						{'opsiAttribute': 'lastSeen', 'ldapAttribute': 'opsiLastSeenTimestamp'},
+						{'opsiAttribute': 'opsiHostKey', 'ldapAttribute': 'opsiHostKey'},
+						{'opsiAttribute': 'oneTimePassword', 'ldapAttribute': 'opsiOneTimePassword'}
 					]
 				},
 				{
-					'opsiClass':      'OpsiDepotserver',
+					'opsiClass': 'OpsiDepotserver',
 					'opsiSuperClass': 'Host',
-					'objectClasses':  [ 'opsiHost', 'opsiDepotserver' ],
+					'objectClasses': ['opsiHost', 'opsiDepotserver'],
 					'attributes': [
-						{ 'opsiAttribute': 'depotLocalUrl',       'ldapAttribute': 'opsiDepotLocalUrl' },
-						{ 'opsiAttribute': 'depotRemoteUrl',      'ldapAttribute': 'opsiDepotRemoteUrl' },
-						{ 'opsiAttribute': 'depotWebdavUrl',      'ldapAttribute': 'opsiDepotWebdavUrl' },
-						{ 'opsiAttribute': 'repositoryLocalUrl',  'ldapAttribute': 'opsiRepositoryLocalUrl' },
-						{ 'opsiAttribute': 'repositoryRemoteUrl', 'ldapAttribute': 'opsiRepositoryRemoteUrl' },
-						{ 'opsiAttribute': 'networkAddress',      'ldapAttribute': 'opsiNetworkAddress' },
-						{ 'opsiAttribute': 'maxBandwidth',        'ldapAttribute': 'opsiMaximumBandwidth' },
-						{ 'opsiAttribute': 'opsiHostKey',         'ldapAttribute': 'opsiHostKey' },
-						{ 'opsiAttribute': 'isMasterDepot',       'ldapAttribute': 'opsiIsMasterDepot' },
-						{ 'opsiAttribute': 'masterDepotId',       'ldapAttribute': 'opsiMasterDepotId' }
+						{'opsiAttribute': 'depotLocalUrl', 'ldapAttribute': 'opsiDepotLocalUrl'},
+						{'opsiAttribute': 'depotRemoteUrl', 'ldapAttribute': 'opsiDepotRemoteUrl'},
+						{'opsiAttribute': 'depotWebdavUrl', 'ldapAttribute': 'opsiDepotWebdavUrl'},
+						{'opsiAttribute': 'repositoryLocalUrl', 'ldapAttribute': 'opsiRepositoryLocalUrl'},
+						{'opsiAttribute': 'repositoryRemoteUrl', 'ldapAttribute': 'opsiRepositoryRemoteUrl'},
+						{'opsiAttribute': 'networkAddress', 'ldapAttribute': 'opsiNetworkAddress'},
+						{'opsiAttribute': 'maxBandwidth', 'ldapAttribute': 'opsiMaximumBandwidth'},
+						{'opsiAttribute': 'opsiHostKey', 'ldapAttribute': 'opsiHostKey'},
+						{'opsiAttribute': 'isMasterDepot', 'ldapAttribute': 'opsiIsMasterDepot'},
+						{'opsiAttribute': 'masterDepotId', 'ldapAttribute': 'opsiMasterDepotId'}
 					]
 				},
 				{
-					'opsiClass':      'OpsiConfigserver',
+					'opsiClass': 'OpsiConfigserver',
 					'opsiSuperClass': 'OpsiDepotserver',
-					'objectClasses':  [ 'opsiHost', 'opsiDepotserver', 'opsiConfigserver' ],
+					'objectClasses': ['opsiHost', 'opsiDepotserver', 'opsiConfigserver'],
 					'attributes': [
 					]
 				},
 				{
-					'opsiClass':     'Config',
+					'opsiClass': 'Config',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiConfig' ],
+					'objectClasses': ['opsiConfig'],
 					'attributes': [
-						{ 'opsiAttribute': 'id',              'ldapAttribute': 'opsiConfigId' },
-						{ 'opsiAttribute': 'description',     'ldapAttribute': 'opsiDescription' },
-						{ 'opsiAttribute': 'defaultValues',   'ldapAttribute': 'opsiDefaultValue' },
-						{ 'opsiAttribute': 'possibleValues',  'ldapAttribute': 'opsiPossibleValue' },
-						{ 'opsiAttribute': 'editable',        'ldapAttribute': 'opsiEditable' },
-						{ 'opsiAttribute': 'multiValue',      'ldapAttribute': 'opsiMultiValue' }
+						{'opsiAttribute': 'id', 'ldapAttribute': 'opsiConfigId'},
+						{'opsiAttribute': 'description', 'ldapAttribute': 'opsiDescription'},
+						{'opsiAttribute': 'defaultValues', 'ldapAttribute': 'opsiDefaultValue'},
+						{'opsiAttribute': 'possibleValues', 'ldapAttribute': 'opsiPossibleValue'},
+						{'opsiAttribute': 'editable', 'ldapAttribute': 'opsiEditable'},
+						{'opsiAttribute': 'multiValue', 'ldapAttribute': 'opsiMultiValue'}
 					]
 				},
 				{
-					'opsiClass':      'UnicodeConfig',
+					'opsiClass': 'UnicodeConfig',
 					'opsiSuperClass': 'Config',
-					'objectClasses':  [ 'opsiConfig', 'opsiUnicodeConfig' ],
-					'attributes': [
-					]
+					'objectClasses': ['opsiConfig', 'opsiUnicodeConfig'],
+					'attributes': []
 				},
 				{
-					'opsiClass':      'BoolConfig',
+					'opsiClass': 'BoolConfig',
 					'opsiSuperClass': 'Config',
-					'objectClasses':  [ 'opsiConfig', 'opsiBoolConfig' ],
+					'objectClasses': ['opsiConfig', 'opsiBoolConfig'],
+					'attributes': []
+				},
+				{
+					'opsiClass': 'ConfigState',
+					'opsiSuperClass': None,
+					'objectClasses': ['opsiConfigState'],
 					'attributes': [
+						{'opsiAttribute': 'configId', 'ldapAttribute': 'opsiConfigId'},
+						{'opsiAttribute': 'objectId', 'ldapAttribute': 'opsiObjectId'},
+						{'opsiAttribute': 'values', 'ldapAttribute': 'opsiValue'}
 					]
 				},
 				{
-					'opsiClass':     'ConfigState',
+					'opsiClass': 'Product',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiConfigState' ],
+					'objectClasses': ['opsiProduct'],
 					'attributes': [
-						{ 'opsiAttribute': 'configId', 'ldapAttribute': 'opsiConfigId' },
-						{ 'opsiAttribute': 'objectId', 'ldapAttribute': 'opsiObjectId' },
-						{ 'opsiAttribute': 'values',   'ldapAttribute': 'opsiValue' }
-					]
-				},
-				{
-					'opsiClass':     'Product',
-					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiProduct' ],
-					'attributes': [
-						{ 'opsiAttribute': 'id',                 'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productVersion',     'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',     'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'name',               'ldapAttribute': 'opsiProductName' },
-						{ 'opsiAttribute': 'licenseRequired',    'ldapAttribute': 'opsiProductLicenseRequired' },
-						{ 'opsiAttribute': 'setupScript',        'ldapAttribute': 'opsiSetupScript' },
-						{ 'opsiAttribute': 'uninstallScript',    'ldapAttribute': 'opsiUninstallScript' },
-						{ 'opsiAttribute': 'updateScript',       'ldapAttribute': 'opsiUpdateScript' },
-						{ 'opsiAttribute': 'alwaysScript',       'ldapAttribute': 'opsiAlwaysScript' },
-						{ 'opsiAttribute': 'onceScript',         'ldapAttribute': 'opsiOnceScript' },
-						{ 'opsiAttribute': 'customScript',       'ldapAttribute': 'opsiCustomScript' },
-						{ 'opsiAttribute': 'userLoginScript',    'ldapAttribute': 'opsiUserLoginScript' },
-						{ 'opsiAttribute': 'priority',        	 'ldapAttribute': 'opsiProductPriority' },
-						{ 'opsiAttribute': 'description',        'ldapAttribute': 'description' },
-						{ 'opsiAttribute': 'advice',             'ldapAttribute': 'opsiProductAdvice' },
-						{ 'opsiAttribute': 'changelog',          'ldapAttribute': 'opsiProductChangeLog' },
-						{ 'opsiAttribute': 'windowsSoftwareIds', 'ldapAttribute': 'opsiWindowsSoftwareId' },
-						{ 'opsiAttribute': 'productClassIds',    'ldapAttribute': 'opsiProductClassId' }
+						{'opsiAttribute': 'id', 'ldapAttribute': 'opsiProductId'},
+						{'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion'},
+						{'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion'},
+						{'opsiAttribute': 'name', 'ldapAttribute': 'opsiProductName'},
+						{'opsiAttribute': 'licenseRequired', 'ldapAttribute': 'opsiProductLicenseRequired'},
+						{'opsiAttribute': 'setupScript', 'ldapAttribute': 'opsiSetupScript'},
+						{'opsiAttribute': 'uninstallScript', 'ldapAttribute': 'opsiUninstallScript'},
+						{'opsiAttribute': 'updateScript', 'ldapAttribute': 'opsiUpdateScript'},
+						{'opsiAttribute': 'alwaysScript', 'ldapAttribute': 'opsiAlwaysScript'},
+						{'opsiAttribute': 'onceScript', 'ldapAttribute': 'opsiOnceScript'},
+						{'opsiAttribute': 'customScript', 'ldapAttribute': 'opsiCustomScript'},
+						{'opsiAttribute': 'userLoginScript', 'ldapAttribute': 'opsiUserLoginScript'},
+						{'opsiAttribute': 'priority', 'ldapAttribute': 'opsiProductPriority'},
+						{'opsiAttribute': 'description', 'ldapAttribute': 'description'},
+						{'opsiAttribute': 'advice', 'ldapAttribute': 'opsiProductAdvice'},
+						{'opsiAttribute': 'changelog', 'ldapAttribute': 'opsiProductChangeLog'},
+						{'opsiAttribute': 'windowsSoftwareIds', 'ldapAttribute': 'opsiWindowsSoftwareId'},
+						{'opsiAttribute': 'productClassIds', 'ldapAttribute': 'opsiProductClassId'}
 
 					]
 				},
 				{
-					'opsiClass':      'LocalbootProduct',
+					'opsiClass': 'LocalbootProduct',
 					'opsiSuperClass': 'Product',
-					'objectClasses':  [ 'opsiProduct', 'opsiLocalBootProduct' ],
-					'attributes': [
-					]
+					'objectClasses': ['opsiProduct', 'opsiLocalBootProduct'],
+					'attributes': []
 				},
 				{
-					'opsiClass':     'NetbootProduct',
+					'opsiClass': 'NetbootProduct',
 					'opsiSuperClass': 'Product',
-					'objectClasses': [ 'opsiProduct', 'opsiNetBootProduct' ],
+					'objectClasses': ['opsiProduct', 'opsiNetBootProduct'],
 					'attributes': [
-						{ 'opsiAttribute': 'pxeConfigTemplate', 'ldapAttribute': 'opsiPxeConfigTemplate' }
+						{'opsiAttribute': 'pxeConfigTemplate', 'ldapAttribute': 'opsiPxeConfigTemplate'}
 					]
 				},
 				{
-					'opsiClass':     'ProductProperty',
+					'opsiClass': 'ProductProperty',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiProductProperty' ],
+					'objectClasses': ['opsiProductProperty'],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',         'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'propertyId',        'ldapAttribute': 'opsiPropertyId' },
-						{ 'opsiAttribute': 'productVersion',    'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',    'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'description',       'ldapAttribute': 'opsiDescription' },
-						{ 'opsiAttribute': 'requiredProductId', 'ldapAttribute': 'opsiRequiredProductId' },
-						{ 'opsiAttribute': 'possibleValues',    'ldapAttribute': 'opsiPossibleValue' },
-						{ 'opsiAttribute': 'defaultValues',     'ldapAttribute': 'opsiDefaultValue' },
-						{ 'opsiAttribute': 'editable',          'ldapAttribute': 'opsiEditable' },
-						{ 'opsiAttribute': 'multiValue',        'ldapAttribute': 'opsiMultiValue' }
+						{'opsiAttribute': 'productId', 'ldapAttribute': 'opsiProductId'},
+						{'opsiAttribute': 'propertyId', 'ldapAttribute': 'opsiPropertyId'},
+						{'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion'},
+						{'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion'},
+						{'opsiAttribute': 'description', 'ldapAttribute': 'opsiDescription'},
+						{'opsiAttribute': 'requiredProductId', 'ldapAttribute': 'opsiRequiredProductId'},
+						{'opsiAttribute': 'possibleValues', 'ldapAttribute': 'opsiPossibleValue'},
+						{'opsiAttribute': 'defaultValues', 'ldapAttribute': 'opsiDefaultValue'},
+						{'opsiAttribute': 'editable', 'ldapAttribute': 'opsiEditable'},
+						{'opsiAttribute': 'multiValue', 'ldapAttribute': 'opsiMultiValue'}
 					]
 				},
 				{
-					'opsiClass':      'UnicodeProductProperty',
+					'opsiClass': 'UnicodeProductProperty',
 					'opsiSuperClass': 'ProductProperty',
-					'objectClasses':  [ 'opsiProductProperty', 'opsiUnicodeProductProperty' ],
-					'attributes': [
-					]
+					'objectClasses': ['opsiProductProperty', 'opsiUnicodeProductProperty'],
+					'attributes': []
 				},
 				{
-					'opsiClass':     'BoolProductProperty',
+					'opsiClass': 'BoolProductProperty',
 					'opsiSuperClass': 'ProductProperty',
-					'objectClasses': [ 'opsiProductProperty', 'opsiBoolProductProperty' ],
+					'objectClasses': ['opsiProductProperty', 'opsiBoolProductProperty'],
 					'attributes': [
-						{ 'opsiAttribute': 'pxeConfigTemplate', 'ldapAttribute': 'opsiPxeConfigTemplate' }
+						{'opsiAttribute': 'pxeConfigTemplate', 'ldapAttribute': 'opsiPxeConfigTemplate'}
 					]
 				},
 				{
-					'opsiClass':     'ProductDependency',
+					'opsiClass': 'ProductDependency',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiProductDependency' ],
+					'objectClasses': ['opsiProductDependency' ],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',                  'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productVersion',             'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',             'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'requiredProductId',          'ldapAttribute': 'opsiRequiredProductId' },
-						{ 'opsiAttribute': 'requiredAction',             'ldapAttribute': 'opsiActionRequired' },
-						{ 'opsiAttribute': 'productAction',              'ldapAttribute': 'opsiProductAction' },
-						{ 'opsiAttribute': 'requiredProductVersion',     'ldapAttribute': 'opsiRequiredProductVersion' },
-						{ 'opsiAttribute': 'requiredPackageVersion',     'ldapAttribute': 'opsiRequiredPackageVersion' },
-						{ 'opsiAttribute': 'requiredInstallationStatus', 'ldapAttribute': 'opsiInstallationStatusRequired' },
-						{ 'opsiAttribute': 'requirementType',            'ldapAttribute': 'opsiRequirementType' }
+						{'opsiAttribute': 'productId', 'ldapAttribute': 'opsiProductId'},
+						{'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion'},
+						{'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion'},
+						{'opsiAttribute': 'requiredProductId', 'ldapAttribute': 'opsiRequiredProductId'},
+						{'opsiAttribute': 'requiredAction', 'ldapAttribute': 'opsiActionRequired'},
+						{'opsiAttribute': 'productAction', 'ldapAttribute': 'opsiProductAction'},
+						{'opsiAttribute': 'requiredProductVersion', 'ldapAttribute': 'opsiRequiredProductVersion'},
+						{'opsiAttribute': 'requiredPackageVersion', 'ldapAttribute': 'opsiRequiredPackageVersion'},
+						{'opsiAttribute': 'requiredInstallationStatus', 'ldapAttribute': 'opsiInstallationStatusRequired'},
+						{'opsiAttribute': 'requirementType', 'ldapAttribute': 'opsiRequirementType'}
 					]
 				},
 				{
-					'opsiClass':     'ProductOnDepot',
+					'opsiClass': 'ProductOnDepot',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiProductOnDepot' ],
+					'objectClasses': ['opsiProductOnDepot'],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',      'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productType',    'ldapAttribute': 'opsiProductType' },
-						{ 'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'depotId',        'ldapAttribute': 'opsiDepotId' },
-						{ 'opsiAttribute': 'locked',         'ldapAttribute': 'opsiLocked' }
+						{'opsiAttribute': 'productId', 'ldapAttribute': 'opsiProductId'},
+						{'opsiAttribute': 'productType', 'ldapAttribute': 'opsiProductType'},
+						{'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion'},
+						{'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion'},
+						{'opsiAttribute': 'depotId', 'ldapAttribute': 'opsiDepotId'},
+						{'opsiAttribute': 'locked', 'ldapAttribute': 'opsiLocked'}
 					]
 				},
 				{
-					'opsiClass':     'ProductOnClient',
+					'opsiClass': 'ProductOnClient',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiProductOnClient' ],
+					'objectClasses': ['opsiProductOnClient'],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',          	'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'productType',        	'ldapAttribute': 'opsiProductType' },
-						{ 'opsiAttribute': 'clientId',           	'ldapAttribute': 'opsiClientId' },
-						{ 'opsiAttribute': 'targetConfiguration',       'ldapAttribute': 'opsiTargetConfiguration' },
-						{ 'opsiAttribute': 'installationStatus', 	'ldapAttribute': 'opsiProductInstallationStatus' },
-						{ 'opsiAttribute': 'actionRequest',      	'ldapAttribute': 'opsiProductActionRequest' },
-						{ 'opsiAttribute': 'actionProgress',     	'ldapAttribute': 'opsiProductActionProgress' },
-						{ 'opsiAttribute': 'actionResult',     		'ldapAttribute': 'opsiActionResult' },
-						{ 'opsiAttribute': 'lastAction',     		'ldapAttribute': 'opsiLastAction' },
-						{ 'opsiAttribute': 'productVersion',     	'ldapAttribute': 'opsiProductVersion' },
-						{ 'opsiAttribute': 'packageVersion',     	'ldapAttribute': 'opsiPackageVersion' },
-						{ 'opsiAttribute': 'modificationTime',    	'ldapAttribute': 'opsiModificationTime' },
-						{ 'opsiAttribute': 'actionSequence',     	'ldapAttribute': None }
+						{'opsiAttribute': 'productId', 'ldapAttribute': 'opsiProductId'},
+						{'opsiAttribute': 'productType', 'ldapAttribute': 'opsiProductType'},
+						{'opsiAttribute': 'clientId', 'ldapAttribute': 'opsiClientId'},
+						{'opsiAttribute': 'targetConfiguration', 'ldapAttribute': 'opsiTargetConfiguration'},
+						{'opsiAttribute': 'installationStatus', 'ldapAttribute': 'opsiProductInstallationStatus'},
+						{'opsiAttribute': 'actionRequest', 'ldapAttribute': 'opsiProductActionRequest'},
+						{'opsiAttribute': 'actionProgress', 'ldapAttribute': 'opsiProductActionProgress'},
+						{'opsiAttribute': 'actionResult', 'ldapAttribute': 'opsiActionResult'},
+						{'opsiAttribute': 'lastAction', 'ldapAttribute': 'opsiLastAction'},
+						{'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion'},
+						{'opsiAttribute': 'packageVersion', 'ldapAttribute': 'opsiPackageVersion'},
+						{'opsiAttribute': 'modificationTime', 'ldapAttribute': 'opsiModificationTime'},
+						{'opsiAttribute': 'actionSequence', 'ldapAttribute': None}
 					]
 				},
 				{
-					'opsiClass':     'ProductPropertyState',
+					'opsiClass': 'ProductPropertyState',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiProductPropertyState' ],
+					'objectClasses': ['opsiProductPropertyState'],
 					'attributes': [
-						{ 'opsiAttribute': 'productId',  'ldapAttribute': 'opsiProductId' },
-						{ 'opsiAttribute': 'propertyId', 'ldapAttribute': 'opsiPropertyId' },
-						{ 'opsiAttribute': 'objectId',   'ldapAttribute': 'opsiObjectId' },
-						{ 'opsiAttribute': 'values',     'ldapAttribute': 'opsiProductPropertyValue' }
+						{'opsiAttribute': 'productId', 'ldapAttribute': 'opsiProductId'},
+						{'opsiAttribute': 'propertyId', 'ldapAttribute': 'opsiPropertyId'},
+						{'opsiAttribute': 'objectId', 'ldapAttribute': 'opsiObjectId'},
+						{'opsiAttribute': 'values', 'ldapAttribute': 'opsiProductPropertyValue'}
 					]
 				},
 				{
-					'opsiClass':     'Group',
+					'opsiClass': 'Group',
 					'opsiSuperClass': None,
-					'objectClasses': [ 'opsiGroup' ],
+					'objectClasses': ['opsiGroup'],
 					'attributes': [
-						{ 'opsiAttribute': 'id',            'ldapAttribute': 'opsiGroupId' },
-						{ 'opsiAttribute': 'description',   'ldapAttribute': 'opsiDescription' },
-						{ 'opsiAttribute': 'notes',         'ldapAttribute': 'opsiNotes' },
-						{ 'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId' },
-						{ 'opsiAttribute': 'objectId',      'ldapAttribute': 'opsiMemberObjectId' } # members
+						{'opsiAttribute': 'id', 'ldapAttribute': 'opsiGroupId'},
+						{'opsiAttribute': 'description', 'ldapAttribute': 'opsiDescription'},
+						{'opsiAttribute': 'notes', 'ldapAttribute': 'opsiNotes'},
+						{'opsiAttribute': 'parentGroupId', 'ldapAttribute': 'opsiParentGroupId'},
+						{'opsiAttribute': 'objectId', 'ldapAttribute': 'opsiMemberObjectId'} # members
 					]
 				},
 				{
-					'opsiClass':     'HostGroup',
+					'opsiClass': 'HostGroup',
 					'opsiSuperClass': 'Group',
-					'objectClasses': [ 'opsiHostGroup' ],
-					'attributes': [
-					]
+					'objectClasses': ['opsiHostGroup'],
+					'attributes': []
 				},
 				{
-					'opsiClass':     'ProductGroup',
+					'opsiClass': 'ProductGroup',
 					'opsiSuperClass': 'Group',
-					'objectClasses': [ 'opsiProductGroup' ],
-					'attributes': [
-					]
+					'objectClasses': ['opsiProductGroup'],
+					'attributes': []
 				}
 				#,
 				#{
-				#	'opsiClass':     'ObjectToGroup',
+				#	'opsiClass': 'ObjectToGroup',
 				#	'opsiSuperClass': None,
-				#	'objectClasses': [ 'opsiObjectToGroup' ],
+				#	'objectClasses': ['opsiObjectToGroup'],
 				#	'attributes': [
-				#		{ 'opsiAttribute': 'groupId',                     'ldapAttribute': 'opsiGroupId' },
-				#		{ 'opsiAttribute': 'objectId',                    'ldapAttribute': 'opsiObjectId' }
+				#		{ 'opsiAttribute': 'groupId', 'ldapAttribute': 'opsiGroupId' },
+				#		{ 'opsiAttribute': 'objectId', 'ldapAttribute': 'opsiObjectId' }
 				#	]
 				#}
 			]
@@ -416,15 +409,15 @@ class LDAPBackend(ConfigDataBackend):
 		self._ldapAttributeToOpsiAttribute = {}
 		self._opsiClassToLdapClasses = {}
 		for mapping in self._mappings:
-			self._opsiClassToLdapClasses[ mapping['opsiClass'] ] = mapping['objectClasses']
-			self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ] = {}
-			self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ] = {}
+			self._opsiClassToLdapClasses[mapping['opsiClass']] = mapping['objectClasses']
+			self._opsiAttributeToLdapAttribute[mapping['opsiClass']] = {}
+			self._ldapAttributeToOpsiAttribute[mapping['opsiClass']] = {}
 			if mapping.get('opsiSuperClass'):
-				self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ] = dict( self._opsiAttributeToLdapAttribute[ mapping['opsiSuperClass'] ] )
-				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ] = dict( self._ldapAttributeToOpsiAttribute[ mapping['opsiSuperClass'] ] )
+				self._opsiAttributeToLdapAttribute[mapping['opsiClass']] = dict(self._opsiAttributeToLdapAttribute[mapping['opsiSuperClass']])
+				self._ldapAttributeToOpsiAttribute[mapping['opsiClass']] = dict(self._ldapAttributeToOpsiAttribute[mapping['opsiSuperClass']])
 			for attribute in mapping['attributes']:
-				self._opsiAttributeToLdapAttribute[ mapping['opsiClass'] ][ attribute['opsiAttribute'] ] = attribute['ldapAttribute']
-				self._ldapAttributeToOpsiAttribute[ mapping['opsiClass'] ][ attribute['ldapAttribute'] ] = attribute['opsiAttribute']
+				self._opsiAttributeToLdapAttribute[mapping['opsiClass']][attribute['opsiAttribute']] = attribute['ldapAttribute']
+				self._ldapAttributeToOpsiAttribute[mapping['opsiClass']][attribute['ldapAttribute']] = attribute['opsiAttribute']
 
 		self._ldapClassesToOpsiClassCache = {}
 		self._opsiLdapClasses = []
@@ -438,7 +431,6 @@ class LDAPBackend(ConfigDataBackend):
 		self._ldap.connect()
 
 	def _objectFilterToLDAPFilter(self, filter):
-
 		ldapFilter = None
 		filters = []
 		objectTypes = []
@@ -453,8 +445,8 @@ class LDAPBackend(ConfigDataBackend):
 			for objectClass in objectClasses:
 				classFilters.append(
 					pureldap.LDAPFilter_equalityMatch(
-						attributeDesc  = pureldap.LDAPAttributeDescription('objectClass'),
-						assertionValue = pureldap.LDAPAssertionValue(objectClass)
+						attributeDesc=pureldap.LDAPAttributeDescription('objectClass'),
+						assertionValue=pureldap.LDAPAssertionValue(objectClass)
 					)
 				)
 
@@ -472,7 +464,6 @@ class LDAPBackend(ConfigDataBackend):
 
 		if not ldapFilter:
 			ldapFilter = pureldap.LDAPFilter_present('objectClass')
-
 
 		andFilters = []
 		for (attribute, values) in filter.items():
@@ -545,7 +536,7 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.backend_deleteBase(self)
 		ldapobj = LDAPObject(self._opsiBaseDn)
 		if ldapobj.exists(self._ldap):
-			ldapobj.deleteFromDirectory(self._ldap, recursive = True)
+			ldapobj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def backend_createBase(self):
 		ConfigDataBackend.backend_createBase(self)
@@ -573,7 +564,6 @@ class LDAPBackend(ConfigDataBackend):
 		'''
 		self._ldapAttributeToOpsiAttribute
 		self._opsiClassToLdapClasses
-
 
 		ldapObject.readFromDirectory(self._ldap)
 
@@ -617,7 +607,7 @@ class LDAPBackend(ConfigDataBackend):
 					attributes.append(identAttribute)
 
 		opsiObjectHash = {}
-		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList = False).items():
+		for (attribute, value) in ldapObject.getAttributeDict(valuesAsList=False).items():
 			#logger.debug2(u"LDAP attribute is: %s" % attribute)
 			if attribute in ('objectClass', 'cn') or attribute in ignoreLdapAttributes:
 				continue
@@ -655,7 +645,6 @@ class LDAPBackend(ConfigDataBackend):
 
 		if not objectClasses:
 			raise Exception(u"Failed to get ldapClasses for OpsiClass: %s" % opsiObject)
-
 
 		ldapObj = LDAPObject(dn)
 		ldapObj.new(*objectClasses)
@@ -696,8 +685,8 @@ class LDAPBackend(ConfigDataBackend):
 		ldapObject.writeToDirectory(self._ldap)
 
 	def _getHostDn(self, host):
-		ldapFilter = self._objectFilterToLDAPFilter( { 'type': host.getType(),'id': host.id } )
-		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
+		ldapFilter = self._objectFilterToLDAPFilter({'type': host.getType(), 'id': host.id})
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter)
 		dn = search.getDn()
 		if dn:
 			return dn
@@ -709,20 +698,20 @@ class LDAPBackend(ConfigDataBackend):
 			ldapFilter = self._serverObjectSearchFilter
 
 		if ldapFilter:
-			ldapFilter = ldapFilter.replace(u'%name%',            host.id.split(u'.')[0])
-			ldapFilter = ldapFilter.replace(u'%hostname%',        host.id.split(u'.')[0])
-			ldapFilter = ldapFilter.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
-			ldapFilter = ldapFilter.replace(u'%id%',              host.id)
-			ldapFilter = ldapFilter.replace(u'%fqdn%',            host.id)
-			ldapFilter = ldapFilter.replace(u'%description%',     host.description or '')
-			ldapFilter = ldapFilter.replace(u'%notes%',           host.notes or '')
+			ldapFilter = ldapFilter.replace(u'%name%', host.id.split(u'.')[0])
+			ldapFilter = ldapFilter.replace(u'%hostname%', host.id.split(u'.')[0])
+			ldapFilter = ldapFilter.replace(u'%domain%', u'.'.join(host.id.split('.')[1:]))
+			ldapFilter = ldapFilter.replace(u'%id%', host.id)
+			ldapFilter = ldapFilter.replace(u'%fqdn%', host.id)
+			ldapFilter = ldapFilter.replace(u'%description%', host.description or '')
+			ldapFilter = ldapFilter.replace(u'%notes%', host.notes or '')
 			ldapFilter = ldapFilter.replace(u'%hardwareaddress%', host.hardwareAddress or '')
-			ldapFilter = ldapFilter.replace(u'%ipaddress%',       host.ipAddress or '')
+			ldapFilter = ldapFilter.replace(u'%ipaddress%', host.ipAddress or '')
 			ldapFilter = ldapFilter.replace(u'%inventorynumber%', host.inventoryNumber or '')
-			ldapFilter = ldapFilter.replace(u'%username%',        self._username)
-			ldapFilter = ldapFilter.replace(u'%password%',        self._password)
+			ldapFilter = ldapFilter.replace(u'%username%', self._username)
+			ldapFilter = ldapFilter.replace(u'%password%', self._password)
 
-			search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
+			search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter)
 			dn = search.getDn()
 			if not dn:
 				createCommand = None
@@ -731,23 +720,23 @@ class LDAPBackend(ConfigDataBackend):
 				if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._createServerCommand:
 					createCommand = self._createServerCommand
 				if createCommand:
-					createCommand = createCommand.replace(u'%name%',            host.id.split(u'.')[0])
-					createCommand = createCommand.replace(u'%hostname%',        host.id.split(u'.')[0])
-					createCommand = createCommand.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
-					createCommand = createCommand.replace(u'%id%',              host.id)
-					createCommand = createCommand.replace(u'%fqdn%',            host.id)
-					createCommand = createCommand.replace(u'%description%',     host.description or '')
-					createCommand = createCommand.replace(u'%notes%',           host.notes or '')
+					createCommand = createCommand.replace(u'%name%', host.id.split(u'.')[0])
+					createCommand = createCommand.replace(u'%hostname%', host.id.split(u'.')[0])
+					createCommand = createCommand.replace(u'%domain%', u'.'.join(host.id.split('.')[1:]))
+					createCommand = createCommand.replace(u'%id%', host.id)
+					createCommand = createCommand.replace(u'%fqdn%', host.id)
+					createCommand = createCommand.replace(u'%description%', host.description or '')
+					createCommand = createCommand.replace(u'%notes%', host.notes or '')
 					createCommand = createCommand.replace(u'%hardwareaddress%', host.hardwareAddress or '')
-					createCommand = createCommand.replace(u'%ipaddress%',       host.ipAddress or '')
+					createCommand = createCommand.replace(u'%ipaddress%', host.ipAddress or '')
 					createCommand = createCommand.replace(u'%inventorynumber%', host.inventoryNumber or '')
-					createCommand = createCommand.replace(u'%username%',        self._username)
-					createCommand = createCommand.replace(u'%password%',        self._password)
+					createCommand = createCommand.replace(u'%username%', self._username)
+					createCommand = createCommand.replace(u'%password%', self._password)
 					try:
 						System.execute(createCommand)
 					except Exception as e:
 						raise BackendIOError(u"Failed to create host %s: %s" % (host, e))
-					search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = ldapFilter)
+					search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter)
 					dn = search.getDn()
 		if not dn:
 			dn = 'cn=%s,%s' % (host.id, self._hostsContainerDn)
@@ -763,12 +752,18 @@ class LDAPBackend(ConfigDataBackend):
 		if ldapObject.exists(self._ldap):
 			isOpsiHost = bool('OpsiHost' in ldapObject.getObjectClasses())
 			if not isOpsiHost:
-				if not host.description:     host.description = None
-				if not host.notes:           host.notes = None
-				if not host.hardwareAddress: host.hardwareAddress = None
-				if not host.ipAddress:       host.ipAddress = None
-				if not host.inventoryNumber: host.inventoryNumber = None
-			self._updateLdapObject(ldapObject, host, updateWhereNone = isOpsiHost)
+				if not host.description:
+					host.description = None
+				if not host.notes:
+					host.notes = None
+				if not host.hardwareAddress:
+					host.hardwareAddress = None
+				if not host.ipAddress:
+					host.ipAddress = None
+				if not host.inventoryNumber:
+					host.inventoryNumber = None
+
+			self._updateLdapObject(ldapObject, host, updateWhereNone=isOpsiHost)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(host, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -776,8 +771,8 @@ class LDAPBackend(ConfigDataBackend):
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 
-		filter = { 'type': host.getType(), 'id': host.id }
-		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter = self._objectFilterToLDAPFilter(filter) )
+		filter = {'type': host.getType(), 'id': host.id}
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=self._objectFilterToLDAPFilter(filter) )
 		dn = search.getDn()
 		if not dn:
 			raise Exception(u"Host %s not found" % host)
@@ -792,13 +787,13 @@ class LDAPBackend(ConfigDataBackend):
 		hosts = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver']
+			filter['type'] = ['OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
 		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
-			hosts.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			hosts.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return hosts
 
 	def host_deleteObjects(self, hosts):
@@ -816,24 +811,24 @@ class LDAPBackend(ConfigDataBackend):
 					if (host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServerCommand):
 						deleteCommand = self._deleteServerCommand
 					if deleteCommand:
-						deleteCommand = deleteCommand.replace(u'%dn%',              dn)
-						deleteCommand = deleteCommand.replace(u'%name%',            host.id.split(u'.')[0])
-						deleteCommand = deleteCommand.replace(u'%hostname%',        host.id.split(u'.')[0])
-						deleteCommand = deleteCommand.replace(u'%domain%',          u'.'.join(host.id.split('.')[1:]))
-						deleteCommand = deleteCommand.replace(u'%id%',              host.id)
-						deleteCommand = deleteCommand.replace(u'%fqdn%',            host.id)
-						deleteCommand = deleteCommand.replace(u'%description%',     host.description or '')
-						deleteCommand = deleteCommand.replace(u'%notes%',           host.notes or '')
+						deleteCommand = deleteCommand.replace(u'%dn%', dn)
+						deleteCommand = deleteCommand.replace(u'%name%', host.id.split(u'.')[0])
+						deleteCommand = deleteCommand.replace(u'%hostname%', host.id.split(u'.')[0])
+						deleteCommand = deleteCommand.replace(u'%domain%', u'.'.join(host.id.split('.')[1:]))
+						deleteCommand = deleteCommand.replace(u'%id%', host.id)
+						deleteCommand = deleteCommand.replace(u'%fqdn%', host.id)
+						deleteCommand = deleteCommand.replace(u'%description%', host.description or '')
+						deleteCommand = deleteCommand.replace(u'%notes%', host.notes or '')
 						deleteCommand = deleteCommand.replace(u'%hardwareaddress%', host.hardwareAddress or '')
-						deleteCommand = deleteCommand.replace(u'%ipaddress%',       host.ipAddress or '')
+						deleteCommand = deleteCommand.replace(u'%ipaddress%', host.ipAddress or '')
 						deleteCommand = deleteCommand.replace(u'%inventorynumber%', host.inventoryNumber or '')
-						deleteCommand = deleteCommand.replace(u'%username%',        self._username)
-						deleteCommand = deleteCommand.replace(u'%password%',        self._password)
+						deleteCommand = deleteCommand.replace(u'%username%', self._username)
+						deleteCommand = deleteCommand.replace(u'%password%', self._password)
 						System.execute(deleteCommand)
 					else:
 						ldapObj.readFromDirectory(self._ldap)
 						delete = False
-						for (attribute, values) in ldapObj.getAttributeDict(valuesAsList = True).items():
+						for (attribute, values) in ldapObj.getAttributeDict(valuesAsList=True).items():
 							if (attribute == 'objectClass'):
 								for oc in ('opsiHost', 'opsiClient', 'opsiDepotserver', 'opsiConfigserver'):
 									if oc in values:
@@ -842,17 +837,24 @@ class LDAPBackend(ConfigDataBackend):
 									# No objectclasses left
 									delete = True
 									break
-							elif attribute in (	'opsiDescription', 'opsiNotes', 'opsiHardwareAddress', 'opsiIpAddress', 'opsiInventoryNumber', \
-										'opsiHostId', 'opsiCreatedTimestamp', 'opsiLastSeenTimestamp', 'opsiHostKey', \
-										'opsiDepotLocalUrl', 'opsiDepotRemoteUrl', 'opsiDepotWebdavUrl', 'opsiRepositoryLocalUrl', 'opsiRepositoryRemoteUrl', \
-										'opsiNetworkAddress', 'opsiMaximumBandwidth', 'opsiHostKey', 'opsiIsMasterDepot', 'opsiMasterDepotId'):
+							elif attribute in ('opsiDescription', 'opsiNotes',
+								'opsiHardwareAddress', 'opsiIpAddress',
+								'opsiInventoryNumber', 'opsiHostId',
+								'opsiCreatedTimestamp',
+								'opsiLastSeenTimestamp', 'opsiHostKey',
+								'opsiDepotLocalUrl', 'opsiDepotRemoteUrl',
+								'opsiDepotWebdavUrl', 'opsiRepositoryLocalUrl',
+								'opsiRepositoryRemoteUrl',
+								'opsiNetworkAddress', 'opsiMaximumBandwidth',
+								'opsiHostKey', 'opsiIsMasterDepot',
+								'opsiMasterDepotId'):
 								values = []
 							else:
 								continue
 							logger.error("attribute: %s, value: %s" % (attribute, values))
 							ldapObj.setAttribute(attribute, values)
 						if delete:
-							ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+							ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 						else:
 							ldapObj.writeToDirectory(self._ldap)
 
@@ -864,7 +866,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, config, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, config, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(config, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -890,7 +892,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		search = LDAPObjectSearch(self._ldap, self._configContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
-			configs.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			configs.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return configs
 
 	def config_deleteObjects(self, configs):
@@ -901,7 +903,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting config: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
@@ -913,7 +915,7 @@ class LDAPBackend(ConfigDataBackend):
 		logger.info(u"Creating ConfigState: %s" % dn)
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, configState, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, configState, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(configState, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -939,7 +941,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		search = LDAPObjectSearch(self._ldap, self._configStateContainerDn, filter=ldapFilter )
 		for ldapObject in search.getObjects():
-			configStates.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			configStates.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return configStates
 
 	def configState_deleteObjects(self, configStates):
@@ -950,7 +952,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting configState: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def product_insertObject(self, product):
 		ConfigDataBackend.product_insertObject(self, product)
@@ -960,7 +962,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, product, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, product, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(product, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -980,13 +982,13 @@ class LDAPBackend(ConfigDataBackend):
 		products = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'Product', 'LocalbootProduct', 'NetbootProduct' ]
+			filter['type'] = ['Product', 'LocalbootProduct', 'NetbootProduct']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			products.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return products
 
 	def product_deleteObjects(self, products):
@@ -997,7 +999,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting product: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
@@ -1011,7 +1013,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, productProperty, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, productProperty, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(productProperty, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -1036,9 +1038,9 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			properties.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			properties.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return properties
 
 	def productProperty_deleteObjects(self, productProperties):
@@ -1050,7 +1052,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting configState: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
@@ -1068,7 +1070,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, productDependency, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, productDependency, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(productDependency, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -1093,9 +1095,9 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			dependencies.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			dependencies.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return dependencies
 
 	def productDependency_deleteObjects(self, productDependencies):
@@ -1107,7 +1109,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productDependency: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
@@ -1120,7 +1122,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, productOnDepot, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, productOnDepot, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(productOnDepot, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -1144,9 +1146,9 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._productOnDepotsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productOnDepotsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			products.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return products
 
 	def productOnDepot_deleteObjects(self, productOnDepots):
@@ -1157,7 +1159,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productOnDepot: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
@@ -1170,7 +1172,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, productOnClient, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, productOnClient, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(productOnClient, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -1194,9 +1196,9 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._productOnClientsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productOnClientsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			products.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			products.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return products
 
 	def productOnClient_deleteObjects(self, productOnClients):
@@ -1207,11 +1209,11 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productOnClient: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
-		hosts = self.host_getObjects( id = productPropertyState.objectId )
+		hosts = self.host_getObjects(id=productPropertyState.objectId)
 		if not hosts:
 			raise BackendReferentialIntegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
 
@@ -1225,7 +1227,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, productPropertyState, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, productPropertyState, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(productPropertyState, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -1245,13 +1247,13 @@ class LDAPBackend(ConfigDataBackend):
 		propertyStates = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'ProductPropertyState' ]
+			filter['type'] = ['ProductPropertyState']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._productPropertyStatesContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._productPropertyStatesContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			propertyStates.append( self._ldapObjectToOpsiObject(ldapObject, attributes) )
+			propertyStates.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return propertyStates
 
 	def productPropertyState_deleteObjects(self, productPropertyStates):
@@ -1262,7 +1264,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting productPropertyState: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
@@ -1279,7 +1281,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapObject = LDAPObject(dn)
 		if ldapObject.exists(self._ldap):
-			self._updateLdapObject(ldapObject, group, updateWhereNone = True)
+			self._updateLdapObject(ldapObject, group, updateWhereNone=True)
 		else:
 			ldapObject = self._opsiObjectToLdapObject(group, dn)
 			ldapObject.writeToDirectory(self._ldap)
@@ -1306,14 +1308,14 @@ class LDAPBackend(ConfigDataBackend):
 		groups = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'Group', 'HostGroup', 'ProductGroup' ]
+			filter['type'] = ['Group', 'HostGroup', 'ProductGroup']
 
 		dn = self._groupsContainerDn
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, dn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, dn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
-			groups.append( self._ldapObjectToOpsiObject(ldapObject, attributes, ignoreLdapAttributes = ['opsiMemberObjectId']) )
+			groups.append(self._ldapObjectToOpsiObject(ldapObject, attributes, ignoreLdapAttributes=['opsiMemberObjectId']))
 		return groups
 
 	def group_deleteObjects(self, groups):
@@ -1331,7 +1333,7 @@ class LDAPBackend(ConfigDataBackend):
 			ldapObj = LDAPObject(dn)
 			if ldapObj.exists(self._ldap):
 				logger.info(u"Deleting group: %s" % dn)
-				ldapObj.deleteFromDirectory(self._ldap, recursive = True)
+				ldapObj.deleteFromDirectory(self._ldap, recursive=True)
 
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
@@ -1401,7 +1403,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		groupFilter = dict(filter)
 		if not groupFilter.get('groupType'):
-			groupFilter['groupType'] = [ 'Group', 'HostGroup', 'ProductGroup' ]
+			groupFilter['groupType'] = ['Group', 'HostGroup', 'ProductGroup']
 
 		groupFilter['type'] = groupFilter['groupType']
 		del groupFilter['groupType']
@@ -1422,10 +1424,10 @@ class LDAPBackend(ConfigDataBackend):
 				groupType = 'ProductGroup'
 			else:
 				raise Exception(u"Unhandled GroupType %s" % groupType)
-			for objectId in ldapObject.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
-				otg = ObjectToGroup(objectId = objectId, groupType = groupType, groupId = groupId)
+			for objectId in ldapObject.getAttribute('opsiMemberObjectId', default=[], valuesAsList=True):
+				otg = ObjectToGroup(objectId=objectId, groupType=groupType, groupId=groupId)
 				if self._objectHashMatches(otg.toHash(), **filter):
-					objectToGroups.append( ObjectToGroup(objectId = objectId, groupType = groupType, groupId = groupId) )
+					objectToGroups.append(ObjectToGroup(objectId=objectId, groupType=groupType, groupId=groupId))
 		return objectToGroups
 
 		#if not filter.get('type'):
@@ -1452,7 +1454,7 @@ class LDAPBackend(ConfigDataBackend):
 		for (groupType, byId) in byTypeAndId.items():
 			for (groupId, objectIds) in byId.items():
 				dn = None
-				if   (groupType == 'HostGroup'):
+				if (groupType == 'HostGroup'):
 					dn = u'cn=%s,cn=hostGroups,%s' % (groupId, self._groupsContainerDn)
 				elif (groupType == 'ProductGroup'):
 					dn = u'cn=%s,cn=productGroups,%s' % (groupId, self._groupsContainerDn)
@@ -1462,7 +1464,7 @@ class LDAPBackend(ConfigDataBackend):
 				if ldapObj.exists(self._ldap):
 					ldapObj.readFromDirectory(self._ldap)
 					newMembers = []
-					for objectId in ldapObj.getAttribute('opsiMemberObjectId', default = [], valuesAsList = True):
+					for objectId in ldapObj.getAttribute('opsiMemberObjectId', default=[], valuesAsList=True):
 						if not objectId in objectIds:
 							newMembers.append(objectId)
 					ldapObj.setAttribute('opsiMemberObjectId', newMembers)
@@ -1487,31 +1489,31 @@ class LDAPObject:
 		self._existsInBackend = False
 
 	def getObjectClasses(self):
-		return self.getAttribute('objectClass', default = [], valuesAsList = True)
+		return self.getAttribute('objectClass', default=[], valuesAsList=True)
 
 	def addObjectClass(self, objectClass):
 		try:
 			self.addAttributeValue('objectClass', objectClass)
 		except Exception as e:
-			logger.warning(u"Failed to add objectClass '%s' to '%s': %s" % (objectClass, self.getDn(), e) )
+			logger.warning(u"Failed to add objectClass '%s' to '%s': %s" % (objectClass, self.getDn(), e))
 
 	def removeObjectClass(self, objectClass):
 		try:
 			self.deleteAttributeValue('objectClass', objectClass)
 		except Exception as e:
-			logger.warning(u"Failed to delete objectClass '%s' from '%s': %s" % (objectClass, self.getDn(), e) )
+			logger.warning(u"Failed to delete objectClass '%s' from '%s': %s" % (objectClass, self.getDn(), e))
 
 	def getCn(self):
-		return ( ldap.explode_dn(self._dn, notypes = 1) )[0]
+		return (ldap.explode_dn(self._dn, notypes=1))[0]
 
 	def getRdn(self):
-		return ( ldap.explode_dn(self._dn, notypes = 0) )[0]
+		return (ldap.explode_dn(self._dn, notypes=0))[0]
 
 	def getDn(self):
 		return self._dn
 
 	def getContainerCn(self):
-		return ( ldap.explode_dn(self._dn, notypes = 1) )[1]
+		return (ldap.explode_dn(self._dn, notypes=1))[1]
 
 	def exists(self, ldapSession):
 		try:
@@ -1526,24 +1528,24 @@ class LDAPObject:
 		return self.getParent()
 
 	def getParent(self):
-		parts = ( ldap.explode_dn(self._dn, notypes = 0) )[1:]
+		parts = (ldap.explode_dn(self._dn, notypes=0))[1:]
 		if (parts <= 1):
 			raise BackendBadValueError(u"Object '%s' has no parent" % self._dn)
 		return LDAPObject(','.join(parts))
 
 	def new(self, *objectClasses, **attributes):
-		if ( len(objectClasses) <= 0 ):
+		if len(objectClasses) <= 0:
 			raise BackendBadValueError(u"No objectClasses defined!")
 
 		self._new['objectClass'] = objectClasses
-		self._new['cn'] = [ self.getCn() ]
+		self._new['cn'] = [self.getCn()]
 
 		for (attribute, value) in attributes.items():
 			self.setAttribute(attribute, value)
 
 		logger.debug(u"Created new LDAP-Object: %s" % self._new)
 
-	def deleteFromDirectory(self, ldapSession, recursive = False):
+	def deleteFromDirectory(self, ldapSession, recursive=False):
 		if recursive:
 			objects = []
 			try:
@@ -1553,25 +1555,29 @@ class LDAPObject:
 				pass
 			if objects:
 				for obj in objects:
-					obj.deleteFromDirectory(ldapSession, recursive = True)
+					obj.deleteFromDirectory(ldapSession, recursive=True)
 
 		return ldapSession.delete(self._dn)
 
 	def readFromDirectory(self, ldapSession, *attributes):
-		''' If no attributes are given, all attributes are read.
-		    If attributes are specified for read speedup,
-		    the object can NOT be written back to ldap! '''
+		'''
+		If no attributes are given, all attributes are read.
+		If attributes are specified for read speedup,
+		the object can NOT be written back to ldap!
+		'''
 
 		self._readAllAttributes = False
-		if ( len(attributes) <= 0 ):
+		if len(attributes) <= 0:
 			attributes = None
 			self._readAllAttributes = True
 
 		try:
-			result = ldapSession.search(	baseDn     = self._dn,
-							scope      = ldap.SCOPE_BASE,
-							filter     = u"(ObjectClass=*)",
-							attributes = attributes )
+			result = ldapSession.search(
+				baseDn=self._dn,
+				scope=ldap.SCOPE_BASE,
+				filter=u"(ObjectClass=*)",
+				attributes=attributes
+			)
 		except Exception as e:
 			raise BackendIOError(u"Cannot read object (dn: '%s') from ldap: %s" % (self._dn, e))
 
@@ -1584,7 +1590,7 @@ class LDAPObject:
 			self._new[attr] = list(self._new[attr])
 
 	def writeToDirectory(self, ldapSession):
-		''' Writes the object to the ldap tree. '''
+		'''Writes the object to the ldap tree.'''
 		logger.info(u"Writing object %s to directory" % self.getDn())
 		if self._existsInBackend:
 			if not self._readAllAttributes:
@@ -1601,33 +1607,46 @@ class LDAPObject:
 		ret = {}
 
 		for (key, values) in self._new.items():
-			if (values == [' ']):
+			if values == [' ']:
 				values = [u'']
+
 			for i in range(len(values)):
-				if   values[i] == 'TRUE':  self._new[key][i] = True
-				elif values[i] == 'FALSE': self._new[key][i] = False
-			if ( len(values) > 1 or valuesAsList):
+				if values[i] == 'TRUE':
+					self._new[key][i] = True
+				elif values[i] == 'FALSE':
+					self._new[key][i] = False
+
+			if len(values) > 1 or valuesAsList:
 				ret[key] = values
 			else:
 				ret[key] = values[0]
+
 		return ret
 
-	def getAttribute(self, attribute, default='DEFAULT_UNDEFINED', valuesAsList=False ):
-		''' Get a specific attribute from object.
-		    Set valuesAsList to a boolean true value to get a list,
-		    even if there is only one attribute value. '''
+	def getAttribute(self, attribute, default='DEFAULT_UNDEFINED', valuesAsList=False):
+		'''
+		Get a specific attribute from object.
+		Set valuesAsList to a boolean true value to get a list,
+		even if there is only one attribute value.
+		'''
 		if not self._new.has_key(attribute):
 			if (default != 'DEFAULT_UNDEFINED'):
 				return default
 			raise BackendMissingDataError(u"Attribute '%s' does not exist" % attribute)
+
 		values = self._new[attribute]
-		if (values == [' ']):
+		if values == [' ']:
 			values = [u'']
+
 		for i in range(len(values)):
-			if   values[i] == 'TRUE':  values[i] = True
-			elif values[i] == 'FALSE': values[i] = False
-		if ( len(values) > 1 or valuesAsList):
+			if values[i] == 'TRUE':
+				values[i] = True
+			elif values[i] == 'FALSE':
+				values[i] = False
+
+		if len(values) > 1 or valuesAsList:
 			return values
+
 		return values[0]
 
 	def setAttribute(self, attribute, value):
@@ -1636,9 +1655,11 @@ class LDAPObject:
 			value = forceList(value)
 			for v in value:
 				if type(v) is bool:
-					if v: v = 'TRUE'
-					else: v = 'FALSE'
-				if (forceUnicode(v) == u''):
+					if v:
+						v = 'TRUE'
+					else:
+						v = 'FALSE'
+				if forceUnicode(v) == u'':
 					v = u' '
 				ldapValue.append(forceUnicode(v).encode('utf-8'))
 		logger.debug(u"Setting attribute '%s' to '%s'" % (attribute, value))
@@ -1679,10 +1700,12 @@ class LDAPObjectSearch:
 
 		# Execute search
 		try:
-			result = self._ldap.search( 	baseDn = baseDn,
-							scope = scope,
-							filter = filter,
-							attributes = ['dn'] )
+			result = self._ldap.search(
+				baseDn=baseDn,
+				scope=scope,
+				filter=filter,
+				attributes=['dn']
+			)
 		except Exception as e:
 			logger.debug(u'LDAPObjectSearch search error: %s' % e)
 			raise
@@ -1696,13 +1719,13 @@ class LDAPObjectSearch:
 		''' Returns the cns of all objects found. '''
 		cns = []
 		for dn in self._dns:
-			cns.append( ( ldap.explode_dn(dn, notypes=1) )[0] )
+			cns.append((ldap.explode_dn(dn, notypes=1))[0])
 		return cns
 
 	def getCn(self):
 		''' Returns the cn of the first object found. '''
-		if ( len(self._dns) >= 1 ):
-			return ( ldap.explode_dn(self._dns[0], notypes=1) )[0]
+		if len(self._dns) >= 1:
+			return (ldap.explode_dn(self._dns[0], notypes=1))[0]
 
 	def getDns(self):
 		''' Returns the dns of all objects found. '''
@@ -1710,19 +1733,19 @@ class LDAPObjectSearch:
 
 	def getDn(self):
 		''' Returns the dn of the first object found. '''
-		if ( len(self._dns) >= 1 ):
+		if len(self._dns) >= 1:
 			return self._dns[0]
 
 	def getObjects(self):
 		''' Returns all objects as Object instances. '''
 		objects = []
 		for dn in self._dns:
-			objects.append( LDAPObject(dn) )
+			objects.append(LDAPObject(dn))
 		return objects
 
 	def getLDAPObject(self):
 		''' Returns the first object found as Object instance. '''
-		if ( len(self._dns) <= 0 ):
+		if len(self._dns) <= 0:
 			return None
 		return LDAPObject(self._dns[0])
 
@@ -1731,9 +1754,9 @@ class LDAPSession:
 	''' This class handles the requests to a ldap server '''
 	def __init__(self, **kwargs):
 		''' Session constructor. '''
-		self._address   = u'localhost'
-		self._username  = u'cn=admin,dc=uib,dc=local'
-		self._password  = u'opsi'
+		self._address = u'localhost'
+		self._username = u'cn=admin,dc=uib,dc=local'
+		self._password = u'opsi'
 		self._referrals = True
 
 		for (option, value) in kwargs.items():
@@ -1748,35 +1771,42 @@ class LDAPSession:
 				self._referrals = forceBool(value)
 
 		self._commandCount = 0
-		self._searchCount  = 0
-		self._deleteCount  = 0
-		self._addCount     = 0
-		self._modifyCount  = 0
+		self._searchCount = 0
+		self._deleteCount = 0
+		self._addCount = 0
+		self._modifyCount = 0
 
 		self._ldap = None
 
 	def getCommandCount(self):
 		''' Get number of all commands (requests) sent to ldap server. '''
 		return self._commandCount
+
 	def getSearchCount(self):
 		''' Get number of all search commands (requests) sent to ldap server. '''
 		return self._searchCount
+
 	def getDeleteCount(self):
 		''' Get number of all delete commands (requests) sent to ldap server. '''
 		return self._deleteCount
+
 	def getAddCount(self):
 		''' Get number of all add commands (requests) sent to ldap server. '''
 		return self._addCount
+
 	def getModifyCount(self):
 		''' Get number of all modify commands (requests) sent to ldap server. '''
 		return self._modifyCount
+
 	def getCommandStatistics(self):
 		''' Get number of all commands as dict. '''
-		return {'total':  self._commandCount,
+		return {
+			'total': self._commandCount,
 			'search': self._searchCount,
 			'delete': self._deleteCount,
-			'add':    self._addCount,
-			'modify': self._modifyCount }
+			'add': self._addCount,
+			'modify': self._modifyCount
+		}
 
 	def connect(self):
 		''' Connect to a ldap server. '''
