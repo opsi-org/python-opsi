@@ -311,7 +311,7 @@ class LDAPBackend(ConfigDataBackend):
 				{
 					'opsiClass': 'ProductDependency',
 					'opsiSuperClass': None,
-					'objectClasses': ['opsiProductDependency' ],
+					'objectClasses': ['opsiProductDependency'],
 					'attributes': [
 						{'opsiAttribute': 'productId', 'ldapAttribute': 'opsiProductId'},
 						{'opsiAttribute': 'productVersion', 'ldapAttribute': 'opsiProductVersion'},
@@ -451,13 +451,13 @@ class LDAPBackend(ConfigDataBackend):
 				)
 
 			if classFilters:
-				if (len(classFilters) == 1):
+				if len(classFilters) == 1:
 					filters.append(classFilters[0])
 				else:
 					filters.append(pureldap.LDAPFilter_and(classFilters))
 
 		if filters:
-			if (len(filters) == 1):
+			if len(filters) == 1:
 				ldapFilter = filters[0]
 			else:
 				ldapFilter = pureldap.LDAPFilter_or(filters)
@@ -467,9 +467,9 @@ class LDAPBackend(ConfigDataBackend):
 
 		andFilters = []
 		for (attribute, values) in filter.items():
-			if (attribute == 'type'):
+			if attribute == 'type':
 				continue
-			if (attribute == 'cn'):
+			if attribute == 'cn':
 				continue
 
 			if values is None:
@@ -501,20 +501,20 @@ class LDAPBackend(ConfigDataBackend):
 					if type(value) is str:
 						value = forceUnicode(value)
 
-					filters.append( ldapfilter.parseFilter("(%s=%s)" % (attribute, value)) )
+					filters.append(ldapfilter.parseFilter("(%s=%s)" % (attribute, value)))
 
 			if filters:
-				if (len(filters) == 1):
+				if len(filters) == 1:
 					andFilters.append(filters[0])
 				else:
 					andFilters.append(pureldap.LDAPFilter_or(filters))
 		if andFilters:
 			newFilter = None
-			if (len(andFilters) == 1):
+			if len(andFilters) == 1:
 				newFilter = andFilters[0]
 			else:
 				newFilter = pureldap.LDAPFilter_and(andFilters)
-			ldapFilter = pureldap.LDAPFilter_and( [ldapFilter, newFilter] )
+			ldapFilter = pureldap.LDAPFilter_and([ldapFilter, newFilter])
 
 		textfilter = forceUnicode(ldapFilter.asText())
 		logger.debug2(u"Filter is: %s" % textfilter)
@@ -641,7 +641,7 @@ class LDAPBackend(ConfigDataBackend):
 		objectClasses = []
 
 		for (opsiClass, ldapClasses) in self._opsiClassToLdapClasses.items():
-			if (opsiObject.getType() == opsiClass):
+			if opsiObject.getType() == opsiClass:
 				objectClasses = ldapClasses
 				break
 
@@ -651,9 +651,9 @@ class LDAPBackend(ConfigDataBackend):
 		ldapObj = LDAPObject(dn)
 		ldapObj.new(*objectClasses)
 		for (attribute, value) in opsiObject.toHash().items():
-			if (attribute == 'type'):
+			if attribute == 'type':
 				continue
-			if (attribute == 'productClassIds'):
+			if attribute == 'productClassIds':
 				value = []
 			if self._opsiAttributeToLdapAttribute[opsiObject.getType()].has_key(attribute):
 				if self._opsiAttributeToLdapAttribute[opsiObject.getType()][attribute] is None:
@@ -670,9 +670,9 @@ class LDAPBackend(ConfigDataBackend):
 		ldapObject.readFromDirectory(self._ldap)
 		newLdapObject = self._opsiObjectToLdapObject(opsiObject, ldapObject.getDn())
 		for (attribute, value) in newLdapObject.getAttributeDict(valuesAsList=True).items():
-			if   (attribute == 'cn'):
+			if attribute == 'cn':
 				continue
-			elif (attribute == 'objectClass'):
+			elif attribute == 'objectClass':
 				if not value:
 					value = []
 				value = forceList(value)
@@ -694,7 +694,7 @@ class LDAPBackend(ConfigDataBackend):
 			return dn
 
 		ldapFilter = None
-		if (host.getType() == 'OpsiClient') and self._clientObjectSearchFilter:
+		if host.getType() == 'OpsiClient' and self._clientObjectSearchFilter:
 			ldapFilter = self._clientObjectSearchFilter
 		if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._serverObjectSearchFilter:
 			ldapFilter = self._serverObjectSearchFilter
@@ -774,7 +774,7 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.host_updateObject(self, host)
 
 		filter = {'type': host.getType(), 'id': host.id}
-		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=self._objectFilterToLDAPFilter(filter) )
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=self._objectFilterToLDAPFilter(filter))
 		dn = search.getDn()
 		if not dn:
 			raise Exception(u"Host %s not found" % host)
@@ -793,7 +793,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._hostsContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
 			hosts.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return hosts
@@ -808,9 +808,9 @@ class LDAPBackend(ConfigDataBackend):
 				logger.info(u"Deleting host: %s" % dn)
 				if ((host.getType() == 'OpsiClient') and self._deleteClient) or (host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServer):
 					deleteCommand = None
-					if (host.getType() == 'OpsiClient') and self._deleteClientCommand:
+					if host.getType() == 'OpsiClient' and self._deleteClientCommand:
 						deleteCommand = self._deleteClientCommand
-					if (host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServerCommand):
+					if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver') and self._deleteServerCommand:
 						deleteCommand = self._deleteServerCommand
 					if deleteCommand:
 						deleteCommand = deleteCommand.replace(u'%dn%', dn)
@@ -892,7 +892,7 @@ class LDAPBackend(ConfigDataBackend):
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
-		search = LDAPObjectSearch(self._ldap, self._configContainerDn, filter=ldapFilter )
+		search = LDAPObjectSearch(self._ldap, self._configContainerDn, filter=ldapFilter)
 		for ldapObject in search.getObjects():
 			configs.append(self._ldapObjectToOpsiObject(ldapObject, attributes))
 		return configs
@@ -1036,7 +1036,7 @@ class LDAPBackend(ConfigDataBackend):
 		properties = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty' ]
+			filter['type'] = ['ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
@@ -1093,7 +1093,7 @@ class LDAPBackend(ConfigDataBackend):
 		dependencies = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'ProductDependency' ]
+			filter['type'] = ['ProductDependency']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
@@ -1144,7 +1144,7 @@ class LDAPBackend(ConfigDataBackend):
 		products = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'ProductOnDepot' ]
+			filter['type'] = ['ProductOnDepot']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
@@ -1194,7 +1194,7 @@ class LDAPBackend(ConfigDataBackend):
 		products = []
 
 		if not filter.get('type'):
-			filter['type'] = [ 'ProductOnClient' ]
+			filter['type'] = ['ProductOnClient']
 
 		ldapFilter = self._objectFilterToLDAPFilter(filter)
 
@@ -1341,9 +1341,9 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 
 		dn = None
-		if (objectToGroup.groupType == 'HostGroup'):
+		if objectToGroup.groupType == 'HostGroup':
 			dn = u'cn=%s,cn=hostGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
-		elif (objectToGroup.groupType == 'ProductGroup'):
+		elif objectToGroup.groupType == 'ProductGroup':
 			dn = u'cn=%s,cn=productGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
 		else:
 			dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
@@ -1375,9 +1375,9 @@ class LDAPBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 
 		dn = None
-		if (objectToGroup.groupType == 'HostGroup'):
+		if objectToGroup.groupType == 'HostGroup':
 			dn = u'cn=%s,cn=hostGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
-		elif (objectToGroup.groupType == 'ProductGroup'):
+		elif objectToGroup.groupType == 'ProductGroup':
 			dn = u'cn=%s,cn=productGroups,%s' % (objectToGroup.groupId, self._groupsContainerDn)
 		else:
 			dn = u'cn=%s,%s' % (objectToGroup.groupId, self._groupsContainerDn)
@@ -1456,9 +1456,9 @@ class LDAPBackend(ConfigDataBackend):
 		for (groupType, byId) in byTypeAndId.items():
 			for (groupId, objectIds) in byId.items():
 				dn = None
-				if (groupType == 'HostGroup'):
+				if groupType == 'HostGroup':
 					dn = u'cn=%s,cn=hostGroups,%s' % (groupId, self._groupsContainerDn)
-				elif (groupType == 'ProductGroup'):
+				elif groupType == 'ProductGroup':
 					dn = u'cn=%s,cn=productGroups,%s' % (groupId, self._groupsContainerDn)
 				else:
 					dn = u'cn=%s,%s' % (groupId, self._groupsContainerDn)
@@ -1531,7 +1531,7 @@ class LDAPObject:
 
 	def getParent(self):
 		parts = (ldap.explode_dn(self._dn, notypes=0))[1:]
-		if (parts <= 1):
+		if parts <= 1:
 			raise BackendBadValueError(u"Object '%s' has no parent" % self._dn)
 		return LDAPObject(','.join(parts))
 
@@ -1634,7 +1634,7 @@ class LDAPObject:
 		even if there is only one attribute value.
 		'''
 		if not self._new.has_key(attribute):
-			if (default != 'DEFAULT_UNDEFINED'):
+			if default != 'DEFAULT_UNDEFINED':
 				return default
 			raise BackendMissingDataError(u"Attribute '%s' does not exist" % attribute)
 
@@ -1840,8 +1840,7 @@ class LDAPSession:
 		''' This function is used to search in a ldap directory. '''
 		self._commandCount += 1
 		self._searchCount += 1
-		logger.debug(u"Searching in baseDn: %s, scope: %s, filter: '%s', attributes: '%s' " \
-					% (baseDn, scope, filter, attributes) )
+		logger.debug(u"Searching in baseDn: %s, scope: %s, filter: '%s', attributes: '%s' " % (baseDn, scope, filter, attributes))
 		result = []
 		try:
 			try:
@@ -1856,16 +1855,15 @@ class LDAPSession:
 					raise
 		except Exception as e:
 			logger.debug(u"LDAP search error %s: %s" % (e.__class__, e))
-			if (e.__class__ == ldap.NO_SUCH_OBJECT):
-				raise BackendMissingDataError(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" \
-					% (baseDn, filter, scope) )
+			if e.__class__ == ldap.NO_SUCH_OBJECT:
+				raise BackendMissingDataError(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" % (baseDn, filter, scope))
 
 			logger.critical(u"LDAP search error %s: %s" % (e.__class__, e))
-			raise BackendIOError(u"Error searching in baseDn '%s', filter '%s', scope %s : %s" \
-					% (baseDn, filter, scope, e) )
-		if (result == []):
-			logger.debug(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" \
-					% (baseDn, filter, scope) )
+			raise BackendIOError(u"Error searching in baseDn '%s', filter '%s', scope %s : %s" % (baseDn, filter, scope, e))
+
+		if result == []:
+			logger.debug(u"No results for search in baseDn: '%s', filter: '%s', scope: %s" % (baseDn, filter, scope))
+
 		return result
 
 	def delete(self, dn):
@@ -1896,19 +1894,19 @@ class LDAPSession:
 		logger.debug(u"[new]: %s" % new)
 		attrs = ldap.modlist.modifyModlist(old,new)
 		logger.debug(u"[change]: %s" % attrs)
-		if (attrs == []):
+		if attrs == []:
 			logger.debug(u"Object '%s' unchanged." % dn)
 			return
 		logger.debug(u"Modifying Object in LDAP, dn: '%s'" % dn)
 		try:
 			try:
-				self._ldap.modify_s(dn,attrs)
+				self._ldap.modify_s(dn, attrs)
 			except ldap.LDAPError as e:
 				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
 					# Possibly timed out
 					logger.warning(u"LDAP connection possibly timed out: %s, trying to reconnect" % e)
 					self.connect()
-					self._ldap.modify_s(dn,attrs)
+					self._ldap.modify_s(dn, attrs)
 				else:
 					raise
 		except ldap.LDAPError as e:
@@ -1926,7 +1924,7 @@ class LDAPSession:
 		logger.debug(u"attrs: '%s'" % attrs)
 		try:
 			try:
-				self._ldap.add_s(dn,attrs)
+				self._ldap.add_s(dn, attrs)
 			except ldap.LDAPError as e:
 				if isinstance(e, ldap.SERVER_DOWN) or (e.__str__().lower().find('ldap connection invalid') != -1):
 					# Possibly timed out
