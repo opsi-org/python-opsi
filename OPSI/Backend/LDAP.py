@@ -43,6 +43,8 @@ with warnings.catch_warnings():
 	from ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
+from OPSI.Types import (BackendBadValueError, BackendIOError,
+	BackendMissingDataError, BackendReferentialIntegrityError)
 from OPSI.Types import forceBool, forceList, forceObjectClassList, forceUnicode
 from OPSI.Object import *
 from OPSI.Backend.Backend import ConfigDataBackend
