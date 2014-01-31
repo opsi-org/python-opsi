@@ -754,7 +754,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 						proc.kill()
 					except:
 						try:
-							os.kill(proc.pid, SIG_KILL)
+							os.kill(proc.pid, SIGKILL)
 						except:
 							pass
 					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)) )
