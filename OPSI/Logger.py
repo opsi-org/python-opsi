@@ -552,7 +552,7 @@ class LoggerImplementation:
 				if not specialConfig and self.__objectConfig:
 					# Ouch, this hurts...
 					f = sys._getframe(2)
-					while (f != None):
+					while f is not None:
 						obj = f.f_locals.get('self')
 						if obj:
 							c = self._getObjectConfig(id(obj))
@@ -778,7 +778,7 @@ class LoggerImplementation:
 		self.log(logLevel, u'Traceback:')
 		# Traceback
 		try:
-			while (tb != None):
+			while tb is not None:
 				f = tb.tb_frame
 				c = f.f_code
 				self.log(logLevel, u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
