@@ -47,6 +47,7 @@ from twisted.conch.ssh import keys
 from OPSI.Logger import Logger
 from OPSI.Types import BackendIOError, BackendBadValueError
 from OPSI.Types import forceInt, forceUnicode
+from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 
 logger = Logger()
@@ -517,7 +518,7 @@ class MySQLBackend(SQLBackend):
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
-	# Overwriting productProperty_insertObject and 
+	# Overwriting productProperty_insertObject and
 	# productProperty_updateObject to implement Transaction
 	def productProperty_insertObject(self, productProperty):
 		if not self._sqlBackendModule:
@@ -652,7 +653,7 @@ class MySQLBackend(SQLBackend):
 		def productProperty_updateObject(self, productProperty):
 			if not self._sqlBackendModule:
 				raise Exception(u"SQL backend module disabled")
-	
+
 			ConfigDataBackend.productProperty_updateObject(self, productProperty)
 			data = self._objectToDatabaseHash(productProperty)
 			where = self._uniqueCondition(productProperty)
@@ -665,10 +666,10 @@ class MySQLBackend(SQLBackend):
 			del data['possibleValues']
 			del data['defaultValues']
 			self._sql.update('PRODUCT_PROPERTY', where, data)
-	
+
 			if not possibleValues is None:
 				self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
-	
+
 			for value in possibleValues:
 				try:
 					self._sql.doCommit = False
@@ -689,7 +690,7 @@ class MySQLBackend(SQLBackend):
 				finally:
 					self._sql.doCommit = True
 					logger.notice(u'doCommit set to true')
-		
+
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
 	def __init__(self, **kwargs):
