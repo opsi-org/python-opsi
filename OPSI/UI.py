@@ -981,18 +981,19 @@ class SnackCopyDualProgressBox(SnackDualProgressBox):
 	def messageChanged(self, subject, message):
 		minLeft = 0
 		secLeft = subject.getTimeLeft()
-		if (secLeft >= 60):
-			minLeft = int(secLeft/60)
-			secLeft -= (minLeft*60)
-		if (minLeft < 10):
+		if secLeft >= 60:
+			minLeft = int(secLeft / 60)
+			secLeft -= minLeft * 60
+		if minLeft < 10:
 			minLeft = '0%d' % minLeft
-		if (secLeft < 10):
+		if secLeft < 10:
 			secLeft = '0%d' % secLeft
 		message = u"[%s:%s ETA] %s" % (minLeft, secLeft, message)
 		self.addText(u"%s\n" % message)
 
 
 if (__name__ == "__main__"):
+	import sys
 	uiTest = UIFactory('snack')
 	try:
 		values = []
@@ -1081,7 +1082,6 @@ if (__name__ == "__main__"):
 
 	answer = uiTest.yesno(text = u'Täxt', title = u'Yäs Or Nö', okLabel = u'ÖK', cancelLabel = u'Cäncel', width = -1, height = -1)
 	uiTest.showMessage(text = u'Answer was: %s' % answer, seconds = 2)
-
 
 	#uiTest.showError(self, _(u'Nothing selected'), title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 	uiTest.showMessage(text = u'Answer was: %s' % _(u'Nothing selected'), seconds = 2)
