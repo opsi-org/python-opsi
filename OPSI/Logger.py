@@ -437,8 +437,8 @@ class LoggerImplementation:
 			if os.path.exists(linkFile):
 				os.unlink(linkFile)
 			os.symlink(logFile, linkFile)
-		except Exception as e:
-			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, e))
+		except Exception as error:
+			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, error))
 
 	def setFileLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to appear in logfile
