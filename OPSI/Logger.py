@@ -429,7 +429,7 @@ class LoggerImplementation:
 			return
 
 		if not os.path.isabs(linkFile):
-			linkFile = os.path.join( os.path.dirname(logFile), linkFile)
+			linkFile = os.path.join(os.path.dirname(logFile), linkFile)
 
 		try:
 			if logFile == linkFile:
@@ -795,6 +795,7 @@ class LoggerImplementation:
 				self.warning(msg)
 
 		warnings.showwarning = _logWarning
+
 	def startTwistedLogging(self):
 		from twisted.python import log
 		observer = TwistedLogObserver(self)
@@ -854,7 +855,10 @@ class LoggerImplementation:
 
 
 class Logger(LoggerImplementation):
-	''' This class implements a SINGLETON used for logging to console, file or syslog. '''
+	'''
+	This class implements a SINGLETON used for logging to console, \
+file or syslog.
+	'''
 
 	# Storage for the instance reference
 	__instance = None
