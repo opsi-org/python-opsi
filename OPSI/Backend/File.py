@@ -119,10 +119,10 @@ class FileBackend(ConfigDataBackend):
 			'Config': [
 				{'fileType': 'ini', 'attribute': 'type', 'section': '<id>', 'option': 'type', 'json': False},
 				{'fileType': 'ini', 'attribute': 'description', 'section': '<id>', 'option': 'description', 'json': False},
-				{'fileType': 'ini', 'attribute': 'editable', 'section': '<id>', 'option': 'editable', 'json': True },
-				{'fileType': 'ini', 'attribute': 'multiValue', 'section': '<id>', 'option': 'multivalue', 'json': True },
-				{'fileType': 'ini', 'attribute': 'possibleValues', 'section': '<id>', 'option': 'possiblevalues', 'json': True },
-				{'fileType': 'ini', 'attribute': 'defaultValues', 'section': '<id>', 'option': 'defaultvalues', 'json': True }
+				{'fileType': 'ini', 'attribute': 'editable', 'section': '<id>', 'option': 'editable', 'json': True},
+				{'fileType': 'ini', 'attribute': 'multiValue', 'section': '<id>', 'option': 'multivalue', 'json': True},
+				{'fileType': 'ini', 'attribute': 'possibleValues', 'section': '<id>', 'option': 'possiblevalues', 'json': True},
+				{'fileType': 'ini', 'attribute': 'defaultValues', 'section': '<id>', 'option': 'defaultvalues', 'json': True}
 			],
 			'OpsiClient': [
 				{'fileType': 'key', 'attribute': 'opsiHostKey'},
@@ -143,7 +143,7 @@ class FileBackend(ConfigDataBackend):
 				{'fileType': 'ini', 'attribute': 'ipAddress', 'section': 'depotserver', 'option': 'ipaddress', 'json': False},
 				{'fileType': 'ini', 'attribute': 'inventoryNumber', 'section': 'depotserver', 'option': 'inventorynumber', 'json': False},
 				{'fileType': 'ini', 'attribute': 'networkAddress', 'section': 'depotserver', 'option': 'network', 'json': False},
-				{'fileType': 'ini', 'attribute': 'isMasterDepot', 'section': 'depotserver', 'option': 'ismasterdepot', 'json': True },
+				{'fileType': 'ini', 'attribute': 'isMasterDepot', 'section': 'depotserver', 'option': 'ismasterdepot', 'json': True},
 				{'fileType': 'ini', 'attribute': 'masterDepotId', 'section': 'depotserver', 'option': 'masterdepotid', 'json': False},
 				{'fileType': 'ini', 'attribute': 'depotRemoteUrl', 'section': 'depotshare', 'option': 'remoteurl', 'json': False},
 				{'fileType': 'ini', 'attribute': 'depotWebdavUrl', 'section': 'depotshare', 'option': 'webdavurl', 'json': False},
@@ -312,10 +312,10 @@ class FileBackend(ConfigDataBackend):
 		logger.debug(u"Getting config file for '%s', '%s', '%s'" % (objType, ident, fileType))
 		filename = None
 
-		if (fileType == 'key'):
+		if fileType == 'key':
 			filename = self.__hostKeyFile
 
-		elif (fileType == 'ini'):
+		elif fileType == 'ini':
 			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 				filename = self.__configFile
 			elif objType in ('OpsiClient',):
@@ -351,7 +351,7 @@ class FileBackend(ConfigDataBackend):
 				else:
 					raise Exception(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
 
-		elif (fileType == 'pro'):
+		elif fileType == 'pro':
 			pVer = u'_' + ident['productVersion'] + u'-' + ident['packageVersion']
 
 			if objType == 'LocalbootProduct':
@@ -370,13 +370,13 @@ class FileBackend(ConfigDataBackend):
 				elif os.path.isfile(os.path.join(self.__productDir, pId + pVer + u'.netboot')):
 					filename = os.path.join(self.__productDir, pId + pVer + u'.netboot')
 
-		elif (fileType == 'sw'):
+		elif fileType == 'sw':
 			if objType == 'AuditSoftware':
 				filename = os.path.join(self.__auditDir, u'global.sw')
 			elif objType == 'AuditSoftwareOnClient':
 				filename = os.path.join(self.__auditDir, ident['clientId'] + u'.sw')
 
-		elif (fileType == 'hw'):
+		elif fileType == 'hw':
 			if objType == 'AuditHardware':
 				filename = os.path.join(self.__auditDir, u'global.hw')
 			elif objType == 'AuditHardwareOnHost':
@@ -468,7 +468,7 @@ class FileBackend(ConfigDataBackend):
 				if objType == 'OpsiConfigserver' and hostId != self.__serverId:
 					continue
 
-				if (objType == 'ProductOnDepot'):
+				if objType == 'ProductOnDepot':
 					filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
 					iniFile = IniFile(filename=filename, ignoreCase=False)
 					cp = iniFile.parse()
@@ -516,8 +516,7 @@ class FileBackend(ConfigDataBackend):
 				if idFilter and not self._objectHashMatches({'id': match.group(1)}, **idFilter):
 					continue
 
-				logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" \
-					% (match.group(1), match.group(2), match.group(3)) )
+				logger.debug2(u"Found match: id='%s', productVersion='%s', packageVersion='%s'" % (match.group(1), match.group(2), match.group(3)))
 
 				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 					objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
@@ -548,7 +547,7 @@ class FileBackend(ConfigDataBackend):
 						logger.warning(u"Ignoring invalid file '%s': %s" % filename, e)
 						continue
 
-					if not self._objectHashMatches({'objectId': objectId }, **filter):
+					if not self._objectHashMatches({'objectId': objectId}, **filter):
 						continue
 
 					iniFile = IniFile(filename=filename, ignoreCase=False)
@@ -602,7 +601,7 @@ class FileBackend(ConfigDataBackend):
 				cp = iniFile.parse()
 
 				for section in cp.sections():
-					if (objType == 'ObjectToGroup'):
+					if objType == 'ObjectToGroup':
 						for option in cp.options(section):
 							if option in ('description', 'notes', 'parentgroupid'):
 								continue
@@ -790,14 +789,14 @@ class FileBackend(ConfigDataBackend):
 				if not os.path.exists(os.path.dirname(filename)):
 					raise BackendIOError(u"Directory '%s' not found" % os.path.dirname(filename))
 
-				if (fileType == 'key'):
+				if fileType == 'key':
 					if not hostKeys:
 						hostKeys = HostKeyFile(filename=filename)
 						hostKeys.parse()
 					for m in mapping:
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 
-				elif (fileType == 'ini'):
+				elif fileType == 'ini':
 					if not iniFileCache.has_key(filename):
 						iniFile = IniFile(filename=filename, ignoreCase=False)
 						iniFileCache[filename] = iniFile.parse()
@@ -826,7 +825,7 @@ class FileBackend(ConfigDataBackend):
 						match = self._placeholderRegex.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
-							if (objType == 'ProductOnClient'): #<productType>_product_states
+							if objType == 'ProductOnClient': #<productType>_product_states
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
 						match = self._placeholderRegex.search(option)
@@ -860,7 +859,7 @@ class FileBackend(ConfigDataBackend):
 
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
 
-				elif (fileType == 'pro'):
+				elif fileType == 'pro':
 					if not packageControlFileCache.has_key(filename):
 						packageControlFileCache[filename] = PackageControlFile(filename=filename)
 						packageControlFileCache[filename].parse()
@@ -880,7 +879,7 @@ class FileBackend(ConfigDataBackend):
 							objIdent = obj.getIdent(returnType='dict')
 							matches = True
 							for (key, value) in ident.items():
-								if (objIdent[key] != value):
+								if objIdent[key] != value:
 									matches = False
 									break
 							if matches:
@@ -900,8 +899,8 @@ class FileBackend(ConfigDataBackend):
 	def _write(self, obj, mode='create'):
 		objType = obj.getType()
 
-		if (objType == 'OpsiConfigserver'):
-			if (self.__serverId != obj.getId()):
+		if objType == 'OpsiConfigserver':
+			if self.__serverId != obj.getId():
 				raise Exception(u"Filebackend can only handle this config server '%s', not '%s'" \
 					% (self.__serverId, obj.getId()))
 
@@ -917,7 +916,7 @@ class FileBackend(ConfigDataBackend):
 		for (fileType, mapping) in mappings.items():
 			filename = self._getConfigFile(objType, obj.getIdent(returnType='dict'), fileType)
 
-			if (fileType == 'key'):
+			if fileType == 'key':
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
 					if not os.path.exists(filename):
 						self._touch(filename)
@@ -925,9 +924,9 @@ class FileBackend(ConfigDataBackend):
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 
-			elif (fileType == 'ini'):
+			elif fileType == 'ini':
 				iniFile = IniFile(filename=filename, ignoreCase=False)
-				if (mode == 'create'):
+				if mode == 'create':
 					if objType in ('OpsiClient',) and not iniFile.exists():
 						proto = os.path.join(self.__clientTemplateDir, os.path.basename(filename))
 						if not os.path.isfile(proto):
@@ -938,7 +937,7 @@ class FileBackend(ConfigDataBackend):
 
 				cp = iniFile.parse()
 
-				if (mode == 'create'):
+				if mode == 'create':
 					removeSections = []
 					removeOptions = {}
 					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
@@ -1018,13 +1017,13 @@ class FileBackend(ConfigDataBackend):
 				iniFile.setSectionSequence(['info', 'generalconfig', 'localboot_product_states', 'netboot_product_states'])
 				iniFile.generate(cp)
 
-			elif (fileType == 'pro'):
+			elif fileType == 'pro':
 				if not os.path.exists(filename):
 					self._touch(filename)
 				packageControlFile = PackageControlFile(filename=filename)
 
 				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-					if (mode == 'create'):
+					if mode == 'create':
 						packageControlFile.setProduct(obj)
 					else:
 						productHash = packageControlFile.getProduct().toHash()
@@ -1036,15 +1035,15 @@ class FileBackend(ConfigDataBackend):
 
 				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
 					currentObjects = []
-					if (objType == 'ProductDependency'):
+					if objType == 'ProductDependency':
 						currentObjects = packageControlFile.getProductDependencies()
 					else:
 						currentObjects = packageControlFile.getProductProperties()
 
 					found = False
 					for i in range(len(currentObjects)):
-						if (currentObjects[i].getIdent(returnType='unicode') == obj.getIdent(returnType='unicode')):
-							if (mode == 'create'):
+						if currentObjects[i].getIdent(returnType='unicode') == obj.getIdent(returnType='unicode'):
+							if mode == 'create':
 								currentObjects[i] = obj
 							else:
 								newHash = currentObjects[i].toHash()
@@ -1060,7 +1059,7 @@ class FileBackend(ConfigDataBackend):
 					if not found:
 						currentObjects.append(obj)
 
-					if (objType == 'ProductDependency'):
+					if objType == 'ProductDependency':
 						packageControlFile.setProductDependencies(currentObjects)
 					else:
 						packageControlFile.setProductProperties(currentObjects)
@@ -1232,11 +1231,11 @@ class FileBackend(ConfigDataBackend):
 					if obj.getType() == 'ObjectToGroup':
 						if not obj.groupType in ('HostGroup', 'ProductGroup'):
 							raise BackendBadValueError(u"Unhandled group type '%s'" % obj.groupType)
-						if not (groupType == obj.groupType):
+						if not groupType == obj.groupType:
 							continue
 						section = obj.getGroupId()
 					else:
-						if not (groupType == obj.getType()):
+						if not groupType == obj.getType():
 							continue
 						section = obj.getId()
 
@@ -1613,7 +1612,7 @@ class FileBackend(ConfigDataBackend):
 		removeSection = None
 		for section in ini.sections():
 			num = int(section.split('_')[-1])
-			if (num >= newNum):
+			if num >= newNum:
 				newNum = num + 1
 
 			matches = True
@@ -1622,7 +1621,7 @@ class FileBackend(ConfigDataBackend):
 					if not auditSoftware[attribute] is None:
 						matches = False
 						break
-				elif (ini.get(section, attribute) != auditSoftware[attribute]):
+				elif ini.get(section, attribute) != auditSoftware[attribute]:
 					matches = False
 					break
 			if matches:
@@ -1657,7 +1656,7 @@ class FileBackend(ConfigDataBackend):
 		for section in ini.sections():
 			found = True
 			for (key, value) in ident.items():
-				if (self.__unescape(ini.get(section, key.lower())) != value):
+				if self.__unescape(ini.get(section, key.lower())) != value:
 					found = False
 					break
 			if found:
@@ -1748,7 +1747,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 
 		logger.debug(u"Inserting auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
+		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')
 
 		if not os.path.exists(filename):
 			self._touch(filename)
@@ -1765,7 +1764,7 @@ class FileBackend(ConfigDataBackend):
 		removeSection = None
 		for section in ini.sections():
 			num = int(section.split('_')[-1])
-			if (num >= newNum):
+			if num >= newNum:
 				newNum = num + 1
 
 			matches = True
@@ -2032,7 +2031,7 @@ class FileBackend(ConfigDataBackend):
 				if attribute in ('firstseen', 'lastseen', 'state'):
 					continue
 				if ini.has_option(section, attribute):
-					if (self.__unescape(ini.get(section, attribute)) != value):
+					if self.__unescape(ini.get(section, attribute)) != value:
 						matches = False
 						break
 				else:
