@@ -61,18 +61,17 @@ except Exception as e:
 		return string
 
 
-def UIFactory(type = u''):
-	type = forceUnicode(type)
-	if   (type == u'snack' or type == u'SnackUI'):
+def UIFactory(type=u''):
+	uiType = forceUnicode(type)
+	if uiType in (u'snack', u'SnackUI'):
 		return SnackUI()
-
-	elif (type == u'dummy' or type == u'UI'):
+	elif uiType in (u'dummy', u'UI'):
 		return UI()
 
 	try:
 		return SnackUI()
-	except Exception as e:
-		logger.warning(u"Failed to create SnackUI: %s" % e)
+	except Exception as error:
+		logger.warning(u"Failed to create SnackUI: {0}".format(error))
 		return UI()
 
 
