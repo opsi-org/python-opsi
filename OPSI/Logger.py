@@ -55,53 +55,53 @@ LOG_ESSENTIAL = 1
 LOG_COMMENT = LOG_ESSENTIAL
 LOG_NONE = 0
 
-if (os.name == 'nt'):
+if os.name == 'nt':
 	# Windows imports for file locking
 	import win32con
 	import win32file
 	import pywintypes
 
 	# Colors
-	COLOR_NORMAL        = ''
-	COLOR_BLACK         = ''
-	COLOR_RED           = ''
-	COLOR_GREEN         = ''
-	COLOR_YELLOW        = ''
-	COLOR_BLUE          = ''
-	COLOR_MAGENTA       = ''
-	COLOR_CYAN          = ''
-	COLOR_WHITE         = ''
-	COLOR_LIGHT_BLACK   = ''
-	COLOR_LIGHT_RED     = ''
-	COLOR_LIGHT_GREEN   = ''
-	COLOR_LIGHT_YELLOW  = ''
-	COLOR_LIGHT_BLUE    = ''
+	COLOR_NORMAL = ''
+	COLOR_BLACK = ''
+	COLOR_RED = ''
+	COLOR_GREEN = ''
+	COLOR_YELLOW = ''
+	COLOR_BLUE = ''
+	COLOR_MAGENTA = ''
+	COLOR_CYAN = ''
+	COLOR_WHITE = ''
+	COLOR_LIGHT_BLACK = ''
+	COLOR_LIGHT_RED = ''
+	COLOR_LIGHT_GREEN = ''
+	COLOR_LIGHT_YELLOW = ''
+	COLOR_LIGHT_BLUE = ''
 	COLOR_LIGHT_MAGENTA = ''
-	COLOR_LIGHT_CYAN    = ''
-	COLOR_LIGHT_WHITE   = ''
+	COLOR_LIGHT_CYAN = ''
+	COLOR_LIGHT_WHITE = ''
 
 elif (os.name == 'posix'):
 	# Posix imports for file locking
 	import fcntl
 
 	# Colors
-	COLOR_NORMAL        = '\033[0;0;0m'
-	COLOR_BLACK         = '\033[0;30;40m'
-	COLOR_RED           = '\033[0;31;40m'
-	COLOR_GREEN         = '\033[0;32;40m'
-	COLOR_YELLOW        = '\033[0;33;40m'
-	COLOR_BLUE          = '\033[0;34;40m'
-	COLOR_MAGENTA       = '\033[0;35;40m'
-	COLOR_CYAN          = '\033[0;36;40m'
-	COLOR_WHITE         = '\033[0;37;40m'
-	COLOR_LIGHT_BLACK   = '\033[1;30;40m'
-	COLOR_LIGHT_RED     = '\033[1;31;40m'
-	COLOR_LIGHT_GREEN   = '\033[1;32;40m'
-	COLOR_LIGHT_YELLOW  = '\033[1;33;40m'
-	COLOR_LIGHT_BLUE    = '\033[1;34;40m'
+	COLOR_NORMAL = '\033[0;0;0m'
+	COLOR_BLACK = '\033[0;30;40m'
+	COLOR_RED = '\033[0;31;40m'
+	COLOR_GREEN = '\033[0;32;40m'
+	COLOR_YELLOW = '\033[0;33;40m'
+	COLOR_BLUE = '\033[0;34;40m'
+	COLOR_MAGENTA = '\033[0;35;40m'
+	COLOR_CYAN = '\033[0;36;40m'
+	COLOR_WHITE = '\033[0;37;40m'
+	COLOR_LIGHT_BLACK = '\033[1;30;40m'
+	COLOR_LIGHT_RED = '\033[1;31;40m'
+	COLOR_LIGHT_GREEN = '\033[1;32;40m'
+	COLOR_LIGHT_YELLOW = '\033[1;33;40m'
+	COLOR_LIGHT_BLUE = '\033[1;34;40m'
 	COLOR_LIGHT_MAGENTA = '\033[1;35;40m'
-	COLOR_LIGHT_CYAN    = '\033[1;36;40m'
-	COLOR_LIGHT_WHITE   = '\033[1;37;40m'
+	COLOR_LIGHT_CYAN = '\033[1;36;40m'
+	COLOR_LIGHT_WHITE = '\033[1;37;40m'
 
 COLORS_AVAILABLE = [
 	COLOR_NORMAL, COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW,
@@ -110,15 +110,15 @@ COLORS_AVAILABLE = [
 	COLOR_LIGHT_MAGENTA, COLOR_LIGHT_CYAN, COLOR_LIGHT_WHITE
 ]
 
-DEBUG_COLOR        = COLOR_WHITE
-INFO_COLOR         = COLOR_LIGHT_WHITE
-NOTICE_COLOR       = COLOR_GREEN
-WARNING_COLOR      = COLOR_YELLOW
-ERROR_COLOR        = COLOR_RED
-CRITICAL_COLOR     = COLOR_LIGHT_RED
+DEBUG_COLOR = COLOR_WHITE
+INFO_COLOR = COLOR_LIGHT_WHITE
+NOTICE_COLOR = COLOR_GREEN
+WARNING_COLOR = COLOR_YELLOW
+ERROR_COLOR = COLOR_RED
+CRITICAL_COLOR = COLOR_LIGHT_RED
 CONFIDENTIAL_COLOR = COLOR_LIGHT_YELLOW
-ESSENTIAL_COLOR    = COLOR_LIGHT_CYAN
-COMMENT_COLOR      = ESSENTIAL_COLOR
+ESSENTIAL_COLOR = COLOR_LIGHT_CYAN
+COMMENT_COLOR = ESSENTIAL_COLOR
 
 encoding = sys.getfilesystemencoding()
 def forceUnicode(var):
@@ -160,7 +160,7 @@ class LoggerSubject:
 	def getClass(self):
 		return u'MessageSubject'
 
-	def setMessage(self, message, severity = 0):
+	def setMessage(self, message, severity=0):
 		self._message = forceUnicode(message)
 		self._severity = severity
 		for o in self._observers:
@@ -181,7 +181,13 @@ class LoggerSubject:
 			self._observers.remove(observer)
 
 	def serializable(self):
-		return { "message": self.getMessage(), "severity": self.getSeverity(), "id": self.getId(), "class": self.getClass(), "type": self.getType() }
+		return {
+			"message": self.getMessage(),
+			"severity": self.getSeverity(),
+			"id": self.getId(),
+			"class": self.getClass(),
+			"type": self.getType()
+		}
 
 
 class TwistedLogObserver(object):
@@ -209,7 +215,7 @@ _showwarning = warnings.showwarning
 class LoggerImplementation:
 	''' Implementation of the singleton interface '''
 
-	def __init__(self, logFile = None):
+	def __init__(self, logFile=None):
 		self.__syslogLevel = LOG_NONE
 		self.__consoleLevel = LOG_NONE
 		self.__fileLevel = LOG_NONE
@@ -242,7 +248,7 @@ class LoggerImplementation:
 
 	def setConfidentialStrings(self, strings):
 		if not type(strings) in (list, tuple):
-			strings = [ strings ]
+			strings = [strings]
 		self.__confidentialStrings = []
 		for string in strings:
 			self.addConfidentialString(string)
@@ -332,18 +338,18 @@ class LoggerImplementation:
 		''' Enable or disable ansi color output '''
 		self.__consoleColor = color
 
-	def setSyslogLevel(self, level = LOG_NONE):
+	def setSyslogLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to log by syslog.
 		Set LOG_NONE to disable syslog (default)'''
 
-		if (level < LOG_NONE):
+		if level < LOG_NONE:
 			level = LOG_NONE
-		if (level > LOG_CONFIDENTIAL):
+		if level > LOG_CONFIDENTIAL:
 			level = LOG_CONFIDENTIAL
 
 		self.__syslogLevel = level
-		if (os.name == 'posix'):
-			if (self.__syslogLevel != LOG_NONE):
+		if os.name == 'posix':
+			if self.__syslogLevel != LOG_NONE:
 				# Import syslog module
 				global syslog
 				import syslog
@@ -364,16 +370,20 @@ class LoggerImplementation:
 			#not yet implemented
 			pass
 
-	def setMessageSubjectLevel(self, level = LOG_NONE):
-		if (level < LOG_NONE):  level = LOG_NONE
-		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
+	def setMessageSubjectLevel(self, level=LOG_NONE):
+		if level < LOG_NONE:
+			level = LOG_NONE
+		if level > LOG_CONFIDENTIAL:
+			level = LOG_CONFIDENTIAL
 		self.__messageSubjectLevel = level
 
-	def setConsoleLevel(self, level = LOG_NONE):
+	def setConsoleLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to print to stderr
 		Set LOG_NONE to disable output to stderr (default)'''
-		if (level < LOG_NONE):  level = LOG_NONE
-		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
+		if level < LOG_NONE:
+			level = LOG_NONE
+		if level > LOG_CONFIDENTIAL:
+			level = LOG_CONFIDENTIAL
 		self.__consoleLevel = level
 
 	def getConsoleLevel(self):
@@ -421,7 +431,7 @@ class LoggerImplementation:
 			linkFile = os.path.join( os.path.dirname(logFile), linkFile)
 
 		try:
-			if (logFile == linkFile):
+			if logFile == linkFile:
 				raise Exception(u'logFile and linkFile are the same file!')
 			if os.path.exists(linkFile):
 				os.unlink(linkFile)
@@ -429,11 +439,13 @@ class LoggerImplementation:
 		except Exception as e:
 			self.error(u"Failed to create symlink from '%s' to '%s': %s" % (logFile, linkFile, e))
 
-	def setFileLevel(self, level = LOG_NONE):
+	def setFileLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to appear in logfile
 		Set LOG_NONE to disable output to logfile (default)'''
-		if (level < LOG_NONE):  level = LOG_NONE
-		if (level > LOG_CONFIDENTIAL): level = LOG_CONFIDENTIAL
+		if level < LOG_NONE:
+			level = LOG_NONE
+		if level > LOG_CONFIDENTIAL:
+			level = LOG_CONFIDENTIAL
 		self.__fileLevel = level
 
 	def exit(self, object=None):
@@ -457,7 +469,7 @@ class LoggerImplementation:
 			self.__threadConfig[threadId] = {}
 		self.__threadConfig[threadId][key] = value
 
-	def _getThreadConfig(self, key = None):
+	def _getThreadConfig(self, key=None):
 		threadId = unicode(thread.get_ident())
 		if not self.__threadConfig.has_key(threadId):
 			return None
@@ -470,14 +482,14 @@ class LoggerImplementation:
 			self.__objectConfig[objectId] = {}
 		self.__objectConfig[objectId][key] = value
 
-	def _getObjectConfig(self, objectId, key = None):
+	def _getObjectConfig(self, objectId, key=None):
 		if not self.__objectConfig.has_key(objectId):
 			return None
 		if not key:
 			return self.__objectConfig[objectId]
 		return self.__objectConfig[objectId].get(key)
 
-	def log(self, level, message, raiseException = False):
+	def log(self, level, message, raiseException=False):
 		''' Log a message '''
 		try:
 			if (level > self.__messageSubjectLevel and
@@ -494,46 +506,46 @@ class LoggerImplementation:
 				else:
 					message = unicode(message, 'utf-8', 'replace')
 
-			levelname     = u''
+			levelname = u''
 			componentname = self.__componentName
-			color         = COLOR_NORMAL
-			filename      = u''
-			linenumber    = u''
-			datetime      = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
-			threadId      = unicode(thread.get_ident())
+			color = COLOR_NORMAL
+			filename = u''
+			linenumber = u''
+			datetime = unicode(time.strftime(u"%b %d %H:%M:%S", time.localtime()), 'utf-8', 'replace')
+			threadId = unicode(thread.get_ident())
 			specialConfig = None
 
-			if (level == LOG_CONFIDENTIAL):
+			if level == LOG_CONFIDENTIAL:
 				levelname = u'confidential'
-				color     = CONFIDENTIAL_COLOR
-			elif (level == LOG_DEBUG2):
+				color = CONFIDENTIAL_COLOR
+			elif level == LOG_DEBUG2:
 				levelname = u'debug2'
-				color     = DEBUG_COLOR
-			elif (level == LOG_DEBUG):
+				color = DEBUG_COLOR
+			elif level == LOG_DEBUG:
 				levelname = u'debug'
-				color     = DEBUG_COLOR
-			elif (level == LOG_INFO):
+				color = DEBUG_COLOR
+			elif level == LOG_INFO:
 				levelname = u'info'
-				color     = INFO_COLOR
-			elif (level == LOG_NOTICE):
+				color = INFO_COLOR
+			elif level == LOG_NOTICE:
 				levelname = u'notice'
-				color     = NOTICE_COLOR
-			elif (level == LOG_WARNING):
+				color = NOTICE_COLOR
+			elif level == LOG_WARNING:
 				levelname = u'warning'
-				color     = WARNING_COLOR
-			elif (level == LOG_ERROR):
+				color = WARNING_COLOR
+			elif level == LOG_ERROR:
 				levelname = u'error'
-				color     = ERROR_COLOR
-			elif (level == LOG_CRITICAL):
+				color = ERROR_COLOR
+			elif level == LOG_CRITICAL:
 				levelname = u'critical'
-				color     = CRITICAL_COLOR
-			elif (level == LOG_ESSENTIAL):
+				color = CRITICAL_COLOR
+			elif level == LOG_ESSENTIAL:
 				levelname = u'essential'
-				color     = COMMENT_COLOR
+				color = COMMENT_COLOR
 
 			try:
-				filename = unicode(os.path.basename( sys._getframe(2).f_code.co_filename ))
-				linenumber = unicode( sys._getframe(2).f_lineno )
+				filename = unicode(os.path.basename(sys._getframe(2).f_code.co_filename))
+				linenumber = unicode(sys._getframe(2).f_lineno)
 
 				specialConfig = self._getThreadConfig()
 				if not specialConfig and self.__objectConfig:
@@ -554,7 +566,7 @@ class LoggerImplementation:
 			if specialConfig:
 				componentname = specialConfig.get('componentName', componentname)
 
-			if (level <= self.__messageSubjectLevel):
+			if level <= self.__messageSubjectLevel:
 				m = self.__messageSubjectFormat
 				if specialConfig:
 					m = specialConfig.get('messageSubjectFormat', m)
@@ -573,7 +585,7 @@ class LoggerImplementation:
 
 				self.__loggerSubject.setMessage(m, level)
 
-			if (level <= self.__consoleLevel):
+			if level <= self.__consoleLevel:
 				# Log to terminal
 				m = self.__consoleFormat
 				if specialConfig:
@@ -592,7 +604,7 @@ class LoggerImplementation:
 						m = m.replace(string, u'*** confidential ***')
 
 				fh = sys.stderr
-				if (self.__consoleStdout):
+				if self.__consoleStdout:
 					fh = sys.stdout
 
 				fhEncoding = None
@@ -609,7 +621,7 @@ class LoggerImplementation:
 					m = u"%s\n" % m
 				fh.write(m.encode(fhEncoding, 'backslashreplace'))
 
-			if (level <= self.__fileLevel):
+			if level <= self.__fileLevel:
 				# Log to file
 				logFile = self.__logFile
 				if specialConfig:
@@ -635,7 +647,7 @@ class LoggerImplementation:
 					lf = None
 					try:
 						lf = codecs.open(logFile, 'a+', 'utf-8', 'replace')
-					except Exception as e:
+					except Exception as err:
 						pass
 
 					if lf:
@@ -645,14 +657,14 @@ class LoggerImplementation:
 							# While not timed out and not locked
 							try:
 								# Try to lock file
-								if (os.name == 'nt'):
+								if os.name == 'nt':
 									hfile = win32file._get_osfhandle(lf.fileno())
 									win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0, -0x7fff0000, pywintypes.OVERLAPPED())
 									#win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
-								elif (os.name == 'posix'):
+								elif os.name == 'posix':
 									# Flags for exclusive, non-blocking lock
 									fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-							except IOError as e:
+							except IOError as err:
 								# Locking failed
 								# increase timeout counter, sleep 100 millis
 								timeout += 100
@@ -670,7 +682,7 @@ class LoggerImplementation:
 							lf.write(m)
 							lf.close()
 
-			if (level <= self.__syslogLevel):
+			if level <= self.__syslogLevel:
 				# Log to syslog
 				m = self.__syslogFormat
 				if specialConfig:
@@ -684,34 +696,34 @@ class LoggerImplementation:
 				m = m.replace(u'%M', message)
 				m = m.replace(u'%F', filename)
 				m = m.replace(u'%N', linenumber)
-				if (self.__syslogLevel < LOG_CONFIDENTIAL):
+				if self.__syslogLevel < LOG_CONFIDENTIAL:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
-				if (os.name == 'posix'):
-					if (level == LOG_CONFIDENTIAL):
+				if os.name == 'posix':
+					if level == LOG_CONFIDENTIAL:
 						syslog.syslog(syslog.LOG_DEBUG, m)
-					elif (level == LOG_DEBUG2):
+					elif level == LOG_DEBUG2:
 						syslog.syslog(syslog.LOG_DEBUG, m)
-					elif (level == LOG_DEBUG):
+					elif level == LOG_DEBUG:
 						syslog.syslog(syslog.LOG_DEBUG, m)
-					elif (level == LOG_INFO):
+					elif level == LOG_INFO:
 						syslog.syslog(syslog.LOG_INFO, m)
-					elif (level == LOG_NOTICE):
+					elif level == LOG_NOTICE:
 						syslog.syslog(syslog.LOG_NOTICE, m)
-					elif (level == LOG_WARNING):
+					elif level == LOG_WARNING:
 						syslog.syslog(syslog.LOG_WARNING, m)
-					elif (level == LOG_ERROR):
+					elif level == LOG_ERROR:
 						syslog.syslog(syslog.LOG_ERR, m)
-					elif (level == LOG_CRITICAL):
+					elif level == LOG_CRITICAL:
 						syslog.syslog(syslog.LOG_CRIT, m)
-					elif (level == LOG_COMMENT):
+					elif level == LOG_COMMENT:
 						syslog.syslog(syslog.LOG_CRIT, m)
 				else:
 					#not yet implemented
 					pass
 
-			if (self.univentionLogger_priv):
+			if self.univentionLogger_priv:
 				# univention log
 				m = self.__univentionFormat
 				if specialConfig:
@@ -728,27 +740,27 @@ class LoggerImplementation:
 				for string in self.__confidentialStrings:
 					m = m.replace(string, u'*** confidential ***')
 
-				if (level == LOG_CONFIDENTIAL):
+				if level == LOG_CONFIDENTIAL:
 					pass
-				elif (level == LOG_DEBUG2):
+				elif level == LOG_DEBUG2:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-				elif (level == LOG_DEBUG):
+				elif level == LOG_DEBUG:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-				elif (level == LOG_INFO):
+				elif level == LOG_INFO:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ALL, m)
-				elif (level == LOG_NOTICE):
+				elif level == LOG_NOTICE:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.INFO, m)
-				elif (level == LOG_WARNING):
+				elif level == LOG_WARNING:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.WARN, m)
-				elif (level == LOG_ERROR):
+				elif level == LOG_ERROR:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-				elif (level == LOG_CRITICAL):
+				elif level == LOG_CRITICAL:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-				elif (level == LOG_COMMENT):
+				elif level == LOG_COMMENT:
 					self.univentionLogger_priv.debug(self.__univentionClass, self.univentionLogger_priv.ERROR, m)
-		except Exception as e:
+		except Exception as err:
 			if raiseException:
-				raise
+				raise err
 
 	def logException(self, e, logLevel=LOG_CRITICAL):
 		self.logTraceback(sys.exc_info()[2], logLevel)
@@ -787,55 +799,55 @@ class LoggerImplementation:
 		observer = TwistedLogObserver(self)
 		log.startLoggingWithObserver(observer.emit, setStdout=0)
 
-	def confidential( self, message ):
+	def confidential(self, message):
 		''' Log a confidential message. '''
 		self.log(LOG_CONFIDENTIAL, message)
 
-	def debug3( self, message ):
+	def debug3(self, message):
 		''' Log a debug message. '''
 		self.debug2(message)
 
-	def debug2( self, message ):
+	def debug2(self, message):
 		''' Log a debug message. '''
 		self.log(LOG_DEBUG2, message)
 
-	def debug( self, message ):
+	def debug(self, message):
 		''' Log a debug message. '''
 		self.log(LOG_DEBUG, message)
 
-	def info( self, message ):
+	def info(self, message):
 		''' Log a info message. '''
 		self.log(LOG_INFO, message)
 
-	def msg( self, message ):
+	def msg(self, message):
 		''' Log a info message. '''
 		self.info(message)
 
-	def notice( self, message ):
+	def notice(self, message):
 		''' Log a notice message. '''
 		self.log(LOG_NOTICE, message)
 
-	def warning( self, message, ):
+	def warning(self, message,):
 		''' Log a warning message. '''
 		self.log(LOG_WARNING, message)
 
-	def error( self, message ):
+	def error(self, message):
 		''' Log a error message. '''
 		self.log(LOG_ERROR, message)
 
-	def err( self, message ):
+	def err(self, message):
 		''' Log a error message. '''
 		self.error(message)
 
-	def critical( self, message ):
+	def critical(self, message):
 		''' Log a critical message. '''
 		self.log(LOG_CRITICAL, message)
 
-	def essential( self, message ):
+	def essential(self, message):
 		''' Log a essential message. '''
 		self.log(LOG_ESSENTIAL, message)
 
-	def comment( self, message ):
+	def comment(self, message):
 		''' Log a comment message. '''
 		self.essential(message)
 
@@ -846,7 +858,7 @@ class Logger(LoggerImplementation):
 	# Storage for the instance reference
 	__instance = None
 
-	def __init__(self, logFile = None):
+	def __init__(self, logFile=None):
 		""" Create singleton instance """
 
 		# Check whether we already have an instance
