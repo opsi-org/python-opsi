@@ -4,7 +4,7 @@
 import unittest
 
 from OPSI.Object import (Host, OpsiConfigserver, OpsiDepotserver,
-    LocalbootProduct, getPossibleClassAttributes)
+    LocalbootProduct, UnicodeConfig, getPossibleClassAttributes)
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -128,3 +128,16 @@ class LocalbootProductTestCase(unittest.TestCase):
         )
 
         self.assertEquals(obj1, obj2)
+
+
+class UnicodeConfigTestCase(unittest.TestCase):
+    def testMultivalueWithUnicode(self):
+        config = UnicodeConfig(
+            id=u'python-opsi.test',
+            description="Something from the OPSI forums.",
+            possibleValues=[u"Neutron Gerätetechnik GmbH", u"Neutron Mikroelektronik GmbH"],
+            defaultValues=[u"Neutron Mikroelektronik GmbH"]
+        )
+
+        self.assertTrue(u"Neutron Gerätetechnik GmbH" in config.possibleValues)
+        self.assertTrue(u"Neutron Mikroelektronik GmbH" in config.possibleValues)
