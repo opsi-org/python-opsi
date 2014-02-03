@@ -48,13 +48,16 @@ logger = Logger()
 encoding = locale.getpreferredencoding()
 
 try:
-	t = gettext.translation('python-opsi', '/usr/share/locale')
-	_ = t.ugettext
+	translation = gettext.translation('python-opsi', '/usr/share/locale')
+	_ = translation.ugettext
 except Exception as e:
 	logger.error(u"Locale not found: %s" % e)
 
 
 	def _(string):
+		"""
+		Fallback function for providing translations.
+		"""
 		return string
 
 
