@@ -121,6 +121,9 @@ ESSENTIAL_COLOR = COLOR_LIGHT_CYAN
 COMMENT_COLOR = ESSENTIAL_COLOR
 
 encoding = sys.getfilesystemencoding()
+_showwarning = warnings.showwarning
+
+
 def forceUnicode(var):
 	if type(var) is types.UnicodeType:
 		return var
@@ -209,8 +212,6 @@ class TwistedLogObserver(object):
 			for line in eventDict.get('message', ()):
 				self._logger.debug(u"[twisted] %s" % line)
 
-
-_showwarning = warnings.showwarning
 
 class LoggerImplementation:
 	''' Implementation of the singleton interface '''
