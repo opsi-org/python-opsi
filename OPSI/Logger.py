@@ -451,14 +451,14 @@ class LoggerImplementation:
 
 	def exit(self, object=None):
 		if object:
-			if self.__objectConfig.has_key(id(object)):
+			if id(object) in self.__objectConfig:
 				self.debug(u"Deleting config of object 0x%x" % id(object))
 				del self.__objectConfig[id(object)]
 			for objectId in self.__objectConfig.keys():
 				self.debug2(u"Got special config for object 0x%x" % objectId)
 
 		threadId = unicode(thread.get_ident())
-		if self.__threadConfig.has_key(threadId):
+		if threadId in self.__threadConfig:
 			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
 		for threadId in self.__threadConfig.keys():
@@ -466,25 +466,25 @@ class LoggerImplementation:
 
 	def _setThreadConfig(self, key, value):
 		threadId = unicode(thread.get_ident())
-		if not self.__threadConfig.has_key(threadId):
+		if threadId not in self.__threadConfig:
 			self.__threadConfig[threadId] = {}
 		self.__threadConfig[threadId][key] = value
 
 	def _getThreadConfig(self, key=None):
 		threadId = unicode(thread.get_ident())
-		if not self.__threadConfig.has_key(threadId):
+		if threadId not in self.__threadConfig:
 			return None
 		if not key:
 			return self.__threadConfig[threadId]
 		return self.__threadConfig[threadId].get(key)
 
 	def _setObjectConfig(self, objectId, key, value):
-		if not self.__objectConfig.has_key(objectId):
+		if objectId not in self.__objectConfig:
 			self.__objectConfig[objectId] = {}
 		self.__objectConfig[objectId][key] = value
 
 	def _getObjectConfig(self, objectId, key=None):
-		if not self.__objectConfig.has_key(objectId):
+		if objectId not in self.__objectConfig:
 			return None
 		if not key:
 			return self.__objectConfig[objectId]
