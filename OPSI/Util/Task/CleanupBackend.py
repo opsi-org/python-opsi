@@ -83,8 +83,8 @@ def cleanupBackend():
 			# ToDo: backendConfigFile should be as dynamic as possible
 			# What if we have 2 mysql backends set up?
 			cleanUpMySQL()
-	except Exception as e:
-		LOGGER.warning(e)
+	except Exception as error:
+		LOGGER.warning(error)
 
 	LOGGER.notice(u"Cleaning up groups")
 	cleanUpGroups(backend)
@@ -166,27 +166,27 @@ def cleanupBackend():
 			newValues = []
 			removeValues = []
 			changedValues = []
-			for v in productPropertyState.values:
-				if v in productProperty.possibleValues:
-					newValues.append(v)
+			for value in productPropertyState.values:
+				if value in productProperty.possibleValues:
+					newValues.append(value)
 					continue
-				if (productProperty.getType() == 'BoolProductProperty') and forceBool(v) in productProperty.possibleValues:
-					newValues.append(forceBool(v))
-					changedValues.append(v)
+				if productProperty.getType() == 'BoolProductProperty' and forceBool(value) in productProperty.possibleValues:
+					newValues.append(forceBool(value))
+					changedValues.append(value)
 					changed = True
 					continue
 				if (productProperty.getType() == 'UnicodeProductProperty'):
 					newValue = None
-					for pv in productProperty.possibleValues:
-						if (forceUnicodeLower(pv) == forceUnicodeLower(v)):
-							newValue = pv
+					for possibleValue in productProperty.possibleValues:
+						if forceUnicodeLower(possibleValue) == forceUnicodeLower(value):
+							newValue = possibleValue
 							break
 					if newValue:
 						newValues.append(newValue)
-						changedValues.append(v)
+						changedValues.append(value)
 						changed = True
 						continue
-				removeValues.append(v)
+				removeValues.append(value)
 				changed = True
 			if changed:
 				if not newValues:
