@@ -49,12 +49,15 @@ from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 LOGGER = Logger()
 
 
-def cleanupBackend():
+def cleanupBackend(backend=None):
 	"""
 	Clean up data from your backends.
 
 	This method uses different cleanup methods to ensure that no
 	obsolete data is present in your backend.
+
+	:param backend: the backend to check. If ``None`` this will create a \
+BackendManager from default paths.
 	"""
 	def usesMysqlBackend():
 		LOGGER.notice(u"Parsing dispatch.conf")
@@ -70,21 +73,22 @@ def cleanupBackend():
 
 		return False
 
-	backend = BackendManager(
-		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-		backendConfigDir=u'/etc/opsi/backends',
-		extensionConfigDir=u'/etc/opsi/backendManager/extend.d',
-		depotbackend=False
-	)
+	if backend is None:
+		backend = BackendManager(
+			dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
+			backendConfigDir=u'/etc/opsi/backends',
+			extensionConfigDir=u'/etc/opsi/backendManager/extend.d',
+			depotbackend=False
+		)
 
-	try:
-		if usesMysqlBackend():
-			LOGGER.notice(u"Mysql-backend detected. Trying to cleanup mysql-backend first")
-			# ToDo: backendConfigFile should be as dynamic as possible
-			# What if we have 2 mysql backends set up?
-			cleanUpMySQL()
-	except Exception as error:
-		LOGGER.warning(error)
+		try:
+			if usesMysqlBackend():
+				LOGGER.notice(u"Mysql-backend detected. Trying to cleanup mysql-backend first")
+				# ToDo: backendConfigFile should be as dynamic as possible
+				# What if we have 2 mysql backends set up?
+				cleanUpMySQL()
+		except Exception as error:
+			LOGGER.warning(error)
 
 	LOGGER.notice(u"Cleaning up groups")
 	cleanUpGroups(backend)
