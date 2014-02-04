@@ -139,7 +139,7 @@ def cleanupBackend():
 		backend.productPropertyState_deleteObjects(deleteProductPropertyStates)
 
 	for depot in backend.host_getObjects(type='OpsiDepotserver'):
-		objectIds = [ depot.id ]
+		objectIds = [depot.id]
 		for clientToDepot in backend.configState_getClientToDepotserver(depotIds=depot.id):
 			if not clientToDepot['clientId'] in objectIds:
 				objectIds.append(clientToDepot['clientId'])
