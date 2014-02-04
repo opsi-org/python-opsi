@@ -175,7 +175,7 @@ def cleanupBackend():
 					changedValues.append(value)
 					changed = True
 					continue
-				if (productProperty.getType() == 'UnicodeProductProperty'):
+				if productProperty.getType() == 'UnicodeProductProperty':
 					newValue = None
 					for possibleValue in productProperty.possibleValues:
 						if forceUnicodeLower(possibleValue) == forceUnicodeLower(value):
