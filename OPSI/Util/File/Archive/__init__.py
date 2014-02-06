@@ -463,12 +463,12 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 	Class = None
 	if format:
 		format = forceUnicodeLower(format)
-		if not format in ('tar', 'cpio'):
-			raise Exception(u"Unsupported format '%s'" % format)
-		if   (format == 'tar'):
+		if format == 'tar':
 			Class = TarArchive
-		elif (format == 'cpio'):
+		elif format == 'cpio':
 			Class = CpioArchive
+		else:
+			raise Exception(u"Unsupported format '%s'" % format)
 
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
