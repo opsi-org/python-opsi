@@ -472,14 +472,16 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
-		if   (fileType.lower().find('tar archive') != -1):
+		if 'tar archive' in fileType.lower():
 			Class = TarArchive
-		elif (fileType.lower().find('cpio archive') != -1):
+		elif 'cpio archive' in fileType.lower():
 			Class = CpioArchive
 		elif filename.lower().endswith('tar') or filename.lower().endswith('tar.gz'):
 			Class = TarArchive
 		elif filename.lower().endswith('cpio') or filename.lower().endswith('cpio.gz'):
 			Class = CpioArchive
+
 	if not Class:
 		raise Exception(u"Failed to guess archive type of '%s'" % filename)
-	return Class(filename = filename, compression = compression, progressSubject = progressSubject)
+
+	return Class(filename=filename, compression=compression, progressSubject=progressSubject)
