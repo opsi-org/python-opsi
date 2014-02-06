@@ -20,6 +20,7 @@
 from __future__ import unicode_literals
 
 import os
+import shutil
 import unittest
 
 import helpers
@@ -29,17 +30,17 @@ from OPSI.Util.Task.Sudoers import patchSudoersFileForOpsi
 
 class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
     def setUp(self):
-        self.fileName = helpers.copyTestfileToTemporaryFolder(
-                            os.path.join(
-                                os.path.dirname(__file__), 'testdata',
-                                'util', 'task', 'sudoers',
-                                'sudoers_without_entries'
-                            )
-                        )
+        emptyExampleFile = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'task', 'sudoers','sudoers_without_entries'
+        )
+
+        self.fileName = helpers.copyTestfileToTemporaryFolder(emptyExampleFile)
 
     def tearDown(self):
-        if os.path.exists(self.fileName):
-            os.remove(self.fileName)
+        tempDirectory = os.path.dirname(self.fileName)
+        if os.path.exists(tempDirectory):
+            shutil.rmtree(tempDirectory)
 
         del self.fileName
 
