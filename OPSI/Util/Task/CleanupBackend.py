@@ -58,6 +58,7 @@ def cleanupBackend(backend=None):
 
 	:param backend: the backend to check. If ``None`` this will create a \
 BackendManager from default paths.
+	:type backend: OPSI.Backend.Backend
 	"""
 	def usesMysqlBackend():
 		LOGGER.notice(u"Parsing dispatch.conf")
