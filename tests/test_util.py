@@ -123,7 +123,18 @@ class GetGlobalConfigTestCase(unittest.TestCase):
         self.assertEqual("no", getGlobalConfig('comment', self.testFile))
 
     def testLinesNeedAssignments(self):
-            self.assertEqual(None, getGlobalConfig('this', self.testFile))
+        self.assertEqual(None, getGlobalConfig('this', self.testFile))
+
+    def testReadingValues(self):
+        self.assertEqual("value", getGlobalConfig('keyword', self.testFile))
+        self.assertEqual(
+            "this works too",
+            getGlobalConfig('value with spaces', self.testFile)
+        )
+        self.assertEqual(
+            "we even can include a = and it works",
+            getGlobalConfig('advanced value', self.testFile)
+        )
 
     def testFileNotFoundExitsGracefully(self):
         self.assertEqual(None, getGlobalConfig('dontCare', 'nonexistingFile'))
