@@ -758,17 +758,20 @@ def getfqdn(name='', conf=None):
 
 
 def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
+	"""
+	Reads the value of ``name`` from the global configuration.
+
+	:param configFile: The path of the config file.
+	:type configFile: str
+	"""
 	name = forceUnicode(name)
 	if os.path.exists(configFile):
-		f = codecs.open(configFile, 'r', 'utf8')
-		try:
-			for line in f.readlines():
+		with codecs.open(configFile, 'r', 'utf8') as config:
+			for line in config:
 				line = line.strip()
-				if not line or line[0] in ('#', ';') or (line.find('=') == -1):
+				if not line or line[0] in ('#', ';') or '=' not in line:
 					continue
-				(k, v) = line.split('=', 1)
-				if (k.strip().lower() == name.lower()):
-					return v.strip()
-		finally:
-			f.close()
+				(key, value) = line.split('=', 1)
+				if key.strip().lower() == name.lower():
+					return value.strip()
 	return None
