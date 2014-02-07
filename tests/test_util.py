@@ -2,10 +2,11 @@
 #-*- coding: utf-8 -*-
 
 import random
+import os
 import unittest
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
-    ipAddressInNetwork, objectToHtml, randomString)
+    getGlobalConfig, ipAddressInNetwork, objectToHtml, randomString)
 from OPSI.Object import LocalbootProduct
 
 
@@ -107,6 +108,25 @@ class CompareVersionTestCase(unittest.TestCase):
     def testPackageVersionsAreComparedAswell(self):
         self.assertTrue(compareVersions('1-2', '<', '1-3'))
         self.assertTrue(compareVersions('1-2.0', '<', '1-2.1'))
+
+
+class GetGlobalConfigTestCase(unittest.TestCase):
+    def setUp(self):
+        self.testFile = os.path.join(
+            os.path.dirname(__file__), 'testdata', 'util', 'fake_global.conf'
+        )
+
+    def tearDown(self):
+        del self.testFile
+
+    def testCommentsAreIgnored(self):
+        self.assertEqual("no", getGlobalConfig('comment', self.testFile))
+
+    def testLinesNeedAssignments(self):
+            self.assertEqual(None, getGlobalConfig('this', self.testFile))
+
+    def testFileNotFoundExitsGracefully(self):
+        self.assertEqual(None, getGlobalConfig('dontCare', 'nonexistingFile'))
 
 
 if __name__ == '__main__':
