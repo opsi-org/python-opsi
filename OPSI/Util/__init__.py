@@ -57,9 +57,9 @@ from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 
 logger = Logger()
 
-if (os.name == 'posix'):
+if os.name == 'posix':
 	from duplicity import librsync
-elif (os.name == 'nt'):
+elif os.name == 'nt':
 	try:
 		import librsync
 	except Exception as e:
@@ -86,7 +86,7 @@ class PickleString(str):
 
 def deserialize(obj, preventObjectCreation=False):
 	newObj = None
-	if not preventObjectCreation and type(obj) is dict and obj.has_key('type'):
+	if not preventObjectCreation and type(obj) is dict and 'type' in obj:
 		try:
 			import OPSI.Object
 			c = eval('OPSI.Object.%s' % obj['type'])
@@ -141,14 +141,14 @@ def fromJson(obj, objectType=None, preventObjectCreation=False):
 	obj = json.loads(obj)
 	if type(obj) is dict and objectType:
 		obj['type'] = objectType
-	return deserialize(obj, preventObjectCreation = preventObjectCreation)
+	return deserialize(obj, preventObjectCreation=preventObjectCreation)
 
 
 def toJson(obj, ensureAscii=False):
-	return json.dumps(serialize(obj), ensure_ascii = ensureAscii)
+	return json.dumps(serialize(obj), ensure_ascii=ensureAscii)
 
 
-def librsyncSignature(filename, base64Encoded = True):
+def librsyncSignature(filename, base64Encoded=True):
 	#if (os.name != 'posix'):
 	#	raise NotImplementedError(u"Not implemented for non-posix os")
 
@@ -171,11 +171,11 @@ def librsyncSignature(filename, base64Encoded = True):
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
 	logger.debug(u"Librsync : %s, %s, %s" % (oldfile, deltafile, newfile))
-	if (oldfile == newfile):
+	if oldfile == newfile:
 		raise ValueError(u"Oldfile and newfile are the same file")
-	if (deltafile == newfile):
+	if deltafile == newfile:
 		raise ValueError(u"deltafile and newfile are the same file")
-	if (deltafile == oldfile):
+	if deltafile == oldfile:
 		raise ValueError(u"oldfile and deltafile are the same file")
 
 	(of, df, nf, pf) = (None, None, None, None)
@@ -242,7 +242,7 @@ def randomString(length):
 
 def generateOpsiHostKey():
 	key = u''
-	if (os.name == 'posix'):
+	if os.name == 'posix':
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
 		r = open(RANDOM_DEVICE)
 		key = r.read(16)
@@ -261,9 +261,9 @@ def timestamp(secs=0, dateOnly=False):
 	if not secs:
 		secs = time.time()
 	if dateOnly:
-		return time.strftime( u"%Y-%m-%d", time.localtime(secs) )
+		return time.strftime(u"%Y-%m-%d", time.localtime(secs))
 	else:
-		return time.strftime( u"%Y-%m-%d %H:%M:%S", time.localtime(secs) )
+		return time.strftime(u"%Y-%m-%d %H:%M:%S", time.localtime(secs))
 
 
 def objectToBeautifiedText(obj, level=0):
@@ -302,12 +302,12 @@ def objectToBeautifiedText(obj, level=0):
 	return text
 
 
-def objectToBash(obj, bashVars = {}, level=0):
-	if (level == 0):
+def objectToBash(obj, bashVars={}, level=0):
+	if level == 0:
 		obj = serialize(obj)
 
 	varName = 'RESULT'
-	if (level > 0):
+	if level > 0:
 		varName = 'RESULT%d' % level
 
 	if not bashVars.get(varName):
@@ -351,13 +351,13 @@ def objectToBash(obj, bashVars = {}, level=0):
 
 
 def objectToHtml(obj, level=0):
-	if (level == 0):
+	if level == 0:
 		obj = serialize(obj)
 
 	html = u''
 	if type(obj) is types.ListType:
 		html += u'['
-		if (len(obj) > 0):
+		if len(obj) > 0:
 			html += u'<div style="padding-left: 3em;">'
 			for i in range( len(obj) ):
 				html += objectToHtml(obj[i], level+1)
@@ -367,7 +367,7 @@ def objectToHtml(obj, level=0):
 		html += u']'
 	elif type(obj) is types.DictType:
 		html += u'{'
-		if (len(obj) > 0):
+		if len(obj) > 0:
 			html += u'<div style="padding-left: 3em;">'
 			i = 0
 			for (key, value) in obj.items():
@@ -514,7 +514,7 @@ def removeUnit(x):
 	unit = match.group(2)
 	mult = 1000
 
-	if   unit.lower().endswith('hz'):
+	if unit.lower().endswith('hz'):
 		unit = unit[:-2]
 	elif unit.lower().endswith('bits'):
 		mult = 1024
@@ -545,7 +545,7 @@ def blowfishEncrypt(key, cleartext):
 	cleartext = forceUnicode(cleartext).encode('utf-8')
 	key = forceUnicode(key)
 
-	while ( len(cleartext) % 8 != 0 ):
+	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
 	try:
