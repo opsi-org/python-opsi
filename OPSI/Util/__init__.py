@@ -550,7 +550,7 @@ def blowfishEncrypt(key, cleartext):
 	except TypeError:
 		raise Exception(u"Failed to hex decode key '%s'" % key)
 
-	blowfish = Blowfish.new(key,  Blowfish.MODE_CBC, BLOWFISH_IV)
+	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	crypt = blowfish.encrypt(cleartext)
 	return unicode(crypt.encode("hex"))
 
@@ -590,7 +590,7 @@ def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
 			data = data[16:]
 		chunks.append(data)
 		for chunk in chunks:
-			enc += rsa.public_encrypt(data = chunk, padding = M2Crypto.RSA.pkcs1_oaep_padding)
+			enc += rsa.public_encrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
 		return enc
 	finally:
 		f.close()
@@ -606,8 +606,8 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 	chunks.append(data)
 	res = ''
 	for chunk in chunks:
-		res += privateKey.private_decrypt(data = chunk, padding = M2Crypto.RSA.pkcs1_oaep_padding)
-	if (res.find('\0') != -1):
+		res += privateKey.private_decrypt(data=chunk, padding=M2Crypto.RSA.pkcs1_oaep_padding)
+	if res.find('\0') != -1:
 		res = res[:res.find('\0')]
 	return res
 
@@ -639,12 +639,12 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 	returnLinks = forceBool(returnLinks)
 	followLinks = forceBool(followLinks)
 
-	islink  = os.path.islink
-	isdir   = os.path.isdir
+	islink = os.path.islink
+	isdir = os.path.isdir
 	listdir = os.listdir
 	if repository:
-		islink  = repository.islink
-		isdir   = repository.isdir
+		islink = repository.islink
+		isdir = repository.isdir
 		listdir = repository.listdir
 
 	files = []
