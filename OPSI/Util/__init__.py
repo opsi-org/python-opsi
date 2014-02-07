@@ -738,11 +738,11 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 
 def flattenSequence(sequence):
 	list = []
-	for s in sequence:
-		if type(s) in (types.ListType, types.TupleType):
-			list.extend(flattenSequence(s))
+	for part in sequence:
+		if type(part) in (types.ListType, types.TupleType):
+			list.extend(flattenSequence(part))
 		else:
-			list.append(s)
+			list.append(part)
 	return list
 
 
@@ -751,9 +751,10 @@ def getfqdn(name='', conf=None):
 		env = os.environ.copy()
 		if "OPSI_HOSTNAME" in env:
 			return forceFqdn(env["OPSI_HOSTNAME"])
-		hn = getGlobalConfig('hostname')
-		if hn:
-			return forceFqdn(hn)
+		hostname = getGlobalConfig('hostname')
+		if hostname:
+			return forceFqdn(hostname)
+
 	return forceFqdn(socket.getfqdn(name))
 
 
