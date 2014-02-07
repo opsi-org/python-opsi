@@ -1,8 +1,14 @@
-python-opsi (4.0.4.5-1) UNRELEASED; urgency=low
+python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
 
   * New module: OPSI.Util.Task.Sudoers
   
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 29 Jan 2014 01:30:57 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:12:23 +0100
+
+python-opsi (4.0.4.5-1) stable; urgency=low
+
+  * set of small fixes.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:10:23 +0100
  
 python-opsi (4.0.4.4-1) testing; urgency=low
 
