@@ -98,10 +98,11 @@ def deserialize(obj, preventObjectCreation=False):
 		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
 	elif type(obj) is dict:
 		newObj = {}
-		for (k, v) in obj.items():
-			newObj[k] = deserialize(v, preventObjectCreation = preventObjectCreation)
+		for (key, value) in obj.items():
+			newObj[key] = deserialize(value, preventObjectCreation=preventObjectCreation)
 	else:
 		return obj
+
 	return newObj
 
 
@@ -115,8 +116,8 @@ def serialize(obj):
 		newObj = [serialize(tempObject) for tempObject in obj]
 	elif type(obj) is dict:
 		newObj = {}
-		for (k, v) in obj.items():
-			newObj[k] = serialize(v)
+		for (key, value) in obj.items():
+			newObj[key] = serialize(value)
 	else:
 		return obj
 	return newObj
