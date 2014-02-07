@@ -95,9 +95,7 @@ def deserialize(obj, preventObjectCreation=False):
 			logger.debug(u"Failed to get object from dict '%s': %s" % (obj, forceUnicode(e)))
 			return obj
 	elif type(obj) is list:
-		newObj = []
-		for o in obj:
-			newObj.append(deserialize(o, preventObjectCreation = preventObjectCreation))
+		newObj = [deserialize(tempObject, preventObjectCreation=preventObjectCreation) for tempObject in obj]
 	elif type(obj) is dict:
 		newObj = {}
 		for (k, v) in obj.items():
@@ -114,9 +112,7 @@ def serialize(obj):
 	elif hasattr(obj, 'serialize'):
 		newObj = obj.serialize()
 	elif type(obj) is list:
-		newObj = []
-		for o in obj:
-			newObj.append(serialize(o))
+		newObj = [serialize(tempObject) for tempObject in obj]
 	elif type(obj) is dict:
 		newObj = {}
 		for (k, v) in obj.items():
