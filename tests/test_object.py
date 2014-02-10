@@ -3,8 +3,9 @@
 
 import unittest
 
-from OPSI.Object import (Host, OpsiConfigserver, OpsiDepotserver,
-    LocalbootProduct, UnicodeConfig, getPossibleClassAttributes)
+from OPSI.Object import (AuditHardwareOnHost, Host, OpsiConfigserver,
+    OpsiDepotserver, LocalbootProduct, UnicodeConfig,
+    getPossibleClassAttributes)
 
 
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
@@ -141,3 +142,27 @@ class UnicodeConfigTestCase(unittest.TestCase):
 
         self.assertTrue(u"Neutron Gerätetechnik GmbH" in config.possibleValues)
         self.assertTrue(u"Neutron Mikroelektronik GmbH" in config.possibleValues)
+
+
+class AuditHardwareOnHostTestCase(unittest.TestCase):
+    def setUp(self):
+        self.ahoh = AuditHardwareOnHost(
+            hostId="client.test.local",
+            hardwareClass='COMPUTER_SYSTEM',
+            description="Description for auditHardware",
+            vendor="Vendor for auditHardware",
+            model="Model for auditHardware",
+            serialNumber='843391034-2192',
+            systemType='Desktop',
+            totalPhysicalMemory=1073741824
+        )
+
+    def tearDown(self):
+        del self.ahoh
+
+    def test__unicode__(self):
+        self.ahoh.__unicode__()
+
+    def test__unicode__with_additionals(self):
+        self.ahoh.name = "Ünicöde name."
+        self.ahoh.__unicode__()
