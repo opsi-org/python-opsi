@@ -1,7 +1,9 @@
 python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
 
   * New module: OPSI.Util.Task.Sudoers
-  
+  * 70_dynamic_depot.conf: Latency algorythm does even work if pinging
+    a depot results in a timeout.
+
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:12:23 +0100
 
 python-opsi (4.0.4.5-1) stable; urgency=low
@@ -9,7 +11,7 @@ python-opsi (4.0.4.5-1) stable; urgency=low
   * set of small fixes.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:10:23 +0100
- 
+
 python-opsi (4.0.4.4-1) testing; urgency=low
 
   * added geo_override patch for older bios (opsi-linux-bootimage)
@@ -30,13 +32,13 @@ python-opsi (4.0.4.4-1) testing; urgency=low
   * Workarround for Windows 8.1 detection.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 29 Jan 2014 01:22:18 +0100
- 
+
 python-opsi (4.0.4.3-1) testing; urgency=low
 
   * Small bugfix for objectToBeautifiedText Method.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.>  Fri, 20 Dec 2013 18:11:37 +0100
- 
+
 python-opsi (4.0.4.2-1) testing; urgency=low
 
   * objectToBeautifiedText optimization.
