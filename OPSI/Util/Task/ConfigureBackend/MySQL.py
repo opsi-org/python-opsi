@@ -132,7 +132,7 @@ on to. Defaults to ``Logger.error``.
 		config.update(additionalBackendConfig)
 
 	try:
-		initializeDatabase(dbAdminUser, dbAdminPass, config, notificationFunction=notificationFunction)
+		initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=systemConfiguration, notificationFunction=notificationFunction)
 	except DatabaseConnectionFailedException as e:
 		errorFunction(u"Failed to connect to host '%s' as user '%s': %s" % (config['address'], dbAdminUser, e))
 		raise e
@@ -147,7 +147,7 @@ on to. Defaults to ``Logger.error``.
 	backend.backend_createBase()
 
 
-def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig, notificationFunction=None, errorFunction=None):
+def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, notificationFunction=None, errorFunction=None):
 	def createUser(host):
 		notificationFunction(u"Creating user '%s' and granting all rights on '%s'" % (config['username'], config['database']))
 		db.query(u'USE %s;' % config['database'])
@@ -183,18 +183,16 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig, notificat
 		if e[0] != 1007:
 			# 1007: database exists
 			raise
-
 	notificationFunction(u"Database '%s' created" % config['database'])
 
-	sysconf = systemConfig
-	if config['address'] in ("localhost", "127.0.0.1", sysconf['hostname'], sysconf['fqdn']):
+	if config['address'] in ("localhost", "127.0.0.1", systemConfig['hostname'], systemConfig['fqdn']):
 		createUser("localhost")
 		if config['address'] not in ("localhost", "127.0.0.1"):
 			createUser(config['address'])
 	else:
-		createUser(sysConfig['ipAddress'])
-		createUser(sysConfig['fqdn'])
-		createUser(sysConfig['hostname'])
+		createUser(systemConfig['ipAddress'])
+		createUser(systemConfig['fqdn'])
+		createUser(systemConfig['hostname'])
 
 	# Disconnect from database
 	db.close()
