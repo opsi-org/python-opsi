@@ -39,17 +39,17 @@ from OPSI.Util import objectToBeautifiedText
 LOGGER = Logger()
 
 
-def getBackendConfiguration(backendConfigFile, neededLocals=None):
+def getBackendConfiguration(backendConfigFile, customLocals=None):
 	"""
 	Reads the backend configuration from the given file.
 
 	:param backendConfigFile: Path to the backend configuration file.
-	:param neededLocals: If special locals are needed for the config file \
+	:param customLocals: If special locals are needed for the config file \
 please pass them here. If this is None defaults will be used.
-	:type neededLocals: dict
+	:type customLocals: dict
 	"""
-	if neededLocals is None:
-		localsForExec = {
+	if customLocals is None:
+		customLocals = {
 			'socket': socket,
 			'os': os,
 			'sys': sys,
@@ -58,9 +58,9 @@ please pass them here. If this is None defaults will be used.
 		}
 
 	LOGGER.info(u"Loading backend config '{0}'".format(backendConfigFile))
-	execfile(backendConfigFile, localsForExec)
-	config = localsForExec['config']
-	LOGGER.info(u"Current backend config: %s" % config)
+	execfile(backendConfigFile, customLocals)
+	config = customLocals['config']
+	LOGGER.debug(u"Current backend config: %s" % config)
 
 	return config
 
