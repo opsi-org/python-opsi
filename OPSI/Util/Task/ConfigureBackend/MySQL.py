@@ -36,7 +36,7 @@ from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
-logger = Logger()
+LOGGER = Logger()
 
 
 class DatabaseConnectionFailedException(Exception):
@@ -49,7 +49,7 @@ def _getSysConfig():
 
 	Should be used as **fallback only**!
 	"""
-	logger.notice(u"Getting current system config")
+	LOGGER.notice(u"Getting current system config")
 	sysConfig = {
 		'hardwareAddress': None,
 	}
@@ -80,10 +80,10 @@ def _getSysConfig():
 	if not sysConfig['ipAddress']:
 		raise Exception(u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn))
 
-	logger.notice(u"System information:")
-	logger.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
-	logger.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
-	logger.notice(u"   hostname     : %s" % sysConfig['hostname'])
+	LOGGER.notice(u"System information:")
+	LOGGER.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
+	LOGGER.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
+	LOGGER.notice(u"   hostname     : %s" % sysConfig['hostname'])
 
 	return sysConfig
 
@@ -120,10 +120,10 @@ on to. Defaults to ``Logger.error``.
 	"""
 
 	if notificationFunction is None:
-		notificationFunction = logger.notice
+		notificationFunction = LOGGER.notice
 
 	if errorFunction is None:
-		errorFunction = logger.error
+		errorFunction = LOGGER.error
 
 	if config is None:
 		config = backendUtils.getBackendConfiguration(backendConfigFile)
@@ -145,6 +145,7 @@ on to. Defaults to ``Logger.error``.
 	notificationFunction(u"Initializing mysql backend")
 	backend = MySQLBackend(**config)
 	backend.backend_createBase()
+	notificationFunction(u"Finished initializing mysql backend.")
 
 
 def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, notificationFunction=None, errorFunction=None):
@@ -157,10 +158,10 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, noti
 		notificationFunction(u"User '%s' created and privileges set" % config['username'])
 
 	if notificationFunction is None:
-		notificationFunction = logger.notice
+		notificationFunction = LOGGER.notice
 
 	if errorFunction is None:
-		errorFunction = logger.error
+		errorFunction = LOGGER.error
 
 	if systemConfig is None:
 		systemConfig = _getSysConfig()
