@@ -36,41 +36,59 @@ import sys
 from OPSI.Logger import Logger
 from OPSI.Util import objectToBeautifiedText
 
-logger = Logger()
+LOGGER = Logger()
 
 
-def getBackendConfiguration(backendConfigFile):
-    localsForExec = {
-        'socket': socket,
-        'os': os,
-        'sys': sys,
-        'module': '',
-        'config': {}
-    }
+def getBackendConfiguration(backendConfigFile, neededLocals=None):
+	"""
+	Reads the backend configuration from the given file.
 
-    logger.info(u"Loading backend config '{0}'".format(backendConfigFile))
-    execfile(backendConfigFile, localsForExec)
-    config = localsForExec['config']
-    logger.info(u"Current backend config: %s" % config)
+	:param backendConfigFile: Path to the backend configuration file.
+	:param neededLocals: If special locals are needed for the config file \
+please pass them here. If this is None defaults will be used.
+	:type neededLocals: dict
+	"""
+	if neededLocals is None:
+		localsForExec = {
+			'socket': socket,
+			'os': os,
+			'sys': sys,
+			'module': '',
+			'config': {}
+		}
 
-    return config
+	LOGGER.info(u"Loading backend config '{0}'".format(backendConfigFile))
+	execfile(backendConfigFile, localsForExec)
+	config = localsForExec['config']
+	LOGGER.info(u"Current backend config: %s" % config)
+
+	return config
 
 
 def updateConfigFile(backendConfigFile, newConfig, notificationFunction=None):
-    if notificationFunction is None:
-        notificationFunction = logger.notice
+	"""
+	Updates a config file with the corresponding new configuration.
 
-    notificationFunction(u"Updating backend config '%s'" % backendConfigFile)
+	:param backendConfigFile: path to the backend configuration
+	:param newConfig: the new configuration.
+	:param notificationFunction: A function that log messages will be passed \
+on to. Defaults to logger.notice
+	:type notificationFunction: func
+	"""
+	if notificationFunction is None:
+		notificationFunction = LOGGER.notice
 
-    lines = []
-    with codecs.open(backendConfigFile, 'r', 'utf-8') as f:
-        for line in f.readlines():
-            if re.search('^\s*config\s*\=', line):
-                break
-            lines.append(line)
+	notificationFunction(u"Updating backend config '%s'" % backendConfigFile)
 
-    with codecs.open(backendConfigFile, 'w', 'utf-8') as f:
-        f.writelines(lines)
-        f.write("config = %s\n" % objectToBeautifiedText(newConfig))
+	lines = []
+	with codecs.open(backendConfigFile, 'r', 'utf-8') as f:
+		for line in f.readlines():
+			if re.search('^\s*config\s*\=', line):
+				break
+			lines.append(line)
 
-    notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
+	with codecs.open(backendConfigFile, 'w', 'utf-8') as f:
+		f.writelines(lines)
+		f.write("config = %s\n" % objectToBeautifiedText(newConfig))
+
+	notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
