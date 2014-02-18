@@ -35,10 +35,7 @@ For more specialised cleanup you should use the corresponding methods.
 
 from __future__ import unicode_literals
 
-import os
 import re
-import socket
-import sys
 
 import OPSI.Util.Task.ConfigureBackend as backendUtil
 from OPSI.Backend.BackendManager import BackendManager
