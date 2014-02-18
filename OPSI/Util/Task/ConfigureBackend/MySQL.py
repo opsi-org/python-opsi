@@ -17,8 +17,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - Util - Task - Configure Backend - MySQL
-
 Functionality to automatically configure an OPSI MySQL backend.
 
 .. versionadded:: 4.0.4.6
@@ -99,6 +97,29 @@ def configureMySQLBackend(dbAdminUser, dbAdminPass,
 	additionalBackendConfig=None,
 	notificationFunction=None,
 	errorFunction=None):
+	"""
+	Does the initial configuration of an MySQL backend.
+
+	It will set up the database for OPSI, grant the specified user the
+	rights needed, try if the connection works, save the configuration
+	to the backend file and create the backend base.
+
+	:param dbAdminUser: Username of the DBA.
+	:param dbAdminPass: Password for the DBA.
+	:param backendConfigFile: Path to mysql backend configuration file.
+	:param config: The configuration for the database. \
+This should include values for the keys `database`, `username`,
+`password` and `address`. `address` is also the address of the database. \
+If not given this will be read from ``backendConfigFile``.
+	:type config: dict
+	:param additionalBackendConfig: If given this will update ``config``
+	:param notificationFunction: A function that notifications will be \
+passed on to. Defaults to ``Logger.notice``.
+	:type notificationFunction: func
+	:param errorFunction: A function that error messages will be passed \
+on to. Defaults to ``Logger.error``.
+	:type errorFunction: func
+	"""
 
 	if notificationFunction is None:
 		notificationFunction = logger.notice
