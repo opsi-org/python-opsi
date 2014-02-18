@@ -54,18 +54,6 @@ def getSysConfig():
 	if sysConfig:
 		return sysConfig
 
-	sysConfig['distributor'] = u'unknown'
-	sysConfig['distribution'] = u'unknown'
-	try:
-		f = os.popen('lsb_release -i 2>/dev/null')
-		sysConfig['distributor'] = f.read().split(':')[1].strip()
-		f.close()
-		f = os.popen('lsb_release -d 2>/dev/null')
-		sysConfig['distribution'] = f.read().split(':')[1].strip()
-		f.close()
-	except Exception as e:
-		logger.warning(u"Failed to get distributor/distribution: %s" % e)
-
 	logger.notice(u"Getting current system config")
 	if ipAddress:
 		sysConfig['ipAddress'] = ipAddress
@@ -75,7 +63,6 @@ def getSysConfig():
 		raise Exception(u"Failed to get fully qualified domain name, got '%s'" % getfqdn(conf=OPSI_GLOBAL_CONF))
 
 	sysConfig['hostname'] = sysConfig['fqdn'].split(u'.')[0]
-	sysConfig['domain'] = u'.'.join(sysConfig['fqdn'].split(u'.')[1:])
 	if 'ipAddress' not in sysConfig:
 		sysConfig['ipAddress'] = socket.gethostbyname(sysConfig['fqdn'])
 		if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
@@ -95,41 +82,10 @@ def getSysConfig():
 	if not sysConfig['ipAddress']:
 		raise Exception(u"Failed to get a valid ip address for fqdn '%s'" % sysConfig['fqdn'])
 
-	if not sysConfig.get('netmask'):
-		sysConfig['netmask'] = u'255.255.255.0'
-
-	sysConfig['broadcast'] = u''
-	sysConfig['subnet'] = u''
-	for i in range(4):
-		if sysConfig['broadcast']:
-			sysConfig['broadcast'] += u'.'
-		if sysConfig['subnet']:
-			sysConfig['subnet']    += u'.'
-
-		sysConfig['subnet'] += u'%d' % ( int(sysConfig['ipAddress'].split(u'.')[i]) & int(sysConfig['netmask'].split(u'.')[i]) )
-		sysConfig['broadcast'] += u'%d' % ( int(sysConfig['ipAddress'].split(u'.')[i]) | int(sysConfig['netmask'].split(u'.')[i]) ^ 255 )
-
-	sysConfig['winDomain'] = u''
-	if os.path.exists(SMB_CONF):
-		f = codecs.open(SMB_CONF, 'r', 'utf-8')
-		for line in f.readlines():
-			match = re.search('^\s*workgroup\s*=\s*(\S+)\s*$', line)
-			if match:
-				sysConfig['winDomain'] = match.group(1).upper()
-				break
-		f.close()
-
 	logger.notice(u"System information:")
-	logger.notice(u"   distributor  : %s" % sysConfig['distributor'])
-	logger.notice(u"   distribution : %s" % sysConfig['distribution'])
 	logger.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
-	logger.notice(u"   netmask      : %s" % sysConfig['netmask'])
-	logger.notice(u"   subnet       : %s" % sysConfig['subnet'])
-	logger.notice(u"   broadcast    : %s" % sysConfig['broadcast'])
 	logger.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
 	logger.notice(u"   hostname     : %s" % sysConfig['hostname'])
-	logger.notice(u"   domain       : %s" % sysConfig['domain'])
-	logger.notice(u"   win domain   : %s" % sysConfig['winDomain'])
 
 	return sysConfig
 
