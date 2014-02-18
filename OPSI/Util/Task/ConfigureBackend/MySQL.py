@@ -27,11 +27,7 @@ Functionality to automatically configure an OPSI MySQL backend.
 :license: GNU Affero General Public License version 3
 """
 
-
-import codecs
 import MySQLdb
-import os
-import re
 import socket
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
