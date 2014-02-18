@@ -93,9 +93,9 @@ def _getSysConfig():
 
 
 def configureMySQLBackend(dbAdminUser, dbAdminPass,
-	systemConfiguration=None,
 	backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 	config=None,
+	systemConfiguration=None,
 	additionalBackendConfig=None,
 	notificationFunction=None,
 	errorFunction=None):
