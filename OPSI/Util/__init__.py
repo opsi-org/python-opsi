@@ -748,7 +748,12 @@ def getfqdn(name='', conf=None):
 		env = os.environ.copy()
 		if "OPSI_HOSTNAME" in env:
 			return forceFqdn(env["OPSI_HOSTNAME"])
-		hostname = getGlobalConfig('hostname')
+
+		if conf is not None:
+			hostname = getGlobalConfig('hostname', conf)
+		else:
+			hostname = getGlobalConfig('hostname')
+
 		if hostname:
 			return forceFqdn(hostname)
 
