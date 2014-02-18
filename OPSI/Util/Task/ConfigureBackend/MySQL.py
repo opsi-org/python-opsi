@@ -29,14 +29,12 @@ import MySQLdb
 import socket
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
-from OPSI.Logger import Logger
+from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
 from OPSI.Backend.MySQL import MySQLBackend
+from OPSI.Logger import Logger
 from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
-
-
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 logger = Logger()
 
