@@ -81,14 +81,14 @@ on to. Defaults to logger.notice
 	notificationFunction(u"Updating backend config '%s'" % backendConfigFile)
 
 	lines = []
-	with codecs.open(backendConfigFile, 'r', 'utf-8') as f:
-		for line in f.readlines():
-			if re.search('^\s*config\s*\=', line):
+	with codecs.open(backendConfigFile, 'r', 'utf-8') as backendFile:
+		for line in backendFile.readlines():
+			if re.search(r'^\s*config\s*\=', line):
 				break
 			lines.append(line)
 
-	with codecs.open(backendConfigFile, 'w', 'utf-8') as f:
-		f.writelines(lines)
-		f.write("config = %s\n" % objectToBeautifiedText(newConfig))
+	with codecs.open(backendConfigFile, 'w', 'utf-8') as backendFile:
+		backendFile.writelines(lines)
+		backendFile.write("config = %s\n" % objectToBeautifiedText(newConfig))
 
 	notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
