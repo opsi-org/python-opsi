@@ -164,7 +164,11 @@ on to. Defaults to ``Logger.error``.
 	notificationFunction(u"Finished initializing mysql backend.")
 
 
-def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, notificationFunction=None, errorFunction=None):
+def initializeDatabase(dbAdminUser, dbAdminPass, config,
+	systemConfig=None, notificationFunction=None, errorFunction=None):
+	"""
+	Create a database and grant the OPSI user the needed rights on it.
+	"""
 	def createUser(host):
 		notificationFunction(u"Creating user '%s' and granting all rights on '%s'" % (config['username'], config['database']))
 		db.query(u'USE %s;' % config['database'])
