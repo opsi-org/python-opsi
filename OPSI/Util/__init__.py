@@ -744,6 +744,14 @@ def flattenSequence(sequence):
 
 
 def getfqdn(name='', conf=None):
+	"""
+	Get the fqdn.
+
+	If ``name`` is not given it will try various ways to get a valid
+	fqdn from the current host.
+	If ``conf`` but no name is given it will try to read the FQDN from
+	the specified configuration file.
+	"""
 	if not name:
 		env = os.environ.copy()
 		if "OPSI_HOSTNAME" in env:
