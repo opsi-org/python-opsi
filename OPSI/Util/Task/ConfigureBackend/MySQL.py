@@ -57,8 +57,11 @@ def _getSysConfig():
 	try:
 		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
 		sysConfig['fqdn'] = forceHostId(fqdn)
-	except:
-		raise Exception(u"Failed to get fully qualified domain name, got '{0}'".format(fqdn))
+	except Exception:
+		raise Exception(
+			u"Failed to get fully qualified domain name, "
+			u"got '{0}'".format(fqdn)
+		)
 
 	sysConfig['hostname'] = fqdn.split(u'.')[0]
 	sysConfig['ipAddress'] = socket.gethostbyname(fqdn)
@@ -78,7 +81,9 @@ def _getSysConfig():
 				break
 
 	if not sysConfig['ipAddress']:
-		raise Exception(u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn))
+		raise Exception(
+			u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn)
+		)
 
 	LOGGER.notice(u"System information:")
 	LOGGER.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
@@ -132,13 +137,24 @@ on to. Defaults to ``Logger.error``.
 		config.update(additionalBackendConfig)
 
 	try:
-		initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=systemConfiguration, notificationFunction=notificationFunction)
-	except DatabaseConnectionFailedException as e:
-		errorFunction(u"Failed to connect to host '%s' as user '%s': %s" % (config['address'], dbAdminUser, e))
-		raise e
+		initializeDatabase(
+			dbAdminUser, dbAdminPass, config,
+			systemConfig=systemConfiguration,
+			notificationFunction=notificationFunction
+		)
+	except DatabaseConnectionFailedException as exc:
+		errorFunction(
+			u"Failed to connect to host '{hostname}' as user '{username}': "
+			u"{error}".format(
+				hostname=config['address'],
+				username=dbAdminUser,
+				error=exc,
+			)
+		)
+		raise exc
 	except Exception as exc:
 		errorFunction(exc)
-		raise e
+		raise exc
 
 	backendUtils.updateConfigFile(backendConfigFile, config, notificationFunction)
 
@@ -169,17 +185,21 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, noti
 	# Connect to database host
 	notificationFunction(u"Connecting to host '%s' as user '%s'" % (config['address'], dbAdminUser))
 	try:
-		db = MySQLdb.connect(host=config['address'], user=dbAdminUser, passwd=dbAdminPass)
-	except Exception as e:
-		raise DatabaseConnectionFailedException(e)
+		db = MySQLdb.connect(
+			host=config['address'],
+			user=dbAdminUser,
+			passwd=dbAdminPass
+		)
+	except Exception as error:
+		raise DatabaseConnectionFailedException(error)
 	notificationFunction(u"Successfully connected to host '%s' as user '%s'" % (config['address'], dbAdminUser))
 
 	# Create opsi database and user
 	notificationFunction(u"Creating database '%s'" % config['database'])
 	try:
 		db.query(u'CREATE DATABASE %s DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;' % config['database'])
-	except MySQLdb.ProgrammingError as e:
-		if e[0] != 1007:
+	except MySQLdb.ProgrammingError as error:
+		if error[0] != 1007:
 			# 1007: database exists
 			raise
 	notificationFunction(u"Database '%s' created" % config['database'])
@@ -207,7 +227,7 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, noti
 			db=config['database']
 		)
 		db.close()
-	except Exception as e:
-		raise DatabaseConnectionFailedException(e)
+	except Exception as error:
+		raise DatabaseConnectionFailedException(error)
 
 	notificationFunction(u"Successfully connected to host '%s' as user '%s'" % (config['address'], config['username']))
