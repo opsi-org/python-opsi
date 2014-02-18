@@ -167,12 +167,10 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, noti
 
 	# Connect to database host
 	notificationFunction(u"Connecting to host '%s' as user '%s'" % (config['address'], dbAdminUser))
-
 	try:
 		db = MySQLdb.connect(host=config['address'], user=dbAdminUser, passwd=dbAdminPass)
 	except Exception as e:
 		raise DatabaseConnectionFailedException(e)
-
 	notificationFunction(u"Successfully connected to host '%s' as user '%s'" % (config['address'], dbAdminUser))
 
 	# Create opsi database and user
@@ -201,7 +199,12 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, noti
 	notificationFunction(u"Testing connection to database '%s' as user '%s'" % (config['database'], config['username']))
 
 	try:
-		db = MySQLdb.connect(host = config['address'], user = config['username'], passwd = config['password'], db = config['database'])
+		db = MySQLdb.connect(
+			host=config['address'],
+			user=config['username'],
+			passwd=config['password'],
+			db=config['database']
+		)
 		db.close()
 	except Exception as e:
 		raise DatabaseConnectionFailedException(e)
