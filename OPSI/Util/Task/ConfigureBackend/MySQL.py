@@ -171,23 +171,6 @@ def getSysConfig():
     return sysConfig
 
 
-def getBackendConfiguration(backendConfigFile, additionalBackendConfig={}):
-    localesForExec = {
-        'socket': socket,
-        'os': os,
-        'sys': sys,
-        'module': '',
-        'config': {}
-    }
-
-    logger.info(u"Loading backend config '{0}'".format(backendConfigFile))
-    execfile(backendConfigFile, localesForExec)
-    config = localesForExec['config']
-    logger.info(u"Current mysql backend config: %s" % config)
-
-    return config
-
-
 def configureMySQLBackend(dbAdminUser, dbAdminPass,
         backendConfigFile=u'/etc/opsi/backends/mysql.conf',
         config=None,
@@ -285,23 +268,3 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, notificationFunction=No
         raise DatabaseConnectionFailedException(e)
 
     notificationFunction(u"Successfully connected to host '%s' as user '%s'" % (config['address'], config['username']))
-
-
-def updateConfigFile(backendConfigFile, newConfig, notificationFunction=None):
-    if notificationFunction is None:
-        notificationFunction = logger.notice
-
-    notificationFunction(u"Updating backend config '%s'" % backendConfigFile)
-
-    lines = []
-    with codecs.open(backendConfigFile, 'r', 'utf-8') as f:
-        for line in f.readlines():
-            if re.search('^\s*config\s*\=', line):
-                break
-            lines.append(line)
-
-    with codecs.open(backendConfigFile, 'w', 'utf-8') as f:
-        f.writelines(lines)
-        f.write("config = %s\n" % objectToBeautifiedText(newConfig))
-
-    notificationFunction(u"Backend config '%s' updated" % backendConfigFile)

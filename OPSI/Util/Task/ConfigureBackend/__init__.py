@@ -26,3 +26,51 @@ Functionality to automatically configure an OPSI backend.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+import codecs
+import os
+import re
+import socket
+import sys
+
+from OPSI.Logger import Logger
+from OPSI.Util import objectToBeautifiedText
+
+logger = Logger()
+
+
+def getBackendConfiguration(backendConfigFile):
+    localsForExec = {
+        'socket': socket,
+        'os': os,
+        'sys': sys,
+        'module': '',
+        'config': {}
+    }
+
+    logger.info(u"Loading backend config '{0}'".format(backendConfigFile))
+    execfile(backendConfigFile, localsForExec)
+    config = localsForExec['config']
+    logger.info(u"Current backend config: %s" % config)
+
+    return config
+
+
+def updateConfigFile(backendConfigFile, newConfig, notificationFunction=None):
+    if notificationFunction is None:
+        notificationFunction = logger.notice
+
+    notificationFunction(u"Updating backend config '%s'" % backendConfigFile)
+
+    lines = []
+    with codecs.open(backendConfigFile, 'r', 'utf-8') as f:
+        for line in f.readlines():
+            if re.search('^\s*config\s*\=', line):
+                break
+            lines.append(line)
+
+    with codecs.open(backendConfigFile, 'w', 'utf-8') as f:
+        f.writelines(lines)
+        f.write("config = %s\n" % objectToBeautifiedText(newConfig))
+
+    notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
