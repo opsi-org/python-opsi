@@ -110,9 +110,6 @@ def configureMySQLBackend(dbAdminUser, dbAdminPass,
 		config = backendUtils.getBackendConfiguration(backendConfigFile)
 
 	if additionalBackendConfig is not None:
-		# TODO: in opsi-setup additionalBackendConfig is a global
-		# that has some additional backend configuration in it.
-		# Check what is needed of it
 		config.update(additionalBackendConfig)
 
 	try:
