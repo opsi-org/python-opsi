@@ -33,6 +33,9 @@ import socket
 import OPSI.Util.Task.ConfigureBackend as backendUtils
 from OPSI.Logger import Logger
 from OPSI.Backend.MySQL import MySQLBackend
+from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
+from OPSI.Types import forceHostId
+from OPSI.Util import getfqdn
 
 
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
@@ -53,6 +56,7 @@ def getSysConfig():
 	logger.notice(u"Getting current system config")
 	if ipAddress:
 		sysConfig['ipAddress'] = ipAddress
+
 	try:
 		sysConfig['fqdn'] = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 	except:
