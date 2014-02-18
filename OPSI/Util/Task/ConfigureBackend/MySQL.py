@@ -89,10 +89,10 @@ def _getSysConfig():
 
 
 def configureMySQLBackend(dbAdminUser, dbAdminPass,
-	backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 	config=None,
 	systemConfiguration=None,
 	additionalBackendConfig=None,
+	backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 	notificationFunction=None,
 	errorFunction=None):
 	"""
