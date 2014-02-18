@@ -243,22 +243,22 @@ class SnackUI(UI):
 
 	def showError(self, text, title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 		try:
-			text    = forceUnicode(text)
-			title   = forceUnicode(title)
+			text = forceUnicode(text)
+			title = forceUnicode(title)
 			okLabel = forceUnicode(okLabel)
-			width   = forceInt(width)
-			height  = forceInt(height)
+			width = forceInt(width)
+			height = forceInt(height)
 			seconds = forceInt(seconds)
 
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self.getScreen().width - 15
-			if (height <= 0):
+			if height <= 0:
 				height = len(text.split(u'\n')) + 2
 
-			textBox = Textbox(width = width, height = height, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
+			textBox = Textbox(width=width, height=height, text=text.encode(encoding, 'replace'), scroll=1, wrap=1)
 			button = Button(okLabel.encode(encoding, 'replace'))
 			rows = 2
 			if seconds:
@@ -282,22 +282,22 @@ class SnackUI(UI):
 
 	def showMessage(self, text, title=_(u'Message'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 		try:
-			text    = forceUnicode(text)
-			title   = forceUnicode(title)
+			text = forceUnicode(text)
+			title = forceUnicode(title)
 			okLabel = forceUnicode(okLabel)
-			width   = forceInt(width)
-			height  = forceInt(height)
+			width = forceInt(width)
+			height = forceInt(height)
 			seconds = forceInt(seconds)
 
 			for string in self.confidentialStrings:
 				text = text.replace(string, u'*** confidential ***')
 
-			if (width <= 0):
+			if width <= 0:
 				width = self.getScreen().width - 15
-			if (height <= 0):
+			if height <= 0:
 				height = len(text.split(u'\n')) + 2
 
-			textBox = Textbox(width = width, height = height, text = text.encode(encoding, 'replace'), scroll = 1, wrap = 1)
+			textBox = Textbox(width=width, height=height, text=text.encode(encoding, 'replace'), scroll=1, wrap=1)
 			button = Button(okLabel.encode(encoding, 'replace'))
 			rows = 2
 			if seconds:
@@ -321,13 +321,13 @@ class SnackUI(UI):
 
 	def createProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
 		try:
-			width   = forceInt(width)
-			height  = forceInt(height)
-			total   = forceInt(total)
-			title   = forceUnicode(title)
-			text    = forceUnicode(text)
+			width = forceInt(width)
+			height = forceInt(height)
+			total = forceInt(total)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
 
-			progressBox = SnackProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
+			progressBox = SnackProgressBox(ui=self, width=width, height=height, total = total, title = title, text = text)
 			return progressBox
 		except Exception as e:
 			self.exit()
@@ -336,11 +336,11 @@ class SnackUI(UI):
 
 	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
 		try:
-			width   = forceInt(width)
-			height  = forceInt(height)
-			total   = forceInt(total)
-			title   = forceUnicode(title)
-			text    = forceUnicode(text)
+			width = forceInt(width)
+			height = forceInt(height)
+			total = forceInt(total)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
 
 			progressBox = SnackCopyProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
 			return progressBox
@@ -351,11 +351,11 @@ class SnackUI(UI):
 
 	def createDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Progress'), text=u''):
 		try:
-			width   = forceInt(width)
-			height  = forceInt(height)
-			total   = forceInt(total)
-			title   = forceUnicode(title)
-			text    = forceUnicode(text)
+			width = forceInt(width)
+			height = forceInt(height)
+			total = forceInt(total)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
 
 			dualProgressBox = SnackDualProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
 			return dualProgressBox
@@ -366,11 +366,11 @@ class SnackUI(UI):
 
 	def createCopyDualProgressBox(self, width=-1, height=-1, total=100, title=_(u'Copy progress'), text=u''):
 		try:
-			width   = forceInt(width)
-			height  = forceInt(height)
-			total   = forceInt(total)
-			title   = forceUnicode(title)
-			text    = forceUnicode(text)
+			width = forceInt(width)
+			height = forceInt(height)
+			total = forceInt(total)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
 
 			progressBox = SnackCopyDualProgressBox(ui = self, width = width, height = height, total = total, title = title, text = text)
 			return progressBox
@@ -380,10 +380,10 @@ class SnackUI(UI):
 			raise
 
 	def createMessageBox(self, width=-1, height=-1, title=_(u'Text'), text=u''):
-		width   = forceInt(width)
-		height  = forceInt(height)
-		title   = forceUnicode(title)
-		text    = forceUnicode(text)
+		width = forceInt(width)
+		height = forceInt(height)
+		title = forceUnicode(title)
+		text = forceUnicode(text)
 
 		self.messageBox = SnackMessageBox(ui=self, width=width, height=height, title=title, text=text)
 		return self.messageBox
@@ -395,13 +395,13 @@ class SnackUI(UI):
 
 	def getValue(self, width=-1, height=-1, title=_(u'Please type text'), default=u'', password=False, text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
 		try:
-			width       = forceInt(width)
-			height      = forceInt(height)
-			title       = forceUnicode(title)
-			default     = forceUnicode(default)
-			password    = forceBool(password)
-			text        = forceUnicode(text)
-			okLabel     = forceUnicode(okLabel)
+			width = forceInt(width)
+			height = forceInt(height)
+			title = forceUnicode(title)
+			default = forceUnicode(default)
+			password = forceBool(password)
+			text = forceUnicode(text)
+			okLabel = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
 
 			for string in self.confidentialStrings:
@@ -442,8 +442,8 @@ class SnackUI(UI):
 			buttonsGrid.setField(okButton, col = 1, row = 0, padding = (10, 0, 0, 0))
 
 			gridForm = GridForm(self._screen, title.encode(encoding, 'replace'), 1, 3)
-			gridForm.add (textGrid,    col = 0, row = 0, padding = (0, 0, 0, 1))
-			gridForm.add (entryGrid,   col = 0, row = 1, padding = (0, 0, 0, 1))
+			gridForm.add (textGrid, col = 0, row = 0, padding = (0, 0, 0, 1))
+			gridForm.add (entryGrid, col = 0, row = 1, padding = (0, 0, 0, 1))
 			gridForm.add (buttonsGrid, col = 0, row = 2, padding = (0, 0, 0, 0))
 			gridForm.addHotKey('ESC')
 
@@ -471,13 +471,13 @@ class SnackUI(UI):
 
 	def getSelection(self, entries, radio=False, width=-1, height=-1, title=_(u'Please select'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
 		try:
-			entries     = forceList(entries)
-			radio       = forceBool(radio)
-			width       = forceInt(width)
-			height      = forceInt(height)
-			title       = forceUnicode(title)
-			text        = forceUnicode(text)
-			okLabel     = forceUnicode(okLabel)
+			entries = forceList(entries)
+			radio = forceBool(radio)
+			width = forceInt(width)
+			height = forceInt(height)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
+			okLabel = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
 
 			for string in self.confidentialStrings:
@@ -519,7 +519,6 @@ class SnackUI(UI):
 				entriesWidget = CheckboxTree(height = entriesHeight, scroll = 1)
 
 			row = 0
-			group = None
 			numSelected = 0
 			for i in range(len(entries)):
 				entry = entries[i]
@@ -546,9 +545,9 @@ class SnackUI(UI):
 			buttonsGrid.setField(okButton, col = 1, row = 0, padding = (10, 0, 0, 0))
 
 			gridForm = GridForm(self._screen, title.encode(encoding, 'replace'), 1, 3)
-			gridForm.add (textGrid,      col = 0, row = 0, padding = (0, 0, 0, 1))
+			gridForm.add (textGrid, col = 0, row = 0, padding = (0, 0, 0, 1))
 			gridForm.add (entriesWidget, col = 0, row = 1, padding = (0, 0, 0, 1))
-			gridForm.add (buttonsGrid,   col = 0, row = 2, padding = (0, 0, 0, 0))
+			gridForm.add (buttonsGrid, col = 0, row = 2, padding = (0, 0, 0, 0))
 
 			# help line
 			helpLine = _(u"<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select") % (cancelLabel, okLabel)
@@ -580,12 +579,12 @@ class SnackUI(UI):
 
 	def getValues(self, entries, width=-1, height=-1, title=_(u'Please fill in'), text=u'', okLabel=_(u'OK'), cancelLabel=_(u'Cancel')):
 		try:
-			entries     = forceList(entries)
-			width       = forceInt(width)
-			height      = forceInt(height)
-			title       = forceUnicode(title)
-			text        = forceUnicode(text)
-			okLabel     = forceUnicode(okLabel)
+			entries = forceList(entries)
+			width = forceInt(width)
+			height = forceInt(height)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
+			okLabel = forceUnicode(okLabel)
 			cancelLabel = forceUnicode(cancelLabel)
 
 			for string in self.confidentialStrings:
@@ -645,9 +644,9 @@ class SnackUI(UI):
 			buttonsGrid.setField(okButton, col = 1, row = 0, padding = (10, 0, 0, 0))
 
 			gridForm = GridForm(self._screen, title.encode(encoding, 'replace'), 1, 3)
-			gridForm.add (textGrid,    col = 0, row = 0, padding = (0, 0, 0, 1))
-			gridForm.add (entriesGrid, col = 0, row = 1, padding = (0, 0, 0, 1))
-			gridForm.add (buttonsGrid, col = 0, row = 2, padding = (0, 0, 0, 0))
+			gridForm.add(textGrid, col=0, row=0, padding=(0, 0, 0, 1))
+			gridForm.add(entriesGrid, col= 0, row=1, padding=(0, 0, 0, 1))
+			gridForm.add(buttonsGrid, col= 0, row=2, padding=(0, 0, 0, 0))
 
 			# help line
 			helpLine = _(u"<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select") % (cancelLabel, okLabel)
@@ -738,10 +737,10 @@ class SnackMessageBox(MessageBox, MessageObserver):
 		try:
 			self._ui = ui
 
-			width  = forceInt(width)
+			width = forceInt(width)
 			height = forceInt(height)
-			title  = forceUnicode(title)
-			text   = forceUnicode(text)
+			title = forceUnicode(title)
+			text = forceUnicode(text)
 
 			self._visible = False
 			self._title = title
@@ -836,11 +835,11 @@ class SnackProgressBox(SnackMessageBox, ProgressBox, ProgressObserver):
 		ProgressObserver.__init__(self)
 
 		self._ui = ui
-		width  = forceInt(width)
+		width = forceInt(width)
 		height = forceInt(height)
-		total  = forceInt(total)
-		title  = forceUnicode(title)
-		text   = forceUnicode(text)
+		total = forceInt(total)
+		title = forceUnicode(title)
+		text = forceUnicode(text)
 
 		if (width <= 0):
 			width = self._ui.getScreen().width - 7
@@ -901,11 +900,11 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 		ProgressObserver.__init__(self)
 
 		self._ui = ui
-		width  = forceInt(width)
+		width = forceInt(width)
 		height = forceInt(height)
-		total  = forceInt(total)
-		title  = forceUnicode(title)
-		text   = forceUnicode(text)
+		total = forceInt(total)
+		title = forceUnicode(title)
+		text = forceUnicode(text)
 
 		if (width <= 0):
 			width = self._ui.getScreen().width - 7
