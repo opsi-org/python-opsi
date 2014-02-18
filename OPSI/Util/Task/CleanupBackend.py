@@ -40,6 +40,7 @@ import re
 import socket
 import sys
 
+import OPSI.Util.Task.ConfigureBackend as backendUtil
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.MySQL import MySQL
 from OPSI.Logger import Logger
@@ -226,16 +227,7 @@ def cleanUpMySQL(backendConfigFile=u'/etc/opsi/backends/mysql.conf'):
 used MySQL backend.
 	:type backendConfigFile: str
 	"""
-	customLocals = {
-		'config': {},
-		'module': '',
-		'os': os,
-		'socket': socket,
-		'sys': sys,
-	}
-	LOGGER.info(u"Loading backend config '%s'" % backendConfigFile)
-	execfile(backendConfigFile, customLocals)
-	config = customLocals['config']
+	config = backendUtil.getBackendConfiguration(backendConfigFile)
 	LOGGER.info(u"Current mysql backend config: %s" % config)
 
 	LOGGER.notice(
