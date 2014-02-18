@@ -41,46 +41,48 @@ from OPSI.Util import getfqdn
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 
 logger = Logger()
-sysConfig = {}
 
 
 class DatabaseConnectionFailedException(Exception):
 	pass
 
 
-def getSysConfig():
-	global sysConfig
-	if sysConfig:
-		return sysConfig
+def _getSysConfig():
+	"""
+	Skinned down version of getSysConfig from ``opsi-setup``.
 
+	Should be used as **fallback only**!
+	"""
 	logger.notice(u"Getting current system config")
-	if ipAddress:
-		sysConfig['ipAddress'] = ipAddress
+	sysConfig = {
+		'hardwareAddress': None,
+	}
 
 	try:
-		sysConfig['fqdn'] = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
+		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
+		sysConfig['fqdn'] = forceHostId(fqdn)
 	except:
-		raise Exception(u"Failed to get fully qualified domain name, got '%s'" % getfqdn(conf=OPSI_GLOBAL_CONF))
+		raise Exception(u"Failed to get fully qualified domain name, got '{0}'".format(fqdn))
 
-	sysConfig['hostname'] = sysConfig['fqdn'].split(u'.')[0]
-	if 'ipAddress' not in sysConfig:
-		sysConfig['ipAddress'] = socket.gethostbyname(sysConfig['fqdn'])
-		if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
-			sysConfig['ipAddress'] = None
-	sysConfig['hardwareAddress'] = None
+	sysConfig['hostname'] = fqdn.split(u'.')[0]
+	sysConfig['ipAddress'] = socket.gethostbyname(fqdn)
+
+	if sysConfig['ipAddress'].split(u'.')[0] in ('127', '169'):
+		sysConfig['ipAddress'] = None
 
 	for device in getEthernetDevices():
 		devconf = getNetworkDeviceConfig(device)
 		if devconf['ipAddress'] and devconf['ipAddress'].split(u'.')[0] not in ('127', '169'):
 			if not sysConfig['ipAddress']:
 				sysConfig['ipAddress'] = devconf['ipAddress']
-			if (sysConfig['ipAddress'] == devconf['ipAddress']):
+
+			if sysConfig['ipAddress'] == devconf['ipAddress']:
 				sysConfig['netmask'] = devconf['netmask']
 				sysConfig['hardwareAddress'] = devconf['hardwareAddress']
 				break
 
 	if not sysConfig['ipAddress']:
-		raise Exception(u"Failed to get a valid ip address for fqdn '%s'" % sysConfig['fqdn'])
+		raise Exception(u"Failed to get a valid ip address for fqdn '{0}'".format(fqdn))
 
 	logger.notice(u"System information:")
 	logger.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
@@ -129,8 +131,7 @@ def configureMySQLBackend(dbAdminUser, dbAdminPass,
 	backend.backend_createBase()
 
 
-def initializeDatabase(dbAdminUser, dbAdminPass, config, notificationFunction=None, errorFunction=None):
-
+def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig, notificationFunction=None, errorFunction=None):
 	def createUser(host):
 		notificationFunction(u"Creating user '%s' and granting all rights on '%s'" % (config['username'], config['database']))
 		db.query(u'USE %s;' % config['database'])
@@ -144,6 +145,9 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, notificationFunction=No
 
 	if errorFunction is None:
 		errorFunction = logger.error
+
+	if systemConfig is None:
+		systemConfig = _getSysConfig()
 
 	# Connect to database host
 	notificationFunction(u"Connecting to host '%s' as user '%s'" % (config['address'], dbAdminUser))
@@ -166,7 +170,7 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config, notificationFunction=No
 
 	notificationFunction(u"Database '%s' created" % config['database'])
 
-	sysconf = getSysConfig()
+	sysconf = systemConfig
 	if config['address'] in ("localhost", "127.0.0.1", sysconf['hostname'], sysconf['fqdn']):
 		createUser("localhost")
 		if config['address'] not in ("localhost", "127.0.0.1"):
