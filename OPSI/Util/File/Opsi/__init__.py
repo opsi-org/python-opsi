@@ -566,8 +566,8 @@ class PackageControlFile(TextFile):
 								if not v in tmp:
 									tmp.append(v)
 							value = tmp
-					   	except Exception as e:
-					   		logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
+						except Exception as e:
+							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), e) )
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
