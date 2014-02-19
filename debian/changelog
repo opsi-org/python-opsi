@@ -3,6 +3,8 @@ python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
   * New module: OPSI.Util.Task.Sudoers
   * 70_dynamic_depot.conf: Latency algorythm does even work if pinging
     a depot results in a timeout.
+  * OpsiBackupArchive: Avoid hanging in an endless loop when running
+    backupMySQLBackend and stderr gets spammed with the same message
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:12:23 +0100
 

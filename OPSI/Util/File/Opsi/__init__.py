@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 __version__ = '4.0.0.2'
 
 import bz2
+import collections
 import datetime
 import gzip
 import os
@@ -1349,22 +1350,43 @@ class OpsiBackupArchive(tarfile.TarFile):
 					fcntl.fcntl(p.stderr, fcntl.F_SETFL, flags| os.O_NONBLOCK)
 
 					out = p.stdout.readline()
-					try:
-						err = p.stderr.readline()
-					except Exception:
-						err = ""
 
-					while not p.poll() and (out or err):
+					try:
+						collectedErrors = [p.stderr.readline()]
+					except Exception:
+						collectedErrors = []
+					lastErrors = collections.deque(collectedErrors, maxlen=10)
+
+					while not p.poll() and out:
 						os.write(fd, out)
 						out = p.stdout.readline()
 
 						try:
-							err += p.stderr.readline()
+							currentError = p.stderr.readline().strip()
+							if currentError:
+								lastErrors.append(currentError)
+								if not "Warning: Using a password on the command line interface can be insecure." in currentError:
+									collectedErrors.append(currentError)
 						except Exception:
 							continue
 
+						if lastErrors.maxlen == len(lastErrors):
+							onlyOneErrorMessageInLastErrors = True
+							firstError = lastErrors[0]
+							for err in list(lastErrors)[1:]:
+								if firstError != err:
+									onlyOneErrorMessageInLastErrors = False
+									break
+
+							if onlyOneErrorMessageInLastErrors:
+								logger.debug(
+									u'Aborting: Only one message in stderr: '
+									u'{0}'.format(firstError)
+								)
+								break
+
 					if p.returncode not in (0, None):
-						raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], err))
+						raise OpsiBackupFileError(u"MySQL dump failed for backend %s: %s" % (backend["name"], u"".join(collectedErrors)))
 
 					self._addContent(name, (name, "BACKENDS/MYSQL/%s/database.sql" %backend["name"]))
 				finally:
