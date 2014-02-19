@@ -1343,7 +1343,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
-
 					p = Popen(cmd, stdout=PIPE, stderr=PIPE)
 
 					flags = fcntl.fcntl(p.stderr, fcntl.F_GETFL)
@@ -1352,15 +1351,16 @@ class OpsiBackupArchive(tarfile.TarFile):
 					out = p.stdout.readline()
 					try:
 						err = p.stderr.readline()
-					except:
+					except Exception:
 						err = ""
+
 					while not p.poll() and (out or err):
 						os.write(fd, out)
 						out = p.stdout.readline()
 
 						try:
 							err += p.stderr.readline()
-						except:
+						except Exception:
 							continue
 
 					if p.returncode not in (0, None):
