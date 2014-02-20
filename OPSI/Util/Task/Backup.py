@@ -47,12 +47,14 @@ from OPSI.System.Posix import SysInfo
 logger = Logger()
 
 try:
-	t = gettext.translation('opsi-utils', '/usr/share/locale')
-	_ = t.ugettext
-except Exception as e:
-	logger.error(u"Locale not found: %s" % e)
+	translation = gettext.translation('opsi-utils', '/usr/share/locale')
+	_ = translation.ugettext
+except Exception as error:
+	logger.error(u"Locale not found: {0}".format(error))
+
 
 	def _(string):
+		""" Function for translating text. """
 		return string
 
 
@@ -155,31 +157,36 @@ class OpsiBackup(object):
 			shutil.move(archive.name, destination)
 
 			logger.notice(u"Backup complete")
-		except Exception as e:
+		except Exception as error:
 			os.remove(archive.name)
-			logger.logException(e, LOG_DEBUG)
-			raise e
+			logger.logException(error, LOG_DEBUG)
+			raise error
 
 	def _verify(self, file, **kwargs):
 		files = forceList(file)
 
 		result = 0
 
-		for f in files:
-			archive = self._getArchive(mode="r", file=f)
+		for fileName in files:
+			archive = self._getArchive(mode="r", file=fileName)
 
-			logger.info(u"Verifying archive %s" % f)
+			logger.info(u"Verifying archive %s" % fileName)
 			try:
 				archive.verify()
 				logger.notice(u"Archive is OK.")
-			except OpsiBackupFileError as e:
-				logger.error(e)
+			except OpsiBackupFileError as error:
+				logger.error(error)
 				result = 1
 			archive.close()
 		return result
 
 	def _verifySysconfig(self, archive):
-		def ask(q=WARNING_DIFF):
+		def ask(question=WARNING_DIFF):
+			"""
+			Ask for a yes or no.
+
+			Returns ``True`` if the answer is ``Yes``, false otherwise.
+			"""
 			fd = sys.stdin.fileno()
 
 			oldterm = termios.tcgetattr(fd)
@@ -190,13 +197,13 @@ class OpsiBackup(object):
 			oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
 			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
-			self.stdout.write(q)
+			self.stdout.write(question)
 
 			try:
-				while 1:
+				while True:
 					try:
-						c = sys.stdin.read(1)
-						return (forceUnicode(c) in (u"y", u"Y"))
+						firstCharacter = sys.stdin.read(1)
+						return (forceUnicode(firstCharacter) in (u"y", u"Y"))
 					except IOError:
 						pass
 			finally:
@@ -206,9 +213,8 @@ class OpsiBackup(object):
 		try:
 			if self._getDifferencesInSysConfig(archive.sysinfo, SysInfo()):
 				return ask(WARNING_DIFF)
-
-		except OpsiError as e:
-			return ask(WARNING_SYSCONFIG % unicode(e))
+		except OpsiError as error:
+			return ask(WARNING_SYSCONFIG % unicode(error))
 
 		return True
 
@@ -269,7 +275,7 @@ class OpsiBackup(object):
 					logger.debug(u"Restoring opsi configuration.")
 					functions.append(lambda x: archive.restoreConfiguration())
 
-				if (mode == "raw"):
+				if mode == "raw":
 					for backend in backends:
 						if backend in ("file", "all", "auto"):
 							if not archive.hasFileBackend() and not force and not auto:
@@ -294,17 +300,16 @@ class OpsiBackup(object):
 						#	archive.backupUniventionBackend()
 
 				try:
-					for f in functions:
-						logger.debug2(u"Running restoration function %s" % repr(f))
-						f(auto)
-				except OpsiBackupBackendNotFound as e:
+					for restoreFunction in functions:
+						logger.debug2(u"Running restoration function %s" % repr(restoreFunction))
+						restoreFunction(auto)
+				except OpsiBackupBackendNotFound as error:
 					if not auto:
-						raise e
-
-				except Exception as e:
-					logger.error(u"Failed to restore data from archive %s: %s. Aborting." % (archive.name, e))
-					logger.logException(e, LOG_DEBUG)
-					raise e
+						raise error
+				except Exception as error:
+					logger.error(u"Failed to restore data from archive %s: %s. Aborting." % (archive.name, error))
+					logger.logException(error, LOG_DEBUG)
+					raise error
 
 				logger.notice(u"Restoration complete")
 		finally:
