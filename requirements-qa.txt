@@ -1,0 +1,4 @@
+nose
+nosexcover
+pylint
+flake8

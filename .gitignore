@@ -6,3 +6,10 @@
 *.egg-info
 *.sublime-*
 tests/Backends/config.py
+
+# QA files:
+.coverage
+coverage.xml
+nosetests.xml
+pylint.txt
+pep8.txt
