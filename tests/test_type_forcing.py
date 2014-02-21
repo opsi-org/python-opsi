@@ -12,7 +12,7 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceProductVersion, forceOpsiHostKey,forceInstallationStatus,
 	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
 	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
-	forceProductType, forceDict, forceUniqueList, args)
+	forceProductType, forceDict, forceUniqueList, args, forceFqdn)
 
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
@@ -468,6 +468,16 @@ class ArgsDecoratorTestCase(unittest.TestCase):
 
 		self.assertEquals(5, someObj._somearg, "Expected somearg to be %d, but got %s instead" % (5, someObj._somearg))
 		self.assertEquals(None, someObj._someOtherArg, "Expected someOtherArg to be None, but got %s instead" % someObj._someOtherArg)
+
+
+class ForceFqdnTestCase(unittest.TestCase):
+	def testTrailingDotIsRemoved(self):
+		self.assertEqual('abc.example.local', forceFqdn('abc.example.local.'))
+
+	def testFqdnContainsHostnameRootZoneAndTopLevelDomain(self):
+		self.assertRaises(ValueError, forceFqdn, 'hostname.tld')
+
+		forceFqdn('hostname.rootzone.tld')
 
 
 if __name__ == '__main__':
