@@ -36,6 +36,8 @@ from OPSI.System import getEthernetDevices, getNetworkDeviceConfig
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 
+DATABASE_EXISTS_ERROR_CODE = 1007
+ACCESS_DENIED_ERROR_CODE = 1044
 LOGGER = Logger()
 
 
@@ -202,10 +204,13 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	notificationFunction(u"Creating database '%s'" % config['database'])
 	try:
 		db.query(u'CREATE DATABASE %s DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;' % config['database'])
+	except MySQLdb.OperationalError as error:
+		if error[0] == ACCESS_DENIED_ERROR_CODE:
+			raise DatabaseConnectionFailedException(error)
+		raise error
 	except MySQLdb.ProgrammingError as error:
-		if error[0] != 1007:
-			# 1007: database exists
-			raise
+		if error[0] != DATABASE_EXISTS_ERROR_CODE:
+			raise error
 	notificationFunction(u"Database '%s' created" % config['database'])
 
 	if config['address'] in ("localhost", "127.0.0.1", systemConfig['hostname'], systemConfig['fqdn']):
