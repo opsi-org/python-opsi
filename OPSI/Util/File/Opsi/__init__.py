@@ -1055,7 +1055,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						execfile(os.path.join(self.BACKEND_CONF_DIR, entry), b)
 						backends[name] = {"name": name, "config": b["config"], "module": b['module'], "dispatch": (name in dispatch)}
 					except Exception as error:
-						logger.warning(u"Failed to read backend config %s: %s" % (file, error))
+						logger.warning(u"Failed to read backend config {filename}: {error}".format(filename=entry, error=error))
 			return backends
 
 		raise OpsiBackupFileError("Could not read backend Configuration.")
