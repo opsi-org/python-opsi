@@ -8,7 +8,7 @@ import unittest
 
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 
-from helpers import copyTestfileToTemporaryFolder
+from .helpers import copyTestfileToTemporaryFolder
 
 
 class ConfigFileManagementTestCase(unittest.TestCase):
