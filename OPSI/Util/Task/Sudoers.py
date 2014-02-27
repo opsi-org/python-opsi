@@ -39,10 +39,9 @@ try:
 except Exception:
 	FILE_ADMIN_GROUP = u'pcpatch'
 
-SUDOERS_FILE=u'/etc/sudoers'
+SUDOERS_FILE = u'/etc/sudoers'
 _NO_TTY_REQUIRED_DEFAULT = "Defaults:opsiconfd !requiretty"
-
-logger = Logger()
+LOGGER = Logger()
 
 
 def patchSudoersFileForOpsi(sudoersFile=SUDOERS_FILE):
@@ -97,10 +96,13 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 			lines.append(line)
 
 	if not found:
-		logger.notice(u"   Creating backup of %s" % sudoersFile)
-		shutil.copy(sudoersFile, sudoersFile + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
+		LOGGER.notice(u"   Creating backup of %s" % sudoersFile)
+		shutil.copy(
+			sudoersFile,
+			sudoersFile + u'.' + time.strftime("%Y-%m-%d_%H:%M")
+		)
 
-		logger.notice(u"   Adding sudoers entries for opsi")
+		LOGGER.notice(u"   Adding sudoers entries for opsi")
 		for entry in entries:
 			lines.append("{0}\n".format(entry))
 
@@ -109,7 +111,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 
 		lines.append('\n')
 
-		logger.notice(u"   Writing new %s" % sudoersFile)
+		LOGGER.notice(u"   Writing new %s" % sudoersFile)
 		with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
 			outputFile.writelines(lines)
 
@@ -126,4 +128,3 @@ def distributionRequiresNoTtyPatch():
 	distributor = distributor.lower()
 	return ('scientificsl' in distributor or 'redhat' in distributor
 			or 'centos' in distributor or 'sme' in distributor)
-
