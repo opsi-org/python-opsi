@@ -90,7 +90,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 			lines.append("{0}\n".format(entry))
 
 		if ttyPatchRequired and distributionRequiresNoTtyPatch():
-				lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
+			lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
 
 		lines.append('\n')
 
