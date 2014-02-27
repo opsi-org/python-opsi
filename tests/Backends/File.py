@@ -15,7 +15,7 @@ from . import BackendMixin
 
 
 class FileBackendMixin(BackendMixin):
-    BACKEND_SUBFOLDER = 'data'
+    BACKEND_SUBFOLDER = os.path.join('etc', 'opsi')
     CREATES_INVENTORY_HISTORY = False
 
     def setUpBackend(self):
@@ -54,7 +54,7 @@ class FileBackendMixin(BackendMixin):
 
     def _patchFileBackend(self, backendDirectory):
         baseDir = os.path.join(backendDirectory, 'baseDir', 'config')
-        hostKeyDir = os.path.join(backendDirectory, 'keyFiles')
+        hostKeyDir = os.path.join(backendDirectory, self.BACKEND_SUBFOLDER, 'pckeys')
 
         currentGroupId = os.getgid()
         groupName = grp.getgrgid(currentGroupId)[0]
@@ -86,7 +86,7 @@ config = {{
         os.makedirs(templateDirectory)
 
     def _patchDispatchConfig(self, targetDirectory):
-        configDir = os.path.join(targetDirectory, 'data', 'backends')
+        configDir = os.path.join(targetDirectory, self.BACKEND_SUBFOLDER, 'backends')
         dispatchConfigPath = os.path.join(configDir, 'dispatch.conf')
 
         self._fileBackendConfig['dispatchConfig'] = dispatchConfigPath
