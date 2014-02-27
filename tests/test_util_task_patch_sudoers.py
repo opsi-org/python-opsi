@@ -30,7 +30,8 @@ except ImportError:
 from . import helpers
 
 from OPSI.Util.Task.Sudoers import (_NO_TTY_REQUIRED_DEFAULT,
-    patchSudoersFileForOpsi, distributionRequiresNoTtyPatch)
+    patchSudoersFileForOpsi, distributionRequiresNoTtyPatch,
+    patchSudoersFileToAllowRestartingDHCPD)
 
 
 class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
@@ -91,7 +92,7 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         with open(self.fileName) as pre:
             for line in pre:
                 if _NO_TTY_REQUIRED_DEFAULT in line:
-                    self.fail()
+                    self.fail('Command already existing. Can\'t check.')
 
         patchSudoersFileForOpsi(self.fileName)
 
@@ -105,6 +106,24 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
             entryFound,
             "Expected {0} in patched file.".format(_NO_TTY_REQUIRED_DEFAULT)
         )
+
+    def testPatchingToAllowRestartingDHCPD(self):
+        serviceCommand = "service dhcpd restart"
+
+        with open(self.fileName) as pre:
+            for line in pre:
+                if serviceCommand in line:
+                    self.fail("Restart command already existing.")
+
+        patchSudoersFileToAllowRestartingDHCPD(serviceCommand, self.fileName)
+
+        entryFound = False
+        with open(self.fileName) as post:
+            for line in post:
+                if serviceCommand in line:
+                    entryFound = True
+
+        self.assertTrue(entryFound)
 
 if __name__ == '__main__':
     unittest.main()

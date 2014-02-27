@@ -39,12 +39,13 @@ try:
 except Exception:
 	FILE_ADMIN_GROUP = u'pcpatch'
 
+SUDOERS_FILE=u'/etc/sudoers'
 _NO_TTY_REQUIRED_DEFAULT = "Defaults:opsiconfd !requiretty"
 
 logger = Logger()
 
 
-def patchSudoersFileForOpsi(sudoersFile=u'/etc/sudoers'):
+def patchSudoersFileForOpsi(sudoersFile=SUDOERS_FILE):
 	"""
 	Patches the sudoers file so opsiconfd and the OPSI file admins can \
 call opsi-set-rights.
@@ -55,6 +56,20 @@ call opsi-set-rights.
 	entries = [
 		"opsiconfd ALL=NOPASSWD: %s" % "/usr/bin/opsi-set-rights",
 		"%%%s ALL=NOPASSWD: %s" % (FILE_ADMIN_GROUP, "/usr/bin/opsi-set-rights"),
+	]
+
+	_patchSudoersFileWithEntries(sudoersFile, entries)
+
+
+def patchSudoersFileToAllowRestartingDHCPD(dhcpdRestartCommand, sudoersFile=SUDOERS_FILE):
+	"""
+	Patches the sudoers file so opsiconfd can restart the DHCP daemon.
+
+	:param dhcpdRestartCommand: The command used to restart the DHCP daemon
+	:param sudoersFile: The path to the sudoers file.
+	"""
+	entries = [
+		u"opsiconfd ALL=NOPASSWD: {0}\n".format(dhcpdRestartCommand)
 	]
 
 	_patchSudoersFileWithEntries(sudoersFile, entries)
@@ -111,3 +126,4 @@ def distributionRequiresNoTtyPatch():
 	distributor = distributor.lower()
 	return ('scientificsl' in distributor or 'redhat' in distributor
 			or 'centos' in distributor or 'sme' in distributor)
+
