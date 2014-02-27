@@ -3291,11 +3291,13 @@ def locateDHCPDConfig(default=None):
 		u"/etc/dhcp3/dhcpd.conf"  # older debian / ubuntu
 	)
 
-	for file in locations:
-		if os.path.exists(file):
-			return file
+	for filename in locations:
+		if os.path.exists(filename):
+			return filename
+
 	if default is not None:
 		return default
+
 	raise RuntimeError(u"Could not locate dhcpd.conf.")
 
 
@@ -3306,9 +3308,11 @@ def locateDHCPDInit(default=None):
 		u"/etc/init.d/dhcp3-server"  # older debian / ubuntu
 	)
 
-	for file in locations:
-		if os.path.exists(file):
-			return file
+	for filename in locations:
+		if os.path.exists(filename):
+			return filename
+
 	if default is not None:
 		return default
+
 	raise RuntimeError(u"Could not locate dhcpd init file.")
