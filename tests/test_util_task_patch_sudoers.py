@@ -17,13 +17,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import os
 import shutil
-import unittest
 
-import helpers
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
+from . import helpers
 
 from OPSI.Util.Task.Sudoers import (_NO_TTY_REQUIRED_DEFAULT,
     patchSudoersFileForOpsi, distributionRequiresNoTtyPatch)
