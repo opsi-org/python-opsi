@@ -8,7 +8,7 @@ import unittest
 
 from OPSI.Util.File import DHCPDConfFile
 
-from helpers import copyTestfileToTemporaryFolder
+from .helpers import copyTestfileToTemporaryFolder
 
 
 class DHCPDConfFileTestCase(unittest.TestCase):

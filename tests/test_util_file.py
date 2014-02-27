@@ -9,7 +9,7 @@ import unittest
 
 from OPSI.Util.File import IniFile, InfFile, TxtSetupOemFile
 
-from helpers import copyTestfileToTemporaryFolder
+from .helpers import copyTestfileToTemporaryFolder
 
 
 class ParseIniFileTestCase(unittest.TestCase):
