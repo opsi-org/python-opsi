@@ -25,7 +25,8 @@ import unittest
 
 import helpers
 
-from OPSI.Util.Task.Sudoers import patchSudoersFileForOpsi
+from OPSI.Util.Task.Sudoers import (_NO_TTY_REQUIRED_DEFAULT,
+    patchSudoersFileForOpsi, distributionRequiresNoTtyPatch)
 
 
 class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
@@ -80,6 +81,26 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         showFolderInfo()
         self.assertEqual(2, len(filesInTemporaryFolder))
 
+    @unittest.skipIf(not distributionRequiresNoTtyPatch(), 'Distribution not affected.')
+    def testOpsiconfdDoesNotRequireTTY(self):
+        # TODO: patch the distributionCheckFunction so this works with all OS
+        with open(self.fileName) as pre:
+            for line in pre:
+                if _NO_TTY_REQUIRED_DEFAULT in line:
+                    self.fail()
+
+        patchSudoersFileForOpsi(self.fileName)
+
+        entryFound = False
+        with open(self.fileName) as post:
+            for line in post:
+                if _NO_TTY_REQUIRED_DEFAULT in line:
+                    entryFound = True
+
+        self.assertTrue(
+            entryFound,
+            "Expected {0} in patched file.".format(_NO_TTY_REQUIRED_DEFAULT)
+        )
 
 if __name__ == '__main__':
     unittest.main()

@@ -39,6 +39,8 @@ try:
 except Exception:
 	FILE_ADMIN_GROUP = u'pcpatch'
 
+_NO_TTY_REQUIRED_DEFAULT = "Defaults:opsiconfd !requiretty"
+
 logger = Logger()
 
 
@@ -54,14 +56,28 @@ call opsi-set-rights.
 		"opsiconfd ALL=NOPASSWD: %s" % "/usr/bin/opsi-set-rights",
 		"%%%s ALL=NOPASSWD: %s" % (FILE_ADMIN_GROUP, "/usr/bin/opsi-set-rights"),
 	]
+
+	_patchSudoersFileWithEntries(sudoersFile, entries)
+
+
+def _patchSudoersFileWithEntries(sudoersFile, entries):
+	"""
+	Patches ``sudoersFile`` with ``entries`` if they are missing.
+
+	.. versionadded:: 4.0.4.6
+	"""
 	lines = []
 	found = False
+	ttyPatchRequired = True
 
 	with codecs.open(sudoersFile, 'r', 'utf-8') as inputFile:
 		for line in inputFile:
 			for entry in entries:
 				if entry in line:
 					found = True
+
+			if _NO_TTY_REQUIRED_DEFAULT in line:
+				ttyPatchRequired = False
 
 			lines.append(line)
 
@@ -73,15 +89,25 @@ call opsi-set-rights.
 		for entry in entries:
 			lines.append("{0}\n".format(entry))
 
-		distributor = Distribution().distributor
-		distributor = distributor.lower()
-		if ('scientificsl' in distributor or 'redhat' in distributor
-			or 'centos' in distributor or 'sme' in distributor):
-
-			lines.append(u"Defaults:opsiconfd !requiretty\n")
+		if ttyPatchRequired and distributionRequiresNoTtyPatch():
+				lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
 
 		lines.append('\n')
 
 		logger.notice(u"   Writing new %s" % sudoersFile)
 		with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
 			outputFile.writelines(lines)
+
+
+def distributionRequiresNoTtyPatch():
+	"""
+	Checks if the used Distribution requires a patch to use sudo without a tty.
+
+	.. versionadded:: 4.0.4.3
+
+	:returntype: bool
+	"""
+	distributor = Distribution().distributor
+	distributor = distributor.lower()
+	return ('scientificsl' in distributor or 'redhat' in distributor
+			or 'centos' in distributor or 'sme' in distributor)
