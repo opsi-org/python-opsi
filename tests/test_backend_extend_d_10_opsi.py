@@ -3,29 +3,14 @@
 
 from __future__ import absolute_import
 
-import os
 import unittest
 
-from OPSI.Backend.BackendManager import BackendManager
+
 from OPSI.Object import (OpsiClient, LocalbootProduct, ProductOnClient,
 						 ProductDependency, OpsiDepotserver, ProductOnDepot,
 						 UnicodeConfig, ConfigState)
 
-from .Backends.File import FileBackendMixin
-
-
-class ExtendedFileBackendMixin(FileBackendMixin):
-	def setUpBackend(self):
-		self._fileBackendConfig = {}
-		self._fileTempDir = self._copyOriginalBackendToTemporaryLocation()
-
-		self.backend = BackendManager(
-			backend='file',
-			backendconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backends'),
-			extensionconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backendManager', 'extend.d')
-		)
-
-		self.backend.backend_createBase()
+from .Backends.File import ExtendedFileBackendMixin
 
 
 class BackendExtendedThroughOPSITestCase(unittest.TestCase, ExtendedFileBackendMixin):

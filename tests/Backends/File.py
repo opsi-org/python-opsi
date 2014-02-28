@@ -9,8 +9,10 @@ import pwd
 import shutil
 import tempfile
 
-from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
+from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Backend.File import FileBackend
+
 from . import BackendMixin
 
 
@@ -94,7 +96,7 @@ config = {{
         with open(dispatchConfigPath, 'w') as dpconf:
             dpconf.write(
 """
-.*                 : file
+.* : file
 """
 )
 
@@ -103,3 +105,19 @@ config = {{
 
         if os.path.exists(self._fileTempDir):
             shutil.rmtree(self._fileTempDir)
+
+        del self.backend
+
+
+class ExtendedFileBackendMixin(FileBackendMixin):
+    def setUpBackend(self):
+        self._fileBackendConfig = {}
+        self._fileTempDir = self._copyOriginalBackendToTemporaryLocation()
+
+        self.backend = BackendManager(
+            backend='file',
+            backendconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backends'),
+            extensionconfigdir=os.path.join(self._fileTempDir, self.BACKEND_SUBFOLDER, 'backendManager', 'extend.d')
+        )
+
+        self.backend.backend_createBase()
