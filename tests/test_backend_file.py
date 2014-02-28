@@ -24,12 +24,10 @@ class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
     stored in the file backend.
     """
     def setUp(self):
-        self.backend = None
         self.setUpBackend()
 
     def tearDown(self):
         self.tearDownBackend()
-        del self.backend
 
     def testMethod(self):
         self.assertNotEqual(None, self.backend)
