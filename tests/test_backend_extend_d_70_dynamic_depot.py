@@ -29,6 +29,7 @@ This tests what usually is found under
 """
 from __future__ import absolute_import
 
+import random
 import unittest
 
 from OPSI.Logger import Logger
@@ -121,12 +122,14 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
 		lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
-		alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b')]
+		alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b', latency=5)]
+		random.shuffle(alternativeDepots)
 		self.assertEqual(lowLatencyRepo, selectDepot({}, self.masterDepot, alternativeDepots))
 
 		# Missing latency means no connection
 		highLatencyRepo = FakeDepot('a', latency=10)
 		alternativeDepots = [highLatencyRepo]
+		random.shuffle(alternativeDepots)
 		self.assertEqual(highLatencyRepo, selectDepot({}, FakeDepot('m', latency=None), alternativeDepots))
 
 	@staticmethod
