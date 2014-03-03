@@ -39,13 +39,14 @@ logger = Logger()
 
 
 class FakeDepot(object):
-	def __init__(self, fqdn, latency=2):
-		self.fqdn = fqdn
+	def __init__(self, id, latency=2):
+		self.id = id
 		self.latency = latency
 		self.repositoryRemoteUrl = self
+		self.masterDepotId = None
 
 	def __repr__(self):
-		return "<FakeDepot({0}, latency={1})>".format(self.fqdn, self.latency)
+		return "<FakeDepot({0}, latency={1})>".format(self.id, self.latency)
 
 
 class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
