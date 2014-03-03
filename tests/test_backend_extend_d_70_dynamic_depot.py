@@ -80,13 +80,22 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 		Without alternative depots the master depot should be returned.
 		"""
 		algo = self.backend.getDepotSelectionAlgorithm()
+
+		self.showAlgoWithLineNumbers(algo)
 		exec(algo)
+
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
 	def testDepotSelectionAlgorithmByMasterDepotAndLatency(self):
 		algo = self.backend.getDepotSelectionAlgorithmByMasterDepotAndLatency()
+		algo = self.patchPingFunctionalityInAlgorythm(algo)
+
+		self.showAlgoWithLineNumbers(algo)
 		exec(algo)
+
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
+
+
 
 	def patchPingFunctionalityInAlgorythm(self, algorythm):
 		testPingFunction = "ping = lambda host: host.latency"
@@ -121,11 +130,16 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 
 	@staticmethod
 	def showAlgoWithLineNumbers(algo):
+		"""
+		Prints the given algorythm with line numbers preceding each line.
+		"""
 		for number, line in enumerate(algo.split('\n')):
 			print("{num}: {line}".format(num=number, line=line))
 
 	def testDepotSelectionAlgorithmByNetworkAddress(self):
 		algo = self.backend.getDepotSelectionAlgorithmByNetworkAddress()
+
+		self.showAlgoWithLineNumbers(algo)
 		exec(algo)
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
