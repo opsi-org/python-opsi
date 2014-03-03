@@ -32,25 +32,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __version__ = '4.0.4.4'
 
-# Imports
-import re, os, time, socket, sys, locale, subprocess, difflib, threading
+import difflib
+import locale
+import os
+import re
+import socket
+import subprocess
+import sys
+import threading
+import time
 
 # Win32 imports
+import _winreg
+import msvcrt
+import ntsecuritycon
+import pywintypes
+import win32api
+import win32con
+import win32event
+import win32file
+import win32gui
+import win32net
+import win32netcon
+import win32pdh
+import win32pdhutil
+import win32pipe
+import win32process
+import win32profile
+import win32security
+import win32service
+import win32ts
+import win32wnet
 from ctypes import *
 from datetime import datetime
-import pywintypes, ntsecuritycon, win32service, win32event, win32con, win32ts, win32process, win32file
-import win32api, win32security, win32gui, win32net, win32wnet, win32netcon, _winreg
-import win32pdhutil, win32pdh, win32pipe, msvcrt
-import win32profile
 
-# OPSI imports
 from OPSI.Logger import *
 from OPSI.Types import *
 
-# Get Logger instance
 logger = Logger()
 
-# Constants
 HKEY_CURRENT_USER = _winreg.HKEY_CURRENT_USER
 HKEY_LOCAL_MACHINE = _winreg.HKEY_LOCAL_MACHINE
 
@@ -830,7 +850,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 				except Exception as e:
 					logger.warning(e)
 					if (forceInt(sessionData['LogonId']) > forceInt(newest['LogonId'])):
-							newest = sessionData
+						newest = sessionData
 			else:
 				newest = sessionData
 	if (len(sessionIds) == 0):
@@ -1836,30 +1856,3 @@ class Impersonate:
 
 	def __del__(self):
 		self.end()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
