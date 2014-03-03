@@ -88,17 +88,22 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 		exec(algo)
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
-	def testDepotSelectionAlgorithmByLatency(self):
+	def patchPingFunctionalityInAlgorythm(self, algorythm):
 		testPingFunction = "ping = lambda host: host.latency"
 		testUrlsplitFunction = "urlsplit = lambda host: (None, host, None, None, None, None)"
 
-		algo = self.backend.getDepotSelectionAlgorithmByLatency()
-		algo = algo.replace("from OPSI.Util.Ping import ping", testPingFunction)
-		algo = algo.replace("from OPSI.Util.HTTP import urlsplit", testUrlsplitFunction)
+		algorythm = algorythm.replace("from OPSI.Util.Ping import ping", testPingFunction)
+		algorythm = algorythm.replace("from OPSI.Util.HTTP import urlsplit", testUrlsplitFunction)
 
 		for replacedPart in ("from OPSI.Util.Ping import ping", "from OPSI.Util.HTTP import urlsplit"):
-			if replacedPart in algo:
+			if replacedPart in algorythm:
 				self.fail("Replacing {0} failed.".format(replacedPart))
+
+		return algorythm
+
+	def testDepotSelectionAlgorithmByLatency(self):
+		algo = self.backend.getDepotSelectionAlgorithmByLatency()
+		algo = self.patchPingFunctionalityInAlgorythm(algo)
 
 		self.showAlgoWithLineNumbers(algo)
 		exec(algo)
