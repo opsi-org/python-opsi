@@ -74,6 +74,11 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 		self.assertTrue(f.repositoryRemoteUrl)
 
 	def testDefaultConfigurationIsExecutable(self):
+		"""
+		Executing the default configuration should never fail.
+
+		Without alternative depots the master depot should be returned.
+		"""
 		algo = self.backend.getDepotSelectionAlgorithm()
 		exec(algo)
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
