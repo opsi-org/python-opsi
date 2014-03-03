@@ -70,34 +70,28 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 
 		del self.masterDepot
 
-	def testDepotFake(self):
-		f = FakeDepot('a')
-		self.assertEqual(f, f.repositoryRemoteUrl)
-		self.assertTrue(f.repositoryRemoteUrl)
+	def getAlgorythm(self):
+		return self.backend.getDepotSelectionAlgorithm()
 
-	def testDefaultConfigurationIsExecutable(self):
+	def testAlgorythmIsExecutable(self):
 		"""
 		Executing the default configuration should never fail.
-
-		Without alternative depots the master depot should be returned.
 		"""
-		algo = self.backend.getDepotSelectionAlgorithm()
-
+		algo = self.getAlgorythm()
 		self.showAlgoWithLineNumbers(algo)
 		exec(algo)
 
+	def testAlgorythmReturnsMasterDepotIfNoAlternativesAreGiven(self):
+		exec(self.getAlgorythm())
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
-	def testDepotSelectionAlgorithmByMasterDepotAndLatency(self):
-		algo = self.backend.getDepotSelectionAlgorithmByMasterDepotAndLatency()
-		algo = self.patchPingFunctionalityInAlgorythm(algo)
-
-		self.showAlgoWithLineNumbers(algo)
-		exec(algo)
-
-		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
-
-
+	@staticmethod
+	def showAlgoWithLineNumbers(algo):
+		"""
+		Prints the given algorythm with line numbers preceding each line.
+		"""
+		for number, line in enumerate(algo.split('\n')):
+			print("{num}: {line}".format(num=number, line=line))
 
 	def patchPingFunctionalityInAlgorythm(self, algorythm):
 		testPingFunction = "ping = lambda host: host.latency"
@@ -112,40 +106,61 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 
 		return algorythm
 
-	def testDepotSelectionAlgorithmByLatency(self):
+class DepotSelectionByLatencyTestCase(DynamicDepotTestCase):
+	def getAlgorythm(self):
 		algo = self.backend.getDepotSelectionAlgorithmByLatency()
 		algo = self.patchPingFunctionalityInAlgorythm(algo)
 
 		self.showAlgoWithLineNumbers(algo)
-		exec(algo)
 
-		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
+		return algo
+
+	def testDepotSelectionAlgorithmByLowestLatency(self):
+		exec(self.getAlgorythm())
 
 		lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
 		alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b', latency=5)]
 		random.shuffle(alternativeDepots)
 		self.assertEqual(lowLatencyRepo, selectDepot({}, self.masterDepot, alternativeDepots))
 
-		# Missing latency means no connection
+	def testThatDepotsWithoutLatencyArentUsed(self):
+		exec(self.getAlgorythm())
+
 		highLatencyRepo = FakeDepot('a', latency=10)
 		alternativeDepots = [highLatencyRepo]
 		random.shuffle(alternativeDepots)
 		self.assertEqual(highLatencyRepo, selectDepot({}, FakeDepot('m', latency=None), alternativeDepots))
 
-	@staticmethod
-	def showAlgoWithLineNumbers(algo):
-		"""
-		Prints the given algorythm with line numbers preceding each line.
-		"""
-		for number, line in enumerate(algo.split('\n')):
-			print("{num}: {line}".format(num=number, line=line))
 
-	def testDepotSelectionAlgorithmByNetworkAddress(self):
+class DepotSelectionByMasterDepotAndLatencyTestCase(DynamicDepotTestCase):
+	def getAlgorythm(self):
+		algo = self.backend.getDepotSelectionAlgorithmByMasterDepotAndLatency()
+		algo = self.patchPingFunctionalityInAlgorythm(algo)
+
+		# self.showAlgoWithLineNumbers(algo)
+
+		return algo
+
+	def testDepotSelectionAlgorithmByMasterDepotAndLatency(self):
+		wantedRepo = FakeDepot('our.wanted.repo', latency=1, masterDepotId='clients.master.depot')
+		alternativeDepots = [
+			FakeDepot('another.master', latency=0.5),
+			FakeDepot('sub.for.another.master', latency=0.4, masterDepotId='another.master'),
+			wantedRepo,
+			FakeDepot('slower.repo.with.right.master', latency=1.5, masterDepotId='clients.master.depot')
+		]
+		random.shuffle(alternativeDepots)
+
+		exec(self.getAlgorythm())
+		self.assertEqual(wantedRepo, selectDepot({}, self.masterDepot, alternativeDepots))
+
+
+class DepotSelectionByNetworkAddressTestCase(DynamicDepotTestCase):
+	# TODO: functional test
+	def getAlgorythm(self):
 		algo = self.backend.getDepotSelectionAlgorithmByNetworkAddress()
-
 		self.showAlgoWithLineNumbers(algo)
-		exec(algo)
-		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
+		return algo
 
 
 if __name__ == '__main__':
