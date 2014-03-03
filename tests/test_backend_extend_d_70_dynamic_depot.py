@@ -101,8 +101,13 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 		self.assertEqual(self.masterDepot, selectDepot({}, self.masterDepot))
 
 		lowLatencyRepo = FakeDepot('x.y.z', latency=1.5)
-		alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('d.e.f')]
+		alternativeDepots = [FakeDepot('a'), lowLatencyRepo, FakeDepot('b')]
 		self.assertEqual(lowLatencyRepo, selectDepot({}, self.masterDepot, alternativeDepots))
+
+		# Missing latency means no connection
+		highLatencyRepo = FakeDepot('a', latency=10)
+		alternativeDepots = [highLatencyRepo]
+		self.assertEqual(highLatencyRepo, selectDepot({}, FakeDepot('m', latency=None), alternativeDepots))
 
 	@staticmethod
 	def showAlgoWithLineNumbers(algo):
