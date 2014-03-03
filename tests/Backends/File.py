@@ -18,7 +18,7 @@ from . import BackendMixin
 
 class FileBackendMixin(BackendMixin):
     BACKEND_SUBFOLDER = os.path.join('etc', 'opsi')
-    CONFIG_DIRECTORY = 'baseDir'
+    CONFIG_DIRECTORY = os.path.join('var', 'lib', 'opsi')
     CREATES_INVENTORY_HISTORY = False
 
     def setUpBackend(self):
