@@ -242,9 +242,17 @@ def randomString(length, characters=_ACCEPTED_CHARACTERS):
 	return forceUnicode(u''.join(string))
 
 
-def generateOpsiHostKey():
+def generateOpsiHostKey(forcePython=False):
+	"""
+	Generates an random opsi host key.
+
+	This will try to make use of an existing random device.
+	As a fallback the generation is done in plain Python.
+
+	:param forcePython: Force the usage of Python for host key generation.
+	"""
 	key = u''
-	if os.name == 'posix':
+	if os.name == 'posix' and not forcePython:
 		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
 		r = open(RANDOM_DEVICE)
 		key = r.read(16)
@@ -253,8 +261,7 @@ def generateOpsiHostKey():
 		key = unicode(key.encode("hex"))
 	else:
 		logger.debug(u"Using python random module to generate opsi host key")
-		while (len(key) < 32):
-			key += random.choice([u'0',u'1',u'2',u'3',u'4',u'5',u'6',u'7',u'8',u'9',u'a',u'b',u'c',u'd',u'e',u'f'])
+		key = randomString(32, "0123456789abcdef")
 	return key
 
 

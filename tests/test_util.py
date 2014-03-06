@@ -6,7 +6,8 @@ import os
 import unittest
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
-    getGlobalConfig, ipAddressInNetwork, objectToHtml, randomString)
+    generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork, objectToHtml,
+    randomString)
 from OPSI.Object import LocalbootProduct
 
 
@@ -70,6 +71,11 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(10, len(randomString(10)))
         self.assertNotEqual('', randomString(1).strip())
         self.assertEqual('', randomString(0).strip())
+        self.assertEqual(5*'a', randomString(5, characters='a'))
+
+    def testGenerateOpsiHostKeyIs32CharsLong(self):
+        self.assertEqual(32, len(generateOpsiHostKey()))
+        self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
 
 
 class CompareVersionTestCase(unittest.TestCase):
