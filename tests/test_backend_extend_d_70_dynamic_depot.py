@@ -137,7 +137,7 @@ class DepotSelectionByMasterDepotAndLatencyTestCase(DynamicDepotTestCase):
 		algo = self.backend.getDepotSelectionAlgorithmByMasterDepotAndLatency()
 		algo = self.patchPingFunctionalityInAlgorythm(algo)
 
-		# self.showAlgoWithLineNumbers(algo)
+		self.showAlgoWithLineNumbers(algo)
 
 		return algo
 
