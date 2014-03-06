@@ -221,15 +221,17 @@ def librsyncDeltaFile(filename, signature, deltafile):
 
 
 def md5sum(filename):
-	f = open(filename, 'rb')
-	m = md5()
-	while True:
-		d = f.read(524288)
-		if not d:
-			break
-		m.update(d)
-	f.close()
-	return m.hexdigest()
+	""" Returns the md5sum of the given file. """
+	md5object = md5()
+
+	with open(filename, 'rb') as fileToHash:
+		while True:
+			data = fileToHash.read(524288)
+			if not data:
+				break
+			md5object.update(data)
+
+	return md5object.hexdigest()
 
 
 def randomString(length, characters=_ACCEPTED_CHARACTERS):
