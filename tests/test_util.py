@@ -6,8 +6,8 @@ import os
 import unittest
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
-    generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork, objectToHtml,
-    randomString)
+    generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork, md5sum,
+    objectToHtml, randomString)
 from OPSI.Object import LocalbootProduct
 
 
@@ -76,6 +76,14 @@ class UtilTestCase(unittest.TestCase):
     def testGenerateOpsiHostKeyIs32CharsLong(self):
         self.assertEqual(32, len(generateOpsiHostKey()))
         self.assertEqual(32, len(generateOpsiHostKey(forcePython=True)))
+
+    def testmd5sum(self):
+        testFile = os.path.join(
+            os.path.dirname(__file__),
+            'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'
+        )
+
+        self.assertEqual('5f345ca76574c528903c1022b05acb4c', md5sum(testFile))
 
 
 class CompareVersionTestCase(unittest.TestCase):
