@@ -232,8 +232,13 @@ def md5sum(filename):
 	return m.hexdigest()
 
 
-def randomString(length):
-	string = [random.choice(_ACCEPTED_CHARACTERS) for _ in range(length)]
+def randomString(length, characters=_ACCEPTED_CHARACTERS):
+	"""
+	Generates a random string for a given length.
+
+	:param characters: The characters to choose from. This defaults to 0-9a-Z.
+	"""
+	string = [random.choice(characters) for _ in range(length)]
 	return forceUnicode(u''.join(string))
 
 
