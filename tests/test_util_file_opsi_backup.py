@@ -63,7 +63,12 @@ class BackendArchiveTestCase(unittest.TestCase):
         self.archive.close()
 
     def test_backupVerify(self):
+        requiredDirectory = '/var/lib/opsi/config'
+        if not os.path.exists(requiredDirectory):
+            self.skipTest('Missing directory "{0}" on testmachine.'.format(requiredDirectory))
+
         self.createArchive(mode="w")
+        # TODO: Fix for computers without /var/lib/opsi/config
         self.archive.backupFileBackend()
         self.archive.close()
 
@@ -77,4 +82,8 @@ class BackendArchiveTestCase(unittest.TestCase):
 
     @unittest.skip("TODO: test corrupted Image")
     def test_backupVerifyCorrupted(self):
+        # TODO: test corrupted Image
         pass
+
+if __name__ == '__main__':
+    unittest.main()
