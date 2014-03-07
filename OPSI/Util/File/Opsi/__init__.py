@@ -1078,17 +1078,18 @@ class OpsiBackupArchive(tarfile.TarFile):
 			name += ".%s" % suffix
 		return name
 
-	def _probeSysInfo(self):
+	@staticmethod
+	def _probeSysInfo():
 		sysinfo = SysInfo()
-		map = {}
-		map["hostname"] = sysinfo.hostname
-		map["fqdn"] = sysinfo.fqdn
-		map["domainname"] = sysinfo.domainname
-		map["distribution"] = sysinfo.distribution
-		map["sysVersion"] = sysinfo.sysVersion
-		map["distributionId"] = sysinfo.distributionId
-		map["opsiVersion"] = sysinfo.opsiVersion
-		return map
+		sysInfoDict = {}
+		sysInfoDict["hostname"] = sysinfo.hostname
+		sysInfoDict["fqdn"] = sysinfo.fqdn
+		sysInfoDict["domainname"] = sysinfo.domainname
+		sysInfoDict["distribution"] = sysinfo.distribution
+		sysInfoDict["sysVersion"] = sysinfo.sysVersion
+		sysInfoDict["distributionId"] = sysinfo.distributionId
+		sysInfoDict["opsiVersion"] = sysinfo.opsiVersion
+		return sysInfoDict
 
 	def _readSysInfo(self):
 		map = {}
