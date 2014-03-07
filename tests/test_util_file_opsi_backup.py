@@ -62,7 +62,7 @@ class BackendArchiveTestCase(unittest.TestCase):
 
         self.archive.close()
 
-    def test_backupVerify(self):
+    def testVerifyingBackup(self):
         requiredDirectory = '/var/lib/opsi/config'
         if not os.path.exists(requiredDirectory):
             self.skipTest('Missing directory "{0}" on testmachine.'.format(requiredDirectory))
