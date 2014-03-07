@@ -748,13 +748,13 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 
 
 def flattenSequence(sequence):
-	list = []
+	listToReturn = []
 	for part in sequence:
 		if type(part) in (types.ListType, types.TupleType):
-			list.extend(flattenSequence(part))
+			listToReturn.extend(flattenSequence(part))
 		else:
-			list.append(part)
-	return list
+			listToReturn.append(part)
+	return listToReturn
 
 
 def getfqdn(name='', conf=None):
