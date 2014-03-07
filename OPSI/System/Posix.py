@@ -2669,10 +2669,10 @@ class SysInfo(object):
 	@property
 	def opsiVersion(self):
 		try:
-			fd = open("/etc/opsi/version")
-			v = fd.read()
-			fd.close()
-			return v.strip()
+			with open("/etc/opsi/version") as versionFile:
+				version = versionFile.read()
+
+			return version.strip()
 		except Exception:
 			raise OpsiVersionError("Unable to determain opsi version")
 
