@@ -11,6 +11,8 @@ try:
 except ImportError:
     import unittest
 
+import mock
+
 from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import randomString
 
@@ -33,7 +35,67 @@ class BackendArchiveTestCase(unittest.TestCase):
         kwargs['tempdir'] = self._tempDir
         self._kwargs = kwargs
         print('Creating archive with the fowlling settings: {0}'.format(kwargs))
-        self.archive = OpsiBackupArchive(**kwargs)
+
+        if not os.path.exists('/etc/opsi/version'):
+            def returnExampleSysconfig(unused):
+                exampleSysConfig = {
+                    'hostname': u'debian6',
+                    'sysVersion': (6, 0, 9),
+                    'domainname': u'uib.local',
+                    'distributionId': '',
+                    'fqdn': u'debian6.uib.local',
+                    'opsiVersion': '4.0.4.5',
+                    'distribution': 'debian'
+                }
+                return exampleSysConfig
+
+            # TODO: rather setup an fake environment.
+            def returnExampleBackendConfiguration(unused):
+                return {
+                    'file': {
+                        'config': {
+                            'baseDir': u'/var/lib/opsi/config',
+                            'hostKeyFile': u'/etc/opsi/pckeys'
+                        },
+                        'dispatch': True,
+                        'module': 'File',
+                        'name': 'file'
+                    },
+                    'hostcontrol': {
+                        'config': {
+                            'broadcastAddresses': ['255.255.255.255'],
+                            'hostRpcTimeout': 15,
+                            'maxConnections': 50,
+                            'opsiclientdPort': 4441,
+                            'resolveHostAddress': False
+                        },
+                        'dispatch': False,
+                        'module': 'HostControl',
+                        'name': 'hostcontrol'
+                    },
+                    'mysql': {
+                        'config': {
+                            'address': u'localhost',
+                            'connectionPoolMaxOverflow': 10,
+                            'connectionPoolSize': 20,
+                            'connectionPoolTimeout': 30,
+                            'database': u'opsi',
+                            'databaseCharset': 'utf8',
+                            'password': u'opsi',
+                            'username': u'opsi'
+                        },
+                        'dispatch': False,
+                        'module': 'MySQL',
+                        'name': 'mysql'
+                    },
+                }
+
+            with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._probeSysInfo', returnExampleSysconfig):
+                with mock.patch('OPSI.Util.File.Opsi.OpsiBackupArchive._readBackendConfiguration', returnExampleBackendConfiguration):
+                    print('Detected missing version file. Patchiiiing.')
+                    self.archive = OpsiBackupArchive(**kwargs)
+        else:
+            self.archive = OpsiBackupArchive(**kwargs)
 
     def testArchiveGetsCreated(self):
         self.createArchive()

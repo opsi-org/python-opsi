@@ -1,2 +1,8 @@
--r requirements.txt  # To include everything in that file.
-unittest2  # If testing with Python 2.6
+# Default requirements
+-r requirements.txt
+
+# Required for testing
+mock
+
+# Backports for Python 2.6
+unittest2
