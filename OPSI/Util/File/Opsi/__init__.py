@@ -981,8 +981,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 	CONTENT_DIR = "CONTENT"
 	CONTROL_DIR = "CONTROL"
 
-	CONF_DIR="/etc/opsi"
-	BACKEND_CONF_DIR=os.path.join(CONF_DIR, "backends")
+	CONF_DIR = "/etc/opsi"
+	BACKEND_CONF_DIR = os.path.join(CONF_DIR, "backends")
 	DISPATCH_CONF = os.path.join(CONF_DIR, "backendManager", "dispatch.conf")
 
 	def __init__(self, name=None, mode=None, tempdir=tempfile.gettempdir(), fileobj=None, **kwargs):
@@ -1044,7 +1044,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				logger.warning(u"Could not read dispatch configuration: %s" % unicode(error))
 				dispatch = []
 
-		if  os.path.exists(self.BACKEND_CONF_DIR):
+		if os.path.exists(self.BACKEND_CONF_DIR):
 			for entry in os.listdir(self.BACKEND_CONF_DIR):
 				if entry.endswith(".conf"):
 					name = entry.split(".")[0].lower()
@@ -1119,7 +1119,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		dest = path
 		if sub:
-			dest = dest.replace(sub[0],sub[1])
+			dest = dest.replace(sub[0], sub[1])
 		dest = os.path.join(self.CONTENT_DIR, dest)
 		if os.path.isdir(path):
 			self.add(path, dest, recursive=False)
@@ -1136,7 +1136,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					checksum.update(chunk)
 			finally:
 				f.close()
-			self._filemap[dest]= checksum.hexdigest()
+			self._filemap[dest] = checksum.hexdigest()
 
 			self.add(path, dest)
 
@@ -1146,7 +1146,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			string.write("%s %s\n" % (checksum, path))
 		string.seek(0)
 		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
-		info.size=len(string.buf)
+		info.size = len(string.buf)
 
 		self.addfile(info, string)
 
@@ -1157,12 +1157,11 @@ class OpsiBackupArchive(tarfile.TarFile):
 			string.write("%s: %s\n" %(key, value))
 		string.seek(0)
 		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
-		info.size=len(string.buf)
+		info.size = len(string.buf)
 
 		self.addfile(info, string)
 
 	def verify(self):
-
 		if self.mode.startswith("w"):
 			raise OpsiBackupFileError("Backup archive is not finalized.")
 
@@ -1244,7 +1243,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					shutil.rmtree(self.CONF_DIR, ignore_errors=True)
 					os.makedirs(self.CONF_DIR)
 					first = False
-				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"),self.CONF_DIR)
+				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"), self.CONF_DIR)
 
 				if member.issym():
 					os.symlink(member.linkname, dest)
@@ -1254,10 +1253,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 						os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
 				else:
 					self._extractFile(member, dest)
-	def _hasBackend(self, backend, name=None):
 
+	def _hasBackend(self, backend, name=None):
 		if name:
-			backend = os.path.join(backend,name)
+			backend = os.path.join(backend, name)
 
 		for member in self.getmembers():
 			if member.name.startswith(os.path.join(self.CONTENT_DIR, os.path.join("BACKENDS", backend))):
@@ -1404,7 +1403,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 				try:
 					for member in self.getmembers():
-						if member.name == os.path.join(self.CONTENT_DIR,"BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
+						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
 							self._extractFile(member, name)
 
 					cmd = ["/usr/bin/mysql"]
