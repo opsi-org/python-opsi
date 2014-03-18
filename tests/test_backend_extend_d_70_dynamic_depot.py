@@ -27,6 +27,7 @@ This tests what usually is found under
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
 from __future__ import absolute_import
 
 import random
@@ -105,6 +106,7 @@ class DynamicDepotTestCase(unittest.TestCase, ExtendedFileBackendMixin):
 				self.fail("Replacing {0} failed.".format(replacedPart))
 
 		return algorythm
+
 
 class DepotSelectionByLatencyTestCase(DynamicDepotTestCase):
 	def getAlgorythm(self):
