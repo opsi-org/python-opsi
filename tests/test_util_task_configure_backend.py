@@ -31,14 +31,14 @@ class ConfigFileManagementTestCase(unittest.TestCase):
         config = backendConfigUtils.getBackendConfiguration(self.fileName)
 
         defaultMySQLConfig = {
-            "address":                   u"localhost",
-            "database":                  u"opsi",
-            "username":                  u"opsi",
-            "password":                  u"opsi",
-            "databaseCharset":           "utf8",
-            "connectionPoolSize":        20,
+            "address": u"localhost",
+            "database": u"opsi",
+            "username": u"opsi",
+            "password": u"opsi",
+            "databaseCharset": "utf8",
+            "connectionPoolSize": 20,
             "connectionPoolMaxOverflow": 10,
-            "connectionPoolTimeout":     30
+            "connectionPoolTimeout": 30
         }
 
         self.assertEqual(config, defaultMySQLConfig)
