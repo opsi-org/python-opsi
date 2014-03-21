@@ -221,8 +221,9 @@ class DHCPDBackend(ConfigDataBackend):
 			self._dhcpdConfFile.parse()
 			currentHostParams = self._dhcpdConfFile.getHost(hostname)
 			if currentHostParams and (currentHostParams.get('hardware', ' ').split(' ')[1] == host.hardwareAddress) \
-			   and (currentHostParams.get('fixed-address') == fixedAddress) \
-			   and (currentHostParams.get('next-server') == parameters['next-server']):
+				and (currentHostParams.get('fixed-address') == fixedAddress) \
+				and (currentHostParams.get('next-server') == parameters['next-server']):
+
 				logger.debug(u"DHCPD config of host '%s' unchanged, no need to update config file" % host)
 				self._reloadLock.release()
 				return
