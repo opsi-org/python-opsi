@@ -54,17 +54,20 @@ class DHCPDBackend(ConfigDataBackend):
 
 		ConfigDataBackend.__init__(self, **kwargs)
 
-		self._dhcpdConfigFile         = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
-		self._reloadConfigCommand     = u'/usr/bin/sudo %s restart' % System.Posix.locateDHCPDInit(u'/etc/init.d/dhcp3-server')
+		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
+		self._reloadConfigCommand = u'/usr/bin/sudo %s restart' % System.Posix.locateDHCPDInit(u'/etc/init.d/dhcp3-server')
 
-		self._fixedAddressFormat      = u'IP'
-		self._defaultClientParameters = { 'next-server': socket.gethostbyname(getfqdn(conf=OPSI_GLOBAL_CONF)), 'filename': u'linux/pxelinux.0' }
-		self._dhcpdOnDepot            = False
+		self._fixedAddressFormat = u'IP'
+		self._defaultClientParameters = {
+			'next-server': socket.gethostbyname(getfqdn(conf=OPSI_GLOBAL_CONF)),
+			'filename': u'linux/pxelinux.0'
+		}
+		self._dhcpdOnDepot = False
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('dhcpdconfigfile',):
+			if option in ('dhcpdconfigfile',):
 				self._dhcpdConfigFile = value
 			elif option in ('reloadconfigcommand',):
 				self._reloadConfigCommand = value
@@ -88,13 +91,14 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadThread = None
 		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._opsiHostKey = None
-		self._depotConnections  = {}
+		self._depotConnections = {}
 
 	def _triggerReload(self):
 		if not self._reloadConfigCommand:
 			return
 		if not self._reloadEvent.isSet():
 			return
+
 		class ReloadThread(threading.Thread):
 			def __init__(self, reloadEvent, reloadLock, reloadConfigCommand):
 				threading.Thread.__init__(self)
@@ -109,7 +113,7 @@ class DHCPDBackend(ConfigDataBackend):
 				try:
 					result = System.execute(self._reloadConfigCommand)
 					for line in result:
-						if (line.find(u'error') != -1):
+						if 'error' in line:
 							raise Exception(u'\n'.join(result))
 				except Exception as e:
 					logger.critical("Failed to restart dhcpd: %s" % e)
@@ -120,30 +124,33 @@ class DHCPDBackend(ConfigDataBackend):
 
 	def _getDepotConnection(self, depotId):
 		depotId = forceHostId(depotId)
-		if (depotId == self._depotId):
+		if depotId == self._depotId:
 			return self
+
 		if not self._depotConnections.get(depotId):
 			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id = self._depotId)
+				depots = self._context.host_getObjects(id=self._depotId)
 				if not depots or not depots[0].getOpsiHostKey():
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
 				self._opsiHostKey = depots[0].getOpsiHostKey()
+
 			try:
 				self._depotConnections[depotId] = JSONRPCBackend(
-									address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
-									username = self._depotId,
-									password = self._opsiHostKey)
+					address=u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
+					username=self._depotId,
+					password=self._opsiHostKey
+				)
 			except Exception as e:
 				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, e))
 
 		return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self._context.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientId)
+		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
-			configs = self._context.config_getObjects(id = u'clientconfig.depot.id')
+			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
@@ -158,7 +165,7 @@ class DHCPDBackend(ConfigDataBackend):
 
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)
-			if (depotId != self._depotId):
+			if depotId != self._depotId:
 				logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (host.id, depotId))
 				return self._getDepotConnection(depotId).dhcpd_updateHost(host.id)
 		self.dhcpd_updateHost(host)
@@ -180,13 +187,13 @@ class DHCPDBackend(ConfigDataBackend):
 				raise BackendIOError(u"Cannot update dhcpd configuration for client %s: ip address unknown and failed to get host by name" % host.id)
 
 		fixedAddress = ipAddress
-		if (self._fixedAddressFormat == 'FQDN'):
+		if self._fixedAddressFormat == 'FQDN':
 			fixedAddress = host.id
 
 		parameters = dict(self._defaultClientParameters)
 		if not self._dhcpdOnDepot:
 			try:
-				depot = self._context.host_getObjects(id = self._getResponsibleDepotId(host.id))[0]
+				depot = self._context.host_getObjects(id=self._getResponsibleDepotId(host.id))[0]
 				if depot.ipAddress:
 					parameters['next-server'] = depot.ipAddress
 			except Exception as e:
@@ -204,11 +211,12 @@ class DHCPDBackend(ConfigDataBackend):
 				return
 
 			self._dhcpdConfFile.addHost(
-				hostname        = host.id.split('.')[0],
-				hardwareAddress = host.hardwareAddress,
-				ipAddress       = ipAddress,
-				fixedAddress    = fixedAddress,
-				parameters      = parameters)
+				hostname=host.id.split('.')[0],
+				hardwareAddress=host.hardwareAddress,
+				ipAddress=ipAddress,
+				fixedAddress=fixedAddress,
+				parameters=parameters
+			)
 			self._dhcpdConfFile.generate()
 		except Exception as e:
 			logger.error(e)
@@ -218,8 +226,8 @@ class DHCPDBackend(ConfigDataBackend):
 	def _dhcpd_deleteHost(self, host):
 		host = forceObjectClass(host, Host)
 		if self._dhcpdOnDepot:
-			for depot in self._context.host_getObjects(id = self._depotId):
-				if (depot.id != self._depotId):
+			for depot in self._context.host_getObjects(id=self._depotId):
+				if depot.id != self._depotId:
 					self._getDepotConnection(depot.id).dhcpd_deleteHost(host.id)
 		self.dhcpd_deleteHost(host)
 
@@ -267,6 +275,7 @@ class DHCPDBackend(ConfigDataBackend):
 		for host in hosts:
 			if not isinstance(host, OpsiClient):
 				continue
+
 			try:
 				self._dhcpd_deleteHost(host)
 			except Exception as e:
@@ -275,17 +284,17 @@ class DHCPDBackend(ConfigDataBackend):
 			raise Exception(u', '.join(errors))
 
 	def configState_insertObject(self, configState):
-		if (configState.configId != 'clientconfig.depot.id'):
+		if configState.configId != 'clientconfig.depot.id':
 			return
 
-		for host in self._context.host_getObjects(id = configState.objectId):
+		for host in self._context.host_getObjects(id=configState.objectId):
 			self.host_updateObject(host)
 
 	def configState_updateObject(self, configState):
 		if (configState.configId != 'clientconfig.depot.id'):
 			return
 
-		for host in self._context.host_getObjects(id = configState.objectId):
+		for host in self._context.host_getObjects(id=configState.objectId):
 			self.host_updateObject(host)
 
 	def configState_deleteObjects(self, configStates):
@@ -293,5 +302,5 @@ class DHCPDBackend(ConfigDataBackend):
 			if (configState.configId != 'clientconfig.depot.id'):
 				continue
 
-			for host in self._context.host_getObjects(id = configState.objectId):
+			for host in self._context.host_getObjects(id=configState.objectId):
 				self.host_updateObject(host)
