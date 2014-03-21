@@ -34,6 +34,9 @@ from . import BackendMixin
 
 
 class DHCPDConfMixin(BackendMixin):
+    """Mixin for an DHCPD backend.
+    Manages a subnet 192.168.99.0/24"""
+
     def setUpDHCPDConf(self):
         testData = '''
 ddns-update-style none;
@@ -51,14 +54,14 @@ option routers 192.168.99.254;
 option netbios-name-servers 192.168.99.2;
 
 subnet 192.168.99.0 netmask 255.255.255.0 {
-        group {
-                #  Opsi hosts
-                       next-server 192.168.99.2;
-                filename "linux/pxelinux.0/xxx?{}";
-                host opsi-test {
-                                    hardware ethernet 9a:e5:3c:10:22:22;
-                        fixed-address opsi-test.domain.local;
-                }
+    group {
+        #  Opsi hosts
+        next-server 192.168.99.2;
+        filename "linux/pxelinux.0/xxx?{}";
+        host opsi-test {
+            hardware ethernet 9a:e5:3c:10:22:22;
+            fixed-address opsi-test.domain.local;
+        }
     }
     host out-of-group {
         hardware ethernet 9a:e5:3c:10:22:22;
