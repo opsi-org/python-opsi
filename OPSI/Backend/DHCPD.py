@@ -72,7 +72,7 @@ class DHCPDBackend(ConfigDataBackend):
 			elif option in ('reloadconfigcommand',):
 				self._reloadConfigCommand = value
 			elif option in ('defaultclientparameters',):
-				self._defaultClientParameters = value
+				self._defaultClientParameters = forceDict(value)
 			elif option in ('fixedaddressformat',):
 				if value not in (u'IP', u'FQDN'):
 					raise BackendBadValueError(u"Bad value '%s' for fixedAddressFormat, possible values are %s" \
@@ -190,7 +190,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if self._fixedAddressFormat == 'FQDN':
 			fixedAddress = host.id
 
-		parameters = dict(self._defaultClientParameters)
+		parameters = self._defaultClientParameters
 		if not self._dhcpdOnDepot:
 			try:
 				depot = self._context.host_getObjects(id=self._getResponsibleDepotId(host.id))[0]
