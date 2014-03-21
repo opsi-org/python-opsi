@@ -107,3 +107,76 @@ class DHCPBackendTestCase(unittest.TestCase, DHCPDConfMixin):
                 ipAddress='192.168.1.104',
             )
         )
+
+    def testUpdatingHostTriggersChangeInDHCPDConfiguration(self):
+        """
+        Updating hosts should trigger an update in the DHCP config.
+
+        Currently there are the two cases that the updated objects
+        differ in the fact that one brings it's ip with it and the other
+        does not.
+
+        If the IP is not found the backend will try to get it from DNS.
+        If this fails it should get the information from the DHCP
+        config file.
+        """
+
+        def isMacAddressInConfigFile(mac):
+            return isElementInConfigFile(mac, caseInSensitive=True)
+
+        def isElementInConfigFile(elem, caseInSensitive=False):
+            if caseInSensitive:
+                elem = elem.lower()
+
+            with open(self.dhcpdConfFile) as config:
+                for line in config:
+                    if caseInSensitive:
+                        line = line.lower()
+
+                    if elem in line:
+                        return True
+
+            return False
+
+        configs = (
+            ('client4hostFile', '00:99:88:77:77:11', '00:99:88:77:77:12', {'ipAddress': '192.168.99.104'}),
+            ('clientWithoutIP4hostFile', '00:99:88:77:77:21', '00:99:88:77:77:22', {})
+        )
+
+        showMissingInfo = lambda x: "Expected {term} to be in DHCPD config {file}".format(
+            term=x,
+            file=self.dhcpdConfFile
+        )
+
+        for (hostname, oldMAC, newMAC, additionalClientConfig) in configs:
+            clientConfig = {
+                'id': '{0}.some.network'.format(hostname),
+                'hardwareAddress': oldMAC,
+            }
+            clientConfig.update(additionalClientConfig)
+
+            client = OpsiClient(**clientConfig)
+            self.backend.host_insertObject(client)
+
+            self.assertTrue(
+                isElementInConfigFile(hostname.lower()),
+                showMissingInfo(client.id)
+            )
+            self.assertTrue(
+                isMacAddressInConfigFile(oldMAC),
+                showMissingInfo(oldMAC)
+            )
+
+
+            client.hardwareAddress = newMAC
+            self.backend.host_updateObject(client)
+
+            self.assertTrue(
+                isMacAddressInConfigFile(newMAC),
+                showMissingInfo(newMAC)
+            )
+            self.assertFalse(isMacAddressInConfigFile(oldMAC))
+
+
+if __name__ == '__main__':
+    unittest.main()
