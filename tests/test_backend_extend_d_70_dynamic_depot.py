@@ -36,7 +36,7 @@ import unittest
 from OPSI.Logger import Logger
 from .Backends.File import ExtendedFileBackendMixin
 
-
+# Logger is needed because the functions expect a global "logger"
 logger = Logger()
 
 
