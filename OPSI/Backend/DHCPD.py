@@ -308,7 +308,7 @@ class DHCPDBackend(ConfigDataBackend):
 			self.host_updateObject(host)
 
 	def configState_updateObject(self, configState):
-		if (configState.configId != 'clientconfig.depot.id'):
+		if configState.configId != 'clientconfig.depot.id':
 			return
 
 		for host in self._context.host_getObjects(id=configState.objectId):
@@ -316,7 +316,7 @@ class DHCPDBackend(ConfigDataBackend):
 
 	def configState_deleteObjects(self, configStates):
 		for configState in configStates:
-			if (configState.configId != 'clientconfig.depot.id'):
+			if configState.configId != 'clientconfig.depot.id':
 				continue
 
 			for host in self._context.host_getObjects(id=configState.objectId):
