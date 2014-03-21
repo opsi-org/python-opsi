@@ -177,6 +177,8 @@ class DHCPDBackend(ConfigDataBackend):
 			logger.warning(u"Cannot update dhcpd configuration for client %s: hardware address unknown" % host)
 			return
 
+		hostname = host.id.split('.')[0]
+
 		ipAddress = host.ipAddress
 		if not ipAddress:
 			try:
@@ -202,7 +204,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._reloadLock.acquire()
 		try:
 			self._dhcpdConfFile.parse()
-			currentHostParams = self._dhcpdConfFile.getHost(host.id.split('.')[0])
+			currentHostParams = self._dhcpdConfFile.getHost(hostname)
 			if currentHostParams and (currentHostParams.get('hardware', ' ').split(' ')[1] == host.hardwareAddress) \
 			   and (currentHostParams.get('fixed-address') == fixedAddress) \
 			   and (currentHostParams.get('next-server') == parameters['next-server']):
@@ -211,7 +213,7 @@ class DHCPDBackend(ConfigDataBackend):
 				return
 
 			self._dhcpdConfFile.addHost(
-				hostname=host.id.split('.')[0],
+				hostname=hostname,
 				hardwareAddress=host.hardwareAddress,
 				ipAddress=ipAddress,
 				fixedAddress=fixedAddress,
