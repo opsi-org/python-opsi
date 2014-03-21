@@ -186,7 +186,22 @@ class DHCPDBackend(ConfigDataBackend):
 				ipAddress = socket.gethostbyname(host.id)
 				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
 			except Exception as e:
-				raise BackendIOError(u"Cannot update dhcpd configuration for client %s: ip address unknown and failed to get host by name" % host.id)
+				with self._reloadLock:
+					self._dhcpdConfFile.parse()
+					currentHostParams = self._dhcpdConfFile.getHost(hostname)
+
+				if currentHostParams:
+					logger.debug(
+						'Trying to use address for {0} from existing DHCP '
+						'configuration.'.format(hostname)
+					)
+
+					if currentHostParams.get('fixed-address'):
+						ipAddress = currentHostParams['fixed-address']
+					else:
+						raise BackendIOError(u"Cannot update dhcpd configuration for client {0}: ip address unknown and failed to get ip address from DHCP configuration file.".format(host.id))
+				else:
+					raise BackendIOError(u"Cannot update dhcpd configuration for client {0}: ip address unknown and failed to get host by name".format(host.id))
 
 		fixedAddress = ipAddress
 		if self._fixedAddressFormat == 'FQDN':

@@ -5,6 +5,8 @@ python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
     a depot results in a timeout.
   * OpsiBackupArchive: Avoid hanging in an endless loop when running
     backupMySQLBackend and stderr gets spammed with the same message
+  * DHCPD Backend: Trying to read the address of an client from the
+    DHCPD configuration file if it can't be resolved via DNS.
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:12:23 +0100
 
