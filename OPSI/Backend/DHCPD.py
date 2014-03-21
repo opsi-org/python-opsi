@@ -130,7 +130,7 @@ class DHCPDBackend(ConfigDataBackend):
 			if not self._opsiHostKey:
 				depots = self._context.host_getObjects(id=self._depotId)
 				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s': %s" % (self._depotId, e))
+					raise BackendMissingDataError(u"Failed to get opsi host key for depot '{0}'".format(self._depotId))
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 
 			try:
