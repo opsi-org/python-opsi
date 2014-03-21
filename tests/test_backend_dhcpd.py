@@ -22,11 +22,11 @@ Testing DHCPD Backend.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-
 import unittest
 
-from OPSI.Object import OpsiClient
 from OPSI.Backend.DHCPD import DHCPDBackend
+from OPSI.Object import OpsiClient
+from OPSI.Types import BackendIOError
 
 from Backends.DHCPD import DHCPDConfMixin
 
@@ -108,6 +108,15 @@ class DHCPBackendTestCase(unittest.TestCase, DHCPDConfMixin):
             )
         )
 
+    def testUpdatingHostWhereAddressCantBeResolvedFails(self):
+        hostname = 'client4hostFile'
+        client = OpsiClient(
+            id='{0}.some.network'.format(hostname),
+            hardwareAddress='00:99:88:77:77:21'
+        )
+
+        self.assertRaises(BackendIOError, self.backend.host_insertObject, client)
+
     def testUpdatingHostTriggersChangeInDHCPDConfiguration(self):
         """
         Updating hosts should trigger an update in the DHCP config.
@@ -120,7 +129,6 @@ class DHCPBackendTestCase(unittest.TestCase, DHCPDConfMixin):
         If this fails it should get the information from the DHCP
         config file.
         """
-
         def isMacAddressInConfigFile(mac):
             return isElementInConfigFile(mac, caseInSensitive=True)
 
@@ -140,7 +148,7 @@ class DHCPBackendTestCase(unittest.TestCase, DHCPDConfMixin):
 
         configs = (
             ('client4hostFile', '00:99:88:77:77:11', '00:99:88:77:77:12', {'ipAddress': '192.168.99.104'}),
-            ('clientWithoutIP4hostFile', '00:99:88:77:77:21', '00:99:88:77:77:22', {})
+            ('client4hostFile', '00:99:88:77:77:21', '00:99:88:77:77:22', {})
         )
 
         showMissingInfo = lambda x: "Expected {term} to be in DHCPD config {file}".format(
