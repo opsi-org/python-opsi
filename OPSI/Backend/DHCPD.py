@@ -75,8 +75,7 @@ class DHCPDBackend(ConfigDataBackend):
 				self._defaultClientParameters = forceDict(value)
 			elif option in ('fixedaddressformat',):
 				if value not in (u'IP', u'FQDN'):
-					raise BackendBadValueError(u"Bad value '%s' for fixedAddressFormat, possible values are %s" \
-									% (value, u', '.join(['IP', 'FQDN'])) )
+					raise BackendBadValueError(u"Bad value '%s' for fixedAddressFormat, possible values are %s" % (value, u', '.join(('IP', 'FQDN'))))
 				self._fixedAddressFormat = value
 			elif option in ('dhcpdondepot',):
 				self._dhcpdOnDepot = forceBool(value)
