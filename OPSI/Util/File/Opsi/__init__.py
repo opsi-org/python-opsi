@@ -245,7 +245,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		self._parsed = False
 		dispatchEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 		dispatch = []
-		for line in ConfigFile.parse(self):
+		for line in ConfigFile.parse(self, lines):
 			match = re.search(dispatchEntryRegex, line)
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in dispatch config file '%s'" % (line, self._filename))
