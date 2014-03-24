@@ -256,11 +256,11 @@ class TextFile(LockableFile):
 		if not self._fileHandle:
 			for encoding in ('utf-8', 'utf-16', 'latin_1', 'cp1252', 'replace'):
 				errors = 'strict'
-				if (encoding == 'replace'):
+				if encoding == 'replace':
 					errors = 'replace'
 					encoding = 'utf-8'
 
-				self.open(encoding = encoding, errors = errors)
+				self.open(encoding=encoding, errors=errors)
 				try:
 					self._lines = self._fileHandle.readlines()
 					self.close()
