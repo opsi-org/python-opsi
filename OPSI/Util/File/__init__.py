@@ -448,9 +448,9 @@ class ConfigFile(TextFile):
 			else:
 				line = line.rstrip()
 			for cc in self._commentChars:
-				index = line.find(cc)
-				if (index == -1):
+				if cc not in line:
 					continue
+
 				parts = line.split(cc)
 				quote = 0
 				doublequote = 0
