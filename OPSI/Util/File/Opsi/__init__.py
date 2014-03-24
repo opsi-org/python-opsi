@@ -231,22 +231,23 @@ class BackendACLFile(ConfigFile):
 
 
 class BackendDispatchConfigFile(ConfigFile):
+	DISPATCH_ENTRY_REGEX = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
+
 	def parse(self, lines=None):
 		"""
 		Returns the dispatch config entries with RegEx and corresponding backends.
 
 		:returntype: [['regex',['backend1', 'backend2',]
 		"""
-
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
 		self._parsed = False
-		dispatchEntryRegex = re.compile('^([^:]+)+\s*:\s*(\S.*)$')
 		dispatch = []
 		for line in ConfigFile.parse(self, lines):
-			match = re.search(dispatchEntryRegex, line)
+			match = self.DISPATCH_ENTRY_REGEX.search(line)
 			if not match:
 				logger.error(u"Found bad formatted line '%s' in dispatch config file '%s'" % (line, self._filename))
 				continue
@@ -255,6 +256,7 @@ class BackendDispatchConfigFile(ConfigFile):
 			for entry in match.group(2).strip(',').split(','):
 				dispatch[-1][1].append(entry.strip())
 		self._parsed = True
+
 		return dispatch
 
 	def getUsedBackends(self, lines=None):
