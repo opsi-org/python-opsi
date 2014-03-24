@@ -232,6 +232,12 @@ class BackendACLFile(ConfigFile):
 
 class BackendDispatchConfigFile(ConfigFile):
 	def parse(self, lines=None):
+		"""
+		Returns the dispatch config entries with RegEx and corresponding backends.
+
+		:returntype: [['regex',['backend1', 'backend2',]
+		"""
+
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
