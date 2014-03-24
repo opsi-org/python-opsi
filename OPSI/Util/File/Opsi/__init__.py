@@ -257,6 +257,21 @@ class BackendDispatchConfigFile(ConfigFile):
 		self._parsed = True
 		return dispatch
 
+	def getUsedBackends(self, lines=None):
+		"""
+		Returns the backends used by the dispatch configuration.
+		This will not include any information on where it is used.
+
+		:returntype: set(['backend1', 'backend2'])
+		"""
+		collectedBackends = set()
+
+		dispatchConfig = self.parse(lines=lines)
+		for (_, backends) in dispatchConfig:
+			collectedBackends.update(backends)
+
+		return collectedBackends
+
 
 class PackageContentFile(TextFile):
 	def __init__(self, filename, lockFailTimeout=2000):
