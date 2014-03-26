@@ -6,7 +6,7 @@ echo "Running pylint"
 pylint --rcfile=pylintrc OPSI > pylint.txt || echo 'pylint did not finish with return code 0'
 
 echo "Running flake8"
-flake8 OPSI/ > pep8.txt || echo 'pep8 did not finish with return code 0'
+flake8 --exit-zero OPSI/ > pep8.txt
 
 echo "Running nosetests"
 nosetests --with-xunit --with-xcoverage --cover-package=OPSI tests/ || echo 'nosetests did not finish with return code 0'
