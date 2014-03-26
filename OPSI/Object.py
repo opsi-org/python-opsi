@@ -163,12 +163,12 @@ class BaseObject(object):
 		identValues = []
 		for attr in identAttributes:
 			try:
-				v = getattr(self, attr)
-				if v is None:
-					v = u''
+				value = getattr(self, attr)
+				if value is None:
+					value = u''
 			except AttributeError:
-				v = u''
-			identValues.append(forceUnicode(v))
+				value = u''
+			identValues.append(forceUnicode(value))
 		if returnType in ('list',):
 			return identValues
 		elif returnType in ('tuple',):
