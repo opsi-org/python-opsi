@@ -2649,6 +2649,7 @@ class SysInfo(object):
 				if (self.ipAddress == devconf['ipAddress']):
 					return forceHardwareAddress(devconf['hardwareAddress'])
 		return None
+
 	@property
 	def netmask(self):
 		for device in getEthernetDevices():
