@@ -23,7 +23,11 @@ Testing Distribution functionality from OPSI.System.Posix
 :license: GNU Affero General Public License version 3
 """
 
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 from OPSI.System.Posix import Distribution
 
 
@@ -44,11 +48,7 @@ class DistributionTestCase(unittest.TestCase):
 
     def test__repr__has_information(self):
         if self.DIST_INFO is None:
-            try:
-                raise unittest.SkipTest('No specific distribution information set.')
-            except AttributeError:
-                print('Probably running an Python < 2.7. Skipping...')
-                return
+            self.skipTest('No specific distribution information set.')
 
         for part in self.DIST_INFO:
             self.assertTrue(part in repr(self.dist),
