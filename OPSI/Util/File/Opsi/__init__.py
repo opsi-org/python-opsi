@@ -1056,29 +1056,33 @@ class OpsiBackupArchive(tarfile.TarFile):
 			self._backends = None
 
 	def _readBackendConfiguration(self):
-		backends = {}
-
-		dispatch = []
 		if os.path.exists(self.CONF_DIR) and os.path.exists(self.DISPATCH_CONF):
 			try:
-				for list in map(lambda x: x[1], BackendDispatchConfigFile(self.DISPATCH_CONF).parse()):
-					dispatch.extend(list)
+				dispatchedBackends = BackendDispatchConfigFile(self.DISPATCH_CONF).getUsedBackends()
 			except Exception as error:
 				logger.warning(u"Could not read dispatch configuration: %s" % unicode(error))
-				dispatch = []
+				dispatchedBackends = []
 
+		backends = {}
 		if os.path.exists(self.BACKEND_CONF_DIR):
 			for entry in os.listdir(self.BACKEND_CONF_DIR):
 				if entry.endswith(".conf"):
 					name = entry.split(".")[0].lower()
 					if name in backends:
 						raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
+
 					b = {'socket': socket, 'config': {}, 'module': ''}
 					try:
 						execfile(os.path.join(self.BACKEND_CONF_DIR, entry), b)
-						backends[name] = {"name": name, "config": b["config"], "module": b['module'], "dispatch": (name in dispatch)}
+						backends[name] = {
+							"name": name,
+							"config": b["config"],
+							"module": b['module'],
+							"dispatch": (name in dispatchedBackends)
+						}
 					except Exception as error:
 						logger.warning(u"Failed to read backend config {filename}: {error}".format(filename=entry, error=error))
+
 			return backends
 
 		raise OpsiBackupFileError("Could not read backend Configuration.")
@@ -1139,7 +1143,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return map
 
 	def _addContent(self, path, sub=()):
-
 		dest = path
 		if sub:
 			dest = dest.replace(sub[0], sub[1])
@@ -1257,7 +1260,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return False
 
 	def restoreConfiguration(self):
-
 		first = True
 
 		for member in self.getmembers():
@@ -1413,7 +1415,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 				finally:
 					os.close(fd)
 					os.remove(name)
-
 
 	def restoreMySQLBackend(self, auto=False):
 		if not self.hasMySQLBackend():
