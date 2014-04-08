@@ -150,7 +150,7 @@ If not given will use a default.
 	LOGGER.notice("Creating new opsiconfd cert")
 	LOGGER.notice("Generating new key pair")
 	k = crypto.PKey()
-	k.generate_key(crypto.TYPE_RSA, 1024)
+	k.generate_key(crypto.TYPE_RSA, 2048)
 
 	LOGGER.notice("Generating new self-signed cert")
 	cert = crypto.X509()

@@ -7,6 +7,7 @@ python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
     backupMySQLBackend and stderr gets spammed with the same message
   * DHCPD Backend: Trying to read the address of an client from the
     DHCPD configuration file if it can't be resolved via DNS.
+  * Certificate Creation: Using 2048 bit instead of 1024
 
  -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:12:23 +0100
 
