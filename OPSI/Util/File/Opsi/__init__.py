@@ -6,7 +6,7 @@ opsi python library - File.Opsi
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -25,12 +25,13 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-@copyright:	uib GmbH <info@uib.de>
-@author: Jan Schneider <j.schneider@uib.de>
-@license: GNU General Public License version 2
+:copyright: uib GmbH <info@uib.de>
+:author: Jan Schneider <j.schneider@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
+:license: GNU General Public License version 2
 """
 
-__version__ = '4.0.0.2'
+__version__ = '4.0.4.6'
 
 import bz2
 import collections
@@ -1350,6 +1351,10 @@ class OpsiBackupArchive(tarfile.TarFile):
 		return self._hasBackend("MYSQL", name=name)
 
 	def backupMySQLBackend(self, flushLogs=False, auto=False):
+		# In Python 2.6 a deque has no "maxlen" attribute so we need to
+		# work around with this.
+		maximumDequeLength = 10
+
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
@@ -1378,7 +1383,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						collectedErrors = [p.stderr.readline()]
 					except Exception:
 						collectedErrors = []
-					lastErrors = collections.deque(collectedErrors, maxlen=10)
+					lastErrors = collections.deque(collectedErrors, maxlen=maximumDequeLength)
 
 					while not p.poll() and out:
 						os.write(fd, out)
@@ -1393,7 +1398,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						except Exception:
 							continue
 
-						if lastErrors.maxlen == len(lastErrors):
+						if maximumDequeLength == len(lastErrors):
 							onlyOneErrorMessageInLastErrors = True
 							firstError = lastErrors[0]
 							for err in list(lastErrors)[1:]:
