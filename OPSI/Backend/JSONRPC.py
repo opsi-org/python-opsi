@@ -600,7 +600,7 @@ class JSONRPCBackend(Backend):
 				logger.debug2(u"Arg string is: %s" % argString)
 				logger.debug2(u"Call string is: %s" % callString)
 				# This would result in not overwriting Backend methods like log_read, log_write, ...
-				#if getattr(self, methodName, None) is None:
+				# if getattr(self, methodName, None) is None:
 				if not licenseManagementModule and (methodName.find("license") != -1):
 					exec(u'def %s(self, %s): return' % (methodName, argString))
 				else:
@@ -684,72 +684,72 @@ class JSONRPCBackend(Backend):
 if (__name__ == '__main__'):
 	import threading
 
-	#logger.setConsoleLevel(LOG_ERROR)
-	#logger.setConsoleLevel(LOG_DEBUG2)
+	# logger.setConsoleLevel(LOG_ERROR)
+	# logger.setConsoleLevel(LOG_DEBUG2)
 	logger.setConsoleLevel(LOG_INFO)
 	logger.setConsoleColor(True)
 
-	#be = JSONRPCBackend(address = '192.168.105.1', username = 'exp-40-wks-001.uib.local', password = '352360038fb824baf836a6b448845745')
-	#print be.backend_info()
-	#print be.backend_info()
-	#print be.backend_info()
+	# be = JSONRPCBackend(address = '192.168.105.1', username = 'exp-40-wks-001.uib.local', password = '352360038fb824baf836a6b448845745')
+	# print be.backend_info()
+	# print be.backend_info()
+	# print be.backend_info()
 	be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c', serverCertFile = '/tmp/server-cert.pem', verifyServerCert = True)
 
-	#be = JSONRPCBackend(address = '192.168.1.14', username = 'someone', password = '123')
-	#print be.authenticated()
-	#
-	#def callback(jsonrpc):
-	#	print jsonrpc.result
-	#
-	#class Thread(threading.Thread):
-	#	def __init__(self, be):
-	#		threading.Thread.__init__(self)
-	#		self.be = be
-	#
-	#	def run(self):
-	#		for i in range(5):
-	#			be.authenticated().setCallback(callback)
-	#			time.sleep(0.3)
-	#
-	#be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c', deflate = True, connectionPoolSize = 30)
+	# be = JSONRPCBackend(address = '192.168.1.14', username = 'someone', password = '123')
+	# print be.authenticated()
 
-	#be.setAsync(True)
-	#
-	#threads = []
-	#for i in range(20):
-	#	t = Thread(be)
-	#	threads.append(t)
-	#	t.start()
-	#
-	#for t in threads:
-	#	t.join()
-	#while True:
-	#print be.authenticated()
-	#print be.group_getIdents()
-	#print be.host_getIdents()
-	#	time.sleep(2)
+	# def callback(jsonrpc):
+	# 	print jsonrpc.result
 
-	#
-	#be.setAsync(True)
-	#
-	##jsonrpc1 = JSONRPC(jsonrpcBackend = be, baseUrl = be._baseUrl, method = 'authenticated', params = [], retry = False)
-	#be.authenticated().setCallback(callback)
-	##jsonrpc2 = JSONRPC(jsonrpcBackend = be, baseUrl = be._baseUrl, method = 'group_getIdents', params = [], retry = False)
-	#be.group_getIdents().setCallback(callback)
-	##jsonrpc3 = JSONRPC(jsonrpcBackend = be, baseUrl = be._baseUrl, method = 'host_getIdents', params = [], retry = False)
-	#be.host_getIdents().setCallback(callback)
-	#be.host_getIdents().setCallback(callback)
-	#be.host_getIdents().setCallback(callback)
-	#be.host_getIdents().setCallback(callback)
-	#be.host_getIdents().setCallback(callback)
-	#
-	#be.setAsync(False)
-	#print "===", be.host_getIdents()
+	# class Thread(threading.Thread):
+	# 	def __init__(self, be):
+	# 		threading.Thread.__init__(self)
+	# 		self.be = be
 
-	#be.backend_exit()
+	# 	def run(self):
+	# 		for i in range(5):
+	# 			be.authenticated().setCallback(callback)
+	# 			time.sleep(0.3)
 
-	#mult = MultiJSONRPC(be, [jsonrpc1, jsonrpc2, jsonrpc3])
-	#mult.process()
-	#
-	#print "WAIT"
-	#time.sleep(5)
+	# be = JSONRPCBackend(address = '192.168.1.14', username = 'stb-40-wks-120.uib.local', password = '8ca221eee05e574c58fcc1d3d99de17c', deflate = True, connectionPoolSize = 30)
+
+	# be.setAsync(True)
+
+	# threads = []
+	# for i in range(20):
+	# 	t = Thread(be)
+	# 	threads.append(t)
+	# 	t.start()
+
+	# for t in threads:
+	# 	t.join()
+	# while True:
+	# print be.authenticated()
+	# print be.group_getIdents()
+	# print be.host_getIdents()
+	# 	time.sleep(2)
+
+
+	# be.setAsync(True)
+
+	# #jsonrpc1 = JSONRPC(jsonrpcBackend = be, baseUrl = be._baseUrl, method = 'authenticated', params = [], retry = False)
+	# be.authenticated().setCallback(callback)
+	# #jsonrpc2 = JSONRPC(jsonrpcBackend = be, baseUrl = be._baseUrl, method = 'group_getIdents', params = [], retry = False)
+	# be.group_getIdents().setCallback(callback)
+	# #jsonrpc3 = JSONRPC(jsonrpcBackend = be, baseUrl = be._baseUrl, method = 'host_getIdents', params = [], retry = False)
+	# be.host_getIdents().setCallback(callback)
+	# be.host_getIdents().setCallback(callback)
+	# be.host_getIdents().setCallback(callback)
+	# be.host_getIdents().setCallback(callback)
+	# be.host_getIdents().setCallback(callback)
+
+	# be.setAsync(False)
+	# print "===", be.host_getIdents()
+
+	# be.backend_exit()
+
+	# mult = MultiJSONRPC(be, [jsonrpc1, jsonrpc2, jsonrpc3])
+	# mult.process()
+
+	# print "WAIT"
+	# time.sleep(5)

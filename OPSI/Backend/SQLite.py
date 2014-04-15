@@ -71,7 +71,7 @@ class SQLite(SQL):
 		logger.debug(u'SQLite created: %s' % self)
 
 	def connect(self):
-		#self._transactionLock.acquire()
+		# self._transactionLock.acquire()
 		try:
 			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
 			if not self._connection:
@@ -99,16 +99,16 @@ class SQLite(SQL):
 				self._cursor.setrowtrace(rowtrace)
 			return (self._connection, self._cursor)
 		except:
-			#self._transactionLock.release()
+			# self._transactionLock.release()
 			raise
 
 	def close(self, conn, cursor):
 		pass
-		#try:
-		#	self._transactionLock.release()
-		#except:
-		#	pass
-		#cursor.close()
+		# try:
+		# 	self._transactionLock.release()
+		# except:
+		# 	pass
+		# cursor.close()
 
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
@@ -168,7 +168,7 @@ class SQLite(SQL):
 			logger.debug2(u"insert: %s" % query)
 
 			self.execute(query, conn, cursor)
-			#result = conn.changes()
+			# result = conn.changes()
 			result = conn.last_insert_rowid()
 		finally:
 			self.close(conn, cursor)
@@ -226,10 +226,10 @@ class SQLite(SQL):
 			(conn, cursor) = self.connect()
 			needClose = True
 		try:
-			#query = forceUnicode(query)
+			# query = forceUnicode(query)
 			logger.debug2(u"SQL query: %s" % forceUnicode(query))
 			res = cursor.execute(query)
-			#cursor.execute("commit")
+			# cursor.execute("commit")
 		finally:
 			if needClose:
 				self.close(conn, cursor)

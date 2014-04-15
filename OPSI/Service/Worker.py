@@ -235,7 +235,7 @@ class WorkerOpsi:
 	def __init__(self, service, request, resource):
 		self.service   = service
 		if request.headers.hasHeader("x-forwarded-for"):
-                        #overloading request because proxy detected
+                        # overloading request because proxy detected
                         request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
 		self.request   = request
 		self.query     = u''
@@ -535,7 +535,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		deferred = defer.Deferred()
 		for rpc in self._rpcs:
 			deferred.addCallback(self._executeRpc, rpc)
-		#deferred.addErrback(self._errback)
+		# deferred.addErrback(self._errback)
 		deferred.callback(None)
 		return deferred
 
@@ -545,7 +545,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):
 		deferred.addCallback(self._getCallInstance)
 		deferred.addCallback(self._getRpcs)
 		deferred.addCallback(self._executeRpcs)
-		#deferred.addErrback(self._errback)
+		# deferred.addErrback(self._errback)
 		deferred.callback(None)
 		return deferred
 

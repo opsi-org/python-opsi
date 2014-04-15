@@ -323,7 +323,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			for member in inspect.getmembers(Class, inspect.ismethod):
 				methodName = member[0]
 				if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'log_write', 'licenseOnClient_getObjects'):
-				#if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
+				# if methodName.startswith('_') or methodName in ('backend_info', 'user_getCredentials', 'user_setCredentials', 'auditHardware_getConfig', 'log_write'):
 					continue
 
 				(argString, callString) = getArgAndCallString(member[1])
@@ -363,7 +363,7 @@ if (__name__ == '__main__'):
 	logger.setConsoleLevel(LOG_NOTICE)
 
 	workBackend = SQLiteBackend(database = ':memory:')
-	#workBackend = SQLiteBackend(database = '/tmp/opsi-cache.sqlite')
+	# workBackend = SQLiteBackend(database = '/tmp/opsi-cache.sqlite')
 
 	serviceBackend = JSONRPCBackend(
 		address  = 'https://bonifax.uib.local:4447/rpc',
@@ -377,17 +377,17 @@ if (__name__ == '__main__'):
 		clientId      = 'cachetest.uib.local'
 	)
 
-	#workBackend._sql.execute('PRAGMA synchronous=OFF')
+	# workBackend._sql.execute('PRAGMA synchronous=OFF')
 	cb._replicateMasterToWorkBackend()
 
 	be = ExtendedConfigDataBackend(cb)
 
-	#cb.host_insertObject( OpsiClient(id = 'cachetest.uib.local', description = 'description') )
-	#print cb.host_getObjects()
-	#print workBackend._sql.getSet('select * from HOST')
-	#for productPropertyState in cb.productPropertyState_getObjects(objectId = 'cachetest.uib.local'):
-	#	print productPropertyState.toHash()
-	#for productOnClient in cb.productOnClient_getObjects(clientId = 'cachetest.uib.local'):
-	#	print productOnClient.toHash()
+	# cb.host_insertObject( OpsiClient(id = 'cachetest.uib.local', description = 'description') )
+	# print cb.host_getObjects()
+	# print workBackend._sql.getSet('select * from HOST')
+	# for productPropertyState in cb.productPropertyState_getObjects(objectId = 'cachetest.uib.local'):
+	# 	print productPropertyState.toHash()
+	# for productOnClient in cb.productOnClient_getObjects(clientId = 'cachetest.uib.local'):
+	# 	print productOnClient.toHash()
 
 	print be.licenseOnClient_getOrCreateObject(clientId = 'cachetest.uib.local', productId = 'license-test-oem')

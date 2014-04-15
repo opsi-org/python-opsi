@@ -475,7 +475,7 @@ class MySQLBackend(SQLBackend):
 		logger.debug(u'MySQLBackend created: %s' % self)
 
 	def _showwarning(self, message, category, filename, lineno, line=None, file=None):
-		#logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))
+		# logger.warning(u"%s (file: %s, line: %s)" % (message, filename, lineno))
 		if str(message).startswith('Data truncated for column'):
 			logger.error(message)
 		else:
@@ -614,7 +614,7 @@ class MySQLBackend(SQLBackend):
 						conn.begin()
 						logger.notice(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
 						if not self._sql.getRow(myPPVselect , conn, cursor):
-							#self._sql.doCommit = True
+							# self._sql.doCommit = True
 							logger.notice(u'doCommit set to true')
 							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 								'productId': data['productId'],

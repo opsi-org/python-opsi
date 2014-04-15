@@ -365,10 +365,10 @@ class LoggerImplementation:
 					# Get caller's filename
 					filename = frame.f_code.co_filename
 					ident = filename.split('/')[-1]
-				#syslog.openlog(ident, syslog.LOG_PID | syslog.LOG_CONS, syslog.LOG_DAEMON)
+				# syslog.openlog(ident, syslog.LOG_PID | syslog.LOG_CONS, syslog.LOG_DAEMON)
 				syslog.openlog(ident, syslog.LOG_CONS, syslog.LOG_DAEMON)
 		else:
-			#not yet implemented
+			# TODO: not yet implemented
 			pass
 
 	def setMessageSubjectLevel(self, level=LOG_NONE):
@@ -661,7 +661,7 @@ class LoggerImplementation:
 								if os.name == 'nt':
 									hfile = win32file._get_osfhandle(lf.fileno())
 									win32file.LockFileEx(hfile, win32con.LOCKFILE_EXCLUSIVE_LOCK, 0, -0x7fff0000, pywintypes.OVERLAPPED())
-									#win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
+									# win32file.LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
 								elif os.name == 'posix':
 									# Flags for exclusive, non-blocking lock
 									fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -678,7 +678,7 @@ class LoggerImplementation:
 							if self.__fileColor:
 								m = u"%s%s%s" % (color, m, COLOR_NORMAL)
 							m += u'\n'
-							if (os.name == 'nt'):
+							if os.name == 'nt':
 								m = m.replace(u'\n', u'\r\n')
 							lf.write(m)
 							lf.close()
@@ -721,7 +721,7 @@ class LoggerImplementation:
 					elif level == LOG_COMMENT:
 						syslog.syslog(syslog.LOG_CRIT, m)
 				else:
-					#not yet implemented
+					# TODO: not yet implemented
 					pass
 
 			if self.univentionLogger_priv:

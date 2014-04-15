@@ -419,10 +419,10 @@ class DepotserverPackageManager(object):
 
 			logger.debug("Deleting product '%s'" % productId)
 
-			#self.setProductInstallationStatus(productId, objectId = depotId, installationStatus = 'uninstalled')
-			#self.deleteProductDependency(productId, depotIds = [ depotId ])
-			#self.deleteProductProperties(productId, objectId = depotId)
-			#self.deleteProduct(productId, depotIds = [ depotId ])
+			# self.setProductInstallationStatus(productId, objectId = depotId, installationStatus = 'uninstalled')
+			# self.deleteProductDependency(productId, depotIds = [ depotId ])
+			# self.deleteProductProperties(productId, objectId = depotId)
+			# self.deleteProduct(productId, depotIds = [ depotId ])
 
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):

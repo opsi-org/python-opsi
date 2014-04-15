@@ -622,9 +622,9 @@ def reboot(wait = 10):
 			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait = True)
 		else:
 			execute(u'%s -r now' % which('shutdown'), nowait = True)
-		#execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
-		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
-		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
+		# execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
+		# execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
+		# 	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_reboot(wait, e)
@@ -644,8 +644,8 @@ def halt(wait = 10):
 			execute(u'%s %d; %s -h now' % (which('sleep'), wait, which('shutdown')), nowait = True)
 		else:
 			execute(u'%s -h now' % which('shutdown'), nowait = True)
-		#execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
-		#	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
+		# execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
+		# 	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception as e:
 		for hook in hooks:
 			hook.error_halt(wait, e)
@@ -792,7 +792,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 def getHarddisks():
 	disks = []
 
-	#_("Looking for harddisks.\n")
+	# _("Looking for harddisks.\n")
 
 	# Get all available disks
 	result = execute(u'%s -s -uB' % which('sfdisk'))
@@ -804,7 +804,7 @@ def getHarddisks():
 		logger.debug(u"Found disk =>>> dev: '%s', size: %0.2f GB" % (dev, size/(1024*1024)) )
 
 		hd = Harddisk(dev)
-		#_("Hardisk '%s' found (%s MB).\n") % (hd.device, hd.size/(1024*1024)))
+		# _("Hardisk '%s' found (%s MB).\n") % (hd.device, hd.size/(1024*1024)))
 		disks.append(hd)
 
 	if ( len(disks) <= 0 ):
@@ -835,8 +835,8 @@ def mount(dev, mountpoint, **options):
 
 	fs = u''
 
-	#if not options.has_key("domain"):
-	#	options['domain'] = None
+	# if not options.has_key("domain"):
+	# 	options['domain'] = None
 
 	credentialsFiles = []
 	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
@@ -2881,7 +2881,7 @@ def hardwareInventory(config, progressSubject=None):
 		for line in execute(u"%s -v" % which("lsusb")):
 			if not line.strip() or (line.find(u'** UNAVAILABLE **') != -1):
 				continue
-			#line = line.decode('ISO-8859-15', 'replace').encode('utf-8', 'replace')
+			# line = line.decode('ISO-8859-15', 'replace').encode('utf-8', 'replace')
 			match = re.search(devRegex, line)
 			if match:
 				busId = str(match.group(1))

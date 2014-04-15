@@ -62,7 +62,7 @@ class MultiplexBackend(object):
 
 	def __init__(self, username = '', password = '', address = '', *args, **kwargs):
 
-		#self.__dict__['__services'] = self.__serviceCache
+		# self.__dict__['__services'] = self.__serviceCache
 
 		# Default values
 		self.__services = self.__serviceCache
@@ -226,52 +226,52 @@ class MultiplexBackend(object):
 		logger.debug2(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
 		return dispatcher
 
-	#def dispatch_threaded(self, methodName, *args, **kwargs):
-	#	logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
-	#	results = []
-	#	calls = 0
-	#	def pushResult(success, result, error):
-	#		if not success or not result:
-	#			results.append((success, result, error))
-	#		else:
-	#			jsonrpc = result
-	#			(success, result, error) = (None, None, None)
-	#			try:
-	#				result = jsonrpc.waitForResult()
-	#				success = True
-	#			except Exception, e:
-	#				error = e
-	#				success = False
-	#			results.append((success, result, error))
-	#
-	#	dispatcher = self._getDispatcher(*args, **kwargs)
-	#	logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
-	#	for service in dispatcher:
-	#		if service.isConnected():
-	#			logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
-	#			self._threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
-	#			calls +=1
-	#	while len(results) != calls:
-	#		time.sleep(0.1)
-	#
-	#	r = None
-	#	errors = []
-	#	for (success, result, error) in results:
-	#		if success:
-	#			if   type(r) is list:
-	#				r.extend(forceList(result))
-	#			elif type(r) is dict:
-	#				r.update(forceDict(result))
-	#			elif type(r) in (str, unicode):
-	#				r = forceUnicode(r) + forceUnicode(result)
-	#			elif not r:
-	#				r = result
-	#		else:
-	#			errors.append(error)
-	#	if errors and methodName not in ('exit', 'backend_exit'):
-	#		#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
-	#		raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
-	#	return r
+	# def dispatch_threaded(self, methodName, *args, **kwargs):
+	# 	logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
+	# 	results = []
+	# 	calls = 0
+	# 	def pushResult(success, result, error):
+	# 		if not success or not result:
+	# 			results.append((success, result, error))
+	# 		else:
+	# 			jsonrpc = result
+	# 			(success, result, error) = (None, None, None)
+	# 			try:
+	# 				result = jsonrpc.waitForResult()
+	# 				success = True
+	# 			except Exception, e:
+	# 				error = e
+	# 				success = False
+	# 			results.append((success, result, error))
+
+	# 	dispatcher = self._getDispatcher(*args, **kwargs)
+	# 	logger.notice(u"Dispatching %s to %d services" % (methodName, len(dispatcher)))
+	# 	for service in dispatcher:
+	# 		if service.isConnected():
+	# 			logger.debug(u"Calling method %s of service %s" %(methodName, service.url))
+	# 			self._threadPool.addJob(getattr(service, methodName), pushResult, *args, **kwargs)
+	# 			calls +=1
+	# 	while len(results) != calls:
+	# 		time.sleep(0.1)
+
+	# 	r = None
+	# 	errors = []
+	# 	for (success, result, error) in results:
+	# 		if success:
+	# 			if   type(r) is list:
+	# 				r.extend(forceList(result))
+	# 			elif type(r) is dict:
+	# 				r.update(forceDict(result))
+	# 			elif type(r) in (str, unicode):
+	# 				r = forceUnicode(r) + forceUnicode(result)
+	# 			elif not r:
+	# 				r = result
+	# 		else:
+	# 			errors.append(error)
+	# 	if errors and methodName not in ('exit', 'backend_exit'):
+	# 		#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
+	# 		raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
+	# 	return r
 
 	def dispatch(self, methodName, *args, **kwargs):
 		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
@@ -330,7 +330,7 @@ class MultiplexBackend(object):
 				errors.append(error)
 		logger.debug(u"Dispatching %s done" % methodName)
 		if errors and methodName not in ('exit', 'backend_exit'):
-			#logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
+			# logger.error(u"Error during dispatch: %s (Result: %s)" % (error, result))
 			raise BackendError(u"Error during dispatch: %s" % (u', '.join(forceUnicodeList(errors))))
 		return r
 
@@ -648,14 +648,12 @@ class RemoteService(Service, JSONRPCBackend):
 	def __repr__(self):
 		return self.__str__()
 
-	#def __del__(self):
-	#	try:
-	#		if self.isConnected():
-	#			self.disconnect()
-	#	finally:
-	#		try:
-	#			JSONRPCBackend.__del__(self)
-	#		except:
-	#			pass
-
-
+	# def __del__(self):
+	# 	try:
+	# 		if self.isConnected():
+	# 			self.disconnect()
+	# 	finally:
+	# 		try:
+	# 			JSONRPCBackend.__del__(self)
+	# 		except:
+	# 			pass

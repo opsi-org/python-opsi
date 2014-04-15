@@ -209,8 +209,8 @@ class SnackUI(UI):
 			pass
 
 	def sigwinchHandler(self, signo, stackFrame):
-		#self._screen.finish()
-		#self._screen = SnackScreen()
+		# self._screen.finish()
+		# self._screen = SnackScreen()
 		self.refresh()
 
 	def getScreen(self):
@@ -1084,7 +1084,7 @@ if (__name__ == "__main__"):
 	answer = uiTest.yesno(text = u'Täxt', title = u'Yäs Or Nö', okLabel = u'ÖK', cancelLabel = u'Cäncel', width = -1, height = -1)
 	uiTest.showMessage(text = u'Answer was: %s' % answer, seconds = 2)
 
-	#uiTest.showError(self, _(u'Nothing selected'), title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
+	# uiTest.showError(self, _(u'Nothing selected'), title=_(u'An error occured'), okLabel=_(u'OK'), width=-1, height=-1, seconds=0):
 	uiTest.showMessage(text = u'Answer was: %s' % _(u'Nothing selected'), seconds = 2)
 
 	time.sleep(2)

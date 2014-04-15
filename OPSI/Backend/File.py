@@ -49,7 +49,7 @@ logger = Logger()
 
 
 class FileBackend(ConfigDataBackend):
-	#example match (ignore spaces):      exampleexam_e.-ex  _ 1234.12 - 1234.12  . local     boot
+	# example match (ignore spaces):      exampleexam_e.-ex  _ 1234.12 - 1234.12  . local     boot
 	productFilenameRegex = re.compile('^([a-zA-Z0-9\_\.-]+)\_([\w\.]+)-([\w\.]+)\.(local|net)boot$')
 
 	def __init__(self, **kwargs):
@@ -845,10 +845,10 @@ class FileBackend(ConfigDataBackend):
 								if index == -1:
 									raise Exception(u"No ':' found in section '%s' in option '%s' in '%s'" % (section, option, filename))
 								if attribute == 'installationStatus':
-									#value = value.split(u':', 1)[0]
+									# value = value.split(u':', 1)[0]
 									value = value[:index]
 								elif attribute == 'actionRequest':
-									#value = value.split(u':', 1)[1]
+									# value = value.split(u':', 1)[1]
 									value = value[index + 1:]
 
 							objHash[attribute] = value
@@ -1070,8 +1070,8 @@ class FileBackend(ConfigDataBackend):
 		if not objList:
 			return
 
-		#objType is not always correct, but _getConfigFile() is
-		#within ifs obj.getType() from obj in objList should be used
+		# objType is not always correct, but _getConfigFile() is
+		# within ifs obj.getType() from obj in objList should be used
 		objType = objList[0].getType()
 
 		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
@@ -1708,7 +1708,7 @@ class FileBackend(ConfigDataBackend):
 				except:
 					pass
 			if not fastFiltered and self._objectHashMatches(objHash, **filter):
-				#TODO: adaptObjHash?
+				# TODO: adaptObjHash?
 				result.append(AuditSoftware.fromHash(objHash))
 
 		return result
@@ -1938,7 +1938,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 
 		logger.debug(u"Deleting auditHardwares ...")
-		#TODO: forceObjectClassList necessary?
+		# TODO: forceObjectClassList necessary?
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
 			self.__doAuditHardwareObj(auditHardware, mode='delete')
 
@@ -1995,7 +1995,7 @@ class FileBackend(ConfigDataBackend):
 
 		logger.debug(u"Deleting auditHardwareOnHosts ...")
 
-		#TODO: forceObjectClassList necessary?
+		# TODO: forceObjectClassList necessary?
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			self.__doAuditHardwareObj(auditHardwareOnHost, mode='delete')
 
@@ -2007,8 +2007,8 @@ class FileBackend(ConfigDataBackend):
 		if not objType in ('AuditHardware', 'AuditHardwareOnHost'):
 			raise Exception(u"Unknown type: %s" % objType)
 
-		#if (objType == 'AuditHardwareOnHost') and (auditHardwareObj.getState() == 0):
-		#	mode = 'delete'
+		# if (objType == 'AuditHardwareOnHost') and (auditHardwareObj.getState() == 0):
+		# 	mode = 'delete'
 
 		filename = self._getConfigFile(objType, auditHardwareObj.getIdent(returnType='dict'), 'hw')
 		self._touch(filename)

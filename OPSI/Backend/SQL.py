@@ -343,8 +343,8 @@ class SQLBackend(ConfigDataBackend):
 					condition += u"`%s` = %s" % (arg, 0)
 			elif type(value) in (float, long, int):
 				condition += u"`%s` = %s" % (arg, value)
-			#elif value is None:
-			#	where += u"`%s` is NULL" % key
+			# elif value is None:
+			# 	where += u"`%s` is NULL" % key
 			else:
 				condition += u"`%s` = '%s'" % (arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 		if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
@@ -1238,7 +1238,7 @@ class SQLBackend(ConfigDataBackend):
 					'value': value,
 					'isDefault': (value in defaultValues)
 					})
-	
+
 	def productProperty_updateObject(self, productProperty):
 		if not self._sqlBackendModule:
 			raise Exception(u"SQL backend module disabled")
@@ -1268,7 +1268,7 @@ class SQLBackend(ConfigDataBackend):
 					'value': value,
 					'isDefault': (value in defaultValues)
 					})
-	
+
 	def productProperty_getObjects(self, attributes=[], **filter):
 		if not self._sqlBackendModule:
 			raise Exception(u"SQL backend module disabled")
@@ -2202,8 +2202,8 @@ class SQLBackend(ConfigDataBackend):
 		auditHardware = { 'type': 'AuditHardware' }
 		auditHardwareOnHostNew = {}
 		for (attribute, value) in auditHardwareOnHost.items():
-			#if value is None or (attribute == 'type'):
-			#	continue
+			# if value is None or (attribute == 'type'):
+			# 	continue
 			if (attribute == 'type'):
 				continue
 			if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):

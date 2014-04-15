@@ -71,10 +71,10 @@ def getArgAndCallString(method):
 	argString = u''
 	callString = u''
 	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
-	#logger.debug2(u"args: %s" % unicode(args))
-	#logger.debug2(u"varargs: %s" % unicode(varargs))
-	#logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
-	#logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
+	# logger.debug2(u"args: %s" % unicode(args))
+	# logger.debug2(u"varargs: %s" % unicode(varargs))
+	# logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
+	# logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
 	for i in range(len(args)):
 		#logger.debug2(u"Processing arg [%s] %s" % (i, args[i]))
 		if (args[i] == 'self'):
@@ -90,7 +90,7 @@ def getArgAndCallString(method):
 				default = u"'%s'" % default
 			elif type(default) is unicode:
 				default = u"u'%s'" % default
-			#logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
+			# logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
 			argString += u'=%s' % unicode(default)
 	if varargs:
 		for vararg in varargs:
@@ -125,7 +125,7 @@ class DeferredCall(object):
 
 	def waitForResult(self):
 		self.finished.wait()
-		#return (self.result, self.error)
+		# return (self.result, self.error)
 		if self.error:
 			raise self.error
 		return self.result
@@ -247,10 +247,10 @@ class Backend:
 		options = forceDict(options)
 		for (key, value) in options.items():
 			if not key in self._options.keys():
-				#raise ValueError(u"No such option '%s'" % key)
+				# raise ValueError(u"No such option '%s'" % key)
 				continue
 			if type(value) != type(self._options[key]):
-				#raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
+				# raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
 				continue
 			self._options[key] = value
 
@@ -265,10 +265,10 @@ class Backend:
 				# protected / private
 				continue
 			(args, varargs, keywords, defaults) = inspect.getargspec(member[1])
-			#logger.debug2(u"args: %s" % unicode(args))
-			#logger.debug2(u"varargs: %s" % unicode(varargs))
-			#logger.debug2(u"keywords: %s" % unicode(keywords))
-			#logger.debug2(u"defaults: %s" % unicode(defaults))
+			# logger.debug2(u"args: %s" % unicode(args))
+			# logger.debug2(u"varargs: %s" % unicode(varargs))
+			# logger.debug2(u"keywords: %s" % unicode(keywords))
+			# logger.debug2(u"defaults: %s" % unicode(defaults))
 			params = []
 			if args:
 				for arg in forceList(args):
@@ -399,7 +399,7 @@ class ExtendedBackend(Backend):
 				# Not a public method
 				continue
 			logger.debug2(u"Found public %s method '%s'" % (self._backend.__class__.__name__, methodName))
-			#if hasattr(self.__class__, methodName):
+			# if hasattr(self.__class__, methodName):
 			if hasattr(self, methodName):
 				if self._overwrite:
 					logger.debug(u"%s: overwriting method %s of backend instance %s" % (self.__class__.__name__, methodName, self._backend))
@@ -1458,17 +1458,17 @@ class ConfigDataBackend(Backend):
 class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def __init__(self, configDataBackend, overwrite = True):
-		#if not isinstance(configDataBackend, ConfigDataBackend):
-		#	raise Exception(u"ExtendedConfigDataBackend needs instance of ConfigDataBackend as backend, got %s" % configDataBackend.__class__.__name__)
+		# if not isinstance(configDataBackend, ConfigDataBackend):
+		# 	raise Exception(u"ExtendedConfigDataBackend needs instance of ConfigDataBackend as backend, got %s" % configDataBackend.__class__.__name__)
 		ExtendedBackend.__init__(self, configDataBackend, overwrite = overwrite)
 		self._options = {
-			#'processProductPriorities':            False,
-			#'processProductDependencies':          False,
+			# 'processProductPriorities':            False,
+			# 'processProductDependencies':          False,
 			'addProductOnClientDefaults':          False,
 			'addProductPropertyStateDefaults':     False,
 			'addConfigStateDefaults':              False,
 			'deleteConfigStateIfDefault':          False,
-			#'deleteProductPropertyStateIfDefault': False,
+			# 'deleteProductPropertyStateIfDefault': False,
 			'returnObjectsOnUpdateAndCreate':      False,
 			'addDependentProductOnClients':        False,
 			'processProductOnClientSequence':      False
@@ -1493,6 +1493,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		try:
 			parsedFilter = ldapfilter.parseFilter(filter)
 		except Exception as e:
+			logger.debug(u"Failed to parse filter '{0}': {1}".format(filter, e))
 			raise BackendBadValueError(u"Failed to parse filter '%s'" % filter)
 		logger.debug(u"Parsed search filter: %s" % repr(parsedFilter))
 
@@ -1517,7 +1518,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				logger.debug(u"No matching identAttributes found (%s, %s)" % (result1['identAttributes'], result2['identAttributes']))
 
 			if (result1IdentIndex == -1):
-				#if (len(result1['identAttributes']) == 1) and result1['foreignIdAttributes']:
+				# if (len(result1['identAttributes']) == 1) and result1['foreignIdAttributes']:
 				if 'id' in result1['identAttributes'] and result1['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
 					for attr in result1['foreignIdAttributes']:
@@ -1533,7 +1534,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					logger.debug(u"Cannot use foreignIdAttributes of result1")
 
 			if (result1IdentIndex == -1):
-				#if (len(result2['identAttributes']) == 1) and result2['foreignIdAttributes']:
+				# if (len(result2['identAttributes']) == 1) and result2['foreignIdAttributes']:
 				if 'id' in result2['identAttributes'] and result2['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
 					for attr in result2['foreignIdAttributes']:
@@ -1651,8 +1652,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					if of:
 						objectFilter.update(of)
 					if res:
-						#if (objectClass or objectFilter):
-						#	raise BackendBadValueError(u"Unsupported search filter: %s" % repr(f))
+						# if (objectClass or objectFilter):
+						# 	raise BackendBadValueError(u"Unsupported search filter: %s" % repr(f))
 						result = combineResults(result, res, operator)
 
 				if objectFilter or objectClass:
@@ -2479,7 +2480,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info(u"Creating productProperty %s" % productProperty)
 			self._backend.productProperty_insertObject(productProperty)
-			###########self._adjustProductPropertyStates(productProperty)
+			# self._adjustProductPropertyStates(productProperty)
 
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
@@ -2502,11 +2503,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					packageVersion = productProperty.packageVersion,
 					propertyId     = productProperty.propertyId):
 				self._backend.productProperty_updateObject(productProperty)
-				####################self._adjustProductPropertyStates(productProperty)
+				# self._adjustProductPropertyStates(productProperty)
 			else:
 				logger.info(u"ProductProperty %s does not exist, creating" % productProperty)
 				self._backend.productProperty_insertObject(productProperty)
-				####################self._adjustProductPropertyStates(productProperty)
+				# self._adjustProductPropertyStates(productProperty)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productProperty_getObjects(
@@ -2918,9 +2919,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				pocByClientIdAndProductId[poc.clientId][poc.productId] = poc
 
 			logger.debug(u"   * created pocByClientIdAndProductId")
-			#for (clientId, pocs) in pocByClientIdAndProductId.items():
-			#	for (productId, poc) in pocs.items():
-			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
+			# for (clientId, pocs) in pocByClientIdAndProductId.items():
+			# 	for (productId, poc) in pocs.items():
+			# 		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
@@ -2938,9 +2939,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							productOnClients.append(poc)
 
 			logger.debug(u"   * created productOnClient defaults")
-			#for (clientId, pocs) in pocByClientIdAndProductId.items():
-			#	for (productId, poc) in pocs.items():
-			#		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
+			# for (clientId, pocs) in pocByClientIdAndProductId.items():
+			# 	for (productId, poc) in pocs.items():
+			# 		logger.debug2(u"      [%s] %s: %s" % (clientId, productId, poc.toHash()))
 
 		if not self._options['addProductOnClientDefaults'] and not self._options['processProductOnClientSequence']:
 			return productOnClients
@@ -2976,10 +2977,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			nextProductOnClient = productOnClient.clone()
 
 		if nextProductOnClient.installationStatus:
-			#if not nextProductOnClient.actionResult:
-			#	nextProductOnClient.setActionResult('none')
-			#if not nextProductOnClient.actionProgress:
-			#	nextProductOnClient.setActionProgress(u'')
+			# if not nextProductOnClient.actionResult:
+			# 	nextProductOnClient.setActionResult('none')
+			# if not nextProductOnClient.actionProgress:
+			# 	nextProductOnClient.setActionProgress(u'')
 			if (nextProductOnClient.installationStatus == 'installed'):
 				# TODO: Check if product exists?
 				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
@@ -3000,21 +3001,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				nextProductOnClient.productVersion = None
 				nextProductOnClient.packageVersion = None
 
-		#if productOnClient.actionRequest:
-		#	# An action request is about to change
-		#	if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
-		#		nextProductOnClient.setLastAction(productOnClient.actionRequest)
-		#	if not productOnClient.targetConfiguration:
-		#		if   (productOnClient.actionRequest == 'setup'):
-		#			nextProductOnClient.setTargetConfiguration('installed')
-		#		elif (productOnClient.actionRequest == 'always'):
-		#			nextProductOnClient.setTargetConfiguration('always')
-		#		elif (productOnClient.actionRequest == 'uninstall'):
-		#			nextProductOnClient.setTargetConfiguration('undefined')
-		#	if not productOnClient.actionResult:
-		#		nextProductOnClient.setActionResult('none')
-		#	if not productOnClient.actionProgress:
-		#		nextProductOnClient.setActionProgress(u'')
+		# if productOnClient.actionRequest:
+		# 	# An action request is about to change
+		# 	if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
+		# 		nextProductOnClient.setLastAction(productOnClient.actionRequest)
+		# 	if not productOnClient.targetConfiguration:
+		# 		if   (productOnClient.actionRequest == 'setup'):
+		# 			nextProductOnClient.setTargetConfiguration('installed')
+		# 		elif (productOnClient.actionRequest == 'always'):
+		# 			nextProductOnClient.setTargetConfiguration('always')
+		# 		elif (productOnClient.actionRequest == 'uninstall'):
+		# 			nextProductOnClient.setTargetConfiguration('undefined')
+		# 	if not productOnClient.actionResult:
+		# 		nextProductOnClient.setActionResult('none')
+		# 	if not productOnClient.actionProgress:
+		# 		nextProductOnClient.setActionProgress(u'')
 
 		nextProductOnClient.setModificationTime(timestamp())
 

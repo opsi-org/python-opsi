@@ -398,9 +398,9 @@ class BackendDispatcher(Backend):
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
-				#for be in self._backends.keys():
-				#	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-				#	setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
+				# for be in self._backends.keys():
+				# 	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
+				# 	setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
@@ -480,8 +480,8 @@ class BackendExtender(ExtendedBackend):
 				new_function = new.function( member[1].func_code, member[1].func_globals, member[1].func_code.co_name )
 				new_method = new.instancemethod( new_function, self, self.__class__ )
 				setattr( self, methodName, new_method )
-				#setattr( sldworks.ISldWorks, 'OpenDoc6', new_method )
-				#setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
+				# setattr( sldworks.ISldWorks, 'OpenDoc6', new_method )
+				# setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
 
 		if self._extensionConfigDir:
 			if not os.path.exists(self._extensionConfigDir):
@@ -571,9 +571,9 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Cannot use BackendAccessControl instance as backend")
 
 		# TODO: forceACL
-		#for i in range(len(self._acl)):
-		#	self._acl[i][0] = re.compile(self._acl[i][0])
-		#	self._acl[i][1] = forceUnicodeList(self._acl[i][1])
+		# for i in range(len(self._acl)):
+		# 	self._acl[i][0] = re.compile(self._acl[i][0])
+		# 	self._acl[i][1] = forceUnicodeList(self._acl[i][1])
 
 		try:
 			if re.search('^[^\.]+\.[^\.]+\.\S+$', self._username):
@@ -865,7 +865,7 @@ class BackendAccessControl(object):
 					granted = newGranted
 				if granted is True:
 					break
-			#if granted:
+			# if granted:
 			break
 
 		logger.info("Method: %s, using acls: %s" % (methodName, acls))

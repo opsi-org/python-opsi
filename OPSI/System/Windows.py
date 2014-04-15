@@ -636,20 +636,20 @@ def getDiskSpaceUsage(path):
 		'used':      0,
 		'usage':     0
 	}
-	#(items, instances) = win32pdh.EnumObjectItems(
-	#			None,
-	#			None,
-	#			win32pdhutil.find_pdh_counter_localized_name('LogicalDisk'),
-	#			win32pdh.PERF_DETAIL_WIZARD)
-	#
-	#for instance in instances:
-	#	if path.lower().startswith(instance.lower()):
+	# (items, instances) = win32pdh.EnumObjectItems(
+	# 			None,
+	# 			None,
+	# 			win32pdhutil.find_pdh_counter_localized_name('LogicalDisk'),
+	# 			win32pdh.PERF_DETAIL_WIZARD)
+
+	# for instance in instances:
+	# 	if path.lower().startswith(instance.lower()):
 	(sectPerCluster, bytesPerSector, freeClusters, totalClusters) = win32file.GetDiskFreeSpace(path)
 	info['capacity'] = totalClusters * sectPerCluster * bytesPerSector
 	info['available'] = freeClusters * sectPerCluster * bytesPerSector
 	info['used'] = info['capacity'] - info['available']
 	info['usage'] = float(info['used']) / float(info['capacity'])
-	#break
+	# break
 
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
@@ -866,16 +866,16 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 	return sessionIds[0]
 
 def getSessionInformation(sessionId, winApiBugCommand = None):
-	#info = {}
-	#for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
+	# info = {}
+	# for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
 	#                  'WTSOEMId', 'WTSUserName', 'WTSWinStationName', 'WTSWorkingDirectory', 'WTSClientProtocolType', 'WTSClientProductId',
 	#                  'WTSClientBuildNumber', 'WTSClientHardwareId', 'WTSSessionId', 'WTSConnectState', 'WTSClientDisplay', 'WTSClientAddress'):
-	#	try:
-	#		info[infoClass] = win32ts.WTSQuerySessionInformation(None, sessionId, eval('win32ts.%s' % infoClass))
-	#	except Exception, e:
-	#		info[infoClass] = None
-	#		logger.debug(e)
-	#return info
+	# 	try:
+	# 		info[infoClass] = win32ts.WTSQuerySessionInformation(None, sessionId, eval('win32ts.%s' % infoClass))
+	# 	except Exception, e:
+	# 		info[infoClass] = None
+	# 		logger.debug(e)
+	# return info
 	wtsUserName = None
 	try:
 		wtsUserName = win32ts.WTSQuerySessionInformation(None, sessionId, win32ts.WTSUserName)
@@ -976,7 +976,7 @@ def getActiveSessionInformation(winApiBugCommand = None):
 						info.append(sessionInfo)
 		elif sessionInfo:
 			info.append(sessionInfo)
-		#info.append(getSessionInformation(sessionId, winApiBugCommand))
+		# info.append(getSessionInformation(sessionId, winApiBugCommand))
 	logger.debug(u"info: '%s'" % info)
 	return info
 
@@ -991,10 +991,10 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
 	for session in getActiveSessionInformation(winApiBugCommand):
-		#if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
+		# if ( session.get('WTSUserName') and (session.get('WTSUserName').lower() == username.lower()) and \
 		#     (not domain or (session.get('WTSDomainName') and (session.get('WTSDomainName').lower() == domain.lower()))) ):
-		#	sessionIds.append(session.get('WTSSessionId'))
-		#	logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
+		# 	sessionIds.append(session.get('WTSSessionId'))
+		# 	logger.debug(u"   Found session id of user '%s': %s" % (username, session.get('WTSSessionId')))
 		if ( session.get('UserName') and (session.get('UserName').lower() == username.lower()) and \
 		     (not domain or (session.get('LogonDomain') and (session.get('LogonDomain').lower() == domain.lower()))) ):
 			sessionIds.append(forceInt(session.get('Session')))
@@ -1026,10 +1026,10 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
-	#win32api.ExitWindows()
-	#win32api.ExitWindowsEx(0)
-	## Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
-	#win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
+	# win32api.ExitWindows()
+	# win32api.ExitWindowsEx(0)
+	# # Windows Server 2008 and Windows Vista:  A call to WTSShutdownSystem does not work when Remote Connection Manager (RCM) is disabled. This is the case when the Terminal Services service is stopped.
+	# win32ts.WTSShutdownSystem(win32ts.WTS_CURRENT_SERVER_HANDLE, win32ts.WTS_WSD_LOGOFF)
 	command = ''
 	if (sys.getwindowsversion()[0] == 5):
 		if (sys.getwindowsversion()[1] == 0):
@@ -1049,8 +1049,8 @@ def logoffCurrentUser():
 			waitForProcessEnding = False )
 
 def lockWorkstation():
-	#windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
-	#windll.user32.LockWorkStation()
+	# windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
+	# windll.user32.LockWorkStation()
 	runCommandInSession(
 			command              = u"rundll32.exe user32.dll,LockWorkStation",
 			sessionId            = getActiveSessionId(),
@@ -1073,15 +1073,15 @@ def abortShutdown():
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.AbortSystemShutdown(None)
 
-#def blockShutdown():
-#	logger.notice(u"Blocking system shutdown")
-#	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
-#	win32api.ShutdownBlockReasonCreate()
-#
-#def unblockShutdown():
-#	logger.notice(u"Unblocking system shutdown")
-#	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
-#	win32api.ShutdownBlockReasonDestroy()
+# def blockShutdown():
+# 	logger.notice(u"Blocking system shutdown")
+# 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
+# 	win32api.ShutdownBlockReasonCreate()
+
+# def unblockShutdown():
+# 	logger.notice(u"Unblocking system shutdown")
+# 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
+# 	win32api.ShutdownBlockReasonDestroy()
 
 def createWindowStation(name):
 	name = forceUnicode(name)
@@ -1425,11 +1425,11 @@ def getProcessName(processId):
 		logger.error(u"Failed getting first process")
 		return
 	while True:
-		#logger.info("Got process %s" % pe32.szExeFile)
-		#sid = win32ts.ProcessIdToSessionId(pe32.th32ProcessID)
+		# logger.info("Got process %s" % pe32.szExeFile)
+		# sid = win32ts.ProcessIdToSessionId(pe32.th32ProcessID)
 		pid = pe32.th32ProcessID
-		#logger.notice("Found process %s with pid %d in session %d" % (process, pid, sid))
-		#logger.notice("Found process %s with pid %d" % (pe32.szExeFile, pid))
+		# logger.notice("Found process %s with pid %d in session %d" % (process, pid, sid))
+		# logger.notice("Found process %s with pid %d" % (pe32.szExeFile, pid))
 		if (pid == processId):
 			processName = forceUnicode(pe32.szExeFile)
 			break
@@ -1447,7 +1447,7 @@ def getProcessWindowHandles(processId):
 	processId = forceInt(processId)
 	logger.info(u"Getting window handles of process with id %s" % processId)
 	def callback (windowHandle, windowHandles):
-		#if win32gui.IsWindowVisible(windowHandle) and win32gui.IsWindowEnabled(windowHandle):
+		# if win32gui.IsWindowVisible(windowHandle) and win32gui.IsWindowEnabled(windowHandle):
 		if (win32process.GetWindowThreadProcessId(windowHandle)[1] == processId):
 			logger.debug(u"Found window %s of process with id %s" % (windowHandle, processId))
 			windowHandles.append(windowHandle)
@@ -1541,8 +1541,8 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 
 	s = win32process.STARTUPINFO()
 	s.lpDesktop = desktop
-	#s.wShowWindow = win32con.SW_MAXIMIZE
-	#s.dwFlags = win32process.STARTF_USESTDHANDLES
+	# s.wShowWindow = win32con.SW_MAXIMIZE
+	# s.dwFlags = win32process.STARTF_USESTDHANDLES
 
 	logger.notice(u"Executing: '%s' in session '%s' on desktop '%s'" % (command, sessionId, desktop))
 	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 1, dwCreationFlags, None, None, s)
@@ -1593,7 +1593,7 @@ def createUser(username, password, groups = []):
 		'password_expired': 0
 	}
 
-	#win32net.NetUserAdd(domain, 3, userData)
+	# win32net.NetUserAdd(domain, 3, userData)
 	win32net.NetUserAdd(u"\\\\" + domain, 1, userData)
 	if not groups:
 		return
@@ -1669,8 +1669,8 @@ class Impersonate:
 	def __init__(self, username=u"", password=u"", userToken = None, desktop = u"default"):
 		if not username and not userToken:
 			raise Exception(u"Neither username nor user token given")
-		#if username and not existsUser(username):
-		#	raise Exception("User '%s' does not exist" % username)
+		# if username and not existsUser(username):
+		# 	raise Exception("User '%s' does not exist" % username)
 		self.domain = getHostname()
 		self.username = forceUnicode(username)
 		if (self.username.find('\\') != -1):

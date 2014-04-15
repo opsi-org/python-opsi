@@ -872,8 +872,8 @@ if (__name__ == "__main__"):
 		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
 		[ flashplayerDependency1, javavmDependency1 ])
 
-	#for productOnClient in productOnClients:
-	#	print productOnClient
+	# for productOnClient in productOnClients:
+	# 	print productOnClient
 
 	print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
