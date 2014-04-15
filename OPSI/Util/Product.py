@@ -36,7 +36,7 @@ import os
 import re
 import shutil
 
-if (os.name == 'posix'):
+if os.name == 'posix':
 	import pwd
 	import grp
 
@@ -56,7 +56,7 @@ except Exception:
 
 DEFAULT_TMP_DIR = u'/tmp'
 DEFAULT_CLIENT_DATA_USER = u'opsiconfd'
-EXCLUDE_DIRS_ON_PACK = u'^\.svn$'
+EXCLUDE_DIRS_ON_PACK = u'(^\.svn$)|(^\.git$)'
 EXCLUDE_FILES_ON_PACK = u'~$'
 PACKAGE_SCRIPT_TIMEOUT = 600
 
