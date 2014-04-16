@@ -30,12 +30,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.0.1'
+__version__ = '4.0.4.6'
 
 import socket
 import threading
 
-# OPSI imports
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceHostId, forceObjectClass, forceUnicode
 from OPSI.Object import *
