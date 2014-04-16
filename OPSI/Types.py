@@ -443,10 +443,11 @@ def forceInstallationStatus(var):
 def forceActionRequest(var):
 	var = forceUnicodeLower(var)
 	if var:
-		if (var == 'undefined'):
+		if var == 'undefined':
 			var = None
 		elif var not in ('setup', 'uninstall', 'update', 'always', 'once', 'custom', 'none'):
 			raise ValueError(u"Bad action request: '%s'" % var)
+
 	return var
 
 
@@ -523,13 +524,15 @@ def forceGroupId(var):
 
 
 def forceGroupType(var):
-	v = forceUnicodeLower(var)
-	if (v == 'hostgroup'):
+	lowercaseValue = forceUnicodeLower(var)
+
+	if lowercaseValue == 'hostgroup':
 		var = u'HostGroup'
-	elif (v == 'productgroup'):
+	elif lowercaseValue == 'productgroup':
 		var = u'ProductGroup'
 	else:
 		raise ValueError(u"Unknown group type: '%s'" % var)
+
 	return var
 
 

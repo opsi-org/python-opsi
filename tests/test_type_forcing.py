@@ -35,7 +35,8 @@ from OPSI.Types import (forceObjectClass, forceUnicode, forceUnicodeList,
 	forceProductVersion, forceOpsiHostKey,forceInstallationStatus,
 	forceActionRequest, forceActionProgress,forceLanguageCode, forceIntList,
 	forceArchitecture, forceEmailAddress, forceUnicodeLowerList,
-	forceProductType, forceDict, forceUniqueList, args, forceFqdn)
+	forceProductType, forceDict, forceUniqueList, args, forceFqdn,
+	forceGroupType)
 
 
 class ForceObjectClassJSONTestCase(unittest.TestCase):
@@ -501,6 +502,15 @@ class ForceFqdnTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceFqdn, 'hostname.tld')
 
 		forceFqdn('hostname.rootzone.tld')
+
+class ForceGroupTypeTestCase(unittest.TestCase):
+	def testUnknownHostGroupsResultInError(self):
+		self.assertRaises(ValueError, forceGroupType, 'asdf')
+		self.assertRaises(ValueError, forceGroupType, None)
+
+	def testKnownValuesAreReturnedWithStandardisedCase(self):
+		self.assertEquals('HostGroup', forceGroupType('hostGROUP'))
+		self.assertEquals('ProductGroup', forceGroupType('PrOdUcTgRoUp'))
 
 
 if __name__ == '__main__':
