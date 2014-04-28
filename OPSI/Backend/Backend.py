@@ -1451,6 +1451,16 @@ class ConfigDataBackend(Backend):
 
 	def bootConfiguration_deleteObjects(self, bootConfigurations):
 		pass
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   direct access                                                                            -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def getData(self, query):
+		return query
+
+	def getRawData(self, query):
+		return query
+	
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =

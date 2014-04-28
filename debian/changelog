@@ -9,8 +9,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
     DHCPD configuration file if it can't be resolved via DNS.
   * Certificate Creation: Using 2048 bit instead of 1024
   * small fix in getOpsiHostKey method
+  * configed: direct access for mysql-backend users
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 28 Apr 2014 10:12:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 28 Apr 2014 15:12:23 +0100
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 

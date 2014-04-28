@@ -166,10 +166,14 @@ class MySQL(SQL):
 		finally:
 			self._transactionLock.release()
 
-	def connect(self):
+	def connect(self, cursorType=None):
 		myConnectionSuccess = False
 		myMaxRetryConnection = 10
 		myRetryConnectionCounter = 0
+		
+		if not cursorType:
+			cursorType = MySQLdb.cursors.DictCursor
+		
 		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
 			try:
 				if (myRetryConnectionCounter > 0):
@@ -180,8 +184,9 @@ class MySQL(SQL):
 				logger.debug(u"Connection pool status: %s" % self._pool.status())
 				conn = self._pool.connect()
 				conn.autocommit(False)
-				cursor = conn.cursor(MySQLdb.cursors.DictCursor)
+				cursor = conn.cursor(cursorType)
 				myConnectionSuccess = True
+				
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e.args[0] == 2006):
@@ -231,6 +236,31 @@ class MySQL(SQL):
 		finally:
 			self.close(conn, cursor)
 		return valueSet
+		
+	def getRows(self, query):
+		logger.debug2(u"getRows: %s" % query)
+		(conn, cursor) = self.connect()
+		valueSet = []
+		try:
+			try:
+				self.execute(query, conn, cursor)
+			except Exception, e:
+				logger.debug(u"Execute error: %s" % e)
+				if (e[0] != 2006):
+					# 2006: MySQL server has gone away
+					raise
+				self._createConnectionPool()
+				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
+				self.execute(query, conn, cursor)
+
+                	valueSet = cursor.fetchall()
+                	if not valueSet:
+                		logger.debug(u"No result for query '%s'" % query)
+                		valueSet = {}
+                	finally:
+                		self.close(conn, cursor)
+
+			return valueSet
 
 	def getRow(self, query, conn=None, cursor=None):
 		logger.debug2(u"getRow: %s" % query)

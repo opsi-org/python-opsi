@@ -2428,3 +2428,20 @@ class SQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting bootConfiguration %s" % bootConfiguration)
 			where = self._uniqueCondition(bootConfiguration)
 			self._sql.delete('BOOT_CONFIGURATION', where)
+	
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Extension for direct connect to db                                           -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def getData(self, query):
+	       # result = ConfigDataBackend.getData(self, query)
+	       logger.debug(u'start query {0}'.format(query))
+	       result = self._sql.getSet(query)
+	       logger.debug(u'ended query {0}'.format(query))
+	       return result
+
+	def getRawData(self, query):
+	       # result = ConfigDataBackend.getRawData(self, query)
+	       logger.debug(u'start query {0}'.format(query))
+	       result = self._sql.getRows(query)
+	       logger.debug(u'ended query {0}'.format(query))
+	       return result
