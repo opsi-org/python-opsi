@@ -1,4 +1,4 @@
-python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
+python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
 
   * New module: OPSI.Util.Task.Sudoers
   * 70_dynamic_depot.conf: Latency algorythm does even work if pinging
@@ -9,7 +9,7 @@ python-opsi (4.0.4.6-1) UNRELEASED; urgency=low
     DHCPD configuration file if it can't be resolved via DNS.
   * Certificate Creation: Using 2048 bit instead of 1024
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Fri, 07 Feb 2014 02:12:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 28 Apr 2014 10:12:23 +0100
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
