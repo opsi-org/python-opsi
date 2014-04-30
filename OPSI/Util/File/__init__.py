@@ -1452,17 +1452,17 @@ class DHCPDConf_Block(DHCPDConf_Component):
 			if (self.components[i] == component):
 				index = i
 				break
-		if (index < 0):
-			raise BackendMissingDataError(u"Component '%s' not found")
+		if index < 0:
+			raise BackendMissingDataError(u"Component '{0}' not found".format(component))
 		del self.components[index]
-		index = -1
 
+		index = -1
 		if self.lineRefs.has_key(component.startLine):
 			for i in range(len(self.lineRefs[component.startLine])):
 				if (self.lineRefs[component.startLine][i] == component):
 					index = i
 					break
-		if (index >= 0):
+		if index >= 0:
 			del self.lineRefs[component.startLine][index]
 
 	def getOptions_hash(self, inherit = None):
