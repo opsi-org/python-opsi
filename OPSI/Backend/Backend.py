@@ -6,7 +6,7 @@ opsi python library - Backend
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -444,11 +444,11 @@ class ConfigDataBackend(Backend):
 
 	def __init__(self, **kwargs):
 		Backend.__init__(self, **kwargs)
-		self._auditHardwareConfigFile       = u'/etc/opsi/hwaudit/opsihwaudit.conf'
+		self._auditHardwareConfigFile = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
-		self._opsiPasswdFile                = OPSI_PASSWD_FILE
-		self._maxLogfileSize                = MAX_LOGFILE_SIZE
-		self._depotId                       = None
+		self._opsiPasswdFile = OPSI_PASSWD_FILE
+		self._maxLogfileSize = MAX_LOGFILE_SIZE
+		self._depotId = None
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -574,9 +574,9 @@ class ConfigDataBackend(Backend):
 		if hostId:
 			hostId = forceHostId(hostId)
 
-		result = { 'password': u'', 'rsaPrivateKey': u'' }
+		result = {'password': u'', 'rsaPrivateKey': u''}
 
-		cf = ConfigFile(filename = self._opsiPasswdFile)
+		cf = ConfigFile(filename=self._opsiPasswdFile)
 		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		for line in cf.parse():
 			match = lineRegex.search(line)
@@ -597,7 +597,7 @@ class ConfigDataBackend(Backend):
 
 		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
 
-		if (username == 'pcpatch'):
+		if username == 'pcpatch':
 			try:
 				import pwd
 				idRsa = os.path.join(pwd.getpwnam(username)[5], u'.ssh', u'id_rsa')
@@ -607,7 +607,7 @@ class ConfigDataBackend(Backend):
 			except Exception as e:
 				logger.debug(e)
 		if hostId:
-			host  = self._context.host_getObjects(id = hostId)
+			host = self._context.host_getObjects(id=hostId)
 			if not host:
 				raise Exception(u"Host '%s' not found in backend" % hostId)
 			host = host[0]
@@ -620,14 +620,14 @@ class ConfigDataBackend(Backend):
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
 
-		depot = self._context.host_getObjects(id = self._depotId)
+		depot = self._context.host_getObjects(id=self._depotId)
 		if not depot:
 			raise Exception(u"Depot '%s' not found in backend %s" % (self._depotId, self._context))
 		depot = depot[0]
 
 		encodedPassword = blowfishEncrypt(depot.opsiHostKey, password)
 
-		cf = ConfigFile(filename = self._opsiPasswdFile)
+		cf = ConfigFile(filename=self._opsiPasswdFile)
 		lineRegex = re.compile('^\s*([^:]+)\s*:\s*(\S+)\s*$')
 		lines = []
 		if os.path.exists(self._opsiPasswdFile):
@@ -1460,28 +1460,28 @@ class ConfigDataBackend(Backend):
 
 	def getRawData(self, query):
 		return query
-	
+
 
 '''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 =                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ExtendedConfigDataBackend(ExtendedBackend):
 
-	def __init__(self, configDataBackend, overwrite = True):
+	def __init__(self, configDataBackend, overwrite=True):
 		# if not isinstance(configDataBackend, ConfigDataBackend):
 		# 	raise Exception(u"ExtendedConfigDataBackend needs instance of ConfigDataBackend as backend, got %s" % configDataBackend.__class__.__name__)
-		ExtendedBackend.__init__(self, configDataBackend, overwrite = overwrite)
+		ExtendedBackend.__init__(self, configDataBackend, overwrite=overwrite)
 		self._options = {
 			# 'processProductPriorities':            False,
 			# 'processProductDependencies':          False,
-			'addProductOnClientDefaults':          False,
-			'addProductPropertyStateDefaults':     False,
-			'addConfigStateDefaults':              False,
-			'deleteConfigStateIfDefault':          False,
+			'addProductOnClientDefaults': False,
+			'addProductPropertyStateDefaults': False,
+			'addConfigStateDefaults': False,
+			'deleteConfigStateIfDefault': False,
 			# 'deleteProductPropertyStateIfDefault': False,
-			'returnObjectsOnUpdateAndCreate':      False,
-			'addDependentProductOnClients':        False,
-			'processProductOnClientSequence':      False
+			'returnObjectsOnUpdateAndCreate': False,
+			'addDependentProductOnClients': False,
+			'processProductOnClientSequence': False
 		}
 		self._auditHardwareConfig = {}
 
@@ -1494,7 +1494,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				self._auditHardwareConfig[hwClass] = {}
 				for value in config['Values']:
 					self._auditHardwareConfig[hwClass][value['Opsi']] = {
-						'Type':  value["Type"],
+						'Type': value["Type"],
 						'Scope': value["Scope"]
 					}
 
