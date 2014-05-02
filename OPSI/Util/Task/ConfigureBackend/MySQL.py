@@ -113,7 +113,7 @@ def configureMySQLBackend(dbAdminUser, dbAdminPass,
 	:param dbAdminPass: Password for the DBA.
 	:param backendConfigFile: Path to mysql backend configuration file.
 	:param config: The configuration for the database. \
-This should include values for the keys `database`, `username`,
+This should include values for the keys `database`, `username`, \
 `password` and `address`. `address` is also the address of the database. \
 If not given this will be read from ``backendConfigFile``.
 	:type config: dict
