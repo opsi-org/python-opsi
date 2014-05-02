@@ -145,7 +145,16 @@ class DeferredCall(object):
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class Backend:
 	def __init__(self, **kwargs):
-		# Parse arguments
+		"""
+		Constructor that only accepts keyword arguments.
+
+		:param name: Name of the backend
+		:param username: Username to use (if required)
+		:param password: Password to use (if required)
+		:param context: Context backend. Calling backend methods from \
+other backend methods is done by using the context backend. \
+This defaults to ``self``.
+		"""
 		self._name = None
 		self._username = None
 		self._password = None
@@ -172,13 +181,20 @@ class Backend:
 		self._options = {}
 
 	def _setContext(self, context):
+		"""Setting the context backend."""
 		self._context = context
 
 	def _getContext(self):
+		"""Getting the context backend."""
 		return self._context
 
 	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
+		"""
+		Checks if the opsi object hash matches the filter.
+
+		:returntype: bool
+		"""
 		matchedAll = True
 		for (attribute, value) in objHash.items():
 			if not filter.get(attribute):
@@ -244,6 +260,12 @@ class Backend:
 		return matchedAll
 
 	def backend_setOptions(self, options):
+		"""
+		Change the behaviour of the backend.
+
+		:param options: The options to set. Unknown keywords will be ignored.
+		:type options: dict
+		"""
 		options = forceDict(options)
 		for (key, value) in options.items():
 			if not key in self._options.keys():
@@ -255,6 +277,11 @@ class Backend:
 			self._options[key] = value
 
 	def backend_getOptions(self):
+		"""
+		Get the current backend options.
+
+		:returntype: dict
+		"""
 		return self._options
 
 	def backend_getInterface(self):
@@ -298,6 +325,11 @@ class Backend:
 		return methodList
 
 	def backend_info(self):
+		"""
+		Get info about the used opsi version and the licensed modules.
+
+		:returntype: dict
+		"""
 		opsiVersion = 'unknown'
 		try:
 			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
@@ -382,7 +414,16 @@ class Backend:
 =                                    CLASS EXTENDEDBACKEND                                           =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ExtendedBackend(Backend):
-	def __init__(self, backend, overwrite = True):
+	"""
+	Extending an backend with additional functionality.
+	"""
+	def __init__(self, backend, overwrite=True):
+		"""
+		Constructor.
+
+		:param backend: Instance of the backend to extend.
+		:param overwrite: Overwriting the public methods of the backend.
+		"""
 		Backend.__init__(self)
 		self._backend = backend
 		if (self._context is self):
@@ -422,11 +463,21 @@ class ExtendedBackend(Backend):
 		return Backend.backend_info()
 
 	def backend_setOptions(self, options):
+		"""
+		Set options on ``self`` and the extended backend.
+
+		:type options: dict
+		"""
 		Backend.backend_setOptions(self, options)
 		if self._backend:
 			self._backend.backend_setOptions(options)
 
 	def backend_getOptions(self):
+		"""
+		Get options from the current and the extended backend.
+
+		:returntype: dict
+		"""
 		options = Backend.backend_getOptions(self)
 		if self._backend:
 			options.update(self._backend.backend_getOptions())
@@ -441,8 +492,25 @@ class ExtendedBackend(Backend):
 =                                   CLASS CONFIGDATABACKEND                                          =
 = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ConfigDataBackend(Backend):
+	"""
+	Base class for backends holding data.
+
+	These backends should keep data integrity intact but not alter the data.
+	"""
 
 	def __init__(self, **kwargs):
+		"""
+		Constructor.
+
+		Keyword arguments can differ between implementation.
+		:param audithardwareconfigfile: Location of the hardware audit \
+configuration file.
+		:param audihardwareconfiglocalesdir: Location of the directory \
+containing the localisation of the hardware audit.
+		:param opsipasswdfile: Location of opsis own passwd file.
+		:param depotid: Id of the current depot.
+		:param maxlogfilesize: Maximum size of a logfile.
+		"""
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
@@ -482,15 +550,38 @@ class ConfigDataBackend(Backend):
 				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
 
 	def backend_createBase(self):
+		"""
+		Setting up the base for the backend to store its data.
+
+		This can be something like creating a directory structure to setting up a databse.
+		"""
 		pass
 
 	def backend_deleteBase(self):
+		"""
+		Deleting the base of the backend.
+
+		This is the place to undo all the things that were created by \
+*backend_createBase*.
+		"""
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def log_write(self, logType, data, objectId=None, append=False):
+		"""
+		Write log data into the corresponding log file.
+
+		:param logType: Type of log. \
+Currently supported: 'bootimage', 'clientconnect', 'instlog' or 'opsiconfd'
+		:param data: Log content
+		:type data: Unicode
+		:param objectId: Specialising of ``logType``
+		:param append: Changes the behaviour to either append or \
+overwrite the log.
+		:type append: bool
+		"""
 		logType = forceUnicode(logType)
 		data = forceUnicode(data)
 		if not objectId:
@@ -537,6 +628,15 @@ class ConfigDataBackend(Backend):
 		os.chmod(logFile, 0640)
 
 	def log_read(self, logType, objectId=None, maxSize=5000000):
+		"""
+		Return the content of a log.
+
+		:param logType: Type of log. \
+Currently supported: 'bootimage', 'clientconnect', 'instlog' or 'opsiconfd'
+		:type data: Unicode
+		:param objectId: Specialising of ``logType``
+		:param maxSize: Limit for the amount of returned characters.
+		"""
 		logType = forceUnicode(logType)
 		if not objectId:
 			objectId = None
@@ -569,7 +669,17 @@ class ConfigDataBackend(Backend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Users                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def user_getCredentials(self, username = u'pcpatch', hostId = None):
+	def user_getCredentials(self, username=u'pcpatch', hostId=None):
+		"""
+		Get the credentials of an opsi user.
+		The information is stored in ``/etc/opsi/passwd``.
+
+		:param hostId: Optional value that should be the calling host.
+		:return: Dict with the keys *password* and *rsaPrivateKey*. \
+If this is called with an valid hostId the data will be encrypted with \
+the opsi host key.
+		:returntype: dict
+		"""
 		username = forceUnicodeLower(username)
 		if hostId:
 			hostId = forceHostId(hostId)
@@ -617,6 +727,12 @@ class ConfigDataBackend(Backend):
 		return result
 
 	def user_setCredentials(self, username, password):
+		"""
+		Set the password of an opsi user.
+		The information is stored in ``/etc/opsi/passwd``.
+		The password will be encrypted with the opsi host key of the \
+depot where the method is.
+		"""
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
 
@@ -1451,7 +1567,7 @@ class ConfigDataBackend(Backend):
 
 	def bootConfiguration_deleteObjects(self, bootConfigurations):
 		pass
-	
+
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   direct access                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3928,6 +4044,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   AuditHardwareOnHosts                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+		"""
+		Update an auditHardwareOnHost object.
+
+		This will update the attributes `state` and `lastseen` on the object.
+		"""
 		auditHardwareOnHost.setLastseen(timestamp())
 		auditHardwareOnHost.setState(1)
 		self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
