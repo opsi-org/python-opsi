@@ -294,7 +294,7 @@ def forceNetworkAddress(var):
 
 urlRegex = re.compile('^[a-z0-9]+://[/a-z0-9]')
 def forceUrl(var):
-	var = forceUnicodeLower(var)
+	var = forceUnicode(var)
 	if not re.search(urlRegex, var):
 		raise ValueError(u"Bad url: '%s'" % var)
 	return var
