@@ -10,8 +10,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * Certificate Creation: Using 2048 bit instead of 1024
   * small fix in getOpsiHostKey method
   * configed: direct access for mysql-backend users
+  * forceUrl method don't convert value to lower
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 28 Apr 2014 15:12:23 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 13 May 2014 12:12:23 +0100
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
