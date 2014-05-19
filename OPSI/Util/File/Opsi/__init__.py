@@ -57,6 +57,7 @@ elif os.name == 'nt':
 	import win32file
 	import pywintypes
 
+import OPSI.System
 from OPSI.Logger import Logger
 from OPSI.Object import *
 from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
@@ -1360,7 +1361,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use." % backend["name"])
-				cmd = ["/usr/bin/mysqldump"]
+				cmd = [OPSI.System.which("mysqldump")]
 				cmd.append("--host=%s" % backend["config"]["address"])
 				cmd.append("--user=%s" % backend["config"]["username"])
 				cmd.append("--password=%s" % backend["config"]["password"])
