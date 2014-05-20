@@ -255,7 +255,7 @@ class MySQL(SQL):
                 	valueSet = cursor.fetchall()
                 	if not valueSet:
                 		logger.debug(u"No result for query '%s'" % query)
-                		valueSet = {}
+                		valueSet = []
                 finally:
                 	self.close(conn, cursor)
 		return valueSet
