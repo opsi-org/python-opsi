@@ -67,6 +67,9 @@ class PosixMethodsTestCase(unittest.TestCase):
 
 		self.assertEquals(expectedIds, Posix.getActiveSessionIds(testdata))
 
+	def testGetActiveSessionId(self):
+		self.assertEquals(type(1), type(Posix.getActiveSessionId()))
+
 
 class PosixHardwareInventoryTestCase(unittest.TestCase):
 	def setUp(self):

@@ -3341,3 +3341,13 @@ def getActiveSessionIds(data=None):
 			raise ValueError("Can't get session ID from line: {0}".format(line))
 
 	return sessionIds
+
+
+def getActiveSessionId():
+	"""
+	Returns the currently active session ID.
+
+	:returntype: int
+	"""
+	ownPid = os.getpid()
+	return os.getsid(ownPid)
