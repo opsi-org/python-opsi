@@ -27,7 +27,7 @@ Various unittests to test functionality of python-opsi.
 
 import unittest
 
-from OPSI.System.Posix import getBlockDeviceContollerInfo, hardwareExtendedInventory, getActiveSessionIds
+import OPSI.System.Posix as Posix
 
 
 class PosixMethodsTestCase(unittest.TestCase):
@@ -40,7 +40,7 @@ class PosixMethodsTestCase(unittest.TestCase):
 			'/0/1/0.0.0/1  /dev/sda1   volume         465GiB Windows FAT volume',
 		]
 
-		deviceInfo = getBlockDeviceContollerInfo('dev/sda', testcase)
+		deviceInfo = Posix.getBlockDeviceContollerInfo('dev/sda', testcase)
 		self.assertTrue(deviceInfo)
 
 		self.assertEqual('dev/sda', deviceInfo['device'])
@@ -65,7 +65,7 @@ class PosixMethodsTestCase(unittest.TestCase):
 
 		expectedIds = [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]
 
-		self.assertEquals(expectedIds, getActiveSessionIds(testdata))
+		self.assertEquals(expectedIds, Posix.getActiveSessionIds(testdata))
 
 
 class PosixHardwareInventoryTestCase(unittest.TestCase):
@@ -105,7 +105,7 @@ class PosixHardwareInventoryTestCase(unittest.TestCase):
 		del self.hardwareInfo
 
 	def testHardwareExtendedInventory(self):
-		result = hardwareExtendedInventory(self.config, self.hardwareInfo)
+		result = Posix.hardwareExtendedInventory(self.config, self.hardwareInfo)
 
 		expected = {
 			'COMPUTER_SYSTEM': [
@@ -125,7 +125,7 @@ class PosixHardwareInventoryTestCase(unittest.TestCase):
 		self.assertEqual(expected, result)
 
 	def testHardwareExtendedInventoryReturnsSafelyWithoutConfig(self):
-		self.assertEqual({}, hardwareExtendedInventory({}, self.hardwareInfo))
+		self.assertEqual({}, Posix.hardwareExtendedInventory({}, self.hardwareInfo))
 
 
 if __name__ == '__main__':
