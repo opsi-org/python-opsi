@@ -3317,3 +3317,27 @@ def locateDHCPDInit(default=None):
 		return default
 
 	raise RuntimeError(u"Could not locate dhcpd init file.")
+
+
+def getActiveSessionIds(data=None):
+	"""
+	Getting the IDs of the currently active sessions.
+
+	:param data: Prefetched data to read information from.
+	:type data: [str, ]
+	:returntype: [int, ]
+	"""
+	if data is None:
+		data = execute(u"who -p -u")
+
+	sessionIds = []
+	for line in data:
+		parts = re.split('\s+', line)
+		if len(parts) == 7:
+			sessionIds.append(int(parts[-2]))
+		elif len(parts) == 6:
+			sessionIds.append(int(parts[-1]))
+		else:
+			raise ValueError("Can't get session ID from line: {0}".format(line))
+
+	return sessionIds

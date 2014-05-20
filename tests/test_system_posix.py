@@ -27,7 +27,7 @@ Various unittests to test functionality of python-opsi.
 
 import unittest
 
-from OPSI.System.Posix import getBlockDeviceContollerInfo, hardwareExtendedInventory
+from OPSI.System.Posix import getBlockDeviceContollerInfo, hardwareExtendedInventory, getActiveSessionIds
 
 
 class PosixMethodsTestCase(unittest.TestCase):
@@ -48,6 +48,24 @@ class PosixMethodsTestCase(unittest.TestCase):
 		self.assertEqual('/0/100/1f.2', deviceInfo['hwPath'])
 		self.assertEqual('82801JD/DO (ICH10 Family) SATA AHCI Controller', deviceInfo['description'])
 		self.assertEqual('3A02', deviceInfo['deviceId'])
+
+	def testGetActiveSessionIds(self):
+		testdata = [
+			'wenselowski tty4         2014-05-20 13:54   .         24093',
+			'wenselowski pts/0        2014-05-20 09:45 01:10       15884 (:0.0)',
+			'wenselowski pts/1        2014-05-20 12:58 00:46       14849 (:0.0)',
+			'wenselowski pts/3        2014-05-20 13:01 00:43       15401 (:0.0)',
+			'wenselowski pts/4        2014-05-20 13:03 00:40       15688 (:0.0)',
+			'wenselowski pts/6        2014-05-19 16:45 01:15       20496 (:0.0)',
+			'wenselowski pts/7        2014-05-19 17:17 00:04       25574 (:0.0)',
+			'wenselowski pts/8        2014-05-20 10:50 00:16       27443 (:0.0)',
+			'wenselowski pts/9        2014-05-20 13:27   .         18172 (:0.0)',
+			'wenselowski pts/10       2014-05-20 13:42 00:02       21605 (:0.0)',
+		]
+
+		expectedIds = [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]
+
+		self.assertEquals(expectedIds, getActiveSessionIds(testdata))
 
 
 class PosixHardwareInventoryTestCase(unittest.TestCase):
