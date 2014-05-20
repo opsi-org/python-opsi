@@ -383,10 +383,7 @@ def getEthernetDevices():
 
 
 def getNetworkInterfaces():
-	interfaces = []
-	for device in getEthernetDevices():
-		interfaces.append(getNetworkDeviceConfig(device))
-	return interfaces
+	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
 
 
 def getNetworkDeviceConfig(device):
