@@ -2675,7 +2675,7 @@ class SysInfo(object):
 
 			return version.strip()
 		except Exception:
-			raise OpsiVersionError("Unable to determain opsi version")
+			raise OpsiVersionError("Unable to determine opsi version")
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
