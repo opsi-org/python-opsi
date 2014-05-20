@@ -70,6 +70,12 @@ class PosixMethodsTestCase(unittest.TestCase):
 	def testGetActiveSessionId(self):
 		self.assertEquals(type(1), type(Posix.getActiveSessionId()))
 
+	def testGetNetworkInterfaces(self):
+		# TODO: make this independent from the underlying hardware...
+		# Idea: prepare a file with information, pass the filename
+		# to the function and read from that.
+		Posix.getNetworkInterfaces()
+
 
 class PosixHardwareInventoryTestCase(unittest.TestCase):
 	def setUp(self):

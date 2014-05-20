@@ -366,18 +366,15 @@ def getKernelParams():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getEthernetDevices():
 	devices = []
-	f = open("/proc/net/dev")
-	try:
+	with open("/proc/net/dev") as f:
 		for line in f.readlines():
 			line = line.strip()
-			if not line or (line.find(':') == -1):
+			if not line or ':' not in line:
 				continue
 			device = line.split(':')[0].strip()
-			if device.startswith('eth') or device.startswith('tr') or device.startswith('br'):
+			if device.startswith(('eth', 'tr', 'br')):
 				logger.info(u"Found ethernet device: '%s'" % device)
 				devices.append(device)
-	finally:
-		f.close()
 
 	return devices
 
