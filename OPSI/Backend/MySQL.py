@@ -239,7 +239,7 @@ class MySQL(SQL):
 		
 	def getRows(self, query):
 		logger.debug2(u"getRows: %s" % query)
-		(conn, cursor) = self.connect()
+		(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 		valueSet = []
 		try:
 			try:
