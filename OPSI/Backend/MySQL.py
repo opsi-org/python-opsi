@@ -238,6 +238,8 @@ class MySQL(SQL):
 		return valueSet
 		
 	def getRows(self, query):
+		if not query.lower().startswith("select"):
+			raise BackendIOError(u"getRows method allows select statements only, aborting.")
 		logger.debug2(u"getRows: %s" % query)
 		(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 		valueSet = []
