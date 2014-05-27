@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 #
-# Copyright (C) 2006, 2007, 2008, 2009, 2010, 2013 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2010, 2013-2014 uib GmbH <info@uib.de>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -365,6 +365,12 @@ def getKernelParams():
 # -                                            NETWORK                                                -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getEthernetDevices():
+	"""
+	Get the ethernet devices on the system.
+
+	:return: For each device the name of the device.
+	:returntype: [str]
+	"""
 	devices = []
 	with open("/proc/net/dev") as f:
 		for line in f.readlines():
@@ -380,6 +386,11 @@ def getEthernetDevices():
 
 
 def getNetworkInterfaces():
+	"""
+	Get information about the network interfaces on the system.
+
+	:returntype: [{}]
+	"""
 	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
 
 
