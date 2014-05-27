@@ -3328,6 +3328,7 @@ def getActiveSessionIds(data=None):
 	"""
 	Getting the IDs of the currently active sessions.
 
+	.. versionadded:: 4.0.5
 	:param data: Prefetched data to read information from.
 	:type data: [str, ]
 	:returntype: [int, ]
@@ -3352,6 +3353,7 @@ def getActiveSessionId():
 	"""
 	Returns the currently active session ID.
 
+	.. versionadded:: 4.0.5
 	:returntype: int
 	"""
 	ownPid = os.getpid()
