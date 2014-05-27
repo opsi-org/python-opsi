@@ -6,7 +6,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013 uib GmbH
+Copyright (C) 2013-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -24,10 +24,10 @@ Affero General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-@copyright: uib GmbH <info@uib.de>
-@author: Jan Schneider <j.schneider@uib.de>
-@author: Erol Ueluekmen <e.ueluekmen@uib.de>
-@license: GNU Affero GPL version 3
+:copyright: uib GmbH <info@uib.de>
+:author: Jan Schneider <j.schneider@uib.de>
+:author: Erol Ueluekmen <e.ueluekmen@uib.de>
+:license: GNU Affero GPL version 3
 """
 
 __version__ = '4.0.4.4'
@@ -70,11 +70,18 @@ from OPSI.Logger import *
 from OPSI.Types import *
 
 logger = Logger()
+hooks = []
 
 HKEY_CURRENT_USER = _winreg.HKEY_CURRENT_USER
 HKEY_LOCAL_MACHINE = _winreg.HKEY_LOCAL_MACHINE
 
 TH32CS_SNAPPROCESS = 0x00000002
+MAX_INTERFACE_NAME_LEN = 256
+MAXLEN_IFDESCR = 256
+MAXLEN_PHYSADDR = 8
+MAX_INTERFACES = 32
+
+
 class PROCESSENTRY32(Structure):
 	_fields_ = [
 		("dwSize", c_ulong),
@@ -89,9 +96,7 @@ class PROCESSENTRY32(Structure):
 		("szExeFile", c_char * 260)
 	]
 
-MAX_INTERFACE_NAME_LEN = 256
-MAXLEN_IFDESCR = 256
-MAXLEN_PHYSADDR = 8
+
 class MIB_IFROW(Structure):
 	_fields_ = [
 		("wszName", c_wchar * MAX_INTERFACE_NAME_LEN),
@@ -120,22 +125,24 @@ class MIB_IFROW(Structure):
 		("bDescr", c_char * MAXLEN_IFDESCR),
 	]
 
-MAX_INTERFACES = 32
+
 class MIB_IFTABLE(Structure):
 	_fields_ = [
 		("dwNumEntries", c_uint),
 		("table", MIB_IFROW * MAX_INTERFACES),
 	]
 
+
 class SystemSpecificHook(object):
 	def __init__(self):
 		pass
 
-hooks = []
+
 def addSystemHook(hook):
 	global hooks
 	if not hook in hooks:
 		hooks.append(hook)
+
 
 def removeSystemHook(hook):
 	global hooks
@@ -152,9 +159,10 @@ def getArchitecture():
 		else:
 			return u'x86'
 	except Exception as e:
-		logger.error("Error by determining OS-Architecture: '%s'; returning default: 'x86'")
+		logger.error("Error by determining OS-Architecture: '{0}'; returning default: 'x86'".format(e))
 
-def getOpsiHotfixName(helper = None):
+
+def getOpsiHotfixName(helper=None):
 	arch = getArchitecture()
 	major = sys.getwindowsversion()[0]
 	minor = sys.getwindowsversion()[1]
@@ -163,11 +171,17 @@ def getOpsiHotfixName(helper = None):
 
 	if (major == 5):
 		loc = locale.getdefaultlocale()[0].split('_')[0]
-		if   (loc == 'en'): lang = u'enu'
-		elif (loc == 'de'): lang = u'deu'
-		elif (loc == 'fr'): lang = u'fra'
-		elif (loc == 'it'): lang = u'ita'
-		elif (loc == 'ch'): lang = u'chs'
+		if (loc == 'en'):
+			lang = u'enu'
+		elif (loc == 'de'):
+			lang = u'deu'
+		elif (loc == 'fr'):
+			lang = u'fra'
+		elif (loc == 'it'):
+			lang = u'ita'
+		elif (loc == 'ch'):
+			lang = u'chs'
+
 		if (minor == 1):
 			os = u'winxp'
 		elif (minor == 2):
@@ -203,8 +217,10 @@ def getOpsiHotfixName(helper = None):
 
 	return u'mshotfix-%s-%s-%s' % (os, arch, lang)
 
+
 def getHostname():
 	return forceUnicodeLower(win32api.GetComputerName())
+
 
 def getFQDN():
 	fqdn = socket.getfqdn().lower()
@@ -212,29 +228,32 @@ def getFQDN():
 		return getHostname()
 	return forceUnicodeLower(getHostname() + u'.' + u'.'.join(fqdn.split(u'.')[1:]))
 
+
 def getFileVersionInfo(filename):
 	filename = forceFilename(filename)
 	(lang, codepage) = win32api.GetFileVersionInfo(filename, u'\\VarFileInfo\\Translation')[0]
 	path = u'\\StringFileInfo\\%04X%04X\\%%s' % (lang, codepage)
 	info = {
-		'CompanyName':      forceUnicode(win32api.GetFileVersionInfo(filename, path % 'CompanyName')),
-		'SpecialBuild':     forceUnicode(win32api.GetFileVersionInfo(filename, path % 'SpecialBuild')),
-		'Comments':         forceUnicode(win32api.GetFileVersionInfo(filename, path % 'Comments')),
-		'FileDescription':  forceUnicode(win32api.GetFileVersionInfo(filename, path % 'FileDescription')),
-		'FileVersion':      forceUnicode(win32api.GetFileVersionInfo(filename, path % 'FileVersion')),
-		'InternalName':     forceUnicode(win32api.GetFileVersionInfo(filename, path % 'InternalName')),
-		'LegalCopyright':   forceUnicode(win32api.GetFileVersionInfo(filename, path % 'LegalCopyright')),
-		'LegalTrademarks':  forceUnicode(win32api.GetFileVersionInfo(filename, path % 'LegalTrademarks')),
+		'CompanyName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'CompanyName')),
+		'SpecialBuild': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'SpecialBuild')),
+		'Comments': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'Comments')),
+		'FileDescription': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'FileDescription')),
+		'FileVersion': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'FileVersion')),
+		'InternalName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'InternalName')),
+		'LegalCopyright': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'LegalCopyright')),
+		'LegalTrademarks': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'LegalTrademarks')),
 		'OriginalFilename': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'OriginalFilename')),
-		'PrivateBuild':     forceUnicode(win32api.GetFileVersionInfo(filename, path % 'PrivateBuild')),
-		'ProductName':      forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductName')),
-		'ProductVersion':   forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductVersion'))
+		'PrivateBuild': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'PrivateBuild')),
+		'ProductName': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductName')),
+		'ProductVersion': forceUnicode(win32api.GetFileVersionInfo(filename, path % 'ProductVersion'))
 	}
 	logger.debug(u"File version info for '%s': %s" % (filename, info))
 	return info
 
+
 def getProgramFilesDir():
 	return getRegistryValue(HKEY_LOCAL_MACHINE, u'Software\\Microsoft\\Windows\\CurrentVersion', u'ProgramFilesDir')
+
 
 def getSystemDrive():
 	return forceUnicode(os.getenv('SystemDrive', u'c:'))
@@ -297,6 +316,7 @@ def getDefaultNetworkInterfaceName():
 		if interface.gatewayList.ipAddress:
 			return interface.description
 	return None
+
 
 class NetworkPerformanceCounter(threading.Thread):
 	def __init__(self, interface):
@@ -374,6 +394,7 @@ class NetworkPerformanceCounter(threading.Thread):
 	def getBytesOutPerSecond(self):
 		return self._bytesOutPerSecond
 
+
 class NetworkPerformanceCounterWMI(threading.Thread):
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
@@ -446,6 +467,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 
 	def getBytesOutPerSecond(self):
 		return self._bytesOutPerSecond
+
 
 class NetworkPerformanceCounterPDH(threading.Thread):
 	def __init__(self, interface):
@@ -569,6 +591,7 @@ def copyACL(src, dest):
 			dest.AddAuditAccessObjectAce(revision, ace[0][1], ace[1], ace[2], ace[3], ace[4], 1, 1)
 	return src.GetAceCount()
 
+
 def adjustPrivilege(priv, enable = 1):
 	# Get the process token.
 	flags = ntsecuritycon.TOKEN_ADJUST_PRIVILEGES | ntsecuritycon.TOKEN_QUERY
@@ -597,6 +620,7 @@ def getRegistryValue(key, subKey, valueName, reflection=True):
 			_winreg.EnableReflectionKey(hkey)
 	return value
 
+
 def setRegistryValue(key, subKey, valueName, value):
 	_winreg.CreateKey(key, subKey)
 	hkey = _winreg.OpenKey(key, subKey, 0, _winreg.KEY_WRITE)
@@ -604,6 +628,7 @@ def setRegistryValue(key, subKey, valueName, value):
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_DWORD, value)
 	else:
 		_winreg.SetValueEx(hkey, valueName, 0, _winreg.REG_SZ, value)
+
 
 def createRegistryKey(key, subKey):
 	_winreg.CreateKey(key, subKey)
@@ -625,6 +650,7 @@ def getFreeDrive(startLetter = 'a'):
 		if (win32file.GetDriveType(letter) == 1):
 			return letter
 	raise Exception(u'No free drive available')
+
 
 def getDiskSpaceUsage(path):
 	path = forceUnicode(path)
@@ -653,6 +679,7 @@ def getDiskSpaceUsage(path):
 
 	logger.info(u"Disk space usage for path '%s': %s" % (path, info))
 	return info
+
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
@@ -721,6 +748,7 @@ def mount(dev, mountpoint, **options):
 	else:
 		raise Exception(u"Cannot mount unknown fs type '%s'" % dev)
 
+
 def umount(mountpoint):
 	try:
 		# Remove connection and update user profile (remove persistent connection)
@@ -747,9 +775,11 @@ def getActiveConsoleSessionId():
 		logger.warning(u"Failed to get WTSGetActiveConsoleSessionId: %s, returning 0" % forceUnicode(e))
 		return 0
 
+
 def getActiveDesktopName():
 	desktop = win32service.OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
 	return forceUnicode(win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME))
+
 
 def getActiveSessionIds(winApiBugCommand = None):
 	sessionIds = []
@@ -776,6 +806,7 @@ def getActiveSessionIds(winApiBugCommand = None):
 			if not sessionId in sessionIds:
 				sessionIds.append(sessionId)
 	return sessionIds
+
 
 def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand = None):
 	logger.debug("Getting ActiveSessionId")
@@ -865,6 +896,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 		return defaultSessionId
 	return sessionIds[0]
 
+
 def getSessionInformation(sessionId, winApiBugCommand = None):
 	# info = {}
 	# for infoClass in ('WTSUserName', 'WTSApplicationName', 'WTSClientDirectory', 'WTSClientName', 'WTSDomainName', 'WTSInitialProgram',
@@ -881,19 +913,18 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 		wtsUserName = win32ts.WTSQuerySessionInformation(None, sessionId, win32ts.WTSUserName)
 	except:
 		pass
-	"""
-	'UserName': u'Administrator',
-	'AuthenticationPackage': u'NTLM',
-	'LogonServer': u'COMPUTERNAME',
-	'LogonId': 1753269L,
-	'Upn': u'',
-	'Session': 1,
-	'DnsDomainName': u'',
-	'Sid': <PySID object at 0x00CD7BA8>,
-	'LogonType': 10,
-	'LogonDomain': u'COMPUTERNAME',
-	'LogonTime': <PyTime:19.04.2010 16:33:07>}
-	"""
+
+	# 'UserName': u'Administrator',
+	# 'AuthenticationPackage': u'NTLM',
+	# 'LogonServer': u'COMPUTERNAME',
+	# 'LogonId': 1753269L,
+	# 'Upn': u'',
+	# 'Session': 1,
+	# 'DnsDomainName': u'',
+	# 'Sid': <PySID object at 0x00CD7BA8>,
+	# 'LogonType': 10,
+	# 'LogonDomain': u'COMPUTERNAME',
+	# 'LogonTime': <PyTime:19.04.2010 16:33:07>}
 	if sys.getwindowsversion()[0] == 5 and getArchitecture() == "x64":
 		logger.debug(u"Using Workarround for problems with buggy winapi from nt5 x64")
 		try:
@@ -951,6 +982,7 @@ def getSessionInformation(sessionId, winApiBugCommand = None):
 	else:
 		return {}
 
+
 def getActiveSessionInformation(winApiBugCommand = None):
 	info = []
 	for sessionId in getActiveSessionIds(winApiBugCommand):
@@ -979,6 +1011,7 @@ def getActiveSessionInformation(winApiBugCommand = None):
 		# info.append(getSessionInformation(sessionId, winApiBugCommand))
 	logger.debug(u"info: '%s'" % info)
 	return info
+
 
 def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 	sessionIds = []
@@ -1024,6 +1057,7 @@ def getUserSessionIds(username, winApiBugCommand = None, onlyNewestId = None):
 	else:
 		return sessionIds
 
+
 def logoffCurrentUser():
 	logger.notice("Logging off current user")
 	# win32api.ExitWindows()
@@ -1044,17 +1078,21 @@ def logoffCurrentUser():
 	else:
 		raise Exception(u"Operating system not supported")
 	runCommandInSession(
-			command              = command,
-			sessionId            = getActiveSessionId(),
-			waitForProcessEnding = False )
+		command=command,
+		sessionId=getActiveSessionId(),
+		waitForProcessEnding=False
+	)
+
 
 def lockWorkstation():
 	# windll.winsta.WinStationConnectW(0, 0, sessionId, "", 0)
 	# windll.user32.LockWorkStation()
 	runCommandInSession(
-			command              = u"rundll32.exe user32.dll,LockWorkStation",
-			sessionId            = getActiveSessionId(),
-			waitForProcessEnding = False )
+		command=u"rundll32.exe user32.dll,LockWorkStation",
+		sessionId=getActiveSessionId(),
+		waitForProcessEnding=False
+	)
+
 
 def reboot(wait=10):
 	logger.notice(u"Rebooting in %s seconds" % wait)
@@ -1062,26 +1100,19 @@ def reboot(wait=10):
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, u"Opsi reboot", wait, True, True)
 
+
 def shutdown(wait=10):
 	logger.notice(u"Shutting down in %s seconds" % wait)
 	wait = forceInt(wait)
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, u"Opsi shutdown", wait, True, False)
 
+
 def abortShutdown():
 	logger.notice(u"Aborting system shutdown")
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.AbortSystemShutdown(None)
 
-# def blockShutdown():
-# 	logger.notice(u"Blocking system shutdown")
-# 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
-# 	win32api.ShutdownBlockReasonCreate()
-
-# def unblockShutdown():
-# 	logger.notice(u"Unblocking system shutdown")
-# 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
-# 	win32api.ShutdownBlockReasonDestroy()
 
 def createWindowStation(name):
 	name = forceUnicode(name)
@@ -1093,6 +1124,7 @@ def createWindowStation(name):
 		return win32service.CreateWindowStation(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error as e:
 		logger.error(u"Failed to create window station '%s': %s" % (name, forceUnicode(e)))
+
 
 def createDesktop(name, runCommand=None):
 	name = forceUnicode(name)
@@ -1120,7 +1152,8 @@ def createDesktop(name, runCommand=None):
 		prc_info = win32process.CreateProcess(None, runCommand, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', s)
 	return hdesk
 
-def getDesktops(winsta = None):
+
+def getDesktops(winsta=None):
 	if not winsta:
 		winsta = win32service.GetProcessWindowStation()
 	desktops = []
@@ -1128,10 +1161,12 @@ def getDesktops(winsta = None):
 		desktops.append(forceUnicodeLower(d))
 	return desktops
 
+
 def switchDesktop(name):
 	name = forceUnicode(name)
 	hdesk = win32service.OpenDesktop(name, 0, 0, win32con.MAXIMUM_ALLOWED)
 	hdesk.SwitchDesktop()
+
 
 def addUserToDesktop(desktop, userSid):
 	'''
@@ -1139,20 +1174,19 @@ def addUserToDesktop(desktop, userSid):
 	discretionary access-control list. The old security descriptor for
 	desktop is returned.
 	'''
-
-	desktopAll  = 	win32con.DESKTOP_CREATEMENU      | \
-			win32con.DESKTOP_CREATEWINDOW    | \
-			win32con.DESKTOP_ENUMERATE       | \
-			win32con.DESKTOP_HOOKCONTROL     | \
-			win32con.DESKTOP_JOURNALPLAYBACK | \
-			win32con.DESKTOP_JOURNALRECORD   | \
-			win32con.DESKTOP_READOBJECTS     | \
-			win32con.DESKTOP_SWITCHDESKTOP   | \
-			win32con.DESKTOP_WRITEOBJECTS    | \
-			win32con.DELETE                  | \
-			win32con.READ_CONTROL            | \
-			win32con.WRITE_DAC               | \
-			win32con.WRITE_OWNER
+	desktopAll = win32con.DESKTOP_CREATEMENU | \
+		win32con.DESKTOP_CREATEWINDOW | \
+		win32con.DESKTOP_ENUMERATE | \
+		win32con.DESKTOP_HOOKCONTROL | \
+		win32con.DESKTOP_JOURNALPLAYBACK | \
+		win32con.DESKTOP_JOURNALRECORD | \
+		win32con.DESKTOP_READOBJECTS | \
+		win32con.DESKTOP_SWITCHDESKTOP | \
+		win32con.DESKTOP_WRITEOBJECTS | \
+		win32con.DELETE | \
+		win32con.READ_CONTROL | \
+		win32con.WRITE_DAC | \
+		win32con.WRITE_OWNER
 
 	securityDesc = win32security.GetUserObjectSecurity(desktop, win32con.DACL_SECURITY_INFORMATION)
 
@@ -1187,30 +1221,27 @@ def addUserToWindowStation(winsta, userSid):
 	discretionary access-control list. The old security descriptor for
 	winsta is returned.
 	'''
+	winstaAll = win32con.WINSTA_ACCESSCLIPBOARD | \
+		win32con.WINSTA_ACCESSGLOBALATOMS | \
+		win32con.WINSTA_CREATEDESKTOP | \
+		win32con.WINSTA_ENUMDESKTOPS | \
+		win32con.WINSTA_ENUMERATE | \
+		win32con.WINSTA_EXITWINDOWS | \
+		win32con.WINSTA_READATTRIBUTES | \
+		win32con.WINSTA_READSCREEN | \
+		win32con.WINSTA_WRITEATTRIBUTES | \
+		win32con.DELETE | \
+		win32con.READ_CONTROL | \
+		win32con.WRITE_DAC | \
+		win32con.WRITE_OWNER
 
-	winstaAll  =	win32con.WINSTA_ACCESSCLIPBOARD   | \
-			win32con.WINSTA_ACCESSGLOBALATOMS | \
-			win32con.WINSTA_CREATEDESKTOP     | \
-			win32con.WINSTA_ENUMDESKTOPS      | \
-			win32con.WINSTA_ENUMERATE         | \
-			win32con.WINSTA_EXITWINDOWS       | \
-			win32con.WINSTA_READATTRIBUTES    | \
-			win32con.WINSTA_READSCREEN        | \
-			win32con.WINSTA_WRITEATTRIBUTES   | \
-			win32con.DELETE                   | \
-			win32con.READ_CONTROL             | \
-			win32con.WRITE_DAC                | \
-			win32con.WRITE_OWNER
-
-	genericAccess = win32con.GENERIC_READ    | \
-			win32con.GENERIC_WRITE   | \
-			win32con.GENERIC_EXECUTE | \
-			win32con.GENERIC_ALL
+	genericAccess = win32con.GENERIC_READ | \
+		win32con.GENERIC_WRITE | \
+		win32con.GENERIC_EXECUTE | \
+		win32con.GENERIC_ALL
 
 	# Get the security description for winsta.
-	securityDesc = win32security.GetUserObjectSecurity(
-						winsta,
-						win32con.DACL_SECURITY_INFORMATION)
+	securityDesc = win32security.GetUserObjectSecurity(winsta, win32con.DACL_SECURITY_INFORMATION)
 
 	# Get discretionary access-control list (DACL) for winsta.
 	acl = securityDesc.GetSecurityDescriptorDacl()
@@ -1255,14 +1286,15 @@ def addUserToWindowStation(winsta, userSid):
 def which(cmd):
 	raise NotImplementedError(u"which() not implemented on windows")
 
+
 def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True):
-	cmd             = forceUnicode(cmd)
-	waitForEnding   = forceBool(waitForEnding)
-	getHandle       = forceBool(getHandle)
-	exitOnStderr    = forceBool(exitOnStderr)
-	captureStderr   = forceBool(captureStderr)
-	timeout         = forceInt(timeout)
-	shell              = forceBool(shell)
+	cmd = forceUnicode(cmd)
+	waitForEnding = forceBool(waitForEnding)
+	getHandle = forceBool(getHandle)
+	exitOnStderr = forceBool(exitOnStderr)
+	captureStderr = forceBool(captureStderr)
+	timeout = forceInt(timeout)
+	shell = forceBool(shell)
 
 	exitCode = 0
 	result = []
@@ -1282,10 +1314,10 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				stderr	= subprocess.PIPE
 			proc = subprocess.Popen(
 				cmd,
-				shell	= shell,
-				stdin	= subprocess.PIPE,
-				stdout	= subprocess.PIPE,
-				stderr	= stderr,
+				shell=shell,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=stderr,
 			)
 			if not encoding:
 				encoding = proc.stdout.encoding
@@ -1309,16 +1341,16 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				ret = proc.poll()
 				try:
 					chunk = proc.stdout.read()
-					if (len(chunk) > 0):
+					if len(chunk) > 0:
 						data += chunk
 				except IOError as e:
-					if (e.errno != 11):
+					if e.errno != 11:
 						raise
 
 				if captureStderr:
 					try:
 						chunk = proc.stderr.read()
-						if (len(chunk) > 0):
+						if len(chunk) > 0:
 							if exitOnStderr:
 								raise IOError(exitCode, u"Command '%s' failed: %s" % (cmd, chunk) )
 							data += chunk
@@ -1360,7 +1392,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 	return result
 
 
-def getPids(process, sessionId = None):
+def getPids(process, sessionId=None):
 	process = forceUnicode(process)
 	if not sessionId is None:
 		sessionId = forceInt(sessionId)
@@ -1375,9 +1407,10 @@ def getPids(process, sessionId = None):
 	pe32 = PROCESSENTRY32()
 	pe32.dwSize = sizeof(PROCESSENTRY32)
 	logger.debug2(u"Getting first process")
-	if ( Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE ):
+	if Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE:
 		logger.error(u"Failed to get first process")
 		return
+
 	while True:
 		pid = pe32.th32ProcessID
 		sid = u'unknown'
@@ -1397,7 +1430,8 @@ def getPids(process, sessionId = None):
 		logger.debug(u"No process with name %s found (session id: %s)" % (process, sessionId))
 	return processIds
 
-def getPid(process, sessionId = None):
+
+def getPid(process, sessionId=None):
 	process = forceUnicode(process)
 	if not sessionId is None:
 		sessionId = forceInt(sessionId)
@@ -1407,6 +1441,7 @@ def getPid(process, sessionId = None):
 	if processIds:
 		processId = processIds[0]
 	return processId
+
 
 def getProcessName(processId):
 	processId = forceInt(processId)
@@ -1430,7 +1465,7 @@ def getProcessName(processId):
 		pid = pe32.th32ProcessID
 		# logger.notice("Found process %s with pid %d in session %d" % (process, pid, sid))
 		# logger.notice("Found process %s with pid %d" % (pe32.szExeFile, pid))
-		if (pid == processId):
+		if pid == processId:
 			processName = forceUnicode(pe32.szExeFile)
 			break
 		if Process32Next(hProcessSnap, byref(pe32)) == win32con.FALSE:
@@ -1438,17 +1473,19 @@ def getProcessName(processId):
 	CloseHandle(hProcessSnap)
 	return processName
 
+
 def getProcessHandle(processId):
 	processId = forceInt(processId)
 	processHandle = win32api.OpenProcess(1, 0, processId)
 	return processHandle
+
 
 def getProcessWindowHandles(processId):
 	processId = forceInt(processId)
 	logger.info(u"Getting window handles of process with id %s" % processId)
 	def callback (windowHandle, windowHandles):
 		# if win32gui.IsWindowVisible(windowHandle) and win32gui.IsWindowEnabled(windowHandle):
-		if (win32process.GetWindowThreadProcessId(windowHandle)[1] == processId):
+		if win32process.GetWindowThreadProcessId(windowHandle)[1] == processId:
 			logger.debug(u"Found window %s of process with id %s" % (windowHandle, processId))
 			windowHandles.append(windowHandle)
 		return True
@@ -1456,12 +1493,14 @@ def getProcessWindowHandles(processId):
 	win32gui.EnumWindows(callback, windowHandles)
 	return windowHandles
 
+
 def closeProcessWindows(processId):
 	processId = forceInt(processId)
 	logger.info("Closing windows of process with id %s" % processId)
 	for windowHandle in getProcessWindowHandles(processId):
 		logger.debug("Sending WM_CLOSE message to window %s" % windowHandle)
 		win32gui.SendMessage(windowHandle, win32con.WM_CLOSE, 0, 0)
+
 
 def terminateProcess(processHandle=None, processId=None):
 	if not processId is None:
@@ -1475,7 +1514,8 @@ def terminateProcess(processHandle=None, processId=None):
 	win32process.TerminateProcess(processHandle, exitCode)
 	return exitCode
 
-def getUserToken(sessionId = None, duplicateFrom = u"winlogon.exe"):
+
+def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 	if not sessionId is None:
 		sessionId = forceInt(sessionId)
 	duplicateFrom = forceUnicode(duplicateFrom)
@@ -1488,36 +1528,36 @@ def getUserToken(sessionId = None, duplicateFrom = u"winlogon.exe"):
 		raise Exception(u"Failed to get user token, pid of '%s' not found in session '%s'" % (duplicateFrom, sessionId))
 	hProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, pid)
 	hPToken = win32security.OpenProcessToken(
-				hProcess,
-				win32con.TOKEN_ADJUST_PRIVILEGES|win32con.TOKEN_QUERY|\
-				win32con.TOKEN_DUPLICATE|win32con.TOKEN_ASSIGN_PRIMARY|\
-				win32con.TOKEN_READ|win32con.TOKEN_WRITE) # win32con.TOKEN_ADJUST_SESSIONID
+		hProcess,
+		win32con.TOKEN_ADJUST_PRIVILEGES|win32con.TOKEN_QUERY|\
+		win32con.TOKEN_DUPLICATE|win32con.TOKEN_ASSIGN_PRIMARY|\
+		win32con.TOKEN_READ|win32con.TOKEN_WRITE
+	)
 
 	id = win32security.LookupPrivilegeValue(None, win32security.SE_DEBUG_NAME)
 
 	newPrivileges = [(id, win32security.SE_PRIVILEGE_ENABLED)]
 
 	hUserTokenDup = win32security.DuplicateTokenEx(
-		ExistingToken = hPToken,
-		DesiredAccess = win32con.MAXIMUM_ALLOWED,
-		ImpersonationLevel = win32security.SecurityIdentification,
-		TokenType = ntsecuritycon.TokenPrimary,
-		TokenAttributes = None )
+		ExistingToken=hPToken,
+		DesiredAccess=win32con.MAXIMUM_ALLOWED,
+		ImpersonationLevel=win32security.SecurityIdentification,
+		TokenType=ntsecuritycon.TokenPrimary,
+		TokenAttributes=None
+	)
 
 	# Adjust Token privilege
-
 	win32security.SetTokenInformation(hUserTokenDup, ntsecuritycon.TokenSessionId, sessionId)
-
 	win32security.AdjustTokenPrivileges(hUserTokenDup, 0, newPrivileges)
 
 	return hUserTokenDup
 
-def runCommandInSession(command, sessionId = None, desktop = u"default", duplicateFrom = u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
+def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	command = forceUnicode(command)
 	if not sessionId is None:
 		sessionId = forceInt(sessionId)
 	desktop = forceUnicodeLower(desktop)
-	if (desktop.find(u'\\') == -1):
+	if desktop.find(u'\\') == -1:
 		desktop = u'winsta0\\' + desktop
 	duplicateFrom = forceUnicode(duplicateFrom)
 	waitForProcessEnding = forceBool(waitForProcessEnding)
@@ -1567,7 +1607,7 @@ def runCommandInSession(command, sessionId = None, desktop = u"default", duplica
 # -                                     USER / GROUP HANDLING                                         -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def createUser(username, password, groups = []):
+def createUser(username, password, groups=[]):
 	username = forceUnicode(username)
 	password = forceUnicode(password)
 	groups = forceUnicodeList(groups)
@@ -1582,13 +1622,13 @@ def createUser(username, password, groups = []):
 		raise ValueError(u"Can only handle domain %s" % getHostname().upper())
 
 	userData = {
-		'name':             username,
-		'full_name':        u"",
-		'password':         password,
-		'flags':            win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT,
-		'priv':             win32netcon.USER_PRIV_USER,
-		'home_dir':         None,
-		'home_dir_drive':   None,
+		'name': username,
+		'full_name': u"",
+		'password': password,
+		'flags': win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT,
+		'priv': win32netcon.USER_PRIV_USER,
+		'home_dir': None,
+		'home_dir_drive': None,
 		'primary_group_id': ntsecuritycon.DOMAIN_GROUP_RID_USERS,
 		'password_expired': 0
 	}
@@ -1597,16 +1637,16 @@ def createUser(username, password, groups = []):
 	win32net.NetUserAdd(u"\\\\" + domain, 1, userData)
 	if not groups:
 		return
-	u = { 'domainandname': domain + u'\\' + username }
+	u = {'domainandname': domain + u'\\' + username}
 	for group in groups:
 		logger.info(u"Adding user '%s' to group '%s'" % (username, group))
 		win32net.NetLocalGroupAddMembers(u"\\\\" + domain, group, 3, [ u ])
 
 
-def deleteUser(username, deleteProfile = True):
+def deleteUser(username, deleteProfile=True):
 	username = forceUnicode(username)
 	domain = getHostname()
-	if (username.find(u'\\') != -1):
+	if username.find(u'\\') != -1:
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 	domain = domain.upper()
@@ -1628,10 +1668,11 @@ def deleteUser(username, deleteProfile = True):
 	except win32net.error as e:
 		logger.info(u"Failed to delete user '%s': %s" % (username, forceUnicode(e)))
 
+
 def existsUser(username):
 	username = forceUnicode(username)
 	domain = getHostname()
-	if (username.find(u'\\') != -1):
+	if username.find(u'\\') != -1:
 		domain = username.split(u'\\')[0]
 		username = username.split(u'\\')[-1]
 	domain = domain.upper()
@@ -1643,11 +1684,13 @@ def existsUser(username):
 			return True
 	return False
 
+
 def getUserSidFromHandle(userHandle):
 	tic = win32security.GetTokenInformation(userHandle, ntsecuritycon.TokenGroups)
 	for (sid, flags) in tic:
 		if (flags & win32con.SE_GROUP_LOGON_ID):
 			return sid
+
 
 def getUserSid(username):
 	username = forceUnicode(username)
@@ -1658,6 +1701,7 @@ def getUserSid(username):
 	domain = domain.upper()
 	return win32security.ConvertSidToStringSid(win32security.LookupAccountName(None, domain + u'\\' + username)[0])
 
+
 def getAdminGroupName():
 	subAuths = ntsecuritycon.SECURITY_BUILTIN_DOMAIN_RID, ntsecuritycon.DOMAIN_ALIAS_RID_ADMINS
 	sidAdmins = win32security.SID(ntsecuritycon.SECURITY_NT_AUTHORITY, subAuths)
@@ -1665,8 +1709,9 @@ def getAdminGroupName():
 	logger.info(u"Admin group name is '%s'" % groupName)
 	return groupName
 
+
 class Impersonate:
-	def __init__(self, username=u"", password=u"", userToken = None, desktop = u"default"):
+	def __init__(self, username=u"", password=u"", userToken=None, desktop=u"default"):
 		if not username and not userToken:
 			raise Exception(u"Neither username nor user token given")
 		# if username and not existsUser(username):
@@ -1709,11 +1754,12 @@ class Impersonate:
 				# TODO: Use (UPN) format for username <USER>@<DOMAIN> ?
 				logger.debug(u"Logon user: '%s\\%s'" % (self.domain, self.username))
 				self.userToken = win32security.LogonUser(
-							self.username,
-							self.domain,
-							self.password,
-							logonType,
-							win32con.LOGON32_PROVIDER_DEFAULT)
+					self.username,
+					self.domain,
+					self.password,
+					logonType,
+					win32con.LOGON32_PROVIDER_DEFAULT
+				)
 
 			if newDesktop:
 				self.saveWindowStation = win32service.GetProcessWindowStation()
@@ -1723,10 +1769,10 @@ class Impersonate:
 				logger.debug(u"Got current desktop")
 
 				self.newWindowStation = win32service.OpenWindowStation(
-								self.winsta,
-								False,
-								win32con.READ_CONTROL |
-								win32con.WRITE_DAC)
+					self.winsta,
+					False,
+					win32con.READ_CONTROL | win32con.WRITE_DAC
+				)
 
 				self.newWindowStation.SetProcessWindowStation()
 				logger.debug(u"Process window station set")
@@ -1741,20 +1787,21 @@ class Impersonate:
 
 				if not self.newDesktop:
 					self.newDesktop = win32service.OpenDesktop(
-								self.desktop,
-								win32con.DF_ALLOWOTHERACCOUNTHOOK, #0,
-								True, #False,
-								win32con.READ_CONTROL |
-								win32con.WRITE_DAC |
-								win32con.DESKTOP_CREATEMENU |
-								win32con.DESKTOP_CREATEWINDOW |
-								win32con.DESKTOP_ENUMERATE |
-								win32con.DESKTOP_HOOKCONTROL |
-								win32con.DESKTOP_JOURNALPLAYBACK |
-								win32con.DESKTOP_JOURNALRECORD |
-								win32con.DESKTOP_READOBJECTS |
-								win32con.DESKTOP_SWITCHDESKTOP |
-								win32con.DESKTOP_WRITEOBJECTS)
+						self.desktop,
+						win32con.DF_ALLOWOTHERACCOUNTHOOK, #0,
+						True, #False,
+						win32con.READ_CONTROL |
+						win32con.WRITE_DAC |
+						win32con.DESKTOP_CREATEMENU |
+						win32con.DESKTOP_CREATEWINDOW |
+						win32con.DESKTOP_ENUMERATE |
+						win32con.DESKTOP_HOOKCONTROL |
+						win32con.DESKTOP_JOURNALPLAYBACK |
+						win32con.DESKTOP_JOURNALRECORD |
+						win32con.DESKTOP_READOBJECTS |
+						win32con.DESKTOP_SWITCHDESKTOP |
+						win32con.DESKTOP_WRITEOBJECTS
+					)
 				self.newDesktop.SetThreadDesktop()
 				logger.debug(u"Thread desktop set")
 
