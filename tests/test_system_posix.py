@@ -65,7 +65,7 @@ class PosixMethodsTestCase(unittest.TestCase):
 
 		expectedIds = [24093, 15884, 14849, 15401, 15688, 20496, 25574, 27443, 18172, 21605]
 
-		self.assertEquals(expectedIds, Posix.getActiveSessionIds(testdata))
+		self.assertEquals(expectedIds, Posix.getActiveSessionIds(data=testdata))
 
 	def testGetActiveSessionId(self):
 		self.assertEquals(type(1), type(Posix.getActiveSessionId()))
