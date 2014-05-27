@@ -3324,7 +3324,7 @@ def locateDHCPDInit(default=None):
 	raise RuntimeError(u"Could not locate dhcpd init file.")
 
 
-def getActiveSessionIds(data=None):
+def getActiveSessionIds(winApiBugCommand=None, data=None):
 	"""
 	Getting the IDs of the currently active sessions.
 
