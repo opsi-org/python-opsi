@@ -6,7 +6,7 @@ opsi python library - Util
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.4.2'
+__version__ = '4.0.5.1'
 
 import base64
 import codecs
@@ -365,51 +365,56 @@ def objectToHtml(obj, level=0):
 	if level == 0:
 		obj = serialize(obj)
 
-	html = u''
+	html = []
 	if type(obj) is types.ListType:
-		html += u'['
+		html.append(u'[')
 		if len(obj) > 0:
-			html += u'<div style="padding-left: 3em;">'
-			for i in range( len(obj) ):
-				html += objectToHtml(obj[i], level+1)
-				if (i < len(obj)-1):
-					html += u',<br />\n'
-			html += u'</div>'
-		html += u']'
+			html.append(u'<div style="padding-left: 3em;">')
+			for i in range(len(obj)):
+				html.append(objectToHtml(obj[i], level+1))
+				if i < len(obj) - 1:
+					html.append(u',<br />\n')
+			html.append(u'</div>')
+		html.append(u']')
 	elif type(obj) is types.DictType:
-		html += u'{'
+		html.append(u'{')
 		if len(obj) > 0:
-			html += u'<div style="padding-left: 3em;">'
+			html.append(u'<div style="padding-left: 3em;">')
 			i = 0
 			for (key, value) in obj.items():
-				html += u'<font class="json_key">%s</font>: ' % objectToHtml(key)
-				html += objectToHtml(value, level+1)
-				if (i < len(obj)-1):
-					html += u',<br />\n'
-				i+=1
-			html += u'</div>'
-		html += u'}'
+				html.append(u'<font class="json_key">')
+				html.append(objectToHtml(key))
+				html.append(u'</font>: ')
+				html.append(objectToHtml(value, level+1))
+				if i < len(obj) - 1:
+					html.append(u',<br />\n')
+				i += 1
+			html.append(u'</div>')
+		html.append(u'}')
 	elif type(obj) is types.BooleanType:
-		html += str(obj).lower()
+		html.append(str(obj).lower())
 	elif type(obj) is types.NoneType:
-		html += 'null'
+		html.append('null')
 	else:
-		isStr = type(obj) in (str, unicode)
-		if isStr:
-			html += u'"'
-		html += forceUnicode(obj)\
-			.replace(u'\r', u'')\
-			.replace(u'\t', u'   ')\
-			.replace(u'&',  u'&amp;')\
-			.replace(u'"',  u'&quot;')\
-			.replace(u"'",  u'&apos;')\
-			.replace(u' ',  u'&nbsp;')\
-			.replace(u'<',  u'&lt;')\
-			.replace(u'>',  u'&gt;')\
-			.replace(u'\n', u'<br />\n')
-		if isStr:
-			html += u'"'
-	return html
+		if type(obj) in (str, unicode):
+			html.append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
+		else:
+			html.append(replaceSpecialHTMLCharacters(obj))
+
+	return u''.join(html)
+
+
+def replaceSpecialHTMLCharacters(text):
+	return forceUnicode(text)\
+		.replace(u'\r', u'')\
+		.replace(u'\t', u'   ')\
+		.replace(u'&',  u'&amp;')\
+		.replace(u'"',  u'&quot;')\
+		.replace(u"'",  u'&apos;')\
+		.replace(u' ',  u'&nbsp;')\
+		.replace(u'<',  u'&lt;')\
+		.replace(u'>',  u'&gt;')\
+		.replace(u'\n', u'<br />\n')
 
 
 def compareVersions(v1, condition, v2):
