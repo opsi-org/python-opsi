@@ -48,30 +48,68 @@ class IPAddressInNetwork(unittest.TestCase):
 
 
 class ObjectToHTMLTestCase(unittest.TestCase):
-    def testWorkingWithManyObjects(self):
-        obj = []
-        for i in range(1000):
-            obj.append(
-    			LocalbootProduct(
-					id='product%d' % i,
-					productVersion=random.choice(('1.0', '2', 'xxx', '3.1', '4')),
-					packageVersion=random.choice(('1', '2', 'y', '3', '10', 11, 22)),
-					name='Product %d' % i,
-					licenseRequired=random.choice((None, True, False)),
-					setupScript=random.choice(('setup.ins', None)),
-					uninstallScript=random.choice(('uninstall.ins', None)),
-					updateScript=random.choice(('update.ins', None)),
-					alwaysScript=random.choice(('always.ins', None)),
-					onceScript=random.choice(('once.ins', None)),
-					priority=random.choice((-100, -90, -30, 0, 30, 40, 60, 99)),
-					description=random.choice(('Test product %d' % i, 'Some product', '--------', '', None)),
-					advice=random.choice(('Nothing', 'Be careful', '--------', '', None)),
-					changelog=None,
-					windowsSoftwareIds=None
-			)
-          )
+    class ProductFactory(object):
+        productVersions = ('1.0', '2', 'xxx', '3.1', '4')
+        packageVersions = ('1', '2', 'y', '3', '10', 11, 22)
+        licenseRequirements = (None, True, False)
+        setupScripts = ('setup.ins', None)
+        updateScripts = ('update.ins', None)
+        uninstallScripts = ('uninstall.ins', None)
+        alwaysScripts = ('always.ins', None)
+        onceScripts = ('once.ins', None)
+        priorities = (-100, -90, -30, 0, 30, 40, 60, 99)
+        descriptions = ['Test product', 'Some product', '--------', '', None]
+        advices = ('Nothing', 'Be careful', '--------', '', None)
+
+        @classmethod
+        def generateLocalbootProduct(self, index=0):
+            return LocalbootProduct(
+                id='product{0}'.format(index),
+                productVersion=random.choice(self.productVersions),
+                packageVersion=random.choice(self.packageVersions),
+                name='Product {0}'.format(index),
+                licenseRequired=random.choice(self.licenseRequirements),
+                setupScript=random.choice(self.setupScripts),
+                uninstallScript=random.choice(self.uninstallScripts),
+                updateScript=random.choice(self.updateScripts),
+                alwaysScript=random.choice(self.alwaysScripts),
+                onceScript=random.choice(self.onceScripts),
+                priority=random.choice(self.priorities),
+                description=random.choice(self.descriptions),
+                advice=random.choice(self.advices),
+                changelog=None,
+                windowsSoftwareIds=None
+            )
+
+    def testWorkingWithManyObjectsMustNotFail(self):
+        obj = [
+            self.ProductFactory.generateLocalbootProduct(i)
+            for i in range(1024)
+        ]
 
         objectToHtml(obj, level=0)
+
+    def testCheckingOutput(self):
+        product = LocalbootProduct(
+            id='htmltestproduct',
+            productVersion='3.1',
+            packageVersion='1',
+            name='Product HTML Test',
+            licenseRequired=False,
+            setupScript='setup.ins',
+            uninstallScript='uninstall.ins',
+            updateScript='update.ins',
+            alwaysScript='always.ins',
+            onceScript='once.ins',
+            priority=0,
+            description="asdf",
+            advice="lolnope",
+            changelog=None,
+            windowsSoftwareIds=None
+        )
+
+        expected = u'{<div style="padding-left: 3em;"><font class="json_key">"onceScript"</font>: "once.ins",<br />\n<font class="json_key">"windowsSoftwareIds"</font>: null,<br />\n<font class="json_key">"description"</font>: "asdf",<br />\n<font class="json_key">"advice"</font>: "lolnope",<br />\n<font class="json_key">"alwaysScript"</font>: "always.ins",<br />\n<font class="json_key">"updateScript"</font>: "update.ins",<br />\n<font class="json_key">"productClassIds"</font>: null,<br />\n<font class="json_key">"id"</font>: "htmltestproduct",<br />\n<font class="json_key">"licenseRequired"</font>: false,<br />\n<font class="json_key">"ident"</font>: "htmltestproduct;3.1;1",<br />\n<font class="json_key">"name"</font>: "Product&nbsp;HTML&nbsp;Test",<br />\n<font class="json_key">"changelog"</font>: null,<br />\n<font class="json_key">"customScript"</font>: null,<br />\n<font class="json_key">"uninstallScript"</font>: "uninstall.ins",<br />\n<font class="json_key">"userLoginScript"</font>: null,<br />\n<font class="json_key">"priority"</font>: 0,<br />\n<font class="json_key">"productVersion"</font>: "3.1",<br />\n<font class="json_key">"packageVersion"</font>: "1",<br />\n<font class="json_key">"type"</font>: "LocalbootProduct",<br />\n<font class="json_key">"setupScript"</font>: "setup.ins"</div>}'
+        self.assertEquals(expected, objectToHtml(product))
 
 
 class UtilTestCase(unittest.TestCase):
