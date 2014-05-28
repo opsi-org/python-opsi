@@ -278,39 +278,48 @@ def timestamp(secs=0, dateOnly=False):
 
 
 def objectToBeautifiedText(obj, level=0):
-	if (level == 0):
+	if level == 0:
 		obj = serialize(obj)
 
-	hspace = level*10
-	text = u''
+	indent = u' ' * (level * 10)
+	text = []
 	if type(obj) is types.ListType:
-		text = u'%s%s' % (text, u' '*hspace + u'[ \n')
-		for i in range( len(obj) ):
+		text.append(u'\n')
+		text.append(indent)
+		text.append(u'[ \n')
+		for i in range(len(obj)):
 			if not type(obj[i]) in (types.DictType, types.ListType):
-				text = u'%s%s' % (text, u' '*hspace)
-			text = u'%s%s' % (text, objectToBeautifiedText(obj[i], level+1))
+				text.append(indent)
+			text.append(objectToBeautifiedText(obj[i], level + 1))
 
-			if (i < len(obj)-1):
-				text = u"%s%s" % (text, u',\n')
-		text = u'\n%s%s]' % (text, u' '*hspace)
+			if i < len(obj) - 1:
+				text.append(u',\n')
+
+		text.append(indent)
+		text.append(u']')
 	elif type(obj) is types.DictType:
-		text = u'%s%s{\n' % (text, u' '*hspace)
+		text.append(indent)
+		text.append(u'{\n')
 		i = 0
 		for (key, value) in obj.items():
-			text = u'%s%s"%s" : ' % (text, u' '*hspace, key)
+			text.append(indent)
+			text.append(key.join((u'"', u'" : ')))
 			if type(value) in (types.DictType, types.ListType):
-				text = u'%s\n' % text
-			text += objectToBeautifiedText(value, level+1)
+				text.append(u'\n')
+			text.append(objectToBeautifiedText(value, level + 1))
 
-			if (i < len(obj)-1):
-				text = u'%s,\n' % text
-			i+=1
-		text = u'%s%s\n}' % (text, u' '*hspace)
+			if i < len(obj) - 1:
+				text.append(u',\n')
+			i += 1
+
+		text.append(indent)
+		text.append(u'\n}')
 	elif type(obj) is str:
-		text = u'%s%s' % (text, toJson(forceUnicode(obj)))
+		text.append(toJson(forceUnicode(obj)))
 	else:
-		text = u'%s%s' % (text, toJson(obj))
-	return text
+		text.append(toJson(obj))
+
+	return ''.join(text)
 
 
 def objectToBash(obj, bashVars={}, level=0):

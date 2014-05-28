@@ -12,7 +12,7 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * configed: direct access for mysql-backend users
   * forceUrl method don't convert value to lower
   * OpsiBackupArchive: get path to mysqldump via which
-  * Speeding up objectToHtml
+  * Speeding up objectToHtml, objectToBeautifiedText
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 May 2014 14:29:25 +0200
 
