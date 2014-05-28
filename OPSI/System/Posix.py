@@ -528,62 +528,71 @@ class NetworkPerformanceCounter(threading.Thread):
 		return self._bytesOutPerSecond
 
 
-def getDHCPResult(device):
+def getDHCPResult(device, leasesFile=None):
 	"""
-	Reads DHCP result from pump
-	returns possible key/values:
-	ip, netmask, bootserver, nextserver, gateway, bootfile, hostname, domain.
-	keys are converted to lower case
+	Get the settings of the current DHCP lease.
+
+	It first tries to read the value from leases files and then tries
+	to read the values from pump.
+
+	:param leasesFile: The file to read the leases from.
+	:type leasesFile: str
+	:return: Settings of the lease. All keys are lowercase. Possible \
+keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
+``gateway``, ``bootfile``, ``hostname``, ``domain``.
+	:returntype: dict
 	"""
 	if not device:
 		raise Exception(u"No device given")
 
+	if not leasesFile:
+		if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
+			# old style dhcp.leases handling should be work
+			# will be removed, if precise bootimage is in testing.
+			leasesFile = DHCLIENT_LEASES_FILE_OLD
+		else:
+			leasesFile = DHCLIENT_LEASES_FILE
+
 	dhcpResult = {}
-	if os.path.exists(DHCLIENT_LEASES_FILE_OLD):
-		# old style dhcp.leases handling should be work
-		# will be removed, if precise bootimage is in testing.
-		DHCLIENT_LEASES_FILE = DHCLIENT_LEASES_FILE_OLD
-	if os.path.exists(DHCLIENT_LEASES_FILE):
-		f = None
-		try:
-			f = open(DHCLIENT_LEASES_FILE)
-			currentInterface = None
-			for line in f.readlines():
-				line = line.strip()
-				if line.endswith(';'):
-					line = line[:-1].strip()
-				if line.startswith('interface '):
-					currentInterface = line.split('"')[1]
-				if (device != currentInterface):
-					continue
-				if line.startswith('filename '):
-					dhcpResult['bootfile'] = dhcpResult['filename'] = line.split('"')[1].strip()
-				elif line.startswith('option domain-name '):
-					dhcpResult['domain'] = dhcpResult['domain-name'] = line.split('"')[1].strip()
-				elif line.startswith('option domain-name-servers '):
-					dhcpResult['nameservers'] = dhcpResult['domain-name-servers'] = line.split(' ', 2)[-1]
-				elif line.startswith('fixed-address '):
-					dhcpResult['ip'] = dhcpResult['fixed-address'] = line.split(' ', 1)[-1]
-				elif line.startswith('option host-name '):
-					dhcpResult['hostname'] = dhcpResult['host-name'] = line.split('"')[1].strip()
-				elif line.startswith('option subnet-mask '):
-					dhcpResult['netmask'] = dhcpResult['subnet-mask'] = line.split(' ', 2)[-1]
-				elif line.startswith('option routers '):
-					dhcpResult['gateways'] = dhcpResult['routers'] = line.split(' ', 2)[-1]
-				elif line.startswith('option netbios-name-servers '):
-					dhcpResult['netbios-name-servers'] = line.split(' ', 2)[-1]
-				elif line.startswith('option dhcp-server-identifier '):
-					dhcpResult['bootserver'] = dhcpResult['dhcp-server-identifier'] = line.split(' ', 2)[-1]
-				elif line.startswith('renew '):
-					dhcpResult['renew'] = line.split(' ', 1)[-1]
-				elif line.startswith('renew '):
-					dhcpResult['rebind'] = line.split(' ', 1)[-1]
-				elif line.startswith('expire '):
-					dhcpResult['expire'] = line.split(' ', 1)[-1]
-		except Exception as e:
-			logger.warning(e)
-		if f:
-			f.close()
+	if os.path.exists(leasesFile):
+		with open(leasesFile) as f:
+			try:
+				currentInterface = None
+				for line in f:
+					line = line.strip()
+					if line.endswith(';'):
+						line = line[:-1].strip()
+					if line.startswith('interface '):
+						currentInterface = line.split('"')[1]
+					if (device != currentInterface):
+						continue
+
+					if line.startswith('filename '):
+						dhcpResult['bootfile'] = dhcpResult['filename'] = line.split('"')[1].strip()
+					elif line.startswith('option domain-name '):
+						dhcpResult['domain'] = dhcpResult['domain-name'] = line.split('"')[1].strip()
+					elif line.startswith('option domain-name-servers '):
+						dhcpResult['nameservers'] = dhcpResult['domain-name-servers'] = line.split(' ', 2)[-1]
+					elif line.startswith('fixed-address '):
+						dhcpResult['ip'] = dhcpResult['fixed-address'] = line.split(' ', 1)[-1]
+					elif line.startswith('option host-name '):
+						dhcpResult['hostname'] = dhcpResult['host-name'] = line.split('"')[1].strip()
+					elif line.startswith('option subnet-mask '):
+						dhcpResult['netmask'] = dhcpResult['subnet-mask'] = line.split(' ', 2)[-1]
+					elif line.startswith('option routers '):
+						dhcpResult['gateways'] = dhcpResult['routers'] = line.split(' ', 2)[-1]
+					elif line.startswith('option netbios-name-servers '):
+						dhcpResult['netbios-name-servers'] = line.split(' ', 2)[-1]
+					elif line.startswith('option dhcp-server-identifier '):
+						dhcpResult['bootserver'] = dhcpResult['dhcp-server-identifier'] = line.split(' ', 2)[-1]
+					elif line.startswith('renew '):
+						dhcpResult['renew'] = line.split(' ', 1)[-1]
+					elif line.startswith('rebind '):
+						dhcpResult['rebind'] = line.split(' ', 1)[-1]
+					elif line.startswith('expire '):
+						dhcpResult['expire'] = line.split(' ', 1)[-1]
+			except Exception as e:
+				logger.warning(e)
 	else:
 		# Try pump
 		try:
@@ -606,6 +615,7 @@ def getDHCPResult(device):
 		except Exception as e:
 			logger.warning(e)
 	return dhcpResult
+
 
 def ifconfig(device, address, netmask=None):
 	cmd = u'%s %s %s' % (which('ifconfig'), device, forceIpAddress(address))
