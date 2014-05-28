@@ -50,7 +50,7 @@ class ThreadTestCase(unittest.TestCase):
     def test_stopPool(self):
         self.pool.adjustSize(size=10)
         for i in range(5):
-            time.sleep(1)
+            time.sleep(0.1)
         numThreads = threading.activeCount() - len(self.pool.worker)
         self.pool.stop()
 
@@ -73,9 +73,9 @@ class ThreadTestCase(unittest.TestCase):
         #give thread time to finish
         time.sleep(1)
 
-        self.assertTrue(result[0], "Expected callback success to be 'True', but got %s"%result[0])
-        self.assertEqual(result[1], 'test', "Expected callback result to be 'test', but got %s"%result[1])
-        self.assertEqual(None, result[2], "Expected function to run successfully, but got error %s"% result[2])
+        self.assertEqual(True, result[0])
+        self.assertEqual(result[1], 'test')
+        self.assertEqual(None, result[2])
 
     def test_workerCallbackWithException(self):
         self.pool.adjustSize(2)
@@ -86,7 +86,6 @@ class ThreadTestCase(unittest.TestCase):
             result.append(returned)
             result.append(errors)
 
-
         def raiseError():
             raise Exception("TestException")
 
@@ -95,9 +94,9 @@ class ThreadTestCase(unittest.TestCase):
         #give thread time to finish
         time.sleep(1)
 
-        self.assertFalse(result[0], "Expected callback success to be 'False', but got %s"%result[0])
-        self.assertEqual(None, result[1], "Expected callback to return no result, but got %s"%result[1])
-        self.assertNotEqual(None, result[2], "Expected function to run successfully, but got error %s"% result[2])
+        self.assertEqual(False, result[0])
+        self.assertEqual(None, result[1])
+        self.assertNotEqual(None, result[2])
 
     def test_invalidThreadPoolSize(self):
         try:
@@ -105,7 +104,7 @@ class ThreadTestCase(unittest.TestCase):
             self.fail("ThreadPool has an invalid size, but no exception was raised.")
         except ThreadPoolException as e:
             return
-        except Exception, e:
+        except Exception as e:
             self.fail(e)
 
     def test_adjustPoolSize(self):
@@ -142,7 +141,7 @@ class ThreadTestCase(unittest.TestCase):
         "Expected more tasks in Queue than workers in pool, but got %s tasks and %s worker" % (self.pool.jobQueue.unfinished_tasks, len(self.pool.worker)))
 
         for i in range(10):
-            time.sleep(1)
+            time.sleep(0.4)
         self.assertEquals(5, len(results), "Expected %s results but, but got %s" % (5, len(results)))
 
     def test_globalPool(self):
@@ -175,8 +174,7 @@ class ThreadTestCase(unittest.TestCase):
         time.sleep(1)
         self.assertEquals(10, len(results), "Expected %s results, but got %s" % (10, len(results)))
 
-        time.sleep(1)
-        time.sleep(1)
+        time.sleep(2)
         results = []
         for i in range(10):
             self.pool.addJob(shortJob, callback=callback)
@@ -193,16 +191,16 @@ class ThreadTestCase(unittest.TestCase):
             results.append(success)
 
         def sleepJob():
-            time.sleep(3)
+            time.sleep(2)
 
-        for i in range(20):
+        for i in range(10):
             self.pool.addJob(sleepJob, callback=callback)
-        time.sleep(4)
+        time.sleep(3)
         self.assertEqual(len(results), 2, "Expected %s results, but got %s" % (2, len(results)))
 
-        self.pool.adjustSize(20)
-        time.sleep(4)
-        self.assertEquals(len(results), 20, "Expected %s results, but got %s" % (20, len(results)))
+        self.pool.adjustSize(10)
+        time.sleep(3)
+        self.assertEquals(len(results), 10, "Expected %s results, but got %s" % (10, len(results)))
 
     def test_shrink(self):
         self.pool.adjustSize(5)
@@ -214,19 +212,19 @@ class ThreadTestCase(unittest.TestCase):
             results.append(success)
 
         def sleepJob():
-            time.sleep(3)
+            time.sleep(2)
 
         for i in range(12):
             self.pool.addJob(sleepJob, callback=callback)
-        time.sleep(4)
+        time.sleep(3)
         self.assertEqual(len(results), 5, "Expected %s results, but got %s" % (5, len(results)))
 
         self.pool.adjustSize(1)
-        time.sleep(3)
+        time.sleep(2)
         self.assertEquals(len(results), 10,  "Expected %s results, but got %s" % (10, len(results)))
-        time.sleep(3)
+        time.sleep(2)
         self.assertEquals(len(results), 11,  "Expected %s results, but got %s" % (11, len(results)))
-        time.sleep(3)
+        time.sleep(2)
         self.assertEquals(len(results), 12,  "Expected %s results, but got %s" % (12, len(results)))
 
 
