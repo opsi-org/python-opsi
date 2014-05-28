@@ -559,10 +559,10 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 
 	dhcpResult = {}
 	if os.path.exists(leasesFile):
-		with open(leasesFile) as f:
+		with open(leasesFile) as leasesFileHandler:
 			try:
 				currentInterface = None
-				for line in f:
+				for line in leasesFileHandler:
 					line = line.strip()
 					if line.endswith(';'):
 						line = line[:-1].strip()
@@ -595,8 +595,8 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 						dhcpResult['rebind'] = line.split(' ', 1)[-1]
 					elif line.startswith('expire '):
 						dhcpResult['expire'] = line.split(' ', 1)[-1]
-			except Exception as e:
-				logger.warning(e)
+			except Exception as error:
+				logger.warning(error)
 	else:
 		logger.debug('Leases file {0} does not exist.'.format(leasesFile))
 		logger.debug('Trying to use pump for getting dhclient info.')
@@ -619,8 +619,8 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 				# seperated by whitespace, so we split all values at
 				# whitespace and take the first element
 				dhcpResult[keyValue[0].replace(u' ', u'').lower()] = keyValue[1].strip().split()[0]
-		except Exception as e:
-			logger.warning(e)
+		except Exception as error:
+			logger.warning(error)
 	return dhcpResult
 
 
