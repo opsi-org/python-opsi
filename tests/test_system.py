@@ -56,10 +56,12 @@ class CopyFilesTestCase(unittest.TestCase):
 		del self.testDir
 
 	def _fillDirectoryWithFilesAndFolders(self):
+		fileContent = 'x'*10*1024
+
 		for filename in self.EXAMPLE_FILENAMES:
 			pathToFile = os.path.join(self.srcDir, filename)
 			with open(pathToFile, 'w') as outputFile:
-				outputFile.write('x'*10*1024*1024)
+				outputFile.write(fileContent)
 
 		for dirname in self.EXAMPLE_DIRECTORIES:
 			pathToDir = os.path.join(self.srcDir, dirname)
@@ -68,7 +70,7 @@ class CopyFilesTestCase(unittest.TestCase):
 			for filename in self.EXAMPLE_FILENAMES:
 				pathToFile = os.path.join(pathToDir, filename)
 				with open(pathToFile, 'w') as outputFile:
-					outputFile.write('x'*20*1024*1024)
+					outputFile.write(fileContent)
 
 	def _makeSureFilesAndFoldersExistAtDestination(self):
 		for filename in self.EXAMPLE_FILENAMES:
