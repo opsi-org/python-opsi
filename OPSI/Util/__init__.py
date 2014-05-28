@@ -283,41 +283,43 @@ def objectToBeautifiedText(obj, level=0):
 
 	indent = u' ' * (level * 10)
 	text = []
+	append = text.append
+
 	if type(obj) is types.ListType:
-		text.append(u'\n')
-		text.append(indent)
-		text.append(u'[ \n')
+		append(u'\n')
+		append(indent)
+		append(u'[ \n')
 		for i in range(len(obj)):
 			if not type(obj[i]) in (types.DictType, types.ListType):
-				text.append(indent)
-			text.append(objectToBeautifiedText(obj[i], level + 1))
+				append(indent)
+			append(objectToBeautifiedText(obj[i], level + 1))
 
 			if i < len(obj) - 1:
-				text.append(u',\n')
+				append(u',\n')
 
-		text.append(indent)
-		text.append(u']')
+		append(indent)
+		append(u']')
 	elif type(obj) is types.DictType:
-		text.append(indent)
-		text.append(u'{\n')
+		append(indent)
+		append(u'{\n')
 		i = 0
 		for (key, value) in obj.items():
-			text.append(indent)
-			text.append(key.join((u'"', u'" : ')))
+			append(indent)
+			append(key.join((u'"', u'" : ')))
 			if type(value) in (types.DictType, types.ListType):
-				text.append(u'\n')
-			text.append(objectToBeautifiedText(value, level + 1))
+				append(u'\n')
+			append(objectToBeautifiedText(value, level + 1))
 
 			if i < len(obj) - 1:
-				text.append(u',\n')
+				append(u',\n')
 			i += 1
 
-		text.append(indent)
-		text.append(u'\n}')
+		append(indent)
+		append(u'\n}')
 	elif type(obj) is str:
-		text.append(toJson(forceUnicode(obj)))
+		append(toJson(forceUnicode(obj)))
 	else:
-		text.append(toJson(obj))
+		append(toJson(obj))
 
 	return ''.join(text)
 
@@ -381,40 +383,42 @@ def objectToHtml(obj, level=0):
 		obj = serialize(obj)
 
 	html = []
+	append = html.append
+
 	if type(obj) is types.ListType:
-		html.append(u'[')
+		append(u'[')
 		if len(obj) > 0:
-			html.append(u'<div style="padding-left: 3em;">')
+			append(u'<div style="padding-left: 3em;">')
 			for i in range(len(obj)):
-				html.append(objectToHtml(obj[i], level+1))
+				append(objectToHtml(obj[i], level+1))
 				if i < len(obj) - 1:
-					html.append(u',<br />\n')
-			html.append(u'</div>')
-		html.append(u']')
+					append(u',<br />\n')
+			append(u'</div>')
+		append(u']')
 	elif type(obj) is types.DictType:
-		html.append(u'{')
+		append(u'{')
 		if len(obj) > 0:
-			html.append(u'<div style="padding-left: 3em;">')
+			append(u'<div style="padding-left: 3em;">')
 			i = 0
 			for (key, value) in obj.items():
-				html.append(u'<font class="json_key">')
-				html.append(objectToHtml(key))
-				html.append(u'</font>: ')
-				html.append(objectToHtml(value, level+1))
+				append(u'<font class="json_key">')
+				append(objectToHtml(key))
+				append(u'</font>: ')
+				append(objectToHtml(value, level+1))
 				if i < len(obj) - 1:
-					html.append(u',<br />\n')
+					append(u',<br />\n')
 				i += 1
-			html.append(u'</div>')
-		html.append(u'}')
+			append(u'</div>')
+		append(u'}')
 	elif type(obj) is types.BooleanType:
-		html.append(str(obj).lower())
+		append(str(obj).lower())
 	elif type(obj) is types.NoneType:
-		html.append('null')
+		append('null')
 	else:
 		if type(obj) in (str, unicode):
-			html.append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
+			append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
 		else:
-			html.append(replaceSpecialHTMLCharacters(obj))
+			append(replaceSpecialHTMLCharacters(obj))
 
 	return u''.join(html)
 
