@@ -322,7 +322,13 @@ def objectToBeautifiedText(obj, level=0):
 	return ''.join(text)
 
 
-def objectToBash(obj, bashVars={}, level=0):
+def objectToBash(obj, bashVars=None, level=0):
+	"""
+	:type bashVars: dict
+	"""
+	if bashVars is None:
+		bashVars = {}
+
 	if level == 0:
 		obj = serialize(obj)
 
