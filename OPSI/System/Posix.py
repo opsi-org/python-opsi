@@ -678,7 +678,7 @@ def which(cmd):
 
 def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
 	"""
-	Executes a command and returns output lines as list
+	Executes a command.
 
 	:param nowait: If this is ``True`` the command will be executed and \
 no waiting for it to finish will be done.
@@ -701,6 +701,9 @@ will be redirected to *stdout*.
 	:param timeout: The time in seconds after that the execution will \
 be aborted.
 	:type timeout: int
+	:return: If the command finishes and we wait for it to finish the
+output will be returned.
+	:returntype: list
 	"""
 	nowait = forceBool(nowait)
 	getHandle = forceBool(getHandle)
