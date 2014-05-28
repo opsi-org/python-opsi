@@ -679,13 +679,34 @@ def which(cmd):
 def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0):
 	"""
 	Executes a command and returns output lines as list
-	"""
 
-	nowait          = forceBool(nowait)
-	getHandle       = forceBool(getHandle)
-	exitOnStderr    = forceBool(exitOnStderr)
-	captureStderr   = forceBool(captureStderr)
-	timeout         = forceInt(timeout)
+	:param nowait: If this is ``True`` the command will be executed and \
+no waiting for it to finish will be done.
+	:type nowait: bool
+	:param getHandle: If this is ``True`` the handle the reference to \
+the command output will be returned.
+	:type getHandle: bool
+	:param ignoreExitCode: Ignore exit codes of the program. This can \
+be ``True`` to ignore all exit codes or a list of specific exit codes \
+that should be ignored.
+	:type ignoreExitCode: bool or list
+	:param exitOnStderr: If this is ``True`` output on stderr will be \
+interpreted as an failed execution and will throw an Exception.
+	:type exitOnStderr: bool
+	:param captureStderr: If this is ``True`` the output of *stderr* \
+will be redirected to *stdout*.
+	:type captureStderr: bool
+	:param encoding: The encoding to be used to decode the output.
+	:type encoding: str
+	:param timeout: The time in seconds after that the execution will \
+be aborted.
+	:type timeout: int
+	"""
+	nowait = forceBool(nowait)
+	getHandle = forceBool(getHandle)
+	exitOnStderr = forceBool(exitOnStderr)
+	captureStderr = forceBool(captureStderr)
+	timeout = forceInt(timeout)
 
 	exitCode = 0
 	result = []
@@ -711,18 +732,20 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 				stderr	= subprocess.PIPE
 			proc = subprocess.Popen(
 				cmd,
-				shell	= True,
-				stdin	= subprocess.PIPE,
-				stdout	= subprocess.PIPE,
-				stderr	= stderr,
+				shell=True,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=stderr,
 			)
+
 			if not encoding:
 				encoding = proc.stdin.encoding
-				if (encoding == 'ascii'): encoding = 'utf-8'
+				if encoding == 'ascii':
+					encoding = 'utf-8'
 			if not encoding:
 				encoding = locale.getpreferredencoding()
-				if (encoding == 'ascii'): encoding = 'utf-8'
-
+				if encoding == 'ascii':
+					encoding = 'utf-8'
 			logger.info(u"Using encoding '%s'" % encoding)
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
@@ -737,18 +760,18 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 				ret = proc.poll()
 				try:
 					chunk = proc.stdout.read()
-					if (len(chunk) > 0):
+					if len(chunk) > 0:
 						data += chunk
 				except IOError as e:
-					if (e.errno != 11):
+					if e.errno != 11:
 						raise
 
 				if captureStderr:
 					try:
 						chunk = proc.stderr.read()
-						if (len(chunk) > 0):
+						if len(chunk) > 0:
 							if exitOnStderr:
-								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk) )
+								raise Exception(u"Command '%s' failed: %s" % (cmd, chunk))
 							data += chunk
 					except IOError as e:
 						if (e.errno != 11):
@@ -762,7 +785,7 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 							os.kill(proc.pid, SIGKILL)
 						except:
 							pass
-					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)) )
+					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
 
 				time.sleep(0.001)
 
@@ -778,16 +801,16 @@ def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=
 
 	except (os.error, IOError) as e:
 		# Some error occured during execution
-		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e) )
+		raise Exception(u"Command '%s' failed:\n%s" % (cmd, e))
 
 	logger.debug(u"Exit code: %s" % exitCode)
 	if exitCode:
-		if   type(ignoreExitCode) is bool and ignoreExitCode:
+		if type(ignoreExitCode) is bool and ignoreExitCode:
 			pass
 		elif type(ignoreExitCode) is list and exitCode in ignoreExitCode:
 			pass
 		else:
-			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)) )
+			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
 	return result
 
 
