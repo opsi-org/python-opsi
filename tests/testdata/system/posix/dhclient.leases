@@ -1,0 +1,18 @@
+lease {
+  interface "eth0";
+  fixed-address 172.16.166.102;
+  filename "linux/pxelinux.0";
+  option subnet-mask 255.255.255.0;
+  option routers 172.16.166.1;
+  option dhcp-lease-time 600;
+  option dhcp-message-type 5;
+  option domain-name-servers 172.16.166.1;
+  option dhcp-server-identifier 172.16.166.1;
+  option dhcp-renewal-time 300;
+  option dhcp-rebinding-time 525;
+  option host-name "win7client";
+  option domain-name "vmnat.local";
+  renew 3 2014/05/28 12:31:42;
+  rebind 3 2014/05/28 12:36:36;
+  expire 3 2014/05/28 12:37:51;
+}

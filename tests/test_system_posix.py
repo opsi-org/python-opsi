@@ -25,6 +25,7 @@ Various unittests to test functionality of python-opsi.
 :license: GNU Affero General Public License version 3
 """
 
+import os
 import unittest
 
 import OPSI.System.Posix as Posix
@@ -75,6 +76,25 @@ class PosixMethodsTestCase(unittest.TestCase):
 		# Idea: prepare a file with information, pass the filename
 		# to the function and read from that.
 		Posix.getNetworkInterfaces()
+
+	def testReadingDHCPLeasesFile(self):
+		leasesFile = os.path.join(os.path.dirname(__file__), 'testdata',
+			'system', 'posix', 'dhclient.leases'
+		)
+		self.assertTrue(os.path.exists(leasesFile))
+
+		dhcpConfig = Posix.getDHCPResult('eth0', leasesFile)
+		self.assertEquals('172.16.166.102', dhcpConfig['fixed-address'])
+		self.assertEquals('linux/pxelinux.0', dhcpConfig['filename'])
+		self.assertEquals('255.255.255.0', dhcpConfig['subnet-mask'])
+		self.assertEquals('172.16.166.1', dhcpConfig['routers'])
+		self.assertEquals('172.16.166.1', dhcpConfig['domain-name-servers'])
+		self.assertEquals('172.16.166.1', dhcpConfig['dhcp-server-identifier'])
+		self.assertEquals('win7client', dhcpConfig['host-name'])
+		self.assertEquals('vmnat.local', dhcpConfig['domain-name'])
+		self.assertEquals('3 2014/05/28 12:31:42', dhcpConfig['renew'])
+		self.assertEquals('3 2014/05/28 12:36:36', dhcpConfig['rebind'])
+		self.assertEquals('3 2014/05/28 12:37:51', dhcpConfig['expire'])
 
 
 class PosixHardwareInventoryTestCase(unittest.TestCase):
