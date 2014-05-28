@@ -30,7 +30,7 @@ Functions and classes for the use with a POSIX operating system.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.3.4'
+__version__ = '4.0.5.1'
 
 import codecs
 import fcntl
@@ -535,7 +535,11 @@ def getDHCPResult(device, leasesFile=None):
 	It first tries to read the value from leases files and then tries
 	to read the values from pump.
 
-	:param leasesFile: The file to read the leases from.
+	.. versionchanged:: 4.0.5.1
+	   Added parameter *leasesFile*.
+
+	:param leasesFile: The file to read the leases from. If this is not \
+given known places for this file will be tried.
 	:type leasesFile: str
 	:return: Settings of the lease. All keys are lowercase. Possible \
 keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
@@ -594,13 +598,15 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 			except Exception as e:
 				logger.warning(e)
 	else:
-		# Try pump
+		logger.debug('Leases file {0} does not exist.'.format(leasesFile))
+		logger.debug('Trying to use pump for getting dhclient info.')
 		try:
-			for line in execute( u'%s -s -i %s' % (which('pump'), device) ):
+			for line in execute(u'%s -s -i %s' % (which('pump'), device)):
 				line = line.strip()
 				keyValue = line.split(u":")
-				if ( len(keyValue) < 2 ):
-					# No ":" in pump output after "boot server" and "next server"
+				if len(keyValue) < 2:
+					# No ":" in pump output after "boot server" and
+					# "next server"
 					if line.lstrip().startswith(u'Boot server'):
 						keyValue[0] = u'Boot server'
 						keyValue.append(line.split()[2])
@@ -609,9 +615,10 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 						keyValue.append(line.split()[2])
 					else:
 						continue
-				# Some DHCP-Servers are returning multiple domain names seperated by whitespace,
-				# so we split all values at whitespace and take the first element
-				dhcpResult[keyValue[0].replace(u' ',u'').lower()] = keyValue[1].strip().split()[0]
+				# Some DHCP-Servers are returning multiple domain names
+				# seperated by whitespace, so we split all values at
+				# whitespace and take the first element
+				dhcpResult[keyValue[0].replace(u' ', u'').lower()] = keyValue[1].strip().split()[0]
 		except Exception as e:
 			logger.warning(e)
 	return dhcpResult
