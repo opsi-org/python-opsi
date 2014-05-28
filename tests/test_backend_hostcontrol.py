@@ -29,7 +29,7 @@ from Backends.HostControl import HostControlBackendMixin
 from BackendTestMixins.Clients import ClientsMixin
 
 
-class FileBackendTestCase(unittest.TestCase, HostControlBackendMixin, ClientsMixin):
+class HostControlBackendTestCase(unittest.TestCase, HostControlBackendMixin, ClientsMixin):
     def setUp(self):
         self.setUpBackend()
 
