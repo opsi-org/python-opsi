@@ -45,7 +45,7 @@ import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
 
-if (os.name == 'posix'):
+if os.name == 'posix':
 	with warnings.catch_warnings():
 		warnings.filterwarnings("ignore", category=DeprecationWarning)
 		from ldaptor.protocols import pureldap
@@ -110,10 +110,6 @@ def getArgAndCallString(method):
 	return (argString, callString)
 
 
-
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                      CLASS DEFERREDCALL                                            =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class DeferredCall(object):
 	def __init__(self, callback = None):
 		self.error = None
@@ -140,9 +136,7 @@ class DeferredCall(object):
 		if self.callback:
 			self.callback(self, *self.callbackArgs, **self.callbackKwargs)
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                        CLASS BACKEND                                               =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+
 class Backend:
 	def __init__(self, **kwargs):
 		"""
@@ -410,9 +404,7 @@ This defaults to ``self``.
 	def backend_exit(self):
 		pass
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                    CLASS EXTENDEDBACKEND                                           =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+
 class ExtendedBackend(Backend):
 	"""
 	Extending an backend with additional functionality.
@@ -488,9 +480,7 @@ class ExtendedBackend(Backend):
 			logger.debug(u"Calling backend_exit() on backend %s" % self._backend)
 			self._backend.backend_exit()
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                                   CLASS CONFIGDATABACKEND                                          =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
+
 class ConfigDataBackend(Backend):
 	"""
 	Base class for backends holding data.
@@ -1575,9 +1565,6 @@ depot where the method is.
 		return query
 
 
-'''= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-=                               CLASS EXTENDEDCONFIGDATABACKEND                                      =
-= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ='''
 class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def __init__(self, configDataBackend, overwrite=True):
@@ -2840,7 +2827,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 	def _productOnClient_processWithFunction(self, productOnClients, function):
 		# Get client and product ids
 		productOnClientsByClient = {}
@@ -2992,10 +2978,14 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		if (self._options['addProductOnClientDefaults'] or self._options['processProductOnClientSequence']) and attributes:
 			# In this case we definetly need to add the following attributes
-			if not 'installationStatus' in pocAttributes: pocAttributes.append('installationStatus')
-			if not 'actionRequest'      in pocAttributes: pocAttributes.append('actionRequest')
-			if not 'productVersion'     in pocAttributes: pocAttributes.append('productVersion')
-			if not 'packageVersion'     in pocAttributes: pocAttributes.append('packageVersion')
+			if not 'installationStatus' in pocAttributes:
+				pocAttributes.append('installationStatus')
+			if not 'actionRequest' in pocAttributes:
+				pocAttributes.append('actionRequest')
+			if not 'productVersion' in pocAttributes:
+				pocAttributes.append('productVersion')
+			if not 'packageVersion' in pocAttributes:
+				pocAttributes.append('packageVersion')
 
 		# Get product states from backend
 		productOnClients = self._backend.productOnClient_getObjects(pocAttributes, **pocFilter)
@@ -3026,11 +3016,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# Get product on depots which match the filter
 			for depotId in depotToClients.keys():
 				productOnDepots[depotId] = self._backend.productOnDepot_getObjects(
-								depotId        = depotId,
-								productId      = pocFilter.get('productId'),
-								productType    = pocFilter.get('productType'),
-								productVersion = pocFilter.get('productVersion'),
-								packageVersion = pocFilter.get('packageVersion'))
+					depotId=depotId,
+					productId=pocFilter.get('productId'),
+					productType=pocFilter.get('productType'),
+					productVersion=pocFilter.get('productVersion'),
+					packageVersion=pocFilter.get('packageVersion')
+				)
 
 			logger.debug(u"   * got productOnDepots")
 
@@ -3083,8 +3074,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def _productOnClientUpdateOrCreate(self, productOnClient, update=False):
 		nextProductOnClient = None
 		currentProductOnClients = self._backend.productOnClient_getObjects(
-							productId = productOnClient.productId,
-							clientId  = productOnClient.clientId)
+			productId=productOnClient.productId,
+			clientId=productOnClient.clientId
+		)
 		if currentProductOnClients:
 			'''
 			If productOnClient exits (same productId, same clientId, different version)
@@ -3198,7 +3190,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		return result
 
-
 	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None):
 		hash = locals()
 		del hash['self']
@@ -3303,7 +3294,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				)
 		return result
 
-
 	def productPropertyState_create(self, productId, propertyId, objectId, values=None):
 		hash = locals()
 		del hash['self']
@@ -3405,7 +3395,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					)
 				)
 		return result
-
 
 	def objectToGroup_create(self, groupType, groupId, objectId):
 		hash = locals()
@@ -3981,23 +3970,32 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self.auditSoftwareOnClient_createObjects(AuditSoftwareOnClient.fromHash(hash))
 
 	def auditSoftwareOnClient_delete(self, name, version, subVersion, language, architecture, clientId):
-		if name is None:         name  = []
-		if version is None:      version = []
-		if subVersion is None:   subVersion = []
-		if language is None:     language = []
-		if architecture is None: architecture = []
-		if clientId is None:     clientId = []
+		if name is None:
+			name = []
+		if version is None:
+			version = []
+		if subVersion is None:
+			subVersion = []
+		if language is None:
+			language = []
+		if architecture is None:
+			architecture = []
+		if clientId is None:
+			clientId = []
 		return self._backend.auditSoftwareOnClient_deleteObjects(
-				self._backend.auditSoftwareOnClient_getObjects(
-					name           = name,
-					version        = version,
-					subVersion     = subVersion,
-					language       = language,
-					architecture   = architecture,
-					clientId       = clientId))
+			self._backend.auditSoftwareOnClient_getObjects(
+				name=name,
+				version=version,
+				subVersion=subVersion,
+				language=language,
+				architecture=architecture,
+				clientId=clientId
+			)
+		)
 
 	def auditSoftwareOnClient_setObsolete(self, clientId):
-		if clientId is None: clientId  = []
+		if clientId is None:
+			clientId = []
 		clientId = forceHostIdList(clientId)
 		self._backend.auditSoftwareOnClient_deleteObjects(
 			self._backend.auditSoftwareOnClient_getObjects(
@@ -4028,14 +4026,18 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self.auditHardware_createObjects(AuditHardware.fromHash(hash))
 
 	def auditHardware_delete(self, hardwareClass, **kwargs):
-		if hardwareClass is None: hardwareClass  = []
+		if hardwareClass is None:
+			hardwareClass = []
 		for key in kwargs.keys():
-			if kwargs[key] is None: kwargs[key] = []
+			if kwargs[key] is None:
+				kwargs[key] = []
 
 		return self._backend.auditHardware_deleteObjects(
-				self._backend.auditHardware_getObjects(
-					hardwareClass  = hardwareClass,
-					**kwargs ))
+			self._backend.auditHardware_getObjects(
+				hardwareClass=hardwareClass,
+				**kwargs
+			)
+		)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
@@ -4066,10 +4068,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				if attribute in ('firstseen', 'lastseen', 'state'):
 					continue
 				if value is None:
-					filter[attribute] = [ None ]
+					filter[attribute] = [None]
 				else:
 					filter[attribute] = value
-			if self.auditHardwareOnHost_getObjects(attributes = ['hostId'], **filter):
+			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
 				logger.info(u"AuditHardwareOnHost %s does not exist, creating" % auditHardwareOnHost)
@@ -4082,27 +4084,35 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self.auditHardwareOnHost_createObjects(AuditHardwareOnHost.fromHash(hash))
 
 	def auditHardwareOnHost_delete(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
-		if hostId is None:        hostId  = []
-		if hardwareClass is None: hardwareClass  = []
-		if firstseen is None:     firstseen  = []
-		if lastseen is None:      lastseen  = []
-		if state is None:         state  = []
+		if hostId is None:
+			hostId = []
+		if hardwareClass is None:
+			hardwareClass = []
+		if firstseen is None:
+			firstseen = []
+		if lastseen is None:
+			lastseen = []
+		if state is None:
+			state = []
 		for key in kwargs.keys():
 			if kwargs[key] is None: kwargs[key] = []
 
 		return self._backend.auditHardwareOnHost_deleteObjects(
-				self._backend.auditHardwareOnHost_getObjects(
-					hostId         = hostId,
-					hardwareClass  = hardwareClass,
-					firstseen      = firstseen,
-					lastseen       = lastseen,
-					state          = state,
-					**kwargs ))
+			self._backend.auditHardwareOnHost_getObjects(
+				hostId=hostId,
+				hardwareClass=hardwareClass,
+				firstseen=firstseen,
+				lastseen=lastseen,
+				state=state,
+				**kwargs
+			)
+		)
 
 	def auditHardwareOnHost_setObsolete(self, hostId):
-		if hostId is None: hostId  = []
+		if hostId is None:
+			hostId = []
 		hostId = forceHostIdList(hostId)
-		auditHardwareOnHosts = self.auditHardwareOnHost_getObjects(hostId = hostId, state = 1)
+		auditHardwareOnHosts = self.auditHardwareOnHost_getObjects(hostId=hostId, state=1)
 		for i in range(len(auditHardwareOnHosts)):
 			auditHardwareOnHosts[i].setState(0)
 			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
@@ -4118,8 +4128,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.bootConfiguration_getObjects(
-						name     = bootConfiguration.name,
-						clientId = bootConfiguration.clientId
+						name=bootConfiguration.name,
+						clientId=bootConfiguration.clientId
 					)
 				)
 		return result
@@ -4129,9 +4139,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		bootConfigurations = forceObjectClassList(bootConfigurations, BootConfiguration)
 		for bootConfiguration in bootConfigurations:
 			logger.info(u"Updating bootConfiguration '%s'" % bootConfiguration)
-			if self.bootConfiguration_getIdents(
-					name     = bootConfiguration.name,
-					clientId = bootConfiguration.clientId):
+			if self.bootConfiguration_getIdents(name=bootConfiguration.name, clientId=bootConfiguration.clientId):
 				self._backend.bootConfiguration_updateObject(bootConfiguration)
 			else:
 				logger.info(u"BootConfiguration %s does not exist, creating" % bootConfiguration)
@@ -4139,8 +4147,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.bootConfiguration_getObjects(
-						name     = bootConfiguration.name,
-						clientId = bootConfiguration.clientId)
+						name=bootConfiguration.name,
+						clientId=bootConfiguration.clientId
+					)
 				)
 		return result
 
@@ -4150,17 +4159,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self.bootConfiguration_createObjects(BootConfiguration.fromHash(hash))
 
 	def bootConfiguration_delete(self, name, clientId):
-		if name is None:     name = []
-		if clientId is None: clientId = []
+		if name is None:
+			name = []
+		if clientId is None:
+			clientId = []
 		return self._backend.bootConfiguration_deleteObjects(
-				self._backend.bootConfiguration_getObjects(
-					name     = name,
-					clientId = clientId))
+			self._backend.bootConfiguration_getObjects(
+				name=name,
+				clientId=clientId
+			)
+		)
+
 
 class ModificationTrackingBackend(ExtendedBackend):
 
-	def __init__(self, backend, overwrite = True):
-		ExtendedBackend.__init__(self, backend, overwrite = overwrite)
+	def __init__(self, backend, overwrite=True):
+		ExtendedBackend.__init__(self, backend, overwrite=overwrite)
 		self._createInstanceMethods()
 		self._backendChangeListeners = []
 
@@ -4187,17 +4201,18 @@ class ModificationTrackingBackend(ExtendedBackend):
 		meth = getattr(self._backend, methodName)
 		result = meth(**kwargs)
 		action = None
-		if (methodName.find('_') != -1):
+		if '_' in methodName:
 			action = methodName.split('_', 1)[1]
 		if action in ('insertObject', 'updateObject', 'deleteObjects'):
-			if (action == 'insertObject'):
+			if action == 'insertObject':
 				self._fireEvent('objectInserted', kwargs.values()[0])
-			if (action == 'updateObject'):
+			elif action == 'updateObject':
 				self._fireEvent('objectUpdated', kwargs.values()[0])
-			if (action == 'deleteObjects'):
+			elif action == 'deleteObjects':
 				self._fireEvent('objectsDeleted', kwargs.values()[0])
 			self._fireEvent('backendModified')
 		return result
+
 
 class BackendModificationListener(object):
 	def objectInserted(self, backend, obj):
@@ -4215,8 +4230,3 @@ class BackendModificationListener(object):
 	def backendModified(self, backend):
 		# Should return immediately!
 		pass
-
-
-
-
-
