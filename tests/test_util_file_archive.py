@@ -23,6 +23,7 @@ Testing the work with archives.
 :license: GNU Affero General Public License version 3
 """
 
+import mock
 import unittest
 
 from OPSI.Util.File.Archive import Archive, PigzMixin, TarArchive
@@ -65,6 +66,13 @@ class PigzMixinAppliedTestCase(unittest.TestCase):
     def test_mixin_methods_work(self):
         self.assertEqual(PigzMixin.is_pigz_available(), self.test_object.pigz_detected)
         self.assertEqual(PigzMixin.is_pigz_available(), self.test_object.is_pigz_available())
+
+    def testDisablingPigz(self):
+        """
+        Disabling the usage of pigz by setting PIGZ_ENABLED to False.
+        """
+        with mock.patch('OPSI.Util.File.Archive.PIGZ_ENABLED', False):
+            self.assertEqual(False, self.test_object.is_pigz_available())
 
 
 if __name__ == '__main__':

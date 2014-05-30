@@ -6,7 +6,7 @@ opsi python library - File.Archive
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -28,9 +28,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU General Public License version 2
+
+.. versionadded:: 4.0.5.1
+   Control the usage of pigz via ``PIGZ_ENABLED``
 """
 
-__version__ = "4.0"
+__version__ = "4.0.5.1"
 
 import locale
 import os
@@ -42,12 +45,18 @@ if os.name == 'posix':
 	import fcntl
 	import magic
 
+import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
 
 logger = Logger()
+
+try:
+	PIGZ_ENABLED = OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled()
+except IOError:
+	PIGZ_ENABLED = True
 
 
 def getFileType(filename):
@@ -250,6 +259,9 @@ class PigzMixin(object):
 			versionMatches = compareVersions(ver, '>=', '2.2.3')
 			logger.debug('pigz version is compatible? %s' % (versionMatches))
 			return versionMatches
+
+		if not PIGZ_ENABLED:
+			return False
 
 		try:
 			System.which('pigz')
