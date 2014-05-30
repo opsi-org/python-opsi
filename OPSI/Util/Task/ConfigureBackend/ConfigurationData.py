@@ -34,9 +34,10 @@ import OPSI.Backend.BackendManager as bm
 from OPSI.Logger import Logger
 
 LOGGER = Logger()
+SMB_CONF = u'/etc/samba/smb.conf'
 
 
-def initializeConfigs(backend=None, configServer=None):
+def initializeConfigs(backend=None, configServer=None, pathToSMBConf=SMB_CONF):
 	"""
 	Adding default configurations to the backend.
 
@@ -46,6 +47,8 @@ will be created.
 default. Supply this if ``clientconfig.configserver.url`` or \
 ``clientconfig.depot.id`` are not yet set.
 	:type configServer: OPSI.Object.OpsiConfigserver
+	:param pathToSMBConf: The path the samba configuration.
+	:type pathToSMBConf: str
 	"""
 	backendProvided = True
 
@@ -150,7 +153,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				id=u'clientconfig.windows.domain',
 				description=u'Windows domain',
 				possibleValues=[],
-				defaultValues=[getSysConfig()['winDomain']],
+				defaultValues=[readWindowsDomainFromSambaConfig(pathToSMBConf)],
 				editable=True,
 				multiValue=False
 			)
