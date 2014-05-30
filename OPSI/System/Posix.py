@@ -798,13 +798,7 @@ output will be returned.
 							raise
 
 				if (timeout > 0) and (time.time() - startTime >= timeout):
-					try:
-						proc.kill()
-					except:
-						try:
-							os.kill(proc.pid, SIGKILL)
-						except:
-							pass
+					_terminateProcess(proc)
 					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
 
 				time.sleep(0.001)
@@ -832,6 +826,24 @@ output will be returned.
 		else:
 			raise Exception(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
 	return result
+
+
+def _terminateProcess(process):
+	"""
+	Terminate a running process.
+
+	:param process: The process to terminate.
+	:type process: subprocess.Popen
+	"""
+	try:
+		process.kill()
+	except Exception as killException:
+		logger.debug('Killing process {0} failed: {1}'.format(process.pid, killException))
+
+		try:
+			os.kill(process.pid, SIGKILL)
+		except Exception as sigKillException:
+			logger.debug('Sending SIGKILL to pid {0} failed: {1}'.format(process.pid, sigKillException))
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
