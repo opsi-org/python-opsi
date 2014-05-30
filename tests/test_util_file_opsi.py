@@ -24,9 +24,10 @@ Testing OPSI.Util.File.Opsi
 """
 from __future__ import absolute_import
 
+import os
 import unittest
 
-from OPSI.Util.File.Opsi import BackendDispatchConfigFile
+from OPSI.Util.File.Opsi import BackendDispatchConfigFile, OpsiConfFile
 
 
 
@@ -68,3 +69,21 @@ audit.*            : mysql
 			set(('yolofile',)),
 			usedBackends
 		)
+
+
+class OpsiConfigFileTestCase(unittest.TestCase):
+	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
+	"""
+	Testing functions for /etc/opsi.conf
+	"""
+	def setUp(self):
+		self.config = OpsiConfFile(filename=self.EXAMPLE_CONFIG_FILE)
+
+	def tearDown(self):
+		del self.config
+
+	def testReadingFileAdminGroupReturnsLowercaseName(self):
+		self.assertEquals('mypcpatch', self.config.getOpsiFileAdminGroup())
+
+	def testReadingReadonlyGroups(self):
+		self.assertEquals(['myopsireadonlys'], self.config.getOpsiGroups("readonly"))
