@@ -1437,7 +1437,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 						if member.name == os.path.join(self.CONTENT_DIR, "BACKENDS/MYSQL/%s/database.sql" % backend["name"]):
 							self._extractFile(member, name)
 
-					cmd = ["/usr/bin/mysql"]
+					cmd = [OPSI.System.which("mysql")]
 					#cmd.append("--max_allowed_packet=%s" % os.path.getsize(name))
 					cmd.append("--host=%s" % backend["config"]["address"])
 					cmd.append("--user=%s" % backend["config"]["username"])
