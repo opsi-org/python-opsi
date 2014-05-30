@@ -71,11 +71,11 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	if runningOnUCS():
 		# We have a domain present and people might want to change this.
-		if not 'clientconfig.depot.user' in configIdents:
+		if 'clientconfig.depot.user' not in configIdents:
 			depotuser = u'pcpatch'
 			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
 			if depotdomain:
-				depotuser = u'{0}\\pcpatch'.format(depotdomain)
+				depotuser = r'\\'.join((depotdomain, depotuser))
 
 			configs.append(
 				oobject.UnicodeConfig(
