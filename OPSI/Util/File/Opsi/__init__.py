@@ -73,6 +73,16 @@ from OPSI.Util import md5sum, toJson, fromJson
 logger = Logger()
 
 
+def requiresParsing(function, *args, **kwargs):
+	# Decorator that calls parse() on unparsed configs.
+	def parsedFile(self, *args, **kwargs):
+		if not self._parsed:
+				self.parse()
+		return function(self, *args, **kwargs)
+
+	return parsedFile
+
+
 class HostKeyFile(ConfigFile):
 
 	lineRegex = re.compile('^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
@@ -113,24 +123,21 @@ class HostKeyFile(ConfigFile):
 		self.writelines()
 		self.close()
 
+	@requiresParsing
 	def getOpsiHostKey(self, hostId):
-		if not self._parsed:
-			self.parse()
 		hostId = forceHostId(hostId)
 		if not self._opsiHostKeys.has_key(hostId):
 			return None
 		return self._opsiHostKeys[hostId]
 
+	@requiresParsing
 	def setOpsiHostKey(self, hostId, opsiHostKey):
-		if not self._parsed:
-			self.parse()
 		hostId = forceHostId(hostId)
 		opsiHostKey = forceOpsiHostKey(opsiHostKey)
 		self._opsiHostKeys[hostId] = opsiHostKey
 
+	@requiresParsing
 	def deleteOpsiHostKey(self, hostId):
-		if not self._parsed:
-			self.parse()
 		hostId = forceHostId(hostId)
 		if self._opsiHostKeys.has_key(hostId):
 			del self._opsiHostKeys[hostId]
@@ -738,33 +745,29 @@ class PackageControlFile(TextFile):
 		self._parsed = True
 		return self._sections
 
+	@requiresParsing
 	def getProduct(self):
-		if not self._parsed:
-			self.parse()
 		return self._product
 
 	def setProduct(self, product):
 		self._product = forceObjectClass(product, Product)
 
+	@requiresParsing
 	def getProductDependencies(self):
-		if not self._parsed:
-			self.parse()
 		return self._productDependencies
 
 	def setProductDependencies(self, productDependencies):
 		self._productDependencies = forceObjectClassList(productDependencies, ProductDependency)
 
+	@requiresParsing
 	def getProductProperties(self):
-		if not self._parsed:
-			self.parse()
 		return self._productProperties
 
 	def setProductProperties(self, productProperties):
 		self._productProperties = forceObjectClassList(productProperties, ProductProperty)
 
+	@requiresParsing
 	def getPackageDependencies(self):
-		if not self._parsed:
-			self.parse()
 		return self._packageDependencies
 
 	def setPackageDependencies(self, packageDependencies):
@@ -782,9 +785,8 @@ class PackageControlFile(TextFile):
 					raise Exception(u"Bad condition string '%s' in package dependency" % packageDependency['condition'])
 			self._packageDependencies.append(packageDependency)
 
+	@requiresParsing
 	def getIncrementalPackage(self):
-		if not self._parsed:
-			self.parse()
 		return self._incrementalPackage
 
 	def setIncrementalPackage(self, incremental):
@@ -989,23 +991,21 @@ class OpsiConfFile(IniFile):
 		self._parsed = True
 		return self._opsiConfig
 
+	@requiresParsing
 	def getOpsiFileAdminGroup(self):
-		if not self._parsed:
-			self.parse()
 		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
 			return "pcpatch"
 		else:
 			return self._opsiConfig["groups"]["fileadmingroup"]
 
+	@requiresParsing
 	def getOpsiGroups(self, groupType):
-		if not self._parsed:
-			self.parse()
-
 		if not self._opsiConfig.get("groups", {}).get(groupType, ""):
 			return None
 		else:
 			return self._opsiConfig["groups"][groupType]
 
+	@requiresParsing
 	def isPigzEnabled(self):
 		"""
 		Check if the usage of pigz is enabled.
@@ -1013,9 +1013,6 @@ class OpsiConfFile(IniFile):
 		:return: False if the usage of pigz is disabled, True otherwise.
 		:returntype: bool
 		"""
-		if not self._parsed:
-			self.parse()
-
 		if "packages" in self._opsiConfig and "use_pigz" in self._opsiConfig["packages"]:
 			return self._opsiConfig["packages"]["use_pigz"]
 		else:
