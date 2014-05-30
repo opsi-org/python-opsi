@@ -254,12 +254,22 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_exit()
 
 
-def readWindowsDomainFromSambaConfig(pathToConfig=u'/etc/samba/smb.conf'):
+def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
+	"""
+	Get the Windows domain (workgroup) from smb.conf.
+	If no workgroup can be found this returns an empty string.
+
+	:param pathToConfig: Path to the smb.conf
+	:type pathToConfig: str
+	:return: The Windows domain in uppercase letters.
+	:returntype: str
+	"""
 	winDomain = u''
 	if os.path.exists(pathToConfig):
+		pattern = re.compile('^\s*workgroup\s*=\s*(\S+)\s*$')
 		with codecs.open(pathToConfig, 'r', 'utf-8') as sambaConfig:
 			for line in sambaConfig:
-				match = re.search('^\s*workgroup\s*=\s*(\S+)\s*$', line)
+				match = pattern.search(line)
 				if match:
 					winDomain = match.group(1).upper()
 					break
