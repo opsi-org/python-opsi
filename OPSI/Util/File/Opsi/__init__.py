@@ -77,7 +77,7 @@ def requiresParsing(function, *args, **kwargs):
 	# Decorator that calls parse() on unparsed configs.
 	def parsedFile(self, *args, **kwargs):
 		if not self._parsed:
-				self.parse()
+			self.parse()
 		return function(self, *args, **kwargs)
 
 	return parsedFile
@@ -105,7 +105,7 @@ class HostKeyFile(ConfigFile):
 			try:
 				hostId = forceHostId(match.group(1))
 				opsiHostKey = forceOpsiHostKey(match.group(2))
-				if self._opsiHostKeys.has_key(hostId):
+				if hostId in self._opsiHostKeys:
 					logger.error(u"Found duplicate host '%s' in pckey file '%s'" % (hostId, self._filename))
 				self._opsiHostKeys[hostId] = opsiHostKey
 			except BackendBadValueError as error:
@@ -126,7 +126,7 @@ class HostKeyFile(ConfigFile):
 	@requiresParsing
 	def getOpsiHostKey(self, hostId):
 		hostId = forceHostId(hostId)
-		if not self._opsiHostKeys.has_key(hostId):
+		if hostId not in self._opsiHostKeys:
 			return None
 		return self._opsiHostKeys[hostId]
 
@@ -139,7 +139,7 @@ class HostKeyFile(ConfigFile):
 	@requiresParsing
 	def deleteOpsiHostKey(self, hostId):
 		hostId = forceHostId(hostId)
-		if self._opsiHostKeys.has_key(hostId):
+		if hostId in self._opsiHostKeys:
 			del self._opsiHostKeys[hostId]
 
 
@@ -174,14 +174,14 @@ class BackendACLFile(ConfigFile):
 				aclTypeParams = ''
 				if entry.find('(') != -1:
 					(aclType, aclTypeParams) = entry.split('(', 1)
-					if (aclTypeParams[-1] != ')'):
+					if aclTypeParams[-1] != ')':
 						raise Exception(u"Bad formatted acl entry '%s': trailing ')' missing" % entry)
 					aclType = aclType.strip()
 					aclTypeParams = aclTypeParams[:-1]
 
-				if not aclType in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
+				if aclType not in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
 					raise Exception(u"Unhandled acl type: '%s'" % aclType)
-				entry = { 'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': [] }
+				entry = {'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': []}
 				if not aclTypeParams:
 					if aclType in ('sys_group', 'sys_user'):
 						raise Exception(u"Bad formatted acl type '%s': no params given" % aclType)
@@ -199,13 +199,13 @@ class BackendACLFile(ConfigFile):
 							if not inAclTypeParamValues or not aclTypeParam:
 								raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
 							inAclTypeParamValues = False
-						elif (c != ',') or (i == len(aclTypeParams) - 1):
+						elif c != ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								aclTypeParamValues[-1] += c
 							else:
 								aclTypeParam += c
 
-						if (c == ',') or (i == len(aclTypeParams) - 1):
+						if c == ',' or i == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								if i == len(aclTypeParams) - 1:
 									raise Exception(u"Bad formatted acl type params '%s'" % aclTypeParams)
@@ -219,7 +219,7 @@ class BackendACLFile(ConfigFile):
 										continue
 									tmp.append(t)
 								aclTypeParamValues = tmp
-								if (aclTypeParam == 'attributes'):
+								if aclTypeParam == 'attributes':
 									for v in aclTypeParamValues:
 										if not v:
 											continue
@@ -335,7 +335,7 @@ class PackageContentFile(TextFile):
 				parts = tmp.split(None, 1)
 				tmp = u''
 				size = parts[0]
-				if (len(parts) > 1):
+				if len(parts) > 1:
 					tmp = parts[1]
 			if type == 'f':
 				md5 = tmp
@@ -424,7 +424,7 @@ class PackageControlFile(TextFile):
 		for line in self._lines:
 			lineNum += 1
 
-			if (len(line) > 0) and line[0] in (';', '#'):
+			if line and line.startswith((';', '#')):
 				# Comment
 				continue
 
@@ -465,13 +465,13 @@ class PackageControlFile(TextFile):
 					#value = match.group(2).lstrip()
 					value = match.group(2).strip()
 
-			if (sectionType == 'package' and key in ('version', 'depends', 'incremental')):
+			if sectionType == 'package' and key in ('version', 'depends', 'incremental'):
 				option = key
-				if (key == 'version'):
+				if key == 'version':
 					value = forceUnicodeLower(value)
-				elif (key == 'depends'):
+				elif key == 'depends':
 					value = forceUnicodeLower(value)
-				elif (key == 'incremental'):
+				elif key == 'incremental':
 					value = forceBool(value)
 
 			elif (sectionType == 'product' and key in \
@@ -481,44 +481,44 @@ class PackageControlFile(TextFile):
 					 'setupscript', 'uninstallscript', 'updatescript',
 					 'alwaysscript', 'oncescript', 'customscript', 'userloginscript')):
 				option = key
-				if (key == 'id'):
+				if key == 'id':
 					value = forceProductId(value)
-				elif (key == 'type'):
+				elif key == 'type':
 					value = forceProductType(value)
-				elif (key == 'name'):
+				elif key == 'name':
 					value = forceUnicode(value)
-				elif (key == 'description'):
+				elif key == 'description':
 					value = forceUnicode(value)
-				elif (key == 'advice'):
+				elif key == 'advice':
 					value = forceUnicode(value)
-				elif (key == 'version'):
+				elif key == 'version':
 					value = forceProductVersion(value)
-				elif (key == 'packageversion'):
+				elif key == 'packageversion':
 					value = forcePackageVersion(value)
-				elif (key == 'priority'):
+				elif key == 'priority':
 					value = forceProductPriority(value)
-				elif (key == 'licenserequired'):
+				elif key == 'licenserequired':
 					value = forceBool(value)
-				elif (key == 'productclasses'):
+				elif key == 'productclasses':
 					value = forceUnicodeLower(value)
-				elif (key == 'pxeconfigtemplate'):
+				elif key == 'pxeconfigtemplate':
 					value = forceFilename(value)
-				elif (key == 'setupscript'):
+				elif key == 'setupscript':
 					value = forceFilename(value)
-				elif (key == 'uninstallscript'):
+				elif key == 'uninstallscript':
 					value = forceFilename(value)
-				elif (key == 'updatescript'):
+				elif key == 'updatescript':
 					value = forceFilename(value)
-				elif (key == 'alwaysscript'):
+				elif key == 'alwaysscript':
 					value = forceFilename(value)
-				elif (key == 'oncescript'):
+				elif key == 'oncescript':
 					value = forceFilename(value)
-				elif (key == 'customscript'):
+				elif key == 'customscript':
 					value = forceFilename(value)
-				elif (key == 'userloginscript'):
+				elif key == 'userloginscript':
 					value = forceFilename(value)
 
-			elif (sectionType == 'windows' and key in ('softwareids', )):
+			elif sectionType == 'windows' and key in ('softwareids', ):
 				option = key
 				value = forceUnicodeLower(value)
 
@@ -526,39 +526,39 @@ class PackageControlFile(TextFile):
 					('action', 'requiredproduct', 'requiredproductversion', 'requiredpackageversion',
 					 'requiredclass', 'requiredstatus', 'requiredaction', 'requirementtype')):
 				option = key
-				if (key == 'action'):
+				if key == 'action':
 					value = forceActionRequest(value)
-				elif (key == 'requiredproduct'):
+				elif key == 'requiredproduct':
 					value = forceProductId(value)
-				elif (key == 'requiredproductversion'):
+				elif key == 'requiredproductversion':
 					value = forceProductVersion(value)
-				elif (key == 'requiredpackageversion'):
+				elif key == 'requiredpackageversion':
 					value = forcePackageVersion(value)
-				elif (key == 'requiredclass'):
+				elif key == 'requiredclass':
 					value = forceUnicodeLower(value)
-				elif (key == 'requiredstatus'):
+				elif key == 'requiredstatus':
 					value = forceInstallationStatus(value)
-				elif (key == 'requiredaction'):
+				elif key == 'requiredaction':
 					value = forceActionRequest(value)
-				elif (key == 'requirementtype'):
+				elif key == 'requirementtype':
 					value = forceRequirementType(value)
 
 			elif (sectionType == 'productproperty' and key in \
 					('type', 'name', 'default', 'values', 'description', 'editable', 'multivalue')):
 				option = key
-				if (key == 'type'):
+				if key == 'type':
 					value = forceProductPropertyType(value)
-				elif (key == 'name'):
+				elif key == 'name':
 					value = forceUnicodeLower(value)
-				elif (key == 'default'):
+				elif key == 'default':
 					value = forceUnicode(value)
-				elif (key == 'values'):
+				elif key == 'values':
 					value = forceUnicode(value)
-				elif (key == 'description'):
+				elif key == 'description':
 					value = forceUnicode(value)
-				elif (key == 'editable'):
+				elif key == 'editable':
 					value = forceBool(value)
-				elif (key == 'multivalue'):
+				elif key == 'multivalue':
 					value = forceBool(value)
 
 			else:
@@ -576,15 +576,15 @@ class PackageControlFile(TextFile):
 					self._sections[sectionType][-1][option] += value.lstrip()
 
 		for (sectionType, secs) in self._sections.items():
-			if (sectionType == 'changelog'):
+			if sectionType == 'changelog':
 				continue
 			for i in range(len(secs)):
 				for (option, value) in secs[i].items():
-					if (sectionType == 'product'         and option == 'productclasses') or \
-					   (sectionType == 'package'         and option == 'depends') or \
+					if (sectionType == 'product' and option == 'productclasses') or \
+					   (sectionType == 'package' and option == 'depends') or \
 					   (sectionType == 'productproperty' and option == 'default') or \
 					   (sectionType == 'productproperty' and option == 'values') or \
-					   (sectionType == 'windows'         and option == 'softwareids'):
+					   (sectionType == 'windows' and option == 'softwareids'):
 						try:
 							if not value.strip().startswith('{') and not value.strip().startswith('['):
 								raise Exception(u'Not trying to read json string because value does not start with { or [')
@@ -597,7 +597,7 @@ class PackageControlFile(TextFile):
 									tmp.append(v)
 							value = tmp
 						except Exception as error:
-							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error) )
+							logger.debug2(u"Failed to read json string '%s': %s" % (value.strip(), error))
 							value = value.replace(u'\n', u'')
 							value = value.replace(u'\t', u'')
 							if not (sectionType == 'productproperty' and option == 'default'):
@@ -625,7 +625,7 @@ class PackageControlFile(TextFile):
 
 		# Get package info
 		for (option, value) in self._sections.get('package', [{}])[0].items():
-			if (option == 'depends'):
+			if option == 'depends':
 				for dep in value:
 					match = re.search('^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
 					if not match.group(1):
@@ -647,9 +647,8 @@ class PackageControlFile(TextFile):
 						version = match.group(2)
 					else:
 						version = None
-					self._packageDependencies.append( { 'package': package, 'condition': condition, 'version': version } )
-
-			elif (option == 'incremental'):
+					self._packageDependencies.append({'package': package, 'condition': condition, 'version': version})
+			elif option == 'incremental':
 				self._incrementalPackage = forceBool(value)
 
 		# Create Product object
@@ -666,7 +665,7 @@ class PackageControlFile(TextFile):
 			id=product.get('id'),
 			name=product.get('name'),
 			productVersion=product.get('version'),
-			packageVersion=self._sections.get('package',[{}])[0].get('version') or product.get('packageversion'),
+			packageVersion=self._sections.get('package', [{}])[0].get('version') or product.get('packageversion'),
 			licenseRequired=product.get('licenserequired'),
 			setupScript=product.get('setupscript'),
 			uninstallScript=product.get('uninstallscript'),
@@ -825,9 +824,9 @@ class PackageControlFile(TextFile):
 		self._lines.append(u'name: %s' % self._product.getName())
 		self._lines.append(u'description: ')
 		descLines = self._product.getDescription().split(u'\n')
-		if (len(descLines) > 0):
+		if len(descLines) > 0:
 			self._lines[-1] += descLines[0]
-			if (len(descLines) > 1):
+			if len(descLines) > 1:
 				for l in descLines[1:]:
 					self._lines.append(u' %s' % l)
 		self._lines.append(u'advice: %s' % self._product.getAdvice())
@@ -1029,7 +1028,6 @@ class OpsiBackupArchive(tarfile.TarFile):
 	DISPATCH_CONF = os.path.join(CONF_DIR, "backendManager", "dispatch.conf")
 
 	def __init__(self, name=None, mode=None, tempdir=tempfile.gettempdir(), fileobj=None, **kwargs):
-
 		self.tempdir = tempdir
 		self.mode = mode
 		self.sysinfo = None

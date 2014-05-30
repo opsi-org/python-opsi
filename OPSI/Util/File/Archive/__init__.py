@@ -120,7 +120,7 @@ class BaseArchive(object):
 					chunk = proc.stdout.read()
 					if chunk:
 						filesExtracted = chunk.count('\n')
-						if (filesExtracted > 0):
+						if filesExtracted > 0:
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
 				except Exception:
@@ -130,7 +130,7 @@ class BaseArchive(object):
 					if chunk:
 						error = chunk
 						filesExtracted = chunk.count('\n')
-						if (filesExtracted > 0):
+						if filesExtracted > 0:
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
 				except Exception:
