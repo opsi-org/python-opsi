@@ -101,7 +101,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=False
 			)
 		)
-	if not 'clientconfig.depot.dynamic' in configIdents:
+	if 'clientconfig.depot.dynamic' not in configIdents:
 		LOGGER.debug("Missing clientconfig.depot.dynamic - adding it.")
 		configs.append(
 			oobject.BoolConfig(
@@ -110,7 +110,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if not 'clientconfig.depot.drive' in configIdents:
+	if 'clientconfig.depot.drive' not in configIdents:
 		LOGGER.debug("Missing clientconfig.depot.drive - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
@@ -127,7 +127,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 			)
 		)
 
-	if not 'clientconfig.depot.protocol' in configIdents:
+	if 'clientconfig.depot.protocol' not in configIdents:
 		LOGGER.debug("Missing clientconfig.depot.protocol - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
@@ -139,7 +139,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=False
 			)
 		)
-	if not 'clientconfig.windows.domain' in configIdents:
+	if 'clientconfig.windows.domain' not in configIdents:
 		LOGGER.debug("Missing clientconfig.windows.domain - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
@@ -151,7 +151,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=False
 			)
 		)
-	if not 'opsi-linux-bootimage.append' in configIdents:
+	if 'opsi-linux-bootimage.append' not in configIdents:
 		LOGGER.debug("Missing opsi-linux-bootimage.append - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
@@ -166,7 +166,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=True
 			)
 		)
-	if not 'license-management.use' in configIdents:
+	if 'license-management.use' not in configIdents:
 		LOGGER.debug("Missing license-management.use - adding it.")
 		configs.append(
 			oobject.BoolConfig(
@@ -175,7 +175,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if not 'software-on-demand.active' in configIdents:
+	if 'software-on-demand.active' not in configIdents:
 		LOGGER.debug("Missing software-on-demand.active - adding it.")
 		configs.append(
 			oobject.BoolConfig(
@@ -184,7 +184,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if not 'software-on-demand.show-details' in configIdents:
+	if 'software-on-demand.show-details' not in configIdents:
 		LOGGER.debug("Missing software-on-demand.show-details - adding it.")
 		configs.append(
 			oobject.BoolConfig(
@@ -193,7 +193,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				defaultValues=[False]
 			)
 		)
-	if not 'software-on-demand.product-group-ids' in configIdents:
+	if 'software-on-demand.product-group-ids' not in configIdents:
 		LOGGER.debug("Missing software-on-demand.product-group-ids - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
@@ -208,7 +208,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				multiValue=True
 			)
 		)
-	if not 'product_sort_algorithm' in configIdents:
+	if 'product_sort_algorithm' not in configIdents:
 		LOGGER.debug("Missing product_sort_algorithm - adding it.")
 		configs.append(
 			oobject.UnicodeConfig(
