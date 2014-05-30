@@ -943,8 +943,9 @@ class OpsiConfFile(IniFile):
 
 		for line in self._lines:
 			lineNum += 1
-			if len(line) > 0 and line[0] in (';', '#'):
-				# Comment
+			line = line.strip()
+			if line and line.startswith((';', '#')):
+				# This is a comment
 				continue
 
 			line = line.replace('\r', '')
@@ -956,27 +957,26 @@ class OpsiConfFile(IniFile):
 					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 			elif not sectionType and line:
 				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
+
 			key = None
 			value = None
 
 			match = self.optionRegex.search(line)
 			if match:
 				key = match.group(1).strip().lower()
-				#value = match.group(2).lstrip()
 				value = match.group(2).strip()
 
 			if sectionType == "groups":
 				if key == "fileadmingroup":
 					value = forceUnicodeLower(value)
-				else:
-					if value:
-						parts = value.split(",")
-						grouplist = []
-						for part in parts:
-							grouplist.append(part.strip().lower())
-						value = forceUnicodeList(grouplist)
-				if not self._opsiConfig.has_key("groups"):
+				elif value:
+					value = forceUnicodeList(
+						[part.strip().lower() for part in value.split(",")]
+					)
+
+				if "groups" not in self._opsiConfig:
 					self._opsiConfig["groups"] = {}
+
 				if key and value:
 					self._opsiConfig["groups"][key] = value
 			elif sectionType == 'packages':
