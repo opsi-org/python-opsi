@@ -52,7 +52,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	:type pathToSMBConf: str
 	"""
 	def runningOnUCS():
-		return 'univention' in Distribution().distributor.lower()
+		return 'univention' in Posix.Distribution().distributor.lower()
 
 	backendProvided = True
 
@@ -78,7 +78,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				depotuser = u'{0}\\pcpatch'.format(depotdomain)
 
 			configs.append(
-				UnicodeConfig(
+				oobject.UnicodeConfig(
 					id=u'clientconfig.depot.user',
 					description=u'User for depot share',
 					possibleValues=[],
