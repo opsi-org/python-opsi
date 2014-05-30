@@ -24,6 +24,10 @@ Configuration data for the backend.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+import codecs
+import os
+import re
+
 import OPSI.Object as oobject
 import OPSI.Backend.BackendManager as bm
 
@@ -245,3 +249,16 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	if not backendProvided:
 		backend.backend_exit()
+
+
+def readWindowsDomainFromSambaConfig(pathToConfig=u'/etc/samba/smb.conf'):
+	winDomain = u''
+	if os.path.exists(pathToConfig):
+		with codecs.open(pathToConfig, 'r', 'utf-8') as sambaConfig:
+			for line in sambaConfig:
+				match = re.search('^\s*workgroup\s*=\s*(\S+)\s*$', line)
+				if match:
+					winDomain = match.group(1).upper()
+					break
+
+	return winDomain

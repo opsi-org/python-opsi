@@ -29,6 +29,7 @@ import os
 import unittest
 
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
+import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
 from .helpers import copyTestfileToTemporaryFolder
 
@@ -91,6 +92,14 @@ class ConfigFileManagementTestCase(unittest.TestCase):
                 key in config,
                 '{0} should be in {1}'.format(key, config)
             )
+
+
+class InitialiseConfigsTestCase(unittest.TestCase):
+    def testReadingWindowsDomain(self):
+        testConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+        domain = confData.readWindowsDomainFromSambaConfig(testConfig)
+
+        self.assertEquals('WWWORK', domain)
 
 
 if __name__ == '__main__':
