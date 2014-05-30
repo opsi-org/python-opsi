@@ -974,11 +974,8 @@ depot where the method is.
 	def productProperty_updateObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 
-	def productProperty_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.productProperty_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def productProperty_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.productProperty_getObjects(attributes, **filter)]
 
 	def productProperty_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductProperty, attributes, **filter)
