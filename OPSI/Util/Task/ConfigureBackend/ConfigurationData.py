@@ -266,7 +266,7 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 	"""
 	winDomain = u''
 	if os.path.exists(pathToConfig):
-		pattern = re.compile('^\s*workgroup\s*=\s*(\S+)\s*$')
+		pattern = re.compile(r'^\s*workgroup\s*=\s*(\S+)\s*$')
 		with codecs.open(pathToConfig, 'r', 'utf-8') as sambaConfig:
 			for line in sambaConfig:
 				match = pattern.search(line)
