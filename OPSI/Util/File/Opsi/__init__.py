@@ -952,7 +952,7 @@ class OpsiConfFile(IniFile):
 			match = self.sectionRegex.search(line)
 			if match:
 				sectionType = match.group(1).strip().lower()
-				if sectionType not in ('groups', ):
+				if sectionType not in ('groups', 'packages'):
 					raise Exception(u"Parse error in line %s: unknown section '%s'" % (lineNum, sectionType))
 			elif not sectionType and line:
 				raise Exception(u"Parse error in line %s: not in a section" % lineNum)
@@ -979,6 +979,12 @@ class OpsiConfFile(IniFile):
 					self._opsiConfig["groups"] = {}
 				if key and value:
 					self._opsiConfig["groups"][key] = value
+			elif sectionType == 'packages':
+				if 'packages' not in self._opsiConfig:
+					self._opsiConfig['packages'] = {}
+
+				if key == 'use_pigz':
+					self._opsiConfig['packages'][key] = forceBool(value)
 
 		self._parsed = True
 		return self._opsiConfig
@@ -999,6 +1005,21 @@ class OpsiConfFile(IniFile):
 			return None
 		else:
 			return self._opsiConfig["groups"][groupType]
+
+	def isPigzEnabled(self):
+		"""
+		Check if the usage of pigz is enabled.
+
+		:return: False if the usage of pigz is disabled, True otherwise.
+		:returntype: bool
+		"""
+		if not self._parsed:
+			self.parse()
+
+		if "packages" in self._opsiConfig and "use_pigz" in self._opsiConfig["packages"]:
+			return self._opsiConfig["packages"]["use_pigz"]
+		else:
+			return True
 
 
 class OpsiBackupArchive(tarfile.TarFile):

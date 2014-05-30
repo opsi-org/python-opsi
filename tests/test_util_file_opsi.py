@@ -96,3 +96,10 @@ class OpsiConfigFileTestCase(unittest.TestCase):
 		self.config.parse([''])
 		self.assertEquals(None, self.config.getOpsiGroups("readonly"))
 
+	def testReadingPigzStatus(self):
+		self.assertEquals(False, self.config.isPigzEnabled())
+
+	def testGettingDefaultPigzStatus(self):
+		self.config.parse([''])
+		self.assertEquals(True, self.config.isPigzEnabled())
+
