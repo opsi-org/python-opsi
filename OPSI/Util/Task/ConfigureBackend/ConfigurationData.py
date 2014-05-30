@@ -28,8 +28,9 @@ import codecs
 import os
 import re
 
-import OPSI.Object as oobject
 import OPSI.Backend.BackendManager as bm
+import OPSI.Object as oobject
+import OPSI.System.Posix as Posix
 
 from OPSI.Logger import Logger
 
@@ -50,6 +51,9 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	:param pathToSMBConf: The path the samba configuration.
 	:type pathToSMBConf: str
 	"""
+	def runningOnUCS():
+		return 'univention' in Distribution().distributor.lower()
+
 	backendProvided = True
 
 	if backend is None:
@@ -65,24 +69,24 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	configs = []
 	configIdents = backend.config_getIdents(returnType='unicode')
 
-	# # TODO: This is only needed on UCS
-	# if not 'clientconfig.depot.user' in configIdents:
-	# 	depotuser = u'pcpatch'
-	# 	depotdomain = getSysConfig()['winDomain']
-	# 	if depotdomain:
-	# 		depotuser = u'%s\\pcpatch' % depotdomain
+	if runningOnUCS():
+		# We have a domain present and people might want to change this.
+		if not 'clientconfig.depot.user' in configIdents:
+			depotuser = u'pcpatch'
+			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+			if depotdomain:
+				depotuser = u'{0}\\pcpatch'.format(depotdomain)
 
-	# 	configs.append(
-	# 		UnicodeConfig(
-	# 			id=u'clientconfig.depot.user',
-	# 			description=u'User for depot share',
-	# 			possibleValues=[],
-	# 			defaultValues=["%s" % depotuser],
-	# 			editable=True,
-	# 			multiValue=False
-	# 		)
-	# 	)
-	# # END TODO
+			configs.append(
+				UnicodeConfig(
+					id=u'clientconfig.depot.user',
+					description=u'User for depot share',
+					possibleValues=[],
+					defaultValues=[depotuser],
+					editable=True,
+					multiValue=False
+				)
+			)
 
 	if configServer and 'clientconfig.configserver.url' not in configIdents:
 		LOGGER.debug("Missing clientconfig.configserver.url - adding it.")
