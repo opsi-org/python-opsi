@@ -85,5 +85,14 @@ class OpsiConfigFileTestCase(unittest.TestCase):
 	def testReadingFileAdminGroupReturnsLowercaseName(self):
 		self.assertEquals('mypcpatch', self.config.getOpsiFileAdminGroup())
 
+	def testReturningDefaultForFileAdminGroup(self):
+		self.config.parse([''])
+		self.assertEquals('pcpatch', self.config.getOpsiFileAdminGroup())
+
 	def testReadingReadonlyGroups(self):
 		self.assertEquals(['myopsireadonlys'], self.config.getOpsiGroups("readonly"))
+
+	def testGettingDefaultForReadonlyGroups(self):
+		self.config.parse([''])
+		self.assertEquals(None, self.config.getOpsiGroups("readonly"))
+
