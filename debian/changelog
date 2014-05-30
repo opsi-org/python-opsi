@@ -13,8 +13,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * forceUrl method don't convert value to lower
   * OpsiBackupArchive: get path to mysqldump via which
   * Speeding up objectToHtml, objectToBeautifiedText
+  * New module: OPSI.Util.Task.ConfigureBackend.ConfigurationData
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 28 May 2014 14:29:25 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 May 2014 11:40:03 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
