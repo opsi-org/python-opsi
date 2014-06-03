@@ -208,7 +208,7 @@ class DHCPDBackend(ConfigDataBackend):
 		if self._fixedAddressFormat == 'FQDN':
 			fixedAddress = host.id
 
-		parameters = self._defaultClientParameters
+		parameters = forceDict(self._defaultClientParameters)
 		if not self._dhcpdOnDepot:
 			try:
 				depot = self._context.host_getObjects(id=self._getResponsibleDepotId(host.id))[0]
