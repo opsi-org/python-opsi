@@ -6,7 +6,7 @@ opsi python library - Util - File
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2006-2013 uib GmbH
+Copyright (C) 2006-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -26,6 +26,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 :author: Jan Schneider <j.schneider@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU General Public License version 2
 """
 
@@ -60,6 +61,17 @@ from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
 logger = Logger()
+
+
+def requiresParsing(function, *args, **kwargs):
+	# Decorator that calls parse() on unparsed configs.
+	def parsedFile(self, *args, **kwargs):
+		if not self._parsed:
+			self.parse()
+
+		return function(self, *args, **kwargs)
+
+	return parsedFile
 
 
 class File(object):

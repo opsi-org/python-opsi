@@ -67,20 +67,10 @@ from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 	forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
 	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
-from OPSI.Util.File import ConfigFile, IniFile, TextFile
+from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
 logger = Logger()
-
-
-def requiresParsing(function, *args, **kwargs):
-	# Decorator that calls parse() on unparsed configs.
-	def parsedFile(self, *args, **kwargs):
-		if not self._parsed:
-			self.parse()
-		return function(self, *args, **kwargs)
-
-	return parsedFile
 
 
 class HostKeyFile(ConfigFile):
