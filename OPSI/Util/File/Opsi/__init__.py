@@ -1071,30 +1071,34 @@ class OpsiBackupArchive(tarfile.TarFile):
 				logger.warning(u"Could not read dispatch configuration: %s" % unicode(error))
 				dispatchedBackends = []
 
+		if not os.path.exists(self.BACKEND_CONF_DIR):
+			raise OpsiBackupFileError(
+				u'Could not read backend configuration: '
+				u'Missing directory "{0}"'.format(self.BACKEND_CONF_DIR)
+			)
+
 		backends = {}
-		if os.path.exists(self.BACKEND_CONF_DIR):
-			for entry in os.listdir(self.BACKEND_CONF_DIR):
-				if entry.endswith(".conf"):
-					name = entry.split(".")[0].lower()
-					if name in backends:
-						raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
+		for entry in os.listdir(self.BACKEND_CONF_DIR):
+			if entry.endswith(".conf"):
+				name = entry.split(".")[0].lower()
+				if name in backends:
+					raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
 
-					backendLocals = {'socket': socket, 'config': {}, 'module': ''}
-					backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
-					try:
-						execfile(backendFile, backendLocals)
-						backends[name] = {
-							"name": name,
-							"config": backendLocals["config"],
-							"module": backendLocals['module'],
-							"dispatch": (name in dispatchedBackends)
-						}
-					except Exception as error:
-						logger.warning(u'Failed to read backend config "{filename}": {error}'.format(filename=forceFilename(entry), error=error))
+				backendLocals = {'socket': socket, 'config': {}, 'module': ''}
+				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
+				try:
+					execfile(backendFile, backendLocals)
+					backends[name] = {
+						"name": name,
+						"config": backendLocals["config"],
+						"module": backendLocals['module'],
+						"dispatch": (name in dispatchedBackends)
+					}
+				except Exception as error:
+					logger.warning(u'Failed to read backend config "{filename}": {error}'.format(filename=forceFilename(entry), error=error))
 
-			return backends
+		return backends
 
-		raise OpsiBackupFileError("Could not read backend Configuration.")
 
 	def _getBackends(self, type=None):
 		if not self._backends:
