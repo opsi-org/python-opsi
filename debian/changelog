@@ -14,8 +14,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * OpsiBackupArchive: get path to mysqldump via which
   * Speeding up objectToHtml, objectToBeautifiedText
   * New module: OPSI.Util.Task.ConfigureBackend.ConfigurationData
+  * Added possibility to disable pigz in opsi.conf
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 May 2014 11:40:03 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 May 2014 16:10:34 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
