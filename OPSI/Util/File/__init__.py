@@ -410,9 +410,8 @@ class ChangelogFile(TextFile):
 				except:
 					pass
 
+	@requiresParsing
 	def getEntries(self):
-		if not self._parsed:
-			self.parse()
 		return self._entries
 
 	def setEntries(self, entries):
@@ -669,14 +668,12 @@ class InfFile(ConfigFile):
 		self._sourceDisksNames = []
 		self._devices = []
 
+	@requiresParsing
 	def getDevices(self):
-		if not self._parsed:
-			self.parse()
 		return self._devices
 
+	@requiresParsing
 	def getSourceDisksNames(self):
-		if not self._parsed:
-			self.parse()
 		return self._sourceDisksNames
 
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
@@ -861,26 +858,23 @@ class PciidsFile(ConfigFile):
 		self._vendors = {}
 		self._subDevices = {}
 
+	@requiresParsing
 	def getVendor(self, vendorId):
 		vendorId = forceHardwareVendorId(vendorId)
-		if not self._parsed:
-			self.parse()
 		return self._vendors.get(vendorId, None)
 
+	@requiresParsing
 	def getDevice(self, vendorId, deviceId):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
-		if not self._parsed:
-			self.parse()
 		return self._devices.get(vendorId, {}).get(deviceId, None)
 
+	@requiresParsing
 	def getSubDevice(self, vendorId, deviceId, subVendorId, subDeviceId):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		subVendorId = forceHardwareVendorId(subVendorId)
 		subDeviceId = forceHardwareDeviceId(subDeviceId)
-		if not self._parsed:
-			self.parse()
 		return self._subDevices.get(vendorId, {}).get(deviceId, {}).get(subVendorId + ':' + subDeviceId, None)
 
 	def parse(self, lines=None):
@@ -952,28 +946,25 @@ class TxtSetupOemFile(ConfigFile):
 		self._driverDisks = []
 		self._configs = []
 
+	@requiresParsing
 	def getDevices(self):
-		if not self._parsed:
-			self.parse()
 		return self._devices
 
+	@requiresParsing
 	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
-		if not self._parsed:
-			self.parse()
 		for d in self._devices:
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
 				return True
 		return False
 
+	@requiresParsing
 	def getDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		architecture = forceArchitecture(architecture)
 
-		if not self._parsed:
-			self.parse()
 		device = None
 		for d in self._devices:
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
@@ -1028,9 +1019,8 @@ class TxtSetupOemFile(ConfigFile):
 				return componentOptions
 		raise Exception(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
 
+	@requiresParsing
 	def applyWorkarounds(self):
-		if not self._parsed:
-			self.parse()
 		if not self._defaultComponentIds:
 			# Missing default component will cause problems in windows textmode setup
 			logger.info(u"No default component ids found, using '%s' as default component id" % self._componentOptions[0]['componentId'])
@@ -1733,22 +1723,18 @@ class DHCPDConfFile(TextFile):
 
 		parentBlock.addComponent(hostBlock)
 
+	@requiresParsing
 	def getHost(self, hostname):
 		hostname = forceHostname(hostname)
-
-		if not self._parsed:
-			self.parse()
 
 		for block in self._globalBlock.getBlocks('host', recursive = True):
 			if (block.settings[1] == hostname):
 				return block.getParameters_hash()
 		return None
 
+	@requiresParsing
 	def deleteHost(self, hostname):
 		hostname = forceHostname(hostname)
-
-		if not self._parsed:
-			self.parse()
 
 		logger.notice(u"Deleting host '%s' from dhcpd config file '%s'" % (hostname, self._filename))
 		hostBlocks = []
@@ -1766,12 +1752,10 @@ class DHCPDConfFile(TextFile):
 		for block in hostBlocks:
 			block.parentBlock.removeComponent(block)
 
+	@requiresParsing
 	def modifyHost(self, hostname, parameters):
 		hostname   = forceHostname(hostname)
 		parameters = forceDict(parameters)
-
-		if not self._parsed:
-			self.parse()
 
 		logger.notice(u"Modifying host '%s' in dhcpd config file '%s'" % (hostname, self.filename))
 
