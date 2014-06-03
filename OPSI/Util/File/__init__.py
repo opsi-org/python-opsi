@@ -1640,16 +1640,16 @@ class DHCPDConfFile(TextFile):
 		self.write(self._globalBlock.asText())
 		self.close()
 
-	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters = {}):
-		if not parameters: parameters = {}
-		hostname        = forceHostname(hostname)
-		hardwareAddress = forceHardwareAddress(hardwareAddress)
-		ipAddress       = forceIPAddress(ipAddress)
-		fixedAddress    = forceUnicodeLower(fixedAddress)
-		parameters      = forceDict(parameters)
+	@requiresParsing
+	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None):
+		if not parameters:
+			parameters = {}
 
-		if not self._parsed:
-			self.parse()
+		hostname = forceHostname(hostname)
+		hardwareAddress = forceHardwareAddress(hardwareAddress)
+		ipAddress = forceIPAddress(ipAddress)
+		fixedAddress = forceUnicodeLower(fixedAddress)
+		parameters = forceDict(parameters)
 
 		existingHost = None
 		for block in self._globalBlock.getBlocks('host', recursive = True):
