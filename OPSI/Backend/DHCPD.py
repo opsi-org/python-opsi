@@ -186,6 +186,7 @@ class DHCPDBackend(ConfigDataBackend):
 				ipAddress = socket.gethostbyname(host.id)
 				logger.info(u"Client fqdn resolved to '%s'" % ipAddress)
 			except Exception as error:
+				logger.debug(u"Failed to get IP by hostname: {0}".format(error))
 				with self._reloadLock:
 					self._dhcpdConfFile.parse()
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
