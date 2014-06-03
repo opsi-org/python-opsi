@@ -23,6 +23,9 @@ Testing the task to backup opsi.
 :license: GNU Affero General Public License version 3
 """
 
+import os
+import mock
+import sys
 import unittest
 
 from OPSI.Util.Task.Backup import OpsiBackup
@@ -52,6 +55,22 @@ class BackupTestCase(unittest.TestCase):
             )
         )
 
+    def testPatchingStdout(self):
+        fake = 'fake'
+        backup = OpsiBackup(stdout=fake)
+        self.assertEquals(fake, backup.stdout)
+
+        newBackup = OpsiBackup()
+        self.assertEquals(sys.stdout, newBackup.stdout)
+
+    def testGettingArchive(self):
+        fakeBackendDir = os.path.join(os.path.dirname(__file__), '..', 'data', 'backends')
+        fakeBackendDir = os.path.normpath(fakeBackendDir)
+
+        with mock.patch('OPSI.System.Posix.SysInfo.opsiVersion'):
+            with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
+                backup = OpsiBackup()
+                archive = backup._getArchive('r')
 
 if __name__ == '__main__':
     unittest.main()
