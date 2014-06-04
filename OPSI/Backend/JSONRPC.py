@@ -6,7 +6,7 @@ opsi python library - JSONRPC
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2010-2013 uib GmbH
+Copyright (C) 2010-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -56,8 +56,10 @@ logger = Logger()
 
 
 class JSONRPC(DeferredCall):
-	def __init__(self, jsonrpcBackend, baseUrl, method, params=[], retry = True, callback = None):
-		DeferredCall.__init__(self, callback = callback)
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):
+		if params is None:
+			params = []
+		DeferredCall.__init__(self, callback=callback)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.baseUrl = baseUrl
 		self.id = self.jsonrpcBackend._getRpcId()
@@ -71,9 +73,13 @@ class JSONRPC(DeferredCall):
 	def getRpc(self):
 		if self.jsonrpcBackend.isLegacyOpsi():
 			for i in range(len(self.params)):
-				if (self.params[i] == '__UNDEF__'):
+				if self.params[i] == '__UNDEF__':
 					self.params[i] = None
-		return { "id": self.id, "method": self.method, "params": serialize(self.params) }
+		return {
+			"id": self.id,
+			"method": self.method,
+			"params": serialize(self.params)
+		}
 
 	def processResult(self, result):
 		try:
@@ -105,7 +111,7 @@ class JSONRPC(DeferredCall):
 
 			rpc = json.dumps(self.getRpc())
 			logger.debug2(u"jsonrpc: %s" % rpc)
-			response = self.jsonrpcBackend._request(baseUrl = self.baseUrl, data = rpc, retry = self.retry)
+			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
 			self.processResult(json.loads(response))
 		except Exception as e:
 			if not self.method in ('backend_exit', 'exit'):
@@ -115,9 +121,11 @@ class JSONRPC(DeferredCall):
 
 
 class JSONRPCThread(JSONRPC, threading.Thread):
-	def __init__(self, jsonrpcBackend, baseUrl, method, params=[], retry = True, callback = None):
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):
+		if params is None:
+			params = []
 		threading.Thread.__init__(self)
-		JSONRPC.__init__(self, jsonrpcBackend = jsonrpcBackend, baseUrl = baseUrl, method = method, params = params, retry = retry, callback = callback)
+		JSONRPC.__init__(self, jsonrpcBackend=jsonrpcBackend, baseUrl=baseUrl, method=method, params=params, retry=retry, callback=callback)
 
 	def execute(self):
 		self.start()
@@ -128,7 +136,7 @@ class JSONRPCThread(JSONRPC, threading.Thread):
 
 
 class RpcQueue(threading.Thread):
-	def __init__(self, jsonrpcBackend, size, poll = 0.01):
+	def __init__(self, jsonrpcBackend, size, poll=0.01):
 		threading.Thread.__init__(self)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.size = size
@@ -140,7 +148,7 @@ class RpcQueue(threading.Thread):
 
 	def add(self, jsonrpc):
 		logger.debug(u'Adding jsonrpc %s to queue (current queue size: %d)' % (jsonrpc, self.queue.qsize()))
-		self.queue.put(jsonrpc, block = True)
+		self.queue.put(jsonrpc, block=True)
 		logger.debug2(u'Added jsonrpc %s to queue' % jsonrpc)
 
 	def stop(self):
@@ -155,7 +163,7 @@ class RpcQueue(threading.Thread):
 			while not self.queue.empty():
 				self.idle.clear()
 				try:
-					jsonrpc = self.queue.get(block = False)
+					jsonrpc = self.queue.get(block=False)
 					if jsonrpc:
 						logger.debug(u'Got jsonrpc %s from queue' % jsonrpc)
 						jsonrpcs.append(jsonrpc)
@@ -164,7 +172,7 @@ class RpcQueue(threading.Thread):
 				except Empty:
 					break
 			if jsonrpcs:
-				self.process(jsonrpcs = jsonrpcs)
+				self.process(jsonrpcs=jsonrpcs)
 			time.sleep(self.poll)
 		logger.debug(u"RpcQueue stopped (empty: %s, stopped: %s)" % (self.queue.empty(), self.stopped))
 
@@ -195,7 +203,7 @@ class RpcQueue(threading.Thread):
 			rpc = json.dumps(rpc)
 			logger.debug2(u"jsonrpc: %s" % rpc)
 
-			response = self.jsonrpcBackend._request(baseUrl = baseUrl, data = rpc, retry = retry)
+			response = self.jsonrpcBackend._request(baseUrl=baseUrl, data=rpc, retry=retry)
 			logger.debug(u"Got response from host %s" % self.jsonrpcBackend._host)
 			try:
 				response = forceList(json.loads(response))
@@ -235,34 +243,34 @@ class JSONRPCBackend(Backend):
 
 		Backend.__init__(self, **kwargs)
 
-		self._application          = 'opsi jsonrpc module version %s' % __version__
-		self._sessionId            = None
-		self._deflate              = False
-		self._connectOnInit        = True
-		self._connected            = False
-		self._retryTime            = 5
-		self._defaultHttpPort      = 4444
-		self._defaultHttpsPort     = 4447
-		self._host                 = None
-		self._port                 = None
-		self._baseUrl              = u'/rpc'
-		self._protocol             = 'https'
-		self._socketTimeout        = None
-		self._connectTimeout       = 30
-		self._connectionPoolSize   = 1
-		self._legacyOpsi           = False
-		self._interface            = None
-		self._rpcId                = 0
-		self._rpcIdLock            = threading.Lock()
-		self._async                = False
-		self._rpcQueue             = None
-		self._rpcQueuePollingTime  = 0.01
-		self._rpcQueueSize         = 10
-		self._serverCertFile       = None
-		self._caCertFile           = None
-		self._verifyServerCert     = False
+		self._application = 'opsi jsonrpc module version %s' % __version__
+		self._sessionId = None
+		self._deflate = False
+		self._connectOnInit = True
+		self._connected = False
+		self._retryTime = 5
+		self._defaultHttpPort = 4444
+		self._defaultHttpsPort = 4447
+		self._host = None
+		self._port = None
+		self._baseUrl = u'/rpc'
+		self._protocol = 'https'
+		self._socketTimeout = None
+		self._connectTimeout = 30
+		self._connectionPoolSize = 1
+		self._legacyOpsi = False
+		self._interface = None
+		self._rpcId = 0
+		self._rpcIdLock = threading.Lock()
+		self._async = False
+		self._rpcQueue = None
+		self._rpcQueuePollingTime = 0.01
+		self._rpcQueueSize = 10
+		self._serverCertFile = None
+		self._caCertFile = None
+		self._verifyServerCert = False
 		self._verifyServerCertByCa = False
-		self._verifyByCaCertsFile  = None
+		self._verifyByCaCertsFile = None
 
 		if not self._username:
 			self._username = u''
@@ -274,33 +282,33 @@ class JSONRPCBackend(Backend):
 			option = option.lower()
 			if option in ('application',):
 				self._application = str(value)
-			if option in ('sessionid',):
+			elif option in ('sessionid',):
 				self._sessionId = str(value)
-			if option in ('deflate',):
+			elif option in ('deflate',):
 				self._deflate = forceBool(value)
-			if option in ('connectoninit',):
+			elif option in ('connectoninit',):
 				self._connectOnInit = forceBool(value)
-			if option in ('connecttimeout',) and not value is None:
+			elif option in ('connecttimeout',) and not value is None:
 				self._connectTimeout = forceInt(value)
-			if option in ('connectionpoolsize',) and not value is None:
+			elif option in ('connectionpoolsize',) and not value is None:
 				self._connectionPoolSize = forceInt(value)
-			if option in ('timeout', 'sockettimeout') and not value is None:
+			elif option in ('timeout', 'sockettimeout') and not value is None:
 				self._socketTimeout = forceInt(value)
-			if option in ('retry',):
+			elif option in ('retry',):
 				retry = forceBool(value)
-			if option in ('retrytime',):
+			elif option in ('retrytime',):
 				self._retryTime = forceInt(value)
-			if option in ('rpcqueuepollingtime',):
+			elif option in ('rpcqueuepollingtime',):
 				self._rpcQueuePollingTime = forceFloat(value)
-			if option in ('rpcqueuesize',):
+			elif option in ('rpcqueuesize',):
 				self._rpcQueueSize = forceInt(value)
-			if option in ('servercertfile',) and not value is None:
+			elif option in ('servercertfile',) and not value is None:
 				self._serverCertFile = forceFilename(value)
-			if option in ('verifyservercert',):
+			elif option in ('verifyservercert',):
 				self._verifyServerCert = forceBool(value)
-			if option in ('cacertfile',) and not value is None:
+			elif option in ('cacertfile',) and not value is None:
 				self._caCertFile = forceFilename(value)
-			if option in ('verifyservercertbyca',):
+			elif option in ('verifyservercertbyca',):
 				self._verifyServerCertByCa = forceBool(value)
 
 		if not retry:
@@ -311,18 +319,18 @@ class JSONRPCBackend(Backend):
 
 		self._processAddress(address)
 		self._connectionPool = getSharedConnectionPool(
-			scheme               = self._protocol,
-			host                 = self._host,
-			port                 = self._port,
-			socketTimeout        = self._socketTimeout,
-			connectTimeout       = self._connectTimeout,
-			retryTime            = self._retryTime,
-			maxsize              = self._connectionPoolSize,
-			block                = True,
-			verifyServerCert     = self._verifyServerCert,
-			serverCertFile       = self._serverCertFile,
-			caCertFile           = self._caCertFile,
-			verifyServerCertByCa = self._verifyServerCertByCa
+			scheme=self._protocol,
+			host=self._host,
+			port=self._port,
+			socketTimeout=self._socketTimeout,
+			connectTimeout=self._connectTimeout,
+			retryTime=self._retryTime,
+			maxsize=self._connectionPoolSize,
+			block=True,
+			verifyServerCert=self._verifyServerCert,
+			serverCertFile=self._serverCertFile,
+			caCertFile=self._caCertFile,
+			verifyServerCertByCa=self._verifyServerCertByCa
 		)
 
 		if self._connectOnInit:
@@ -335,7 +343,11 @@ class JSONRPCBackend(Backend):
 
 	def startRpcQueue(self):
 		if not self._rpcQueue or not self._rpcQueue.is_alive():
-			self._rpcQueue = RpcQueue(jsonrpcBackend = self, size = self._rpcQueueSize, poll = self._rpcQueuePollingTime)
+			self._rpcQueue = RpcQueue(
+				jsonrpcBackend=self,
+				size=self._rpcQueueSize,
+				poll=self._rpcQueuePollingTime
+			)
 			self._rpcQueue.start()
 
 	def __del__(self):
@@ -351,9 +363,9 @@ class JSONRPCBackend(Backend):
 		if self._connected:
 			try:
 				if self._legacyOpsi:
-					res = self._jsonRPC('exit', retry = False)
+					res = self._jsonRPC('exit', retry=False)
 				else:
-					res = self._jsonRPC('backend_exit', retry = False)
+					res = self._jsonRPC('backend_exit', retry=False)
 			except:
 				pass
 		if self._rpcQueue:
@@ -421,7 +433,7 @@ class JSONRPCBackend(Backend):
 				logger.info(u"Legacy opsi")
 				self._legacyOpsi = True
 				self._deflate = False
-				self._jsonRPC(u'authenticated', retry = False)
+				self._jsonRPC(u'authenticated', retry=False)
 			if self._legacyOpsi:
 				self._createInstanceMethods34()
 			else:
@@ -435,7 +447,7 @@ class JSONRPCBackend(Backend):
 		self._rpcIdLock.acquire()
 		try:
 			self._rpcId += 1
-			if (self._rpcId > 100000):
+			if self._rpcId > 100000:
 				self._rpcId = 1
 		finally:
 			self._rpcIdLock.release()
@@ -487,8 +499,7 @@ class JSONRPCBackend(Backend):
 
 			logger.debug2("Creating instance method '%s'" % method['name'])
 
-
-			if (len(params) == 2):
+			if len(params) == 2:
 				logger.debug2('def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
 					% (method['name'], ', '.join(paramsWithDefaults), params[1], params[1], params[1], method['name'], ', '.join(params[1:])) )
 				exec 'def %s(%s):\n  if type(%s) == list: %s = [ %s ]\n  return self._jsonRPC(method = "%s", params = [%s])'\
@@ -557,14 +568,13 @@ class JSONRPCBackend(Backend):
 					if mysqlBackend and not modules.get('mysql_backend'):
 						raise Exception(u"MySQL backend in use but not licensed")
 
-
 		for method in self._interface:
 			try:
 				methodName = method['name']
-				args       = method['args']
-				varargs    = method['varargs']
-				keywords   = method['keywords']
-				defaults   = method['defaults']
+				args = method['args']
+				varargs = method['varargs']
+				keywords = method['keywords']
+				defaults = method['defaults']
 
 				if methodName in ('backend_exit', 'backend_getInterface'):
 					continue
@@ -572,14 +582,17 @@ class JSONRPCBackend(Backend):
 				argString = u''
 				callString = u''
 				for i in range(len(args)):
-					if (args[i] == 'self'):
+					if args[i] == 'self':
 						continue
-					if (argString):	 argString  += u', '
-					if (callString): callString += u', '
-					argString  += args[i]
+					if argString:
+						argString += u', '
+					if callString:
+						callString += u', '
+					argString += args[i]
 					callString += args[i]
 					if type(defaults) in (tuple, list) and (len(defaults) + i >= len(args)):
 						default = defaults[len(defaults)-len(args)+i]
+						# TODO: watch out for Python 3
 						if type(default) is str:
 							default = u"'%s'" % default
 						elif type(default) is unicode:
@@ -587,14 +600,18 @@ class JSONRPCBackend(Backend):
 						argString += u'=%s' % unicode(default)
 				if varargs:
 					for vararg in varargs:
-						if (argString):	 argString  += u', '
-						if (callString): callString += u', '
-						argString  += u'*%s' % vararg
+						if argString:
+							argString += u', '
+						if callString:
+							callString += u', '
+						argString += u'*%s' % vararg
 						callString += vararg
 				if keywords:
-					if (argString):	 argString  += u', '
-					if (callString): callString += u', '
-					argString  += u'**%s' % keywords
+					if argString:
+						argString += u', '
+					if callString:
+						callString += u', '
+					argString += u'**%s' % keywords
 					callString += keywords
 
 				logger.debug2(u"Arg string is: %s" % argString)
@@ -612,14 +629,14 @@ class JSONRPCBackend(Backend):
 	def _jsonRPC(self, method, params=[], retry=True):
 		if self._async:
 			self.startRpcQueue()
-			jsonrpc = JSONRPC(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
+			jsonrpc = JSONRPC(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			self._rpcQueue.add(jsonrpc)
 			return jsonrpc
 		else:
-			jsonrpc = JSONRPCThread(jsonrpcBackend = self, baseUrl = self._baseUrl, method = method, params = params, retry = retry)
+			jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			return jsonrpc.execute()
 
-	def _request(self, baseUrl, data, retry = True):
+	def _request(self, baseUrl, data, retry=True):
 		headers = {
 			'user-agent': self._application,
 			'Accept': 'application/json-rpc, text/plain'
@@ -653,7 +670,7 @@ class JSONRPCBackend(Backend):
 		if self._sessionId:
 			headers['Cookie'] = self._sessionId
 
-		response = self._connectionPool.urlopen(method = 'POST', url = baseUrl, body = data, headers = headers, retry = retry)
+		response = self._connectionPool.urlopen(method='POST', url=baseUrl, body=data, headers=headers, retry=retry)
 
 		# Get cookie from header
 		cookie = response.getheader('set-cookie', None)
