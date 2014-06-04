@@ -257,8 +257,8 @@ class SQLBackend(ConfigDataBackend):
 		if not attributes:
 			attributes = []
 		# Work on copies of attributes and filter!
-		newAttributes = list(forceUnicodeList(attributes))
-		newFilter = dict(forceDict(filter))
+		newAttributes = forceUnicodeList(attributes)
+		newFilter = forceDict(filter)
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 		if newFilter.has_key('id'):
 			newFilter[id] = newFilter['id']
