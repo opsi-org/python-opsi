@@ -85,24 +85,15 @@ def forceUnicodeUpper(var):
 
 
 def forceUnicodeList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceUnicode(var[i])
-	return var
+	return [forceUnicode(element) for element in forceList(var)]
 
 
 def forceDictList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceDict(var[i])
-	return var
+	return [forceDict(element) for element in forceList(var)]
 
 
 def forceUnicodeLowerList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceUnicodeLower(var[i])
-	return var
+	return [forceUnicodeLower(element) for element in forceList(var)]
 
 
 def forceBool(var):
@@ -117,10 +108,7 @@ def forceBool(var):
 
 
 def forceBoolList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceBool(var[i])
-	return var
+	return [forceBool(element) for element in forceList(var)]
 
 
 def forceInt(var):
