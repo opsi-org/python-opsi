@@ -27,7 +27,7 @@ It also is home to various exception classes.
 :copyright:	uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU General Public License version 2
+:license: GNU Affero General Public License version 3
 """
 
 __version__ = '4.0.5.1'
