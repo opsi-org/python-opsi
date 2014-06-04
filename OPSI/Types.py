@@ -47,17 +47,18 @@ logger = Logger()
 
 def forceList(var):
 	if not type(var) in (types.ListType, types.TupleType):
-		return [ var ]
+		return [var]
 	return list(var)
 
 
 def forceUnicode(var):
 	if type(var) is types.UnicodeType:
 		return var
-	if type(var) is types.StringType:
+	elif type(var) is types.StringType:
 		return unicode(var, 'utf-8', 'replace')
-	if (os.name == 'nt') and type(var) is WindowsError:
+	elif (os.name == 'nt') and type(var) is WindowsError:
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
+
 	if hasattr(var, '__unicode__'):
 		try:
 			return var.__unicode__()
@@ -132,16 +133,13 @@ def forceInt(var):
 
 
 def forceIntList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceInt(var[i])
-	return var
+	return [forceInt(element) for element in forceList(var)]
 
 
 def forceUnsignedInt(var):
 	var = forceInt(var)
-	if (var < 0):
-		var = var*(-1)
+	if var < 0:
+		var = -1 * var
 	return var
 
 
@@ -153,9 +151,9 @@ def forceOct(var):
 		var = ''
 		for i in range(len(tmp)):
 			x = forceInt(tmp[i])
-			if (x > 7):
-				raise Exception('too big')
-			if (i == 0) and (x != '0'):
+			if x > 7:
+				raise Exception('"{0}" is too big')
+			elif i == 0 and x != '0':
 				var += '0'
 			var += str(x)
 		var = eval(var)
@@ -478,7 +476,7 @@ def forceRequirementType(var):
 	var = forceUnicodeLower(var)
 	if not var:
 		return None
-	if not var in ('before', 'after'):
+	elif var not in ('before', 'after'):
 		raise ValueError(u"Bad requirement type: '%s'" % var)
 	return var
 
