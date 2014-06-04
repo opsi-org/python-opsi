@@ -285,6 +285,14 @@ class ForceUrlTestCase(unittest.TestCase):
 		self.assertRaises(ValueError, forceUrl, True)
 		self.assertRaises(ValueError, forceUrl, None)
 
+	def testForcingDoesNotForceLowercase(self):
+		"""
+		URLs must not be force lowercase because they could include an
+		username / password combination for an proxy.
+		"""
+		self.assertTrue(forceUrl('https://X:YY12ZZ@SERVER.DOMAIN.TLD:4447/resource'), 'https://X:YY12ZZ@SERVER.DOMAIN.TLD:4447/resource')
+		self.assertTrue(forceUrl('https://X:Y@server.domain.tld:4447/resource'), 'https://X:Y@server.domain.tld:4447/resource')
+
 
 class ForceOpsiHostKeyTestCase(unittest.TestCase):
 	def testForcingReturnsLowercase(self):

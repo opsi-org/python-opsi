@@ -292,11 +292,16 @@ def forceNetworkAddress(var):
 	return var
 
 
-urlRegex = re.compile('^[a-z0-9]+://[/a-z0-9]')
+urlRegex = re.compile('^[a-z0-9]+://[/a-zA-Z0-9]')
 def forceUrl(var):
+	"""
+	Forces ``var`` to be an valid URL.
+
+	:returntype: unicode
+	"""
 	var = forceUnicode(var)
-	if not re.search(urlRegex, var):
-		raise ValueError(u"Bad url: '%s'" % var)
+	if not urlRegex.search(var):
+		raise ValueError(u"Bad url: '{0}'".format(var))
 	return var
 
 
