@@ -141,8 +141,73 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
             windowsSoftwareIds=None
         )
 
-        expected = u'\n[ \n          {\n          "onceScript" : "once.ins",\n          "windowsSoftwareIds" : null,\n          "description" : "asdf",\n          "advice" : "lolnope",\n          "alwaysScript" : "always.ins",\n          "updateScript" : "update.ins",\n          "productClassIds" : null,\n          "id" : "htmltestproduct",\n          "licenseRequired" : false,\n          "ident" : "htmltestproduct;3.1;1",\n          "name" : "Product HTML Test",\n          "changelog" : null,\n          "customScript" : null,\n          "uninstallScript" : "uninstall.ins",\n          "userLoginScript" : null,\n          "priority" : 0,\n          "productVersion" : "3.1",\n          "packageVersion" : "1",\n          "type" : "LocalbootProduct",\n          "setupScript" : "setup.ins"          \n}]'
-        self.assertEquals(expected, objectToBeautifiedText([product]))
+        expected = u"""\
+[
+          {
+          "onceScript" : "once.ins",
+          "windowsSoftwareIds" : null,
+          "description" : "asdf",
+          "advice" : "lolnope",
+          "alwaysScript" : "always.ins",
+          "updateScript" : "update.ins",
+          "productClassIds" : null,
+          "id" : "htmltestproduct",
+          "licenseRequired" : false,
+          "ident" : "htmltestproduct;3.1;1",
+          "name" : "Product HTML Test",
+          "changelog" : null,
+          "customScript" : null,
+          "uninstallScript" : "uninstall.ins",
+          "userLoginScript" : null,
+          "priority" : 0,
+          "productVersion" : "3.1",
+          "packageVersion" : "1",
+          "type" : "LocalbootProduct",
+          "setupScript" : "setup.ins"
+          },
+          {
+          "onceScript" : "once.ins",
+          "windowsSoftwareIds" : null,
+          "description" : "asdf",
+          "advice" : "lolnope",
+          "alwaysScript" : "always.ins",
+          "updateScript" : "update.ins",
+          "productClassIds" : null,
+          "id" : "htmltestproduct",
+          "licenseRequired" : false,
+          "ident" : "htmltestproduct;3.1;1",
+          "name" : "Product HTML Test",
+          "changelog" : null,
+          "customScript" : null,
+          "uninstallScript" : "uninstall.ins",
+          "userLoginScript" : null,
+          "priority" : 0,
+          "productVersion" : "3.1",
+          "packageVersion" : "1",
+          "type" : "LocalbootProduct",
+          "setupScript" : "setup.ins"
+          }
+]\
+"""
+        self.maxDiff = None
+        self.assertEquals(expected, objectToBeautifiedText([product, product]))
+
+    def testFormattingEmptyList(self):
+        self.assertEquals('[\n]', objectToBeautifiedText([]))
+
+    def testFormattingListOfEmptyLists(self):
+        expected = """\
+[
+          [
+          ],
+          [
+          ]
+]\
+"""
+        self.assertEquals(expected, objectToBeautifiedText([[],[]]))
+
+    def testFormattingEmptyDict(self):
+        self.assertEquals('{\n}', objectToBeautifiedText({}))
 
 
 class UtilTestCase(unittest.TestCase):

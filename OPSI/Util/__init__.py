@@ -286,36 +286,38 @@ def objectToBeautifiedText(obj, level=0):
 	append = text.append
 
 	if type(obj) is types.ListType:
-		append(u'\n')
 		append(indent)
-		append(u'[ \n')
-		for i in range(len(obj)):
-			if not type(obj[i]) in (types.DictType, types.ListType):
-				append(indent)
-			append(objectToBeautifiedText(obj[i], level + 1))
+		append(indent)
+		append(u'[\n')
 
-			if i < len(obj) - 1:
-				append(u',\n')
+		for element in obj:
+			if not type(element) in (types.DictType, types.ListType):
+				append(indent)
+			append(objectToBeautifiedText(element, level + 1))
+			append(u',')
+			append(u'\n')
+		else:
+			del text[-2]  # Deleting the last comma
 
 		append(indent)
 		append(u']')
 	elif type(obj) is types.DictType:
 		append(indent)
 		append(u'{\n')
-		i = 0
-		for (key, value) in obj.items():
+
+		for (key, value) in obj.iteritems():
 			append(indent)
 			append(key.join((u'"', u'" : ')))
 			if type(value) in (types.DictType, types.ListType):
 				append(u'\n')
 			append(objectToBeautifiedText(value, level + 1))
-
-			if i < len(obj) - 1:
-				append(u',\n')
-			i += 1
+			append(u',')
+			append(u'\n')
+		else:
+			del text[-2]  # Deleting the last comma
 
 		append(indent)
-		append(u'\n}')
+		append(u'}')
 	elif type(obj) is str:
 		append(toJson(forceUnicode(obj)))
 	else:
