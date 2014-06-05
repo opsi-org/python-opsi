@@ -117,10 +117,10 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
     def testWorkingWithManyObjectsMustNotFail(self):
         obj = [
             ProductFactory.generateLocalbootProduct(i)
-            for i in range(1024)
+            for i in range(10240)
         ]
 
-        objectToBeautifiedText(obj, level=0)
+        objectToBeautifiedText(obj)
 
     def testCheckingOutput(self):
         product = LocalbootProduct(
