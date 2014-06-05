@@ -287,16 +287,16 @@ def objectToBeautifiedText(obj, level=0):
 
 	if type(obj) is types.ListType:
 		append(indent)
-		append(indent)
 		append(u'[\n')
 
-		for element in obj:
-			if not type(element) in (types.DictType, types.ListType):
-				append(indent)
-			append(objectToBeautifiedText(element, level + 1))
-			append(u',')
-			append(u'\n')
-		else:
+		if obj:
+			for element in obj:
+				if not type(element) in (types.DictType, types.ListType):
+					append(indent)
+				append(objectToBeautifiedText(element, level + 1))
+				append(u',')
+				append(u'\n')
+
 			del text[-2]  # Deleting the last comma
 
 		append(indent)
@@ -305,15 +305,16 @@ def objectToBeautifiedText(obj, level=0):
 		append(indent)
 		append(u'{\n')
 
-		for (key, value) in obj.iteritems():
-			append(indent)
-			append(key.join((u'"', u'" : ')))
-			if type(value) in (types.DictType, types.ListType):
+		if obj:
+			for (key, value) in obj.iteritems():
+				append(indent)
+				append(key.join((u'"', u'" : ')))
+				if type(value) in (types.DictType, types.ListType):
+					append(u'\n')
+				append(objectToBeautifiedText(value, level + 1))
+				append(u',')
 				append(u'\n')
-			append(objectToBeautifiedText(value, level + 1))
-			append(u',')
-			append(u'\n')
-		else:
+
 			del text[-2]  # Deleting the last comma
 
 		append(indent)
