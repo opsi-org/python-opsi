@@ -629,10 +629,19 @@ class MySQLBackend(SQLBackend):
 					myPPVvalue = u"`value` = %s" % (value)
 				else:
 					myPPVvalue = u"`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
-				myPPVselect = u"select * from PRODUCT_PROPERTY_VALUE where " \
-					+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
-					% (data['propertyId'], data['productId'], str(data['productVersion']), str(data['packageVersion'])) \
-					+ u" AND "+myPPVvalue+u" AND "+myPPVdefault
+				myPPVselect = (
+					u"select * from PRODUCT_PROPERTY_VALUE where "
+					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
+					u"`productVersion` = '{2}' AND "
+					u"`packageVersion` = '{3}' AND {4} AND {5}".format(
+						data['propertyId'],
+						data['productId'],
+						str(data['productVersion']),
+						str(data['packageVersion']),
+						myPPVvalue,
+						myPPVdefault
+					)
+				)
 				myTransactionSuccess = False
 				myMaxRetryTransaction = 10
 				myRetryTransactionCounter = 0
