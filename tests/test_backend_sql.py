@@ -91,8 +91,14 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertTrue(u'1' in result)
         self.assertTrue(u'2' in result)
 
-    def testCreatingQueryWithWildcard(self):
+    def testCreatingFilterWithWildcard(self):
         self.assertEquals(u"(`a` LIKE '%bc')", self.backend._filterToSql({'a': '*bc'}))
+
+    def testCreatingFilterWithGreaterOrLowerOrEqualSign(self):
+        self.assertEquals(u"(`a` > 1)", self.backend._filterToSql({'a': '> 1'}))
+        self.assertEquals(u"(`a` < 1)", self.backend._filterToSql({'a': '< 1'}))
+        self.assertEquals(u"(`a` = 1)", self.backend._filterToSql({'a': '= 1'}))
+        self.assertEquals(u"(`a` <=> 1)", self.backend._filterToSql({'a': '<=> 1'}))
 
 
 class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
