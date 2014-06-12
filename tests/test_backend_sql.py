@@ -91,6 +91,9 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertTrue(u'1' in result)
         self.assertTrue(u'2' in result)
 
+    def testCreatingQueryWithWildcard(self):
+        self.assertEquals(u"(`a` LIKE '%bc')", self.backend._filterToSql({'a': '*bc'}))
+
 
 class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
     def testCreatingQueryIncludesTableName(self):
