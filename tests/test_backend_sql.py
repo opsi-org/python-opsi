@@ -105,6 +105,10 @@ class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
     def testDefiningColumnsToSelect(self):
         self.assertTrue(u'`first`,`second`' in self.backend._createQuery('foo', ['first', 'second']))
 
+    def testHavingFilterAddsWhereClause(self):
+        self.assertTrue(u'where' not in self.backend._createQuery('foo'))
+        self.assertTrue(u'where' in self.backend._createQuery('foo', filter={'a': 1}))
+
 
 if __name__ == '__main__':
     unittest.main()
