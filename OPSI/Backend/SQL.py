@@ -346,8 +346,6 @@ class SQLBackend(ConfigDataBackend):
 					condition += u"`%s` = %s" % (arg, 0)
 			elif type(value) in (float, long, int):
 				condition += u"`%s` = %s" % (arg, value)
-			# elif value is None:
-			# 	where += u"`%s` is NULL" % key
 			else:
 				condition += u"`%s` = '%s'" % (arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
 		if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
