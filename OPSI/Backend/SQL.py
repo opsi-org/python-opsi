@@ -46,11 +46,11 @@ class SQL(object):
 
 	AUTOINCREMENT = 'AUTO_INCREMENT'
 	ALTER_TABLE_CHANGE_SUPPORTED = True
-	ESCAPED_BACKSLASH  = "\\\\"
+	ESCAPED_BACKSLASH = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_UNDERSCORE = "\\_"
-	ESCAPED_PERCENT    = "\\%"
-	ESCAPED_ASTERISK   = "\\*"
+	ESCAPED_PERCENT = "\\%"
+	ESCAPED_ASTERISK = "\\*"
 	doCommit = True
 
 	def __init__(self, **kwargs):
@@ -139,10 +139,10 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		if not command in ('insert', 'update', 'delete'):
 			raise Exception(u"Unhandled command '%s'" % command)
 		data = {
-			'command':     command,
+			'command': command,
 			'objectClass': obj.__class__.__name__,
-			'ident':       obj.getIdent(),
-			'date':        timestamp()
+			'ident': obj.getIdent(),
+			'date': timestamp()
 		}
 		if self._lastModificationOnly:
 			objectClass = data['objectClass']
@@ -152,11 +152,11 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		self._sql.insert('OBJECT_MODIFICATION_TRACKER', data)
 		logger.debug(u"Took %0.2f seconds to track modification of objectClass %s, ident %s" % ((time.time() - start), data['objectClass'], data['ident']))
 
-	def getModifications(self, sinceDate = 0):
+	def getModifications(self, sinceDate=0):
 		return self._sql.getSet("SELECT * FROM `OBJECT_MODIFICATION_TRACKER` WHERE `date` > '%s'" % forceOpsiTimestamp(sinceDate))
 
-	def clearModifications(self, objectClass = None, sinceDate = 0):
-		where ="`date` > '%s'" % forceOpsiTimestamp(sinceDate)
+	def clearModifications(self, objectClass=None, sinceDate=0):
+		where = "`date` > '%s'" % forceOpsiTimestamp(sinceDate)
 		if objectClass:
 			where += ' AND `objectClass` = "%s"' % objectClass
 		self._sql.execute("DELETE FROM `OBJECT_MODIFICATION_TRACKER` WHERE %s" % where)
@@ -190,7 +190,7 @@ class SQLBackend(ConfigDataBackend):
 			self._auditHardwareConfig[hwClass] = {}
 			for value in conf['Values']:
 				self._auditHardwareConfig[hwClass][value['Opsi']] = {
-					'Type':  value["Type"],
+					'Type': value["Type"],
 					'Scope': value["Scope"]
 				}
 
@@ -241,6 +241,7 @@ class SQLBackend(ConfigDataBackend):
 			if select:
 				select += u','
 			select += u'`%s`' % attribute
+
 		if not select:
 			select = u'*'
 
@@ -257,27 +258,28 @@ class SQLBackend(ConfigDataBackend):
 		if not attributes:
 			attributes = []
 		# Work on copies of attributes and filter!
+		# TODO: horribly slow code :<
 		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
-		if newFilter.has_key('id'):
+		if 'id' in newFilter:
 			newFilter[id] = newFilter['id']
 			del newFilter['id']
 		if 'id' in newAttributes:
 			newAttributes.remove('id')
 			newAttributes.append(id)
-		if 'type' in filter.keys():
+		if 'type' in filter:
 			for oc in forceList(filter['type']):
-				if (objectClass.__name__ == oc):
+				if objectClass.__name__ == oc:
 					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
 		if newAttributes:
 			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
 				newAttributes.append('type')
-			objectClasses = [ objectClass ]
+			objectClasses = [objectClass]
 			objectClasses.extend(objectClass.subClasses.values())
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
-					if (arg == 'id'):
+					if arg == 'id':
 						arg = id
 					if not arg in newAttributes:
 						newAttributes.append(arg)
@@ -292,7 +294,7 @@ class SQLBackend(ConfigDataBackend):
 
 	def _objectToDatabaseHash(self, object):
 		hash = object.toHash()
-		if (object.getType() == 'ProductOnClient'):
+		if object.getType() == 'ProductOnClient':
 			if hash.has_key('actionSequence'):
 				del hash['actionSequence']
 
@@ -302,7 +304,7 @@ class SQLBackend(ConfigDataBackend):
 
 		for (key, value) in hash.items():
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, key)
-			if (key != arg):
+			if key != arg:
 				hash[arg] = hash[key]
 				del hash[key]
 		return hash
@@ -918,7 +920,7 @@ class SQLBackend(ConfigDataBackend):
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
 		if self._sql.getRow('select * from `HOST` where %s' % where):
-			self._sql.update('HOST', where, data, updateWhereNone = True)
+			self._sql.update('HOST', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('HOST', data)
 
@@ -969,7 +971,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(config)
 		if self._sql.getRow('select * from `CONFIG` where %s' % where):
-			self._sql.update('CONFIG', where, data, updateWhereNone = True)
+			self._sql.update('CONFIG', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('CONFIG', data)
 
@@ -1073,7 +1075,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(configState)
 		if self._sql.getRow('select * from `CONFIG_STATE` where %s' % where):
-			self._sql.update('CONFIG_STATE', where, data, updateWhereNone = True)
+			self._sql.update('CONFIG_STATE', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('CONFIG_STATE', data)
 
@@ -1122,7 +1124,7 @@ class SQLBackend(ConfigDataBackend):
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
@@ -1136,7 +1138,7 @@ class SQLBackend(ConfigDataBackend):
 				if (val == False): val = 'no'
 				if (val == True):  val = 'yes'
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 			logger.error(u"Failed to verify modules signature")
 			return
 
@@ -1148,7 +1150,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(product)
 		if self._sql.getRow('select * from `PRODUCT` where %s' % where):
-			self._sql.update('PRODUCT', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT', data)
 
@@ -1223,7 +1225,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(productProperty)
 		if self._sql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
-			self._sql.update('PRODUCT_PROPERTY', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT_PROPERTY', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
@@ -1313,7 +1315,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(productDependency)
 		if self._sql.getRow('select * from `PRODUCT_DEPENDENCY` where %s' % where):
-			self._sql.update('PRODUCT_DEPENDENCY', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT_DEPENDENCY', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT_DEPENDENCY', data)
 
@@ -1359,13 +1361,13 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 
-		productOnDepotClone = productOnDepot.clone(identOnly = True)
+		productOnDepotClone = productOnDepot.clone(identOnly=True)
 		productOnDepotClone.productVersion = None
 		productOnDepotClone.packageVersion = None
 		productOnDepotClone.productType = None
 		where = self._uniqueCondition(productOnDepotClone)
 		if self._sql.getRow('select * from `PRODUCT_ON_DEPOT` where %s' % where):
-			self._sql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT_ON_DEPOT', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT_ON_DEPOT', data)
 
@@ -1409,14 +1411,14 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 
-		productOnClientClone = productOnClient.clone(identOnly = True)
+		productOnClientClone = productOnClient.clone(identOnly=True)
 		productOnClientClone.productVersion = None
 		productOnClientClone.packageVersion = None
 		productOnClientClone.productType = None
 		where = self._uniqueCondition(productOnClientClone)
 
 		if self._sql.getRow('select * from `PRODUCT_ON_CLIENT` where %s' % where):
-			self._sql.update('PRODUCT_ON_CLIENT', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT_ON_CLIENT', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT_ON_CLIENT', data)
 
@@ -1466,7 +1468,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(productPropertyState)
 		if self._sql.getRow('select * from `PRODUCT_PROPERTY_STATE` where %s' % where):
-			self._sql.update('PRODUCT_PROPERTY_STATE', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT_PROPERTY_STATE', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT_PROPERTY_STATE', data)
 
@@ -1516,7 +1518,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(group)
 		if self._sql.getRow('select * from `GROUP` where %s' % where):
-			self._sql.update('GROUP', where, data, updateWhereNone = True)
+			self._sql.update('GROUP', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('GROUP', data)
 
@@ -1564,7 +1566,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(objectToGroup)
 		if self._sql.getRow('select * from `OBJECT_TO_GROUP` where %s' % where):
-			self._sql.update('OBJECT_TO_GROUP', where, data, updateWhereNone = True)
+			self._sql.update('OBJECT_TO_GROUP', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('OBJECT_TO_GROUP', data)
 
@@ -1612,7 +1614,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(licenseContract)
 		if self._sql.getRow('select * from `LICENSE_CONTRACT` where %s' % where):
-			self._sql.update('LICENSE_CONTRACT', where, data, updateWhereNone = True)
+			self._sql.update('LICENSE_CONTRACT', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('LICENSE_CONTRACT', data)
 
@@ -1668,7 +1670,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(softwareLicense)
 		if self._sql.getRow('select * from `SOFTWARE_LICENSE` where %s' % where):
-			self._sql.update('SOFTWARE_LICENSE', where, data, updateWhereNone = True)
+			self._sql.update('SOFTWARE_LICENSE', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('SOFTWARE_LICENSE', data)
 
@@ -1719,7 +1721,7 @@ class SQLBackend(ConfigDataBackend):
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
 
-		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''; mks = modules.keys(); mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
@@ -1746,7 +1748,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(licensePool)
 		if self._sql.getRow('select * from `LICENSE_POOL` where %s' % where):
-			self._sql.update('LICENSE_POOL', where, data, updateWhereNone = True)
+			self._sql.update('LICENSE_POOL', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('LICENSE_POOL', data)
 
@@ -1826,7 +1828,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
 		if self._sql.getRow('select * from `SOFTWARE_LICENSE_TO_LICENSE_POOL` where %s' % where):
-			self._sql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data, updateWhereNone = True)
+			self._sql.update('SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
 
@@ -1877,7 +1879,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(licenseOnClient)
 		if self._sql.getRow('select * from `LICENSE_ON_CLIENT` where %s' % where):
-			self._sql.update('LICENSE_ON_CLIENT', where, data, updateWhereNone = True)
+			self._sql.update('LICENSE_ON_CLIENT', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('LICENSE_ON_CLIENT', data)
 
@@ -1924,7 +1926,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(auditSoftware)
 		if self._sql.getRow('select * from `SOFTWARE` where %s' % where):
-			self._sql.update('SOFTWARE', where, data, updateWhereNone = True)
+			self._sql.update('SOFTWARE', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('SOFTWARE', data)
 
@@ -1962,7 +1964,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(auditSoftwareToLicensePool)
 		if self._sql.getRow('select * from `AUDIT_SOFTWARE_TO_LICENSE_POOL` where %s' % where):
-			self._sql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data, updateWhereNone = True)
+			self._sql.update('AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('AUDIT_SOFTWARE_TO_LICENSE_POOL', data)
 
@@ -2000,7 +2002,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(auditSoftwareOnClient)
 		if self._sql.getRow('select * from `SOFTWARE_CONFIG` where %s' % where):
-			self._sql.update('SOFTWARE_CONFIG', where, data, updateWhereNone = True)
+			self._sql.update('SOFTWARE_CONFIG', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('SOFTWARE_CONFIG', data)
 
@@ -2056,12 +2058,12 @@ class SQLBackend(ConfigDataBackend):
 
 		for (attribute, value) in auditHardware.items():
 			if value is None:
-				auditHardware[attribute] = [ None ]
+				auditHardware[attribute] = [None]
 			elif type(value) is unicode:
 				auditHardware[attribute] = self._sql.escapeAsterisk(value)
 
 		logger.debug(u"Getting hardware ids, filter %s" % auditHardware)
-		hardwareIds = self._auditHardware_search(returnHardwareIds = True, attributes=[], **auditHardware)
+		hardwareIds = self._auditHardware_search(returnHardwareIds=True, attributes=[], **auditHardware)
 		logger.debug(u"Found hardware ids: %s" % hardwareIds)
 		return hardwareIds
 
@@ -2072,7 +2074,7 @@ class SQLBackend(ConfigDataBackend):
 		filter = {}
 		for (attribute, value) in auditHardware.toHash().items():
 			if value is None:
-				filter[attribute] = [ None ]
+				filter[attribute] = [None]
 			elif type(value) is unicode:
 				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
@@ -2109,7 +2111,7 @@ class SQLBackend(ConfigDataBackend):
 		return auditHardwares
 
 	def auditHardware_getHashes(self, attributes=[], **filter):
-		return self._auditHardware_search(returnHardwareIds = False, attributes = attributes, **filter)
+		return self._auditHardware_search(returnHardwareIds=False, attributes = attributes, **filter)
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
 		results = []
@@ -2402,7 +2404,7 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._uniqueCondition(bootConfiguration)
 		if self._sql.getRow('select * from `BOOT_CONFIGURATION` where %s' % where):
-			self._sql.update('BOOT_CONFIGURATION', where, data, updateWhereNone = True)
+			self._sql.update('BOOT_CONFIGURATION', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('BOOT_CONFIGURATION', data)
 
@@ -2428,7 +2430,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting bootConfiguration %s" % bootConfiguration)
 			where = self._uniqueCondition(bootConfiguration)
 			self._sql.delete('BOOT_CONFIGURATION', where)
-	
+
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
