@@ -91,6 +91,9 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertTrue(u'1' in result)
         self.assertTrue(u'2' in result)
 
+        anotherResult = self.backend._filterToSql({'a': [1, 2], 'b': False})
+        self.assertEquals(u'(`a` = 1 or `a` = 2) and (`b` = 0)', anotherResult)
+
     def testCreatingFilterWithWildcard(self):
         self.assertEquals(u"(`a` LIKE '%bc')", self.backend._filterToSql({'a': '*bc'}))
 
