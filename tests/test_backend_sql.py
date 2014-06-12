@@ -35,6 +35,7 @@ class MySQLBackendWithoutConnectonTestCase(unittest.TestCase):
     """
     def setUp(self):
         self.backend = sql.SQLBackend()
+        self.backend._sql = sql.SQL()
 
     def tearDown(self):
         del self.backend
@@ -55,6 +56,13 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertTrue('NULL' not in result)
         self.assertTrue('None' not in result)
 
+    def testCreatingFilterForNoneInList(self):
+        self.assertTrue('`a` is NULL' in self.backend._filterToSql({'a': [None]}))
+
+    def testEmptyListsGetSkipped(self):
+        self.assertTrue('a' not in self.backend._filterToSql({'a': []}))
+        self.assertEquals('', self.backend._filterToSql({'a': []}))
+
     def testBoolValueRepresentation(self):
         self.assertTrue('0' in self.backend._filterToSql({'a': False}))
         self.assertTrue('1' in self.backend._filterToSql({'a': True}))
@@ -73,6 +81,9 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertEquals(u'(`a` = 1)', self.backend._filterToSql({'a': 1}))
         self.assertEquals(u'(`b` = 2.3)', self.backend._filterToSql({'b': 2.3}))
         self.assertEquals(u'(`c` = 4)', self.backend._filterToSql({'c': 4L}))
+
+    def testCreatingFilterForStringValue(self):
+        self.assertEquals(u"(`a` = 'b')", self.backend._filterToSql({'a': "b"}))
 
 
 if __name__ == '__main__':
