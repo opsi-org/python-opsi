@@ -6,7 +6,7 @@ opsi python library - MySQL
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013 uib GmbH
+Copyright (C) 2013-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -27,10 +27,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 @copyright: uib GmbH <info@uib.de>
 @author: Jan Schneider <j.schneider@uib.de>
 @author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@author: Niko Wenselowski <n.wenselowski@uib.de>
 @license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.4.1'
+__version__ = '4.0.5.1'
 
 import base64
 import warnings
@@ -170,10 +171,10 @@ class MySQL(SQL):
 		myConnectionSuccess = False
 		myMaxRetryConnection = 10
 		myRetryConnectionCounter = 0
-		
+
 		if not cursorType:
 			cursorType = MySQLdb.cursors.DictCursor
-		
+
 		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
 			try:
 				if (myRetryConnectionCounter > 0):
@@ -186,7 +187,7 @@ class MySQL(SQL):
 				conn.autocommit(False)
 				cursor = conn.cursor(cursorType)
 				myConnectionSuccess = True
-				
+
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if (e.args[0] == 2006):
@@ -236,7 +237,7 @@ class MySQL(SQL):
 		finally:
 			self.close(conn, cursor)
 		return valueSet
-		
+
 	def getRows(self, query):
 		if not query.lower().startswith("select"):
 			raise BackendIOError(u"getRows method allows select statements only, aborting.")
@@ -704,9 +705,20 @@ class MySQLBackend(SQLBackend):
 				try:
 					self._sql.doCommit = False
 					logger.notice(u'doCommit set to false')
-					if not self._sql.getRow(u"select * from PRODUCT_PROPERTY_VALUE where " \
-							+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s' AND `value` = '%s' AND `isDefault` = %s" \
-							% (data['propertyId'], data['productId'], str(data['productVersion']), str(data['packageVersion']), value, str(value in defaultValues))):
+					valuesExist = self._sql.getRow(
+						u"select * from PRODUCT_PROPERTY_VALUE where "
+						u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
+						u"`productVersion` = '{2}' AND `packageVersion` = '{3}' "
+						u"AND `value` = '{4}' AND `isDefault` = {5}".format(
+							data['propertyId'],
+							data['productId'],
+							str(data['productVersion']),
+							str(data['packageVersion']),
+							value,
+							str(value in defaultValues)
+						)
+					)
+					if not valuesExist:
 						self._sql.doCommit = True
 						logger.notice(u'doCommit set to true')
 						self._sql.insert('PRODUCT_PROPERTY_VALUE', {
@@ -716,7 +728,8 @@ class MySQLBackend(SQLBackend):
 							'propertyId': data['propertyId'],
 							'value': value,
 							'isDefault': (value in defaultValues)
-							})
+							}
+						)
 				finally:
 					self._sql.doCommit = True
 					logger.notice(u'doCommit set to true')
