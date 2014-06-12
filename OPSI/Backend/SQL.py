@@ -6,7 +6,7 @@ opsi python library - Backend - SQL
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013 uib GmbH
+Copyright (C) 2013-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 @copyright:	uib GmbH <info@uib.de>
 @author: Jan Schneider <j.schneider@uib.de>
 @author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@author: Niko Wenselowski <n.wenselowski@uib.de>
 @license: GNU Affero GPL version 3
 """
 
@@ -158,7 +159,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def clearModifications(self, objectClass=None, sinceDate=0):
 		where = "`date` > '%s'" % forceOpsiTimestamp(sinceDate)
 		if objectClass:
-			where += ' AND `objectClass` = "%s"' % objectClass
+			where = ''.join((where, 'AND `objectClass` = "{0}"'.format(objectClass)))
 		self._sql.execute("DELETE FROM `OBJECT_MODIFICATION_TRACKER` WHERE %s" % where)
 
 	def objectInserted(self, backend, obj):
