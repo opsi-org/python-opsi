@@ -295,7 +295,6 @@ class MySQL(SQL):
 		return row
 
 	def insert(self, table, valueHash, conn=None, cursor=None):
-
 		closeConnection = True
 		if conn and cursor:
 			logger.debug(u"TRANSACTION: conn and cursor given, so we should not close the connection.")
@@ -304,24 +303,25 @@ class MySQL(SQL):
 			(conn, cursor) = self.connect()
 		result = -1
 		try:
-			colNames = values = u''
+			colNames = []
+			values = []
 			for (key, value) in valueHash.items():
-				colNames += u"`%s`, " % key
+				colNames.append(u"`{0}`".format(key))
 				if value is None:
-					values += u"NULL, "
+					values.append(u"NULL")
 				elif type(value) is bool:
 					if value:
-						values += u"1, "
+						values.append(u"1")
 					else:
-						values += u"0, "
+						values.append(u"0")
 				elif type(value) in (float, long, int):
-					values += u"%s, " % value
+					values.append(u"{0}".format(value))
 				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
+					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
-					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
+					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 
-			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			query = u'INSERT INTO `{0}` ({1}) VALUES ({2});'.format(table, ', '.join(colNames), ', '.join(values))
 			logger.debug2(u"insert: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
