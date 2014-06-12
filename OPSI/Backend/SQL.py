@@ -175,6 +175,8 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 class SQLBackend(ConfigDataBackend):
 
+	OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
+
 	def __init__(self, **kwargs):
 		self._name = 'sql'
 
@@ -196,45 +198,49 @@ class SQLBackend(ConfigDataBackend):
 				}
 
 	def _filterToSql(self, filter={}):
-		where = u''
+		"""
+		Creates a SQL condition out of the given filter.
+		"""
+		condition = []
 		for (key, values) in filter.items():
 			if values is None:
 				continue
 			values = forceList(values)
 			if not values:
 				continue
-			if where:
-				where += u' and '
-			where += u'('
+
+			tmp = []
 			for value in values:
-				operator = '='
 				if type(value) is bool:
 					if value:
-						where += u"`%s` %s %s" % (key, operator, 1)
+						tmp.append(u"`{0}` = 1".format(key))
 					else:
-						where += u"`%s` %s %s" % (key, operator, 0)
+						tmp.append(u"`{0}` = 0".format(key))
 				elif type(value) in (float, long, int):
-					where += u"`%s` %s %s" % (key, operator, value)
+					tmp.append(u"`{0}` = {1}".format(key, value))
 				elif value is None:
-					where += u"`%s` is NULL" % key
+					tmp.append(u"`{0}` is NULL".format(key))
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, u'\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
-					match = re.search('^\s*([>=<]+)\s*(\d\.?\d*)', value)
+					match = self.OPERATOR_IN_CONDITION_PATTERN.search(value)
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						where += u"`%s` %s %s" % (key, operator, forceUnicode(value))
+						tmp.append(u"`%s` %s %s" % (key, operator, forceUnicode(value)))
 					else:
-						if (value.find('*') != -1):
+						if '*' in value:
 							operator = 'LIKE'
 							value = self._sql.escapeUnderscore(self._sql.escapePercent(value)).replace('*', '%')
+						else:
+							operator = '='
+
 						value = value.replace(u'\uffff', self._sql.ESCAPED_ASTERISK)
-						where += u"`%s` %s '%s'" % (key, operator, forceUnicode(value))
-				where += u' or '
-			where = where[:-4] + u')'
-		return where
+						tmp.append(u"`{0}` {1} '{2}'".format(key, operator, forceUnicode(value)))
+			condition.append(u' or '.join(tmp))
+
+		return u' and '.join([u'({0})'.format(c) for c in condition])
 
 	def _createQuery(self, table, attributes=[], filter={}):
 		select = u','.join(
