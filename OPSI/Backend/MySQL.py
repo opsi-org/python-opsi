@@ -345,26 +345,28 @@ class MySQL(SQL):
 		try:
 			if not valueHash:
 				raise BackendBadValueError(u"No values given")
-			query = u"UPDATE `%s` SET " % table
+			query = []
 			for (key, value) in valueHash.items():
-				if value is None and not updateWhereNone:
-					continue
-				query += u"`%s` = " % key
 				if value is None:
-					query += u"NULL, "
+					if not updateWhereNone:
+						continue
+
+					value = u"NULL"
 				elif type(value) is bool:
 					if value:
-						query += u"1, "
+						value = u"1"
 					else:
-						query += u"0, "
+						value = u"0"
 				elif type(value) in (float, long, int):
-					query += u"%s, " % value
+					value = u"%s" % value
 				elif type(value) is str:
-					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
+					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
 				else:
-					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
+					value = u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
 
-			query = u'%s WHERE %s;' % (query[:-2], where)
+				query.append(u"`{0}` = {1}".format(key, value))
+
+			query = u"UPDATE `{0}` SET {1} WHERE {2};".format(table, ', '.join(query), where)
 			logger.debug2(u"update: %s" % query)
 			try:
 				self.execute(query, conn, cursor)
