@@ -237,17 +237,14 @@ class SQLBackend(ConfigDataBackend):
 		return where
 
 	def _createQuery(self, table, attributes=[], filter={}):
-		select = u''
-		for attribute in attributes:
-			if select:
-				select += u','
-			select += u'`%s`' % attribute
+		select = u','.join(
+			[u'`{0}`'.format(attribute) for attribute in attributes]
+		)
 
 		if not select:
 			select = u'*'
 
 		where = self._filterToSql(filter)
-		query = u''
 		if where:
 			query = u'select %s from `%s` where %s' % (select, table, where)
 		else:
