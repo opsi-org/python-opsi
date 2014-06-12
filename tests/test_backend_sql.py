@@ -85,6 +85,23 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
     def testCreatingFilterForStringValue(self):
         self.assertEquals(u"(`a` = 'b')", self.backend._filterToSql({'a': "b"}))
 
+    def testListOfValuesCreatesAnOrExpression(self):
+        result = self.backend._filterToSql({'a': [1, 2]})
+        self.assertTrue(u' or ' in result)
+        self.assertTrue(u'1' in result)
+        self.assertTrue(u'2' in result)
+
+
+class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
+    def testCreatingQueryIncludesTableName(self):
+        self.assertTrue("foo" in self.backend._createQuery('foo'))
+
+    def testWithoutAttributesEverythingIsSelected(self):
+        self.assertTrue(u'select * from' in self.backend._createQuery('foo'))
+
+    def testDefiningColumnsToSelect(self):
+        self.assertTrue(u'`first`,`second`' in self.backend._createQuery('foo', ['first', 'second']))
+
 
 if __name__ == '__main__':
     unittest.main()
