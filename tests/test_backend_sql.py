@@ -211,6 +211,56 @@ class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(4L)))
 
 
+class UniqueAuditHardwareConditionTestCase(MySQLBackendWithoutConnectonTestCase):
+    def testCreatingUniqueHardwareConditionIgnoresHardwareClassAndType(self):
+        hwDict = {
+            "hardwareClass": "abc",
+            "type": 'def'
+        }
+
+        self.assertEquals('', self.backend._uniqueAuditHardwareCondition(hwDict))
+
+    def testCreatingConditionWithNoneTypes(self):
+        testDict = {
+            "abc": None,
+            'def': [None]
+        }
+
+        condition = self.backend._uniqueAuditHardwareCondition(testDict)
+        self.assertTrue(u'`abc` is NULL' in condition)
+        self.assertTrue(u' and ' in condition)
+        self.assertTrue(u'`def` is NULL' in condition)
+
+    def testAddingMultipleParametersWithAnd(self):
+        testDict = {
+            "abc": None,
+            'def': [None]
+        }
+
+        condition = self.backend._uniqueAuditHardwareCondition(testDict)
+        self.assertTrue(u' and ' in condition)
+        self.assertFalse(condition.strip().endswith('and'))
+        self.assertFalse(condition.strip().startswith('and'))
+
+    def testCreatingQueryWithVariousTypes(self):
+        testDict = {
+            "int": 1,
+            "float": 2.3,
+            "long": 4L,
+            "bool_true": True,
+            "bool_false": False,
+            "string": "caramba",
+        }
+
+        condition = self.backend._uniqueAuditHardwareCondition(testDict)
+        self.assertTrue(u' and ' in condition)
+        self.assertTrue(u'`int` = 1' in condition)
+        self.assertTrue(u'`float` = 2.3' in condition)
+        self.assertTrue(u'`long` = 4' in condition)
+        self.assertTrue(u'`bool_false` = False' in condition)
+        self.assertTrue(u'`bool_true` = True' in condition)
+        self.assertTrue(u"`string` = 'caramba'" in condition)
+
 
 if __name__ == '__main__':
     unittest.main()
