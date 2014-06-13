@@ -314,21 +314,21 @@ class SQLBackend(ConfigDataBackend):
 		return hash
 
 	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):
-		if (attribute == 'id'):
+		if attribute == 'id':
 			# A class is considered a subclass of itself
 			if issubclass(objectClass, Product):
 				return 'productId'
-			if issubclass(objectClass, Host):
+			elif issubclass(objectClass, Host):
 				return 'hostId'
-			if issubclass(objectClass, Group):
+			elif issubclass(objectClass, Group):
 				return 'groupId'
-			if issubclass(objectClass, Config):
+			elif issubclass(objectClass, Config):
 				return 'configId'
-			if issubclass(objectClass, LicenseContract):
+			elif issubclass(objectClass, LicenseContract):
 				return 'licenseContractId'
-			if issubclass(objectClass, SoftwareLicense):
+			elif issubclass(objectClass, SoftwareLicense):
 				return 'softwareLicenseId'
-			if issubclass(objectClass, LicensePool):
+			elif issubclass(objectClass, LicensePool):
 				return 'licensePoolId'
 		return attribute
 
