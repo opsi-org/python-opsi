@@ -2049,19 +2049,17 @@ class SQLBackend(ConfigDataBackend):
 		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
 
-		condition = u''
+		condition = []
 		for (attribute, value) in auditHardware.items():
 			if attribute in ('hardwareClass', 'type'):
 				continue
-			if condition:
-				condition += u' and '
-			if value is None or (value == [None]):
-				condition += u"`%s` is NULL" % attribute
+			if value is None or value == [None]:
+				condition.append(u"`{0}` is NULL".format(attribute))
 			elif type(value) in (float, long, int, bool):
-				condition += u"`%s` = %s" % (attribute, value)
+				condition.append(u"`{0}` = {1}".format(attribute, value))
 			else:
-				condition += u"`%s` = '%s'" % (attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
-		return condition
+				condition.append(u"`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value))))
+		return u' and '.join(condition)
 
 	def _getHardwareIds(self, auditHardware):
 		if hasattr(auditHardware, 'toHash'):
