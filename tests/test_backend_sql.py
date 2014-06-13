@@ -121,6 +121,13 @@ class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
 
 
 class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
+    """
+    Testing the creation of an unique condition.
+
+    **Notes**: Because of the function that reads the mandatory parameters
+    and its caching function the Foo-Classes in the tests must all be
+    named different!
+    """
 
     def testHostObject(self):
         host = ob.Host('foo.bar.baz')
@@ -139,8 +146,8 @@ class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
 
     def testMultipleParametersAreJoinedWithAnAnd(self):
         license = ob.SoftwareLicense('a', 'b')
-
         condition = self.backend._uniqueCondition(license)
+
         self.assertTrue(' and ' in condition)
         self.assertEquals(
             "`softwareLicenseId` = 'a' and `licenseContractId` = 'b'",
@@ -149,20 +156,61 @@ class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
 
     def testConditionForHostGroupHasTypeAppended(self):
         group = ob.ProductGroup('t')
-
         condition = self.backend._uniqueCondition(group)
+
         self.assertTrue("`groupId` = 't'" in condition)
         self.assertTrue("and" in condition)
         self.assertTrue("`type` = 'ProductGroup'" in condition)
 
-
     def testConditionForProductGroupHasTypeAppended(self):
         group = ob.HostGroup('hg')
-
         condition = self.backend._uniqueCondition(group)
+
         self.assertTrue("`groupId` = 'hg'" in condition)
         self.assertTrue("and" in condition)
         self.assertTrue("`type` = 'HostGroup'" in condition)
+
+    def testBooleanParameters(self):
+        class Foo(object):
+            def __init__(self, true, false):
+                self.true = true
+                self.false = false
+
+        f00 = Foo(True, False)
+        condition = self.backend._uniqueCondition(f00)
+
+        self.assertTrue("`true` = 1" in condition)
+        self.assertTrue("and" in condition)
+        self.assertTrue("`false` = 0" in condition)
+
+    def testAccessingParametersWithAttributenamesFails(self):
+        class Foo2(object):
+            def __init__(self, something):
+                self._something = something
+
+        f00 = Foo2(True)
+
+        self.assertRaises(AttributeError, self.backend._uniqueCondition, f00)
+
+    def testMandatoryParametersAreSkippedIfValueIsNone(self):
+        class Foo3(object):
+            def __init__(self, something):
+                self.something = something
+
+        f00 = Foo3(None)
+
+        self.assertEquals('', self.backend._uniqueCondition(f00))
+
+    def testParameterIsNumber(self):
+        class FooParam(object):
+            def __init__(self, param):
+                self.param = param
+
+        self.assertEquals('`param` = 1', self.backend._uniqueCondition(FooParam(1)))
+        self.assertEquals('`param` = 2.3', self.backend._uniqueCondition(FooParam(2.3)))
+        self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(4L)))
+
+
 
 if __name__ == '__main__':
     unittest.main()
