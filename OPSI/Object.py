@@ -58,18 +58,18 @@ logger = Logger()
 mandatoryConstructorArgsCache = {}
 def mandatoryConstructorArgs(Class):
 	cacheKey = Class.__name__
-	if mandatoryConstructorArgsCache.has_key(cacheKey):
-		return mandatoryConstructorArgsCache[cacheKey]
-	(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
-	if not defaults:
-		defaults = []
-	last = -1*len(defaults)
-	if (last == 0):
-		last = len(args)
-	mandatory = args[1:][:last]
-	logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class.__class__, mandatory))
-	mandatoryConstructorArgsCache[cacheKey] = mandatory
-	return mandatory
+	if cacheKey not in mandatoryConstructorArgsCache:
+		(args, varargs, varkwargs, defaults) = inspect.getargspec(Class.__init__)
+		if not defaults:
+			defaults = []
+		last = -1 * len(defaults)
+		if last == 0:
+			last = len(args)
+		mandatory = args[1:][:last]
+		logger.debug2(u"mandatoryConstructorArgs for %s: %s" % (Class.__class__, mandatory))
+		mandatoryConstructorArgsCache[cacheKey] = mandatory
+
+	return mandatoryConstructorArgsCache[cacheKey]
 
 def getIdentAttributes(Class):
 	return tuple(mandatoryConstructorArgs(Class))
