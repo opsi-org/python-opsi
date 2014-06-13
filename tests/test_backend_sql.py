@@ -26,6 +26,7 @@ Testing opsi SQL backend.
 import unittest
 
 import OPSI.Backend.SQL as sql
+import OPSI.Object as ob
 
 
 class MySQLBackendWithoutConnectonTestCase(unittest.TestCase):
@@ -118,6 +119,50 @@ class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertTrue(u'where' not in self.backend._createQuery('foo'))
         self.assertTrue(u'where' in self.backend._createQuery('foo', filter={'a': 1}))
 
+
+class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
+
+    def testHostObject(self):
+        host = ob.Host('foo.bar.baz')
+        self.assertEquals(
+            "`hostId` = 'foo.bar.baz'",
+            self.backend._uniqueCondition(host)
+        )
+
+    def testOptionalParametersAreIgnored(self):
+        host = ob.Host('foo.bar.baz', inventoryNumber='ABC+333')
+
+        self.assertEquals(
+            "`hostId` = 'foo.bar.baz'",
+            self.backend._uniqueCondition(host)
+        )
+
+    def testMultipleParametersAreJoinedWithAnAnd(self):
+        license = ob.SoftwareLicense('a', 'b')
+
+        condition = self.backend._uniqueCondition(license)
+        self.assertTrue(' and ' in condition)
+        self.assertEquals(
+            "`softwareLicenseId` = 'a' and `licenseContractId` = 'b'",
+            condition
+        )
+
+    def testConditionForHostGroupHasTypeAppended(self):
+        group = ob.ProductGroup('t')
+
+        condition = self.backend._uniqueCondition(group)
+        self.assertTrue("`groupId` = 't'" in condition)
+        self.assertTrue("and" in condition)
+        self.assertTrue("`type` = 'ProductGroup'" in condition)
+
+
+    def testConditionForProductGroupHasTypeAppended(self):
+        group = ob.HostGroup('hg')
+
+        condition = self.backend._uniqueCondition(group)
+        self.assertTrue("`groupId` = 'hg'" in condition)
+        self.assertTrue("and" in condition)
+        self.assertTrue("`type` = 'HostGroup'" in condition)
 
 if __name__ == '__main__':
     unittest.main()
