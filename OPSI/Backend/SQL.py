@@ -333,27 +333,36 @@ class SQLBackend(ConfigDataBackend):
 		return attribute
 
 	def _uniqueCondition(self, object):
-		condition = u''
+		"""
+		Creates an unique condition that can be used in the WHERE part
+		of an SQL query to identify an object.
+		To achieve this the constructor of the object is inspected.
+		Objects must have an attribute named like the parameter.
+
+		:param object: The object to create an condition for.
+		:returntype: str
+		"""
+		condition = []
 		args = mandatoryConstructorArgs(object.__class__)
 		for arg in args:
 			value = getattr(object, arg)
 			if value is None:
 				continue
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, arg)
-			if condition:
-				condition += u' and '
 			if type(value) is bool:
 				if value:
-					condition += u"`%s` = %s" % (arg, 1)
+					condition.append(u"`{0}` = 1".format(arg))
 				else:
-					condition += u"`%s` = %s" % (arg, 0)
+					condition.append(u"`{0}` = 0".format(arg))
 			elif type(value) in (float, long, int):
-				condition += u"`%s` = %s" % (arg, value)
+				condition.append(u"`{0}` = {1}".format(arg, value))
 			else:
-				condition += u"`%s` = '%s'" % (arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
+				condition.append(u"`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value))))
+
 		if isinstance(object, HostGroup) or isinstance(object, ProductGroup):
-			condition += u" and `type` = '%s'" % object.getType()
-		return condition
+			condition.append(u"`type` = '{0}'".format(object.getType()))
+
+		return ' and '.join(condition)
 
 	def _objectExists(self, table, object):
 		query = 'select * from `%s` where %s' % (table, self._uniqueCondition(object))
