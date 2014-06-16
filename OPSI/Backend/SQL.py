@@ -2210,25 +2210,24 @@ class SQLBackend(ConfigDataBackend):
 
 		hardwareClass = auditHardwareOnHost['hardwareClass']
 
-		auditHardware = { 'type': 'AuditHardware' }
+		auditHardware = {'type': 'AuditHardware'}
 		auditHardwareOnHostNew = {}
 		for (attribute, value) in auditHardwareOnHost.items():
-			# if value is None or (attribute == 'type'):
-			# 	continue
-			if (attribute == 'type'):
+			if attribute == 'type':
 				continue
-			if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+			elif attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
 				auditHardwareOnHostNew[attribute] = value
 				continue
-			if attribute in ('hardwareClass',):
+			elif attribute == 'hardwareClass':
 				auditHardware[attribute] = value
 				auditHardwareOnHostNew[attribute] = value
 				continue
+
 			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 			if valueInfo is None:
 				raise BackendConfigurationError(u"Attribute '%s' not found in config of hardware class '%s'" % (attribute, hardwareClass))
-			scope = valueInfo.get('Scope', '')
-			if (scope == 'g'):
+
+			if valueInfo.get('Scope', '') == 'g':
 				auditHardware[attribute] = value
 				continue
 			auditHardwareOnHostNew[attribute] = value
@@ -2238,13 +2237,12 @@ class SQLBackend(ConfigDataBackend):
 	def _uniqueAuditHardwareOnHostCondition(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
-		hardwareClass = auditHardwareOnHost['hardwareClass']
 		del auditHardwareOnHost['hardwareClass']
 
 		filter = {}
-		for (attribute, value) in auditHardwareOnHost.items():
+		for (attribute, value) in auditHardwareOnHost.iteritems():
 			if value is None:
-				filter[attribute] = [ None ]
+				filter[attribute] = [None]
 			elif type(value) is unicode:
 				filter[attribute] = self._sql.escapeAsterisk(value)
 			else:
@@ -2252,13 +2250,22 @@ class SQLBackend(ConfigDataBackend):
 
 		where = self._filterToSql(filter)
 
-		hwIdswhere = u''
-		for hardwareId in self._getHardwareIds(auditHardware):
-			if hwIdswhere: hwIdswhere += u' or '
-			hwIdswhere += u'`hardware_id` = %s' % hardwareId
+		hwIdswhere = u' or '.join(
+			[
+				u'`hardware_id` = {0}'.format(hardwareId) for hardwareId in \
+				self._getHardwareIds(auditHardware)
+			]
+		)
+
 		if not hwIdswhere:
 			raise BackendReferentialIntegrityError(u"Hardware device %s not found" % auditHardware)
-		return where + u' and (%s)' % hwIdswhere
+
+		return ' and '.join(
+			(
+				where,
+				hwIdswhere.join((u'(', u')'))
+			)
+		)
 
 	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
@@ -2273,7 +2280,7 @@ class SQLBackend(ConfigDataBackend):
 
 		for (key, value) in auditHardware.items():
 			if value is None:
-				auditHardware[key] = [ None ]
+				auditHardware[key] = [None]
 		hardwareIds = self._getHardwareIds(auditHardware)
 		if not hardwareIds:
 			raise BackendReferentialIntegrityError(u"Hardware device %s not found" % auditHardware)

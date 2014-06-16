@@ -15,8 +15,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * Speeding up objectToHtml, objectToBeautifiedText
   * New module: OPSI.Util.Task.ConfigureBackend.ConfigurationData
   * Added possibility to disable pigz in opsi.conf
+  * SQL-Backends: Improved speed of query creation
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 30 May 2014 16:10:34 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 16 Jun 2014 16:08:40 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
