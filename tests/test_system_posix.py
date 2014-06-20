@@ -240,14 +240,14 @@ class DiskTestCase(unittest.TestCase):
 
 		outputFromSecondSfdiskListing = [
 			"",
-			"Disk /dev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
+			"Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
 			"Units = sectors of 512 bytes, counting from 0",
 			"",
 			"   Device Boot    Start       End   #sectors  Id  System",
-			"/dev/sdb1   *      2048  67926015   67923968   7  HPFS/NTFS",
-			"/dev/sdb2      69971968  78165359    8193392   c  W95 FAT32 (LBA)",
-			"/dev/sdb3             0         -          0   0  Empty",
-			"/dev/sdb4             0         -          0   0  Empty",
+			"/fakedev/sdb1   *      2048  67926015   67923968   7  HPFS/NTFS",
+			"/fakedev/sdb2      69971968  78165359    8193392   c  W95 FAT32 (LBA)",
+			"/fakedev/sdb3             0         -          0   0  Empty",
+			"/fakedev/sdb4             0         -          0   0  Empty",
 		]
 		d._parseSectorData(outputFromSecondSfdiskListing)
 
