@@ -1451,30 +1451,35 @@ class Harddisk:
 
 	def _parseSectorData(self, outputFromSfDiskListing):
 		for line in outputFromSfDiskListing:
-				line = line.strip()
+			line = line.strip()
 
-				if line.startswith(self.device):
-					match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
+			if line.startswith(self.device):
+				match = re.search('%sp*(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+				if not match:
+					raise Exception(u"Unable to read partition table (sectors) of disk '%s'" % self.device)
 
-					if match.group(4):
-						for p in range(len(self.partitions)):
-							if (forceInt(self.partitions[p]['number']) == forceInt(match.group(1))):
-								self.partitions[p]['secStart'] = forceInt(match.group(3))
-								self.partitions[p]['secEnd']   = forceInt(match.group(4))
-								self.partitions[p]['secSize']  = forceInt(match.group(5))
-								logger.debug(u"Partition sector values =>>> number: %s, start: %s sec, end: %s sec, size: %s sec " \
-										% ( self.partitions[p]['number'], self.partitions[p]['secStart'],
-										    self.partitions[p]['secEnd'], self.partitions[p]['secSize']) )
-								break
-				elif line.lower().startswith('units'):
-					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
-					if not match:
-						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
-					self.bytesPerSector = forceInt(match.group(1))
-					self.totalSectors   = int(self.size / self.bytesPerSector)
-					logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
+				if match.group(4):
+					for p in range(len(self.partitions)):
+						if forceInt(self.partitions[p]['number']) == forceInt(match.group(1)):
+							self.partitions[p]['secStart'] = forceInt(match.group(3))
+							self.partitions[p]['secEnd'] = forceInt(match.group(4))
+							self.partitions[p]['secSize'] = forceInt(match.group(5))
+							logger.debug(u"Partition sector values =>>> number: %s, start: %s sec, end: %s sec, size: %s sec " \
+								% (
+									self.partitions[p]['number'],
+									self.partitions[p]['secStart'],
+									self.partitions[p]['secEnd'],
+									self.partitions[p]['secSize']
+							   )
+							)
+							break
+			elif line.lower().startswith('units'):
+				match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
+				if not match:
+					raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
+				self.bytesPerSector = forceInt(match.group(1))
+				self.totalSectors = int(self.size / self.bytesPerSector)
+				logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
 
 	def writePartitionTable(self):
 		logger.debug(u"Writing partition table to disk %s" % self.device)
