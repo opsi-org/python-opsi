@@ -168,11 +168,11 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			"Units = cylinders of 4177920 bytes, blocks of 1024 bytes, counting from 0",
 			"",
 			"   Device   			Boot Start    End   #cyls    #blocks Id  System",
-			"/fakedev/cciss/c0d0p1   *      0+   5066    5067 -20673344    7  HPFS/NTFS ",
-			"/fakedev/cciss/c0d0p2       5067   17560   12494 -50975520    f  W95 Ext'd (LBA) ",
+			"/fakedev/cciss/c0d0p1   *     0+    5066    5067- 20673344    7  HPFS/NTFS ",
+			"/fakedev/cciss/c0d0p2       5067   17560   12494- 50975520    f  W95 Ext'd (LBA) ",
 			"/fakedev/cciss/c0d0p3          0       -       0 0    0  Empty ",
 			"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty ",
-			"/fakedev/cciss/c0d0p5       5067+  17560   12494 -50975504    7  HPFS/NTFS ",
+			"/fakedev/cciss/c0d0p5       5067+  17560   12494- 50975504    7  HPFS/NTFS ",
 			"        start: (c,h,s) expected (1023,254,32) found (1023,0,1)",
 			"        start: (c,h,s) expected (1023,254,32) found (1023,1,1)",
 		]
@@ -181,27 +181,31 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			d = Posix.Harddisk('/fakedev/cciss/c0d0')
 
 		d.partitions = []  # Make sure no parsing happened before
-		d._parsePartitionTable(outputFromSfdiskListing)
+		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+			# Making sure that we do not run into a timeout.
+			d._parsePartitionTable(outputFromSfdiskListing)
 
 		self.assertEquals('/fakedev/cciss/c0d0', d.device)
 		self.assertEquals(17562, d.cylinders)
 		self.assertEquals(255, d.heads)
 		self.assertEquals(32, d.sectors)
 		self.assertEquals(17562, d.cylinders)
-
 		self.assertEquals(4177920, d.bytesPerCylinder)
+
+		self.assertTrue(len(d.partitions) > 0)
 
 		outputFromSecondSfdiskListing = [
 			"",
 			"Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
 			"Units = sectors of 512 bytes, counting from 0",
 			"",
-			"   Device Boot    Start       End   #sectors  Id System",
-			"/fakedev/cciss/c0d0p1          2048 135114751 135112704   7  HPFS/NTFS",
-			"/fakedev/cciss/c0d0p2   * 135114752 143305919 8191168   c  W95 FAT32 (LBA)",
-			"/fakedev/cciss/c0d0p3             0         - 0   0  Empty",
-			"/fakedev/cciss/c0d0p4             0         - 0   0  Empty",
+			"              Device  Boot    Start       End #sectors  Id System",
+			"/fakedev/cciss/c0d0p1          2048 135114751 135112704  7  HPFS/NTFS",
+			"/fakedev/cciss/c0d0p2   * 135114752 143305919 8191168    c  W95 FAT32 (LBA)",
+			"/fakedev/cciss/c0d0p3             0         - 0          0  Empty",
+			"/fakedev/cciss/c0d0p4             0         - 0          0  Empty",
 		]
+
 		d._parseSectorData(outputFromSecondSfdiskListing)
 
 
