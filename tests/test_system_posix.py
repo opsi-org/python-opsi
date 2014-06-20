@@ -205,5 +205,57 @@ class HPProliantDisksTestCase(unittest.TestCase):
 		d._parseSectorData(outputFromSecondSfdiskListing)
 
 
+class DiskTestCase(unittest.TestCase):
+
+	def testReadingPartitionTable(self):
+		outputFromSfdiskListing = [
+			" ",
+			" Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
+			" Units = cylinders of 8225280 bytes, blocks of 1024 bytes, counting from 0",
+			" ",
+			"    Device Boot Start     End   #cyls    #blocks   Id  System",
+			" /fakedev/sdb1   *      0+   4228-   4229-  33961984    7  HPFS/NTFS",
+			" /fakedev/sdb2       4355+   4865-    511-   4096696    c  W95 FAT32 (LBA)",
+			" /fakedev/sdb3          0       -       0          0    0  Empty",
+			" /fakedev/sdb4          0       -       0          0    0  Empty",
+		]
+
+		with mock.patch('OPSI.System.Posix.execute'):
+			d = Posix.Harddisk('/fakedev/sdb')
+
+		d.size = 39082680 * 1024  # Faking this
+		d.partitions = []  # Make sure no parsing happened before
+
+		with mock.patch('os.path.exists', mock.Mock(return_value=True)):
+			# Making sure that we do not run into a timeout.
+			d._parsePartitionTable(outputFromSfdiskListing)
+
+		self.assertEquals('/fakedev/sdb', d.device)
+		self.assertEquals(4865, d.cylinders)
+		self.assertEquals(255, d.heads)
+		self.assertEquals(63, d.sectors)
+		self.assertEquals(8225280, d.bytesPerCylinder)
+
+		self.assertTrue(len(d.partitions) > 0)
+
+		outputFromSecondSfdiskListing = [
+			"",
+			"Disk /dev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
+			"Units = sectors of 512 bytes, counting from 0",
+			"",
+			"   Device Boot    Start       End   #sectors  Id  System",
+			"/dev/sdb1   *      2048  67926015   67923968   7  HPFS/NTFS",
+			"/dev/sdb2      69971968  78165359    8193392   c  W95 FAT32 (LBA)",
+			"/dev/sdb3             0         -          0   0  Empty",
+			"/dev/sdb4             0         -          0   0  Empty",
+		]
+		d._parseSectorData(outputFromSecondSfdiskListing)
+
+		self.assertTrue(len(d.partitions) > 0, "We should have partitions even after the second parsing.")
+
+		self.assertEquals(512, d.bytesPerSector)
+		self.assertEquals(78165360, d.totalSectors)
+
+
 if __name__ == '__main__':
 	unittest.main()
