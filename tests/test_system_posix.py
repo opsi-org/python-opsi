@@ -217,7 +217,7 @@ class DiskTestCase(unittest.TestCase):
 			" Disk /fakedev/sdb: 4865 cylinders, 255 heads, 63 sectors/track",
 			" Units = cylinders of 8225280 bytes, blocks of 1024 bytes, counting from 0",
 			" ",
-			"    Device Boot Start     End   #cyls    #blocks   Id  System",
+			"    Device     Boot  Start     End   #cyls   #blocks   Id  System",
 			" /fakedev/sdb1   *      0+   4228-   4229-  33961984    7  HPFS/NTFS",
 			" /fakedev/sdb2       4355+   4865-    511-   4096696    c  W95 FAT32 (LBA)",
 			" /fakedev/sdb3          0       -       0          0    0  Empty",
@@ -259,6 +259,47 @@ class DiskTestCase(unittest.TestCase):
 
 		self.assertEquals(512, d.bytesPerSector)
 		self.assertEquals(78165360, d.totalSectors)
+
+
+		self.assertTrue(4, len(d.partitions))
+
+		expected = {
+			'fs': u'ntfs',
+			'cylSize': 4229,
+			'number': 1,
+			'secStart': 2048,
+			'secSize': 67923968,
+			'device': u'/fakedev/sdb1',
+			'size': 34784709120L,
+			'cylStart': 0,
+			'end': 34784709120L,
+			'secEnd': 67926015,
+			'boot': True,
+			'start': 0,
+			'cylEnd': 4228,
+			'type': u'7'
+		}
+		self.assertEquals(expected, d.partitions[0])
+
+		expected_last_partition = {
+			'fs': u'fat32',
+			'cylSize': 511,
+			'number': 2,
+			'secStart': 69971968,
+			'secSize': 8193392,
+			'device': u'/fakedev/sdb2',
+			'size': 4203118080L,
+			'cylStart': 4355,
+			'end': 40024212480L,
+			'secEnd': 78165359,
+			'boot': False,
+			'start': 35821094400L,
+			'cylEnd': 4865,
+			'type': u'c'
+		}
+		self.assertEquals(expected_last_partition, d.partitions[-1])
+
+
 
 
 if __name__ == '__main__':
