@@ -1328,25 +1328,24 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			result = execute(u'%s -s -uB %s' % (which('sfdisk'), self.device))
+			result = execute(u'{sfdisk} -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device))
 			for line in result:
 				try:
 					self.size = int(line.strip())*1024
 				except:
 					pass
 
-			logger.info(u"Size of disk '%s': %s Byte / %s MB" % ( self.device, self.size, (self.size/(1024*1024))) )
+			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 
-			result = execute(u"%s -l %s" % (which('sfdisk'), self.device))
+			result = execute(u"{sfdisk} -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
 			for line in result:
-				if (line.find(u'unrecognized partition table type') != -1):
-					execute('%s -e "0,0\n\n\n\n" | %s -D %s' % (which('echo'), which('sfdisk'), self.device))
-					result = execute(which('sfdisk') + ' -l ' + self.device)
+				if u'unrecognized partition table type' in line:
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device))
+					result = execute("{sfdisk} -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
 					break
 			self._parsePartitionTable(result)
 
-			# Get sector data
-			result = execute(u"%s -uS -l %s" % (which('sfdisk'), self.device))
+			result = execute(u"{sfdisk} -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
 			self._parseSectorData(result)
 
 			if self.ldPreload:
