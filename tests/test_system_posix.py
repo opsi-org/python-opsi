@@ -167,15 +167,13 @@ class HPProliantDisksTestCase(unittest.TestCase):
 			"Disk /fakedev/cciss/c0d0: 17562 cylinders, 255 heads, 32 sectors/track",
 			"Units = cylinders of 4177920 bytes, blocks of 1024 bytes, counting from 0",
 			"",
-			"   Device   			Boot Start    End   #cyls    #blocks Id  System",
-			"/fakedev/cciss/c0d0p1   *     0+    5066    5067- 20673344    7  HPFS/NTFS ",
-			"/fakedev/cciss/c0d0p2       5067   17560   12494- 50975520    f  W95 Ext'd (LBA) ",
-			"/fakedev/cciss/c0d0p3          0       -       0 0    0  Empty ",
-			"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty ",
-			"/fakedev/cciss/c0d0p5       5067+  17560   12494- 50975504    7  HPFS/NTFS ",
-			"        start: (c,h,s) expected (1023,254,32) found (1023,0,1)",
-			"        start: (c,h,s) expected (1023,254,32) found (1023,1,1)",
+			"   Device             Boot  Start     End   #cyls    #blocks Id  System",
+			"/fakedev/cciss/c0d0p1          0+  16558-  16558- 67556352    7  HPFS/NTFS",
+			"/fakedev/cciss/c0d0p2   *  16558+  17561    1004- 4095584    c  W95 FAT32 (LBA)",
+			"/fakedev/cciss/c0d0p3          0       -       0 0    0  Empty",
+			"/fakedev/cciss/c0d0p4          0       -       0 0    0  Empty",
 		]
+
 
 		with mock.patch('OPSI.System.Posix.execute'):
 			d = Posix.Harddisk('/fakedev/cciss/c0d0')
