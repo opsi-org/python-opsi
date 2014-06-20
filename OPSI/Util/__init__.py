@@ -467,7 +467,7 @@ def compareVersions(v1, condition, v2):
 		condition = u'=='
 	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
 		raise Exception(u"Bad condition '%s'" % condition)
-	if (condition == u'='):
+	if condition == u'=':
 		condition = u'=='
 
 	v1 = removePartAfterWave(forceUnicode(v1))
@@ -506,11 +506,11 @@ def compareVersions(v1, condition, v2):
 						cv2 = match.group(1)
 						v2p[i] = match.group(2)
 
-				if (cv1 == u''):
+				if cv1 == u'':
 					cv1 = chr(1)
-				if (cv2 == u''):
+				if cv2 == u'':
 					cv2 = chr(1)
-				if (cv1 == cv2):
+				if cv1 == cv2:
 					logger.debug2(u"%s == %s => continue" % (cv1, cv2))
 					continue
 
@@ -529,7 +529,7 @@ def compareVersions(v1, condition, v2):
 					logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
 						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
 					return True
-	if (condition.find(u'=') == -1):
+	if u'=' not in condition:
 		logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
 			% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
 		return False
