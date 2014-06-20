@@ -1026,6 +1026,7 @@ def umount(devOrMountpoint):
 		logger.error(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 		raise Exception(u"Failed to umount '%s': %s" % (devOrMountpoint, e))
 
+
 def getBlockDeviceBusType(device):
 	# Returns either 'IDE', 'SCSI', 'SATA', 'RAID' or None (not found)
 	device = forceFilename(device)
@@ -1320,6 +1321,7 @@ class Harddisk:
 	def readPartitionTable(self):
 		for hook in hooks:
 			hook.pre_Harddisk_readPartitionTable(self)
+
 		try:
 			self.partitions = []
 			os.putenv("LC_ALL", "C")
@@ -1341,95 +1343,115 @@ class Harddisk:
 					execute('%s -e "0,0\n\n\n\n" | %s -D %s' % (which('echo'), which('sfdisk'), self.device))
 					result = execute(which('sfdisk') + ' -l ' + self.device)
 					break
+			self._parsePartitionTable(result)
 
-			for line in result:
-				line = line.strip()
-				if line.lower().startswith(u'disk'):
-					match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
-					if not match:
-						raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
-
-					self.cylinders = forceInt(match.group(1))
-					self.heads     = forceInt(match.group(2))
-					self.sectors   = forceInt(match.group(3))
-					self.totalCylinders = self.cylinders
-
-				elif line.lower().startswith(u'units'):
-					match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
-					if not match:
-						raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
-					self.bytesPerCylinder = forceInt(match.group(1))
-					self.totalCylinders = int(self.size / self.bytesPerCylinder)
-					logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
-
-				elif line.startswith(self.device):
-					match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
-					if not match:
-						raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
-
-					if match.group(5):
-						boot = False
-						if (match.group(3) == u'*'):
-							boot = True
-
-						fs = u'unknown'
-						if (match.group(8).lower() in [u"b", u"c", u"e"]):
-							fs = u'fat32'
-						elif (match.group(8).lower() in [u"7"]):
-							fs = u'ntfs'
-						try:
-							part = forceFilename(match.group(1) + match.group(2))
-							logger.debug("Trying using Blkid")
-							fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), part))
-							if fsres:
-								for line in fsres:
-									line = line.strip()
-									if not line:
-										continue
-									logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % line)
-									fs = line
-						except:
-							pass
-
-						self.partitions.append(
-							{
-								'device': forceFilename(match.group(1) + match.group(2)),
-								'number': forceInt(match.group(2)),
-								'cylStart': forceInt(match.group(4)),
-								'cylEnd': forceInt(match.group(5)),
-								'cylSize': forceInt(match.group(6)),
-								'start': forceInt(match.group(4)) * self.bytesPerCylinder,
-								'end': (forceInt(match.group(5))+1) * self.bytesPerCylinder,
-								'size': forceInt(match.group(6)) * self.bytesPerCylinder,
-								'type': forceUnicodeLower(match.group(8)),
-								'fs': fs,
-								'boot': boot
-							}
-						)
-
-						logger.debug(u"Partition found =>>> number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-								% (	self.partitions[-1]['number'],
-									(self.partitions[-1]['start']/(1024*1024)), self.partitions[-1]['cylStart'],
-									(self.partitions[-1]['end']/(1024*1024)),   self.partitions[-1]['cylEnd'],
-									(self.partitions[-1]['size']/(1024*1024)),  self.partitions[-1]['cylSize'] ) \
-								+ u"type: %s, fs: %s, boot: %s" \
-								% (match.group(8), fs, boot) )
-
-						if self.partitions[-1]['device']:
-							logger.debug(u"Waiting for device '%s' to appear" % self.partitions[-1]['device'])
-							timeout = 15
-							while (timeout > 0):
-								if os.path.exists(self.partitions[-1]['device']):
-									break
-								time.sleep(1)
-								timeout -= 1
-							if os.path.exists(self.partitions[-1]['device']):
-								logger.debug(u"Device '%s' found" % self.partitions[-1]['device'])
-							else:
-								logger.warning(u"Device '%s' not found" % self.partitions[-1]['device'])
 			# Get sector data
 			result = execute(u"%s -uS -l %s" % (which('sfdisk'), self.device))
-			for line in result:
+			self._parseSectorData(result)
+
+			if self.ldPreload:
+				os.unsetenv("LD_PRELOAD")
+		except Exception as e:
+			for hook in hooks:
+				hook.error_Harddisk_readPartitionTable(self, e)
+			raise
+
+		for hook in hooks:
+			hook.post_Harddisk_readPartitionTable(self)
+
+	def _parsePartitionTable(self, sfdiskListingOutput):
+		for line in sfdiskListingOutput:
+			line = line.strip()
+			if line.lower().startswith(u'disk'):
+				match = re.search('\s+(\d+)\s+cylinders,\s+(\d+)\s+heads,\s+(\d+)\s+sectors', line)
+				if not match:
+					raise Exception(u"Unable to get geometry for disk '%s'" % self.device)
+
+				self.cylinders = forceInt(match.group(1))
+				self.heads = forceInt(match.group(2))
+				self.sectors = forceInt(match.group(3))
+				self.totalCylinders = self.cylinders
+
+			elif line.lower().startswith(u'units'):
+				match = re.search('cylinders\s+of\s+(\d+)\s+bytes', line)
+				if not match:
+					raise Exception(u"Unable to get bytes/cylinder for disk '%s'" % self.device)
+				self.bytesPerCylinder = forceInt(match.group(1))
+				self.totalCylinders = int(self.size / self.bytesPerCylinder)
+				logger.info(u"Total cylinders of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalCylinders, self.bytesPerCylinder))
+
+			elif line.startswith(self.device):
+				match = re.search('(%sp*)(\d+)\s+(\**)\s*(\d+)[\+\-]*\s+(\d*)[\+\-]*\s+(\d+)[\+\-]*\s+(\d+)[\+\-]*\s+(\S+)\s+(.*)' % self.device, line)
+
+				if not match:
+					raise Exception(u"Unable to read partition table of disk '%s'" % self.device)
+
+				if match.group(5):
+					boot = False
+					if (match.group(3) == u'*'):
+						boot = True
+
+					fs = u'unknown'
+					fsType = forceUnicodeLower(match.group(8))
+					if fsType in (u"b", u"c", u"e"):
+						fs = u'fat32'
+					elif fsType == u"7":
+						fs = u'ntfs'
+
+					deviceName = forceFilename(match.group(1) + match.group(2))
+
+					try:
+						logger.debug("Trying using Blkid")
+						fsres = execute(u'%s -o value -s TYPE %s' % (which('blkid'), deviceName))
+						if fsres:
+							for line in fsres:
+								line = line.strip()
+								if not line:
+									continue
+								logger.debug(u"Found filesystem: %s with blkid tool, using now this filesystemtype." % line)
+								fs = line
+					except Exception:
+						pass
+
+					self.partitions.append(
+						{
+							'device': deviceName,
+							'number': forceInt(match.group(2)),
+							'cylStart': forceInt(match.group(4)),
+							'cylEnd': forceInt(match.group(5)),
+							'cylSize': forceInt(match.group(6)),
+							'start': forceInt(match.group(4)) * self.bytesPerCylinder,
+							'end': (forceInt(match.group(5))+1) * self.bytesPerCylinder,
+							'size': forceInt(match.group(6)) * self.bytesPerCylinder,
+							'type': fsType,
+							'fs': fs,
+							'boot': boot
+						}
+					)
+
+					logger.debug(u"Partition found =>>> number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
+							% (	self.partitions[-1]['number'],
+								(self.partitions[-1]['start']/(1024*1024)), self.partitions[-1]['cylStart'],
+								(self.partitions[-1]['end']/(1024*1024)),   self.partitions[-1]['cylEnd'],
+								(self.partitions[-1]['size']/(1024*1024)),  self.partitions[-1]['cylSize'] ) \
+							+ u"type: %s, fs: %s, boot: %s" \
+							% (match.group(8), fs, boot) )
+
+					if self.partitions[-1]['device']:
+						logger.debug(u"Waiting for device '%s' to appear" % self.partitions[-1]['device'])
+						timeout = 15
+						while (timeout > 0):
+							if os.path.exists(self.partitions[-1]['device']):
+								break
+							time.sleep(1)
+							timeout -= 1
+						if os.path.exists(self.partitions[-1]['device']):
+							logger.debug(u"Device '%s' found" % self.partitions[-1]['device'])
+						else:
+							logger.warning(u"Device '%s' not found" % self.partitions[-1]['device'])
+
+	def _parseSectorData(self, outputFromSfDiskListing):
+		for line in outputFromSfDiskListing:
 				line = line.strip()
 
 				if line.startswith(self.device):
@@ -1448,22 +1470,12 @@ class Harddisk:
 										    self.partitions[p]['secEnd'], self.partitions[p]['secSize']) )
 								break
 				elif line.lower().startswith('units'):
-					match = re.search('sectors\sof\s(\d+)\sbytes', line)
+					match = re.search('sectors\s+of\s+(\d+)\s+bytes', line)
 					if not match:
 						raise Exception(u"Unable to get bytes/sector for disk '%s'" % self.device)
 					self.bytesPerSector = forceInt(match.group(1))
 					self.totalSectors   = int(self.size / self.bytesPerSector)
 					logger.info(u"Total sectors of disk '%s': %d, %d bytes per cylinder" % (self.device, self.totalSectors, self.bytesPerSector))
-
-			if self.ldPreload:
-				os.unsetenv("LD_PRELOAD")
-		except Exception as e:
-			for hook in hooks:
-				hook.error_Harddisk_readPartitionTable(self, e)
-			raise
-
-		for hook in hooks:
-			hook.post_Harddisk_readPartitionTable(self)
 
 	def writePartitionTable(self):
 		logger.debug(u"Writing partition table to disk %s" % self.device)
