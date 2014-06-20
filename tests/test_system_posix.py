@@ -208,6 +208,50 @@ class HPProliantDisksTestCase(unittest.TestCase):
 
 		d._parseSectorData(outputFromSecondSfdiskListing)
 
+		self.assertTrue(len(d.partitions) > 0)
+		self.assertEquals(
+			2,
+			len(d.partitions),
+			"Read out {0} partitons instead of the expected 2. "
+			"Maybe parsing empty partitions?".format(len(d.partitions))
+		)
+
+		first_partition_expected = {
+			'fs': u'ntfs',
+			'cylSize': 16558,
+			'number': 1,
+			'secStart': 2048,
+			'secSize': 135112704,
+			'device': u'/fakedev/cciss/c0d0p1',
+			'size': 69177999360L,
+			'cylStart': 0,
+			'end': 69182177280L,
+			'secEnd': 135114751,
+			'boot': False,
+			'start': 0,
+			'cylEnd': 16558,
+			'type': u'7'
+		}
+		self.assertEquals(first_partition_expected, d.partitions[0])
+
+		last_partition_expected = {
+			'fs': u'fat32',
+			'cylSize': 1004,
+			'number': 2,
+			'secStart': 135114752,
+			'secSize': 8191168,
+			'device': u'/fakedev/cciss/c0d0p2',
+			'size': 4194631680L,
+			'cylStart': 16558,
+			'end': 73372631040L,
+			'secEnd': 143305919,
+			'boot': True,
+			'start': 69177999360L,
+			'cylEnd': 17561,
+			'type': u'c'
+		}
+		self.assertEquals(last_partition_expected, d.partitions[-1])
+
 
 class DiskTestCase(unittest.TestCase):
 
