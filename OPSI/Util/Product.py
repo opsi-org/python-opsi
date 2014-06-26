@@ -38,7 +38,7 @@ if os.name == 'posix':
 from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
-from OPSI.Util import randomString, findFiles
+from OPSI.Util import randomString, findFiles, removeDirectory
 from OPSI.System import execute
 from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 	forceUnicode)
@@ -115,16 +115,7 @@ class ProductPackageFile(object):
 			if (f.lower() == productId.lower()):
 				clientDataDir = os.path.join(self.clientDataDir, f)
 				logger.info("Deleting client data dir '%s'" % clientDataDir)
-
-				try:
-					shutil.rmtree(clientDataDir)
-				except UnicodeDecodeError:
-					# See http://bugs.python.org/issue3616
-					logger.info(
-						u'Client data directory seems to contain filenames '
-						u'with unicode characters. Trying fallback.'
-					)
-					execute('rm -rf {dir}'.format(dir=clientDataDir))
+				removeDirectory(clientDataDir)
 
 	def install(self, clientDataDir):
 		self.setClientDataDir(clientDataDir)

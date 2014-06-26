@@ -39,6 +39,7 @@ import json
 import os
 import random
 import re
+import shutil
 import socket
 import struct
 import time
@@ -827,3 +828,29 @@ def getGlobalConfig(name, configFile=OPSI_GLOBAL_CONF):
 				if key.strip().lower() == name.lower():
 					return value.strip()
 	return None
+
+
+def removeDirectory(directory):
+	"""
+	Removing an directory.
+
+	If this fails with shutil it will try to use system calls.
+
+	.. versionadded:: 4.0.5.1
+
+
+	:param directory: Path to the directory
+	:tye directory: str
+	"""
+	logger.debug('Removing directory: {0}'.format(directory))
+	try:
+		shutil.rmtree(directory)
+	except UnicodeDecodeError:
+		# See http://bugs.python.org/issue3616
+		logger.info(
+			u'Client data directory seems to contain filenames '
+			u'with unicode characters. Trying fallback.'
+		)
+
+		import OPSI.System  # late import to avoid circular dependency
+		OPSI.System.execute('rm -rf {dir}'.format(dir=directory))

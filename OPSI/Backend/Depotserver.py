@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.1'
+__version__ = '4.0.5.1'
 
 import shutil
 import os
@@ -45,7 +45,7 @@ from OPSI.Backend.Backend import LOG_DIR, OPSI_GLOBAL_CONF, ExtendedBackend
 from OPSI.System import getDiskSpaceUsage
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
-	librsyncPatchFile, librsyncDeltaFile)
+	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
 
 logger = Logger()
@@ -401,8 +401,8 @@ class DepotserverPackageManager(object):
 			force = forceBool(force)
 			deleteFiles = forceBool(deleteFiles)
 
-			depot = self._depotBackend._context.host_getObjects(type = 'OpsiDepotserver', id = depotId)[0]
-			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = depotId, productId = productId)
+			depot = self._depotBackend._context.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
+			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			if not productOnDepots:
 				raise BackendBadValueError("Product '%s' is not installed on depot '%s'" % (productId, depotId))
 
@@ -419,22 +419,17 @@ class DepotserverPackageManager(object):
 
 			logger.debug("Deleting product '%s'" % productId)
 
-			# self.setProductInstallationStatus(productId, objectId = depotId, installationStatus = 'uninstalled')
-			# self.deleteProductDependency(productId, depotIds = [ depotId ])
-			# self.deleteProductProperties(productId, objectId = depotId)
-			# self.deleteProduct(productId, depotIds = [ depotId ])
-
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):
 					raise BackendBadValueError(u"Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
+
 				for f in os.listdir(depot.depotLocalUrl[7:]):
 					if (f.lower() == productId.lower()):
 						clientDataDir = os.path.join(depot.depotLocalUrl[7:], f)
 						logger.info("Deleting client data dir '%s'" % clientDataDir)
-						shutil.rmtree(clientDataDir)
+						removeDirectory(clientDataDir)
 
 			self._depotBackend._context.productOnDepot_deleteObjects(productOnDepot)
-
 		except Exception as e:
 			logger.logException(e)
 			raise BackendError(u"Failed to uninstall product '%s' on depot '%s': %s" % (productId, depotId, e))
