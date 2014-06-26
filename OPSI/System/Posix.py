@@ -1419,8 +1419,7 @@ class Harddisk:
 					except Exception:
 						pass
 
-					self.partitions.append(
-						{
+					partitionData = {
 							'device': deviceName,
 							'number': forceInt(match.group(2)),
 							'cylStart': forceInt(match.group(4)),
@@ -1433,28 +1432,39 @@ class Harddisk:
 							'fs': fs,
 							'boot': boot
 						}
+
+					self.partitions.append(partitionData)
+
+					logger.debug(
+						u"Partition found =>>> number: %s, "
+						u"start: %s MB (%s cyl), end: %s MB (%s cyl), "
+						u"size: %s MB (%s cyl), "
+						u"type: %s, fs: %s, boot: %s" % (
+							partitionData['number'],
+							partitionData['start'] / (1024 * 1024),
+							partitionData['cylStart'],
+							partitionData['end'] / (1024 * 1024),
+							partitionData['cylEnd'],
+							partitionData['size'] / (1024 * 1024),
+							partitionData['cylSize'],
+							match.group(8),
+							fs,
+							boot
+						)
 					)
 
-					logger.debug(u"Partition found =>>> number: %s, start: %s MB (%s cyl), end: %s MB (%s cyl), size: %s MB (%s cyl), " \
-							% (	self.partitions[-1]['number'],
-								(self.partitions[-1]['start']/(1024*1024)), self.partitions[-1]['cylStart'],
-								(self.partitions[-1]['end']/(1024*1024)),   self.partitions[-1]['cylEnd'],
-								(self.partitions[-1]['size']/(1024*1024)),  self.partitions[-1]['cylSize'] ) \
-							+ u"type: %s, fs: %s, boot: %s" \
-							% (match.group(8), fs, boot) )
-
-					if self.partitions[-1]['device']:
-						logger.debug(u"Waiting for device '%s' to appear" % self.partitions[-1]['device'])
+					if partitionData['device']:
+						logger.debug(u"Waiting for device '%s' to appear" % partitionData['device'])
 						timeout = 15
 						while (timeout > 0):
-							if os.path.exists(self.partitions[-1]['device']):
+							if os.path.exists(partitionData['device']):
 								break
 							time.sleep(1)
 							timeout -= 1
-						if os.path.exists(self.partitions[-1]['device']):
-							logger.debug(u"Device '%s' found" % self.partitions[-1]['device'])
+						if os.path.exists(partitionData['device']):
+							logger.debug(u"Device '%s' found" % partitionData['device'])
 						else:
-							logger.warning(u"Device '%s' not found" % self.partitions[-1]['device'])
+							logger.warning(u"Device '%s' not found" % partitionData['device'])
 
 	def _parseSectorData(self, outputFromSfDiskListing):
 		"""
@@ -1478,7 +1488,9 @@ class Harddisk:
 							self.partitions[p]['secStart'] = forceInt(match.group(3))
 							self.partitions[p]['secEnd'] = forceInt(match.group(4))
 							self.partitions[p]['secSize'] = forceInt(match.group(5))
-							logger.debug(u"Partition sector values =>>> number: %s, start: %s sec, end: %s sec, size: %s sec " \
+							logger.debug(
+								u"Partition sector values =>>> number: %s, "
+								u"start: %s sec, end: %s sec, size: %s sec " \
 								% (
 									self.partitions[p]['number'],
 									self.partitions[p]['secStart'],
