@@ -1359,6 +1359,13 @@ class Harddisk:
 			hook.post_Harddisk_readPartitionTable(self)
 
 	def _parsePartitionTable(self, sfdiskListingOutput):
+		"""
+		Parses the partition table and sets the corresponding attributes
+		on this object.
+
+		:param sfdiskListingOutput: The output from ``sfdisk -l /dev/foo``
+		:type sfdiskListingOutput: [str, ]
+		"""
 		for line in sfdiskListingOutput:
 			line = line.strip()
 			if line.lower().startswith(u'disk'):
@@ -1450,6 +1457,13 @@ class Harddisk:
 							logger.warning(u"Device '%s' not found" % self.partitions[-1]['device'])
 
 	def _parseSectorData(self, outputFromSfDiskListing):
+		"""
+		Parses the sector data of the disk and extends the existing
+		partition data.
+
+		:param outputFromSfDiskListing: Output of ``sfdisk -uS -l /dev/foo``
+		:type outputFromSfDiskListing: [str, ]
+		"""
 		for line in outputFromSfDiskListing:
 			line = line.strip()
 
