@@ -56,11 +56,11 @@ class DepotserverBackend(ExtendedBackend):
 
 		ExtendedBackend.__init__(self, backend)
 
-		self._packageLog           = os.path.join(LOG_DIR, 'package.log')
-		self._sshRSAPublicKeyFile  = u'/etc/ssh/ssh_host_rsa_key.pub'
+		self._packageLog = os.path.join(LOG_DIR, 'package.log')
+		self._sshRSAPublicKeyFile = u'/etc/ssh/ssh_host_rsa_key.pub'
 
 		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
-		if not self._context.host_getIdents(id = self._depotId):
+		if not self._context.host_getIdents(id=self._depotId):
 			raise BackendMissingDataError(u"Depot '%s' not found in backend" % self._depotId)
 		self._packageManager = DepotserverPackageManager(self)
 
@@ -97,7 +97,7 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(u"Failed to create librsync delta file: %s" % e)
 
 	def depot_getDiskSpaceUsage(self, path):
-		if (os.name != 'posix'):
+		if os.name != 'posix':
 			raise NotImplementedError(u"Not implemented for non-posix os")
 
 		try:
@@ -133,7 +133,7 @@ class DepotserverPackageManager(object):
 		if not isinstance(depotBackend, DepotserverBackend):
 			raise Exception(u"DepotserverPackageManager needs instance of DepotserverBackend as backend, got %s" % depotBackend.__class__.__name__)
 		self._depotBackend = depotBackend
-		logger.setLogFile(self._depotBackend._packageLog, object = self)
+		logger.setLogFile(self._depotBackend._packageLog, object=self)
 
 	def installPackage(self, filename, force=False, propertyDefaultValues={}, tempDir=None):
 		depotId = self._depotBackend._depotId
@@ -156,7 +156,7 @@ class DepotserverPackageManager(object):
 			if not os.access(filename, os.R_OK):
 				raise BackendIOError(u"Read access denied for package file '%s'" % filename)
 
-			depots = self._depotBackend._context.host_getObjects(id = depotId)
+			depots = self._depotBackend._context.host_getObjects(id=depotId)
 			if not depots:
 				raise BackendMissingDataError(u"Depot '%s' not found in backend" % depotId)
 			depot = depots[0]
@@ -178,14 +178,14 @@ class DepotserverPackageManager(object):
 
 				logger.notice(u"Locking product '%s' on depot '%s'" % (product.getId(), depotId))
 				productOnDepot = ProductOnDepot(
-					productId      = product.getId(),
-					productType    = product.getType(),
-					productVersion = product.getProductVersion(),
-					packageVersion = product.getPackageVersion(),
-					depotId        = depotId,
-					locked         = True
+					productId=product.getId(),
+					productType=product.getType(),
+					productVersion=product.getProductVersion(),
+					packageVersion=product.getPackageVersion(),
+					depotId=depotId,
+					locked=True
 				)
-				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = depotId, productId = product.getId())
+				productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=depotId, productId=product.getId())
 				if productOnDepots and productOnDepots[0].getLocked():
 					logger.notice(u"Product currently locked on depot '%s'" % depotId)
 					if not force:
@@ -214,14 +214,14 @@ class DepotserverPackageManager(object):
 				currentProductDependencies = {}
 				productDependencies = []
 				for productDependency in self._depotBackend._context.productDependency_getObjects(
-							productId      = product.getId(),
-							productVersion = product.getProductVersion(),
-							packageVersion = product.getPackageVersion() ):
-					ident = productDependency.getIdent(returnType = 'unicode')
+							productId=product.getId(),
+							productVersion=product.getProductVersion(),
+							packageVersion=product.getPackageVersion()):
+					ident = productDependency.getIdent(returnType='unicode')
 					currentProductDependencies[ident] = productDependency
 				for productDependency in ppf.packageControlFile.getProductDependencies():
-					ident = productDependency.getIdent(returnType = 'unicode')
-					if currentProductDependencies.has_key(ident):
+					ident = productDependency.getIdent(returnType='unicode')
+					if ident in currentProductDependencies:
 						del currentProductDependencies[ident]
 					productDependencies.append(productDependency)
 				self._depotBackend._context.productDependency_createObjects(productDependencies)
@@ -234,14 +234,14 @@ class DepotserverPackageManager(object):
 				currentProductProperties = {}
 				productProperties = []
 				for productProperty in self._depotBackend._context.productProperty_getObjects(
-							productId      = product.getId(),
-							productVersion = product.getProductVersion(),
-							packageVersion = product.getPackageVersion() ):
+							productId=product.getId(),
+							productVersion=product.getProductVersion(),
+							packageVersion=product.getPackageVersion()):
 					ident = productProperty.getIdent(returnType = 'unicode')
 					currentProductProperties[ident] = productProperty
 				for productProperty in ppf.packageControlFile.getProductProperties():
 					ident = productProperty.getIdent(returnType = 'unicode')
-					if currentProductProperties.has_key(ident):
+					if ident in currentProductProperties:
 						del currentProductProperties[ident]
 					productProperties.append(productProperty)
 				self._depotBackend._context.productProperty_createObjects(productProperties)
@@ -266,19 +266,19 @@ class DepotserverPackageManager(object):
 				logger.info(u"Deleting product property states of product %s on depot '%s'" % (product.getId(), depotId))
 				self._depotBackend._context.productPropertyState_deleteObjects(
 					self._depotBackend._context.productPropertyState_getObjects(
-						productId = product.getId(),
-						objectId  = depotId ) )
+						productId=product.getId(),
+						objectId=depotId
+					)
+				)
 
 				logger.info(u"Deleting not needed property states of product %s" % product.getId())
-				productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(
-					productId = product.getId() )
-				baseProperties = self._depotBackend._context.productProperty_getObjects(
-					productId = product.getId() )
+				productPropertyStates = self._depotBackend._context.productPropertyState_getObjects(productId=product.getId())
+				baseProperties = self._depotBackend._context.productProperty_getObjects(productId=product.getId())
 
 				productPropertyIds = None
 				productPropertyStatesToDelete = None
-				productPropertyIds = [ productProperty.propertyId  for productProperty in  baseProperties ]
-				productPropertyStatesToDelete = [ ppState  for ppState in productPropertyStates if not ppState.propertyId in productPropertyIds ]
+				productPropertyIds = [productProperty.propertyId for productProperty in  baseProperties]
+				productPropertyStatesToDelete = [ppState for ppState in productPropertyStates if ppState.propertyId not in productPropertyIds]
 				logger.debug(u"Following productPropertyStates are marked to delete: '%s'" % productPropertyStatesToDelete)
 				if productPropertyStatesToDelete:
 					self._depotBackend._context.productPropertyState_deleteObjects(productPropertyStatesToDelete)
@@ -288,12 +288,14 @@ class DepotserverPackageManager(object):
 				for productProperty in productProperties:
 					productPropertyStates.append(
 						ProductPropertyState(
-							productId  = product.getId(),
-							propertyId = productProperty.propertyId,
-							objectId   = depotId,
-							values     = productProperty.defaultValues ) )
+							productId=product.getId(),
+							propertyId=productProperty.propertyId,
+							objectId=depotId,
+							values=productProperty.defaultValues
+						)
+					)
 				for productPropertyState in productPropertyStates:
-					if propertyDefaultValues.has_key(productPropertyState.propertyId):
+					if productPropertyState.propertyId in propertyDefaultValues:
 						try:
 							productPropertyState.setValues(propertyDefaultValues[productPropertyState.propertyId])
 						except Exception as e:
@@ -316,13 +318,13 @@ class DepotserverPackageManager(object):
 
 				# Clean up products
 				productIdents = []
-				for productOnDepot in self._depotBackend._context.productOnDepot_getObjects(productId = productOnDepot.productId):
+				for productOnDepot in self._depotBackend._context.productOnDepot_getObjects(productId=productOnDepot.productId):
 					productIdent = u"%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
-					if not productIdent in productIdents:
+					if productIdent not in productIdents:
 						productIdents.append(productIdent)
 				deleteProducts = []
-				for product in self._depotBackend._context.product_getObjects(id = productOnDepot.productId):
-					if not product.getIdent(returnType = 'unicode') in productIdents:
+				for product in self._depotBackend._context.product_getObjects(id=productOnDepot.productId):
+					if product.getIdent(returnType='unicode') not in productIdents:
 						deleteProducts.append(product)
 				if deleteProducts:
 					self._depotBackend._context.product_deleteObjects(deleteProducts)
@@ -335,16 +337,16 @@ class DepotserverPackageManager(object):
 					productPropertiesToCleanup[productProperty.propertyId] = productProperty
 				if productPropertiesToCleanup:
 					clientIds = []
-					for clientToDepot in self._depotBackend._context.configState_getClientToDepotserver(depotIds = depotId):
-						if not clientToDepot['clientId'] in clientIds:
+					for clientToDepot in self._depotBackend._context.configState_getClientToDepotserver(depotIds=depotId):
+						if clientToDepot['clientId'] not in clientIds:
 							clientIds.append(clientToDepot['clientId'])
 					if clientIds:
 						deleteProductPropertyStates = []
 						updateProductPropertyStates = []
 						for productPropertyState in self._depotBackend._context.productPropertyState_getObjects(
-										objectId   = clientIds,
-										productId  = productOnDepot.getProductId(),
-										propertyId = productPropertiesToCleanup.keys()):
+										objectId=clientIds,
+										productId=productOnDepot.getProductId(),
+										propertyId=productPropertiesToCleanup.keys()):
 							changed = False
 							newValues = []
 							for v in productPropertyState.values:
@@ -352,14 +354,14 @@ class DepotserverPackageManager(object):
 								if v in productProperty.possibleValues:
 									newValues.append(v)
 									continue
-								if (productProperty.getType() == 'BoolProductProperty') and forceBool(v) in productProperty.possibleValues:
+								if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
 									newValues.append(forceBool(v))
 									changed = True
 									continue
-								if (productProperty.getType() == 'UnicodeProductProperty'):
+								elif productProperty.getType() == 'UnicodeProductProperty':
 									newValue = None
 									for pv in productProperty.possibleValues:
-										if (forceUnicodeLower(pv) == forceUnicodeLower(v)):
+										if forceUnicodeLower(pv) == forceUnicodeLower(v):
 											newValue = pv
 											break
 									if newValue:
@@ -435,7 +437,7 @@ class DepotserverPackageManager(object):
 
 	def checkDependencies(self, productPackageFile):
 		for dependency in productPackageFile.packageControlFile.getPackageDependencies():
-			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId = self._depotBackend._depotId, productId = dependency['package'])
+			productOnDepots = self._depotBackend._context.productOnDepot_getObjects(depotId=self._depotBackend._depotId, productId=dependency['package'])
 			if not productOnDepots:
 				raise Exception(u"Dependent package '%s' not installed" % dependency['package'])
 
