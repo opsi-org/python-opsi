@@ -18,8 +18,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * SQL-Backends: Improved speed of query creation
   * Do not fail on removing installed products if the directory
     contains filenames with unicode characters
+  * OPSI.System.Posix: Fixing reread partiontable problem with new bootimage
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 26 Jun 2014 16:49:40 +0200
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 30 Jun 2014 12:55:40 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
