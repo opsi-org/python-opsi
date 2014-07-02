@@ -196,7 +196,7 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals('[\n]', objectToBeautifiedText([]))
 
     def testFormattingListOfEmptyLists(self):
-        expected = """\
+        expected = u"""\
 [
           [
           ],
@@ -208,6 +208,12 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
 
     def testFormattingEmptyDict(self):
         self.assertEquals('{\n}', objectToBeautifiedText({}))
+
+        expected = u"""\
+          {
+          }\
+"""
+        self.assertEquals(expected, objectToBeautifiedText({}, level=1))
 
 
 class UtilTestCase(unittest.TestCase):
