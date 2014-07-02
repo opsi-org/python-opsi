@@ -46,10 +46,11 @@ class Hybi10EncodeTestCase(unittest.TestCase):
         self.assertEquals(randstring, decoded)
 
     def testEndocingAndDecodingDoNotAlterStringWithRandomInputs(self):
+        valid_digits = ''.join((string.ascii_uppercase, string.digits))
         def string_generator(size):
-            return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(size))
+            return ''.join(random.choice(valid_digits) for x in range(size))
 
-        for i in range(1000):
+        for i in range(100):
             randstring = string_generator(random.randint(1, 10000))
             encoded = hybi10Encode(randstring)
             decoded = hybi10Decode(encoded)
