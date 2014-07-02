@@ -710,6 +710,8 @@ def destroyPool(pool):
 
 
 if (__name__ == '__main__'):
+	pass
+
 	#pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
 	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	#print resp.data
