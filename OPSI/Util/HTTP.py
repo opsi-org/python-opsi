@@ -10,7 +10,7 @@
    (open pc server integration) http://www.opsi.org
 
    Copyright (C) 2010 Andrey Petrov
-   Copyright (C) 2010 uib GmbH
+   Copyright (C) 2010-2014 uib GmbH
 
    http://www.uib.de/
 
@@ -58,20 +58,24 @@ totalRequests = 0
 # This could be an import - but support for pycurl is currently not fully implrement
 pycurl = None
 
+
 def hybi10Encode(data):
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
-	frame = [ 0x81 ]
-	mask = [ random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255) ]
+	frame = [0x81]
+	mask = [
+		random.randint(0, 255), random.randint(0, 255),
+		random.randint(0, 255), random.randint(0, 255)
+	]
 	dataLength = len(data)
 
-	if (dataLength <= 125):
+	if dataLength <= 125:
 		frame.append(dataLength + 128)
 	else:
 		frame.append(254)
 		frame.append(dataLength >> 8)
 		frame.append(dataLength & 0xff)
 
-	frame.extend(mask);
+	frame.extend(mask)
 	for i in range(len(data)):
 		frame.append(ord(data[i]) ^ mask[i % 4])
 
@@ -82,7 +86,7 @@ def hybi10Encode(data):
 
 
 def hybi10Decode(data):
-	if (len(data.strip()) < 2):
+	if len(data.strip()) < 2:
 		return ''
 	# Code stolen from http://lemmingzshadow.net/files/2011/09/Connection.php.txt
 	mask = ''
@@ -92,15 +96,15 @@ def hybi10Decode(data):
 	masked = False
 	dataLength = ord(data[1])
 
-	if (secondByte[0] == '1'):
+	if secondByte[0] == '1':
 		masked = True
 		dataLength = ord(data[1]) & 127
 
 	if masked:
-		if (dataLength == 126):
+		if dataLength == 126:
 			mask = data[4:8]
 			codedData = data[8:]
-		elif (dataLength == 127):
+		elif dataLength == 127:
 			mask = data[10:14]
 			codedData = data[14:]
 		else:
@@ -109,9 +113,9 @@ def hybi10Decode(data):
 		for i in range(len(codedData)):
 			decodedData += chr( ord(codedData[i]) ^ ord(mask[i % 4]) )
 	else:
-		if (dataLength == 126):
+		if dataLength == 126:
 			decodedData = data[4:]
-		elif (dataLength == 127):
+		elif dataLength == 127:
 			decodedData = data[10:]
 		else:
 			decodedData = data[2:]
@@ -128,7 +132,7 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	lastError = None
 	while True:
 		try:
-			if (connectTimeout > 0) and ((time.time()-started) >= connectTimeout):
+			if connectTimeout > 0 and ((time.time() - started) >= connectTimeout):
 				raise OpsiTimeoutError(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(lastError)))
 			sock.connect((self.host, self.port))
 			break
@@ -148,18 +152,18 @@ def non_blocking_connect_http(self, connectTimeout=0):
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
 	if verifyByCaCertsFile:
-		self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_REQUIRED, ca_certs = verifyByCaCertsFile)
+		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile)
 		logger.debug(u"Server verified by CA")
 	else:
-		self.sock = ssl_module.wrap_socket(self.sock, keyfile = self.key_file, certfile = self.cert_file, cert_reqs = ssl_module.CERT_NONE)
+		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_NONE)
 
 
-def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM = True):
+def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 	try:
 		sock = httpsConnectionOrSSLSocket
 		if hasattr(sock, 'sock'):
 			sock = sock.sock
-		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form = True))
+		cert = crypto.load_certificate(crypto.FILETYPE_ASN1, sock.getpeercert(binary_form=True))
 		if not asPEM:
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
@@ -206,7 +210,7 @@ class HTTPResponse(object):
 			try:
 				(version, status, reason) = header.split(None, 2)
 				self.version = 9
-				if (version == 'HTTP/1.0'):
+				if version == 'HTTP/1.0':
 					self.version = 10
 				elif version.startswith('HTTP/1.'):
 					self.version = 11
@@ -214,14 +218,15 @@ class HTTPResponse(object):
 				self.reason = reason.strip()
 			except Exception:
 				pass
-		elif (header.count(':') > 0):
+		elif header.count(':') > 0:
 			(k, v) = header.split(':', 1)
 			k = k.lower().strip()
 			v = v.strip()
-			if (k == 'content-length'):
+			if k == 'content-length':
 				try:
 					v = int(v)
-					if (v < 0): v = 0
+					if v < 0:
+						v = 0
 				except:
 					return
 			self.headers[k] = v
@@ -236,12 +241,13 @@ class HTTPResponse(object):
 		on the original http.HTTPResponse object.
 		"""
 		return HTTPResponse(
-			data    = r.read(),
-			headers = dict(r.getheaders()),
-			status  = r.status,
-			version = r.version,
-			reason  = r.reason,
-			strict  = r.strict)
+			data=r.read(),
+			headers=dict(r.getheaders()),
+			status=r.status,
+			version=r.version,
+			reason=r.reason,
+			strict=r.strict
+		)
 
 	# Backwards-compatibility methods for httplib.HTTPResponse
 	def getheaders(self):
@@ -274,6 +280,7 @@ class HTTPConnectionPool(object):
 		self.serverCertFile       = None
 		self.caCertFile           = None
 		self.verifyServerCertByCa = False
+
 		if isinstance(self, HTTPSConnectionPool):
 			if self.host in ('localhost', '127.0.0.1'):
 				self.serverVerified = True
@@ -302,7 +309,7 @@ class HTTPConnectionPool(object):
 
 	def decreaseUsageCount(self):
 		self.usageCount -= 1
-		if (self.usageCount == 0):
+		if self.usageCount == 0:
 			destroyPool(self)
 
 	free = decreaseUsageCount
@@ -311,7 +318,7 @@ class HTTPConnectionPool(object):
 		if self.pool:
 			while True:
 				try:
-					conn = self.pool.get(block = False)
+					conn = self.pool.get(block=False)
 					if conn:
 						try:
 							if conn.sock:
@@ -324,7 +331,7 @@ class HTTPConnectionPool(object):
 					break
 
 	def adjustSize(self, maxsize):
-		if (maxsize < 1):
+		if maxsize < 1:
 			raise Exception(u"Connection pool size %d is invalid" % maxsize)
 		self.maxsize = forceInt(maxsize)
 		self.delPool()
@@ -355,7 +362,7 @@ class HTTPConnectionPool(object):
 		try:
 			conn = self.pool.get(block=self.block, timeout=timeout)
 		except Empty:
-			pass # Oh well, we'll create a new connection then
+			pass  # Oh well, we'll create a new connection then
 
 		return conn or self._new_conn()
 
@@ -552,7 +559,7 @@ class HTTPConnectionPool(object):
 			raise
 
 		# Handle redirection
-		if redirect and response.status in [301, 302, 303, 307] and 'location' in response.headers: # Redirect, retry
+		if redirect and response.status in (301, 302, 303, 307) and 'location' in response.headers: # Redirect, retry
 			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
 			time.sleep(0.1)
 			self._put_conn(None)
@@ -594,7 +601,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
 		logger.debug(u"Connection established to: %s" % self.host)
 		self.num_connections += 1
-		self.peerCertificate = getPeerCertificate(conn, asPEM = True)
+		self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 		if self.verifyServerCertByCa:
 			try:
 				if self.peerCertificate:
@@ -602,7 +609,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 					host = self.host
 					if re.search('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host):
 						fqdn = socket.getfqdn(host)
-						if (fqdn == host):
+						if fqdn == host:
 							raise Exception(u"Failed to get fqdn for ip %s" % host)
 						host = fqdn
 					if not host or not commonName or (host.lower() != commonName.lower()):
@@ -625,18 +632,18 @@ def urlsplit(url):
 	port = None
 	username = None
 	password = None
-	if (url.find('://') != -1):
+	if url.find('://') != -1:
 		(scheme, url) = url.split('://', 1)
 		scheme = scheme.lower()
 	parts = url.split('/', 1)
 	host = parts[0]
-	if (len(parts) > 1):
+	if len(parts) > 1:
 		baseurl += parts[1]
-	if (host.find('@') != -1):
+	if host.find('@') != -1:
 		(username, host) = host.split('@', 1)
 		if (username.find(':') != -1):
 			(username, password) = username.split(':', 1)
-	if (host.find(':') != -1):
+	if host.find(':') != -1:
 		(host, port) = host.split(':', 1)
 		port = int(port)
 	return (scheme, host, port, baseurl, username, password)
@@ -689,7 +696,7 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	else:
 		connectionPools[poolKey].increaseUsageCount()
 		maxsize = kw.get('maxsize', 0)
-		if (maxsize > connectionPools[poolKey].maxsize):
+		if maxsize > connectionPools[poolKey].maxsize:
 			connectionPools[poolKey].adjustSize(maxsize)
 	return connectionPools[poolKey]
 
