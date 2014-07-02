@@ -703,30 +703,6 @@ def destroyPool(pool):
 
 
 if (__name__ == '__main__'):
-	from OPSI.Logger import LOG_DEBUG2
-	import string
-
-	logger.setConsoleLevel(LOG_DEBUG2)
-	logger.setConsoleColor(True)
-
-
-	def string_generator(size):
-		return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(size))
-
-	randstring = u'[{"operations": ["created", "deleted", "updated"], "message_type": "register_for_object_events", "client_id": "nJ87nTA7Fph8n29C", "object_types": ["OpsiClient", "ProductOnClient", "BootConfiguration", "ProductOnDepot", "ConfigState"]}]'
-	randstring = randstring.encode('utf-8')
-	encoded = hybi10Encode(randstring)
-	decoded = hybi10Decode(encoded)
-	if (randstring != decoded):
-		raise Exception("'%s' != '%s'" % (randstring, decoded))
-
-	for i in range(1000):
-		randstring = string_generator(random.randint(1,10000))
-		encoded = hybi10Encode(randstring)
-		decoded = hybi10Decode(encoded)
-		if (randstring != decoded):
-			raise Exception("'%s' != '%s'" % (randstring, decoded))
-
 	#pool = HTTPSConnectionPool(host = 'download.uib.de', port = 443, connectTimeout=5, caCertFile = '/tmp/xxx', verifyServerCertByCa=True)
 	#resp = pool.urlopen('GET', url = '/index.html', body=None, headers={"accept": "text/html", "user-agent": "test"})
 	#print resp.data
