@@ -24,10 +24,10 @@ Testing functionality of OPSI.Util.HTTP
 """
 
 import random
-import os
+import string
 import unittest
 
-import OPSI.Util.HTTP
+from OPSI.Util.HTTP import hybi10Decode, hybi10Encode
 
 
 class Hybi10EncodeTestCase(unittest.TestCase):
