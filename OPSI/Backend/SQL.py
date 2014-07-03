@@ -2187,13 +2187,13 @@ class SQLBackend(ConfigDataBackend):
 				if returnHardwareIds:
 					results.append(res['hardware_id'])
 					continue
-				elif res.has_key('hardware_id'):
+				elif 'hardware_id' in res:
 					del res['hardware_id']
 				res['hardwareClass'] = hardwareClass
 				for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
 					if (valueInfo.get('Scope', 'g') == 'i'):
 						continue
-					if not res.has_key(attribute):
+					if attribute not in res:
 						res[attribute] = None
 				results.append(res)
 		return results
@@ -2344,7 +2344,7 @@ class SQLBackend(ConfigDataBackend):
 				pass  # not there - everything okay.
 
 		for attribute in attributes:
-			if not filter.has_key(attribute):
+			if attribute not in filter:
 				filter[attribute] = None
 
 		for hardwareClass in hardwareClasses:
@@ -2400,7 +2400,7 @@ class SQLBackend(ConfigDataBackend):
 					pass  # not there - everything okay
 
 				for attribute in self._auditHardwareConfig[hardwareClass].keys():
-					if not data.has_key(attribute):
+					if attribute not in data:
 						data[attribute] = None
 				hashes.append(data)
 		return hashes
