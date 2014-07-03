@@ -849,25 +849,40 @@ def _terminateProcess(process):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                            FILESYSTEMS                                            -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def getHarddisks():
+def getHarddisks(data=None):
+	"""
+	Get the available harddisks from the machine.
+
+	:param data: Data to parse through.
+	:type data: [str, ]
+	:return: The found harddisks.
+	:returntype: [Harddisk, ]
+	"""
+	if data is None:
+		# Get all available disks
+		result = execute(u'{sfdisk} -s -uB'.format(sfdisk=which('sfdisk')))
+	else:
+		result = data
+
 	disks = []
 
-	# _("Looking for harddisks.\n")
-
-	# Get all available disks
-	result = execute(u'%s -s -uB' % which('sfdisk'))
 	for line in result:
 		if not line.lstrip().startswith(u'/dev'):
 			continue
+
 		(dev, size) = line.split(u':')
 		size = forceInt(size.strip())
-		logger.debug(u"Found disk =>>> dev: '%s', size: %0.2f GB" % (dev, size/(1024*1024)) )
+		logger.debug(
+			u"Found disk =>>> dev: '{device}', size: {size:0.2f} GB".format(
+				device=dev,
+				size=size / (1024 * 1024)
+			)
+		)
 
 		hd = Harddisk(dev)
-		# _("Hardisk '%s' found (%s MB).\n") % (hd.device, hd.size/(1024*1024)))
 		disks.append(hd)
 
-	if ( len(disks) <= 0 ):
+	if len(disks) <= 0:
 		raise Exception(u'No harddisks found!')
 
 	return disks

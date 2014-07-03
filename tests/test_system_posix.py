@@ -98,6 +98,42 @@ class PosixMethodsTestCase(unittest.TestCase):
 		self.assertEquals('3 2014/05/28 12:37:51', dhcpConfig['expire'])
 
 
+class GetHarddisksTestCase(unittest.TestCase):
+	def testGetHarddisks(self):
+		testData = [
+			'/dev/sda:  19922944',
+			'total: 19922944 blocks',
+		]
+
+
+		with mock.patch('OPSI.System.Posix.execute'):
+			disks = Posix.getHarddisks(data=testData)
+
+		self.assertEquals(1, len(disks))
+
+	def testGetHarddisksIgnoresEverythingOutsideDev(self):
+		testData = [
+			'/no/dev/sdb:  19922944',
+			'/dev/sda:  19922944',
+			'/tmp/sda:  19922944',
+			'total: 19922944 blocks',
+		]
+
+		with mock.patch('OPSI.System.Posix.execute'):
+			disks = Posix.getHarddisks(data=testData)
+
+		self.assertEquals(1, len(disks))
+
+	def testGetHarddisksFailsIfNoDisks(self):
+		testData = [
+			'/no/dev/sdb:  19922944',
+			'total: 19922944 blocks',
+		]
+
+		with mock.patch('OPSI.System.Posix.execute'):
+			self.assertRaises(Exception, Posix.getHarddisks, data=testData)
+
+
 class PosixHardwareInventoryTestCase(unittest.TestCase):
 	def setUp(self):
 		self.config = [
