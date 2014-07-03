@@ -299,12 +299,16 @@ class SQLBackend(ConfigDataBackend):
 	def _objectToDatabaseHash(self, object):
 		hash = object.toHash()
 		if object.getType() == 'ProductOnClient':
-			if hash.has_key('actionSequence'):
+			try:
 				del hash['actionSequence']
+			except KeyError:
+				pass  # not there - can be
 
 		if issubclass(object.__class__, Relationship):
-			if hash.has_key('type'):
+			try:
 				del hash['type']
+			except KeyError:
+				pass  # not there - can be
 
 		for (key, value) in hash.items():
 			arg = self._objectAttributeToDatabaseAttribute(object.__class__, key)
@@ -1502,8 +1506,10 @@ class SQLBackend(ConfigDataBackend):
 		productPropertyStates = []
 		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
-			if res.has_key('values'):
+			try:
 				res['values'] = json.loads(res['values'])
+			except KeyError:
+				pass  # Could be non-existing and it would be okay.
 			productPropertyStates.append(ProductPropertyState.fromHash(res))
 		return productPropertyStates
 
@@ -2139,10 +2145,11 @@ class SQLBackend(ConfigDataBackend):
 			for key in self._auditHardwareConfig.keys():
 				hardwareClasses.append(key)
 
-		if filter.has_key('hardwareClass'):
-			del filter['hardwareClass']
-		if filter.has_key('type'):
-			del filter['type']
+		for unwanted_key in ('hardwareClass', 'type')
+			try:
+				del filter[unwanted_key]
+			except KeyError:
+				pass  # not there - everything okay.
 
 		if 'hardwareClass' in attributes:
 			attributes.remove('hardwareClass')
@@ -2330,10 +2337,11 @@ class SQLBackend(ConfigDataBackend):
 			for key in self._auditHardwareConfig.keys():
 				hardwareClasses.append(key)
 
-		if filter.has_key('hardwareClass'):
-			del filter['hardwareClass']
-		if filter.has_key('type'):
-			del filter['type']
+		for unwanted_key in ('hardwareClass', 'type')
+			try:
+				del filter[unwanted_key]
+			except KeyError:
+				pass  # not there - everything okay.
 
 		for attribute in attributes:
 			if not filter.has_key(attribute):
@@ -2386,8 +2394,10 @@ class SQLBackend(ConfigDataBackend):
 				data.update(res)
 				data['hardwareClass'] = hardwareClass
 				del data['hardware_id']
-				if data.has_key('config_id'):
+				try:
 					del data['config_id']
+				except KeyError:
+					pass  # not there - everything okay
 
 				for attribute in self._auditHardwareConfig[hardwareClass].keys():
 					if not data.has_key(attribute):
