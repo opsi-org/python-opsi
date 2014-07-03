@@ -1298,13 +1298,22 @@ class SQLBackend(ConfigDataBackend):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
 			if not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes:
-				for res2 in self._sql.getSet(u"select * from PRODUCT_PROPERTY_VALUE where " \
-					+ u"`propertyId` = '%s' AND `productId` = '%s' AND `productVersion` = '%s' AND `packageVersion` = '%s'" \
-					% (res['propertyId'], res['productId'], res['productVersion'], res['packageVersion'])):
+				for res2 in self._sql.getSet(
+					u"select * from PRODUCT_PROPERTY_VALUE where "
+					u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
+					u"`productVersion` = '{2}' AND "
+					u"`packageVersion` = '{3}'".format(
+						res['propertyId'],
+						res['productId'],
+						res['productVersion'],
+						res['packageVersion']
+					)):
+
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
 						res['defaultValues'].append(res2['value'])
 			productProperties.append(ProductProperty.fromHash(res))
+
 		return productProperties
 
 	def productProperty_deleteObjects(self, productProperties):
