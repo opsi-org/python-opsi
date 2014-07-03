@@ -53,9 +53,6 @@ class DirectoryExclusionRegexTestCase(unittest.TestCase):
 class ProductPackageFileTestCase(unittest.TestCase):
 	def setUp(self):
 		self.tempPackageFilename = tempfile.NamedTemporaryFile(suffix='.opsi')
-		# self.tempPackageFilename = self.tempPackageFilename.name
-		# self.tempPackage = Archive.Archive(self.tempPackageFilename, format="cpio")
-
 		self.tempDepotDir = tempfile.mkdtemp()
 
 	def tearDown(self):
@@ -84,10 +81,8 @@ class ProductPackageFileTestCase(unittest.TestCase):
 		fakePackageControlFile = mock.Mock()
 		fakePackageControlFile.getProduct.return_value = fakeProduct
 
-
 		# Setting up evil file
 		targetDir = os.path.join(self.tempDepotDir, 'umlauts')
-		print("Target dir: {0}".format(targetDir))
 		os.makedirs(os.path.join(self.tempDepotDir, 'umlauts'))
 		os.system(r"touch -- $(echo -e '{0}/--\0250--')".format(targetDir))
 
