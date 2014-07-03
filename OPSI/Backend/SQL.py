@@ -2145,7 +2145,7 @@ class SQLBackend(ConfigDataBackend):
 			for key in self._auditHardwareConfig.keys():
 				hardwareClasses.append(key)
 
-		for unwanted_key in ('hardwareClass', 'type')
+		for unwanted_key in ('hardwareClass', 'type'):
 			try:
 				del filter[unwanted_key]
 			except KeyError:
@@ -2337,7 +2337,7 @@ class SQLBackend(ConfigDataBackend):
 			for key in self._auditHardwareConfig.keys():
 				hardwareClasses.append(key)
 
-		for unwanted_key in ('hardwareClass', 'type')
+		for unwanted_key in ('hardwareClass', 'type'):
 			try:
 				del filter[unwanted_key]
 			except KeyError:
