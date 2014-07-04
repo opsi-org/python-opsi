@@ -112,6 +112,43 @@ class TestReadingMethodInformationTestCase(unittest.TestCase):
 		self.assertEquals("bar=u'baz'", args)
 		self.assertEquals('bar=bar', kwargs)
 
+	def testArgumentWithVariableArgumentCount(self):
+		def foo(*bar):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals("*bar", args)
+		self.assertEquals('*bar', kwargs)
+
+	def testArgumentWithPositionalArgumentAndVariableArgumentCount(self):
+		def foo(bar, *baz):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals("bar, *baz", args)
+		self.assertEquals('bar=bar, *baz', kwargs)
+
+	def testVariableKeywordArguments(self):
+		def foo(**bar):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals("**bar", args)
+		self.assertEquals('**bar', kwargs)
+
+	def testMethodWithAllTypesOfArguments(self):
+		def foo(ironman, blackWidow=True, *hulk, **deadpool):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals("ironman, blackWidow=True, *hulk, **deadpool", args)
+		self.assertEquals('ironman=ironman, blackWidow=blackWidow, *hulk, **deadpool', kwargs)
+
+
 
 if __name__ == '__main__':
 	unittest.main()
