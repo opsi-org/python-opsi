@@ -85,6 +85,33 @@ class TestReadingMethodInformationTestCase(unittest.TestCase):
 		self.assertEquals('bar, baz=None', args)
 		self.assertEquals('bar=bar, baz=baz', kwargs)
 
+	def testSelfAsFirstArgumentIsIgnored(self):
+		def foo(self, bar=None):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals('bar=None', args)
+		self.assertEquals('bar=bar', kwargs)
+
+	def testArgumentWithStringDefault(self):
+		def foo(bar='baz'):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals("bar='baz'", args)
+		self.assertEquals('bar=bar', kwargs)
+
+	def testArgumentWithUnicodeDefault(self):
+		def foo(bar=u'baz'):
+			pass
+
+		(args, kwargs) = Backend.getArgAndCallString(foo)
+
+		self.assertEquals("bar=u'baz'", args)
+		self.assertEquals('bar=bar', kwargs)
+
 
 if __name__ == '__main__':
 	unittest.main()
