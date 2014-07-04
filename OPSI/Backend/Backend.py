@@ -93,12 +93,11 @@ def getArgAndCallString(method):
 			# logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
 			argString += u'=%s' % unicode(default)
 	if varargs:
-		for vararg in varargs:
-			if argString:
-				argString += u', '
-				callString += u', '
-			argString += u'*%s' % vararg
-			callString += u'*%s' % vararg
+		if argString:
+			argString += u', '
+			callString += u', '
+		argString += u'*%s' % varargs
+		callString += u'*%s' % varargs
 	if varkwargs:
 		if argString:
 			argString += u', '
