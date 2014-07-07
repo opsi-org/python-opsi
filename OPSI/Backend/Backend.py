@@ -94,9 +94,9 @@ def getArgAndCallString(method):
 		else:
 			argString.append(element)
 
-	for (element, template) in ((varargs, u'*{0}'), (varkwargs, u'**{0}')):
+	for (index, element) in enumerate((varargs, varkwargs), start=1):
 		if element:
-			toAdd = template.format(element)
+			toAdd = '{0}{1}'.format(index * u'*', element)
 			argString.append(toAdd)
 			callString.append(toAdd)
 
