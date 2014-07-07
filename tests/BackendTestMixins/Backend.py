@@ -370,6 +370,39 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         #hosts = self.backend.host_getObjects()
         #assert len(hosts) == 0
 
+    def testBackend_getInterface(self):
+        """
+        Testing the behaviour of backend_getIngterface.
+
+        The method descriptions in `expected` may vary and should be
+        reduced if problems because of missing methods occur.
+        """
+        results = self.backend.backend_getInterface()
+
+        expected = [
+            {'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+            {'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+            {'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
+            {'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+            {'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
+            {'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+            {'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+            {'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+        ]
+
+        for selection in expected:
+            found = False
+            for result in results:
+                if result['name'] == selection['name']:
+                    print('Checking {0}'.format(selection['name']))
+                    for parameter in ('args', 'params', 'defaults', 'varargs', 'keywords'):
+                        self.assertEqual(selection[parameter], result[parameter])
+
+                    found = True
+                    break
+
+            self.assertTrue(found, "Expected method {0} not found".format(selection['name']))
+
 
 class BackendPerformanceTestMixin(object):
     def testBackendPerformance(self, clientCount=500, productCount=50):
