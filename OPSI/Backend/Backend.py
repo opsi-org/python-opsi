@@ -68,45 +68,39 @@ MAX_LOGFILE_SIZE  = 5000000
 
 
 def getArgAndCallString(method):
-	argString = u''
-	callString = u''
+	"""
+	Inspects `method` to gain information about the method signature.
+
+	:type method: func
+	:returntype: (str, str)
+	"""
+	argString = []
+	callString = []
 	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
-	# logger.debug2(u"args: %s" % unicode(args))
-	# logger.debug2(u"varargs: %s" % unicode(varargs))
-	# logger.debug2(u"varkwargs: %s" % unicode(varkwargs))
-	# logger.debug2(u"argDefaults: %s" % unicode(argDefaults))
+
 	for i in range(len(args)):
-		#logger.debug2(u"Processing arg [%s] %s" % (i, args[i]))
 		if (args[i] == 'self'):
 			continue
-		if (argString):
-			argString += u', '
-			callString += u', '
-		argString += args[i]
-		callString += u'%s=%s' % (args[i], args[i])
+
+		callString.append(u'='.join((args[i], args[i])))
 		if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
-			default = argDefaults[len(argDefaults)-len(args)+i]
+			default = argDefaults[len(argDefaults) - len(args) + i]
 			if type(default) is str:
-				default = u"'%s'" % default
+				default = u"'{0}'".format(default)
 			elif type(default) is unicode:
-				default = u"u'%s'" % default
-			# logger.debug2(u"   Using default [%s] %s" % (len(argDefaults)-len(args)+i, default))
-			argString += u'=%s' % unicode(default)
-	if varargs:
-		if argString:
-			argString += u', '
-			callString += u', '
-		argString += u'*%s' % varargs
-		callString += u'*%s' % varargs
-	if varkwargs:
-		if argString:
-			argString += u', '
-			callString += u', '
-		argString += u'**%s' % varkwargs
-		callString += u'**%s' % varkwargs
-	logger.debug3(u"Arg string is: %s" % argString)
-	logger.debug3(u"Call string is: %s" % callString)
-	return (argString, callString)
+				default = u"u'{0}'".format(default)
+
+			argString.append(u'='.join((args[i], unicode(default))))
+		else:
+			argString.append(args[i])
+
+	for (element, template) in ((varargs, u'*{0}'), (varkwargs, u'**{0}')):
+		if element:
+			toAdd = template.format(element)
+			argString.append(toAdd)
+			callString.append(toAdd)
+
+	return (u', '.join(argString), u', '.join(callString))
 
 
 class DeferredCall(object):
