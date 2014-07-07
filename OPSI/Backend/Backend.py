@@ -78,21 +78,21 @@ def getArgAndCallString(method):
 	callString = []
 	(args, varargs, varkwargs, argDefaults) = inspect.getargspec(method)
 
-	for i in range(len(args)):
-		if (args[i] == 'self'):
+	for element in args:
+		if element == 'self':
 			continue
 
-		callString.append(u'='.join((args[i], args[i])))
-		if type(argDefaults) is tuple and (len(argDefaults) + i >= len(args)):
-			default = argDefaults[len(argDefaults) - len(args) + i]
+		callString.append(u'='.join((element, element)))
+		if type(argDefaults) is tuple and (len(argDefaults) + args.index(element) >= len(args)):
+			default = argDefaults[len(argDefaults) - len(args) + args.index(element)]
 			if type(default) is str:
 				default = u"'{0}'".format(default)
 			elif type(default) is unicode:
 				default = u"u'{0}'".format(default)
 
-			argString.append(u'='.join((args[i], unicode(default))))
+			argString.append(u'='.join((element, unicode(default))))
 		else:
-			argString.append(args[i])
+			argString.append(element)
 
 	for (element, template) in ((varargs, u'*{0}'), (varkwargs, u'**{0}')):
 		if element:
