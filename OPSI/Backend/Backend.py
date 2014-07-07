@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.5.1'
 
 import base64
 import codecs
