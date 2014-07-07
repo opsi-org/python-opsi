@@ -12,7 +12,8 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * configed: direct access for mysql-backend users
   * forceUrl method don't convert value to lower
   * OpsiBackupArchive: get path to mysqldump via which
-  * Speeding up objectToHtml, objectToBeautifiedText
+  * Speeding up backend_getInterface, getArgAndCallString, objectToHtml,
+    objectToBeautifiedText
   * New module: OPSI.Util.Task.ConfigureBackend.ConfigurationData
   * Added possibility to disable pigz in opsi.conf
   * SQL-Backends: Improved speed of query creation

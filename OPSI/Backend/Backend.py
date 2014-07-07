@@ -278,38 +278,35 @@ This defaults to ``self``.
 			if methodName.startswith('_'):
 				# protected / private
 				continue
+
 			(args, varargs, keywords, defaults) = inspect.getargspec(member[1])
-			# logger.debug2(u"args: %s" % unicode(args))
-			# logger.debug2(u"varargs: %s" % unicode(varargs))
-			# logger.debug2(u"keywords: %s" % unicode(keywords))
-			# logger.debug2(u"defaults: %s" % unicode(defaults))
-			params = []
 			if args:
-				for arg in forceList(args):
-					if (arg != 'self'):
-						params.append(arg)
-			if ( defaults != None and len(defaults) > 0 ):
+				params = [arg for arg in forceList(args) if arg != 'self']
+			else:
+				params = []
+
+			if defaults is not None and len(defaults) > 0:
 				offset = len(params) - len(defaults)
 				for i in range(len(defaults)):
-					params[offset+i] = '*' + params[offset+i]
+					index = offset + i
+					params[index] = '*{0}'.format(params[index])
 
-			if varargs:
-				for arg in forceList(varargs):
-					params.append('*' + arg)
+			for (index, element) in enumerate((varargs, keywords), start=1):
+				if element:
+					stars = '*' * index
+					params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
 
-			if keywords:
-				for arg in forceList(keywords):
-					params.append('**' + arg)
+			logger.debug2(u"{0} interface method: name '{1}', params {2}".format(self.__class__.__name__, methodName, params))
+			methods[methodName] = {
+				'name': methodName,
+				'params': params,
+				'args': args,
+				'varargs': varargs,
+				'keywords': keywords,
+				'defaults': defaults
+			}
 
-			logger.debug2(u"%s interface method: name '%s', params %s" % (self.__class__.__name__, methodName, params))
-			methods[methodName] = { 'name': methodName, 'params': params, 'args': args, 'varargs': varargs, 'keywords': keywords, 'defaults': defaults}
-
-		methodList = []
-		methodNames = methods.keys()
-		methodNames.sort()
-		for methodName in methodNames:
-			methodList.append(methods[methodName])
-		return methodList
+		return [methods[methodName] for methodName in sorted(methods.keys())]
 
 	def backend_info(self):
 		"""
