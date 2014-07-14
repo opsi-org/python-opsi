@@ -1568,7 +1568,9 @@ class Harddisk:
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
-			execute(cmd)
+				
+			#changing execution to os.system
+			os.system(cmd)
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
 			self._forceReReadPartionTable()
