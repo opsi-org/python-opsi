@@ -1591,6 +1591,7 @@ class Harddisk:
 		except:
 			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
 			try:
+				time.sleep(5)
 				execute(u'%s %s' % (which('partprobe'), self.device))
 			except:
 				logger.error(u"Reread Partiontabel failed the second time, given up.")
