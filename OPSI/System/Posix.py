@@ -1585,7 +1585,16 @@ class Harddisk:
 		if self.ldPreload:
 			os.putenv("LD_PRELOAD", self.ldPreload)
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
-		execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
+		#execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
+		try:
+			execute(u'%s %s' % (which('partprobe'), self.device))
+		except:
+			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
+			try:
+				execute(u'%s %s' % (which('partprobe'), self.device))
+			except:
+				logger.error(u"Reread Partiontabel failed the second time, given up.")
+				raise
 		if self.ldPreload:
 			os.unsetenv("LD_PRELOAD")
 
