@@ -860,7 +860,7 @@ def getHarddisks(data=None):
 	"""
 	if data is None:
 		# Get all available disks
-		result = execute(u'{sfdisk} -s -uB'.format(sfdisk=which('sfdisk')))
+		result = execute(u'%s --no-reread -s -uB' % which('sfdisk'))
 	else:
 		result = data
 
@@ -1343,7 +1343,7 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			result = execute(u'{sfdisk} -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device))
+			result = execute(u'{sfdisk} --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device))
 			for line in result:
 				try:
 					self.size = int(line.strip())*1024
@@ -1352,15 +1352,15 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 
-			result = execute(u"{sfdisk} -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
+			result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
 			for line in result:
 				if u'unrecognized partition table type' in line:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device))
-					result = execute("{sfdisk} -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device))
+					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
 					break
 			self._parsePartitionTable(result)
 
-			result = execute(u"{sfdisk} -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
+			result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
 			self._parseSectorData(result)
 
 			if self.ldPreload:
@@ -1562,9 +1562,9 @@ class Harddisk:
 			if self.dosCompatibility:
 				dosCompat = u'-D '
 			if self.blockAlignment:
-				cmd +=  u'" | %s -uS -f %s' % (which('sfdisk'), self.device)
+				cmd +=  u'" | %s --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
-				cmd +=  u'" | %s -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
+				cmd +=  u'" | %s --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
