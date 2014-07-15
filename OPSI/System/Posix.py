@@ -860,7 +860,7 @@ def getHarddisks(data=None):
 	"""
 	if data is None:
 		# Get all available disks
-		result = execute(u'%s --no-reread -s -uB' % which('sfdisk'))
+		result = execute(u'%s --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
 	else:
 		result = data
 
@@ -1343,7 +1343,7 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			result = execute(u'{sfdisk} --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device))
+			result = execute(u'{sfdisk} --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			for line in result:
 				try:
 					self.size = int(line.strip())*1024
@@ -1352,15 +1352,15 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 
-			result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
+			result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			for line in result:
 				if u'unrecognized partition table type' in line:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device))
-					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 					break
 			self._parsePartitionTable(result)
 
-			result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device))
+			result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			self._parseSectorData(result)
 
 			if self.ldPreload:
@@ -1570,7 +1570,7 @@ class Harddisk:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 				
 			#changing execution to os.system
-			os.system(cmd)
+			execute(cmd, ignoreExitCode=[1], captureStderr=False)
 			if self.ldPreload:
 				os.unsetenv("LD_PRELOAD")
 			self._forceReReadPartionTable()
@@ -1589,12 +1589,12 @@ class Harddisk:
 		logger.info(u"Forcing kernel to reread partition table of '%s'." % self.device)
 		#execute(u'%s --re-read %s' % (which('sfdisk'), self.device))
 		try:
-			execute(u'%s %s' % (which('partprobe'), self.device))
+			execute(u'%s %s' % (which('partprobe'), self.device), captureStderr=False)
 		except:
 			logger.error(u"Forcing kernel reread partion table failed, waiting 5 sec. and try again")
 			try:
 				time.sleep(5)
-				execute(u'%s %s' % (which('partprobe'), self.device))
+				execute(u'%s %s' % (which('partprobe'), self.device), ignoreExitCode=[1])
 			except:
 				logger.error(u"Reread Partiontabel failed the second time, given up.")
 				raise
