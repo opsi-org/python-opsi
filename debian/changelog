@@ -20,8 +20,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * Do not fail on removing installed products if the directory
     contains filenames with unicode characters
   * OPSI.System.Posix: Fixing reread partiontable problem with new bootimage
+  * OPSI.System.Windows: Added setLocalSystemTime and getServiceTime in backend
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 30 Jun 2014 12:55:40 +0200
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 15 Jul 2014 22:55:40 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
