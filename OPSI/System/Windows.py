@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.4.4'
+__version__ = '4.0.5.1'
 
 import difflib
 import locale
@@ -852,7 +852,7 @@ def getActiveSessionId(verifyProcessRunning = "winlogon.exe", winApiBugCommand =
 	else:
 		for s in win32security.LsaEnumerateLogonSessions():
 			sessionData = win32security.LsaGetLogonSessionData(s)
-			if not forceInt(sessionData['LogonType']) in (2, 10):
+			if not forceInt(sessionData['LogonType']) in (2, 10) or sessionData['LogonDomain'] == u'Window Manager':
 				continue
 			sessionId = forceInt(sessionData['Session'])
 			if (sessionId == 0) and (sys.getwindowsversion()[0] >= 6):
@@ -1708,6 +1708,39 @@ def getAdminGroupName():
 	groupName = forceUnicode(win32security.LookupAccountSid(None, sidAdmins)[0])
 	logger.info(u"Admin group name is '%s'" % groupName)
 	return groupName
+	
+def setLocalSystemTime(timestring):
+	"""
+	Method sets the local systemtime
+	param timestring = "2014-07-15 13:20:24.085661"
+	Die Typ SYSTEMTIME-Struktur ist wie folgt:
+
+	WYear           Integer-The current year.
+	WMonth          Integer-The current month. January is 1.
+	WDayOfWeek      Integer-The current day of the week. Sunday is 0.
+	WDay            Integer-The current day of the month.
+	WHour           Integer-The current hour.
+	wMinute         Integer-The current minute.
+	wSecond         Integer-The current second.
+	wMilliseconds   Integer-The current millisecond.
+				
+	
+	win32api.SetSystemTime
+
+	int = SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )
+	
+	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
+	"""
+	if not timestring:
+		raise Exeption(u"Not Valid Timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+	try:
+		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
+		logger.info(u"Setting Systemtime Time to %s" % timestring)
+		winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+	except Exception as e:
+		logger.error(u"Failed to set System Time: '%s'" % e)
+		
+	
 
 
 class Impersonate:
