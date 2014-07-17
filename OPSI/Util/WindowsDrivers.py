@@ -445,15 +445,23 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		messageSubject.setMessage(u"Adding additional drivers")
 
 	rulesdir = os.path.join(driverSourceDirectory, "byAudit")
-	if exists(rulesdir) and auditHardwareOnHosts:
+	
+	auditInfoByClass = {}
+	for auditHardwareOnHost in auditHardwareOnHosts:
+		if not auditHardwareOnHost.hardwareClass in  ("COMPUTER_SYSTEM", "BASE_BOARD"):
+			continue
+		else:
+			if not auditInfoByClass.has_key(auditHardwareOnHost.hardwareClass):
+				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
+			
+				
+	byAuditIntegrated = False
+	if exists(rulesdir) and auditInfoByClass.has_key("COMPUTER_SYSTEM"):
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
-		vendorFromHost = None
-		modelFromHost = None
-		for auditHardwareOnHost in auditHardwareOnHosts:
-			if not auditHardwareOnHost.hardwareClass == "COMPUTER_SYSTEM":
-				continue
-			vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
-			modelFromHost  = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model)
+		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
+		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
+		modelFromHost  = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model)
+		
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
 			for vendordirectory in vendordirectories:
@@ -462,7 +470,23 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
 							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, modeldirectory))
-
+							byAuditIntegrated = True
+							
+	if not byAuditIntegrated and exists(rulesdir) and auditInfoByClass.has_key("BASE_BOARD"):
+		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
+		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
+		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
+		productFromHost  = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product)
+		
+		if vendorFromHost and productFromHost:
+			vendordirectories = listdir(rulesdir)
+			for vendordirectory in vendordirectories:
+				if vendordirectory.lower() == vendorFromHost.lower():
+					productdirectories = listdir(os.path.join(rulesdir,vendordirectory))
+					for productdirectory in productdirectories:
+						if productdirectory.lower() == productFromHost.lower():
+							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, productdirectory))
+		
 	driverDirectories = []
 	for additionalDriver in additionalDrivers:
 		if not additionalDriver:

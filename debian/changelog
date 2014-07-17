@@ -21,8 +21,9 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
     contains filenames with unicode characters
   * OPSI.System.Posix: Fixing reread partiontable problem with new bootimage
   * OPSI.System.Windows: Added setLocalSystemTime and getServiceTime in backend
+  * Driverintegration: Fallback for byAudit to check if mainboard integration is possible.
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 15 Jul 2014 22:55:40 +0200
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 17 Jul 2014 10:55:40 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
