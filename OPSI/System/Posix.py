@@ -860,7 +860,7 @@ def getHarddisks(data=None):
 	"""
 	if data is None:
 		# Get all available disks
-		result = execute(u'%s --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
+		result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
 	else:
 		result = data
 
@@ -1343,7 +1343,7 @@ class Harddisk:
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
 
-			result = execute(u'{sfdisk} --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+			result = execute(u'{sfdisk} -L --no-reread -s -uB {device}'.format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			for line in result:
 				try:
 					self.size = int(line.strip())*1024
@@ -1352,15 +1352,15 @@ class Harddisk:
 
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 
-			result = execute(u"{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+			result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			for line in result:
 				if u'unrecognized partition table type' in line:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
-					result = execute("{sfdisk} --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 					break
 			self._parsePartitionTable(result)
 
-			result = execute(u"{sfdisk} --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+			result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 			self._parseSectorData(result)
 
 			if self.ldPreload:
@@ -1562,13 +1562,13 @@ class Harddisk:
 			if self.dosCompatibility:
 				dosCompat = u'-D '
 			if self.blockAlignment:
-				cmd +=  u'" | %s --no-reread -uS -f %s' % (which('sfdisk'), self.device)
+				cmd +=  u'" | %s -L --no-reread -uS -f %s' % (which('sfdisk'), self.device)
 			else:
-				cmd +=  u'" | %s --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
+				cmd +=  u'" | %s -L --no-reread -uC %s%s' % (which('sfdisk'), dosCompat, self.device)
 
 			if self.ldPreload:
 				os.putenv("LD_PRELOAD", self.ldPreload)
-				
+
 			#changing execution to os.system
 			execute(cmd, ignoreExitCode=[1], captureStderr=False)
 			if self.ldPreload:
