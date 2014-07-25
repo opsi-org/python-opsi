@@ -1190,6 +1190,7 @@ class Harddisk:
 		self.cylinders = 0
 		self.heads = 0
 		self.sectors = 0
+		self.bytesPerSector = 512
 		self.label  = None
 		self.size = -1
 		self.partitions = []

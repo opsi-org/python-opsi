@@ -22,8 +22,10 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * OPSI.System.Posix: Fixing reread partiontable problem with new bootimage
   * OPSI.System.Windows: Added setLocalSystemTime and getServiceTime in backend
   * Driverintegration: Fallback for byAudit to check if mainboard integration is possible.
+  * OPSI.System.Posix: initializing bytesPerSector attribute in Harddisk class
+    constructor
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Mon, 17 Jul 2014 10:55:40 +0200
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Thu, 24 Jul 2014 10:55:40 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 
