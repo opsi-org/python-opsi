@@ -132,7 +132,7 @@ class Repository:
 				from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
 				while retry > 5:
 					try:
-						self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName()))
+						self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
 						break
 					except Exception as e:
 						exception = forceUnicode(e)
