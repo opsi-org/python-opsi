@@ -366,17 +366,14 @@ class Repository:
 				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
 				logger.debug2("bytes: '%d'" % bytes)
 				
-				if sys.version_info[:2] == (2, 6):
+				remaining_bytes = fileSize - self._bytesTransfered
+				logger.debug2("self._remainingBytes: '%d'" % remaining_bytes)
+				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
+					buf = src.read(remaining_bytes)
+				elif (remaining_bytes > 0):
 					buf = src.read(self._bufferSize)
 				else:
-					remaining_bytes = fileSize - self._bytesTransfered
-					logger.debug2("self._remainingBytes: '%d'" % remaining_bytes)
-					if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
-						buf = src.read(remaining_bytes)
-					elif (remaining_bytes > 0):
-						buf = src.read(self._bufferSize)
-					else:
-						break
+					break
 				read = len(buf)
 				
 				if (read > 0):
