@@ -24,8 +24,10 @@ python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
   * Driverintegration: Fallback for byAudit to check if mainboard integration is possible.
   * OPSI.System.Posix: initializing bytesPerSector attribute in Harddisk class
     constructor
+  * OPSI.Util.Repository: workarround timing problem after reconnect network
+    adapter
 
- -- Erol Ueluekmen <e.ueluekmen@uib.de>  Thu, 24 Jul 2014 10:55:40 +0200
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Thu, 28 Jul 2014 23:51:00 +0200
 
 python-opsi (4.0.4.5-1) stable; urgency=low
 

@@ -127,9 +127,16 @@ class Repository:
 
 		if self._dynamicBandwidth:
 			if not self._networkPerformanceCounter:
-				try:
-					from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
-					self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName())
+				retry = 0
+				from OPSI.System import getDefaultNetworkInterfaceName, NetworkPerformanceCounter
+				while retry > 5:
+					try:
+						self._networkPerformanceCounter = NetworkPerformanceCounter(getDefaultNetworkInterfaceName()))
+						break
+					except Exception as e:
+						logger.debug("Setting dynamic bandwith failed, waiting 5 sec and trying again.")
+						retry =+ 1
+						time.sleep(5)
 				except Exception as e:
 					logger.logException(e)
 					logger.critical(u"Failed to enable dynamic bandwidth: %s" % e)
