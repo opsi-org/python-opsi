@@ -355,7 +355,7 @@ class Repository:
 			logger.debug('Filesize is: {0}'.format(fileSize))
 
 			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
-				if not sys.version_info[:2] == (2, 6):
+				if sys.version_info[:2] == (2, 6):
 					buf = src.read(self._bufferSize)
 				else:
 					remaining_bytes = fileSize - self._bytesTransfered
