@@ -357,7 +357,6 @@ class Repository:
 				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
 				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
 				logger.debug2("bytes: '%d'" % bytes)
-				logger.debug2("buf: %s" % buf)
 				remaining_bytes = fileSize - self._bytesTransfered
 				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
 					buf = src.read(remaining_bytes)
