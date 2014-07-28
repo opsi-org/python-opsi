@@ -29,7 +29,7 @@
 	@license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.4.2'
+__version__ = '4.0.5.1'
 
 import base64
 import httplib
@@ -39,6 +39,7 @@ import shutil
 import stat
 import time
 import urllib
+import sys
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -354,17 +355,23 @@ class Repository:
 			logger.debug('Filesize is: {0}'.format(fileSize))
 
 			while buf and ( (bytes < 0) or (self._bytesTransfered < bytes) ):
-				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
-				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
-				logger.debug2("bytes: '%d'" % bytes)
-				remaining_bytes = fileSize - self._bytesTransfered
-				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
-					buf = src.read(remaining_bytes)
-				elif (remaining_bytes > 0):
+				if not sys.version_info[:2] == (2, 6):
 					buf = src.read(self._bufferSize)
 				else:
-					break
+					remaining_bytes = fileSize - self._bytesTransfered
+					if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
+						buf = src.read(remaining_bytes)
+					elif (remaining_bytes > 0):
+						buf = src.read(self._bufferSize)
+					else:
+						break
 				read = len(buf)
+				
+				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
+				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
+				logger.debug2("self._remainingBytes: '%d'" % remaining_bytes)
+				logger.debug2("bytes: '%d'" % bytes)
+				
 				if (read > 0):
 					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):
 						buf = buf[:bytes-self._bytesTransfered]
