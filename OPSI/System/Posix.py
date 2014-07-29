@@ -1354,11 +1354,16 @@ class Harddisk:
 			logger.info(u"Size of disk '%s': %s Byte / %s MB" % (self.device, self.size, (self.size/(1024*1024))))
 
 			result = execute(u"{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=True)
+			partTablefound = None
 			for line in result:
-				if u'unrecognized partition table type' in line:
-					execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
-					result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+				if line.startswith("/dev"):
+					partTablefound = True
 					break
+			if not partTablefound:
+				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
+				execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+				result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
+					
 			self._parsePartitionTable(result)
 
 			result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
