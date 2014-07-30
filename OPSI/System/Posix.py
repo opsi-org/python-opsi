@@ -1237,9 +1237,21 @@ class Harddisk:
 
 		.. versionadded:: 4.0.4.2
 		"""
-		devicename = self.device.split("/")[2]
-
 		try:
+			deviceparts = self.device.split("/")
+			if len(deviceparts) > 3:
+				if deviceparts[2].lower() == "cciss":
+					logger.info(u"Special device (cciss) detected")
+					devicename = "!".join(deviceparts[1:])
+					if not os.path.exists('/sys/block/{0}/queue/rotational'.format(devicename)):
+						raise Exception("rotational file '/sys/block/{0}/queue/rotational' not found!".format(devicename))
+				else:
+					logger.error(u"Unknown device, fallback to default: rotational")
+					return
+			else:
+				devicename = self.device.split("/")[2]
+                	
+			
 			for line in execute(u'cat /sys/block/{0}/queue/rotational'.format(devicename)):
 				try:
 					self.rotational = forceBool(int(line.strip()))
