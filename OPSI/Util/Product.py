@@ -64,7 +64,7 @@ def _(string):
 
 class ProductPackageFile(object):
 
-	def __init__(self, packageFile, tempDir = None):
+	def __init__(self, packageFile, tempDir=None):
 		self.packageFile = os.path.abspath(forceFilename(packageFile))
 		if not os.path.exists(self.packageFile):
 			raise Exception(u"Package file '%s' not found" % self.packageFile)
@@ -72,13 +72,14 @@ class ProductPackageFile(object):
 		if not tempDir:
 			tempDir = DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
+
 		if not os.path.isdir(self.tempDir):
 			raise Exception(u"Temporary directory '%s' not found" % self.tempDir)
 
-		self.clientDataDir      = None
-		self.tmpUnpackDir       = os.path.join( self.tempDir, u'.opsi.unpack.%s' % randomString(5) )
+		self.clientDataDir = None
+		self.tmpUnpackDir = os.path.join(self.tempDir, u'.opsi.unpack.%s' % randomString(5))
 		self.packageControlFile = None
-		self.clientDataFiles    = []
+		self.clientDataFiles = []
 
 	def cleanup(self):
 		logger.info(u"Cleaning up")
@@ -218,7 +219,7 @@ class ProductPackageFile(object):
 
 			for metadataArchive in metadataArchives:
 				archive = Archive( os.path.join(metaDataTmpDir, metadataArchive) )
-				archive.extract(targetPath = metaDataTmpDir)
+				archive.extract(targetPath=metaDataTmpDir)
 
 			packageControlFile = os.path.join(metaDataTmpDir, u'control')
 			if not os.path.exists(packageControlFile):
