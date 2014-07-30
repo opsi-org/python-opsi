@@ -1,4 +1,10 @@
-python-opsi (4.0.5.1-1) UNRELEASED; urgency=low
+python-opsi (4.0.5.1-2) experimental; urgency=low
+
+  * Using dh_python2
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 30 Jul 2014 17:38:00 +0200
+
+python-opsi (4.0.5.1-1) experimental; urgency=low
 
   * New module: OPSI.Util.Task.Sudoers
   * 70_dynamic_depot.conf: Latency algorythm does even work if pinging
