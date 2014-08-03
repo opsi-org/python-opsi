@@ -1,6 +1,6 @@
 from twisted.python import usage, reflect
-from ldaptor.protocols import pureldap
-from ldaptor.protocols.ldap import distinguishedname
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols.ldap import distinguishedname
 
 class Options(usage.Options):
     optParameters = ()

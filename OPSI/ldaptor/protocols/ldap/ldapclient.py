@@ -16,8 +16,8 @@
 
 """LDAP protocol client"""
 
-from ldaptor.protocols import pureldap, pureber
-from ldaptor.protocols.ldap import ldaperrors
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.ldaptor.protocols.ldap import ldaperrors
 
 from twisted.python import log
 from twisted.internet import protocol, defer, ssl, reactor

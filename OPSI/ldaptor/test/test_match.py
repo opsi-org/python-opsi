@@ -3,9 +3,9 @@ Test cases for ldaptor.protocols.ldap.ldapserver module.
 """
 
 from twisted.trial import unittest
-from ldaptor import inmemory
-from ldaptor.protocols import pureldap, pureber
-from ldaptor.protocols.ldap import ldapsyntax
+from OPSI.ldaptor import inmemory
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.ldaptor.protocols.ldap import ldapsyntax
 
 class TestEntryMatch(unittest.TestCase):
     def test_matchAll(self):

@@ -4,9 +4,9 @@ Test cases for ldaptor.protocols.ldap.svcbindproxy module.
 
 from twisted.trial import unittest
 from twisted.internet import reactor
-from ldaptor.protocols.ldap import svcbindproxy, ldaperrors
-from ldaptor.protocols import pureldap, pureber
-from ldaptor import ldapfilter, testutil
+from OPSI.ldaptor.protocols.ldap import svcbindproxy, ldaperrors
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.ldaptor import ldapfilter, testutil
 
 class ServiceBindingProxy(unittest.TestCase):
     berdecoder = pureldap.LDAPBERDecoderContext_TopLevel(

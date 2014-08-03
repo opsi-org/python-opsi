@@ -4,9 +4,9 @@ Test cases for ldaptor.protocols.ldap.proxy module.
 
 from twisted.trial import unittest
 from twisted.internet import reactor, error
-from ldaptor.protocols.ldap import proxy, ldaperrors
-from ldaptor.protocols import pureldap
-from ldaptor import testutil
+from OPSI.ldaptor.protocols.ldap import proxy, ldaperrors
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor import testutil
 
 class Proxy(unittest.TestCase):
     def createServer(self, *responses):

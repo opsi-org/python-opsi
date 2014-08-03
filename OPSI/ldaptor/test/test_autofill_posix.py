@@ -3,10 +3,10 @@ Test cases for ldaptor.protocols.ldap.autofill.posixAccount module.
 """
 
 from twisted.trial import unittest
-from ldaptor.protocols.ldap import ldapsyntax, autofill
-from ldaptor.protocols import pureldap
-from ldaptor.protocols.ldap.autofill import posixAccount
-from ldaptor.testutil import LDAPClientTestDriver
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, autofill
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols.ldap.autofill import posixAccount
+from OPSI.ldaptor.testutil import LDAPClientTestDriver
 
 class LDAPAutoFill_Posix(unittest.TestCase):
     def testMustHaveObjectClass(self):

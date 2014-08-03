@@ -5,9 +5,9 @@ Changes to the content of one single LDAP entry.
 changing of location in tree)
 """
 
-from ldaptor import attributeset
-from ldaptor.protocols import pureldap, pureber
-from ldaptor.protocols.ldap import ldif, distinguishedname
+from OPSI.ldaptor import attributeset
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.ldaptor.protocols.ldap import ldif, distinguishedname
 
 class Modification(attributeset.LDAPAttributeSet):
     def patch(self, entry):

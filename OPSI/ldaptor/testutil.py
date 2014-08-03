@@ -3,7 +3,7 @@
 from twisted.internet import defer
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from ldaptor import config
+from OPSI.ldaptor import config
 
 def mustRaise(dummy):
     raise unittest.FailTest('Should have raised an exception.')

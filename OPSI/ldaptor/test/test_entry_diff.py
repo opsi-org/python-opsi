@@ -3,7 +3,7 @@ Test cases for ldaptor.diff
 """
 
 from twisted.trial import unittest
-from ldaptor import delta, entry
+from OPSI.ldaptor import delta, entry
 
 class TestDiffEntry(unittest.TestCase):
     def testEqual(self):

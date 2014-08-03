@@ -4,9 +4,9 @@ Test cases for ldaptor.protocols.ldap.autofill.sambaAccount module.
 
 import sets
 from twisted.trial import unittest
-from ldaptor.protocols.ldap import ldapsyntax
-from ldaptor.protocols.ldap.autofill import sambaAccount, sambaSamAccount
-from ldaptor import testutil
+from OPSI.ldaptor.protocols.ldap import ldapsyntax
+from OPSI.ldaptor.protocols.ldap.autofill import sambaAccount, sambaSamAccount
+from OPSI.ldaptor import testutil
 
 class LDAPAutoFill_sambaAccount(unittest.TestCase):
     def testMustHaveObjectClass(self):

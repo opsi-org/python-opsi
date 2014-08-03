@@ -1,6 +1,6 @@
 """Find an available uidNumber/gidNumber/other similar number."""
 
-from ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols import pureldap
 
 class freeNumberGuesser:
     def __init__(self, makeAGuess, min=None, max=None):

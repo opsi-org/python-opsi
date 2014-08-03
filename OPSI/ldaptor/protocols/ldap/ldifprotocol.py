@@ -3,7 +3,7 @@ import base64
 from twisted.protocols import basic
 from twisted.internet import protocol
 
-from ldaptor import entry
+from OPSI.ldaptor import entry
 
 class LDIFParseError(Exception):
     """Error parsing LDIF."""

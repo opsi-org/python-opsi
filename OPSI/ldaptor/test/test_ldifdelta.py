@@ -3,8 +3,8 @@ Test cases for ldaptor.protocols.ldap.ldifdelta
 """
 
 from twisted.trial import unittest
-from ldaptor.protocols.ldap import ldifdelta
-from ldaptor import delta, entry
+from OPSI.ldaptor.protocols.ldap import ldifdelta
+from OPSI.ldaptor import delta, entry
 
 class LDIFDeltaDriver(ldifdelta.LDIFDelta):
     def __init__(self):

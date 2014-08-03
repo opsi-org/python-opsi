@@ -2,8 +2,8 @@ import sets, random, sha, base64
 from zope.interface import implements
 from twisted.internet import defer
 from twisted.python.util import InsensitiveDict
-from ldaptor import interfaces, attributeset, delta
-from ldaptor.protocols.ldap import distinguishedname, ldif, ldaperrors
+from OPSI.ldaptor import interfaces, attributeset, delta
+from OPSI.ldaptor.protocols.ldap import distinguishedname, ldif, ldaperrors
 
 def sshaDigest(passphrase, salt=None):
     if salt is None:

@@ -6,8 +6,8 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer
 
-from ldaptor.protocols.ldap import ldapclient
-from ldaptor import testutil
+from OPSI.ldaptor.protocols.ldap import ldapclient
+from OPSI.ldaptor import testutil
 
 class SillyMessage(object):
     needs_answer = True

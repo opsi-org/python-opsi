@@ -1,9 +1,9 @@
 import os.path
 import ConfigParser
 from zope.interface import implements
-from ldaptor import interfaces
-from ldaptor.insensitive import InsensitiveString
-from ldaptor.protocols.ldap import distinguishedname
+from OPSI.ldaptor import interfaces
+from OPSI.ldaptor.insensitive import InsensitiveString
+from OPSI.ldaptor.protocols.ldap import distinguishedname
 
 class MissingBaseDNError(Exception):
     """Configuration must specify a base DN"""

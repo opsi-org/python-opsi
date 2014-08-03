@@ -4,7 +4,7 @@ Test cases for the ldaptor.config module.
 
 from twisted.trial import unittest
 import os
-from ldaptor import config
+from OPSI.ldaptor import config
 
 def writeFile(path, content):
     f = file(path, 'w')

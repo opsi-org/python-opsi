@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols import pureldap
 
 """
 

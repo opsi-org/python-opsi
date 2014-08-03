@@ -3,9 +3,9 @@ Test cases for ldaptor.protocols.ldap.delta
 """
 
 from twisted.trial import unittest
-from ldaptor import testutil
-from ldaptor import delta, entry, attributeset, inmemory
-from ldaptor.protocols.ldap import ldapsyntax, distinguishedname, ldaperrors
+from OPSI.ldaptor import testutil
+from OPSI.ldaptor import delta, entry, attributeset, inmemory
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, distinguishedname, ldaperrors
 
 class TestModifications(unittest.TestCase):
     def setUp(self):

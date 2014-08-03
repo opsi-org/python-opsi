@@ -6,11 +6,11 @@ from twisted.trial import unittest
 import sets, base64
 from twisted.internet import protocol, address
 from twisted.python import components
-from ldaptor import inmemory, interfaces, schema, delta, entry
-from ldaptor.protocols.ldap import ldapserver, ldapclient, ldaperrors, fetchschema
-from ldaptor.protocols import pureldap, pureber
-from twisted.test import proto_helpers
-from ldaptor.test import util, test_schema
+from OPSI.ldaptor import inmemory, interfaces, schema, delta, entry
+from OPSI.ldaptor.protocols.ldap import ldapserver, ldapclient, ldaperrors, fetchschema
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.twisted.test import proto_helpers
+from OPSI.ldaptor.test import util, test_schema
 
 class LDAPServerTest(unittest.TestCase):
     def setUp(self):

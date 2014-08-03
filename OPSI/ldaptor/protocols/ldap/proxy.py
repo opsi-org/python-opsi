@@ -1,8 +1,8 @@
 """LDAP protocol proxy server"""
 
 from twisted.internet import reactor, defer
-from ldaptor.protocols.ldap import ldapserver, ldapconnector, ldapclient
-from ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols.ldap import ldapserver, ldapconnector, ldapclient
+from OPSI.ldaptor.protocols import pureldap
 
 class Proxy(ldapserver.BaseLDAPServer):
     protocol = ldapclient.LDAPClient

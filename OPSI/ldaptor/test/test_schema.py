@@ -3,7 +3,7 @@ Test cases for ldaptor.schema module.
 """
 
 from twisted.trial import unittest
-from ldaptor import schema
+from OPSI.ldaptor import schema
 
 OBJECTCLASSES = {
     'organization': """( 2.5.6.4 NAME 'organization'

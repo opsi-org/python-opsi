@@ -2,8 +2,8 @@ from zope.interface import implements
 from twisted.cred import checkers, credentials, error
 from twisted.internet import reactor
 from twisted.python import failure
-from ldaptor import ldapfilter, config
-from ldaptor.protocols.ldap import ldapconnector, ldapclient, ldapsyntax, ldaperrors
+from OPSI.ldaptor import ldapfilter, config
+from OPSI.ldaptor.protocols.ldap import ldapconnector, ldapclient, ldapsyntax, ldaperrors
 
 def makeFilter(name, template=None):
     filter=None

@@ -4,7 +4,7 @@ Test cases for ldaptor.attributeset
 
 from twisted.trial import unittest
 import sets
-from ldaptor import attributeset
+from OPSI.ldaptor import attributeset
 
 class TestComparison(unittest.TestCase):
     def testEquality_True_Set(self):

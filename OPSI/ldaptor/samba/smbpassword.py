@@ -1,5 +1,5 @@
 import string, warnings
-from ldaptor import md4, config
+from OPSI.ldaptor import md4, config
 
 lower='abcdefghijklmnopqrstuvwxyz'
 upper=lower.upper()

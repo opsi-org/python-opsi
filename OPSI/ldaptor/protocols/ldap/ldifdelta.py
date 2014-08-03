@@ -1,7 +1,7 @@
 from twisted.python.failure import Failure
 from twisted.internet import error
-from ldaptor.protocols.ldap import ldifprotocol
-from ldaptor import delta, entry
+from OPSI.ldaptor.protocols.ldap import ldifprotocol
+from OPSI.ldaptor import delta, entry
 
 WAIT_FOR_CHANGETYPE = 'WAIT_FOR_CHANGETYPE'
 WAIT_FOR_MOD_SPEC = 'WAIT_FOR_MOD_SPEC'

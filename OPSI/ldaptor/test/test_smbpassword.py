@@ -3,8 +3,8 @@ Test cases for the ldaptor.samba.smbpassword module.
 """
 
 from twisted.trial import unittest
-from ldaptor.samba import smbpassword
-from ldaptor import config
+from OPSI.ldaptor.samba import smbpassword
+from OPSI.ldaptor import config
 
 class TestNTHash(unittest.TestCase):
     knownValues=( # password, expected_result

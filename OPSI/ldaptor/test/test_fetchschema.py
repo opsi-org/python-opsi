@@ -3,10 +3,10 @@ Test cases for ldaptor.protocols.ldap.fetchschema module.
 """
 
 from twisted.trial import unittest
-from ldaptor.protocols.ldap import fetchschema
-from ldaptor import schema
-from ldaptor.protocols import pureldap
-from ldaptor.testutil import LDAPClientTestDriver
+from OPSI.ldaptor.protocols.ldap import fetchschema
+from OPSI.ldaptor import schema
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor.testutil import LDAPClientTestDriver
 
 class OnWire(unittest.TestCase):
     cn = """( 2.5.4.3 NAME ( 'cn' 'commonName' ) DESC 'RFC2256: common name(s) for which the entity is known by' SUP name )"""

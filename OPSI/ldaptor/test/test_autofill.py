@@ -3,8 +3,8 @@ Test cases for ldaptor.protocols.ldap.autofill module.
 """
 
 from twisted.trial import unittest
-from ldaptor.protocols.ldap import ldapsyntax
-from ldaptor.testutil import LDAPClientTestDriver
+from OPSI.ldaptor.protocols.ldap import ldapsyntax
+from OPSI.ldaptor.testutil import LDAPClientTestDriver
 
 class Autofill_sum: #TODO baseclass
     def __init__(self, resultAttr, sumAttrs):

@@ -1,8 +1,8 @@
 import sets
 from twisted.internet import defer
-from ldaptor import delta, ldapfilter
-from ldaptor.protocols import pureldap
-from ldaptor.protocols.ldap import ldapsyntax, ldaperrors
+from OPSI.ldaptor import delta, ldapfilter
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, ldaperrors
 
 class DiffTreeMixin(object):
     def _diffTree_gotMyChildren(self, myChildren, other, result):

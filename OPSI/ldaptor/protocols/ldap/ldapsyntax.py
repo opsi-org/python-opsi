@@ -3,10 +3,10 @@
 from zope.interface import implements
 from twisted.internet import defer
 from twisted.python.failure import Failure
-from ldaptor.protocols.ldap import ldapclient, ldif, distinguishedname, ldaperrors
-from ldaptor.protocols import pureldap, pureber
-from ldaptor.samba import smbpassword
-from ldaptor import ldapfilter, interfaces, delta, attributeset, entry
+from OPSI.ldaptor.protocols.ldap import ldapclient, ldif, distinguishedname, ldaperrors
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.ldaptor.samba import smbpassword
+from OPSI.ldaptor import ldapfilter, interfaces, delta, attributeset, entry
 
 class PasswordSetAggregateError(Exception):
     """Some of the password plugins failed"""

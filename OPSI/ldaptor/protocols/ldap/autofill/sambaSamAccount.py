@@ -1,4 +1,4 @@
-from ldaptor.protocols.ldap.autofill import ObjectMissingObjectClassException
+from OPSI.ldaptor.protocols.ldap.autofill import ObjectMissingObjectClassException
 
 class Autofill_samba: #TODO baseclass
     def __init__(self, domainSID, fixedPrimaryGroupSID=None):

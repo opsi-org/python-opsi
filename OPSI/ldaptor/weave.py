@@ -1,7 +1,7 @@
 from zope.interface import implements
 from nevow import tags, compy, inevow, flat
-from ldaptor.protocols.ldap import ldapsyntax, distinguishedname
-from ldaptor import interfaces
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, distinguishedname
+from OPSI.ldaptor import interfaces
 
 def keyvalue(context, data):
     """

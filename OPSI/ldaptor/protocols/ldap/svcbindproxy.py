@@ -1,6 +1,6 @@
-from ldaptor.protocols.ldap import proxy
-from ldaptor.protocols.ldap import ldapsyntax, ldaperrors
-from ldaptor.protocols import pureldap
+from OPSI.ldaptor.protocols.ldap import proxy
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, ldaperrors
+from OPSI.ldaptor.protocols import pureldap
 import datetime
 
 class ServiceBindingProxy(proxy.Proxy):

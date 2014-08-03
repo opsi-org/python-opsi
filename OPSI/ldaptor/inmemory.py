@@ -1,8 +1,8 @@
 from zope.interface import implements
 from twisted.internet import defer, error
 from twisted.python.failure import Failure
-from ldaptor import interfaces, entry, entryhelpers
-from ldaptor.protocols.ldap import distinguishedname, ldaperrors, ldifprotocol
+from OPSI.ldaptor import interfaces, entry, entryhelpers
+from OPSI.ldaptor.protocols.ldap import distinguishedname, ldaperrors, ldifprotocol
 
 class LDAPCannotRemoveRootError(ldaperrors.LDAPNamingViolation):
     """Cannot remove root of LDAP tree"""

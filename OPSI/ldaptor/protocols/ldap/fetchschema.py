@@ -1,6 +1,6 @@
-from ldaptor.protocols.ldap import ldaperrors, ldapsyntax
-from ldaptor.protocols import pureldap
-from ldaptor import schema
+from OPSI.ldaptor.protocols.ldap import ldaperrors, ldapsyntax
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor import schema
 
 def _fetchCb(subschemaSubentry, client):
     o=ldapsyntax.LDAPEntry(client=client,

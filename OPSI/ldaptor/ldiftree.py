@@ -5,7 +5,7 @@ import os, errno, sets
 from zope.interface import implements
 from twisted.internet import defer, error
 from twisted.python import failure
-from ldaptor import entry, interfaces, attributeset, entryhelpers
+from OPSI.ldaptor import entry, interfaces, attributeset, entryhelpers
 from ldaptor.protocols.ldap import ldifprotocol, distinguishedname, ldaperrors
 from twisted.mail.maildir import _generateMaildirName as tempName
 

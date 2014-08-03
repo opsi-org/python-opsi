@@ -3,8 +3,8 @@ Test cases for ldaptor.protocols.ldap.ldapfilter module.
 """
 
 from twisted.trial import unittest
-from ldaptor.protocols import pureldap
-from ldaptor import ldapfilter
+from OPSI.ldaptor.protocols import pureldap
+from OPSI.ldaptor import ldapfilter
 import types
 
 def s(*l):

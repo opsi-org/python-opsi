@@ -1,6 +1,6 @@
 from twisted.internet import defer
-from ldaptor import numberalloc
-from ldaptor.protocols.ldap import ldapsyntax, autofill
+from OPSI.ldaptor import numberalloc
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, autofill
 
 class Autofill_posix: #TODO baseclass
     def __init__(self,

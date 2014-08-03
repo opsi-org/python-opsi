@@ -4,9 +4,9 @@ Test cases for LDIF directory tree writing/reading.
 
 from twisted.trial import unittest
 import os, random, errno, shutil, sets
-from ldaptor import ldiftree, entry, delta, testutil
-from ldaptor.entry import BaseLDAPEntry
-from ldaptor.protocols.ldap import ldaperrors, ldifprotocol
+from OPSI.ldaptor import ldiftree, entry, delta, testutil
+from OPSI.ldaptor.entry import BaseLDAPEntry
+from OPSI.ldaptor.protocols.ldap import ldaperrors, ldifprotocol
 
 def writeFile(path, content):
     f = file(path, 'w')

@@ -3,7 +3,7 @@ Test cases for ldaptor.dns
 """
 
 from twisted.trial import unittest
-from ldaptor import dns
+from OPSI.ldaptor import dns
 
 class NetmaskToNumbits(unittest.TestCase):
     def test_classA(self):

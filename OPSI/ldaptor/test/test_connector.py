@@ -1,6 +1,6 @@
 from twisted.trial import unittest
 from twisted.internet import reactor, protocol, address
-from ldaptor.protocols.ldap import ldapconnector, distinguishedname
+from OPSI.ldaptor.protocols.ldap import ldapconnector, distinguishedname
 
 class FakeProto(protocol.Protocol):
     pass

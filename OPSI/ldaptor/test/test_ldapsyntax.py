@@ -3,12 +3,12 @@ Test cases for ldaptor.protocols.ldap.ldapsyntax module.
 """
 
 from twisted.trial import unittest
-from ldaptor import config, testutil, delta
-from ldaptor.protocols.ldap import ldapsyntax, ldaperrors
-from ldaptor.protocols import pureldap, pureber
-from twisted.internet import defer
-from twisted.python import failure
-from ldaptor.testutil import LDAPClientTestDriver
+from OPSI.ldaptor import config, testutil, delta
+from OPSI.ldaptor.protocols.ldap import ldapsyntax, ldaperrors
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.twisted.internet import defer
+from OPSI.twisted.python import failure
+from OPSI.ldaptor.testutil import LDAPClientTestDriver
 
 class LDAPSyntaxBasics(unittest.TestCase):
     def testCreation(self):

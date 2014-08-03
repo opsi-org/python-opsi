@@ -4,7 +4,7 @@ Test cases for ldaptor.protocols.ldap.ldif module.
 
 from twisted.trial import unittest
 import sets
-from ldaptor.protocols.ldap import ldifprotocol, distinguishedname
+from OPSI.ldaptor.protocols.ldap import ldifprotocol, distinguishedname
 
 class LDIFDriver(ldifprotocol.LDIF):
     def __init__(self):

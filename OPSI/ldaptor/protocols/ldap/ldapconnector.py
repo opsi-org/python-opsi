@@ -1,5 +1,5 @@
 from twisted.internet import protocol, defer
-from ldaptor.protocols.ldap import distinguishedname
+from OPSI.ldaptor.protocols.ldap import distinguishedname
 
 try:
     from twisted.internet.utils import SRVConnector

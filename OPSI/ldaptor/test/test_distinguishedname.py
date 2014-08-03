@@ -3,7 +3,7 @@ Test cases for ldaptor.protocols.ldap.distinguishedname module.
 """
 
 from twisted.trial import unittest
-from ldaptor.protocols.ldap import distinguishedname as dn
+from OPSI.ldaptor.protocols.ldap import distinguishedname as dn
 
 class TestCaseWithKnownValues(unittest.TestCase):
     knownValues = ()

@@ -17,9 +17,9 @@
 """LDAP protocol server"""
 
 import sets
-from ldaptor import interfaces, delta
-from ldaptor.protocols import pureldap, pureber
-from ldaptor.protocols.ldap import distinguishedname, ldaperrors
+from OPSI.ldaptor import interfaces, delta
+from OPSI.ldaptor.protocols import pureldap, pureber
+from OPSI.ldaptor.protocols.ldap import distinguishedname, ldaperrors
 
 from twisted.python import log
 from twisted.internet import protocol, defer
@@ -417,7 +417,7 @@ if __name__ == '__main__':
     log.startLogging(sys.stderr)
 
     from twisted.python import components
-    from ldaptor import inmemory
+    from OPSI.ldaptor import inmemory
 
     class LDAPServerFactory(protocol.ServerFactory):
         def __init__(self, root):

@@ -5,7 +5,7 @@ from twisted.internet import address
 from twisted.web import client
 
 from nevow import testutil
-from ldaptor.test import util
+from OPSI.ldaptor.test import util
 
 class FakeChannel(testutil.FakeChannel):
     def requestDone(self, request):
