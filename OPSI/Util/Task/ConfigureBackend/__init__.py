@@ -87,6 +87,7 @@ on to. Defaults to logger.notice
 
 	with codecs.open(backendConfigFile, 'w', 'utf-8') as backendFile:
 		backendFile.writelines(lines)
-		backendFile.write("config = %s\n" % objectToBeautifiedText(newConfig))
+		backendConfigData = objectToBeautifiedText(newConfig).replace("true","True").replace("false","False")
+		backendFile.write("config = %s\n" % backendConfigData)
 
 	notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
