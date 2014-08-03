@@ -1,3 +1,9 @@
+python-opsi (4.0.5.2-1) experimental; urgency=low
+
+  * fix in write method for backendConfigFiles
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Sun, 03 Aug 2014 03:26:28 +0200
+
 python-opsi (4.0.5.1-2) experimental; urgency=low
 
   * Using dh_python2
