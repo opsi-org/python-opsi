@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.4 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity lshw
+Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity lshw python-ldaptor
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
@@ -28,7 +28,7 @@ Requires:       python-twisted >= 8.2 python-twisted-web >= 8.2 python-twisted-c
 Requires:       python-twisted-web >= 8.2 python-twisted-conch >= 8.2
 %endif
 Url:            http://www.opsi.org
-License:        GPL v2 or later
+License:        AGPL v3 or later
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
 Version:        4.0.5.2

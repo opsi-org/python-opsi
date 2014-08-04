@@ -1,8 +1,8 @@
-python-opsi (4.0.5.2-3) UNRELEASED; urgency=low
+python-opsi (4.0.5.2-4) experimental; urgency=low
 
-  * Building with Fedora possible.
+  * Re-Enabling dependency on python-ldaptor. 
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Aug 2014 16:06:05 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Aug 2014 16:39:12 +0200
 
 python-opsi (4.0.5.2-2) experimental; urgency=low
 
