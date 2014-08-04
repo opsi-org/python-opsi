@@ -1,3 +1,9 @@
+python-opsi (4.0.5.2-2) experimental; urgency=low
+
+  * Possible to build with python-support again.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Aug 2014 14:35:00 +0200
+
 python-opsi (4.0.5.2-1) experimental; urgency=low
 
   * fix in write method for backendConfigFiles
