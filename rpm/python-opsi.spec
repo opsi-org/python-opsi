@@ -42,7 +42,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %if %{?suse_version: %{suse_version} >= 1120} %{!?suse_version:1}
 BuildArch:      noarch
 %endif
-%if 0%{?centos_version} || 0%{?rhel_version}
+%if 0%{?centos_version} || 0%{?rhel_version} || 0%{?fedora_version}
 BuildRequires:  gettext
 %else
 BuildRequires:  gettext-runtime
