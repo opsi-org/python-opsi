@@ -1,8 +1,9 @@
-python-opsi (4.0.5.2-6) UNRELEASED; urgency=low
+python-opsi (4.0.5.2-7) experimental; urgency=low
 
   * RHEL / CentOS: Depending on MySQL-python instead python-mysql 
+  * openSUSE / SLES: Fix depending on wrong version number for python-newt
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 06 Aug 2014 11:56:02 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 06 Aug 2014 12:10:08 +0200
 
 python-opsi (4.0.5.2-5) experimental; urgency=low
 
