@@ -7,16 +7,16 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-mysql python-sqlalchemy iproute duplicity lshw python-ldaptor
+Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-sqlalchemy iproute duplicity lshw python-ldaptor
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
 %{py_requires}
 %endif
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
-Requires:       m2crypto python-ctypes pyOpenSSL newt-python python-twisted >= 8.2 PyPAM
+Requires:       m2crypto python-ctypes pyOpenSSL newt-python python-twisted >= 8.2 PyPAM MySQL-python
 %else
-Requires:       python-m2crypto python-openssl lsb-release python-newt >= 8.2 python-pam
+Requires:       python-m2crypto python-openssl lsb-release python-newt >= 8.2 python-pam python-mysql
 %endif
 Url:            http://www.opsi.org
 License:        AGPL v3 or later
