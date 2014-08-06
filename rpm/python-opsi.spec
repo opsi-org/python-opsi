@@ -7,25 +7,16 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-pam python-mysql python-sqlalchemy iproute duplicity lshw python-ldaptor
+Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-mysql python-sqlalchemy iproute duplicity lshw python-ldaptor
 %if 0%{?suse_version}
 BuildRequires:  pwdutils
 Requires:       pwdutils
 %{py_requires}
 %endif
-%if 0%{?suse_version} == 1140
-# This is a twisted dependency that SUSE screwed up in 11.4...
-Requires:       python-asn1
-%endif
-%if 0%{?rhel_version} || 0%{?centos_version}
-Requires:       m2crypto python-ctypes pyOpenSSL newt-python
+%if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
+Requires:       m2crypto python-ctypes pyOpenSSL newt-python python-twisted >= 8.2 PyPAM
 %else
-Requires:       python-m2crypto python-openssl lsb-release python-newt
-%endif
-%if 0%{?rhel_version} > 599
-Requires:       python-twisted >= 8.2 python-twisted-web >= 8.2 python-twisted-conch >= 8.2
-%else
-Requires:       python-twisted-web >= 8.2 python-twisted-conch >= 8.2
+Requires:       python-m2crypto python-openssl lsb-release python-newt >= 8.2 python-pam
 %endif
 Url:            http://www.opsi.org
 License:        AGPL v3 or later
@@ -78,7 +69,7 @@ python setup.py install --prefix=%{_prefix} --root=$RPM_BUILD_ROOT --record=INST
 %endif
 ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi/backendManager/extend.d/configed/20_legacy.conf
 
-%if 0%{?rhel_version} > 599 || 0%{?centos_version} > 599
+%if 0%{?rhel_version} || 0%{?centos_version}
 sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcp/dhcpd.conf#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 sed -i 's#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %else
