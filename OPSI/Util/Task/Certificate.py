@@ -123,7 +123,7 @@ If not given will use a default.
 	"""
 	try:
 		which("ucr")
-		LOGGER.notice("Don't use recreate method on UCS-Systems")
+		LOGGER.notice("Don't use certificate creation method on UCS-Systems")
 		return
 	except Exception:
 		pass
