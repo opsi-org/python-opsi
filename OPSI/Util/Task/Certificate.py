@@ -139,8 +139,9 @@ If not given will use a default.
 	try:
 		certparams["expires"] = forceInt(certparams["expires"])
 	except Exception:
-		raise CertificateCreationError("No valid expiration date given. "
-										"Must be an integer.")
+		raise CertificateCreationError(
+			"No valid expiration date given. Must be an integer."
+		)
 
 	if certparams["commonName"] != forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF)):
 		raise CertificateCreationError(
