@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (C) 2010-2013 uib GmbH
+Copyright (C) 2010-2014 uib GmbH
 
 http://www.uib.de/
 
@@ -23,11 +23,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU General Public License version 2
 """
+import datetime
 import time
 import threading
 import unittest
 
-from OPSI.Util.Thread import ThreadPoolException, ThreadPool, getGlobalThreadPool
+from OPSI.Util.Thread import ThreadPoolException, ThreadPool, getGlobalThreadPool, KillableThread
 
 
 class ThreadTestCase(unittest.TestCase):
@@ -226,6 +227,41 @@ class ThreadTestCase(unittest.TestCase):
         self.assertEquals(len(results), 11,  "Expected %s results, but got %s" % (11, len(results)))
         time.sleep(2)
         self.assertEquals(len(results), 12,  "Expected %s results, but got %s" % (12, len(results)))
+
+
+class KillableThreadTestCase(unittest.TestCase):
+    def test_terminating_running_thread(self):
+        """
+        It must be possible to interrupt running threads even though
+        they may still be processing.
+        """
+
+        class ThirtySecondsToEndThread(KillableThread):
+            def __init__(self, testCase):
+                super(ThirtySecondsToEndThread, self).__init__()
+
+                self.testCase = testCase
+
+            def run(self):
+                start = datetime.datetime.now()
+                thirtySeconds = datetime.timedelta(seconds=30)
+
+                while datetime.datetime.now() < (start + thirtySeconds):
+                    time.sleep(0.1)
+
+                self.testCase.fail("Thread did not get killed in time.")
+
+
+        runningThread = ThirtySecondsToEndThread(self)
+        runningThread.start()
+
+        time.sleep(2)
+        self.assertTrue(runningThread.isAlive(), "Thread should be running.")
+
+        runningThread.terminate()
+
+        time.sleep(2)
+        self.assertFalse(runningThread.isAlive(), "Thread should be killed.")
 
 
 if __name__ == '__main__':
