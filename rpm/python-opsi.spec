@@ -18,6 +18,10 @@ Requires:       m2crypto python-ctypes pyOpenSSL newt-python python-twisted >= 8
 %else
 Requires:       python-m2crypto python-openssl lsb-release python-newt python-pam python-mysql
 %endif
+%if 0%{?sles_version}
+# Needed for working python-magic
+Requires:       libmagic1
+%endif
 Url:            http://www.opsi.org
 License:        AGPL v3 or later
 Group:          Productivity/Networking/Opsi

@@ -1,3 +1,9 @@
+python-opsi (4.0.5.3-2) experimental; urgency=low
+
+  * SLES: Require libmagic1 for working python-magic 
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Aug 2014 12:55:00 +0200
+
 python-opsi (4.0.5.3-1) experimental; urgency=low
 
   * Fix termination of KillableThread on newer Pythons 
