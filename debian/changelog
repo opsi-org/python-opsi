@@ -1,3 +1,9 @@
+python-opsi (4.0.5.4-1) UNRELEASED; urgency=low
+
+  * 40_groupActions.conf: _getClientsOnDepotByHostGroup get correct clients.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 20 Aug 2014 11:52:23 +0200
+
 python-opsi (4.0.5.3-2) experimental; urgency=low
 
   * SLES: Require libmagic1 for working python-magic
