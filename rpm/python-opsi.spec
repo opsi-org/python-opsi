@@ -1,7 +1,7 @@
 #
 # spec file for package python-opsi
 #
-# Copyright (c) 2013 uib GmbH.
+# Copyright (c) 2013-2014 uib GmbH.
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
@@ -23,12 +23,12 @@ Requires:       python-m2crypto python-openssl lsb-release python-newt python-pa
 Requires:       libmagic1
 %endif
 Url:            http://www.opsi.org
-License:        AGPL v3 or later
+License:        AGPLv3+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
 Version:        4.0.5.2
 Release:        1
-Summary:        opsi python library
+Summary:        Python library for the client management solution opsi
 Source:         python-opsi_4.0.5.2-1.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
