@@ -1,18 +1,18 @@
 python-opsi (4.0.5.3-2) experimental; urgency=low
 
-  * SLES: Require libmagic1 for working python-magic 
+  * SLES: Require libmagic1 for working python-magic
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 19 Aug 2014 12:55:00 +0200
 
 python-opsi (4.0.5.3-1) experimental; urgency=low
 
-  * Fix termination of KillableThread on newer Pythons 
+  * Fix termination of KillableThread on newer Pythons
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 11 Aug 2014 14:09:02 +0200
 
 python-opsi (4.0.5.2-7) experimental; urgency=low
 
-  * RHEL / CentOS: Depending on MySQL-python instead python-mysql 
+  * RHEL / CentOS: Depending on MySQL-python instead python-mysql
   * openSUSE / SLES: Fix depending on wrong version number for python-newt
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 06 Aug 2014 12:10:08 +0200
@@ -25,7 +25,7 @@ python-opsi (4.0.5.2-5) experimental; urgency=low
 
 python-opsi (4.0.5.2-4) experimental; urgency=low
 
-  * Re-Enabling dependency on python-ldaptor. 
+  * Re-Enabling dependency on python-ldaptor.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 04 Aug 2014 16:39:12 +0200
 
