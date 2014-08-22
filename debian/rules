@@ -7,4 +7,4 @@ override_dh_auto_install:
 endif
 
 %:
-	dh $@
+	dh $@ --with python2
