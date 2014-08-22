@@ -1,3 +1,9 @@
+python-opsi (4.0.5.4-3) testing; urgency=low
+
+  * Also build on Ubuntu 10.04
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 22 Aug 2014 17:28:08 +0200
+
 python-opsi (4.0.5.4-2) experimental; urgency=low
 
   * 40_groupActions.conf: _getClientsOnDepotByHostGroup get correct clients.

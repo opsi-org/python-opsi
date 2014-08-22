@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+WITH_PYTHON2 = $(shell test -f /usr/bin/dh_python2 && echo "--with python2")
+
 ifeq (,$(findstring $(shell lsb_release -cs),"lenny lucid"))
 override_dh_auto_install:
 	dh_auto_install
@@ -7,4 +9,4 @@ override_dh_auto_install:
 endif
 
 %:
-	dh $@ --with python2
+	dh $@ ${WITH_PYTHON2}
