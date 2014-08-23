@@ -14,3 +14,12 @@ coverage.xml
 nosetests.xml
 pylint.txt
 pep8.txt
+build/
+data/version
+debian/files
+debian/python-opsi.debhelper.log
+debian/python-opsi.postinst.debhelper
+debian/python-opsi.prerm.debhelper
+debian/python-opsi.substvars
+debian/python-opsi/
+locale/
