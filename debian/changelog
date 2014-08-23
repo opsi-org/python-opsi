@@ -1,3 +1,10 @@
+python-opsi (4.0.5.5-1) testing; urgency=medium
+
+  * setProductActionRequestWithDependencies: added optional force
+    parameter, to set dependend products even if they are installed
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Sat, 23 Aug 2014 02:37:20 +0200
+
 python-opsi (4.0.5.4-3) testing; urgency=low
 
   * Also build on Ubuntu 10.04
