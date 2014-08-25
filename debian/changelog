@@ -1,3 +1,9 @@
+python-opsi (4.0.5.6-1) experimental; urgency=low
+
+  * Fix for certificate creation on SLES11SP3
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 25 Aug 2014 15:26:42 +0200
+
 python-opsi (4.0.5.5-1) testing; urgency=medium
 
   * setProductActionRequestWithDependencies: added optional force

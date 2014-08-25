@@ -205,7 +205,16 @@ If not given will use a default.
 
 	with NamedTemporaryFile(mode="wt") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		randfile.write(rand.bytes(512))
+		try:
+			randomBytes = rand.bytes(512)
+		except AttributeError as error:
+			LOGGER.debug("Getting rand.bytes failed: {0}".format(error))
+			LOGGER.debug("Using workaround with random.getrandbits")
+			# SLES11SP3 ships a version so old that rand.bytes does not
+			# even exist yet. As a workaround we use plain old random
+			import random
+			randomBytes = str(bytearray(random.getrandbits(8) for _ in range(512)))
+		randfile.write(randomBytes)
 
 		execute(
 			"{command} gendh -rand {tempfile} 512 >> {target}".format(
