@@ -33,6 +33,10 @@ New tests should be placed under ``tests``.
 
 ## Contributing
 
+Please feel free to contribute.
+
+An easy way to contribute is to provide patches. You can either send
+them to info@uib.de or post them in the forums under forum.opsi.org.
 
 ### Tests
 
