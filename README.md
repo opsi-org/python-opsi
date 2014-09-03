@@ -22,7 +22,9 @@ Opsi relies on a mix of Python-libraries and system tools that need to
 be installed.
 
 The dependencies for your distribution can either be found in
-``debian/control`` or ``rpm/python-opsi.spec``
+``debian/control`` or ``rpm/python-opsi.spec``.
+Please use your distributions recommended tool for the installation of
+these.
 
 ### Install via pip
 
