@@ -122,3 +122,12 @@ To ease following these rules you can simply execute the
 ``run_qa.sh``-script:
 
   ./run_qa.sh
+
+
+### Documentation
+
+Documentation should be provided for any non-intuitive or complex part.
+Please provide the documentation either directly as Python docstrings or
+provide it in the form of documents inside the ``doc`` folder.
+The documentation should be integrated into the documentation that is
+built with Sphinx.
