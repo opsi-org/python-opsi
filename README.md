@@ -36,7 +36,7 @@ New tests should be placed under ``tests``.
 
 ### Tests
 
-Please provide tests or a guido on how to tests with your contributions.
+Please provide tests or a guide on how to test with your contributions.
 After applying your code changes all tests must pass.
 
 ### Coding Style
