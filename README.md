@@ -3,6 +3,12 @@
 This is the Python library behind the client management-tool opsi.
 
 
+## License
+
+This library is released under the AGPLv3 and the copyright belongs to
+uib GmbH if this is not noted otherwise in the file itself.
+
+
 ## Documentation
 
 You can use Sphinx to build the documentation.
