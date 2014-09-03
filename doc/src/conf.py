@@ -11,6 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import datetime
 import sys
 import os
 
@@ -47,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'OPSI'
-copyright = u'2013, uib GmbH'
+copyright = u'2013-{year}, uib GmbH'.format(year=datetime.datetime.now().year)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -257,7 +258,7 @@ texinfo_documents = [
 epub_title = u'opsi'
 epub_author = u'uib GmbH'
 epub_publisher = u'uib GmbH'
-epub_copyright = u'2013, uib GmbH'
+epub_copyright = u'2013-{year}, uib GmbH'.format(year=datetime.datetime.now().year)
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
