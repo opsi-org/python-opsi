@@ -93,6 +93,11 @@ Please feel free to contribute.
 An easy way to contribute is to provide patches. You can either send
 them to info@uib.de or post them in the forums under forum.opsi.org.
 
+### Translation
+
+Translations can be edited with any editor that can handle ``.po``-files.
+These files can be found in the folder ``gettext``.
+
 ### Tests
 
 Please provide tests or a guide on how to test with your contributions.
