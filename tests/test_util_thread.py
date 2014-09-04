@@ -31,7 +31,7 @@ import unittest
 from OPSI.Util.Thread import ThreadPoolException, ThreadPool, getGlobalThreadPool, KillableThread
 
 
-class ThreadTestCase(unittest.TestCase):
+class ThreadPoolTestCase(unittest.TestCase):
     POOL_SIZE = 10
 
     def setUp(self):
