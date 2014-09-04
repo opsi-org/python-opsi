@@ -154,10 +154,21 @@ and the method name with an underscore like this:
 
 Besides this please follow PEP 008.
 
-To ease following these rules you can simply execute the
-``run_qa.sh``-script:
+
+#### Automated Quality Checks
+
+There is a script that runs ``pylint``, ``flake8`` and all the tests.
+If you want to use it please install the requirements for it first:
+
+  pip install -r requirements-qa.txt
+
+
+After that you can execute the script:
 
   ./run_qa.sh
+
+The script will not display any problems reported by ``pylint`` or
+``pep8`` but instead creates the files ``pylint.txt`` and ``pep8.txt``.
 
 
 ### Documentation
