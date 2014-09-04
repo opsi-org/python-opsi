@@ -15,6 +15,18 @@ You can use Sphinx to build the documentation.
 If you are looking for information on how to setup or configure an opsi
 system please get the _getting started_ from opsi.org.
 
+### Building the documentation
+
+First we create the API documentation from the Python files:
+
+  sphinx-apidoc --output-dir=doc/src OPSI/
+
+After that we can build the documentation:
+
+  sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/html/
+
+
+After that you will find the documentation in the folder ``doc/html``.
 
 ## Requirements
 
