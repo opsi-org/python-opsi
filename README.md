@@ -127,7 +127,7 @@ New tests should be placed under ``tests``.
 Please feel free to contribute.
 
 An easy way to contribute is to provide patches. You can either send
-them to info@uib.de or post them in the forums under forum.opsi.org.
+them to _info@uib.de_ or post them in the [forums](https://forum.opsi.org).
 
 ### Translation
 
@@ -152,7 +152,8 @@ and the method name with an underscore like this:
 * ``configState_getHashes``
 
 
-Besides this please follow PEP 008.
+Besides this please follow
+[PEP 008](http://legacy.python.org/dev/peps/pep-0008/).
 
 
 #### Automated Quality Checks
