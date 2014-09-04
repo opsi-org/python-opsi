@@ -38,6 +38,23 @@ The dependencies for your distribution can either be found in
 Please use your distributions recommended tool for the installation of
 these.
 
+Installing the depedencies on Ubuntu 12.04:
+
+  apt-get install lsb-release python-twisted-web python-twisted-conch \
+  python-magic python-crypto python-ldap python-simplejson python-newt \
+  python-pam python-openssl python-mysqldb python-sqlalchemy iproute \
+  duplicity python-m2crypto lshw python-dev python-ldaptor
+
+
+For installing further depedencies on your system we also recommend to
+install the header files for Python, librsync and to test the
+SQLite-backend we also need apsw.
+
+This can be done on Ubuntu 12.04 with:
+
+  apt-get install build-essential python-dev librsync-dev python-apsw
+
+
 ### Install via pip
 
 It is possible to use ``pip`` to install most of the requirements - some
@@ -46,29 +63,19 @@ requirements are for other programs that can not be installed via pip.
   pip install -r requirements.txt
 
 
-Please note that additional libraries may need to be installed on your
-system.
-Under Debian / Ubuntu these can be installed with:
-
-  apt-get install build-essential python-dev
-
-
-If you want to run the tests please install with:
-
-  pip install -r requirements-dev.txt
-
-
-If you want to contribute you can install used tools for quality assurance with the following command:
-
-  pip install -r requirements-qa.txt
-
-
 ## Building
 
 Packages can be build for distributions that use either Debian or RPM
 packages.
 Please install the build requirements from either ``debian/control`` or
 ``rpm/python-opsi.spec`` before you try to build an package.
+
+
+Installing the build-requirements on a Ubuntu 12.04:
+
+  apt-get install gettext debhelper python-support python \
+  python-setuptools lsb-release
+
 
 For building on a Debian-based system you can use the following command:
 
