@@ -90,9 +90,26 @@ For building on a RPM-based system you can use the following command:
 ## Testing
 
 Tests can be found in the ``tests`` folder. The tests can be run with
-any testrunner. We currently use ``nose`` as a testrunner. If you are
-unsure what testrunner to use we recommend using nose.
-Tests can be run with:
+any testrunner. We currently use
+[nose](http://nose.readthedocs.org/en/latest/) as a testrunner.
+If you are unsure what testrunner to use we recommend using _nose_.
+
+### Installing Requirements
+
+Requirements for the tests can be found in ``requirements-dev.txt``.
+They can be installed with the following command:
+
+  pip install -r requirements-dev.txt
+
+
+If you want to install _nose_ you can do so with the following command:
+
+  pip install nose
+
+
+### Running
+
+Tests can then be run with:
 
   nosetests tests/
 
