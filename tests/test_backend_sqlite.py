@@ -28,7 +28,12 @@ try:
 except ImportError:
     import unittest
 
-from OPSI.Backend.SQLite import SQLiteBackend
+try:
+	import apsw
+	from OPSI.Backend.SQLite import SQLiteBackend
+except ImportError:
+	apsw = None
+
 
 # from Backends.SQLite import SQLiteBackendMixin
 # from BackendTestMixins import (ConfigStateTestsMixin, LicensesTestMixin,
@@ -36,6 +41,7 @@ from OPSI.Backend.SQLite import SQLiteBackend
 #     ExtendedBackendTestsMixin, BackendTestsMixin)
 
 
+@unittest.skipIf(not apsw, 'SQLite tests skipped: Missing the module "apsw".')
 class BackendSQLiteTestCase(unittest.TestCase):
     def testInitialisationDoesNotFail(self):
         backend = SQLiteBackend()
