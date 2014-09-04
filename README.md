@@ -11,7 +11,7 @@ uib GmbH if this is not noted otherwise in the file itself.
 
 ## Documentation
 
-You can use Sphinx to build the documentation.
+You can use [Sphinx](http://sphinx-doc.org/) to build the documentation.
 If you are looking for information on how to setup or configure an opsi
 system please get the _getting started_ from opsi.org.
 
