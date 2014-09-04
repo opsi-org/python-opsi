@@ -228,6 +228,20 @@ class ThreadPoolTestCase(unittest.TestCase):
         time.sleep(2)
         self.assertEquals(len(results), 12,  "Expected %s results, but got %s" % (12, len(results)))
 
+    def testDecreasingUsageCount(self):
+        self.pool.increaseUsageCount()
+        self.assertEquals(2, self.pool.usageCount)
+
+        self.pool.decreaseUsageCount()
+        self.assertEquals(1, self.pool.usageCount)
+
+    def testDecreasingUsageCountBelowZeroStopsThreadPool(self):
+        self.assertTrue(self.pool.started)
+        self.assertEquals(1, self.pool.usageCount)
+        self.pool.decreaseUsageCount()
+        self.assertEquals(0, self.pool.usageCount)
+        self.assertFalse(self.pool.started)
+
 
 class KillableThreadTestCase(unittest.TestCase):
     def test_terminating_running_thread(self):
