@@ -1,3 +1,9 @@
+python-opsi (4.0.5.6-2) experimental; urgency=low
+
+  * rpm-based packages: require python-pyasn1
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 09 Sep 2014 16:55:20 +0200
+
 python-opsi (4.0.5.6-1) experimental; urgency=low
 
   * Fix for certificate creation on SLES11SP3
