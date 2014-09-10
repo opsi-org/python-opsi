@@ -24,13 +24,14 @@ Affero General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-@copyright:	uib GmbH <info@uib.de>
+@copyright: uib GmbH <info@uib.de>
 @author: Jan Schneider <j.schneider@uib.de>
 @author: Erol Ueluekmen <e.ueluekmen@uib.de>
+@author: Niko Wenselowski <n.wenselowski@uib.de>
 @license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.5.7'
 
 import base64
 import codecs
@@ -48,8 +49,12 @@ from twisted.conch.ssh import keys
 if os.name == 'posix':
 	with warnings.catch_warnings():
 		warnings.filterwarnings("ignore", category=DeprecationWarning)
-		from OPSI.ldaptor.protocols import pureldap
-		from OPSI.ldaptor import ldapfilter
+		try:
+			from ldaptor.protocols import pureldap
+			from ldaptor import ldapfilter
+		except ImportError:
+			from OPSI.ldaptor.protocols import pureldap
+			from OPSI.ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
 from OPSI.Types import *

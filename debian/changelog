@@ -1,3 +1,9 @@
+python-opsi (4.0.5.7-1) experimental; urgency=low
+
+  * Preferring ldaptor over OPSI.ldaptor
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 10 Sep 2014 13:36:47 +0200
+
 python-opsi (4.0.5.6-2) experimental; urgency=low
 
   * rpm-based packages: require python-pyasn1
