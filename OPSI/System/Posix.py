@@ -30,7 +30,7 @@ Functions and classes for the use with a POSIX operating system.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.5.4'
 
 import codecs
 import fcntl
@@ -858,13 +858,33 @@ def getHarddisks(data=None):
 	:return: The found harddisks.
 	:returntype: [Harddisk, ]
 	"""
+	disks = []
+	
 	if data is None:
 		# Get all available disks
-		result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
+		if os.path.exists("/dev/cciss"):
+			result = []
+			logger.notice("HP Smart Array detected, trying to workarround scan problem.")
+			listing = os.listdir("/dev/cciss")
+			for entry in listing:
+				if len(entry) < 5:
+					dev = entry
+					size = forceInt(execute(u'%s -L --no-reread -s -uB /dev/cciss/%s' % (which('sfdisk'), dev), ignoreExitCode=[1], captureStderr=False)[0])
+					logger.debug(
+						u"Found disk =>>> dev: '{device}', size: {size:0.2f} GB".format(
+							device=dev,
+							size=size / (1024 * 1024)
+							)
+						)
+					hd = Harddisk("/dev/cciss/%s" % dev)
+					disks.append(hd)
+			if len(disks) <= 0:
+				raise Exception(u'No harddisks found!')
+			return disks
+		else:	
+			result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
 	else:
 		result = data
-
-	disks = []
 
 	for line in result:
 		if not line.lstrip().startswith(u'/dev'):
