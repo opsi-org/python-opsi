@@ -26,10 +26,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 :author: Arne Kerz <a.kerz@uib.de>
+:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.2.3'
+__version__ = '4.0.5.7'
 
 import grp
 import os
@@ -1254,6 +1255,9 @@ class FileBackend(ConfigDataBackend):
 
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s' object: %s" % (objType, objList[0]))
+			
+	def getRawData(self, query):
+		raise BackendConfigurationError(u"You have tried to execute a method, that will not work with filebackend.")
 
 	# Hosts
 	def host_insertObject(self, host):
