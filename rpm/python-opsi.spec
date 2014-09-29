@@ -34,9 +34,9 @@ License:        AGPLv3+
 Group:          Productivity/Networking/Opsi
 AutoReqProv:    on
 Version:        4.0.5.8
-Release:        1
+Release:        2
 Summary:        Python library for the client management solution opsi
-Source:         python-opsi_4.0.5.8-1.tar.gz
+Source:         python-opsi_4.0.5.8-2.tar.gz
 #Source2:        setup.py
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # python noarch modules are only working on openSUSE 11.2 or higher
