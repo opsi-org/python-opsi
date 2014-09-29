@@ -7,7 +7,7 @@
 #
 Name:           python-opsi
 BuildRequires:  python-devel gettext-devel python-setuptools
-Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-crypto python-ldap python-simplejson python-sqlalchemy iproute duplicity lshw python-ldaptor
+Requires:       python >= 2.6 python-twisted-web >= 8.2 python-twisted-conch >= 8.2 python-magic python-ldap python-simplejson python-sqlalchemy iproute duplicity lshw python-ldaptor
 
 # Dependencies for twisted are a mess because most lack needed packages.
 # We try to avoid problems with this:
@@ -25,7 +25,9 @@ Requires:       python-m2crypto python-openssl lsb-release python-newt python-pa
 %endif
 %if 0%{?sles_version}
 # Needed for working python-magic
-Requires:       libmagic1
+Requires:       libmagic1 python-pycrypto 
+%else
+Requires:	python-crypto
 %endif
 Url:            http://www.opsi.org
 License:        AGPLv3+
