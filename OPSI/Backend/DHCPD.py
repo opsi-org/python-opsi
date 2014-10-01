@@ -31,10 +31,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.5.9'
+__version__ = '4.0.5.10'
 
 import socket
 import threading
+import os
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceHostId, forceObjectClass, forceUnicode
@@ -54,9 +55,13 @@ class DHCPDBackend(ConfigDataBackend):
 		self._name = 'dhcpd'
 
 		ConfigDataBackend.__init__(self, **kwargs)
+		
+		pathToService = u"/usr/sbin/service"
+		if os.path.exists(u"/sbin/service"):
+			pathToService = u"/sbin/service"
 
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
-		self._reloadConfigCommand = u'%s %s restart' % (System.Posix.which("service"), System.Posix.locateDHCPDInit(u'/etc/init.d/isc-dhcp-server').split("/")[-1])
+		self._reloadConfigCommand = u'%s %s restart' % (pathToService, System.Posix.locateDHCPDInit(u'/etc/init.d/isc-dhcp-server').split("/")[-1])
 
 		self._fixedAddressFormat = u'IP'
 		self._defaultClientParameters = {
