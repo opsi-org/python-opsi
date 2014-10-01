@@ -1,3 +1,10 @@
+python-opsi (4.0.5.9-1) stable; urgency=low
+
+  * opsi-setup: changed restarting services over service calls
+    instead of using init-scripts directly.
+
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Wed, 01 Oct 2014 16:14:13 +0200
+
 python-opsi (4.0.5.8-2) testing; urgency=low
 
   * python-crypto requirement modified for sles to python-pycrypto

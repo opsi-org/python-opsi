@@ -26,11 +26,12 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 :author: Jan Schneider <j.schneider@uib.de>
+:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.4.6'
+__version__ = '4.0.5.9'
 
 import socket
 import threading
@@ -55,7 +56,7 @@ class DHCPDBackend(ConfigDataBackend):
 		ConfigDataBackend.__init__(self, **kwargs)
 
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
-		self._reloadConfigCommand = u'/usr/bin/sudo %s restart' % System.Posix.locateDHCPDInit(u'/etc/init.d/dhcp3-server')
+		self._reloadConfigCommand = u'%s %s restart' % (System.Posix.which("service"), System.Posix.locateDHCPDInit(u'/etc/init.d/isc-dhcp-server').split("/")[-1])
 
 		self._fixedAddressFormat = u'IP'
 		self._defaultClientParameters = {

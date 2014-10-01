@@ -82,9 +82,9 @@ ln -sf /etc/opsi/backendManager/extend.d/20_legacy.conf $RPM_BUILD_ROOT/etc/opsi
 
 %if 0%{?rhel_version} || 0%{?centos_version}
 sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcp/dhcpd.conf#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
-sed -i 's#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+sed -i 's#dhcp3-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %else
-sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#/etc/init.d/dhcp3-server#/etc/init.d/dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
+sed -i 's#/etc/dhcp3/dhcpd.conf#/etc/dhcpd.conf#;s#dhcp3-server#dhcpd#' $RPM_BUILD_ROOT/etc/opsi/backends/dhcpd.conf
 %endif
 
 %if 0%{?sles_version}
