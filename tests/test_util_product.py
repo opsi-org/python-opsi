@@ -23,6 +23,8 @@ Testing the OPSI.Util.Product module.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import mock
 import os
 import re
@@ -32,6 +34,8 @@ import unittest
 
 import OPSI.Util.Product as Product
 import OPSI.Util.File.Archive as Archive
+
+from .helpers import cd
 
 
 class DirectoryExclusionRegexTestCase(unittest.TestCase):
@@ -83,8 +87,10 @@ class ProductPackageFileTestCase(unittest.TestCase):
 
 		# Setting up evil file
 		targetDir = os.path.join(self.tempDepotDir, 'umlauts')
-		os.makedirs(os.path.join(self.tempDepotDir, 'umlauts'))
-		os.system(r"touch -- $(echo -e '{0}/--\0250--')".format(targetDir))
+		os.makedirs(targetDir)
+
+		with cd(targetDir):
+			os.system(r"touch -- $(echo -e '--\0250--')")
 
 		with mock.patch.object(ppf, 'packageControlFile', fakePackageControlFile):
 			ppf.deleteProductClientDataDir()
