@@ -28,7 +28,7 @@ MySQL-Backend
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.5.11'
 
 import base64
 import warnings
@@ -583,7 +583,7 @@ class MySQLBackend(SQLBackend):
 					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 					self._sql.doCommit = False
 					conn.begin()
-					logger.notice(u'Start Transaction: delete from ppv %d' % myRetryTransactionCounter)
+					logger.debug2(u'Start Transaction: delete from ppv %d' % myRetryTransactionCounter)
 
 					self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
 					conn.commit()
@@ -604,9 +604,9 @@ class MySQLBackend(SQLBackend):
 						logger.error(u'Unknown DB Error: %s' % str(e))
 						raise
 
-				logger.notice(u'End Transaction')
+				logger.debug2(u'End Transaction')
 				self._sql.doCommit = True
-				logger.notice(u'doCommit set to true')
+				logger.debug2(u'doCommit set to true')
 			self._sql.close(conn,cursor)
 
 		(conn, cursor) = self._sql.connect()
@@ -651,10 +651,10 @@ class MySQLBackend(SQLBackend):
 						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
 						self._sql.doCommit = False
 						conn.begin()
-						logger.notice(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
+						logger.debug2(u'Start Transaction: insert to ppv %d' % myRetryTransactionCounter)
 						if not self._sql.getRow(myPPVselect , conn, cursor):
 							# self._sql.doCommit = True
-							logger.notice(u'doCommit set to true')
+							logger.debug2(u'doCommit set to true')
 							self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 								'productId': data['productId'],
 								'productVersion': data['productVersion'],
@@ -683,10 +683,10 @@ class MySQLBackend(SQLBackend):
 							logger.error(u'Unknown DB Error: %s' % str(e))
 							raise
 
-				logger.notice(u'End Transaction')
+				logger.debug2(u'End Transaction')
 			finally:
 				self._sql.doCommit = True
-				logger.notice(u'doCommit set to true')
+				logger.debug2(u'doCommit set to true')
 		self._sql.close(conn,cursor)
 
 		def productProperty_updateObject(self, productProperty):
@@ -712,7 +712,7 @@ class MySQLBackend(SQLBackend):
 			for value in possibleValues:
 				try:
 					self._sql.doCommit = False
-					logger.notice(u'doCommit set to false')
+					logger.debug2(u'doCommit set to false')
 					valuesExist = self._sql.getRow(
 						u"select * from PRODUCT_PROPERTY_VALUE where "
 						u"`propertyId` = '{0}' AND `productId` = '{1}' AND "
@@ -728,7 +728,7 @@ class MySQLBackend(SQLBackend):
 					)
 					if not valuesExist:
 						self._sql.doCommit = True
-						logger.notice(u'doCommit set to true')
+						logger.debug2(u'doCommit set to true')
 						self._sql.insert('PRODUCT_PROPERTY_VALUE', {
 							'productId': data['productId'],
 							'productVersion': data['productVersion'],
@@ -740,7 +740,7 @@ class MySQLBackend(SQLBackend):
 						)
 				finally:
 					self._sql.doCommit = True
-					logger.notice(u'doCommit set to true')
+					logger.debug2(u'doCommit set to true')
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
