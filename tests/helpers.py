@@ -26,6 +26,15 @@ Helpers for testing opsi.
 import os
 import shutil
 import tempfile
+from contextlib import contextmanager
+
+
+@contextmanager
+def cd(path):
+    old_dir = os.getcwd()
+    os.chdir(path)
+    yield
+    os.chdir(old_dir)
 
 
 def copyTestfileToTemporaryFolder(filename):
