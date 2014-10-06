@@ -30,6 +30,7 @@ except ImportError:
 
 import Backends.MySQL as MySQLBackend
 from BackendTestMixins import BackendTestMixin
+from BackendTestMixins.Backend import MultiThreadingTestMixin
 
 
 @unittest.skipIf(not MySQLBackend.MySQLconfiguration,
@@ -51,6 +52,18 @@ class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, Ba
 
     def testWeHaveABackend(self):
         self.assertNotEqual(None, self.backend)
+
+
+@unittest.skipIf(not MySQLBackend.MySQLconfiguration,
+    'no MySQL backend configuration given.')
+class MySQLBackendMultiThreadTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, MultiThreadingTestMixin):
+    def setUp(self):
+        self.backend = None
+        self.setUpBackend()
+
+    def tearDown(self):
+        self.tearDownBackend()
+        del self.backend
 
 
 if __name__ == '__main__':
