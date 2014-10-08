@@ -1,4 +1,4 @@
-python-opsi (4.0.5.11-1) UNRELEASED; urgency=low
+python-opsi (4.0.5.11-1) experimental; urgency=low
 
   * MySQL-backend: lower log-level for messages regarding transactions
   * Posix: added Methods getServiceNames and getSambaServiceName
