@@ -520,11 +520,14 @@ class BackendPerformanceTestMixin(object):
 
 
 class MultiThreadingTestMixin(HostsMixin, ClientsMixin):
+    NUMBER_OF_THREADS = 50
+
     def testMultithreading(self):
         self.setUpHosts()
         self.setUpClients()
 
         self.createHostsOnBackend()
+        self.backend.group_createObjects(self.groups)
 
         class MultiThreadTest(threading.Thread):
             def __init__(self, backendTest):
@@ -559,19 +562,16 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin):
                     self._backendTest.backend.host_getObjects()
                     print(u"Thread %s done" % self)
                 except Exception as e:
-                    print(u"Test failed: {0}".format(e))
+                    self._backendTest.fail(u"Test failed: {0}".format(e))
 
-        self.backend.group_createObjects(self.groups)
-
-        mtts = []
-        for i in range(50):
-            mtt = MultiThreadTest(self)
-            mtts.append(mtt)
+        mtts = [MultiThreadTest(self) for _ in range(self.NUMBER_OF_THREADS)]
+        for mtt in mtts:
             mtt.start()
+
         for mtt in mtts:
             mtt.join()
 
         try:
             self.backend.host_createObjects(self.client1)
         except Exception as e:
-            print(u"Creating object on backend failed: {0}".format(e))
+            self.fail(u"Creating object on backend failed: {0}".format(e))
