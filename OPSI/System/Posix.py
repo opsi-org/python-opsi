@@ -859,7 +859,7 @@ def getHarddisks(data=None):
 	:returntype: [Harddisk, ]
 	"""
 	disks = []
-	
+
 	if data is None:
 		# Get all available disks
 		if os.path.exists("/dev/cciss"):
@@ -881,7 +881,7 @@ def getHarddisks(data=None):
 			if len(disks) <= 0:
 				raise Exception(u'No harddisks found!')
 			return disks
-		else:	
+		else:
 			result = execute(u'%s -L --no-reread -s -uB' % which('sfdisk'), ignoreExitCode=[1], captureStderr=False)
 	else:
 		result = data
@@ -1270,8 +1270,8 @@ class Harddisk:
 					return
 			else:
 				devicename = self.device.split("/")[2]
-                	
-			
+
+
 			for line in execute(u'cat /sys/block/{0}/queue/rotational'.format(devicename)):
 				try:
 					self.rotational = forceBool(int(line.strip()))
@@ -1395,7 +1395,7 @@ class Harddisk:
 				logger.notice(u"unrecognized partition table type, writing empty partitiontable")
 				execute('{echo} -e "0,0\n\n\n\n" | {sfdisk} -L --no-reread -D {device}'.format(echo=which('echo'), sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
 				result = execute("{sfdisk} -L --no-reread -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
-					
+
 			self._parsePartitionTable(result)
 
 			result = execute(u"{sfdisk} -L --no-reread -uS -l {device}".format(sfdisk=which('sfdisk'), device=self.device), ignoreExitCode=[1], captureStderr=False)
