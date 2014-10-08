@@ -381,16 +381,16 @@ class DiskTestCase(unittest.TestCase):
 class GetSambaServiceNameTestCase(unittest.TestCase):
 	def testGettingDefaultIfNothingElseParsed(self):
 		with mock.patch('OPSI.System.Posix.getServiceNames'):
-			self.assertEquals("blabla", Posix.getSambaServiceName(default="blabla"))
+			self.assertEquals("blabla", Posix.getSambaServiceName(default="blabla", staticFallback=False))
 
 	def testNoDefaultNoResultRaisesException(self):
 		with mock.patch('OPSI.System.Posix.getServiceNames'):
-			self.assertRaises(RuntimeError, Posix.getSambaServiceName)
+			self.assertRaises(RuntimeError, Posix.getSambaServiceName, staticFallback=False)
 
 	def testGettingFoundSambaServiceName(self):
 		# TODO: make the tests run on SLES11SP3...
 		with mock.patch('OPSI.System.Posix.getServiceNames', mock.Mock(return_value=set("abc"))):
-			self.assertRaises(RuntimeError, Posix.getSambaServiceName)
+			self.assertRaises(RuntimeError, Posix.getSambaServiceName, staticFallback=False)
 
 		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=set(["abc", "smb", "def"]))):
 			self.assertEquals("smb", Posix.getSambaServiceName())

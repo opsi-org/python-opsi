@@ -3486,17 +3486,42 @@ def locateDHCPDInit(default=None):
 	raise RuntimeError(u"Could not locate dhcpd init file.")
 
 
-def getSambaServiceName(default=None):
+def getSambaServiceName(default=None, staticFallback=True):
 	"""
 	Get the name for the samba service.
+
+	:param default: If not value was detected use this as default.
+	:type default: str
+	:param staticFallback: If this is ``True`` it will use a static \
+lookup to determine what value needs to be returned in case no \
+service name was detected by the automatic approach.
+	:type staticFallback: bool
 	"""
-	if Distribution().distribution.strip() == u'SUSE Linux Enterprise Server':
+	def getFixServiceName():
+		distroName = distro.distribution.strip().lower()
+		if distroName == u'debian':
+			if distro.version[0] == 6:
+				return "samba"
+			else:
+				return "smbd"
+		elif distroName == u'ubuntu':
+			return "smbd"
+		elif distroName in (u'opensuse', u'centos', u'red hat enterprise linux server'):
+			return "smb"
+
+	distro = Distribution()
+	if distro.distribution.strip() == u'SUSE Linux Enterprise Server':
 		return u"smb"
 
 	possibleNames = (u"samba", u"smb", u"smbd")
 
 	for servicename in getServiceNames():
 		if servicename in possibleNames:
+			return servicename
+
+	if staticFallback:
+		servicename = getFixServiceName()
+		if servicename is not None:
 			return servicename
 
 	if default is not None:
