@@ -388,7 +388,18 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 			self.assertRaises(RuntimeError, Posix.getSambaServiceName)
 
 	def testGettingFoundSambaServiceName(self):
-		pass
+		# TODO: make the tests run on SLES11SP3...
+		with mock.patch('OPSI.System.Posix.getServiceNames', mock.Mock(return_value=set("abc"))):
+			self.assertRaises(RuntimeError, Posix.getSambaServiceName)
+
+		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=set(["abc", "smb", "def"]))):
+			self.assertEquals("smb", Posix.getSambaServiceName())
+
+		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=set(["abc", "smbd", "def"]))):
+			self.assertEquals("smbd", Posix.getSambaServiceName())
+
+		with mock.patch('OPSI.System.Posix.getServiceNames',  mock.Mock(return_value=set(["abc", "samba", "def"]))):
+			self.assertEquals("samba", Posix.getSambaServiceName())
 
 
 	def testParsingServiceOnDebian(self):
