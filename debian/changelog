@@ -1,3 +1,10 @@
+python-opsi (4.0.5.11-2) experimental; urgency=low
+
+  * Dropping python-simplejson as dependency because it is Pythons stdlib as
+    json since Python 2.6
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 08 Oct 2014 11:43:34 +0200
+
 python-opsi (4.0.5.11-1) experimental; urgency=low
 
   * MySQL-backend: lower log-level for messages regarding transactions

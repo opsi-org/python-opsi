@@ -41,7 +41,7 @@ these.
 Installing the depedencies on Ubuntu 12.04:
 
   apt-get install lsb-release python-twisted-web python-twisted-conch \
-  python-magic python-crypto python-ldap python-simplejson python-newt \
+  python-magic python-crypto python-ldap python-newt \
   python-pam python-openssl python-mysqldb python-sqlalchemy iproute \
   duplicity python-m2crypto lshw python-dev python-ldaptor
 
