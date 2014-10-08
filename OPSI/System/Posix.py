@@ -3490,10 +3490,10 @@ def getSambaServiceName(default=None):
 	"""
 	Get the name for the samba service.
 	"""
-	if Distribution().distribution.strip() == 'SUSE Linux Enterprise Server':
-		return "smb"
+	if Distribution().distribution.strip() == u'SUSE Linux Enterprise Server':
+		return u"smb"
 
-	possibleNames = ("samba", "smb", "smbd")
+	possibleNames = (u"samba", u"smb", u"smbd")
 
 	for servicename in getServiceNames():
 		if servicename in possibleNames:
@@ -3518,7 +3518,7 @@ def getServiceNames(listingOutput=None):
 	  Does not work on Suse Linux Enterprise Server (SLES) 11SP3.
 	"""
 	if not listingOutput:
-		listingOutput = execute("{0} --status-all".format(which("service")))
+		listingOutput = execute(u"{0} --status-all".format(which("service")))
 
 	patterns = [
 		'\[.*\]\s+(?P<servicename>.+)',  # Debian
@@ -3538,7 +3538,7 @@ def getServiceNames(listingOutput=None):
 				services.add(match.group('servicename').strip())
 				break
 
-	logger.debug("Found the following services: {0}".format(services))
+	logger.debug(u"Found the following services: {0}".format(services))
 	return services
 
 
