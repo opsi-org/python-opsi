@@ -378,6 +378,195 @@ class DiskTestCase(unittest.TestCase):
 		self.assertEquals(expected_last_partition, d.partitions[-1])
 
 
+class GetSambaServiceNameTestCase(unittest.TestCase):
+	def testGettingDefaultIfNothingElseParsed(self):
+		with mock.patch('OPSI.System.Posix.getServiceNames'):
+			self.assertEquals("blabla", Posix.getSambaServiceName(default="blabla"))
+
+	def testNoDefaultNoResultRaisesException(self):
+		with mock.patch('OPSI.System.Posix.getServiceNames'):
+			self.assertRaises(RuntimeError, Posix.getSambaServiceName)
+
+	def testParsingServiceOnDebian(self):
+		commandOutput = [
+			' [ ? ]  alsa-utils',
+			' [ - ]  anacron',
+			' [ + ]  atd',
+			' [ ? ]  bootmisc.sh',
+			' [ - ]  x11-common',
+		]
+
+		self.assertEquals(
+			set(["alsa-utils", "anacron", "atd", "bootmisc.sh", "x11-common"]),
+			Posix.getServiceNames(listingOutput=commandOutput)
+		)
+
+	def testParsingServiceOnRHEL6(self):
+		output = [
+			'atd (PID  1439) wird ausgeführt ...',
+			'dhcpd wurde beendet',
+			'Tabelle: filter',
+			'Chain INPUT (policy ACCEPT)',
+			'num  target     prot opt source               destination         ',
+			'1    ACCEPT     all      ::/0                 ::/0                state RELATED,ESTABLISHED ',
+			'2    ACCEPT     icmpv6    ::/0                 ::/0                ',
+			'3    ACCEPT     all      ::/0                 ::/0                ',
+			'4    ACCEPT     tcp      ::/0                 ::/0                state NEW tcp dpt:22 ',
+			'5    REJECT     all      ::/0                 ::/0                reject-with icmp6-adm-prohibited ',
+			'',
+			'Chain FORWARD (policy ACCEPT)',
+			'num  target     prot opt source               destination         ',
+			'1    REJECT     all      ::/0                 ::/0                reject-with icmp6-adm-prohibited ',
+			'',
+			'Chain OUTPUT (policy ACCEPT)',
+			'num  target     prot opt source               destination         ',
+			'',
+			'iptables: Firewall läuft nicht. ',
+			'lvmetad wurde beendet',
+			'Netconsole-Modul nicht geladen',
+			'Konfigurierte Geräte:',
+			'lo eth0',
+			'Derzeit aktive Geräte:',
+			'lo eth0',
+			'nmbd wurde beendet',
+			'Checking opsi config service... (running).',
+		]
+
+		self.assertEquals(
+			set(["atd", "dhcpd", "lvmetad", "nmbd"]),
+			Posix.getServiceNames(listingOutput=output)
+		)
+
+	def testParsingFromSystemd(self):
+		output = [
+			'iprdump.service - LSB: Start the ipr dump daemon',
+			'   Loaded: loaded (/etc/rc.d/init.d/iprdump)',
+			'   Active: active (running) since Di 2014-10-07 15:53:35 CEST; 4min 14s ago',
+			'  Process: 572 ExecStart=/etc/rc.d/init.d/iprdump start (code=exited, status=0/SUCCESS)',
+			' Main PID: 581 (iprdump)',
+			'   CGroup: /system.slice/iprdump.service',
+			'           └─581 /sbin/iprdump --daemon',
+			'',
+			'Okt 07 15:53:35 stb-40-srv-106.uib.local iprdump[572]: Starting iprdump: [  OK  ]',
+			'Okt 07 15:53:35 stb-40-srv-106.uib.local systemd[1]: Started LSB: Start the ipr dump daemon.',
+			'iprinit.service - LSB: Start the ipr init daemon',
+			'   Loaded: loaded (/etc/rc.d/init.d/iprinit)',
+			'   Active: active (running) since Di 2014-10-07 15:53:35 CEST; 4min 15s ago',
+			'  Process: 537 ExecStart=/etc/rc.d/init.d/iprinit start (code=exited, status=0/SUCCESS)',
+			' Main PID: 566 (iprinit)',
+			'   CGroup: /system.slice/iprinit.service',
+			'           └─566 /sbin/iprinit --daemon',
+			'',
+			'Okt 07 15:53:35 stb-40-srv-106.uib.local iprinit[537]: Starting iprinit: [  OK  ]',
+			'Okt 07 15:53:35 stb-40-srv-106.uib.local systemd[1]: Started LSB: Start the ipr init daemon.',
+			'iprupdate.service - LSB: Start the iprupdate utility',
+			'   Loaded: loaded (/etc/rc.d/init.d/iprupdate)',
+			'   Active: active (running) since Di 2014-10-07 15:53:35 CEST; 4min 15s ago',
+			'  Process: 525 ExecStart=/etc/rc.d/init.d/iprupdate start (code=exited, status=0/SUCCESS)',
+			' Main PID: 567 (iprupdate)',
+			'   CGroup: /system.slice/iprupdate.service',
+			'           └─567 /sbin/iprupdate --daemon',
+			'',
+			'Okt 07 15:53:34 stb-40-srv-106.uib.local systemd[1]: Starting LSB: Start the iprupdate utility...',
+			'Okt 07 15:53:35 stb-40-srv-106.uib.local iprupdate[525]: Starting iprupdate: [  OK  ]',
+			'Okt 07 15:53:35 stb-40-srv-106.uib.local systemd[1]: Started LSB: Start the iprupdate utility.',
+			'Netconsole-Modul nicht geladen',
+			'Konfigurierte Geräte:',
+			'lo ens18',
+			'Derzeit aktive Geräte:',
+			'lo ens18',
+		]
+
+		self.assertEquals(
+			set(["iprdump", "iprinit", "iprupdate"]),
+			Posix.getServiceNames(listingOutput=output)
+		)
+
+	def testParsingOpenSuse131(self):
+		output = [
+			'getty@tty1.service                                                           loaded active running Getty on tty1',
+			'lvm2-lvmetad.service                                                         loaded active running LVM2 metadata daemon',
+			'rc-local.service                                                             loaded active exited  /etc/init.d/boot.local Compatibility',
+			'SuSEfirewall2.service                                                        loaded active exited  SuSEfirewall2 phase 2',
+			'SuSEfirewall2_init.service                                                   loaded active exited  SuSEfirewall2 phase 1',
+			'systemd-fsck@dev-disk-by\x2did-ata\x2dQEMU_HARDDISK_QM00005\x2dpart1.service loaded active exited  File System Check on /dev/disk/by-id/ata-QEMU_HARDDISK_QM00005-part1',
+			'systemd-random-seed.service                                                  loaded active exited  Load/Save Random Seed',
+			'user@0.service                                                               loaded active running User Manager for 0',
+			'user@993.service                                                             loaded active running User Manager for 993',
+		]
+
+		self.assertEquals(
+			set(
+				[
+					"getty@tty1", "lvm2-lvmetad", "rc-local", "SuSEfirewall2",
+					"SuSEfirewall2_init",
+					"systemd-fsck@dev-disk-by\x2did-ata\x2dQEMU_HARDDISK_QM00005\x2dpart1",
+					"systemd-random-seed", "user@0", "user@993"
+				]
+			),
+			Posix.getServiceNames(listingOutput=output)
+		)
+
+	def testParsingOpensuse121(self):
+		output = [
+			'redirecting to systemctl',
+			'SuSEfirewall2_init.service - LSB: SuSEfirewall2 phase 1',
+			'	  Loaded: loaded (/etc/init.d/SuSEfirewall2_init)',
+			'	  Active: inactive (dead)',
+			'	  CGroup: name=systemd:/system/SuSEfirewall2_init.service',
+			'Checking the status of SuSEfirewall2                                                                        unused',
+			'redirecting to systemctl',
+			'avahi-daemon.service - Avahi mDNS/DNS-SD Stack',
+			'	  Loaded: loaded (/lib/systemd/system/avahi-daemon.service; enabled)',
+			'	  Active: active (running) since Tue, 07 Oct 2014 16:00:13 +0200; 6min ago',
+			'	Main PID: 611 (avahi-daemon)',
+			'	  Status: "Server startup complete. Host name is stb-40-srv-111.local. Local service cookie is 634832754."',
+			'	  CGroup: name=systemd:/system/avahi-daemon.service',
+			'		  └ 611 avahi-daemon: running [stb-40-srv-111.local]',
+			'redirecting to systemctl',
+			'cgroup.service',
+			'	  Loaded: masked (/dev/null)',
+			'	  Active: inactive (dead)',
+			'redirecting to systemctl',
+			'device-mapper.service',
+			'	  Loaded: masked (/dev/null)',
+			'	  Active: inactive (dead)',
+			'',
+			"Warning: Unit file changed on disk, 'systemctl --system daemon-reload' recommended.",
+			'redirecting to systemctl',
+			'udev.service - udev Kernel Device Manager',
+			'	  Loaded: loaded (/lib/systemd/system/udev.service; static)',
+			'	  Active: active (running) since Tue, 07 Oct 2014 16:00:10 +0200; 6min ago',
+			'	Main PID: 319 (udevd)',
+			'	  CGroup: name=systemd:/system/udev.service',
+			'		  ├ 319 /sbin/udevd',
+			'		  ├ 452 /sbin/udevd',
+			'		  └ 453 /sbin/udevd',
+			'Checking opsi config service... (not running).',
+		]
+
+		self.assertEquals(
+			set(["SuSEfirewall2_init", "SuSEfirewall2", "avahi-daemon",
+				 "cgroup", "device-mapper", "udev"]),
+			Posix.getServiceNames(listingOutput=output)
+		)
+
+
+	def testParsingOpensuse122andOpenSuse123(self):
+		output = [
+			'console-kit-log-system-start.service loaded active exited      Console System Startup Logging',
+			'getty@tty1.service                   loaded active running     Getty on tty1',
+			'opsipxeconfd.service                 loaded failed failed      LSB: opsi pxe config service',
+			'rc-local.service                     loaded active exited      /etc/init.d/boot.local Compatibility',
+			'sshd.service                         loaded active running     OpenSSH Daemon',
+			'SuSEfirewall2_setup.service          loaded active exited      LSB: SuSEfirewall2 phase 2',
+		]
+
+		self.assertEquals(
+			set(["console-kit-log-system-start", "getty@tty1", "opsipxeconfd",
+				 "rc-local", "sshd", "SuSEfirewall2_setup"]),
+			Posix.getServiceNames(listingOutput=output)
+		)
 
 
 if __name__ == '__main__':

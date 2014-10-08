@@ -30,7 +30,7 @@ Functions and classes for the use with a POSIX operating system.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.4'
+__version__ = '4.0.5.11'
 
 import codecs
 import fcntl
@@ -3484,6 +3484,62 @@ def locateDHCPDInit(default=None):
 		return default
 
 	raise RuntimeError(u"Could not locate dhcpd init file.")
+
+
+def getSambaServiceName(default=None):
+	"""
+	Get the name for the samba service.
+	"""
+	if Distribution().distribution.strip() == 'SUSE Linux Enterprise Server':
+		return "smb"
+
+	possibleNames = ("samba", "smb", "smbd")
+
+	for servicename in getServiceNames():
+		if servicename in possibleNames:
+			return servicename
+
+	if default is not None:
+		return default
+
+	raise RuntimeError(u"Could not get samba service name.")
+
+
+def getServiceNames(listingOutput=None):
+	"""
+	Get the names of services on the system.
+
+	:returntype: set
+
+    .. versionadded:: 4.0.5.11
+
+	.. note::
+
+	  Does not work on Suse Linux Enterprise Server (SLES) 11SP3.
+	"""
+	if not listingOutput:
+		listingOutput = execute("{0} --status-all".format(which("service")))
+
+	patterns = [
+		'\[.*\]\s+(?P<servicename>.+)',  # Debian
+		'(?P<servicename>.+) \(PID',  # RHEL 6
+		'(?P<servicename>.+) w',  # RHEL 6, part 2
+		r'(?P<servicename>([\w-]|@)+)\.service',  # systemd-based
+		'Checking the status of (?P<servicename>.+)\s+',  # opensuse 12.1
+	]
+	patterns = [re.compile(pattern) for pattern in patterns]
+
+	services = set()
+
+	for line in listingOutput:
+		for pattern in patterns:
+			match = pattern.search(line.strip())
+			if match:
+				services.add(match.group('servicename').strip())
+				break
+
+	logger.debug("Found the following services: {0}".format(services))
+	return services
 
 
 def getActiveSessionIds(winApiBugCommand=None, data=None):
