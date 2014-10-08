@@ -3505,10 +3505,13 @@ def getSambaServiceName(default=None):
 	raise RuntimeError(u"Could not get samba service name.")
 
 
-def getServiceNames(listingOutput=None):
+def getServiceNames(_serviceStatusOutput=None):
 	"""
 	Get the names of services on the system.
 
+	:param _serviceStatusOutput: The output of `service --status-all`.\
+Used for testing.
+	:type _serviceStatusOutput: [str, ]
 	:returntype: set
 
     .. versionadded:: 4.0.5.11
@@ -3517,8 +3520,8 @@ def getServiceNames(listingOutput=None):
 
 	  Does not work on Suse Linux Enterprise Server (SLES) 11SP3.
 	"""
-	if not listingOutput:
-		listingOutput = execute(u"{0} --status-all".format(which("service")))
+	if not _serviceStatusOutput:
+		_serviceStatusOutput = execute(u"{0} --status-all".format(which("service")))
 
 	patterns = [
 		'\[.*\]\s+(?P<servicename>.+)',  # Debian
@@ -3531,7 +3534,7 @@ def getServiceNames(listingOutput=None):
 
 	services = set()
 
-	for line in listingOutput:
+	for line in _serviceStatusOutput:
 		for pattern in patterns:
 			match = pattern.search(line.strip())
 			if match:

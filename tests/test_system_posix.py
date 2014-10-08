@@ -387,6 +387,10 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 		with mock.patch('OPSI.System.Posix.getServiceNames'):
 			self.assertRaises(RuntimeError, Posix.getSambaServiceName)
 
+	def testGettingFoundSambaServiceName(self):
+		pass
+
+
 	def testParsingServiceOnDebian(self):
 		commandOutput = [
 			' [ ? ]  alsa-utils',
@@ -398,7 +402,7 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 
 		self.assertEquals(
 			set(["alsa-utils", "anacron", "atd", "bootmisc.sh", "x11-common"]),
-			Posix.getServiceNames(listingOutput=commandOutput)
+			Posix.getServiceNames(_serviceStatusOutput=commandOutput)
 		)
 
 	def testParsingServiceOnRHEL6(self):
@@ -434,7 +438,7 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 
 		self.assertEquals(
 			set(["atd", "dhcpd", "lvmetad", "nmbd"]),
-			Posix.getServiceNames(listingOutput=output)
+			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
 	def testParsingFromSystemd(self):
@@ -479,7 +483,7 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 
 		self.assertEquals(
 			set(["iprdump", "iprinit", "iprupdate"]),
-			Posix.getServiceNames(listingOutput=output)
+			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
 	def testParsingOpenSuse131(self):
@@ -504,7 +508,7 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 					"systemd-random-seed", "user@0", "user@993"
 				]
 			),
-			Posix.getServiceNames(listingOutput=output)
+			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
 	def testParsingOpensuse121(self):
@@ -548,7 +552,7 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 		self.assertEquals(
 			set(["SuSEfirewall2_init", "SuSEfirewall2", "avahi-daemon",
 				 "cgroup", "device-mapper", "udev"]),
-			Posix.getServiceNames(listingOutput=output)
+			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
 
@@ -565,7 +569,7 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 		self.assertEquals(
 			set(["console-kit-log-system-start", "getty@tty1", "opsipxeconfd",
 				 "rc-local", "sshd", "SuSEfirewall2_setup"]),
-			Posix.getServiceNames(listingOutput=output)
+			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
 
