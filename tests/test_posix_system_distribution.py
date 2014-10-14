@@ -33,6 +33,7 @@ from OPSI.System.Posix import Distribution
 
 class DistributionTestCase(unittest.TestCase):
     DIST_INFO = None
+
     def setUp(self):
         if self.DIST_INFO is not None:
             self.dist = Distribution(distribution_information=self.DIST_INFO)
@@ -51,8 +52,8 @@ class DistributionTestCase(unittest.TestCase):
             self.skipTest('No specific distribution information set.')
 
         for part in self.DIST_INFO:
-            self.assertTrue(part in repr(self.dist),
-                'Expected "{0}" to be in {1}.'.format(part, self.dist)
+            self.assertTrue(part.strip() in repr(self.dist),
+                'Expected "{0}" to be in {1}.'.format(part, repr(self.dist))
             )
 
     def testDistributorIsNotNone(self):
@@ -86,12 +87,18 @@ class OpenSuse113TestCase(DistributionTestCase):
     def testReadingVersionIsCorrect(self):
         self.assertEqual((11, 3), self.dist.version)
 
+    def testDistributionNameGetsTruncated(self):
+        self.assertEquals('openSUSE', self.dist.distribution)
+
 
 class OpenSuse121TestCase(DistributionTestCase):
     DIST_INFO = ('openSUSE ', '12.1', 'x86_64')
 
     def testReadingVersionIsCorrect(self):
         self.assertEqual((12, 1), self.dist.version)
+
+    def testDistributionNameGetsTruncated(self):
+        self.assertEquals('openSUSE', self.dist.distribution)
 
 
 class RedHatEnterpriseLinux6TestCase(DistributionTestCase):
@@ -106,6 +113,9 @@ class SuseLinuxEnterpriseLinuxServer11TestCase(DistributionTestCase):
 
     def testReadingVersionIsCorrect(self):
         self.assertEqual((11, ), self.dist.version)
+
+    def testDistributionNameGetsTruncated(self):
+        self.assertEquals('SUSE Linux Enterprise Server', self.dist.distribution)
 
 
 class UbuntuRaringTestCase(DistributionTestCase):

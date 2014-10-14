@@ -2731,6 +2731,7 @@ class Distribution(object):
 			distribution_information = linux_distribution()
 
 		self.distribution, self._version, self.id = distribution_information
+		self.distribution = self.distribution.strip()
 
 		osType, self.hostname, self.kernel, self.detailedVersion, self.arch, processor = platform.uname()
 

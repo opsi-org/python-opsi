@@ -1,3 +1,9 @@
+python-opsi (4.0.5.13-1) experimental; urgency=low
+
+  * OPSI.System.Posix.Distribution: stripping the distribution attribute.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 14 Oct 2014 15:34:21 +0200
+
 python-opsi (4.0.5.12-1) experimental; urgency=low
 
   * More work on OPSI.System.Posix.getSambaServiceName
