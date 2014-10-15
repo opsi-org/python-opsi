@@ -1,3 +1,10 @@
+python-opsi (4.0.5.13-2) UNRELEASED; urgency=low
+
+  * 10_opsi.conf: New methods getHardwareAuditDataCount and
+    getSoftwareAuditDataCount
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 15 Oct 2014 14:26:08 +0200
+
 python-opsi (4.0.5.13-1) experimental; urgency=low
 
   * OPSI.System.Posix.Distribution: stripping the distribution attribute.
