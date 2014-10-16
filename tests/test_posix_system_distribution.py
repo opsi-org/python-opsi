@@ -81,6 +81,13 @@ class CentOS64TestCase(DistributionTestCase):
         self.assertEqual((6, 4), self.dist.version)
 
 
+class RHEL7TestCase(DistributionTestCase):
+    DIST_INFO = ('Red Hat Enterprise Linux Server', '7.0', 'Maipo')
+
+    def testReadingVersionIsCorrect(self):
+        self.assertEqual((7, 0), self.dist.version)
+
+
 class OpenSuse113TestCase(DistributionTestCase):
     DIST_INFO = ('openSUSE ', '11.3', 'i586')
 
