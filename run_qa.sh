@@ -9,4 +9,4 @@ echo "Running flake8"
 flake8 --exit-zero OPSI/ > pep8.txt
 
 echo "Running nosetests"
-nosetests --with-xunit --with-xcoverage --cover-package=OPSI tests/ || echo 'nosetests did not finish with return code 0'
+nosetests --with-xunit --with-xcoverage --cover-erase --cover-package=OPSI tests/ || echo 'nosetests did not finish with return code 0'
