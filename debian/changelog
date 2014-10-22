@@ -3,8 +3,11 @@ python-opsi (4.0.5.14-1) experimental; urgency=low
   * 10_opsi.conf: New methods getHardwareAuditDataCount and
     getSoftwareAuditDataCount
   * DHCPD backend: Fix logging problem caused by string / unicode mixup.
+  * OPSI.System.Posix.getServiceNames: Prefer "systemctl" over "service"
+    to have a solution that flawlessly works on CentOS 7.
+  * OPSI.System.Posix.locateDHCPDInit: Added search via getServiceNames
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 15 Oct 2014 14:26:08 +0200
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 22 Oct 2014 12:23:35 +0200
 
 python-opsi (4.0.5.13-1) experimental; urgency=low
 
