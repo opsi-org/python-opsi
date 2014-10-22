@@ -3471,6 +3471,20 @@ def locateDHCPDConfig(default=None):
 
 
 def locateDHCPDInit(default=None):
+	"""
+	Returns the init command for the DHCPD.
+
+	It will try to get the init script from ``/etc/init.d``.
+	If no relevant script is found it will try to find relevant services
+	via :py:func:`getServiceNames`.
+	If no services are found and `default` is given it will return the
+	default.
+	If no default is given it will throw an :py:exc:`RuntimeError`.
+
+	:param default: If no init script is found fall back to this \
+instead of throwing an error.
+	:returntype: str
+	"""
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
 		u"/etc/init.d/isc-dhcp-server",  # newer debian / ubuntu
@@ -3480,6 +3494,13 @@ def locateDHCPDInit(default=None):
 	for filename in locations:
 		if os.path.exists(filename):
 			return filename
+
+	try:
+		for servicename in getServiceNames():
+			if servicename in (u"dhcpd", u"isc-dhcp-server", u"dhcp3-server"):
+				return "service {name}".format(servicename)
+	except Exception:
+		pass
 
 	if default is not None:
 		return default
