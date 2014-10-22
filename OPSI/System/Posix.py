@@ -3535,6 +3535,10 @@ def getServiceNames(_serviceStatusOutput=None):
 	"""
 	Get the names of services on the system.
 
+	This script tries to pull the information from ``systemctl`` if
+	present. If ``systemctl`` is not present it will fall back to use
+	``service``.
+
 	:param _serviceStatusOutput: The output of `service --status-all`.\
 Used for testing.
 	:type _serviceStatusOutput: [str, ]
@@ -3542,12 +3546,22 @@ Used for testing.
 
     .. versionadded:: 4.0.5.11
 
+
+	.. note:
+
+	  RHEL / CentOS 7 will display insufficent information when using
+	  the ``service``-command and we work around this preferring ``systemctl``.
+
+
 	.. note::
 
 	  Does not work on Suse Linux Enterprise Server (SLES) 11SP3.
 	"""
 	if not _serviceStatusOutput:
-		_serviceStatusOutput = execute(u"{0} --status-all".format(which("service")))
+		try:
+			_serviceStatusOutput = execute(u"{0} --all --full".format(which("systemctl")))
+		except Exception:
+			_serviceStatusOutput = execute(u"{0} --status-all".format(which("service")))
 
 	patterns = [
 		'\[.*\]\s+(?P<servicename>.+)',  # Debian
