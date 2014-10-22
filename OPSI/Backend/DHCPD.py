@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.5.10'
+__version__ = '4.0.5.14'
 
 import socket
 import threading
@@ -55,7 +55,7 @@ class DHCPDBackend(ConfigDataBackend):
 		self._name = 'dhcpd'
 
 		ConfigDataBackend.__init__(self, **kwargs)
-		
+
 		pathToService = u"/usr/sbin/service"
 		if os.path.exists(u"/sbin/service"):
 			pathToService = u"/sbin/service"
@@ -121,7 +121,8 @@ class DHCPDBackend(ConfigDataBackend):
 						if 'error' in line:
 							raise Exception(u'\n'.join(result))
 				except Exception as error:
-					logger.critical("Failed to restart dhcpd: %s" % error)
+					logger.critical(u"Failed to restart dhcpd: {0}".format(error))
+
 				self._reloadLock.release()
 				self._reloadEvent.set()
 
