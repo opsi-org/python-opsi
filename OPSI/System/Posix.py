@@ -354,7 +354,7 @@ def getKernelParams():
 	if cmdline:
 		for option in cmdline.split():
 			keyValue = option.split(u"=")
-			if ( len(keyValue) < 2 ):
+			if len(keyValue) < 2:
 				params[keyValue[0].strip().lower()] = u''
 			else:
 				params[keyValue[0].strip().lower()] = keyValue[1].strip()
@@ -426,7 +426,7 @@ def getNetworkDeviceConfig(device):
 	for line in execute(u"%s route" % which(u'ip')):
 		line = line.lower().strip()
 		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s*', line)
-		if match and (match.group(2).lower() == device.lower()):
+		if match and match.group(2).lower() == device.lower():
 			result['gateway'] = forceIpAddress(match.group(1))
 
 	try:
@@ -444,7 +444,7 @@ def getNetworkDeviceConfig(device):
 		if x.startswith('0x'):
 			x = eval(x)
 		x = int(x)
-		if (result['vendorId'] == '1AF4'):
+		if result['vendorId'] == '1AF4':
 			# FIXME: what is wrong with virtio devices?
 			x += 0xfff
 		x = "%x" % x
@@ -497,7 +497,7 @@ class NetworkPerformanceCounter(threading.Thread):
 			for line in f.readlines():
 				line = line.strip()
 				match = self._regex.search(line)
-				if match and (match.group(1) == self.interface):
+				if match and match.group(1) == self.interface:
 					#       |   Receive                                                |  Transmit
 					# iface: bytes    packets errs drop fifo frame compressed multicast bytes    packets errs drop fifo colls carrier compressed
 					now = time.time()
@@ -508,11 +508,11 @@ class NetworkPerformanceCounter(threading.Thread):
 						timeDiff = now - self._lastTime
 					if self._lastBytesIn:
 						self._bytesInPerSecond = (bytesIn - self._lastBytesIn)/timeDiff
-						if (self._bytesInPerSecond < 0):
+						if self._bytesInPerSecond < 0:
 							self._bytesInPerSecond = 0
 					if self._lastBytesOut:
 						self._bytesOutPerSecond = (bytesOut - self._lastBytesOut)/timeDiff
-						if (self._bytesOutPerSecond < 0):
+						if self._bytesOutPerSecond < 0:
 							self._bytesOutPerSecond = 0
 					self._lastBytesIn = bytesIn
 					self._lastBytesOut = bytesOut
@@ -568,7 +568,7 @@ keys are: ``ip``, ``netmask``, ``bootserver``, ``nextserver``, \
 						line = line[:-1].strip()
 					if line.startswith('interface '):
 						currentInterface = line.split('"')[1]
-					if (device != currentInterface):
+					if device != currentInterface:
 						continue
 
 					if line.startswith('filename '):
@@ -797,7 +797,7 @@ output will be returned.
 						if (e.errno != 11):
 							raise
 
-				if (timeout > 0) and (time.time() - startTime >= timeout):
+				if timeout > 0 and (time.time() - startTime >= timeout):
 					_terminateProcess(proc)
 					raise Exception(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
 
@@ -944,7 +944,7 @@ def mount(dev, mountpoint, **options):
 				options['username'] = u'guest'
 			if not 'password' in options:
 				options['password'] = u''
-			if (options['username'].find('\\') != -1):
+			if options['username'].find('\\') != -1:
 				(options['domain'], options['username']) = options['username'].split('\\', 1)
 
 			credentialsFile = u"/tmp/.cifs-credentials.%s" % parts[0]
@@ -1080,12 +1080,12 @@ def getBlockDeviceBusType(device):
 
 		match = re.search('^\s+Device Files*:(.*)$', line)
 		if match:
-			if (match.group(1).find(u',') != -1):
+			if match.group(1).find(u',') != -1:
 				devs = match.group(1).split(u',')
-			elif (match.group(1).find(u'(') != -1):
+			elif match.group(1).find(u'(') != -1:
 				devs = match.group(1).replace(u')', u' ').split(u'(')
 			else:
-				devs = [ match.group(1) ]
+				devs = [match.group(1)]
 			for i in range(len(devs)):
 				devs[i] = devs[i].strip()
 
@@ -1119,10 +1119,10 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 		match = re.search('^(/\S+)\s+(\S+)\s+storage\s+(\S+.*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			vendorId = match.group(4)
-			while (len(vendorId) < 4):
+			while len(vendorId) < 4:
 				vendorId = '0' + vendorId
 			deviceId = match.group(5)
-			while (len(deviceId) < 4):
+			while len(deviceId) < 4:
 				deviceId = '0' + deviceId
 			storageControllers[match.group(1)] = {
 				'hwPath':      forceUnicode(match.group(1)),
@@ -1134,9 +1134,9 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			continue
 
 		parts = line.split(None, 3)
-		if (len(parts) < 4):
+		if len(parts) < 4:
 			continue
-		if (parts[1].lower() == device):
+		if parts[1].lower() == device:
 			for hwPath in storageControllers.keys():
 				if parts[0].startswith(hwPath + u'/'):
 					return storageControllers[hwPath]
@@ -1156,10 +1156,10 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 		match = re.search('^(/\S+)\s+storage\s+(\S+.*[Aa][Hh][Cc][Ii].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 		if match:
 			vendorId = match.group(3)
-			while (len(vendorId) < 4):
+			while len(vendorId) < 4:
 				vendorId = '0' + vendorId
 			deviceId = match.group(4)
-			while (len(deviceId) < 4):
+			while len(deviceId) < 4:
 				deviceId = '0' + deviceId
 			storageControllers[match.group(1)] = {
 				'hwPath':      forceUnicode(match.group(1)),
@@ -1180,10 +1180,10 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):
 			match = re.search('^(/\S+)\s+storage\s+(\S+.*[Rr][Aa][Ii][Dd].*)\s\[([a-fA-F0-9]{1,4})\:([a-fA-F0-9]{1,4})\]$', line)
 			if match:
 				vendorId = match.group(3)
-				while (len(vendorId) < 4):
+				while len(vendorId) < 4:
 					vendorId = '0' + vendorId
 				deviceId = match.group(4)
-				while (len(deviceId) < 4):
+				while len(deviceId) < 4:
 					deviceId = '0' + deviceId
 				storageControllers[match.group(1)] = {
 					'hwPath':      forceUnicode(match.group(1)),
