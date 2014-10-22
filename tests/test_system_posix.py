@@ -583,6 +583,38 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 			Posix.getServiceNames(_serviceStatusOutput=output)
 		)
 
+	def testParsingSystemdOutputFromCentOS7(self):
+		output = [
+'UNIT FILE                                   STATE   ',
+'proc-sys-fs-binfmt_misc.automount           static  ',
+'tmp.mount                                   disabled',
+'brandbot.path                               disabled',
+'systemd-ask-password-console.path           static  ',
+'session-1.scope                             static  ',
+'session-c2.scope                            static  ',
+'dhcpd.service                               disabled',
+'dhcpd6.service                              disabled',
+'getty@.service                              enabled ',
+'initrd-cleanup.service                      static  ',
+'smb.service                                 enabled ',
+'systemd-backlight@.service                  static  ',
+'-.slice                                     static  ',
+'machine.slice                               static  ',
+'syslog.socket                               static  ',
+'systemd-udevd-kernel.socket                 static  ',
+'basic.target                                static  ',
+'systemd-tmpfiles-clean.timer                static  ',
+'',
+'219 unit files listed.']
+
+		self.assertEquals(
+			set(["dhcpd", "dhcpd6", "getty@", "initrd-cleanup", "smb",
+				 "systemd-backlight@",]),
+			Posix.getServiceNames(_serviceStatusOutput=output)
+		)
+
+
+
 
 if __name__ == '__main__':
 	unittest.main()
