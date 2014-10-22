@@ -51,7 +51,6 @@ call opsi-set-rights.
 
 	:param sudoersFile: The path to the sudoers file.
 	"""
-	#get opsifileadmins groupname!!!!
 	entries = [
 		"opsiconfd ALL=NOPASSWD: %s" % "/usr/bin/opsi-set-rights",
 		"%%%s ALL=NOPASSWD: %s" % (FILE_ADMIN_GROUP, "/usr/bin/opsi-set-rights"),
