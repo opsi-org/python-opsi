@@ -84,7 +84,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 
 	.. versionchanged:: 4.0.5.15
 
-       Do not require a TTY for running the service command.
+		Do not require a TTY for running the service command.
 	"""
 	lines = []
 	entriesAlreadyExisting = False
