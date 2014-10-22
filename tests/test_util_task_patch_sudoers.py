@@ -29,16 +29,16 @@ except ImportError:
 
 from . import helpers
 
-from OPSI.Util.Task.Sudoers import (_NO_TTY_REQUIRED_DEFAULT,
-    patchSudoersFileForOpsi, distributionRequiresNoTtyPatch,
-    patchSudoersFileToAllowRestartingDHCPD)
+from OPSI.Util.Task.Sudoers import (_NO_TTY_FOR_SERVICE_REQUIRED,
+    _NO_TTY_REQUIRED_DEFAULT, patchSudoersFileForOpsi,
+    distributionRequiresNoTtyPatch, patchSudoersFileToAllowRestartingDHCPD)
 
 
 class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
     def setUp(self):
         emptyExampleFile = os.path.join(
             os.path.dirname(__file__),
-            'testdata', 'util', 'task', 'sudoers','sudoers_without_entries'
+            'testdata', 'util', 'task', 'sudoers', 'sudoers_without_entries'
         )
 
         self.fileName = helpers.copyTestfileToTemporaryFolder(emptyExampleFile)
@@ -105,6 +105,25 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
         self.assertTrue(
             entryFound,
             "Expected {0} in patched file.".format(_NO_TTY_REQUIRED_DEFAULT)
+        )
+
+    def testExecutingServiceDoesNotRequireTTY(self):
+        with open(self.fileName) as pre:
+            for line in pre:
+                if _NO_TTY_FOR_SERVICE_REQUIRED in line:
+                    self.fail('Command already existing. Can\'t check.')
+
+        patchSudoersFileForOpsi(self.fileName)
+
+        entryFound = False
+        with open(self.fileName) as post:
+            for line in post:
+                if _NO_TTY_FOR_SERVICE_REQUIRED in line:
+                    entryFound = True
+
+        self.assertTrue(
+            entryFound,
+            "Expected {0} in patched file.".format(_NO_TTY_FOR_SERVICE_REQUIRED)
         )
 
     def testPatchingToAllowRestartingDHCPD(self):

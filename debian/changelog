@@ -1,3 +1,9 @@
+python-opsi (4.0.5.15-1) experimental; urgency=low
+
+  * Patching sudoers: allow using service when no TTY present
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 22 Oct 2014 14:30:24 +0200
+
 python-opsi (4.0.5.14-1) experimental; urgency=low
 
   * 10_opsi.conf: New methods getHardwareAuditDataCount and

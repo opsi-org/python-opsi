@@ -40,7 +40,8 @@ except Exception:
 	FILE_ADMIN_GROUP = u'pcpatch'
 
 SUDOERS_FILE = u'/etc/sudoers'
-_NO_TTY_REQUIRED_DEFAULT = "Defaults:opsiconfd !requiretty"
+_NO_TTY_FOR_SERVICE_REQUIRED = u"Defaults!/sbin/service !requiretty"
+_NO_TTY_REQUIRED_DEFAULT = u"Defaults:opsiconfd !requiretty"
 LOGGER = Logger()
 
 
@@ -61,7 +62,8 @@ call opsi-set-rights.
 
 def patchSudoersFileToAllowRestartingDHCPD(dhcpdRestartCommand, sudoersFile=SUDOERS_FILE):
 	"""
-	Patches the sudoers file so opsiconfd can restart the DHCP daemon.
+	Patches the sudoers file so opsiconfd can restart the DHCP daemon
+	and execute the ``service`` command without an tty.
 
 	:param dhcpdRestartCommand: The command used to restart the DHCP daemon
 	:param sudoersFile: The path to the sudoers file.
@@ -78,37 +80,54 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 	Patches ``sudoersFile`` with ``entries`` if they are missing.
 
 	.. versionadded:: 4.0.4.6
+
+
+	.. versionchanged:: 4.0.5.15
+
+       Do not require a TTY for running the service command.
 	"""
 	lines = []
-	found = False
+	entriesAlreadyExisting = False
 	ttyPatchRequired = True
+	servicePatchRequired = True
 
 	with codecs.open(sudoersFile, 'r', 'utf-8') as inputFile:
 		for line in inputFile:
 			for entry in entries:
 				if entry in line:
-					found = True
+					entriesAlreadyExisting = True
+					break
 
 			if _NO_TTY_REQUIRED_DEFAULT in line:
 				ttyPatchRequired = False
+			elif _NO_TTY_FOR_SERVICE_REQUIRED in line:
+				servicePatchRequired = False
 
 			lines.append(line)
 
-	if not found:
+	ttyPatchRequired = ttyPatchRequired and distributionRequiresNoTtyPatch()
+	modifyFile = ttyPatchRequired or servicePatchRequired or (not entriesAlreadyExisting)
+	if modifyFile:
+		LOGGER.notice(u"   Adding sudoers entries for opsi")
+
+	if not entriesAlreadyExisting:
+		for entry in entries:
+			lines.append("{0}\n".format(entry))
+
+	if ttyPatchRequired:
+		lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
+
+	if servicePatchRequired:
+		lines.append(u"{0}\n".format(_NO_TTY_FOR_SERVICE_REQUIRED))
+
+	if modifyFile:
+		lines.append('\n')
+
 		LOGGER.notice(u"   Creating backup of %s" % sudoersFile)
 		shutil.copy(
 			sudoersFile,
 			sudoersFile + u'.' + time.strftime("%Y-%m-%d_%H:%M")
 		)
-
-		LOGGER.notice(u"   Adding sudoers entries for opsi")
-		for entry in entries:
-			lines.append("{0}\n".format(entry))
-
-		if ttyPatchRequired and distributionRequiresNoTtyPatch():
-			lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
-
-		lines.append('\n')
 
 		LOGGER.notice(u"   Writing new %s" % sudoersFile)
 		with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
