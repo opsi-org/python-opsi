@@ -3580,7 +3580,7 @@ Used for testing.
 	"""
 	if not _serviceStatusOutput:
 		try:
-			_serviceStatusOutput = execute(u"{0} --all --full".format(which("systemctl")))
+			_serviceStatusOutput = execute(u"{0} list-unit-files".format(which("systemctl")))
 		except Exception:
 			_serviceStatusOutput = execute(u"{0} --status-all".format(which("service")))
 
