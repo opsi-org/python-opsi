@@ -102,7 +102,7 @@ class Repository:
 		self._dynamicBandwidth = False
 		self._networkPerformanceCounter = None
 		self._lastSpeedCalcTime = None
-		self._bufferSize  = 16384
+		self._bufferSize = 16384
 		self._bytesTransfered = 0
 		self._networkBandwidth = 0.0
 		self._currentSpeed = 0.0
@@ -119,11 +119,11 @@ class Repository:
 			kwargs.get('maxBandwidth', self._maxBandwidth),
 		)
 
-	def setBandwidth(self, dynamicBandwidth = False, maxBandwidth = 0):
+	def setBandwidth(self, dynamicBandwidth=False, maxBandwidth=0):
 		''' maxBandwidth in byte/s'''
 		self._dynamicBandwidth = forceBool(dynamicBandwidth)
 		self._maxBandwidth = forceInt(maxBandwidth)
-		if (self._maxBandwidth < 0):
+		if self._maxBandwidth < 0:
 			self._maxBandwidth = 0
 
 		if self._dynamicBandwidth:
@@ -152,7 +152,7 @@ class Repository:
 				logger.warning(u"Failed to stop networkPerformanceCounter: %s" % e)
 
 	def setMaxBandwidth(self, maxBandwidth):
-		self.setBandwidth(dynamicBandwidth = self._dynamicBandwidth, maxBandwidth = maxBandwidth)
+		self.setBandwidth(dynamicBandwidth=self._dynamicBandwidth, maxBandwidth=maxBandwidth)
 
 	def __unicode__(self):
 		return u'<%s %s>' % (self.__class__.__name__, self._url)
@@ -217,7 +217,7 @@ class Repository:
 
 		if self._lastSpeedCalcTime is not None:
 			delta = now - self._lastSpeedCalcTime
-			if (delta > 0):
+			if delta > 0:
 				self._currentSpeed = float(self._lastSpeedCalcBytes) / float(delta)
 				self._lastSpeedCalcBytes = 0
 
@@ -226,8 +226,8 @@ class Repository:
 			self._averageSpeed = self._currentSpeed
 		else:
 			delta = now - self._lastAverageSpeedCalcTime
-			if (delta > 1):
-				self._averageSpeed = float(self._lastAverageSpeedCalcBytes)/float(delta)
+			if delta > 1:
+				self._averageSpeed = float(self._lastAverageSpeedCalcBytes) / float(delta)
 				self._lastAverageSpeedCalcBytes = 0
 				self._lastAverageSpeedCalcTime = now
 		self._lastSpeedCalcTime = now
@@ -245,13 +245,13 @@ class Repository:
 			if self._dynamicBandwidth and self._networkPerformanceCounter:
 				bwlimit = self._dynamicBandwidthLimit
 				totalNetworkUsage = self._getNetworkUsage()
-				if (totalNetworkUsage > 0):
+				if totalNetworkUsage > 0:
 					if not self._dynamicBandwidthLimit:
 						self._networkBandwidth = totalNetworkUsage
 					if not hasattr(self, '_networkUsageData'):
 						self._networkUsageData = []
 					usage = (float(self._averageSpeed)/float(totalNetworkUsage)) * 1.03
-					if (usage > 1):
+					if usage > 1:
 						usage = 1.0
 					#print totalNetworkUsage/1024, usage
 					self._networkUsageData.append([now, usage])
@@ -262,7 +262,7 @@ class Repository:
 						#data = []
 						for i in range(len(self._networkUsageData)):
 							if (now - self._networkUsageData[i][0] <= 5):
-								if (index == -1):
+								if index == -1:
 									index = i
 							if (now - self._networkUsageData[i][0] <= 2.0):
 								usage += self._networkUsageData[i][1]
@@ -369,18 +369,18 @@ class Repository:
 				logger.debug2("self._bufferSize: '%d" % self._bufferSize)
 				logger.debug2("self._bytesTransfered: '%d'" % self._bytesTransfered)
 				logger.debug2("bytes: '%d'" % bytes)
-				
+
 				remaining_bytes = fileSize - self._bytesTransfered
 				logger.debug2("self._remainingBytes: '%d'" % remaining_bytes)
 				if (remaining_bytes > 0) and (remaining_bytes < self._bufferSize):
 					buf = src.read(remaining_bytes)
-				elif (remaining_bytes > 0):
+				elif remaining_bytes > 0:
 					buf = src.read(self._bufferSize)
 				else:
 					break
 				read = len(buf)
-				
-				if (read > 0):
+
+				if read > 0:
 					if (bytes >= 0) and ((self._bytesTransfered + read) > bytes):
 						buf = buf[:bytes-self._bytesTransfered]
 						read = len(buf)
@@ -416,16 +416,13 @@ class Repository:
 		raise RepositoryError(u"Not implemented")
 
 	def listdir(self, source=''):
-		result = []
-		for c in self.content(source, recursive=False):
-			result.append(c['name'])
-		return result
+		return [c['name'] for c in self.content(source, recursive=False)]
 
 	def getCountAndSize(self, source=''):
 		source = forceUnicode(source)
 		(count, size) = (0, 0)
-		for entry in self.content(source, recursive = True):
-			if (entry.get('type', '') == 'file'):
+		for entry in self.content(source, recursive=True):
+			if entry.get('type', '') == 'file':
 				count += 1
 				size += entry.get('size', 0)
 		return (count, size)
@@ -440,7 +437,7 @@ class Repository:
 			if not filename:
 				return {'name': dirname.split('/')[:-1], 'path': dirname.split('/')[:-1], 'type': 'dir', 'size': long(0)}
 			for c in self.content(dirname):
-				if (c['name'] == filename):
+				if c['name'] == filename:
 					info = c
 					return info
 			raise Exception(u'File not found')
@@ -531,6 +528,7 @@ class Repository:
 					elif (info['size'] > 1024):
 						sizeString = "%0.2f kByte" % ( float(info['size'])/(1024) )
 					overallProgressSubject.setMessage(u"[1/1] %s (%s)" % (info['name'], sizeString ) )
+
 				try:
 					self.download(source, destinationFile, currentProgressSubject)
 				except OSError as e:
@@ -937,9 +935,9 @@ class HTTPRepository(Repository):
 				if (startByteNumber > -1) or (endByteNumber > -1):
 					sbn = startByteNumber
 					ebn = endByteNumber
-					if (sbn <= -1):
+					if sbn <= -1:
 						sbn = 0
-					if (ebn <= -1):
+					if ebn <= -1:
 						ebn = ''
 					headers['range'] = 'bytes=%s-%s' % (sbn, ebn)
 
@@ -958,9 +956,10 @@ class HTTPRepository(Repository):
 					size = forceInt(httplib_response.getheader('content-length', 0))
 					logger.debug(u"Length of binary data to download: %d bytes" % size)
 
-					if progressSubject: progressSubject.setEnd(size)
+					if progressSubject:
+						progressSubject.setEnd(size)
 
-					if (startByteNumber > 0) and os.path.exists(destination):
+					if startByteNumber > 0 and os.path.exists(destination):
 						mode = 'ab'
 					else:
 						mode = 'wb'
@@ -970,7 +969,7 @@ class HTTPRepository(Repository):
 				except Exception as e:
 					conn = None
 					self._connectionPool.endConnection(conn)
-					if (trynum > 2):
+					if trynum > 2:
 						raise
 					logger.info(u"Error '%s' occured while downloading, retrying" % e)
 					continue
