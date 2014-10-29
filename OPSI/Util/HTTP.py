@@ -125,15 +125,13 @@ def hybi10Decode(data):
 def non_blocking_connect_http(self, connectTimeout=0):
 	''' Non blocking connect, needed for KillableThread '''
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	#sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-	#sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 	sock.settimeout(3.0)
 	started = time.time()
 	lastError = None
 	while True:
 		try:
 			if connectTimeout > 0 and ((time.time() - started) >= connectTimeout):
-				raise OpsiTimeoutError(u"Timed out after %d seconds (%s)" % (connectTimeout, forceUnicode(lastError)))
+				raise OpsiTimeoutError(u"Timed out after {0:d} seconds (last error: {1})".format(connectTimeout, forceUnicode(lastError)))
 			sock.connect((self.host, self.port))
 			break
 		except socket.error as e:
