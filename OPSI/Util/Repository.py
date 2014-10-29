@@ -7,7 +7,7 @@
 	This module is part of the desktop management solution opsi
 	(open pc server integration) http://www.opsi.org
 
-	Copyright (C) 2006, 2007, 2008, 2009, 2010, 2013 uib GmbH <info@uib.de>
+	Copyright (C) 2006-2014 uib GmbH <info@uib.de>
 	All rights reserved.
 
 	This program is free software: you can redistribute it and/or modify
@@ -26,10 +26,11 @@
 	@copyright: uib GmbH <info@uib.de>
 	.. codeauthor:: Jan Schneider <j.schneider@uib.de>
 	.. codeauthor:: Erol Ueluekmen <e.ueluekmen@uib.de>
+	.. codeauthor:: Niko Wenselowski <n.wenselowski@uib.de>
 	@license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.5.16'
 
 import base64
 import httplib
@@ -923,7 +924,6 @@ class HTTPRepository(Repository):
 		endByteNumber = forceInt(endByteNumber)
 		source = self._preProcessPath(source)
 
-		dst = None
 		try:
 			trynum = 0
 			bytesTransfered = 0
@@ -960,15 +960,15 @@ class HTTPRepository(Repository):
 					if progressSubject: progressSubject.setEnd(size)
 
 					if (startByteNumber > 0) and os.path.exists(destination):
-						dst = open(destination, 'ab')
+						mode = 'ab'
 					else:
-						dst = open(destination, 'wb')
-					bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
-					dst.close()
+						mode = 'wb'
+
+					with open(destination, mode) as dst:
+						bytesTransfered = self._transferDown(httplib_response, dst, progressSubject)
 				except Exception as e:
 					conn = None
 					self._connectionPool.endConnection(conn)
-					if dst: dst.close()
 					if (trynum > 2):
 						raise
 					logger.info(u"Error '%s' occured while downloading, retrying" % e)
