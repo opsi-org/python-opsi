@@ -1,3 +1,9 @@
+python-opsi (4.0.5.16-1) UNRELEASED; urgency=low
+
+  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 Oct 2014 17:19:22 +0100
+
 python-opsi (4.0.5.15-1) experimental; urgency=low
 
   * Patching sudoers: allow using service when no TTY present
