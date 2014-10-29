@@ -40,7 +40,6 @@ import shutil
 import stat
 import time
 import urllib
-import sys
 
 from OPSI.web2 import responsecode
 from OPSI.web2.dav import davxml
@@ -1485,7 +1484,9 @@ class DepotToLocalDirectorySychronizer(object):
 #			return self._repository.download(source = source, destination = destination, progressSubject = progressSubject, rangeStart = rangeStart)
 #
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
+	# TODO: this must be a test!
+	import sys
 	from OPSI.Logger import LOG_DEBUG, LOG_DEBUG2
 
 	logger.setConsoleLevel(LOG_DEBUG)
