@@ -30,7 +30,7 @@ Functions and classes for the use with a POSIX operating system.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.11'
+__version__ = '4.0.5.16'
 
 import codecs
 import fcntl
@@ -3481,12 +3481,17 @@ def locateDHCPDInit(default=None):
 	default.
 	If no default is given it will throw an :py:exc:`RuntimeError`.
 
+	We prefer univention-dhcp over isc-dhcp-server because if this is
+	run an an UCS 3.2 scripts for both services are available but
+	isc-dhcp-server will not do anything.
+
 	:param default: If no init script is found fall back to this \
 instead of throwing an error.
 	:returntype: str
 	"""
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
+		u"/etc/init.d/univention-dhcp", # UCS 3.2
 		u"/etc/init.d/isc-dhcp-server",  # newer debian / ubuntu
 		u"/etc/init.d/dhcp3-server"  # older debian / ubuntu
 	)
@@ -3497,7 +3502,7 @@ instead of throwing an error.
 
 	try:
 		for servicename in getServiceNames():
-			if servicename in (u"dhcpd", u"isc-dhcp-server", u"dhcp3-server"):
+			if servicename in (u"univention-dhcp", u"dhcpd", u"isc-dhcp-server", u"dhcp3-server"):
 				return "service {name}".format(servicename)
 	except Exception:
 		pass

@@ -1,8 +1,10 @@
-python-opsi (4.0.5.16-1) UNRELEASED; urgency=low
+python-opsi (4.0.5.16-1) experimental; urgency=low
 
   * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
+  * OPSI.System.Posix.locateDHCPDinit: Prefer univention-dhcp over 
+    isc-dhcp-server to avoid problems on UCS 3.2
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 29 Oct 2014 17:19:22 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Nov 2014 10:17:09 +0100
 
 python-opsi (4.0.5.15-1) experimental; urgency=low
 
