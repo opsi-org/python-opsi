@@ -1,3 +1,9 @@
+python-opsi (4.0.5.17-1) UNRELEASED; urgency=low
+
+  * Reverting the changes made for UCS in OPSI.System.Posix.locateDHCPDinit
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 12 Nov 2014 09:56:26 +0100
+
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
   * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
