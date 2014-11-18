@@ -132,12 +132,9 @@ class SessionHandler(object):
 	def getSessions(self, ip=None):
 		if not ip:
 			return self.sessions
-		sessions = []
-		for session in self.sessions.values():
-			if (session.ip == ip):
-				sessions.append(session)
-		return sessions
-		
+
+		return [session for session in self.sessions.values() if session.ip == ip]
+
 	def getSession(self, uid=None, ip=None):
 		if uid:
 			session = self.sessions.get(uid)
@@ -222,17 +219,16 @@ class SessionHandler(object):
 				threading.Thread.__init__(self)
 				self._sessionHandler = sessionHandler
 				self._uid = uid
-			
+
 			def run(self):
 				self._sessionHandler.deleteSession(self._uid)
-		
+
 		dts = []
 		for (uid, session) in self.sessions.items():
 			logger.debug(u"Deleting session '%s'" % uid)
 			dts.append(SessionDeletionThread(self, uid))
-			dts[-1].start()
-		for dt in dts:
-			dt.join(2)
-		self.sessions = {}
-	
 
+		[dt.start() for dt in dts]
+		[dt.join(2) for dt in dts]
+
+		self.sessions = {}
