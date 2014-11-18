@@ -300,7 +300,7 @@ class Entity(BaseObject):
 		if identOnly:
 			identAttributes = self.getIdentAttributes()
 			for (attribute, value) in self.toHash().items():
-				if (attribute != 'type') and attribute not in self.getIdentAttributes():
+				if attribute != 'type' and attribute not in identAttributes:
 					continue
 				hash[attribute] = value
 		else:
@@ -338,12 +338,12 @@ class Relationship(BaseObject):
 				kwargs[varname] = hash[varname]
 		return Class(**kwargs)
 
-	def clone(self, identOnly = False):
+	def clone(self, identOnly=False):
 		hash = {}
 		if identOnly:
 			identAttributes = self.getIdentAttributes()
 			for (attribute, value) in self.toHash().items():
-				if (attribute != 'type') and attribute not in self.getIdentAttributes():
+				if attribute != 'type' and attribute not in identAttributes:
 					continue
 				hash[attribute] = value
 		else:
