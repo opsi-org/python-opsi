@@ -289,12 +289,14 @@ class Entity(BaseObject):
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
-			if hash.has_key(varname):
+			if varname in hash:
 				kwargs[varname] = hash[varname]
+
 		return Class(**kwargs)
 
 	def clone(self, identOnly=False):
 		hash = {}
+
 		if identOnly:
 			identAttributes = self.getIdentAttributes()
 			for (attribute, value) in self.toHash().items():
@@ -303,6 +305,7 @@ class Entity(BaseObject):
 				hash[attribute] = value
 		else:
 			hash = self.toHash()
+
 		return self.fromHash(hash)
 
 	def serialize(self):
@@ -1327,9 +1330,10 @@ class ProductProperty(Entity):
 	def _updateValues(self):
 		if self.possibleValues is None:
 			self.possibleValues = []
+
 		if self.possibleValues and self.defaultValues:
 			for defaultValue in self.defaultValues:
-				if not defaultValue in self.possibleValues:
+				if defaultValue not in self.possibleValues:
 					self.defaultValues.remove(defaultValue)
 		elif not self.possibleValues and self.defaultValues:
 			self.possibleValues = self.defaultValues
@@ -1648,7 +1652,7 @@ class ProductOnDepot(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if not 'type' in hash:
+		if 'type' not in hash:
 			hash['type'] = 'ProductOnDepot'
 		return Relationship.fromHash(hash)
 
