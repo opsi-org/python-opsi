@@ -104,7 +104,7 @@ class KillableThread(threading.Thread):
 
 class ThreadPool(object):
 
-	def __init__(self, size = 20, autostart = True):
+	def __init__(self, size=20, autostart=True):
 		self.size = int(size)
 		self.started = False
 		self.worker = []
@@ -190,7 +190,7 @@ class ThreadPool(object):
 			newWorkers.append(worker)
 			num -= 1
 
-	def addJob(self, function, callback = None, *args, **kwargs):
+	def addJob(self, function, callback=None, *args, **kwargs):
 		logger.debug(u"New job added: %s(%s, %s)"% (callback, args, kwargs))
 		if not self.started:
 			raise ThreadPoolException(u"Pool is not running.")
