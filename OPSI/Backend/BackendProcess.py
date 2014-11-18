@@ -60,6 +60,7 @@ class BackendProcessConfiguration(BaseConfiguration):
 		parser.add_option("--logFile", dest="logFile")
 		return parser
 
+
 class BackendDataExchangeProtocol(Protocol):
 
 	def dataReceived(self, data):
@@ -67,6 +68,7 @@ class BackendDataExchangeProtocol(Protocol):
 
 	def write(self, data):
 		self.transport.write(data)
+
 
 class OpsiBackendService(Service):
 
@@ -120,10 +122,10 @@ class OpsiBackendService(Service):
 		self.startReactor = startReactor
 
 		self._backend = BackendManager(
-			dispatchConfigFile = dispatchConfigFile,
-			backendConfigDir   = backendConfigDir,
-			extensionConfigDir = extensionConfigDir,
-			depotBackend       = bool(depotId)
+			dispatchConfigFile=dispatchConfigFile,
+			backendConfigDir=backendConfigDir,
+			extensionConfigDir=extensionConfigDir,
+			depotBackend=bool(depotId)
 		)
 
 		backendinfo = self._backend.backend_info()
@@ -199,6 +201,7 @@ class OpsiBackendService(Service):
 		if self._backendManager is not None:
 			return getattr(self._backendManager, name, None)
 
+
 class OpsiBackendProcessConnector(OpsiProcessConnector):
 
 	def __init__(self, socket, timeout=None, reactor=reactor):
@@ -219,6 +222,7 @@ class OpsiBackendProcessConnector(OpsiProcessConnector):
 		self._dataport = dataport
 		self.remote.attachDataPort(self._dataport)
 
+
 class OpsiBackendProcess(OpsiPyDaemon):
 
 	user = "opsiconfd"
@@ -226,23 +230,19 @@ class OpsiBackendProcess(OpsiPyDaemon):
 	configurationClass = BackendProcessConfiguration
 	allowRestart = False
 
-	def __init__(self, socket, args=[], reactor=reactor, logFile = logger.getLogFile()):
-
+	def __init__(self, socket, args=[], reactor=reactor, logFile=logger.getLogFile()):
 		self._socket = socket
 
 		args.extend(["--socket", socket, "--logFile", logFile])
-		OpsiPyDaemon.__init__(self, socket = socket, args = args, reactor = reactor)
+		OpsiPyDaemon.__init__(self, socket=socket, args=args, reactor=reactor)
 		self._uid, self._gid = None, None
 
 		self.check = ResetableLoop(self.checkRunning)
 
 	def start(self):
-
 		logger.info(u"Starting new backend worker process")
 		d = OpsiPyDaemon.start(self)
-
 		d.addCallback(lambda x: self._startCheck(30, False))
-
 		return d
 
 	def _startCheck(self, interval, now=False):
