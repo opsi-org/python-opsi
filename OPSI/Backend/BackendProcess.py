@@ -106,8 +106,9 @@ class OpsiBackendService(Service):
 		self._check.start(10)
 
 
-	def initialize(self, user, password, forceGroups, dispatchConfigFile, backendConfigDir,
-				extensionConfigDir, aclFile, depotId, postpath, messageBusNotifier, startReactor):
+	def initialize(self, user, password, forceGroups, dispatchConfigFile,
+			backendConfigDir, extensionConfigDir, aclFile, depotId, postpath,
+			messageBusNotifier, startReactor):
 
 		self.user = user
 		self.password = password
