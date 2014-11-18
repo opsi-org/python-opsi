@@ -627,11 +627,11 @@ def forceArchitectureList(var):
 
 
 def forceUniqueList(_list):
-	l = []
+	cleanedList = []
 	for entry in _list:
-		if entry not in l:
-			l.append(entry)
-	return l
+		if entry not in cleanedList:
+			cleanedList.append(entry)
+	return cleanedList
 
 
 def args(*vars, **typeVars):
