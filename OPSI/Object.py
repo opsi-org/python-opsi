@@ -766,13 +766,15 @@ class Config(Entity):
 	def _updateValues(self):
 		if self.possibleValues is None:
 			self.possibleValues = []
+
 		if self.possibleValues and self.defaultValues:
 			for defaultValue in self.defaultValues:
 				if defaultValue not in self.possibleValues:
 					self.defaultValues.remove(defaultValue)
 		elif not self.possibleValues and self.defaultValues:
 			self.possibleValues = self.defaultValues
-		if self.defaultValues and (len(self.defaultValues) > 1):
+
+		if self.defaultValues and len(self.defaultValues) > 1:
 			self.multiValue = True
 
 		if self.possibleValues is not None:
@@ -1337,7 +1339,8 @@ class ProductProperty(Entity):
 					self.defaultValues.remove(defaultValue)
 		elif not self.possibleValues and self.defaultValues:
 			self.possibleValues = self.defaultValues
-		if self.defaultValues and (len(self.defaultValues) > 1):
+
+		if self.defaultValues and len(self.defaultValues) > 1:
 			self.multiValue = True
 		if self.possibleValues is not None:
 			self.possibleValues.sort()
@@ -1377,7 +1380,7 @@ class ProductProperty(Entity):
 
 	def setMultiValue(self, multiValue):
 		self.multiValue = forceBool(multiValue)
-		if not self.defaultValues is None and (len(self.defaultValues) > 1):
+		if self.defaultValues is not None and len(self.defaultValues) > 1:
 			self.multiValue = True
 
 	@staticmethod
@@ -1464,7 +1467,7 @@ class BoolProductProperty(ProductProperty):
 
 	def setDefaultValues(self, defaultValues):
 		defaultValues = forceBoolList(defaultValues)
-		if (len(defaultValues) > 1):
+		if len(defaultValues) > 1:
 			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % defaultValues)
 		ProductProperty.setDefaultValues(self, defaultValues)
 
@@ -2225,7 +2228,7 @@ class OEMSoftwareLicense(SoftwareLicense):
 
 	def setMaxInstallations(self, maxInstallations):
 		maxInstallations = forceUnsignedInt(maxInstallations)
-		if (maxInstallations > 1):
+		if maxInstallations > 1:
 			raise BackendBadValueError(u"OEM software license max installations can only be set to 1")
 		self.maxInstallations = maxInstallations
 
@@ -2872,7 +2875,7 @@ class AuditHardware(Entity):
 					except Exception as e:
 						logger.debug2(e)
 						kwargs[attribute] = None
-				elif (attrType == 'double'):
+				elif attrType == 'double':
 					try:
 						kwargs[attribute] = forceFloat(value)
 					except Exception as e:
@@ -2903,7 +2906,7 @@ class AuditHardware(Entity):
 			hwClass = config['Class']['Opsi']
 			hardwareAttributes[hwClass] = {}
 			for value in config['Values']:
-				if (value["Scope"] == 'g'):
+				if value["Scope"] == 'g':
 					hardwareAttributes[hwClass][value['Opsi']] = value["Type"]
 		AuditHardware.hardwareAttributes = hardwareAttributes
 
@@ -2998,7 +3001,7 @@ class AuditHardwareOnHost(Relationship):
 					except Exception as e:
 						logger.debug2(e)
 						kwargs[attribute] = None
-				elif (attrType == 'double'):
+				elif attrType == 'double':
 					try:
 						kwargs[attribute] = forceFloat(value)
 					except Exception as e:
@@ -3082,9 +3085,10 @@ class AuditHardwareOnHost(Relationship):
 		attributes = AuditHardware.hardwareAttributes.get(self.getHardwareClass(), {}).keys()
 
 		for (attribute, value) in self.toHash():
-			if (attribute == 'type'):
+			if attribute == 'type':
 				continue
-			if attribute in ('hardwareClass',):
+
+			if attribute == 'hardwareClass':
 				auditHardwareHash[attribute] = value
 				continue
 			if attribute in attributes:
