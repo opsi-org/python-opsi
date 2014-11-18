@@ -2906,18 +2906,18 @@ class AuditHardware(Entity):
 		return attributes
 
 	def serialize(self):
-		hash = self.toHash()
-		return hash
+		return self.toHash()
 
 	@staticmethod
 	def fromHash(hash):
 		initHash = {}
-		for (k, v) in hash.items():
-			if (k == 'type'):
+		for (key, value) in hash.items():
+			if key == 'type':
 				continue
-			if type(k) is unicode:
-				k = str(k)
-			initHash[k] = v
+
+			if type(key) is unicode:
+				key = str(key)
+			initHash[key] = value
 		return AuditHardware(**initHash)
 
 	@staticmethod
@@ -3091,12 +3091,14 @@ class AuditHardwareOnHost(Relationship):
 	@staticmethod
 	def fromHash(hash):
 		initHash = {}
-		for (k, v) in hash.items():
-			if (k == 'type'):
+		for (key, value) in hash.items():
+			if key == 'type':
 				continue
-			if type(k) is unicode:
-				k = str(k)
-			initHash[k] = v
+
+			if type(key) is unicode:
+				key = str(key)
+
+			initHash[key] = value
 		return AuditHardwareOnHost(**initHash)
 
 	@staticmethod
