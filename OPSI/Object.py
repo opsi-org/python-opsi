@@ -368,9 +368,9 @@ class Object(Entity):
 		self.description = None
 		self.notes = None
 		self.setId(id)
-		if not description is None:
+		if description is not None:
 			self.setDescription(description)
-		if not notes is None:
+		if notes is not None:
 			self.setNotes(notes)
 
 	def setDefaults(self):
@@ -426,11 +426,12 @@ class Host(Object):
 		self.ipAddress = None
 		self.inventoryNumber = None
 		self.setId(id)
-		if not hardwareAddress is None:
+
+		if hardwareAddress is not None:
 			self.setHardwareAddress(hardwareAddress)
-		if not ipAddress is None:
+		if ipAddress is not None:
 			self.setIpAddress(ipAddress)
-		if not inventoryNumber is None:
+		if inventoryNumber is not None:
 			self.setInventoryNumber(inventoryNumber)
 
 	def setDefaults(self):
@@ -489,13 +490,14 @@ class OpsiClient(Host):
 		self.created = None
 		self.lastSeen = None
 		self.oneTimePassword = None
-		if not opsiHostKey is None:
+
+		if opsiHostKey is not None:
 			self.setOpsiHostKey(opsiHostKey)
-		if not created is None:
+		if created is not None:
 			self.setCreated(created)
-		if not lastSeen is None:
+		if lastSeen is not None:
 			self.setLastSeen(lastSeen)
-		if not oneTimePassword is None:
+		if oneTimePassword is not None:
 			self.setOneTimePassword(oneTimePassword)
 
 	def setDefaults(self):
@@ -570,25 +572,26 @@ class OpsiDepotserver(Host):
 		self.maxBandwidth = None
 		self.isMasterDepot = None
 		self.masterDepotId = None
-		if not opsiHostKey is None:
+
+		if opsiHostKey is not None:
 			self.setOpsiHostKey(opsiHostKey)
-		if not depotLocalUrl is None:
+		if depotLocalUrl is not None:
 			self.setDepotLocalUrl(depotLocalUrl)
-		if not depotRemoteUrl is None:
+		if depotRemoteUrl is not None:
 			self.setDepotRemoteUrl(depotRemoteUrl)
-		if not depotWebdavUrl is None:
+		if depotWebdavUrl is not None:
 			self.setDepotWebdavUrl(depotWebdavUrl)
-		if not repositoryLocalUrl is None:
+		if repositoryLocalUrl is not None:
 			self.setRepositoryLocalUrl(repositoryLocalUrl)
-		if not repositoryRemoteUrl is None:
+		if repositoryRemoteUrl is not None:
 			self.setRepositoryRemoteUrl(repositoryRemoteUrl)
-		if not networkAddress is None:
+		if networkAddress is not None:
 			self.setNetworkAddress(networkAddress)
-		if not maxBandwidth is None:
+		if maxBandwidth is not None:
 			self.setMaxBandwidth(maxBandwidth)
-		if not isMasterDepot is None:
+		if isMasterDepot is not None:
 			self.setIsMasterDepot(isMasterDepot)
-		if not masterDepotId is None:
+		if masterDepotId is not None:
 			self.setMasterDepotId(masterDepotId)
 
 	def setDefaults(self):
@@ -723,15 +726,15 @@ class Config(Entity):
 		self.multiValue = None
 
 		self.setId(id)
-		if not description is None:
+		if description is not None:
 			self.setDescription(description)
-		if not possibleValues is None:
+		if possibleValues is not None:
 			self.setPossibleValues(possibleValues)
-		if not defaultValues is None:
+		if defaultValues is not None:
 			self.setDefaultValues(defaultValues)
-		if not editable is None:
+		if editable is not None:
 			self.setEditable(editable)
-		if not multiValue is None:
+		if multiValue is not None:
 			self.setMultiValue(multiValue)
 
 	def setDefaults(self):
@@ -762,15 +765,17 @@ class Config(Entity):
 			self.possibleValues = []
 		if self.possibleValues and self.defaultValues:
 			for defaultValue in self.defaultValues:
-				if not defaultValue in self.possibleValues:
+				if defaultValue not in self.possibleValues:
 					self.defaultValues.remove(defaultValue)
 		elif not self.possibleValues and self.defaultValues:
 			self.possibleValues = self.defaultValues
 		if self.defaultValues and (len(self.defaultValues) > 1):
 			self.multiValue = True
-		if not self.possibleValues is None:
+
+		if self.possibleValues is not None:
 			self.possibleValues.sort()
-		if not self.defaultValues is None:
+
+		if self.defaultValues is not None:
 			self.defaultValues.sort()
 
 	def getPossibleValues(self):
@@ -836,7 +841,7 @@ class UnicodeConfig(Config):
 
 		if possibleValues is not None:
 			self.setPossibleValues(possibleValues)
-		if not defaultValues is None:
+		if defaultValues is not None:
 			self.setDefaultValues(defaultValues)
 
 	def setDefaults(self):
@@ -912,7 +917,8 @@ class ConfigState(Relationship):
 		self.values = None
 		self.setConfigId(configId)
 		self.setObjectId(objectId)
-		if not values is None:
+
+		if values is not None:
 			self.setValues(values)
 
 	def setDefaults(self):
@@ -984,35 +990,36 @@ class Product(Entity):
 		self.setId(id)
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
-		if not name is None:
+
+		if name is not None:
 			self.setName(name)
-		if not licenseRequired is None:
+		if licenseRequired is not None:
 			self.setLicenseRequired(licenseRequired)
-		if not setupScript is None:
+		if setupScript is not None:
 			self.setSetupScript(setupScript)
-		if not uninstallScript is None:
+		if uninstallScript is not None:
 			self.setUninstallScript(uninstallScript)
-		if not updateScript is None:
+		if updateScript is not None:
 			self.setUpdateScript(updateScript)
-		if not alwaysScript is None:
+		if alwaysScript is not None:
 			self.setAlwaysScript(alwaysScript)
-		if not onceScript is None:
+		if onceScript is not None:
 			self.setOnceScript(onceScript)
-		if not customScript is None:
+		if customScript is not None:
 			self.setCustomScript(customScript)
-		if not userLoginScript is None:
+		if userLoginScript is not None:
 			self.setUserLoginScript(userLoginScript)
-		if not priority is None:
+		if priority is not None:
 			self.setPriority(priority)
-		if not description is None:
+		if description is not None:
 			self.setDescription(description)
-		if not advice is None:
+		if advice is not None:
 			self.setAdvice(advice)
-		if not changelog is None:
+		if changelog is not None:
 			self.setChangelog(changelog)
-		if not productClassIds is None:
+		if productClassIds is not None:
 			self.setProductClassIds(productClassIds)
-		if not windowsSoftwareIds is None:
+		if windowsSoftwareIds is not None:
 			self.setWindowsSoftwareIds(windowsSoftwareIds)
 
 	def setDefaults(self):
@@ -1262,15 +1269,16 @@ class ProductProperty(Entity):
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
 		self.setPropertyId(propertyId)
-		if not description is None:
+
+		if description is not None:
 			self.setDescription(description)
-		if not possibleValues is None:
+		if possibleValues is not None:
 			self.setPossibleValues(possibleValues)
-		if not defaultValues is None:
+		if defaultValues is not None:
 			self.setDefaultValues(defaultValues)
-		if not editable is None:
+		if editable is not None:
 			self.setEditable(editable)
-		if not multiValue is None:
+		if multiValue is not None:
 			self.setMultiValue(multiValue)
 
 	def setDefaults(self):
@@ -1327,9 +1335,9 @@ class ProductProperty(Entity):
 			self.possibleValues = self.defaultValues
 		if self.defaultValues and (len(self.defaultValues) > 1):
 			self.multiValue = True
-		if not self.possibleValues is None:
+		if self.possibleValues is not None:
 			self.possibleValues.sort()
-		if not self.defaultValues is None:
+		if self.defaultValues is not None:
 			self.defaultValues.sort()
 
 	def getPossibleValues(self):
@@ -1398,9 +1406,9 @@ class UnicodeProductProperty(ProductProperty):
 
 		self.possibleValues = None
 		self.defaultValues = None
-		if not possibleValues is None:
+		if possibleValues is not None:
 			self.setPossibleValues(possibleValues)
-		if not defaultValues is None:
+		if defaultValues is not None:
 			self.setDefaultValues(defaultValues)
 
 	def setDefaults(self):
@@ -1490,15 +1498,16 @@ class ProductDependency(Relationship):
 		self.setPackageVersion(packageVersion)
 		self.setProductAction(productAction)
 		self.setRequiredProductId(requiredProductId)
-		if not requiredProductVersion is None:
+
+		if requiredProductVersion is not None:
 			self.setRequiredProductVersion(requiredProductVersion)
-		if not requiredPackageVersion is None:
+		if requiredPackageVersion is not None:
 			self.setRequiredPackageVersion(requiredPackageVersion)
-		if not requiredAction is None:
+		if requiredAction is not None:
 			self.setRequiredAction(requiredAction)
-		if not requiredInstallationStatus is None:
+		if requiredInstallationStatus is not None:
 			self.setRequiredInstallationStatus(requiredInstallationStatus)
-		if not requirementType is None:
+		if requirementType is not None:
 			self.setRequirementType(requirementType)
 
 	def setDefaults(self):
@@ -1593,7 +1602,7 @@ class ProductOnDepot(Relationship):
 		self.setProductVersion(productVersion)
 		self.setPackageVersion(packageVersion)
 		self.setDepotId(depotId)
-		if not locked is None:
+		if locked is not None:
 			self.setLocked(locked)
 
 	def setDefaults(self):
@@ -1676,25 +1685,26 @@ class ProductOnClient(Relationship):
 		self.setProductId(productId)
 		self.setProductType(productType)
 		self.setClientId(clientId)
-		if not targetConfiguration is None:
+
+		if targetConfiguration is not None:
 			self.setTargetConfiguration(targetConfiguration)
-		if not installationStatus is None:
+		if installationStatus is not None:
 			self.setInstallationStatus(installationStatus)
-		if not actionRequest is None:
+		if actionRequest is not None:
 			self.setActionRequest(actionRequest)
-		if not lastAction is None:
+		if lastAction is not None:
 			self.setLastAction(lastAction)
-		if not actionProgress is None:
+		if actionProgress is not None:
 			self.setActionProgress(actionProgress)
-		if not actionResult is None:
+		if actionResult is not None:
 			self.setActionResult(actionResult)
-		if not productVersion is None:
+		if productVersion is not None:
 			self.setProductVersion(productVersion)
-		if not packageVersion is None:
+		if packageVersion is not None:
 			self.setPackageVersion(packageVersion)
-		if not modificationTime is None:
+		if modificationTime is not None:
 			self.setModificationTime(modificationTime)
-		if not actionSequence is None:
+		if actionSequence is not None:
 			self.setActionSequence(actionSequence)
 
 	def setDefaults(self):
@@ -1810,7 +1820,8 @@ class ProductPropertyState(Relationship):
 		self.setProductId(productId)
 		self.setPropertyId(propertyId)
 		self.setObjectId(objectId)
-		if not values is None:
+
+		if values is not None:
 			self.setValues(values)
 
 	def setDefaults(self):
@@ -1869,7 +1880,8 @@ class Group(Object):
 		Object.__init__(self, id, description, notes)
 		self.parentGroupId = None
 		self.setId(id)
-		if not parentGroupId is None:
+
+		if parentGroupId is not None:
 			self.setParentGroupId(parentGroupId)
 
 	def setDefaults(self):
@@ -2009,17 +2021,18 @@ class LicenseContract(Entity):
 		self.notificationDate = None
 		self.expirationDate = None
 		self.setId(id)
-		if not description is None:
+
+		if description is not None:
 			self.setDescription(description)
-		if not notes is None:
+		if notes is not None:
 			self.setNotes(notes)
-		if not partner is None:
+		if partner is not None:
 			self.setPartner(partner)
-		if not conclusionDate is None:
+		if conclusionDate is not None:
 			self.setConclusionDate(conclusionDate)
-		if not notificationDate is None:
+		if notificationDate is not None:
 			self.setNotificationDate(notificationDate)
-		if not conclusionDate is None:
+		if conclusionDate is not None:
 			self.setExpirationDate(expirationDate)
 
 	def setDefaults(self):
@@ -2108,11 +2121,12 @@ class SoftwareLicense(Entity):
 		self.expirationDate = None
 		self.setId(id)
 		self.setLicenseContractId(licenseContractId)
-		if not maxInstallations is None:
+
+		if maxInstallations is not None:
 			self.setMaxInstallations(maxInstallations)
-		if not boundToHost is None:
+		if boundToHost is not None:
 			self.setBoundToHost(boundToHost)
-		if not expirationDate is None:
+		if expirationDate is not None:
 			self.setExpirationDate(expirationDate)
 
 	def setDefaults(self):
@@ -2288,9 +2302,10 @@ class LicensePool(Entity):
 		self.description = None
 		self.productIds = None
 		self.setId(id)
-		if not description is None:
+
+		if description is not None:
 			self.setDescription(description)
-		if not productIds is None:
+		if productIds is not None:
 			self.setProductIds(productIds)
 
 	def setDefaults(self):
@@ -2422,11 +2437,13 @@ class SoftwareLicenseToLicensePool(Relationship):
 		self.licenseKey = None
 		self.setSoftwareLicenseId(softwareLicenseId)
 		self.setLicensePoolId(licensePoolId)
-		if not licenseKey is None:
+
+		if licenseKey is not None:
 			self.setLicenseKey(licenseKey)
 
 	def setDefaults(self):
 		Relationship.setDefaults(self)
+
 		if self.licenseKey is None:
 			self.setLicenseKey(u'')
 
@@ -2476,13 +2493,15 @@ class LicenseOnClient(Relationship):
 		self.setSoftwareLicenseId(softwareLicenseId)
 		self.setLicensePoolId(licensePoolId)
 		self.setClientId(clientId)
-		if not licenseKey is None:
+
+		if licenseKey is not None:
 			self.setLicenseKey(licenseKey)
-		if not notes is None:
+		if notes is not None:
 			self.setNotes(notes)
 
 	def setDefaults(self):
 		Relationship.setDefaults(self)
+
 		if self.licenseKey is None:
 			self.setLicenseKey(u'')
 		if self.notes is None:
@@ -2552,13 +2571,14 @@ class AuditSoftware(Entity):
 		self.setSubVersion(subVersion)
 		self.setLanguage(language)
 		self.setArchitecture(architecture)
-		if not windowsSoftwareId is None:
+
+		if windowsSoftwareId is not None:
 			self.setWindowsSoftwareId(windowsSoftwareId)
-		if not windowsDisplayName is None:
+		if windowsDisplayName is not None:
 			self.setWindowsDisplayName(windowsDisplayName)
-		if not windowsDisplayVersion is None:
+		if windowsDisplayVersion is not None:
 			self.setWindowsDisplayVersion(windowsDisplayVersion)
-		if not installSize is None:
+		if installSize is not None:
 			self.setInstallSize(installSize)
 
 	def setDefaults(self):
@@ -2665,25 +2685,27 @@ class AuditSoftwareOnClient(Relationship):
 		self.setLanguage(language)
 		self.setArchitecture(architecture)
 		self.setClientId(clientId)
-		if not uninstallString is None:
+
+		if uninstallString is not None:
 			self.setUninstallString(uninstallString)
-		if not binaryName is None:
+		if binaryName is not None:
 			self.setBinaryName(binaryName)
-		if not firstseen is None:
+		if firstseen is not None:
 			self.setFirstseen(firstseen)
-		if not lastseen is None:
+		if lastseen is not None:
 			self.setLastseen(lastseen)
-		if not state is None:
+		if state is not None:
 			self.setState(state)
-		if not usageFrequency is None:
+		if usageFrequency is not None:
 			self.setUsageFrequency(usageFrequency)
-		if not lastUsed is None:
+		if lastUsed is not None:
 			self.setLastUsed(lastUsed)
-		if not licenseKey is None:
+		if licenseKey is not None:
 			self.setLicenseKey(licenseKey)
 
 	def setDefaults(self):
 		Relationship.setDefaults(self)
+
 		if self.uninstallString is None:
 			self.setUninstallString(u"")
 		if self.binaryName is None:
@@ -2985,11 +3007,11 @@ class AuditHardwareOnHost(Relationship):
 					kwargs[attribute] = forceUnicode(value).strip()
 
 		self.__dict__.update(kwargs)
-		if not firstseen is None:
+		if firstseen is not None:
 			self.setFirstseen(firstseen)
-		if not lastseen is None:
+		if lastseen is not None:
 			self.setLastseen(lastseen)
-		if not state is None:
+		if state is not None:
 			self.setState(state)
 
 		if hasattr(self, 'vendorId') and self.vendorId:
@@ -3130,29 +3152,30 @@ class BootConfiguration(Relationship):
 		self.osName = None
 		self.setName(name)
 		self.setClientId(clientId)
-		if not priority is None:
+
+		if priority is not None:
 			self.setPriority(priority)
-		if not description is None:
+		if description is not None:
 			self.setDescription(description)
-		if not netbootProductId is None:
+		if netbootProductId is not None:
 			self.setNetbootProductId(netbootProductId)
-		if not pxeTemplate is None:
+		if pxeTemplate is not None:
 			self.setPxeTemplate(pxeTemplate)
-		if not options is None:
+		if options is not None:
 			self.setOptions(options)
-		if not disk is None:
+		if disk is not None:
 			self.setDisk(disk)
-		if not partition is None:
+		if partition is not None:
 			self.setPartition(partition)
-		if not active is None:
+		if active is not None:
 			self.setActive(active)
-		if not deleteAfter is None:
+		if deleteAfter is not None:
 			self.setDeleteAfter(deleteAfter)
-		if not deactivateAfter is None:
+		if deactivateAfter is not None:
 			self.setDeactivateAfter(deactivateAfter)
-		if not accessCount is None:
+		if accessCount is not None:
 			self.setAccessCount(accessCount)
-		if not osName is None:
+		if osName is not None:
 			self.setOsName(osName)
 
 	def setDefaults(self):
