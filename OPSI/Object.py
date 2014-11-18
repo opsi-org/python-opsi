@@ -787,22 +787,14 @@ class Config(Entity):
 		return self.possibleValues
 
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = []
-		# Remove duplicates
-		for value in forceList(possibleValues):
-			if not value in self.possibleValues:
-				self.possibleValues.append(value)
+		self.possibleValues = [value for value in set(forceList(possibleValues))]
 		self._updateValues()
 
 	def getDefaultValues(self):
 		return self.defaultValues
 
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = []
-		# Remove duplicates
-		for value in forceList(defaultValues):
-			if not value in self.defaultValues:
-				self.defaultValues.append(value)
+		self.defaultValues = [value for value in set(forceList(defaultValues))]
 		self._updateValues()
 
 	def getEditable(self):
@@ -891,13 +883,8 @@ class BoolConfig(Config):
 		Config.setPossibleValues(self, [ True, False ])
 
 	def setDefaultValues(self, defaultValues):
-		dv = []
-		# Remove duplicates
-		for value in forceBoolList(defaultValues):
-			if not value in dv:
-				dv.append(value)
-		defaultValues = dv
-		if (len(defaultValues) > 1):
+		defaultValues = [value for value in set(forceBoolList(defaultValues))]
+		if len(defaultValues) > 1:
 			raise BackendBadValueError(u"Bool config cannot have multiple default values: %s" % defaultValues)
 		Config.setDefaultValues(self, defaultValues)
 
@@ -1351,22 +1338,14 @@ class ProductProperty(Entity):
 		return self.possibleValues
 
 	def setPossibleValues(self, possibleValues):
-		self.possibleValues = []
-		# Remove duplicates
-		for value in forceList(possibleValues):
-			if not value in self.possibleValues:
-				self.possibleValues.append(value)
+		self.possibleValues = [value for value in set(forceList(possibleValues))]
 		self._updateValues()
 
 	def getDefaultValues(self):
 		return self.defaultValues
 
 	def setDefaultValues(self, defaultValues):
-		self.defaultValues = []
-		# Remove duplicates
-		for value in forceList(defaultValues):
-			if not value in self.defaultValues:
-				self.defaultValues.append(value)
+		self.defaultValues = [value for value in set(forceList(defaultValues))]
 		self._updateValues()
 
 	def getEditable(self):
@@ -3081,8 +3060,8 @@ class AuditHardwareOnHost(Relationship):
 		self.state = forceAuditState(state)
 
 	def toAuditHardware(self):
-		auditHardwareHash = { 'type': 'AuditHardware' }
-		attributes = AuditHardware.hardwareAttributes.get(self.getHardwareClass(), {}).keys()
+		auditHardwareHash = {'type': 'AuditHardware'}
+		attributes = set(AuditHardware.hardwareAttributes.get(self.getHardwareClass(), {}).keys())
 
 		for (attribute, value) in self.toHash():
 			if attribute == 'type':
@@ -3091,6 +3070,7 @@ class AuditHardwareOnHost(Relationship):
 			if attribute == 'hardwareClass':
 				auditHardwareHash[attribute] = value
 				continue
+
 			if attribute in attributes:
 				auditHardwareHash[attribute] = value
 
