@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.5.16'
 
 import base64
 import codecs
@@ -282,7 +282,7 @@ def objectToBeautifiedText(obj, level=0):
 	if level == 0:
 		obj = serialize(obj)
 
-	indent = u' ' * (level * 10)
+	indent = u' ' * (4 * level)  # indent with four spaces
 	text = []
 	append = text.append
 

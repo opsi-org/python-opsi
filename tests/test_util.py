@@ -143,50 +143,50 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
 
         expected = u"""\
 [
-          {
-          "onceScript" : "once.ins",
-          "windowsSoftwareIds" : null,
-          "description" : "asdf",
-          "advice" : "lolnope",
-          "alwaysScript" : "always.ins",
-          "updateScript" : "update.ins",
-          "productClassIds" : null,
-          "id" : "htmltestproduct",
-          "licenseRequired" : false,
-          "ident" : "htmltestproduct;3.1;1",
-          "name" : "Product HTML Test",
-          "changelog" : null,
-          "customScript" : null,
-          "uninstallScript" : "uninstall.ins",
-          "userLoginScript" : null,
-          "priority" : 0,
-          "productVersion" : "3.1",
-          "packageVersion" : "1",
-          "type" : "LocalbootProduct",
-          "setupScript" : "setup.ins"
-          },
-          {
-          "onceScript" : "once.ins",
-          "windowsSoftwareIds" : null,
-          "description" : "asdf",
-          "advice" : "lolnope",
-          "alwaysScript" : "always.ins",
-          "updateScript" : "update.ins",
-          "productClassIds" : null,
-          "id" : "htmltestproduct",
-          "licenseRequired" : false,
-          "ident" : "htmltestproduct;3.1;1",
-          "name" : "Product HTML Test",
-          "changelog" : null,
-          "customScript" : null,
-          "uninstallScript" : "uninstall.ins",
-          "userLoginScript" : null,
-          "priority" : 0,
-          "productVersion" : "3.1",
-          "packageVersion" : "1",
-          "type" : "LocalbootProduct",
-          "setupScript" : "setup.ins"
-          }
+    {
+    "onceScript" : "once.ins",
+    "windowsSoftwareIds" : null,
+    "description" : "asdf",
+    "advice" : "lolnope",
+    "alwaysScript" : "always.ins",
+    "updateScript" : "update.ins",
+    "productClassIds" : null,
+    "id" : "htmltestproduct",
+    "licenseRequired" : false,
+    "ident" : "htmltestproduct;3.1;1",
+    "name" : "Product HTML Test",
+    "changelog" : null,
+    "customScript" : null,
+    "uninstallScript" : "uninstall.ins",
+    "userLoginScript" : null,
+    "priority" : 0,
+    "productVersion" : "3.1",
+    "packageVersion" : "1",
+    "type" : "LocalbootProduct",
+    "setupScript" : "setup.ins"
+    },
+    {
+    "onceScript" : "once.ins",
+    "windowsSoftwareIds" : null,
+    "description" : "asdf",
+    "advice" : "lolnope",
+    "alwaysScript" : "always.ins",
+    "updateScript" : "update.ins",
+    "productClassIds" : null,
+    "id" : "htmltestproduct",
+    "licenseRequired" : false,
+    "ident" : "htmltestproduct;3.1;1",
+    "name" : "Product HTML Test",
+    "changelog" : null,
+    "customScript" : null,
+    "uninstallScript" : "uninstall.ins",
+    "userLoginScript" : null,
+    "priority" : 0,
+    "productVersion" : "3.1",
+    "packageVersion" : "1",
+    "type" : "LocalbootProduct",
+    "setupScript" : "setup.ins"
+    }
 ]\
 """
         self.maxDiff = None
@@ -198,10 +198,10 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
     def testFormattingListOfEmptyLists(self):
         expected = u"""\
 [
-          [
-          ],
-          [
-          ]
+    [
+    ],
+    [
+    ]
 ]\
 """
         self.assertEquals(expected, objectToBeautifiedText([[],[]]))
@@ -210,8 +210,8 @@ class ObjectToBeautifiedTextTestCase(unittest.TestCase):
         self.assertEquals('{\n}', objectToBeautifiedText({}))
 
         expected = u"""\
-          {
-          }\
+    {
+    }\
 """
         self.assertEquals(expected, objectToBeautifiedText({}, level=1))
 
