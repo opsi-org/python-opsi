@@ -265,7 +265,7 @@ class BaseObject(object):
 		return not self.__eq__(other)
 
 	def __unicode__(self):
-		return u"<%s>" % (self.getType())
+		return u"<{0}>".format(self.getType())
 
 	def __str__(self):
 		return self.__unicode__().encode("ascii", "replace")
@@ -409,7 +409,7 @@ class Object(Entity):
 		return fromJson(jsonString, 'Object')
 
 	def __unicode__(self):
-		return u"<%s id '%s'>" % (self.getType(), self.id)
+		return u"<{0} id='{1}'>".format(self.getType(), self.id)
 
 Entity.subClasses['Object'] = Object
 
@@ -2938,13 +2938,14 @@ class AuditHardware(Entity):
 		return fromJson(jsonString, 'AuditHardware')
 
 	def __unicode__(self):
-		res = u"<%s" % self.getType()
+		infos = [self.getType()]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			res += u", hardwareClass '%s'" % hardwareClass
+			infos.append("hardwareClass '{0}'".format(hardwareClass))
 		if hasattr(self, 'name'):
-			res += u", name '%s'" % self.name
-		return res + u">"
+			infos.append("name '{0}'".format(self.name))
+
+		return "<{0}>".format(', '.join(infos))
 
 Entity.subClasses['AuditHardware'] = AuditHardware
 
@@ -3113,17 +3114,16 @@ class AuditHardwareOnHost(Relationship):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
 	def __unicode__(self):
-		additional = []
+		additional = ["hostId='{0}'".format(self.hostId)]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
 			additional.append(u"hardwareClass='{0}'".format(hardwareClass))
 		if hasattr(self, 'name'):
 			additional.append(u"name='{0}'".format(forceUnicode(self.name)))
 
-		return u"<{type} hostId='{host}'{additional}>".format(
+		return u"<{type} {additional}>".format(
 			type=self.getType(),
-			host=self.hostId,
-			additional=u' {0}'.format(u', '.join(additional)) if additional else u''
+			additional=u', '.join(additional)
 		)
 
 
