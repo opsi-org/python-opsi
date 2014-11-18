@@ -217,8 +217,7 @@ def forceOpsiTimestamp(var):
 fqdnRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceFqdn(var):
 	var = forceObjectId(var)
-	match = re.search(fqdnRegex, var)
-	if not match:
+	if not fqdnRegex.search(var):
 		raise ValueError(u"Bad fqdn: '%s'" % var)
 	if var.endswith('.'):
 		var = var[:-1]
@@ -305,8 +304,7 @@ def forceOpsiHostKey(var):
 productVersionRegex = re.compile('^[a-z0-9\.]{1,32}$')
 def forceProductVersion(var):
 	var = forceUnicode(var)
-	match = re.search(productVersionRegex, var)
-	if not match:
+	if not productVersionRegex.search(var):
 		raise ValueError(u"Bad product version: '%s'" % var)
 	return var
 
@@ -318,8 +316,7 @@ def forceProductVersionList(var):
 packageVersionRegex = re.compile('^[a-z0-9\.]{1,16}$')
 def forcePackageVersion(var):
 	var = forceUnicode(var)
-	match = re.search(packageVersionRegex, var)
-	if not match:
+	if not packageVersionRegex.search(var):
 		raise ValueError(u"Bad package version: '%s'" % var)
 	return var
 
@@ -331,11 +328,7 @@ def forcePackageVersionList(var):
 productIdRegex = re.compile('^[a-z0-9-_\.]{1,128}$')
 def forceProductId(var):
 	var = forceObjectId(var)
-	# if (var.find('_') != -1):
-	# 	logger.warning(u"Replacing '_' with '-' in product id '%s'" % var)
-	# 	var = var.replace('_', '-')
-	match = re.search(productIdRegex, var)
-	if not match:
+	if not productIdRegex.search(var):
 		raise ValueError(u"Bad product id: '%s'" % var)
 	return var
 
@@ -347,8 +340,7 @@ def forceProductIdList(var):
 packageCustomNameRegex = re.compile('^[a-zA-Z0-9]+$')
 def forcePackageCustomName(var):
 	var = forceUnicodeLower(var)
-	match = re.search(packageCustomNameRegex, var)
-	if not match:
+	if not packageCustomNameRegex.search(var):
 		raise ValueError(u"Bad package custom name: '%s'" % var)
 	return var
 
@@ -356,19 +348,17 @@ def forcePackageCustomName(var):
 def forceProductType(var):
 	v = forceUnicodeLower(var)
 	if v in ('localboot', 'localbootproduct'):
-		var = u'LocalbootProduct'
+		return u'LocalbootProduct'
 	elif v in ('netboot', 'netbootproduct'):
-		var = u'NetbootProduct'
+		return u'NetbootProduct'
 	else:
 		raise ValueError(u"Unknown product type: '%s'" % var)
-	return var
 
 
 productPropertyIdRegex = re.compile('^\S+$')
 def forceProductPropertyId(var):
 	var = forceUnicodeLower(var)
-	match = re.search(productPropertyIdRegex, var)
-	if not match:
+	if not productPropertyIdRegex.search(var):
 		raise ValueError(u"Bad product property id: '%s'" % var)
 	return var
 
@@ -376,8 +366,7 @@ def forceProductPropertyId(var):
 configIdRegex = re.compile('^\S+$')
 def forceConfigId(var):
 	var = forceUnicodeLower(var)
-	match = re.search(configIdRegex, var)
-	if not match:
+	if not configIdRegex.search(var):
 		raise ValueError(u"Bad config id: '%s'" % var)
 	return var
 
@@ -504,8 +493,7 @@ def forceObjectClassList(var, objectClass):
 groupIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceGroupId(var):
 	var = forceObjectId(var)
-	match = re.search(groupIdRegex, var)
-	if not match:
+	if not groupIdRegex.search(var):
 		raise ValueError(u"Bad group id: '%s'" % var)
 	return var
 
@@ -534,8 +522,7 @@ def forceGroupIdList(var):
 objectIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceObjectId(var):
 	var = forceUnicodeLower(var).strip()
-	match = re.search(objectIdRegex, var)
-	if not match:
+	if not objectIdRegex.search(var):
 		raise ValueError(u"Bad object id: '%s'" % var)
 	return var
 
@@ -547,8 +534,7 @@ def forceObjectIdList(var):
 emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
-	match = re.search(emailRegex, var)
-	if not match:
+	if not emailRegex.search(var):
 		raise ValueError(u"Bad email address: '%s'" % var)
 	return var
 
@@ -556,8 +542,7 @@ def forceEmailAddress(var):
 domainRegex = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceDomain(var):
 	var = forceUnicodeLower(var)
-	match = re.search(domainRegex, var)
-	if not match:
+	if not domainRegex.search(var):
 		raise ValueError(u"Bad domain: '%s'" % var)
 	return var
 
@@ -565,8 +550,7 @@ def forceDomain(var):
 hostnameRegex = re.compile('^[a-z0-9][a-z0-9\-]*$')
 def forceHostname(var):
 	var = forceUnicodeLower(var)
-	match = re.search(hostnameRegex, var)
-	if not match:
+	if not hostnameRegex.search(var):
 		raise ValueError(u"Bad hostname: '%s'" % var)
 	return var
 
@@ -574,8 +558,7 @@ def forceHostname(var):
 licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicenseContractId(var):
 	var = forceUnicodeLower(var)
-	match = re.search(licenseContractIdRegex, var)
-	if not match:
+	if not licenseContractIdRegex.search(var):
 		raise ValueError(u"Bad license contract id: '%s'" % var)
 	return var
 
@@ -587,8 +570,7 @@ def forceLicenseContractIdList(var):
 softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceSoftwareLicenseId(var):
 	var = forceUnicodeLower(var)
-	match = re.search(softwareLicenseIdRegex, var)
-	if not match:
+	if not softwareLicenseIdRegex.search(var):
 		raise ValueError(u"Bad software license id: '%s'" % var)
 	return var
 
@@ -600,8 +582,7 @@ def forceSoftwareLicenseIdList(var):
 licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicensePoolId(var):
 	var = forceUnicodeLower(var)
-	match = re.search(licensePoolIdRegex, var)
-	if not match:
+	if not licensePoolIdRegex.search(var):
 		raise ValueError(u"Bad license pool id: '%s'" % var)
 	return var
 
