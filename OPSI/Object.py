@@ -208,12 +208,11 @@ class BaseObject(object):
 	def setDefaults(self):
 		pass
 
-	def emptyValues(self, keepAttributes = []):
-		keepAttributes = forceUnicodeList(keepAttributes)
+	def emptyValues(self, keepAttributes=[]):
+		keepAttributes = set(forceUnicodeList(keepAttributes))
 		for attribute in self.getIdentAttributes():
-			if not attribute in keepAttributes:
-				keepAttributes.append(attribute)
-		keepAttributes.append('type')
+			keepAttributes.add(attribute)
+		keepAttributes.add('type')
 
 		for attribute in self.__dict__.keys():
 			if not attribute in keepAttributes:
