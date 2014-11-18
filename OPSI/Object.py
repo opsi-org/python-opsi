@@ -247,8 +247,6 @@ class BaseObject(object):
 		return self._isGeneratedDefault
 
 	def toHash(self):
-		# FIXME: Do we need deepcopy here? slow!
-		# hash = pycopy.deepcopy(self.__dict__)
 		hash = dict(self.__dict__)
 		hash['type'] = self.getType()
 		return hash
