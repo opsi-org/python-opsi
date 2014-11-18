@@ -502,13 +502,11 @@ def forceGroupType(var):
 	lowercaseValue = forceUnicodeLower(var)
 
 	if lowercaseValue == 'hostgroup':
-		var = u'HostGroup'
+		return u'HostGroup'
 	elif lowercaseValue == 'productgroup':
-		var = u'ProductGroup'
+		return u'ProductGroup'
 	else:
 		raise ValueError(u"Unknown group type: '%s'" % var)
-
-	return var
 
 
 def forceGroupTypeList(var):
