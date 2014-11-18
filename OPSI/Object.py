@@ -240,7 +240,7 @@ class BaseObject(object):
 	def getType(self):
 		return unicode(self.__class__.__name__)
 
-	def setGeneratedDefault(self, flag = True):
+	def setGeneratedDefault(self, flag=True):
 		self._isGeneratedDefault = forceBool(flag)
 
 	def isGeneratedDefault(self):
@@ -293,7 +293,7 @@ class Entity(BaseObject):
 				kwargs[varname] = hash[varname]
 		return Class(**kwargs)
 
-	def clone(self, identOnly = False):
+	def clone(self, identOnly=False):
 		hash = {}
 		if identOnly:
 			identAttributes = self.getIdentAttributes()
@@ -419,7 +419,8 @@ class Host(Object):
 	foreignIdAttributes = Object.foreignIdAttributes + ['hostId']
 	backendMethodPrefix = 'host'
 
-	def __init__(self, id, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None):
+	def __init__(self, id, description=None, notes=None, hardwareAddress=None,
+				ipAddress=None, inventoryNumber=None):
 		Object.__init__(self, id, description, notes)
 		self.hardwareAddress = None
 		self.ipAddress = None
@@ -478,8 +479,12 @@ class OpsiClient(Host):
 	subClasses = {}
 	foreignIdAttributes = Host.foreignIdAttributes + ['clientId']
 
-	def __init__(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword = None, created=None, lastSeen=None):
-		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
+	def __init__(self, id, opsiHostKey=None, description=None, notes=None,
+				hardwareAddress=None, ipAddress=None, inventoryNumber=None,
+				oneTimePassword = None, created=None, lastSeen=None):
+
+		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress,
+			inventoryNumber)
 		self.opsiHostKey = None
 		self.created = None
 		self.lastSeen = None
@@ -546,10 +551,15 @@ class OpsiDepotserver(Host):
 	subClasses = {}
 	foreignIdAttributes = Host.foreignIdAttributes + ['depotId']
 
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
-		     isMasterDepot=None, masterDepotId=None):
-		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress, inventoryNumber)
+	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None,
+				depotRemoteUrl=None, depotWebdavUrl=None,
+				repositoryLocalUrl=None, repositoryRemoteUrl=None,
+				description=None, notes=None, hardwareAddress=None,
+				ipAddress=None, inventoryNumber=None, networkAddress=None,
+				maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+
+		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress,
+			inventoryNumber)
 		self.opsiHostKey = None
 		self.depotLocalUrl = None
 		self.depotRemoteUrl = None
@@ -668,11 +678,17 @@ class OpsiConfigserver(OpsiDepotserver):
 	subClasses = {}
 	foreignIdAttributes = OpsiDepotserver.foreignIdAttributes + ['serverId']
 
-	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None, depotWebdavUrl=None, repositoryLocalUrl=None, repositoryRemoteUrl=None,
-		     description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, networkAddress=None, maxBandwidth=None,
-		     isMasterDepot=None, masterDepotId=None):
-		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl, depotRemoteUrl, depotWebdavUrl, repositoryLocalUrl, repositoryRemoteUrl,
-		     description, notes, hardwareAddress, ipAddress, inventoryNumber, networkAddress, maxBandwidth, isMasterDepot, masterDepotId)
+	def __init__(self, id, opsiHostKey=None, depotLocalUrl=None,
+				depotRemoteUrl=None, depotWebdavUrl=None,
+				repositoryLocalUrl=None, repositoryRemoteUrl=None,
+				description=None, notes=None, hardwareAddress=None,
+				ipAddress=None, inventoryNumber=None, networkAddress=None,
+				maxBandwidth=None, isMasterDepot=None, masterDepotId=None):
+		OpsiDepotserver.__init__(self, id, opsiHostKey, depotLocalUrl,
+			depotRemoteUrl, depotWebdavUrl, repositoryLocalUrl,
+			repositoryRemoteUrl, description, notes, hardwareAddress,
+			ipAddress, inventoryNumber, networkAddress, maxBandwidth,
+			isMasterDepot, masterDepotId)
 
 	def setDefaults(self):
 		if self.isMasterDepot is None:
@@ -698,7 +714,8 @@ class Config(Entity):
 	foreignIdAttributes = Object.foreignIdAttributes + ['configId']
 	backendMethodPrefix = 'config'
 
-	def __init__(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def __init__(self, id, description=None, possibleValues=None,
+				defaultValues=None, editable=None, multiValue=None):
 		self.description = None
 		self.possibleValues = None
 		self.defaultValues = None
@@ -811,9 +828,13 @@ Entity.subClasses['Config'] = Config
 class UnicodeConfig(Config):
 	subClasses = {}
 
-	def __init__(self, id, description='', possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		Config.__init__(self, id, description, possibleValues, defaultValues, editable, multiValue)
-		if not possibleValues is None:
+	def __init__(self, id, description='', possibleValues=None,
+				defaultValues=None, editable=None, multiValue=None):
+
+		Config.__init__(self, id, description, possibleValues, defaultValues,
+			editable, multiValue)
+
+		if possibleValues is not None:
 			self.setPossibleValues(possibleValues)
 		if not defaultValues is None:
 			self.setDefaultValues(defaultValues)
@@ -847,8 +868,9 @@ Config.subClasses['UnicodeConfig'] = UnicodeConfig
 class BoolConfig(Config):
 	subClasses = {}
 
-	def __init__(self, id, description = None, defaultValues = None):
-		Config.__init__(self, id, description, [ True, False ], defaultValues, False, False)
+	def __init__(self, id, description=None, defaultValues=None):
+		Config.__init__(self, id, description, [True, False], defaultValues,
+			False, False)
 
 	def setDefaults(self):
 		if self.defaultValues is None:
@@ -938,9 +960,12 @@ class Product(Entity):
 	foreignIdAttributes = Object.foreignIdAttributes + ['productId']
 	backendMethodPrefix = 'product'
 
-	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None, userLoginScript=None,
-		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
+	def __init__(self, id, productVersion, packageVersion, name=None,
+				licenseRequired=None, setupScript=None, uninstallScript=None,
+				updateScript=None, alwaysScript=None, onceScript=None,
+				customScript=None, userLoginScript=None, priority=None,
+				description=None, advice=None, changelog=None,
+				productClassIds=None, windowsSoftwareIds=None):
 		self.name = None
 		self.licenseRequired = None
 		self.setupScript = None
@@ -1152,12 +1177,17 @@ Entity.subClasses['Product'] = Product
 class LocalbootProduct(Product):
 	subClasses = {}
 
-	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None, userLoginScript=None,
-		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None):
-		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
-		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, userLoginScript,
-		     priority, description, advice, changelog, productClassIds, windowsSoftwareIds)
+	def __init__(self, id, productVersion, packageVersion, name=None,
+				licenseRequired=None, setupScript=None, uninstallScript=None,
+				updateScript=None, alwaysScript=None, onceScript=None,
+				customScript=None, userLoginScript=None, priority=None,
+				description=None, advice=None, changelog=None,
+				productClassIds=None, windowsSoftwareIds=None):
+
+		Product.__init__(self, id, productVersion, packageVersion, name,
+			licenseRequired,  setupScript, uninstallScript, updateScript,
+			alwaysScript, onceScript, customScript, userLoginScript, priority,
+			description, advice, changelog, productClassIds, windowsSoftwareIds)
 
 	def setDefaults(self):
 		Product.setDefaults(self)
@@ -1178,13 +1208,17 @@ Product.subClasses['LocalbootProduct'] = LocalbootProduct
 class NetbootProduct(Product):
 	subClasses = {}
 
-	def __init__(self, id, productVersion, packageVersion, name=None, licenseRequired=None,
-		     setupScript=None, uninstallScript=None, updateScript=None, alwaysScript=None, onceScript=None, customScript=None,
-		     priority=None, description=None, advice=None, changelog=None, productClassIds=None, windowsSoftwareIds=None,
-		     pxeConfigTemplate=u''):
-		Product.__init__(self, id, productVersion, packageVersion, name, licenseRequired,
-		     setupScript, uninstallScript, updateScript, alwaysScript, onceScript, customScript, None,
-		     priority, description, advice, changelog, productClassIds, windowsSoftwareIds)
+	def __init__(self, id, productVersion, packageVersion, name=None,
+				licenseRequired=None, setupScript=None, uninstallScript=None,
+				updateScript=None, alwaysScript=None, onceScript=None,
+				customScript=None, priority=None, description=None,
+				advice=None, changelog=None, productClassIds=None,
+				windowsSoftwareIds=None, pxeConfigTemplate=u''):
+
+		Product.__init__(self, id, productVersion, packageVersion, name,
+			licenseRequired, setupScript, uninstallScript, updateScript,
+			alwaysScript, onceScript, customScript, None, priority,
+			description, advice, changelog, productClassIds, windowsSoftwareIds)
 		self.setPxeConfigTemplate(pxeConfigTemplate)
 
 	def setDefaults(self):
@@ -1216,7 +1250,9 @@ class ProductProperty(Entity):
 	subClasses = {}
 	backendMethodPrefix = 'productProperty'
 
-	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
+	def __init__(self, productId, productVersion, packageVersion, propertyId,
+		description=None, possibleValues=None, defaultValues=None,
+		editable=None, multiValue=None):
 		self.description = None
 		self.possibleValues = None
 		self.defaultValues = None
@@ -1352,8 +1388,14 @@ Entity.subClasses['ProductProperty'] = ProductProperty
 class UnicodeProductProperty(ProductProperty):
 	subClasses = {}
 
-	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		ProductProperty.__init__(self, productId, productVersion, packageVersion, propertyId, description, possibleValues, defaultValues, editable, multiValue)
+	def __init__(self, productId, productVersion, packageVersion, propertyId,
+				description=None, possibleValues=None, defaultValues=None,
+				editable=None, multiValue=None):
+
+		ProductProperty.__init__(self, productId, productVersion,
+			packageVersion, propertyId, description, possibleValues,
+			defaultValues, editable, multiValue)
+
 		self.possibleValues = None
 		self.defaultValues = None
 		if not possibleValues is None:
@@ -1390,9 +1432,14 @@ ProductProperty.subClasses['UnicodeProductProperty'] = UnicodeProductProperty
 class BoolProductProperty(ProductProperty):
 	subClasses = {}
 
-	def __init__(self, productId, productVersion, packageVersion, propertyId, description=None, defaultValues=None):
-		ProductProperty.__init__(self, productId, productVersion, packageVersion, propertyId, description, [ True, False ], defaultValues, False, False)
-		if not self.defaultValues is None and (len(self.defaultValues) > 1):
+	def __init__(self, productId, productVersion, packageVersion, propertyId,
+				description=None, defaultValues=None):
+
+		ProductProperty.__init__(self, productId, productVersion,
+			packageVersion, propertyId, description, [True, False],
+			defaultValues, False, False)
+
+		if self.defaultValues is not None and len(self.defaultValues) > 1:
 			raise BackendBadValueError(u"Bool product property cannot have multiple default values: %s" % self.defaultValues)
 
 	def setDefaults(self):
@@ -1429,7 +1476,10 @@ class ProductDependency(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productDependency'
 
-	def __init__(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
+	def __init__(self, productId, productVersion, packageVersion,
+				productAction, requiredProductId, requiredProductVersion=None,
+				requiredPackageVersion=None, requiredAction=None,
+				requiredInstallationStatus=None, requirementType=None):
 		self.requiredProductVersion = None
 		self.requiredPackageVersion = None
 		self.requiredAction = None
@@ -1535,7 +1585,8 @@ class ProductOnDepot(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnDepot'
 
-	def __init__(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
+	def __init__(self, productId, productType, productVersion, packageVersion,
+				depotId, locked=None):
 		self.locked = None
 		self.setProductId(productId)
 		self.setProductType(productType)
@@ -1607,7 +1658,11 @@ class ProductOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'productOnClient'
 
-	def __init__(self, productId, productType, clientId, targetConfiguration=None, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None, actionSequence=None):
+	def __init__(self, productId, productType, clientId,
+				targetConfiguration=None, installationStatus=None,
+				actionRequest=None, lastAction=None, actionProgress=None,
+				actionResult=None, productVersion=None, packageVersion=None,
+				modificationTime=None, actionSequence=None):
 		self.targetConfiguration = None
 		self.installationStatus = None
 		self.actionRequest = None
@@ -1944,7 +1999,9 @@ class LicenseContract(Entity):
 	foreignIdAttributes = Entity.foreignIdAttributes + ['licenseContractId']
 	backendMethodPrefix = 'licenseContract'
 
-	def __init__(self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None):
+	def __init__(self, id, description=None, notes=None, partner=None,
+				conclusionDate=None, notificationDate=None,
+				expirationDate=None):
 		self.description = None
 		self.notes = None
 		self.partner = None
@@ -2044,7 +2101,8 @@ class SoftwareLicense(Entity):
 	foreignIdAttributes = Entity.foreignIdAttributes + ['softwareLicenseId']
 	backendMethodPrefix = 'softwareLicense'
 
-	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
+	def __init__(self, id, licenseContractId, maxInstallations=None,
+				boundToHost=None, expirationDate=None):
 		self.maxInstallations = None
 		self.boundToHost = None
 		self.expirationDate = None
@@ -2139,8 +2197,10 @@ SoftwareLicense.subClasses['RetailSoftwareLicense'] = RetailSoftwareLicense
 class OEMSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
-	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		SoftwareLicense.__init__(self, id, licenseContractId, 1, boundToHost, expirationDate)
+	def __init__(self, id, licenseContractId, maxInstallations=None,
+				boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, 1, boundToHost,
+			expirationDate)
 
 	def setDefaults(self):
 		SoftwareLicense.setDefaults(self)
@@ -2172,8 +2232,10 @@ SoftwareLicense.subClasses['OEMSoftwareLicense'] = OEMSoftwareLicense
 class VolumeSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
-	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations, boundToHost, expirationDate)
+	def __init__(self, id, licenseContractId, maxInstallations=None,
+				boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations,
+			boundToHost, expirationDate)
 
 	def setDefaults(self):
 		SoftwareLicense.setDefaults(self)
@@ -2196,8 +2258,10 @@ SoftwareLicense.subClasses['VolumeSoftwareLicense'] = VolumeSoftwareLicense
 class ConcurrentSoftwareLicense(SoftwareLicense):
 	subClasses = {}
 
-	def __init__(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations, boundToHost, expirationDate)
+	def __init__(self, id, licenseContractId, maxInstallations=None,
+				boundToHost=None, expirationDate=None):
+		SoftwareLicense.__init__(self, id, licenseContractId, maxInstallations,
+			boundToHost, expirationDate)
 
 	def setDefaults(self):
 		SoftwareLicense.setDefaults(self)
@@ -2276,7 +2340,8 @@ class AuditSoftwareToLicensePool(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditSoftwareToLicensePool'
 
-	def __init__(self, name, version, subVersion, language, architecture, licensePoolId):
+	def __init__(self, name, version, subVersion, language, architecture,
+				licensePoolId):
 		self.setName(name)
 		self.setVersion(version)
 		self.setSubVersion(subVersion)
@@ -2353,7 +2418,7 @@ class SoftwareLicenseToLicensePool(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'softwareLicenseToLicensePool'
 
-	def __init__(self, softwareLicenseId, licensePoolId, licenseKey = None):
+	def __init__(self, softwareLicenseId, licensePoolId, licenseKey=None):
 		self.licenseKey = None
 		self.setSoftwareLicenseId(softwareLicenseId)
 		self.setLicensePoolId(licensePoolId)
@@ -2404,7 +2469,8 @@ class LicenseOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'licenseOnClient'
 
-	def __init__(self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None):
+	def __init__(self, softwareLicenseId, licensePoolId, clientId,
+				licenseKey=None, notes=None):
 		self.licenseKey = None
 		self.notes = None
 		self.setSoftwareLicenseId(softwareLicenseId)
@@ -2474,7 +2540,9 @@ class AuditSoftware(Entity):
 	foreignIdAttributes = Entity.foreignIdAttributes
 	backendMethodPrefix = 'auditSoftware'
 
-	def __init__(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
+	def __init__(self, name, version, subVersion, language, architecture,
+				windowsSoftwareId=None, windowsDisplayName=None,
+				windowsDisplayVersion=None, installSize=None):
 		self.windowsSoftwareId = None
 		self.windowsDisplayName = None
 		self.windowsDisplayVersion = None
@@ -2579,7 +2647,10 @@ class AuditSoftwareOnClient(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'auditSoftwareOnClient'
 
-	def __init__(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None, licenseKey=None):
+	def __init__(self, name, version, subVersion, language, architecture,
+				clientId, uninstallString=None, binaryName=None,
+				firstseen=None, lastseen=None, state=None,
+				usageFrequency=None, lastUsed=None, licenseKey=None):
 		self.uninstallString = None
 		self.binaryName = None
 		self.firstseen = None
@@ -2861,7 +2932,8 @@ class AuditHardwareOnHost(Relationship):
 	backendMethodPrefix = 'auditHardwareOnHost'
 	hardwareAttributes = {}
 
-	def __init__(self, hardwareClass, hostId, firstseen=None, lastseen=None, state=None, **kwargs):
+	def __init__(self, hardwareClass, hostId, firstseen=None, lastseen=None,
+				state=None, **kwargs):
 		self.firstseen = None
 		self.lastseen = None
 		self.state = None
@@ -3040,7 +3112,10 @@ class BootConfiguration(Relationship):
 	subClasses = {}
 	backendMethodPrefix = 'bootConfiguration'
 
-	def __init__(self, name, clientId, priority=None, description=None, netbootProductId=None, pxeTemplate=None, options=None, disk=None, partition=None, active=None, deleteAfter=None, deactivateAfter=None, accessCount=None, osName=None):
+	def __init__(self, name, clientId, priority=None, description=None,
+				netbootProductId=None, pxeTemplate=None, options=None,
+				disk=None, partition=None, active=None, deleteAfter=None,
+				deactivateAfter=None, accessCount=None, osName=None):
 		self.priority = None
 		self.description = None
 		self.netbootProductId = None
