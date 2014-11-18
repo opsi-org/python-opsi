@@ -100,7 +100,7 @@ class Session(object):
 		if self.deleted:
 			return
 		self.deleted = True
-		if (self.usageCount > 0):
+		if self.usageCount > 0:
 			logger.warning(u"Deleting session in use: %s" % self)
 		if self.sessionTimer:
 			try:
@@ -147,16 +147,18 @@ class SessionHandler(object):
 					return session
 			else:
 				logger.info(u'Failed to get session: session id %s not found' % uid)
-		if ip and (self.maxSessionsPerIp > 0):
+
+		if ip and self.maxSessionsPerIp > 0:
 			sessions = self.getSessions(ip)
-			if (len(sessions) >= self.maxSessionsPerIp):
+			if len(sessions) >= self.maxSessionsPerIp:
 				logger.error(u"Session limit for ip '%s' reached" % ip)
 				for session in sessions:
-					if (session.usageCount > 0):
+					if session.usageCount > 0:
 						continue
 					logger.info(u"Deleting unused session")
 					self.deleteSession(session.uid)
-				if (len(self.getSessions(ip)) >= self.maxSessionsPerIp):
+
+				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
 					raise OpsiAuthenticationError(u"Session limit for ip '%s' reached" % ip)
 		
 		session = self.createSession()
@@ -172,17 +174,19 @@ class SessionHandler(object):
 	def sessionExpired(self, session):
 		logger.notice(u"Session '%s' from ip '%s', application '%s' expired after %d seconds" \
 				% (session.uid, session.ip, session.userAgent, (time.time()-session.lastModified)))
-		if (session.usageCount > 0):
+
+		if session.usageCount > 0:
 			logger.notice(u"Session currently in use, waiting before deletion")
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout
-		while (session.usageCount > 0) and (timeout > 0):
+		while session.usageCount > 0 and timeout > 0:
 			if not self.sessions.get(session.uid):
 				# Session deleted (closed by client)
 				return False
 			time.sleep(1)
 			timeout -= 1
-		if (timeout == 0):
+
+		if timeout == 0:
 			logger.warning(u"Session '%s': timeout occured while waiting for session to get free for deletion" % session.uid)
 		self.deleteSession(session.uid)
 		return True
