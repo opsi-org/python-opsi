@@ -105,20 +105,21 @@ def getBackendMethodPrefix(Class):
 
 
 def decodeIdent(Class, hash):
-	if hash.has_key('ident') and hash['ident']:
-		ident = {}
-		if type(hash['ident']) is types.DictType:
+	if 'ident' in hash and hash['ident']:
+		if type(hash['ident']) is dict:
 			ident = hash['ident']
 		else:
-			identValues = []
-			if   type(hash['ident']) in (str, unicode):
+			if type(hash['ident']) in (str, unicode):
 				identValues = hash['ident'].split(Class.identSeparator)
 			elif type(hash['ident']) is (tuple, list):
 				identValues = hash['ident']
+			else:
+				identValues = []
+
 			args = mandatoryConstructorArgs(Class)
-			if (len(identValues) == len(args)):
-				for i in range(len(args)):
-					ident[args[i]] = identValues[i]
+			if len(identValues) == len(args):
+				ident = dict(zip(args, identValues))
+
 		del hash['ident']
 		hash.update(ident)
 	return hash
