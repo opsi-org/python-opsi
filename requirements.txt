@@ -1,7 +1,7 @@
 pycrypto
 twisted
 libmagic
-# Ldaptor  # disabled: currently not installable via pip.
+ldaptor
 pam
 pyOpenSSL
 MySQL-python
@@ -9,4 +9,3 @@ SQLAlchemy
 M2Crypto
 pyasn1
 duplicity
-
