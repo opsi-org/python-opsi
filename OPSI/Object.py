@@ -196,9 +196,10 @@ class BaseObject(object):
 			except AttributeError:
 				value = u''
 			identValues.append(forceUnicode(value))
-		if returnType in ('list',):
+
+		if returnType == 'list':
 			return identValues
-		elif returnType in ('tuple',):
+		elif returnType == 'tuple':
 			return tuple(identValues)
 		elif returnType in ('dict', 'hash'):
 			return dict(zip(identAttributes, identValues))
