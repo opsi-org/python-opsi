@@ -30,7 +30,7 @@ It also is home to various exception classes.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.6.1'
 
 import datetime
 import os
@@ -139,10 +139,11 @@ def forceUnsignedInt(var):
 def forceOct(var):
 	if type(var) is types.IntType:
 		return var
+
 	try:
 		tmp = forceUnicode(var)
 		var = ''
-		for i in range(len(tmp)):
+		for i in xrange(len(tmp)):
 			x = forceInt(tmp[i])
 			if x > 7:
 				raise Exception('"{0}" is too big')
