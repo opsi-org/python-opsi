@@ -56,7 +56,7 @@ class Session(object):
 		self.markedForDeletion = False
 		self.deleted = False
 		self.touch()
-		
+
 	def decreaseUsageCount(self):
 		if self.deleted:
 			return
@@ -75,33 +75,37 @@ class Session(object):
 	def touch(self):
 		if self.deleted:
 			return
+
 		self.lastModified = time.time()
 		if self.sessionTimer:
 			self.sessionTimer.cancel()
 			self.sessionTimer.join(1)
 		self.sessionTimer = threading.Timer(self.sessionMaxInactiveInterval, self.expire)
 		self.sessionTimer.start()
-	
+
 	def setMarkedForDeletion(self):
 		self.markedForDeletion = True
-	
+
 	def getMarkedForDeletion(self):
 		return self.markedForDeletion
-	
+
 	def getValidity(self):
 		if self.deleted:
 			return 0
+
 		return int(self.lastModified - time.time() + self.sessionMaxInactiveInterval)
-	
+
 	def expire(self):
 		self.sessionHandler.sessionExpired(self)
-	
+
 	def delete(self):
 		if self.deleted:
 			return
+
 		self.deleted = True
 		if self.usageCount > 0:
 			logger.warning(u"Deleting session in use: %s" % self)
+
 		if self.sessionTimer:
 			try:
 				self.sessionTimer.cancel()
@@ -121,10 +125,10 @@ class SessionHandler(object):
 		self.maxSessionsPerIp = forceInt(maxSessionsPerIp)
 		self.sessionDeletionTimeout = forceInt(sessionDeletionTimeout)
 		self.sessions = {}
-	
+
 	def cleanup(self):
 		self.deleteAllSessions()
-	
+
 	def getSessions(self, ip=None):
 		if not ip:
 			return self.sessions
@@ -160,23 +164,24 @@ class SessionHandler(object):
 
 				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
 					raise OpsiAuthenticationError(u"Session limit for ip '%s' reached" % ip)
-		
+
 		session = self.createSession()
 		session.increaseUsageCount()
 		return session
-		
+
 	def createSession(self):
 		session = Session(self, self.sessionName, self.sessionMaxInactiveInterval)
 		self.sessions[session.uid] = session
 		logger.notice(u"New session created")
 		return session
-	
+
 	def sessionExpired(self, session):
 		logger.notice(u"Session '%s' from ip '%s', application '%s' expired after %d seconds" \
 				% (session.uid, session.ip, session.userAgent, (time.time()-session.lastModified)))
 
 		if session.usageCount > 0:
 			logger.notice(u"Session currently in use, waiting before deletion")
+
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout
 		while session.usageCount > 0 and timeout > 0:
@@ -188,25 +193,28 @@ class SessionHandler(object):
 
 		if timeout == 0:
 			logger.warning(u"Session '%s': timeout occured while waiting for session to get free for deletion" % session.uid)
+
 		self.deleteSession(session.uid)
 		return True
-		
+
 	def deleteSession(self, uid):
 		session = self.sessions.get(uid)
 		if not session:
 			logger.warning(u'No such session id: %s' % uid)
 			return
+
 		try:
 			session.delete()
 		except:
 			pass
+
 		try:
 			del self.sessions[uid]
 			logger.notice(u"Session '%s' from ip '%s', application '%s' deleted" % (session.uid, session.ip, session.userAgent))
 			del session
 		except KeyError:
 			pass
-	
+
 	def deleteAllSessions(self):
 		logger.notice(u"Deleting all sessions")
 		class SessionDeletionThread(threading.Thread):
