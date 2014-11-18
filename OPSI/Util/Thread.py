@@ -175,12 +175,9 @@ class ThreadPool(object):
 		self.__createWorkers(1)
 
 	def __createWorkers(self, num):
-		logger.debug(u"Creating %d new workers" % num)
-		newWorkers = []
-		while (num > 0):
-			worker = Worker(self, len(self.worker)+1)
-			self.worker.append(worker)
-			newWorkers.append(worker)
+		logger.debug(u"Creating {n} new workers".format(n=num))
+		while num > 0:
+			self.worker.append(Worker(self, len(self.worker) + 1))
 			num -= 1
 
 	def addJob(self, function, callback=None, *args, **kwargs):
