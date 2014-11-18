@@ -223,12 +223,18 @@ class BaseObject(object):
 		if not issubclass(updateObject.__class__, self.__class__):
 			raise Exception(u"Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
 		hash = updateObject.toHash()
-		if hash.has_key('type'):
+
+		try:
 			del hash['type']
+		except KeyError:
+			# No key "type", everything fine.
+			pass
+
 		if not updateWithNoneValues:
 			for (key, value) in hash.items():
 				if value is None:
 					del hash[key]
+
 		self.__dict__.update(hash)
 
 	def getType(self):
