@@ -32,7 +32,6 @@ As an example this contains classes for hosts, products, configurations.
 __version__ = '4.0.6.1'
 
 import inspect
-import types
 
 from OPSI.Logger import Logger
 from OPSI.Types import BackendBadValueError, BackendConfigurationError
