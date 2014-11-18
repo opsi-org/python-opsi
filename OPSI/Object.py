@@ -876,11 +876,11 @@ class BoolConfig(Config):
 
 	def setDefaults(self):
 		if self.defaultValues is None:
-			self.defaultValues = [ False ]
+			self.defaultValues = [False]
 		Config.setDefaults(self)
 
 	def setPossibleValues(self, possibleValues):
-		Config.setPossibleValues(self, [ True, False ])
+		Config.setPossibleValues(self, [True, False])
 
 	def setDefaultValues(self, defaultValues):
 		defaultValues = [value for value in set(forceBoolList(defaultValues))]
@@ -1438,11 +1438,11 @@ class BoolProductProperty(ProductProperty):
 
 	def setDefaults(self):
 		if self.defaultValues is None:
-			self.defaultValues = [ False ]
+			self.defaultValues = [False]
 		ProductProperty.setDefaults(self)
 
 	def setPossibleValues(self, possibleValues):
-		ProductProperty.setPossibleValues(self, [ True, False ])
+		ProductProperty.setPossibleValues(self, [True, False])
 
 	def setDefaultValues(self, defaultValues):
 		defaultValues = forceBoolList(defaultValues)
