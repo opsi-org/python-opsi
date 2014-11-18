@@ -28,13 +28,15 @@ opsi python library - Resource
 """
 
 from twisted.internet import defer
-from OPSI.web2 import http, resource, server, responsecode
-import OPSI.web2.dav.static
-from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface, WorkerOpsiDAV
 
-from OPSI.Logger import *
+import OPSI.web2.dav.static
+from OPSI.Logger import Logger
+from OPSI.Service.Worker import (WorkerOpsi, WorkerOpsiJsonRpc,
+	WorkerOpsiJsonInterface, WorkerOpsiDAV)
+from OPSI.web2 import http, resource, server, responsecode
 
 logger = Logger()
+
 
 class ResourceOpsi(resource.Resource):
 	WorkerClass = WorkerOpsi
