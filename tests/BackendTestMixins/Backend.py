@@ -403,6 +403,13 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
 
             self.assertTrue(found, "Expected method {0} not found".format(selection['name']))
 
+    def testBackend_info(self):
+        info = self.backend.backend_info()
+
+        self.assertTrue('opsiVersion' in info)
+        self.assertTrue('modules' in info)
+        self.assertTrue('realmodules' in info)
+
 
 class BackendPerformanceTestMixin(object):
     def testBackendPerformance(self, clientCount=500, productCount=50):
