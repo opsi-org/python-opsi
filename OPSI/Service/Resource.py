@@ -101,15 +101,21 @@ class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
 		self._authRequired = authRequired
 
 	def createSimilarFile(self, path):
-		return self.__class__(self._service, path, readOnly=self._readOnly, defaultType=self.defaultType, indexNames=self.indexNames[:], authRequired = self._authRequired)
+		return self.__class__(self._service, path,
+			readOnly=self._readOnly,
+			defaultType=self.defaultType,
+			indexNames=self.indexNames[:],
+			authRequired=self._authRequired
+		)
 
 	def renderHTTP(self, request):
 		try:
 			if self._readOnly and request.method not in ('GET', 'PROPFIND', 'OPTIONS', 'USERINFO', 'HEAD'):
 				logger.warning(u"Command %s not allowed (readonly)" % request.method)
 				return http.Response(
-					code	= responsecode.FORBIDDEN,
-					stream	= "Readonly!" )
+					code=responsecode.FORBIDDEN,
+					stream="Readonly!"
+				)
 			worker = self.WorkerClass(self._service, request, self)
 			return worker.process()
 		except Exception as exc:
