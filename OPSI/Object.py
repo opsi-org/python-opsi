@@ -2965,17 +2965,18 @@ class AuditHardwareOnHost(Relationship):
 					continue
 				if value is None:
 					continue
+
 				if attrType.startswith('varchar'):
 					kwargs[attribute] = forceUnicode(value).strip()
-					size = 0
 					try:
 						size = int(attrType.split('(')[1].split(')')[0].strip())
-					except:
+
+						if len(kwargs[attribute]) > size:
+							logger.warning(u'Truncating value of attribute %s of hardware class %s to length %d' % (attribute, hardwareClass, size))
+							kwargs[attribute] = kwargs[attribute][:size].strip()
+					except (ValueError, IndexError):
 						pass
-					if size and (len(kwargs[attribute]) > size):
-						logger.warning(u'Truncating value of attribute %s of hardware class %s to length %d' % (attribute, hardwareClass, size))
-						kwargs[attribute] = kwargs[attribute][:size].strip()
-				elif (attrType.find('int') != -1):
+				elif 'int' in attrType:
 					try:
 						kwargs[attribute] = forceInt(value)
 					except Exception as e:
