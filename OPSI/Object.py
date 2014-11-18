@@ -78,12 +78,23 @@ def getForeignIdAttributes(Class):
 	return Class.foreignIdAttributes
 
 def getPossibleClassAttributes(Class):
+	"""
+	Returns the possible attributes of a class.
+
+	:returntype: set of strings
+	"""
 	attributes = inspect.getargspec(Class.__init__)[0]
 	for subClass in Class.subClasses.values():
 		attributes.extend(inspect.getargspec(subClass.__init__)[0])
-	attributes = list(set(attributes))
-	attributes.remove('self')
-	attributes.append('type')
+
+	attributes = set(attributes)
+	attributes.add('type')
+
+	try:
+		attributes.remove('self')
+	except KeyError:
+		pass
+
 	return attributes
 
 def getBackendMethodPrefix(Class):

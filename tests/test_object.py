@@ -33,7 +33,7 @@ from OPSI.Object import (AuditHardwareOnHost, Host, OpsiConfigserver,
 class GetPossibleClassAttributesTestCase(unittest.TestCase):
     def testMethod(self):
         self.assertEquals(
-            set(getPossibleClassAttributes(Host)),
+            getPossibleClassAttributes(Host),
             set(
                 [
                     'masterDepotId', 'depotLocalUrl', 'repositoryRemoteUrl',
