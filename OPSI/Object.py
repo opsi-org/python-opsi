@@ -201,10 +201,7 @@ class BaseObject(object):
 		elif returnType in ('tuple',):
 			return tuple(identValues)
 		elif returnType in ('dict', 'hash'):
-			ret = {}
-			for i in range(len(identAttributes)):
-				ret[identAttributes[i]] = identValues[i]
-			return ret
+			return dict(zip(identAttributes, identValues))
 		else:
 			return self.identSeparator.join(identValues)
 
