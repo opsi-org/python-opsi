@@ -171,7 +171,7 @@ class ThreadPool(object):
 			[worker.join(60) for worker in deleteWorkers]
 
 	def __createWorker(self):
-		logger.debug(u"Creating new worker %s" % (len(self.worker)+1))
+		logger.debug(u"Creating new worker {0}".format(len(self.worker) + 1))
 		self.__createWorkers(1)
 
 	def __createWorkers(self, num):
@@ -184,7 +184,7 @@ class ThreadPool(object):
 		logger.debug(u"New job added: %s(%s, %s)"% (callback, args, kwargs))
 		if not self.started:
 			raise ThreadPoolException(u"Pool is not running.")
-		self.jobQueue.put( (function, callback, args, kwargs) )
+		self.jobQueue.put((function, callback, args, kwargs))
 
 	def stop(self):
 		logger.debug(u"Stopping ThreadPool")
@@ -206,23 +206,27 @@ class Worker(threading.Thread):
 		while True:
 			if self.stopped:
 				break
+
 			try:
-				object = self.threadPool.jobQueue.get(block=True, timeout=1)
-				if object:
+				callResult = self.threadPool.jobQueue.get(block=True, timeout=1)
+				if callResult:
 					self.busy = True
-					(function, callback, args, kwargs) = object
+					(function, callback, args, kwargs) = callResult
 					success = False
 					try:
 						result = function(*args, **kwargs)
 						success = True
 						errors = None
-					except Exception as e:
-						logger.debug(e)
+					except Exception as error:
+						logger.debug(
+							u"Problem running function: {0}".format(error)
+						)
 						result = None
-						errors = e
+						errors = error
 
 					if callback:
 						callback(success, result, errors)
+
 					self.threadPool.jobQueue.task_done()
 					self.busy = False
 			except Empty:
