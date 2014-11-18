@@ -24,18 +24,12 @@ Configuration util.
 :license: GNU Affero General Public License version 3
 """
 
-import os
-import sys
-import optparse
-from optparse import OptionParser, OptionGroup
-from ConfigParser import ConfigParser
+from optparse import OptionParser
 
 
 class BaseConfiguration(object):
 
-	configFiles = []
-
-	configFiles = tuple(configFiles)
+	configFiles = tuple()
 
 	def __init__(self, args):
 		self._options = {}
@@ -43,9 +37,7 @@ class BaseConfiguration(object):
 		self._loadConfiguration(args)
 
 	def _makeParser(self):
-
-		parser = OptionParser()
-		return parser
+		return OptionParser()
 
 	def _loadConfiguration(self, args):
 		self._options.update(self._parser.defaults.copy())
