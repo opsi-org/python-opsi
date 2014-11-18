@@ -46,7 +46,7 @@ logger = Logger()
 
 
 def forceList(var):
-	if not type(var) in (types.ListType, types.TupleType):
+	if type(var) not in (types.ListType, types.TupleType):
 		return [var]
 	return list(var)
 
@@ -64,15 +64,18 @@ def forceUnicode(var):
 			return var.__unicode__()
 		except:
 			pass
+
 	try:
 		return unicode(var)
 	except:
 		pass
+
 	if hasattr(var, '__repr__'):
 		var = var.__repr__()
 		if type(var) is types.UnicodeType:
 			return var
 		return unicode(var, 'utf-8', 'replace')
+
 	return unicode(var)
 
 
@@ -99,11 +102,13 @@ def forceUnicodeLowerList(var):
 def forceBool(var):
 	if type(var) is types.BooleanType:
 		return var
+
 	if type(var) in (types.UnicodeType, types.StringType):
 		if var.lower() in ('true', 'yes', 'on', '1'):
 			return True
 		elif var.lower() in ('false', 'no', 'off', '0'):
 			return False
+
 	return bool(var)
 
 
@@ -391,25 +396,30 @@ def forceConfigId(var):
 def forceProductPropertyType(var):
 	v = forceUnicodeLower(var)
 	if v in ('unicode', 'unicodeproductproperty'):
-		var = u'UnicodeProductProperty'
+		return u'UnicodeProductProperty'
 	elif v in ('bool', 'boolproductproperty'):
-		var = u'BoolProductProperty'
+		return u'BoolProductProperty'
 	else:
 		raise ValueError(u"Unknown product property type: '%s'" % var)
-	return var
 
 
 def forceProductPriority(var):
 	var = forceInt(var)
-	if (var < -100): var = -100
-	if (var >  100): var =  100
+	if var < -100:
+		var = -100
+	elif var > 100:
+		var = 100
+
 	return var
 
 
 def forceBootConfigurationPriority(var):
 	var = forceInt(var)
-	if (var <   0): var =   0
-	if (var > 100): var = 100
+	if var < 0:
+		var =   0
+	elif var > 100:
+		var = 100
+
 	return var
 
 
@@ -479,9 +489,11 @@ def forceObjectClass(var, objectClass):
 		except Exception as e:
 			exception = e
 			logger.debug(u"Failed to get object from json '%s': %s" % (var, e))
+
 	if type(var) is types.DictType:
-		if not var.has_key('type'):
+		if 'type' not in var:
 			raise ValueError(u"Key 'type' missing in hash '%s'" % var)
+
 		try:
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
