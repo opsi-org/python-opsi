@@ -291,13 +291,20 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 			countLen = len(str(totalFiles))
 			countLenFormat = '%' + str(countLen) + 's'
 			size = os.path.getsize(src)
-			sizeString = "%d Byte" % size
-			if (size > 1024*1024):
-				sizeString = "%0.2f MByte" % ( float(size)/(1024*1024) )
-			elif (size > 1024):
-				sizeString = "%0.2f kByte" % ( float(size)/(1024) )
-			progressSubject.setMessage(u"[%s/%s] %s (%s)" \
-					% (countLenFormat % fileCount, totalFiles, os.path.basename(src), sizeString ) )
+
+			if size > 1024 * 1024:
+				sizeString = "%0.2f MByte" % (float(size) / (1024 * 1024))
+			elif size > 1024:
+				sizeString = "%0.2f kByte" % (float(size) / 1024)
+			else:
+				sizeString = "%d Byte" % size
+
+			progressSubject.setMessage(
+				u"[%s/%s] %s (%s)" % (
+					countLenFormat % fileCount, totalFiles,
+					os.path.basename(src), sizeString
+				)
+			)
 
 		try:
 			shutil.copy2(src, dst)
