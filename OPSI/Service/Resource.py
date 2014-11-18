@@ -67,8 +67,9 @@ class ResourceOpsi(resource.Resource):
 				raise Exception(u"No worker class defined in resource %s" % self.__class__.__name__)
 			worker = self.WorkerClass(self._service, request, self)
 			return worker.process()
-		except Exception as e:
-			logger.logException(e)
+		except Exception as exc:
+			logger.logException(exc)
+
 
 class ResourceOpsiJsonRpc(ResourceOpsi):
 	WorkerClass = WorkerOpsiJsonRpc
@@ -79,6 +80,7 @@ class ResourceOpsiJsonRpc(ResourceOpsi):
 
 	def locateChild(self, request, segments):
 		return self, server.StopTraversal
+
 
 class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):
 	WorkerClass = WorkerOpsiJsonInterface
@@ -110,8 +112,8 @@ class ResourceOpsiDAV(OPSI.web2.dav.static.DAVFile):
 					stream	= "Readonly!" )
 			worker = self.WorkerClass(self._service, request, self)
 			return worker.process()
-		except Exception as e:
-			logger.logException(e)
+		except Exception as exc:
+			logger.logException(exc)
 
 	def renderHTTP_super(self, request, worker):
 		deferred = super(ResourceOpsiDAV, self).renderHTTP(request)
