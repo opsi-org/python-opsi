@@ -147,10 +147,11 @@ class ThreadPool(object):
 
 	def __deleteWorkers(self, num, wait=False):
 		logger.debug(u"Deleting %d workers" % num)
-		deleteWorkers = []
+		deleteWorkers = set()
+
 		for worker in self.worker:
-			if not worker.busy and not worker in deleteWorkers:
-				deleteWorkers.append(worker)
+			if (not worker.busy) and worker not in deleteWorkers:
+				deleteWorkers.add(worker)
 				worker.stop()
 				num -= 1
 				if num == 0:
@@ -158,21 +159,16 @@ class ThreadPool(object):
 
 		if num > 0:
 			for worker in self.worker:
-				if not worker in deleteWorkers:
-					deleteWorkers.append(worker)
+				if worker not in deleteWorkers:
+					deleteWorkers.add(worker)
 					worker.stop()
 					num -= 1
 					if num == 0:
 						break
 
-		worker_ = []
-		for worker in self.worker:
-			if not worker in deleteWorkers:
-				worker_.append(worker)
-		self.worker = worker_
+		self.worker = [worker for worker in self.worker if worker not in deleteWorkers]
 		if wait:
-			for worker in deleteWorkers:
-				worker.join(60)
+			[worker.join(60) for worker in deleteWorkers]
 
 	def __createWorker(self):
 		logger.debug(u"Creating new worker %s" % (len(self.worker)+1))
