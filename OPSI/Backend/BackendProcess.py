@@ -286,8 +286,7 @@ class OpsiBackendProcess(OpsiPyDaemon):
 		except Exception as e:
 			logger.error(e)
 
-		d = OpsiPyDaemon.stop(self)
-		return d
+		return OpsiPyDaemon.stop(self)
 
 	def backend_exit(self):
 		if self.check.running:
