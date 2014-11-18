@@ -52,8 +52,9 @@ def getGlobalThreadPool(*args, **kwargs):
 	else:
 		size = kwargs.get('size', 0)
 		GlobalPool.increaseUsageCount()
-		if (GlobalPool.size < size):
+		if GlobalPool.size < size:
 			GlobalPool.adjustSize(size)
+
 	return GlobalPool
 
 
@@ -118,7 +119,7 @@ class ThreadPool(object):
 
 	def decreaseUsageCount(self):
 		self.usageCount -= 1
-		if (self.usageCount <= 0):
+		if self.usageCount <= 0:
 			self.stop()
 
 	free = decreaseUsageCount
@@ -136,9 +137,9 @@ class ThreadPool(object):
 
 			self.size = size
 			if self.started:
-				if (len(self.worker) > self.size):
+				if len(self.worker) > self.size:
 					self.__deleteWorkers(num=len(self.worker) - self.size)
-				if (len(self.worker) < self.size):
+				if len(self.worker) < self.size:
 					self.__createWorkers(num=self.size - len(self.worker))
 		finally:
 			self.workerLock.release()
@@ -155,15 +156,16 @@ class ThreadPool(object):
 				deleteWorkers.append(worker)
 				worker.stop()
 				num -= 1
-				if (num == 0):
+				if num == 0:
 					break
-		if (num > 0):
+
+		if num > 0:
 			for worker in self.worker:
 				if not worker in deleteWorkers:
 					deleteWorkers.append(worker)
 					worker.stop()
 					num -= 1
-					if (num == 0):
+					if num == 0:
 						break
 
 		worker_ = []
