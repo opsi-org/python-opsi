@@ -81,7 +81,7 @@ class OpsiBackendService(Service):
 		self._check = ResetableLoop(self.checkConnected)
 
 	def checkConnected(self):
-		if ((time.time() - self._lastContact) > 300):
+		if (time.time() - self._lastContact) > 300:
 			reactor.stop()
 
 	def setLogging(self, console=LOG_WARNING, file=LOG_WARNING):
