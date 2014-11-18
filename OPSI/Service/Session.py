@@ -111,7 +111,7 @@ class Session(object):
 				self.sessionTimer.cancel()
 				try:
 					self.sessionTimer.join(1)
-				except:
+				except Exception:
 					pass
 				logger.info(u"Session timer %s canceled" % self.sessionTimer)
 			except Exception, e:
@@ -205,7 +205,7 @@ class SessionHandler(object):
 
 		try:
 			session.delete()
-		except:
+		except Exception:
 			pass
 
 		try:
