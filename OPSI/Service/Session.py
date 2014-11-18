@@ -34,11 +34,9 @@ from OPSI.Util import randomString
 
 logger = Logger()
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =                                         CLASS SESSION                                             =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-class Session:
-	def __init__(self, sessionHandler, name = u'OPSISID', sessionMaxInactiveInterval = 120):
+
+class Session(object):
+	def __init__(self, sessionHandler, name=u'OPSISID', sessionMaxInactiveInterval=120):
 		self.sessionHandler = sessionHandler
 		self.name = forceUnicode(name)
 		self.sessionMaxInactiveInterval = forceInt(sessionMaxInactiveInterval)
@@ -114,12 +112,10 @@ class Session:
 				logger.info(u"Session timer %s canceled" % self.sessionTimer)
 			except Exception, e:
 				logger.error(u"Failed to cancel session timer: %s" % e)
-	
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =                                    CLASS SESSION HANDLER                                          =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-class SessionHandler:
-	def __init__(self, sessionName = u'OPSISID', sessionMaxInactiveInterval = 120, maxSessionsPerIp = 0, sessionDeletionTimeout = 60):
+
+
+class SessionHandler(object):
+	def __init__(self, sessionName=u'OPSISID', sessionMaxInactiveInterval=120, maxSessionsPerIp=0, sessionDeletionTimeout=60):
 		self.sessionName = forceUnicode(sessionName)
 		self.sessionMaxInactiveInterval = forceInt(sessionMaxInactiveInterval)
 		self.maxSessionsPerIp = forceInt(maxSessionsPerIp)
