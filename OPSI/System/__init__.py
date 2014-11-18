@@ -98,17 +98,17 @@ def getDirectorySize(path):
 
 	size = 0
 	try:
-		for r in os.listdir(path):
-			a = os.path.join(path, r)
-			if os.path.islink(a):
+		for element in os.listdir(path):
+			absolutePath = os.path.join(path, element)
+			if os.path.islink(absolutePath):
 				continue
-			if os.path.isfile(a):
-				size += os.path.getsize(a)
-			if os.path.isdir(a):
-				size += getDirectorySize(a)
-	except Exception as e:
+			elif os.path.isfile(absolutePath):
+				size += os.path.getsize(absolutePath)
+			elif os.path.isdir(absolutePath):
+				size += getDirectorySize(absolutePath)
+	except Exception as error:
 		for hook in hooks:
-			hook.error_getDirectorySize(path, size, e)
+			hook.error_getDirectorySize(path, size, error)
 		raise
 
 	for hook in hooks:
@@ -130,11 +130,11 @@ def getSize(path):
 			size = os.path.getsize(path)
 		elif os.path.isdir(path):
 			logger.debug(u"Getting size of files in dir '%s'" % path)
-			for r in os.listdir(path):
-				size += getSize(os.path.join(path, r))
-	except Exception as e:
+			for element in os.listdir(path):
+				size += getSize(os.path.join(path, element))
+	except Exception as error:
 		for hook in hooks:
-			hook.error_getSize(path, size, e)
+			hook.error_getSize(path, size, error)
 		raise
 
 	for hook in hooks:
@@ -156,11 +156,11 @@ def countFiles(path):
 			count = 1
 		elif os.path.isdir(path):
 			logger.debug(u"Counting files in dir '%s'" % path)
-			for r in os.listdir(path):
-				count += countFiles(os.path.join(path, r))
-	except Exception as e:
+			for element in os.listdir(path):
+				count += countFiles(os.path.join(path, element))
+	except Exception as error:
 		for hook in hooks:
-			hook.error_countFiles(path, count, e)
+			hook.error_countFiles(path, count, error)
 		raise
 
 	for hook in hooks:
@@ -183,13 +183,13 @@ def getCountAndSize(path):
 		elif os.path.isdir(path):
 			logger.debug2(u"Is dir: %s" % path)
 			logger.debug(u"Counting and getting sizes of files in dir '%s'" % path)
-			for r in os.listdir(path):
-				(c, s) = getCountAndSize(os.path.join(path, r))
-				count += c
-				size += s
-	except Exception as e:
+			for element in os.listdir(path):
+				(elementCount, elementSize) = getCountAndSize(os.path.join(path, element))
+				count += elementCount
+				size += elementSize
+	except Exception as error:
 		for hook in hooks:
-			hook.error_getCountAndSize(path, (count, size), e)
+			hook.error_getCountAndSize(path, (count, size), error)
 		raise
 
 	for hook in hooks:
@@ -234,7 +234,6 @@ def copy(src, dst, progressSubject=None):
 	- src = dir, dst = dir: copy src dir into dst
 	- src = dir, dst = not existent: create dst, copy content of src into dst
 	- src = dir/*, dst = dir/not existent: create dst if not exists, copy content of src into dst
-
 	'''
 	for hook in hooks:
 		(src, dst, progressSubject) = hook.pre_copy(src, dst, progressSubject)
@@ -316,7 +315,16 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 			os.makedirs(dst)
 		elif not copySrcContent:
 			dst = os.path.join(dst, os.path.basename(src))
-		for r in os.listdir(src):
-			fileCount = _copy(os.path.join(src, r), os.path.join(dst,r), True, fileCount, totalFiles, totalSize, progressSubject)
+
+		for element in os.listdir(src):
+			fileCount = _copy(
+				os.path.join(src, element),
+				os.path.join(dst, element),
+				True,
+				fileCount,
+				totalFiles,
+				totalSize,
+				progressSubject
+			)
 
 	return fileCount
