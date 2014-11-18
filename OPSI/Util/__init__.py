@@ -1,34 +1,35 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# This module is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+
+# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# http://www.uib.de/
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - Util
+General utility functions.
 
-This module is part of the desktop management solution opsi
-(open pc server integration) http://www.opsi.org
-
-Copyright (C) 2006-2014 uib GmbH
-
-http://www.uib.de/
-
-All rights reserved.
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+This module holds various utility functions for the work with opsi.
+This includes functions for (de)serialisation, converting classes from
+or to JSON, working with librsync and more.
 
 :copyright:	uib GmbH <info@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU General Public License version 2
+:license: GNU Affero General Public License version 3
 """
 
 __version__ = '4.0.5.16'
@@ -541,12 +542,13 @@ def compareVersions(v1, condition, v2):
 
 unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 def removeUnit(x):
+	# TODO: tests!
 	x = forceUnicode(x)
 	match = unitRegex.search(x)
 	if not match:
 		return x
 
-	if (match.group(1).find(u'.') != -1):
+	if u'.' in match.group(1):
 		value = float(match.group(1))
 	else:
 		value = int(match.group(1))
@@ -565,14 +567,14 @@ def removeUnit(x):
 		unit = unit[:-1]
 
 	if unit.endswith('n'):
-		return float(value)/(mult*mult)
-	if unit.endswith('m'):
-		return float(value)/(mult)
-	if unit.lower().endswith('k'):
-		return value*mult
-	if unit.endswith('M'):
-		return value*mult*mult
-	if unit.endswith('G'):
+		return float(value) / (mult * mult)
+	elif unit.endswith('m'):
+		return float(value) / (mult)
+	elif unit.lower().endswith('k'):
+		return value * mult
+	elif unit.endswith('M'):
+		return value * mult * mult
+	elif unit.endswith('G'):
 		return value*mult*mult*mult
 
 	return value
@@ -657,26 +659,31 @@ def decryptWithPrivateKeyFromPEMFile(data, filename):
 def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
+
 	if excludeDir:
-		if (str(type(excludeDir)).find("SRE_Pattern") == -1):
+		if not isRegularExpressionPattern(excludeDir):
 			excludeDir = re.compile(forceUnicode(excludeDir))
 	else:
 		excludeDir = None
+
 	if excludeFile:
-		if (str(type(excludeFile)).find("SRE_Pattern") == -1):
+		if not isRegularExpressionPattern(excludeFile):
 			excludeFile = re.compile(forceUnicode(excludeFile))
 	else:
 		excludeFile = None
+
 	if includeDir:
-		if (str(type(includeDir)).find("SRE_Pattern") == -1):
+		if not isRegularExpressionPattern(includeDir):
 			includeDir = re.compile(forceUnicode(includeDir))
 	else:
 		includeDir = None
+
 	if includeFile:
-		if (str(type(includeFile)).find("SRE_Pattern") == -1):
+		if not isRegularExpressionPattern(includeFile):
 			includeFile = re.compile(forceUnicode(includeFile))
 	else:
 		includeFile = None
+
 	returnDirs = forceBool(returnDirs)
 	returnLinks = forceBool(returnLinks)
 	followLinks = forceBool(followLinks)
@@ -724,12 +731,14 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 					followLinks = followLinks,
 					repository  = repository) )
 			continue
+
 		if excludeFile and re.search(excludeFile, entry):
 			if isLink:
 				logger.debug(u"Excluding link '%s'" % entry)
 			else:
 				logger.debug(u"Excluding file '%s'" % entry)
 			continue
+
 		if includeFile:
 			if not re.search(includeFile, entry):
 				continue
@@ -739,6 +748,10 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 				logger.debug(u"Including file '%s'" % entry)
 		files.append(pp)
 	return files
+
+
+def isRegularExpressionPattern(object):
+	return "SRE_Pattern" in str(type(object))
 
 
 def ipAddressInNetwork(ipAddress, networkAddress):
