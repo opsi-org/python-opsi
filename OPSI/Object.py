@@ -70,11 +70,14 @@ def mandatoryConstructorArgs(Class):
 
 	return mandatoryConstructorArgsCache[cacheKey]
 
+
 def getIdentAttributes(Class):
 	return tuple(mandatoryConstructorArgs(Class))
 
+
 def getForeignIdAttributes(Class):
 	return Class.foreignIdAttributes
+
 
 def getPossibleClassAttributes(Class):
 	"""
@@ -96,8 +99,10 @@ def getPossibleClassAttributes(Class):
 
 	return attributes
 
+
 def getBackendMethodPrefix(Class):
 	return Class.backendMethodPrefix
+
 
 def decodeIdent(Class, hash):
 	if hash.has_key('ident') and hash['ident']:
@@ -127,9 +132,12 @@ def objectsDiffer(obj1, obj2, excludeAttributes = []):
 	for (attribute, value1) in obj1.items():
 		if attribute in excludeAttributes:
 			continue
+
 		value2 = obj2.get(attribute)
+
 		if not type(value1) is type(value2):
 			return True
+
 		if type(value1) is dict:
 			if (len(value1.keys()) != len(value2.keys())):
 				return True
