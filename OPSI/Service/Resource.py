@@ -33,6 +33,7 @@ import OPSI.web2.dav.static
 from OPSI.Logger import Logger
 from OPSI.Service.Worker import (WorkerOpsi, WorkerOpsiJsonRpc,
 	WorkerOpsiJsonInterface, WorkerOpsiDAV)
+from OPSI.Types import forceUnicode
 from OPSI.web2 import http, resource, server, responsecode
 
 logger = Logger()
