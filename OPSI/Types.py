@@ -227,10 +227,7 @@ forceHostId = forceFqdn
 
 
 def forceHostIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceHostId(var[i])
-	return var
+	return [forceHostId(element) for element in forceList(var)]
 
 
 hardwareAddressRegex = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
@@ -315,10 +312,7 @@ def forceProductVersion(var):
 
 
 def forceProductVersionList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceProductVersion(var[i])
-	return var
+	return [forceProductVersion(element) for element in forceList(var)]
 
 
 packageVersionRegex = re.compile('^[a-z0-9\.]{1,16}$')
@@ -331,10 +325,7 @@ def forcePackageVersion(var):
 
 
 def forcePackageVersionList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forcePackageVersion(var[i])
-	return var
+	return [forcePackageVersion(element) for element in forceList(var)]
 
 
 productIdRegex = re.compile('^[a-z0-9-_\.]{1,128}$')
@@ -350,10 +341,7 @@ def forceProductId(var):
 
 
 def forceProductIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceProductId(var[i])
-	return var
+	return [forceProductId(element) for element in forceList(var)]
 
 
 packageCustomNameRegex = re.compile('^[a-zA-Z0-9]+$')
@@ -454,10 +442,7 @@ def forceActionRequest(var):
 
 
 def forceActionRequestList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceActionRequest(var[i])
-	return var
+	return [forceActionRequest(element) for element in forceList(var)]
 
 
 def forceActionProgress(var):
@@ -508,14 +493,12 @@ def forceObjectClass(var, objectClass):
 			raise ValueError(u"Not a %s: '%s': %s" % (objectClass, var, exception))
 		else:
 			raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
+
 	return var
 
 
 def forceObjectClassList(var, objectClass):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceObjectClass(var[i], objectClass)
-	return var
+	return [forceObjectClass(element, objectClass) for element in forceList(var)]
 
 
 groupIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
@@ -541,17 +524,11 @@ def forceGroupType(var):
 
 
 def forceGroupTypeList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceGroupType(var[i])
-	return var
+	return [forceGroupType(element) for element in forceList(var)]
 
 
 def forceGroupIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceGroupId(var[i])
-	return var
+	return [forceGroupId(element) for element in forceList(var)]
 
 
 objectIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
@@ -564,10 +541,7 @@ def forceObjectId(var):
 
 
 def forceObjectIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceObjectId(var[i])
-	return var
+	return [forceObjectId(element) for element in forceList(var)]
 
 
 emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
@@ -607,10 +581,7 @@ def forceLicenseContractId(var):
 
 
 def forceLicenseContractIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceLicenseContractId(var[i])
-	return var
+	return [forceLicenseContractId(element) for element in forceList(var)]
 
 
 softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
@@ -623,10 +594,7 @@ def forceSoftwareLicenseId(var):
 
 
 def forceSoftwareLicenseIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceSoftwareLicenseId(var[i])
-	return var
+	return [forceSoftwareLicenseId(element) for element in forceList(var)]
 
 
 licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
@@ -639,10 +607,7 @@ def forceLicensePoolId(var):
 
 
 def forceLicensePoolIdList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceLicensePoolId(var[i])
-	return var
+	return [forceLicensePoolId(element) for element in forceList(var)]
 
 
 def forceAuditState(var):
@@ -667,10 +632,7 @@ def forceLanguageCode(var):
 
 
 def forceLanguageCodeList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceLanguageCode(var[i])
-	return var
+	return [forceLanguageCode(element) for element in forceList(var)]
 
 
 architectureRegex = re.compile('^(x86|x64)$')
@@ -682,10 +644,7 @@ def forceArchitecture(var):
 
 
 def forceArchitectureList(var):
-	var = forceList(var)
-	for i in range(len(var)):
-		var[i] = forceArchitecture(var[i])
-	return var
+	return [forceArchitecture(element) for element in forceList(var)]
 
 
 def forceUniqueList(_list):
