@@ -124,13 +124,18 @@ def decodeIdent(Class, hash):
 		hash.update(ident)
 	return hash
 
-def objectsDiffer(obj1, obj2, excludeAttributes = []):
-	excludeAttributes = forceUnicodeList(excludeAttributes)
-	if (obj1 != obj2):
+
+def objectsDiffer(obj1, obj2, excludeAttributes=None):
+	if excludeAttributes is None:
+		excludeAttributes = []
+	else:
+		excludeAttributes = forceUnicodeList(excludeAttributes)
+
+	if obj1 != obj2:
 		return True
-	obj1 = obj1.toHash()
+
 	obj2 = obj2.toHash()
-	for (attribute, value1) in obj1.items():
+	for (attribute, value1) in obj1.toHash().items():
 		if attribute in excludeAttributes:
 			continue
 
@@ -140,22 +145,25 @@ def objectsDiffer(obj1, obj2, excludeAttributes = []):
 			return True
 
 		if type(value1) is dict:
-			if (len(value1.keys()) != len(value2.keys())):
+			if len(value1) != len(value2):
 				return True
-			for (k, v) in value1.items():
-				if (value2.get(k) != v):
+
+			for (key, value) in value1.items():
+				if value2.get(key) != value:
 					return True
 		elif type(value1) is list:
-			if (len(value1) != len(value2)):
+			if len(value1) != len(value2):
 				return True
-			for v in value1:
-				if not v in value2:
+
+			for value in value1:
+				if value not in value2:
 					return True
-			for v in value2:
-				if not v in value1:
+
+			for value in value2:
+				if value not in value1:
 					return True
 		else:
-			if (value1 != value2):
+			if value1 != value2:
 				return True
 	return False
 
