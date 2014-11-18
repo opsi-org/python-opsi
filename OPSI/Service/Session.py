@@ -60,18 +60,18 @@ class Session(object):
 	def decreaseUsageCount(self):
 		if self.deleted:
 			return
-		self.usageCountLock.acquire()
-		self.usageCount -= 1
-		self.usageCountLock.release()
-		
+
+		with self.usageCountLock:
+			self.usageCount -= 1
+
 	def increaseUsageCount(self):
 		if self.deleted:
 			return
-		self.usageCountLock.acquire()
-		self.usageCount += 1
-		self.touch()
-		self.usageCountLock.release()
-	
+
+		with self.usageCountLock:
+			self.usageCount += 1
+			self.touch()
+
 	def touch(self):
 		if self.deleted:
 			return
