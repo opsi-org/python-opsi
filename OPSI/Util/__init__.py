@@ -148,9 +148,6 @@ def toJson(obj, ensureAscii=False):
 
 
 def librsyncSignature(filename, base64Encoded=True):
-	#if (os.name != 'posix'):
-	#	raise NotImplementedError(u"Not implemented for non-posix os")
-
 	(f, sf) = (None, None)
 	try:
 		f = open(filename, 'rb')
