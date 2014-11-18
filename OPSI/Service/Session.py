@@ -25,10 +25,11 @@ opsi python library - Webservice - Session
 :license: GNU Affero General Public License version 3
 """
 
+import time
 import threading
 
-from OPSI.Types import *
-from OPSI.Logger import *
+from OPSI.Types import OpsiAuthenticationError, forceInt, forceUnicode
+from OPSI.Logger import Logger
 from OPSI.Util import randomString
 
 logger = Logger()
