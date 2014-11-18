@@ -24,12 +24,14 @@ Testing functionality of OPSI.Util
 """
 
 import random
+import re
 import os
 import unittest
 
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
-    generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork, md5sum,
-    objectToBeautifiedText, objectToHtml, randomString)
+    generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork,
+    isRegularExpressionPattern, md5sum, objectToBeautifiedText, objectToHtml,
+    randomString)
 from OPSI.Object import LocalbootProduct
 
 
@@ -316,6 +318,14 @@ class GetGlobalConfigTestCase(unittest.TestCase):
 
     def testFileNotFoundExitsGracefully(self):
         self.assertEqual(None, getGlobalConfig('dontCare', 'nonexistingFile'))
+
+
+class IsRegularExpressionTestCase(unittest.TestCase):
+    def testIfIsRegExObject(self):
+        self.assertFalse(isRegularExpressionPattern("no pattern"))
+        self.assertFalse(isRegularExpressionPattern("SRE_Pattern"))
+
+        self.assertTrue(isRegularExpressionPattern(re.compile("ABC")))
 
 
 if __name__ == '__main__':
