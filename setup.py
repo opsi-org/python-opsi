@@ -153,7 +153,7 @@ setup(
 	license='GPL-2',
 	url="http://www.opsi.org",
 	description='The opsi python library',
-	packages=find_packages(),
+	packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
 	data_files=data_files,
 	cmdclass=cmdclass
 )

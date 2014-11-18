@@ -1,6 +1,7 @@
-python-opsi (4.0.5.17-1) UNRELEASED; urgency=low
+python-opsi (4.0.5.6-1) UNRELEASED; urgency=low
 
   * Reverting the changes made for UCS in OPSI.System.Posix.locateDHCPDinit
+  * setup.py: Exclude test folders.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 12 Nov 2014 09:56:26 +0100
 
