@@ -130,19 +130,16 @@ class ThreadPool(object):
 
 	def adjustSize(self, size):
 		size = int(size)
-		self.workerLock.acquire()
-		try:
-			if (size < 1):
-				raise ThreadPoolException(u"Threadpool size %d is invalid" % size)
+		if size < 1:
+			raise ThreadPoolException(u"Threadpool size %d is invalid" % size)
 
+		with self.workerLock:
 			self.size = size
 			if self.started:
 				if len(self.worker) > self.size:
 					self.__deleteWorkers(num=len(self.worker) - self.size)
 				if len(self.worker) < self.size:
 					self.__createWorkers(num=self.size - len(self.worker))
-		finally:
-			self.workerLock.release()
 
 	def __deleteWorker(self, wait=False):
 		logger.debug(u"Deleting a worker")
@@ -198,12 +195,9 @@ class ThreadPool(object):
 
 	def stop(self):
 		logger.debug(u"Stopping ThreadPool")
-		self.workerLock.acquire()
-		self.started = False
-		try:
+		with self.workerLock:
+			self.started = False
 			self.__deleteWorkers(num=len(self.worker), wait=True)
-		finally:
-			self.workerLock.release()
 
 
 class Worker(threading.Thread):
