@@ -308,11 +308,11 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 
 		try:
 			shutil.copy2(src, dst)
-		except OSError as e:
-			if (e.errno != 1):
-				raise
+		except OSError as error:
+			logger.debug(error)
 			# Operation not permitted
-			logger.debug(e)
+			if error.errno != 1:
+				raise
 
 		if progressSubject:
 			progressSubject.addToState(size)
