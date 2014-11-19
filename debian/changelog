@@ -15,7 +15,7 @@ python-opsi (4.0.5.16-1) experimental; urgency=low
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Nov 2014 10:17:09 +0100
 
-python-opsi (4.0.5.15-1) experimental; urgency=low
+python-opsi (4.0.5.15-1) stable; urgency=low
 
   * Patching sudoers: allow using service when no TTY present
 
