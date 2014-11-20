@@ -4,8 +4,10 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * setup.py: Exclude test folders.
   * objectToBeautifiedText: indent with only four spaces
   * OPSI/Object.py overhauled module
+  * Added OPSI.System.Posix.runCommandInSession to have access to this
+    function not only when running Windows.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 12 Nov 2014 09:56:26 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Nov 2014 13:52:19 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 

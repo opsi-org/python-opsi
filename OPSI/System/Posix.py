@@ -3640,3 +3640,51 @@ def getActiveSessionId():
 	"""
 	ownPid = os.getpid()
 	return os.getsid(ownPid)
+
+
+def runCommandInSession(command, sessionId=None, desktop=None, duplicateFrom=None, waitForProcessEnding=True, timeoutSeconds=0):
+	"""
+	Run an command.
+
+	The arguments `sessionId`, `desktop` and `duplicateFrom` currently
+	do not have any effect and are only provided to have a method
+	signature matching the one from the corresponding Windows module.
+
+	.. versionadded:: 4.0.5.2
+
+
+	:param waitForProcessEnding: If this is `False` the command will be \
+started and we will not wait for it to finish.
+	:type waitForProcessEnding: bool
+	:param timeoutSeconds: If this is set we will wait this many seconds \
+until the execution of the process is terminated.
+	:returntype: (subprocess.Popen, None, int, None) if \
+`waitForProcessEnding` is False, otherwise (None, None, None, None)
+	"""
+	sleepDuration = 0.1
+
+	command = forceUnicode(command)
+	waitForProcessEnding = forceBool(waitForProcessEnding)
+	timeoutSeconds = forceInt(timeoutSeconds)
+
+	logger.notice(u"Executing: '{0}'".format(command))
+	process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+	logger.info(u"Process started, pid: {0}".format(process.pid))
+	if not waitForProcessEnding:
+		return (process, None, process.pid, None)
+
+	logger.info(u"Waiting for process ending: {0} (timeout: {1} seconds)".format(process.pid, timeoutSeconds))
+	timeRunning = 0.0
+	while process.poll() is None:
+		if timeoutSeconds:
+			if timeRunning >= timeoutSeconds:
+				_terminateProcess(process)
+				raise Exception(u"Timed out after {0} seconds while waiting for process {1}".format(timeRunning, process.pid))
+
+			timeRunning += sleepDuration
+		time.sleep(sleepDuration)
+
+	exitCode = process.returncode
+	logger.notice(u"Process {0} ended with exit code {1}".format(process.pid, exitCode))
+	return (None, None, None, None)
