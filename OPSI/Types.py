@@ -617,7 +617,7 @@ def forceLanguageCodeList(var):
 _ARCHITECTURE_REGX = re.compile('^(x86|x64)$')
 def forceArchitecture(var):
 	var = forceUnicodeLower(var)
-	if not _ARCHITECTURE_REGEXarchitectureRegex.search(var):
+	if not _ARCHITECTURE_REGEX.search(var):
 		raise ValueError(u"Bad architecture: '%s'" % var)
 	return var
 
