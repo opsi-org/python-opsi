@@ -1723,9 +1723,8 @@ class FileBackend(ConfigDataBackend):
 			return
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		idents = []
-		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
-			idents.append(auditSoftware.getIdent(returnType='dict'))
+		idents = [auditSoftware.getIdent(returnType='dict') for auditSoftware
+				  in forceObjectClassList(auditSoftwares, AuditSoftware)]
 
 		removeSections = []
 		for section in ini.sections():
@@ -2065,9 +2064,8 @@ class FileBackend(ConfigDataBackend):
 			if sectionFound:
 				ini.remove_section(sectionFound)
 			else:
-				nums = []
-				for section in ini.sections():
-					nums.append(int(section[section.rfind('_') + 1:]))
+				nums = [int(section[section.rfind('_') + 1:]) for section in ini.sections()]
+
 				num = 0
 				while num in nums:
 					num += 1
