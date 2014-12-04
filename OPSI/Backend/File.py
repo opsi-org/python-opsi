@@ -1803,7 +1803,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 
 		logger.debug(u"Updating auditSoftwareOnClient: '%s'" % auditSoftwareOnClient.getIdent())
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId }, 'sw')
+		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
 		ident = auditSoftwareOnClient.getIdent(returnType='dict')
