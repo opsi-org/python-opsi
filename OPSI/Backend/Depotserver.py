@@ -25,7 +25,7 @@ Depotserver backend.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.6.1'
 
 import os
 
@@ -138,13 +138,14 @@ class DepotserverPackageManager(object):
 			for propertyId in propertyDefaultValues:
 				if propertyDefaultValues[propertyId] is None:
 					propertyDefaultValues[propertyId] = []
+
 			if tempDir:
 				tempDir = forceFilename(tempDir)
 			else:
 				tempDir = None
 
 			if not os.path.isfile(filename):
-				raise BackendIOError(u"Package file '%s' does not exist or access denied" % filename)
+				raise BackendIOError(u"Package file '{0}' does not exist or can not be accessed.".format(filename))
 			if not os.access(filename, os.R_OK):
 				raise BackendIOError(u"Read access denied for package file '%s'" % filename)
 
