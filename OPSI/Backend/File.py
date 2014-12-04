@@ -418,7 +418,7 @@ class FileBackend(ConfigDataBackend):
 
 				try:
 					hostId = forceHostId(entry[:-4])
-				except:
+				except Exception:
 					logger.warning(u"Ignoring invalid client file '%s'" % (entry))
 					continue
 
@@ -457,7 +457,7 @@ class FileBackend(ConfigDataBackend):
 
 				try:
 					hostId = forceHostId(entry[:-4])
-				except:
+				except Exception:
 					logger.warning(u"Ignoring invalid depot file '%s'" % (entry))
 					continue
 
@@ -660,7 +660,7 @@ class FileBackend(ConfigDataBackend):
 					try:
 						if idFilter and not self._objectHashMatches({'id': forceHostId(entry[:-3])}, **idFilter):
 							continue
-					except:
+					except Exception:
 						logger.warning(u"Ignoring invalid file '%s'" % (entry))
 						continue
 
@@ -1705,7 +1705,7 @@ class FileBackend(ConfigDataBackend):
 						fastFiltered = True
 						break
 					objHash[key] = value
-				except:
+				except Exception:
 					pass
 			if not fastFiltered and self._objectHashMatches(objHash, **filter):
 				# TODO: adaptObjHash?
@@ -1855,7 +1855,7 @@ class FileBackend(ConfigDataBackend):
 				for (key, value) in objHash.items():
 					try:
 						objHash[key] = self.__unescape(ini.get(section, key.lower()))
-					except:
+					except Exception:
 						pass
 
 				if self._objectHashMatches(objHash, **filter):
