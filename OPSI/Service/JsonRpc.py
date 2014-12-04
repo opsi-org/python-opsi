@@ -89,17 +89,16 @@ class JsonRpc(object):
 	def execute(self, result=None):
 		# Execute rpc
 		self.result = None
-		params = []
-		for param in self.params:
-			params.append(param)
-		try:
-			self.started = time.time()
+		params = [param for param in self.params]
+		self.started = time.time()
 
+		try:
 			methodInterface = None
 			for m in self._interface:
 				if self.getMethodName() == m['name']:
 					methodInterface = m
 					break
+
 			if not methodInterface:
 				raise OpsiRpcError(u"Method '%s' is not valid" % self.getMethodName())
 
@@ -237,7 +236,6 @@ class JsonRpcRequestProcessor(object):
 		if not self.callInterface:
 			raise Exception(u"Call interface not defined in %s" % self)
 
-		rpcs = []
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
@@ -264,11 +262,7 @@ class JsonRpcRequestProcessor(object):
 		return deferred
 
 	def executeRpcs(self, thread=True):
-		dl = []
-		for rpc in self.rpcs:
-			d = self._executeRpc(rpc=rpc, thread=thread)
-			dl.append(d)
-
+		dl = [self._executeRpc(rpc=rpc, thread=thread) for rpc in self.rpcs]
 		return DeferredList(dl)
 
 	def getResults(self):
