@@ -60,10 +60,8 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageManager = DepotserverPackageManager(self)
 
 	def depot_getHostRSAPublicKey(self):
-		f = open(self._sshRSAPublicKeyFile, 'r')
-		data = f.read()
-		f.close()
-		return forceUnicode(data)
+		with open(self._sshRSAPublicKeyFile, 'r') as publicKey:
+			return forceUnicode(publicKey.read())
 
 	def depot_getMD5Sum(self, filename):
 		try:
@@ -111,9 +109,8 @@ class DepotserverBackend(ExtendedBackend):
 			raise Exception(u"File not found: %s" % filename)
 		logger.info(u"Creating md5sum file '%s'" % md5sumFilename)
 		md5 = md5sum(filename)
-		f = open(md5sumFilename, 'w')
-		f.write(md5)
-		f.close()
+		with open(md5sumFilename, 'w') as md5file:
+			md5file.write(md5)
 
 	def depot_createZsyncFile(self, filename, zsyncFilename):
 		if not os.path.exists(filename):
