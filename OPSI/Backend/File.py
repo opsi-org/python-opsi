@@ -40,7 +40,7 @@ from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import *
 from OPSI.Util.File.Opsi import *
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 
 
 logger = Logger()
