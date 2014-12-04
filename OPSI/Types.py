@@ -182,42 +182,42 @@ def forceTime(var):
 	raise ValueError(u"Not a time '%s'" % var)
 
 
-hardwareIdRegex = re.compile('^[a-fA-F0-9]{4}$')
+_HARDWARE_ID_REGEX = re.compile('^[a-fA-F0-9]{4}$')
 def forceHardwareVendorId(var):
 	var = forceUnicodeUpper(var)
-	if not re.search(hardwareIdRegex, var):
+	if not re.search(_HARDWARE_ID_REGEX, var):
 		raise ValueError(u"Bad hardware vendor id '%s'" % var)
 	return var
 
 
 def forceHardwareDeviceId(var):
 	var = forceUnicodeUpper(var)
-	if not re.search(hardwareIdRegex, var):
+	if not re.search(_HARDWARE_ID_REGEX, var):
 		raise ValueError(u"Bad hardware device id '%s'" % var)
 	return var
 
 
-opsiTimestampRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
-opsiDateRegex = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
+_OPSI_TIMESTAMP_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
+_OPSI_DATE_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
 def forceOpsiTimestamp(var):
 	if not var:
 		var = u'0000-00-00 00:00:00'
 	if isinstance(var, datetime.datetime):
 		var = str(var)
 	var = forceUnicode(var)
-	match = re.search(opsiTimestampRegex, var)
+	match = re.search(_OPSI_TIMESTAMP_REGEX, var)
 	if not match:
-		match = re.search(opsiDateRegex, var)
+		match = re.search(_OPSI_DATE_REGEX, var)
 		if not match:
 			raise ValueError(u"Bad opsi timestamp: '%s'" % var)
 		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
 
-fqdnRegex = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
+_FQDN_REGEX = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceFqdn(var):
 	var = forceObjectId(var)
-	if not fqdnRegex.search(var):
+	if not _FQDN_REGEX.search(var):
 		raise ValueError(u"Bad fqdn: '%s'" % var)
 	if var.endswith('.'):
 		var = var[:-1]
@@ -229,21 +229,21 @@ def forceHostIdList(var):
 	return [forceHostId(element) for element in forceList(var)]
 
 
-hardwareAddressRegex = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
+_HARDWARE_ADDRESS_REGEX = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
 def forceHardwareAddress(var):
 	var = forceUnicodeLower(var)
 	if not var:
 		return var
-	match = re.search(hardwareAddressRegex, var)
+	match = re.search(_HARDWARE_ADDRESS_REGEX, var)
 	if not match:
 		raise ValueError(u"Bad hardware address: %s" % var)
 	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
 
-ipAddressRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+_IP_ADDRESS_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceIPAddress(var):
 	var = forceUnicodeLower(var)
-	if not re.search(ipAddressRegex, var):
+	if not re.search(_IP_ADDRESS_REGEX, var):
 		raise ValueError(u"Bad ip address: '%s'" % var)
 	return var
 forceIpAddress = forceIPAddress
@@ -264,23 +264,23 @@ def forceHostAddress(var):
 	return var
 
 
-netmaskRegex = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+_NETMASK_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceNetmask(var):
 	var = forceUnicodeLower(var)
-	if not re.search(netmaskRegex, var):
+	if not re.search(_NETMASK_REGEX, var):
 		raise ValueError(u"Bad netmask: '%s'" % var)
 	return var
 
 
-networkAddressRegex = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+_NETWORK_ADDRESS_REGEX = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
 	var = forceUnicodeLower(var)
-	if not re.search(networkAddressRegex, var):
+	if not re.search(_NETWORK_ADDRESS_REGEX, var):
 		raise ValueError(u"Bad network address: '%s'" % var)
 	return var
 
 
-urlRegex = re.compile('^[a-z0-9]+://[/a-zA-Z0-9]')
+_URL_REGEX = re.compile('^[a-z0-9]+://[/a-zA-Z0-9]')
 def forceUrl(var):
 	"""
 	Forces ``var`` to be an valid URL.
@@ -288,23 +288,23 @@ def forceUrl(var):
 	:returntype: unicode
 	"""
 	var = forceUnicode(var)
-	if not urlRegex.search(var):
+	if not _URL_REGEX.search(var):
 		raise ValueError(u"Bad url: '{0}'".format(var))
 	return var
 
 
-opsiHostKeyRegex = re.compile('^[0-9a-f]{32}$')
+_OPSI_HOST_KEY_REGEX = re.compile('^[0-9a-f]{32}$')
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
-	if not re.search(opsiHostKeyRegex, var):
+	if not re.search(_OPSI_HOST_KEY_REGEX, var):
 		raise ValueError(u"Bad opsi host key: '%s'" % var)
 	return var
 
 
-productVersionRegex = re.compile('^[a-z0-9\.]{1,32}$')
+_PRODUCT_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,32}$')
 def forceProductVersion(var):
 	var = forceUnicode(var)
-	if not productVersionRegex.search(var):
+	if not _PRODUCT_VERSION_REGEX.search(var):
 		raise ValueError(u"Bad product version: '%s'" % var)
 	return var
 
@@ -313,10 +313,10 @@ def forceProductVersionList(var):
 	return [forceProductVersion(element) for element in forceList(var)]
 
 
-packageVersionRegex = re.compile('^[a-z0-9\.]{1,16}$')
+_PACKAGE_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,16}$')
 def forcePackageVersion(var):
 	var = forceUnicode(var)
-	if not packageVersionRegex.search(var):
+	if not _PACKAGE_VERSION_REGEX.search(var):
 		raise ValueError(u"Bad package version: '%s'" % var)
 	return var
 
@@ -325,10 +325,10 @@ def forcePackageVersionList(var):
 	return [forcePackageVersion(element) for element in forceList(var)]
 
 
-productIdRegex = re.compile('^[a-z0-9-_\.]{1,128}$')
+_PRODUCT_ID_REGEX = re.compile('^[a-z0-9-_\.]{1,128}$')
 def forceProductId(var):
 	var = forceObjectId(var)
-	if not productIdRegex.search(var):
+	if not _PRODUCT_ID_REGEX.search(var):
 		raise ValueError(u"Bad product id: '%s'" % var)
 	return var
 
@@ -337,10 +337,10 @@ def forceProductIdList(var):
 	return [forceProductId(element) for element in forceList(var)]
 
 
-packageCustomNameRegex = re.compile('^[a-zA-Z0-9]+$')
+_PACKAGE_CUSTOM_NAME_REGEX = re.compile('^[a-zA-Z0-9]+$')
 def forcePackageCustomName(var):
 	var = forceUnicodeLower(var)
-	if not packageCustomNameRegex.search(var):
+	if not _PACKAGE_CUSTOM_NAME_REGEX.search(var):
 		raise ValueError(u"Bad package custom name: '%s'" % var)
 	return var
 
@@ -355,18 +355,18 @@ def forceProductType(var):
 		raise ValueError(u"Unknown product type: '%s'" % var)
 
 
-productPropertyIdRegex = re.compile('^\S+$')
+_PRODUCT_PROPERTY_ID_REGEX = re.compile('^\S+$')
 def forceProductPropertyId(var):
 	var = forceUnicodeLower(var)
-	if not productPropertyIdRegex.search(var):
+	if not _PRODUCT_PROPERTY_ID_REGEX.search(var):
 		raise ValueError(u"Bad product property id: '%s'" % var)
 	return var
 
 
-configIdRegex = re.compile('^\S+$')
+CONFIG_ID_REGEX = re.compile('^\S+$')
 def forceConfigId(var):
 	var = forceUnicodeLower(var)
-	if not configIdRegex.search(var):
+	if not CONFIG_ID_REGEX.search(var):
 		raise ValueError(u"Bad config id: '%s'" % var)
 	return var
 
@@ -490,10 +490,10 @@ def forceObjectClassList(var, objectClass):
 	return [forceObjectClass(element, objectClass) for element in forceList(var)]
 
 
-groupIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+_GROUP_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceGroupId(var):
 	var = forceObjectId(var)
-	if not groupIdRegex.search(var):
+	if not _GROUP_ID_REGEX.search(var):
 		raise ValueError(u"Bad group id: '%s'" % var)
 	return var
 
@@ -517,10 +517,10 @@ def forceGroupIdList(var):
 	return [forceGroupId(element) for element in forceList(var)]
 
 
-objectIdRegex = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+_OBJECT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceObjectId(var):
 	var = forceUnicodeLower(var).strip()
-	if not objectIdRegex.search(var):
+	if not _OBJECT_ID_REGEX.search(var):
 		raise ValueError(u"Bad object id: '%s'" % var)
 	return var
 
@@ -529,34 +529,34 @@ def forceObjectIdList(var):
 	return [forceObjectId(element) for element in forceList(var)]
 
 
-emailRegex = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
+_EMAIL_REGEX = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
-	if not emailRegex.search(var):
+	if not _EMAIL_REGEX.search(var):
 		raise ValueError(u"Bad email address: '%s'" % var)
 	return var
 
 
-domainRegex = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
+_DOMAIN_REGEX = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceDomain(var):
 	var = forceUnicodeLower(var)
-	if not domainRegex.search(var):
+	if not _DOMAIN_REGEX.search(var):
 		raise ValueError(u"Bad domain: '%s'" % var)
 	return var
 
 
-hostnameRegex = re.compile('^[a-z0-9][a-z0-9\-]*$')
+_HOSTNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\-]*$')
 def forceHostname(var):
 	var = forceUnicodeLower(var)
-	if not hostnameRegex.search(var):
+	if not _HOSTNAME_REGEX.search(var):
 		raise ValueError(u"Bad hostname: '%s'" % var)
 	return var
 
 
-licenseContractIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
+_LICENSE_CONTRACT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicenseContractId(var):
 	var = forceUnicodeLower(var)
-	if not licenseContractIdRegex.search(var):
+	if not _LICENSE_CONTRACT_ID_REGEX.search(var):
 		raise ValueError(u"Bad license contract id: '%s'" % var)
 	return var
 
@@ -565,10 +565,10 @@ def forceLicenseContractIdList(var):
 	return [forceLicenseContractId(element) for element in forceList(var)]
 
 
-softwareLicenseIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
+_SOFTWARE_LICENSE_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceSoftwareLicenseId(var):
 	var = forceUnicodeLower(var)
-	if not softwareLicenseIdRegex.search(var):
+	if not _SOFTWARE_LICENSE_ID_REGEX.search(var):
 		raise ValueError(u"Bad software license id: '%s'" % var)
 	return var
 
@@ -577,10 +577,10 @@ def forceSoftwareLicenseIdList(var):
 	return [forceSoftwareLicenseId(element) for element in forceList(var)]
 
 
-licensePoolIdRegex = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
+_LICENSE_POOL_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicensePoolId(var):
 	var = forceUnicodeLower(var)
-	if not licensePoolIdRegex.search(var):
+	if not _LICENSE_POOL_ID_REGEX.search(var):
 		raise ValueError(u"Bad license pool id: '%s'" % var)
 	return var
 
@@ -596,10 +596,10 @@ def forceAuditState(var):
 	return var
 
 
-languageCodeRegex = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
+_LANGUAGE_CODE_REGEX = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 def forceLanguageCode(var):
 	var = forceUnicodeLower(var)
-	match = languageCodeRegex.search(var)
+	match = _LANGUAGE_CODE_REGEX.search(var)
 	if not match:
 		raise ValueError(u"Bad language code: '%s'" % var)
 	var = match.group(1)
@@ -614,10 +614,10 @@ def forceLanguageCodeList(var):
 	return [forceLanguageCode(element) for element in forceList(var)]
 
 
-architectureRegex = re.compile('^(x86|x64)$')
+_ARCHITECTURE_REGX = re.compile('^(x86|x64)$')
 def forceArchitecture(var):
 	var = forceUnicodeLower(var)
-	if not architectureRegex.search(var):
+	if not _ARCHITECTURE_REGEXarchitectureRegex.search(var):
 		raise ValueError(u"Bad architecture: '%s'" % var)
 	return var
 
