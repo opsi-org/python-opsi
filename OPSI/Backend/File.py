@@ -981,7 +981,7 @@ class FileBackend(ConfigDataBackend):
 
 					attributeMapping = mapping.get(attribute, mapping.get('*'))
 
-					if not attributeMapping is None:
+					if attributeMapping is not None:
 						section = attributeMapping['section']
 						option = attributeMapping['option']
 
@@ -1011,7 +1011,8 @@ class FileBackend(ConfigDataBackend):
 									(installationStatus, actionRequest) = combined.split(u':', 1)
 								elif combined:
 									installationStatus = combined
-								if not value is None:
+
+								if value is not None:
 									if attribute == 'installationStatus':
 										installationStatus = value
 									elif attribute == 'actionRequest':
@@ -1020,7 +1021,7 @@ class FileBackend(ConfigDataBackend):
 						elif objType == 'ObjectToGroup':
 							value = 1
 
-						if not value is None:
+						if value is not None:
 							if attributeMapping.get('json'):
 								value = toJson(value)
 							elif isinstance(value, str) or isinstance(value, unicode):
@@ -1613,7 +1614,7 @@ class FileBackend(ConfigDataBackend):
 			matches = True
 			for attribute in ('name', 'version', 'subVersion', 'language', 'architecture'):
 				if not ini.has_option(section, attribute):
-					if not auditSoftware[attribute] is None:
+					if auditSoftware[attribute] is not None:
 						matches = False
 						break
 				elif ini.get(section, attribute) != auditSoftware[attribute]:
@@ -1772,7 +1773,7 @@ class FileBackend(ConfigDataBackend):
 			matches = True
 			for attribute in ('name', 'version', 'subVersion', 'language', 'architecture'):
 				if not ini.has_option(section, attribute):
-					if not auditSoftwareOnClient[attribute] is None:
+					if auditSoftwareOnClient[attribute] is not None:
 						matches = False
 						break
 				elif ini.get(section, attribute) != auditSoftwareOnClient[attribute]:
