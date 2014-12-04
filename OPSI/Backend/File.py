@@ -1325,9 +1325,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.config_getObjects(self, attributes, **filter)
 
 		logger.debug(u"Getting configs ...")
-		result = self._read('Config', attributes, **filter)
-
-		return result
+		return self._read('Config', attributes, **filter)
 
 	def config_deleteObjects(self, configs):
 		ConfigDataBackend.config_deleteObjects(self, configs)
@@ -1354,9 +1352,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
 
 		logger.debug(u"Getting configStates ...")
-		result = self._read('ConfigState', attributes, **filter)
-
-		return result
+		return self._read('ConfigState', attributes, **filter)
 
 	def configState_deleteObjects(self, configStates):
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
@@ -1413,9 +1409,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.productProperty_getObjects(self, attributes, **filter)
 
 		logger.debug(u"Getting productProperties ...")
-		result = self._read('ProductProperty', attributes, **filter)
-
-		return result
+		return self._read('ProductProperty', attributes, **filter)
 
 	def productProperty_deleteObjects(self, productProperties):
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
@@ -1442,9 +1436,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting productDependencies ...")
-		result = self._read('ProductDependency', attributes, **filter)
-
-		return result
+		return self._read('ProductDependency', attributes, **filter)
 
 	def productDependency_deleteObjects(self, productDependencies):
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
@@ -1471,9 +1463,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting productOnDepots ...")
-		result = self._read('ProductOnDepot', attributes, **filter)
-
-		return result
+		return self._read('ProductOnDepot', attributes, **filter)
 
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
@@ -1500,9 +1490,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting productOnClient ...")
-		result = self._read('ProductOnClient', attributes, **filter)
-
-		return result
+		return self._read('ProductOnClient', attributes, **filter)
 
 	def productOnClient_deleteObjects(self, productOnClients):
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
@@ -1529,9 +1517,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting productPropertyStates ...")
-		result = self._read('ProductPropertyState', attributes, **filter)
-
-		return result
+		return self._read('ProductPropertyState', attributes, **filter)
 
 	def productPropertyState_deleteObjects(self, productPropertyStates):
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
@@ -1558,9 +1544,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting groups ...")
-		result = self._read('Group', attributes, **filter)
-
-		return result
+		return self._read('Group', attributes, **filter)
 
 	def group_deleteObjects(self, groups):
 		ConfigDataBackend.group_deleteObjects(self, groups)
@@ -1587,9 +1571,7 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting objectToGroups ...")
-		result = self._read('ObjectToGroup', attributes, **filter)
-
-		return result
+		return self._read('ObjectToGroup', attributes, **filter)
 
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
