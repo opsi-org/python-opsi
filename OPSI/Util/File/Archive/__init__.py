@@ -431,9 +431,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				if match:
 					fileCount += 1
 
-			include = u''
-			for pattern in patterns:
-				include += ' "%s"' % pattern
+			include = ' '.join(['"%s"' % pattern for pattern in patterns])
 
 			curDir = os.path.abspath(os.getcwd())
 			os.chdir(targetPath)

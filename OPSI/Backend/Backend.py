@@ -752,10 +752,7 @@ depot where the method is.
 		host = forceObjectClass(host, Host)
 
 	def host_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.host_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.host_getObjects(attributes, **filter)]
 
 	def host_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
@@ -826,24 +823,22 @@ depot where the method is.
 		config = forceObjectClass(config, Config)
 
 	def config_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.config_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.config_getObjects(attributes, **filter)]
 
 	def config_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
 		return []
 
 	def config_deleteObjects(self, configs):
-		ids = []
-		for config in forceObjectClassList(configs, Config):
-			ids.append(config.id)
+		ids = [config.id for config in forceObjectClassList(configs, Config)]
+
 		if ids:
 			self._context.configState_deleteObjects(
 				self._context.configState_getObjects(
-					configId = ids,
-					objectId = []))
+					configId=ids,
+					objectId=[]
+				)
+			)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -853,9 +848,8 @@ depot where the method is.
 		configState.setDefaults()
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			configIds = []
-			for config in self._context.config_getObjects(attributes = ['id']):
-				configIds.append(config.id)
+			configIds = [config.id for config in self._context.config_getObjects(attributes=['id'])]
+
 			if configState.configId not in configIds:
 				raise BackendReferentialIntegrityError(u"Config with id '%s' not found" % configState.configId)
 
@@ -863,10 +857,7 @@ depot where the method is.
 		configState = forceObjectClass(configState, ConfigState)
 
 	def configState_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.configState_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.configState_getObjects(attributes, **filter)]
 
 	def configState_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
@@ -886,10 +877,7 @@ depot where the method is.
 		product = forceObjectClass(product, Product)
 
 	def product_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.product_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.product_getObjects(attributes, **filter)]
 
 	def product_getObjects(self, attributes = [], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
@@ -988,10 +976,7 @@ depot where the method is.
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 
 	def productDependency_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.productDependency_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.productDependency_getObjects(attributes, **filter)]
 
 	def productDependency_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductDependency, attributes, **filter)
@@ -1029,10 +1014,7 @@ depot where the method is.
 					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 
 	def productOnDepot_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.productOnDepot_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.productOnDepot_getObjects(attributes, **filter)]
 
 	def productOnDepot_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnDepot, attributes, **filter)
@@ -1059,11 +1041,8 @@ depot where the method is.
 	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 
-	def productOnClient_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.productOnClient_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def productOnClient_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.productOnClient_getObjects(attributes, **filter)]
 
 	def productOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductOnClient, attributes, **filter)
@@ -1090,10 +1069,7 @@ depot where the method is.
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 
 	def productPropertyState_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.productPropertyState_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.productPropertyState_getObjects(attributes, **filter)]
 
 	def productPropertyState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
@@ -1117,21 +1093,20 @@ depot where the method is.
 		group = forceObjectClass(group, Group)
 
 	def group_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.group_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.group_getObjects(attributes, **filter)]
 
 	def group_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Group, attributes, **filter)
 		return []
 
 	def group_deleteObjects(self, groups):
-		for group in forceObjectClassList(groups, Group):
-			self._context.objectToGroup_deleteObjects(
-				self._context.objectToGroup_getObjects(
-					groupType = group.getType(),
-					groupId   = group.id ))
+		[self._context.objectToGroup_deleteObjects(
+			self._context.objectToGroup_getObjects(
+				groupType=group.getType(),
+				groupId=group.id
+			)
+		) for group in forceObjectClassList(groups, Group)]
+
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
@@ -1143,11 +1118,8 @@ depot where the method is.
 	def objectToGroup_updateObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 
-	def objectToGroup_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.objectToGroup_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def objectToGroup_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.objectToGroup_getObjects(attributes, **filter)]
 
 	def objectToGroup_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
@@ -1167,10 +1139,7 @@ depot where the method is.
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
 
 	def licenseContract_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.licenseContract_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.licenseContract_getObjects(attributes, **filter)]
 
 	def licenseContract_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseContract, attributes, **filter)
@@ -1196,22 +1165,20 @@ depot where the method is.
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 
 	def softwareLicense_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.softwareLicense_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.softwareLicense_getObjects(attributes, **filter)]
 
 	def softwareLicense_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicense, attributes, **filter)
 		return []
 
 	def softwareLicense_deleteObjects(self, softwareLicenses):
-		softwareLicenseIds = []
-		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
-			softwareLicenseIds.append(softwareLicense.id)
+		softwareLicenseIds = [softwareLicense.id for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense)]
+
 		self._context.softwareLicenseToLicensePool_deleteObjects(
 			self._context.softwareLicenseToLicensePool_getObjects(
-				softwareLicenseId = softwareLicenseIds ))
+				softwareLicenseId=softwareLicenseIds
+			)
+		)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools                                                                              -
@@ -1224,19 +1191,15 @@ depot where the method is.
 		licensePool = forceObjectClass(licensePool, LicensePool)
 
 	def licensePool_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.licensePool_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.licensePool_getObjects(attributes, **filter)]
 
 	def licensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicensePool, attributes, **filter)
 		return []
 
 	def licensePool_deleteObjects(self, licensePools):
-		licensePoolIds = []
-		for licensePool in forceObjectClassList(licensePools, LicensePool):
-			licensePoolIds.append(licensePool.id)
+		licensePoolIds = [licensePool.id for licensePool in forceObjectClassList(licensePools, LicensePool)]
+
 		if licensePoolIds:
 			softwareLicenseToLicensePools = self._context.softwareLicenseToLicensePool_getObjects(licensePoolId = licensePoolIds)
 			if softwareLicenseToLicensePools:
@@ -1268,19 +1231,15 @@ depot where the method is.
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 
 	def softwareLicenseToLicensePool_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.softwareLicenseToLicensePool_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.softwareLicenseToLicensePool_getObjects(attributes, **filter)]
 
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(SoftwareLicenseToLicensePool, attributes, **filter)
 		return []
 
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
-		softwareLicenseIds = []
-		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
-			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
+		softwareLicenseIds = [softwareLicenseToLicensePool.softwareLicenseId for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)]
+
 		if softwareLicenseIds:
 			licenseOnClients = self._context.licenseOnClient_getObjects(softwareLicenseId = softwareLicenseIds)
 			if licenseOnClients:
@@ -1298,10 +1257,7 @@ depot where the method is.
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
 
 	def licenseOnClient_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.licenseOnClient_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.licenseOnClient_getObjects(attributes, **filter)]
 
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(LicenseOnClient, attributes, **filter)
@@ -1320,11 +1276,8 @@ depot where the method is.
 	def auditSoftware_updateObject(self, auditSoftware):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 
-	def auditSoftware_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.auditSoftware_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def auditSoftware_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.auditSoftware_getObjects(attributes, **filter)]
 
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftware, attributes, **filter)
@@ -1343,11 +1296,8 @@ depot where the method is.
 	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
 		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
 
-	def auditSoftwareToLicensePool_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.auditSoftwareToLicensePool_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def auditSoftwareToLicensePool_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.auditSoftwareToLicensePool_getObjects(attributes, **filter)]
 
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareToLicensePool, attributes, **filter)
@@ -1366,11 +1316,8 @@ depot where the method is.
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 
-	def auditSoftwareOnClient_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.auditSoftwareOnClient_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def auditSoftwareOnClient_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.auditSoftwareOnClient_getObjects(attributes, **filter)]
 
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(AuditSoftwareOnClient, attributes, **filter)
@@ -1389,11 +1336,8 @@ depot where the method is.
 	def auditHardware_updateObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 
-	def auditHardware_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.auditHardware_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+	def auditHardware_getHashes(self, attributes=[], **filter):
+		return [obj.toHash() for obj in self.auditHardware_getObjects(attributes, **filter)]
 
 	def auditHardware_getObjects(self, attributes=[], **filter):
 		return []
@@ -1516,10 +1460,7 @@ depot where the method is.
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 
 	def auditHardwareOnHost_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.auditHardwareOnHost_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.auditHardwareOnHost_getObjects(attributes, **filter)]
 
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
 		return []
@@ -1538,10 +1479,7 @@ depot where the method is.
 		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
 
 	def bootConfiguration_getHashes(self, attributes = [], **filter):
-		hashes = []
-		for obj in self.bootConfiguration_getObjects(attributes, **filter):
-			hashes.append(obj.toHash())
-		return hashes
+		return [obj.toHash() for obj in self.bootConfiguration_getObjects(attributes, **filter)]
 
 	def bootConfiguration_getObjects(self, attributes=[], **filter):
 		return []
@@ -1663,12 +1601,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				   result2['objectClass'], result2['identAttributes'][result2IdentIndex],
 				   operator))
 
-			values1 = []
-			for v in result1['identValues']:
-				values1.append(v[result1IdentIndex])
-			values2 = []
-			for v in result2['identValues']:
-				values2.append(v[result2IdentIndex])
+			values1 = [v[result1IdentIndex] for v in result1['identValues']]
+			values2 = [v[result2IdentIndex] for v in result2['identValues']]
 
 			foreignIdAttributes = result1["foreignIdAttributes"]
 			for attr in result2["foreignIdAttributes"]:
@@ -1824,144 +1758,147 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			return (result, objectClass, objectFilter)
 
-		result = []
-		for v in handleFilter(parsedFilter)[0].get('identValues', []):
-			result.append(v[0])
-		result.sort()
+		result = [v[0] for v in handleFilter(parsedFilter)[0].get('identValues', [])]
 		logger.info(u"=== Search done, result: %s" % result)
-		return result
+		return sorted(result)
 
 	def host_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for host in self.host_getObjects(attributes = ['id'], **filter):
-			result.append(host.getIdent(returnType))
-		return result
+		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]
 
 	def config_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for config in self.config_getObjects(attributes = ['id'], **filter):
-			result.append(config.getIdent(returnType))
-		return result
+		return [config.getIdent(returnType) for config in self.config_getObjects(attributes=['id'], **filter)]
 
 	def configState_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for configState in self.configState_getObjects(attributes = ['configId', 'objectId'], **filter):
-			result.append(configState.getIdent(returnType))
-		return result
+		return [configState.getIdent(returnType) for configState in self.configState_getObjects(attributes=['configId', 'objectId'], **filter)]
 
 	def product_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for product in self.product_getObjects(attributes = ['id'], **filter):
-			result.append(product.getIdent(returnType))
-		return result
+		return [product.getIdent(returnType) for product in self.product_getObjects(attributes=['id'], **filter)]
 
 	def productProperty_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productProperty in self.productProperty_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'propertyId'], **filter):
-			result.append(productProperty.getIdent(returnType))
-		return result
+		return [productProperty.getIdent(returnType) for productProperty
+				in self.productProperty_getObjects(
+					attributes=['productId', 'productVersion', 'packageVersion', 'propertyId'],
+					**filter
+				)
+		]
 
 	def productDependency_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productDependency in self.productDependency_getObjects(attributes = ['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'], **filter):
-			result.append(productDependency.getIdent(returnType))
-		return result
+		return [productDependency.getIdent(returnType) for productDependency
+				in self.productDependency_getObjects(
+					attributes=['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'],
+					**filter
+				)
+		]
 
 	def productOnDepot_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productOnDepot in self.productOnDepot_getObjects(attributes = ['productId', 'productType', 'depotId'], **filter):
-			result.append(productOnDepot.getIdent(returnType))
-		return result
+		return [productOnDepot.getIdent(returnType) for productOnDepot
+				in self.productOnDepot_getObjects(
+					attributes=['productId', 'productType', 'depotId'],
+					**filter
+				)
+		]
 
 	def productOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productOnClient in self.productOnClient_getObjects(attributes = ['productId', 'productType', 'clientId'], **filter):
-			result.append(productOnClient.getIdent(returnType))
-		return result
+		return [productOnClient.getIdent(returnType) for productOnClient
+				in self.productOnClient_getObjects(
+					attributes=['productId', 'productType', 'clientId'],
+					**filter
+				)
+		]
 
 	def productPropertyState_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for productPropertyState in self.productPropertyState_getObjects(attributes = ['productId', 'propertyId', 'objectId'], **filter):
-			result.append(productPropertyState.getIdent(returnType))
-		return result
+		return [productPropertyState.getIdent(returnType) for
+				productPropertyState in self.productPropertyState_getObjects(
+					attributes=['productId', 'propertyId', 'objectId'],
+					**filter
+				)
+		]
 
 	def group_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for group in self.group_getObjects(attributes = ['id'], **filter):
-			result.append(group.getIdent(returnType))
-		return result
+		return [group.getIdent(returnType) for group in
+				self.group_getObjects(attributes=['id'], **filter)]
 
 	def objectToGroup_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for objectToGroup in self.objectToGroup_getObjects(attributes = ['groupType', 'groupId', 'objectId'], **filter):
-			result.append(objectToGroup.getIdent(returnType))
-		return result
+		return [objectToGroup.getIdent(returnType) for objectToGroup
+				in self.objectToGroup_getObjects(
+					attributes=['groupType', 'groupId', 'objectId'],
+					**filter
+				)
+		]
 
 	def licenseContract_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for licenseContract in self.licenseContract_getObjects(attributes = ['id'], **filter):
-			result.append(licenseContract.getIdent(returnType))
-		return result
+		return [licenseContract.getIdent(returnType) for licenseContract
+				in self.licenseContract_getObjects(attributes=['id'], **filter)]
 
 	def softwareLicense_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for softwareLicense in self.softwareLicense_getObjects(attributes = ['id', 'licenseContractId'], **filter):
-			result.append(softwareLicense.getIdent(returnType))
-		return result
+		return [softwareLicense.getIdent(returnType) for softwareLicense
+				in self.softwareLicense_getObjects(
+					attributes=['id', 'licenseContractId'],
+					**filter
+				)
+		]
 
 	def licensePool_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for licensePool in self.licensePool_getObjects(attributes = ['id'], **filter):
-			result.append(licensePool.getIdent(returnType))
-		return result
+		return [licensePool.getIdent(returnType) for licensePool in
+				self.licensePool_getObjects(attributes=['id'], **filter)]
 
 	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for softwareLicenseToLicensePool in self.softwareLicenseToLicensePool_getObjects(attributes = ['softwareLicenseId', 'licensePoolId'], **filter):
-			result.append(softwareLicenseToLicensePool.getIdent(returnType))
-		return result
+		return [softwareLicenseToLicensePool.getIdent(returnType) for
+				softwareLicenseToLicensePool in
+				self.softwareLicenseToLicensePool_getObjects(
+					attributes=['softwareLicenseId', 'licensePoolId'],
+					**filter
+				)
+		]
 
 	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for licenseOnClient in self.licenseOnClient_getObjects(attributes = ['softwareLicenseId', 'licensePoolId', 'clientId'], **filter):
-			result.append(licenseOnClient.getIdent(returnType))
-		return result
+		return [licenseOnClient.getIdent(returnType) for licenseOnClient
+				in self.licenseOnClient_getObjects(
+					attributes=['softwareLicenseId', 'licensePoolId', 'clientId'],
+					**filter
+				)
+		]
 
 	def bootConfiguration_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for bootConfiguration in self.bootConfiguration_getObjects(attributes = ['name', 'clientId'], **filter):
-			result.append(bootConfiguration.getIdent(returnType))
-		return result
+		return [bootConfiguration.getIdent(returnType) for bootConfiguration
+				in self.bootConfiguration_getObjects(
+					attributes=['name', 'clientId'], **filter
+				)
+		]
 
 	def auditSoftware_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditSoftware in self.auditSoftware_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture'], **filter):
-			result.append(auditSoftware.getIdent(returnType))
-		return result
+		return [auditSoftware.getIdent(returnType) for auditSoftware in
+				self.auditSoftware_getObjects(
+					attributes=['name', 'version', 'subVersion', 'language', 'architecture'],
+					**filter
+				)
+		]
 
 	def auditSoftwareToLicensePool_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditSoftwareToLicensePool in self.auditSoftwareToLicensePool_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture', 'licensePoolId'], **filter):
-			result.append(auditSoftwareToLicensePool.getIdent(returnType))
-		return result
+		return [auditSoftwareToLicensePool.getIdent(returnType) for
+				auditSoftwareToLicensePool in
+				self.auditSoftwareToLicensePool_getObjects(
+					attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'licensePoolId'],
+					**filter
+				)
+		]
 
 	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditSoftwareOnClient in self.auditSoftwareOnClient_getObjects(attributes = ['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'], **filter):
-			result.append(auditSoftwareOnClient.getIdent(returnType))
-		return result
+		return [auditSoftwareOnClient.getIdent(returnType) for
+				auditSoftwareOnClient in
+				self.auditSoftwareOnClient_getObjects(
+					attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'],
+					**filter
+				)
+		]
 
 	def auditHardware_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditHardware in self.auditHardware_getObjects(**filter):
-			result.append(auditHardware.getIdent(returnType))
-		return result
+		return [auditHardware.getIdent(returnType) for auditHardware
+				in self.auditHardware_getObjects(**filter)]
 
 	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):
-		result = []
-		for auditHardwareOnHost in self.auditHardwareOnHost_getObjects(**filter):
-			result.append(auditHardwareOnHost.getIdent(returnType))
-		return result
+		return [auditHardwareOnHost.getIdent(returnType) for auditHardwareOnHost
+				in self.auditHardwareOnHost_getObjects(**filter)]
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
@@ -3058,12 +2995,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.debug(u"   * generating productOnClient sequence")
 			productOnClients = self.productOnClient_generateSequence(productOnClients)
 
-		productOnClientsFiltered = []
-		for productOnClient in productOnClients:
-			if self._objectHashMatches(productOnClient.toHash(), **filter):
-				productOnClientsFiltered.append(productOnClient)
-		return productOnClientsFiltered
-
+		return [productOnClient for productOnClient in productOnClients if
+				self._objectHashMatches(productOnClient.toHash(), **filter)]
 
 	def _productOnClientUpdateOrCreate(self, productOnClient, update=False):
 		nextProductOnClient = None
@@ -3725,9 +3658,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if not softwareLicenseToLicensePools:
 			raise LicenseMissingError(u"No licenses in pool '%s'" % licensePoolId)
 
-		softwareLicenseIds = []
-		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
-			softwareLicenseIds.append(softwareLicenseToLicensePool.softwareLicenseId)
+		softwareLicenseIds = [softwareLicenseToLicensePool.softwareLicenseId
+								for softwareLicenseToLicensePool
+								in softwareLicenseToLicensePools]
 
 		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id = softwareLicenseIds, boundToHost = clientId)
 		if softwareLicensesBoundToHost:

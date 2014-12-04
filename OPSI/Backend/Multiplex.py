@@ -158,10 +158,7 @@ class MultiplexBackend(object):
 		self.connect()
 
 	def _getDepotIds(self):
-		depotIds = []
-		for service in self.__services.keys():
-			depotIds.append(service.split("/")[2].split(":")[0])
-		return depotIds
+		return [service.split("/")[2].split(":")[0]) for service in self.__services.keys()]
 
 	def _getOpsiHostKey(self, depotId):
 		for name, service in self.__services.iteritems():
@@ -286,10 +283,10 @@ class MultiplexBackend(object):
 				serviceKwargs = dict(kwargs)
 				for attribute in ('id', 'objectId', 'hostId', 'depotId', 'clientId'):
 					if serviceKwargs.has_key(attribute):
-						objectIds = []
-						for objectId in forceUnicodeList(serviceKwargs[attribute]):
-							if objectId in map((lambda x: x.id), service.clients) or objectId in map((lambda x: x.id), service.depots):
-								objectIds.append(objectId)
+						objectIds = [objectId for objectId in
+							forceUnicodeList(serviceKwargs[attribute])
+							if objectId in map((lambda x: x.id), service.clients) or objectId in map((lambda x: x.id), service.depots)]
+
 						if objectIds:
 							serviceKwargs[attribute] = objectIds
 				res = meth(*args, **serviceKwargs)
@@ -397,11 +394,12 @@ class MultiplexBackend(object):
 						if pps:
 							dispatcher.productPropertyState_createObjects(pps)
 
-						css = []
-						for cs in source.configState_getObjects(objectId = configState.objectId):
-							if (cs.configId == u"clientconfig.depot.id"):
-								continue
-							css.append(cs)
+						css = [
+							cs for cs in
+							source.configState_getObjects(objectId=configState.objectId)
+							if cs.configId != u"clientconfig.depot.id"
+						]
+
 						if css:
 							dispatcher.configState_createObjects(css)
 

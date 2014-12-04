@@ -168,8 +168,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		self._trackModification('update', obj)
 
 	def objectsDeleted(self, backend, objs):
-		for obj in forceList(objs):
-			self._trackModification('delete', obj)
+		[self._trackModification('delete', obj) for obj in forceList(objs)]
 
 
 class SQLBackend(ConfigDataBackend):
@@ -1015,12 +1014,12 @@ class SQLBackend(ConfigDataBackend):
 
 		self._sql.update('CONFIG', where, data)
 		self._sql.delete('CONFIG_VALUE', where)
-		for value in possibleValues:
-			self._sql.insert('CONFIG_VALUE', {
-				'configId': data['configId'],
-				'value': value,
-				'isDefault': (value in defaultValues)
-				})
+		[self._sql.insert('CONFIG_VALUE', {
+			'configId': data['configId'],
+			'value': value,
+			'isDefault': (value in defaultValues)
+			}
+		) for value in possibleValues]
 
 	def config_getObjects(self, attributes=[], **filter):
 		if not self._sqlBackendModule:
@@ -1034,25 +1033,36 @@ class SQLBackend(ConfigDataBackend):
 		if filter.has_key('defaultValues'):
 			if filter['defaultValues']:
 				configIds = filter.get('configId')
-				filter['configId'] = []
-				for res in self._sql.getSet(self._createQuery('CONFIG_VALUE', ['configId'], {'configId': configIds, 'value': filter['defaultValues'], 'isDefault': True})):
-					filter['configId'].append(res['configId'])
+				filter['configId'] = [res['configId'] for res in
+					self._sql.getSet(
+						self._createQuery(
+							'CONFIG_VALUE',
+							('configId', ),
+							{'configId': configIds, 'value': filter['defaultValues'], 'isDefault': True}
+						)
+					)
+				]
+
 				if not filter['configId']:
 					return []
 			del filter['defaultValues']
 		if filter.has_key('possibleValues'):
 			if filter['possibleValues']:
 				configIds = filter.get('configId')
-				filter['configId'] = []
-				for res in self._sql.getSet(self._createQuery('CONFIG_VALUE', ['configId'], {'configId': configIds, 'value': filter['possibleValues']})):
-					filter['configId'].append(res['configId'])
+				filter['configId'] = [res['configId'] for res in
+					self._sql.getSet(
+						self._createQuery(
+							'CONFIG_VALUE',
+							('configId', ),
+							{'configId': configIds, 'value': filter['possibleValues']}
+						)
+					)
+				]
+
 				if not filter['configId']:
 					return []
 			del filter['possibleValues']
-		attrs = []
-		for attr in attributes:
-			if not attr in ('defaultValues', 'possibleValues'):
-				attrs.append(attr)
+		attrs = [attr for attr in attributes if attr not in ('defaultValues', 'possibleValues')]
 		for res in self._sql.getSet(self._createQuery('CONFIG', attrs, filter)):
 			res['possibleValues'] = []
 			res['defaultValues'] = []
@@ -1169,8 +1179,13 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.insert('PRODUCT', data)
 
 		self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
-		for windowsSoftwareId in windowsSoftwareIds:
-			self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+
+		[self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT',
+			{
+				'windowsSoftwareId': windowsSoftwareId,
+				'productId': data['productId']
+			}
+		) for windowsSoftwareId in windowsSoftwareIds]
 
 	def product_updateObject(self, product):
 		if not self._sqlBackendModule:
@@ -1185,8 +1200,12 @@ class SQLBackend(ConfigDataBackend):
 		self._sql.update('PRODUCT', where, data)
 		self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % data['productId'])
 		if windowsSoftwareIds:
-			for windowsSoftwareId in windowsSoftwareIds:
-				self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT', {'windowsSoftwareId': windowsSoftwareId, 'productId': data['productId']})
+			[self._sql.insert('WINDOWS_SOFTWARE_ID_TO_PRODUCT',
+				{
+					'windowsSoftwareId': windowsSoftwareId,
+					'productId': data['productId']
+				}
+			) for windowsSoftwareId in windowsSoftwareIds]
 
 	def product_getObjects(self, attributes=[], **filter):
 		if not self._sqlBackendModule:
@@ -1245,15 +1264,17 @@ class SQLBackend(ConfigDataBackend):
 
 		if not possibleValues is None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
-		for value in possibleValues:
-			self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-					'productId': data['productId'],
-					'productVersion': data['productVersion'],
-					'packageVersion': data['packageVersion'],
-					'propertyId': data['propertyId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-					})
+
+		[self._sql.insert('PRODUCT_PROPERTY_VALUE',
+			{
+				'productId': data['productId'],
+				'productVersion': data['productVersion'],
+				'packageVersion': data['packageVersion'],
+				'propertyId': data['propertyId'],
+				'value': value,
+				'isDefault': (value in defaultValues)
+			}
+		) for value in possibleValues]
 
 	def productProperty_updateObject(self, productProperty):
 		if not self._sqlBackendModule:
@@ -1275,15 +1296,16 @@ class SQLBackend(ConfigDataBackend):
 		if not possibleValues is None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
-		for value in possibleValues:
-			self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-					'productId': data['productId'],
-					'productVersion': data['productVersion'],
-					'packageVersion': data['packageVersion'],
-					'propertyId': data['propertyId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-					})
+		[self._sql.insert('PRODUCT_PROPERTY_VALUE',
+			{
+				'productId': data['productId'],
+				'productVersion': data['productVersion'],
+				'packageVersion': data['packageVersion'],
+				'propertyId': data['propertyId'],
+				'value': value,
+				'isDefault': (value in defaultValues)
+			}
+		) for value in possibleValues]
 
 	def productProperty_getObjects(self, attributes=[], **filter):
 		if not self._sqlBackendModule:
@@ -1358,11 +1380,8 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product dependencies, filter: %s" % filter)
-		productDependencies = []
 		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter)):
-			productDependencies.append(ProductDependency.fromHash(res))
-		return productDependencies
+		return [ProductDependency.fromHash(res) for res in self._sql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter))]
 
 	def productDependency_deleteObjects(self, productDependencies):
 		if not self._sqlBackendModule:
@@ -1408,11 +1427,9 @@ class SQLBackend(ConfigDataBackend):
 			raise Exception(u"SQL backend module disabled")
 
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
-		productOnDepots = []
 		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter)):
-			productOnDepots.append(ProductOnDepot.fromHash(res))
-		return productOnDepots
+		return [ProductOnDepot.fromHash(res) for res in
+				self._sql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter))]
 
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		if not self._sqlBackendModule:
@@ -1460,11 +1477,9 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productOnClients, filter: %s" % filter)
-		productOnClients = []
 		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter)):
-			productOnClients.append(ProductOnClient.fromHash(res))
-		return productOnClients
+		return [ProductOnClient.fromHash(res) for res in
+				self._sql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter))]
 
 	def productOnClient_deleteObjects(self, productOnClients):
 		if not self._sqlBackendModule:
@@ -1610,11 +1625,9 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting objectToGroups, filter: %s" % filter)
-		objectToGroups = []
 		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter)):
-			objectToGroups.append(ObjectToGroup.fromHash(res))
-		return objectToGroups
+		return [ObjectToGroup.fromHash(res) for res in
+				self._sql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter))]
 
 	def objectToGroup_deleteObjects(self, objectToGroups):
 		if not self._sqlBackendModule:
@@ -1778,8 +1791,14 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.insert('LICENSE_POOL', data)
 
 		self._sql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
-		for productId in productIds:
-			self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
+
+		[self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL',
+			{
+				'productId': productId,
+				'licensePoolId': data['licensePoolId']
+			}
+		) for productId in productIds]
+
 
 	def licensePool_updateObject(self, licensePool):
 		if not self._licenseManagementModule:
@@ -1793,8 +1812,13 @@ class SQLBackend(ConfigDataBackend):
 		del data['productIds']
 		self._sql.update('LICENSE_POOL', where, data)
 		self._sql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % data['licensePoolId'])
-		for productId in productIds:
-			self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL', {'productId': productId, 'licensePoolId': data['licensePoolId']})
+
+		[self._sql.insert('PRODUCT_ID_TO_LICENSE_POOL',
+			{
+				'productId': productId,
+				'licensePoolId': data['licensePoolId']
+			}
+		) for productId in productIds]
 
 	def licensePool_getObjects(self, attributes=[], **filter):
 		if not self._licenseManagementModule:
@@ -1815,10 +1839,8 @@ class SQLBackend(ConfigDataBackend):
 				if not filter['licensePoolId']:
 					return []
 			del filter['productIds']
-		attrs = []
-		for attr in attributes:
-			if not attr in ('productIds',):
-				attrs.append(attr)
+
+		attrs = [attr for attr in attributes if attr != 'productIds']
 		for res in self._sql.getSet(self._createQuery('LICENSE_POOL', attrs, filter)):
 			res['productIds'] = []
 			if not attributes or 'productIds' in attributes:
@@ -1874,11 +1896,14 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenseToLicensePool, filter: %s" % filter)
-		softwareLicenseToLicensePools = []
 		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('SOFTWARE_LICENSE_TO_LICENSE_POOL', attributes, filter)):
-			softwareLicenseToLicensePools.append(SoftwareLicenseToLicensePool.fromHash(res))
-		return softwareLicenseToLicensePools
+		return [SoftwareLicenseToLicensePool.fromHash(res) for res in
+				self._sql.getSet(
+					self._createQuery(
+						'SOFTWARE_LICENSE_TO_LICENSE_POOL', attributes, filter
+					)
+				)
+		]
 
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		if not self._licenseManagementModule:
@@ -1925,11 +1950,12 @@ class SQLBackend(ConfigDataBackend):
 
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseOnClient, filter: %s" % filter)
-		licenseOnClients = []
 		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
-		for res in self._sql.getSet(self._createQuery('LICENSE_ON_CLIENT', attributes, filter)):
-			licenseOnClients.append(LicenseOnClient.fromHash(res))
-		return licenseOnClients
+		return [LicenseOnClient.fromHash(res) for res in
+				self._sql.getSet(
+					self._createQuery('LICENSE_ON_CLIENT', attributes, filter)
+				)
+		]
 
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
 		if not self._licenseManagementModule:
@@ -1968,10 +1994,9 @@ class SQLBackend(ConfigDataBackend):
 	def auditSoftware_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting auditSoftware, filter: %s" % filter)
-		auditSoftwares = []
-		for h in self.auditSoftware_getHashes(attributes, **filter):
-			auditSoftwares.append(AuditSoftware.fromHash(h))
-		return auditSoftwares
+		return [AuditSoftware.fromHash(h) for h in
+			self.auditSoftware_getHashes(attributes, **filter)
+		]
 
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
@@ -2006,10 +2031,8 @@ class SQLBackend(ConfigDataBackend):
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting auditSoftwareToLicensePool, filter: %s" % filter)
-		auditSoftwareToLicensePools = []
-		for h in self.auditSoftwareToLicensePool_getHashes(attributes, **filter):
-			auditSoftwareToLicensePools.append(AuditSoftwareToLicensePool.fromHash(h))
-		return auditSoftwareToLicensePools
+		return [AuditSoftwareToLicensePool.fromHash(h) for h in
+				self.auditSoftwareToLicensePool_getHashes(attributes, **filter)]
 
 	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
 		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
@@ -2044,10 +2067,8 @@ class SQLBackend(ConfigDataBackend):
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting auditSoftwareOnClient, filter: %s" % filter)
-		auditSoftwareOnClients = []
-		for h in self.auditSoftwareOnClient_getHashes(attributes, **filter):
-			auditSoftwareOnClients.append(AuditSoftwareOnClient.fromHash(h))
-		return auditSoftwareOnClients
+		return [AuditSoftwareOnClient.fromHash(h) for h in
+				self.auditSoftwareOnClient_getHashes(attributes, **filter)]
 
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
@@ -2212,9 +2233,12 @@ class SQLBackend(ConfigDataBackend):
 			logger.info(u"Deleting auditHardware: %s" % auditHardware)
 
 			where = self._uniqueAuditHardwareCondition(auditHardware)
-			for hardware_id in self._getHardwareIds(auditHardware):
-				self._sql.delete( u'HARDWARE_CONFIG_' + auditHardware.getHardwareClass(), u'`hardware_id` = %s' % hardware_id)
-			self._sql.delete( u'HARDWARE_DEVICE_' + auditHardware.getHardwareClass(), where)
+			[self._sql.delete(
+				u'HARDWARE_CONFIG_{0}'.format(auditHardware.getHardwareClass()),
+				u'`hardware_id` = {0}'.format(hardware_id)
+			) for hardware_id in self._getHardwareIds(auditHardware)]
+
+			self._sql.delete(u'HARDWARE_DEVICE_{0}'.format(auditHardware.getHardwareClass()), where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts                                                                      -
@@ -2417,10 +2441,7 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 
 		logger.info(u"Getting auditHardwareOnHosts, filter: %s" % filter)
-		auditHardwareOnHosts = []
-		for h in self.auditHardwareOnHost_getHashes(attributes, **filter):
-			auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(h))
-		return auditHardwareOnHosts
+		return [AuditHardwareOnHost.fromHash(h) for h in self.auditHardwareOnHost_getHashes(attributes, **filter)]
 
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)

@@ -480,14 +480,12 @@ class BackendExtender(ExtendedBackend):
 			if not os.path.exists(self._extensionConfigDir):
 				logger.error(u"No extensions loaded: '%s' does not exist" % self._extensionConfigDir)
 				return
+
 			try:
-				confFiles = []
-				files = os.listdir(self._extensionConfigDir)
-				files.sort()
-				for f in files:
-					if not f.endswith('.conf'):
-						continue
-					confFiles.append( os.path.join(self._extensionConfigDir, f) )
+				confFiles = (os.path.join(self._extensionConfigDir, filename)
+					for filename in sorted(os.listdir(self._extensionConfigDir))
+					if filename.endswith('.conf')
+				)
 
 				for confFile in confFiles:
 					try:
