@@ -97,7 +97,7 @@ class JsonRpc(object):
 
 			methodInterface = None
 			for m in self._interface:
-				if (self.getMethodName() == m['name']):
+				if self.getMethodName() == m['name']:
 					methodInterface = m
 					break
 			if not methodInterface:
@@ -110,9 +110,11 @@ class JsonRpc(object):
 					l += len(methodInterface['args'])
 				if methodInterface['varargs']:
 					l += len(methodInterface['varargs'])
-				if (len(params) >= l):
+
+				if len(params) >= l:
 					if not type(params[-1]) is types.DictType:
 						raise Exception(u"kwargs param is not a dict: %s" % params[-1])
+
 					for (key, value) in params.pop(-1).items():
 						keywords[str(key)] = deserialize(value)
 
@@ -140,7 +142,7 @@ class JsonRpc(object):
 			self.exception = e
 			self.traceback = []
 			tb = sys.exc_info()[2]
-			while (tb != None):
+			while tb != None:
 				f = tb.tb_frame
 				c = f.f_code
 				self.traceback.append(u"     line %s in '%s' in file '%s'" % (tb.tb_lineno, c.co_name, c.co_filename))
@@ -149,8 +151,8 @@ class JsonRpc(object):
 
 	def getResponse(self):
 		response = {}
-		if (self.type == 'rpc'):
-			response['tid']    = self.tid
+		if self.type == 'rpc':
+			response['tid'] = self.tid
 			response['action'] = self.action
 			response['method'] = self.method
 			if self.exception:
@@ -165,11 +167,11 @@ class JsonRpc(object):
 				response['result'] = self.result
 		else:
 			response['id'] = self.tid
-			if (self.rpcVersion == '2.0'):
+			if self.rpcVersion == '2.0':
 				response['jsonrpc'] = '2.0'
 
 			if self.exception:
-				if (self.rpcVersion == '2.0'):
+				if self.rpcVersion == '2.0':
 					code = 0
 					try:
 						code = int(getattr(self.exception, 'errno'))
@@ -181,11 +183,15 @@ class JsonRpc(object):
 						'data': {'class': self.exception.__class__.__name__}
 					}
 				else:
-					response['error'] = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
-				if (self.rpcVersion != '2.0'):
+					response['error'] = {
+						'class': self.exception.__class__.__name__,
+						'message': forceUnicode(self.exception)
+					}
+
+				if self.rpcVersion != '2.0':  # TODO: das macht keinen Sinn!
 					response['result'] = None
 			else:
-				if (self.rpcVersion != '2.0'):
+				if self.rpcVersion != '2.0':
 					response['error'] = None
 				response['result'] = self.result
 
