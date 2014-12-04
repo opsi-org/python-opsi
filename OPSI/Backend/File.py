@@ -405,11 +405,12 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': section})
 
 		elif objType in ('OpsiClient', 'ProductOnClient'):
-			idFilter = {}
 			if objType in ('OpsiClient', ) and filter.get('id'):
 				idFilter = {'id': filter['id']}
 			elif objType in ('ProductOnClient', ) and filter.get('clientId'):
 				idFilter = {'id': filter['clientId']}
+			else:
+				idFilter = {}
 
 			for entry in os.listdir(self.__clientConfigDir):
 				if not entry.lower().endswith('.ini'):
@@ -487,11 +488,12 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': hostId})
 
 		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-			idFilter = {}
 			if objType in ('Product', 'LocalbootProduct', 'NetbootProduct') and filter.get('id'):
 				idFilter = {'id': filter['id']}
 			elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency') and filter.get('productId'):
 				idFilter = {'id': filter['productId']}
+			else:
+				idFilter = {}
 
 			for entry in os.listdir(self.__productDir):
 				match = None
@@ -629,19 +631,17 @@ class FileBackend(ConfigDataBackend):
 						objIdents.append({'id': section, 'type': groupType})
 
 		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):
-			filenames = []
-
-			fileType = 'sw'
 			if objType in ('AuditHardware', 'AuditHardwareOnHost'):
 				fileType = 'hw'
+			else:
+				fileType = 'sw'
 
+			filenames = []
 			if objType in ('AuditSoftware', 'AuditHardware'):
 				filename = self._getConfigFile(objType, {}, fileType)
 				if os.path.isfile(filename):
 					filenames.append(filename)
 			else:
-
-
 				idFilter = {}
 				if objType == 'AuditSoftwareOnClient' and filter.get('clientId'):
 					idFilter = {'id': filter['clientId']}
@@ -671,8 +671,6 @@ class FileBackend(ConfigDataBackend):
 				cp = iniFile.parse()
 
 				for section in cp.sections():
-					objIdent = {}
-
 					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
 						objIdent = {
 							'name': None,
@@ -689,6 +687,8 @@ class FileBackend(ConfigDataBackend):
 						if objType == 'AuditSoftwareOnClient':
 							objIdent['clientId'] = os.path.basename(filename)[:-3]
 					else:
+						objIdent = {}
+
 						for (key, value) in cp.items(section):
 							objIdent[str(key)] = self.__unescape(value)
 
@@ -778,7 +778,6 @@ class FileBackend(ConfigDataBackend):
 
 		objects = []
 		for ident in self._getIdents(objType, **filter):
-			ignoreHash = False
 			objHash = dict(ident)
 
 			for (fileType, mapping) in mappings.items():
@@ -987,10 +986,13 @@ class FileBackend(ConfigDataBackend):
 						if objType == 'ProductOnClient':
 							if attribute in ('installationStatus', 'actionRequest'):
 								(installationStatus, actionRequest) = (u'not_installed', u'none')
-								combined = u''
+
 								if cp.has_option(section, option):
 									combined = cp.get(section, option)
-								if combined.find(u':') != -1:
+								else:
+									combined = u''
+
+								if u':' in combined:
 									(installationStatus, actionRequest) = combined.split(u':', 1)
 								elif combined:
 									installationStatus = combined
@@ -1029,9 +1031,7 @@ class FileBackend(ConfigDataBackend):
 								continue
 							productHash[attribute] = value
 						packageControlFile.setProduct(Product.fromHash(productHash))
-
 				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-					currentObjects = []
 					if objType == 'ProductDependency':
 						currentObjects = packageControlFile.getProductDependencies()
 					else:
@@ -1139,14 +1139,13 @@ class FileBackend(ConfigDataBackend):
 
 			for filename in filenames:
 				packageControlFile = PackageControlFile(filename=filename)
-				newList = []
-				oldList = []
 
 				if objType == 'ProductDependency':
 					oldList = packageControlFile.getProductDependencies()
 				else:
 					oldList = packageControlFile.getProductProperties()
 
+				newList = []
 				for oldItem in oldList:
 					delete = False
 					for obj in objList:
@@ -1672,19 +1671,22 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting auditSoftwares ...")
-		result = []
 		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
 		if not os.path.exists(filename):
-			return result
+			return []
+
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
 		fastFilter = {}
+
 		if filter:
 			for (attribute, value) in filter.items():
 				if attribute in ("name", "version", "subVersion", "language", "architecture") and value:
 					value = forceUnicodeList(value)
 					if len(value) == 1 and value[0].find('*') == -1:
 						fastFilter[attribute] = value[0]
+
+		result = []
 		for section in ini.sections():
 			objHash = {
 				"name": None,
@@ -1914,10 +1916,11 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
 		logger.debug(u"Getting auditHardwares ...")
-		result = []
 		filename = self._getConfigFile('AuditHardware', {}, 'hw')
 		if not os.path.exists(filename):
-			return result
+			return []
+
+		result = []
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
 		for section in ini.sections():
