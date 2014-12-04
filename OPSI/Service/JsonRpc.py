@@ -48,21 +48,23 @@ logger = Logger()
 
 class JsonRpc(object):
 	def __init__(self, instance, interface, rpc):
-		self._instance  = instance
+		self._instance = instance
 		self._interface = interface
-		self.started    = None
-		self.ended      = None
-		self.type       = rpc.get('type')
+		self.started = None
+		self.ended = None
+		self.type = rpc.get('type')
 		self.rpcVersion = rpc.get('jsonrpc', None)
-		self.tid        = rpc.get('tid', rpc.get('id'))
-		self.action     = rpc.get('action')
-		self.method     = rpc.get('method')
-		self.params     = rpc.get('params', rpc.get('data'))
-		if not self.params:
-			self.params = []
-		self.result    = None
+		self.tid = rpc.get('tid', rpc.get('id'))
+		self.action = rpc.get('action')
+		self.method = rpc.get('method')
+		self.params = rpc.get('params', rpc.get('data'))
+		self.result = None
 		self.exception = None
 		self.traceback = None
+
+		if not self.params:
+			self.params = []
+
 		if not self.tid:
 			raise Exception(u"No transaction id ((t)id) found in rpc")
 		if not self.method:
@@ -126,13 +128,12 @@ class JsonRpc(object):
 
 			instance = self._instance
 			if keywords:
-				self.result = eval( "instance.%s(*params, **keywords)" % self.getMethodName() )
+				self.result = eval("instance.%s(*params, **keywords)" % self.getMethodName())
 			else:
-				self.result = eval( "instance.%s(*params)" % self.getMethodName() )
+				self.result = eval("instance.%s(*params)" % self.getMethodName())
 
 			logger.info(u'Got result')
 			logger.debug2("RPC ID %s: %s" %(self.tid, self.result))
-
 		except Exception as e:
 			logger.logException(e, LOG_INFO)
 			logger.error(u'Execution error: %s' % forceUnicode(e))
@@ -153,16 +154,20 @@ class JsonRpc(object):
 			response['action'] = self.action
 			response['method'] = self.method
 			if self.exception:
-				response['type']    = 'exception'
-				response['message'] = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
-				response['where']   = self.traceback
+				response['type'] = 'exception'
+				response['message'] = {
+					'class': self.exception.__class__.__name__,
+					'message': forceUnicode(self.exception)
+				}
+				response['where'] = self.traceback
 			else:
-				response['type']   = 'rpc'
+				response['type'] = 'rpc'
 				response['result'] = self.result
 		else:
 			response['id'] = self.tid
 			if (self.rpcVersion == '2.0'):
 				response['jsonrpc'] = '2.0'
+
 			if self.exception:
 				if (self.rpcVersion == '2.0'):
 					code = 0
@@ -170,7 +175,11 @@ class JsonRpc(object):
 						code = int(getattr(self.exception, 'errno'))
 					except Exception:
 						pass
-					response['error'] = { 'code': code, 'message': forceUnicode(self.exception), 'data': {'class': self.exception.__class__.__name__}  }
+					response['error'] = {
+						'code': code,
+						'message': forceUnicode(self.exception),
+						'data': {'class': self.exception.__class__.__name__}
+					}
 				else:
 					response['error'] = { 'class': self.exception.__class__.__name__, 'message': forceUnicode(self.exception) }
 				if (self.rpcVersion != '2.0'):
@@ -179,6 +188,7 @@ class JsonRpc(object):
 				if (self.rpcVersion != '2.0'):
 					response['error'] = None
 				response['result'] = self.result
+
 		return response
 
 	def __getstate__(self):
@@ -198,6 +208,7 @@ class JsonRpcRequestProcessor(object):
 			self.callInterface = callInstance.backend_getInterface()
 		else:
 			self.callInterface = callInterface
+
 		self.query = query
 		self.rpcs = []
 
@@ -209,6 +220,7 @@ class JsonRpcRequestProcessor(object):
 			self.query = unicode(self.query, 'utf-8')
 		except (UnicodeError, UnicodeEncodeError):
 			self.query = unicode(self.query, 'utf-8', 'replace')
+
 		return self.query
 
 	def buildRpcs(self):
@@ -221,16 +233,20 @@ class JsonRpcRequestProcessor(object):
 
 		rpcs = []
 		try:
-			rpcs = fromJson(self.query, preventObjectCreation = True)
+			rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
 				raise Exception(u"Got no rpcs")
-
 		except Exception as e:
-			raise OpsiBadRpcError(u"Failed to decode rpc: %s." % e )
+			raise OpsiBadRpcError(u"Failed to decode rpc: {0}".format(e))
 
 		for rpc in forceList(rpcs):
-			rpc = JsonRpc(instance = self.callInstance, interface = self.callInterface, rpc = rpc)
-			self.rpcs.append(rpc)
+			self.rpcs.append(
+				JsonRpc(
+					instance=self.callInstance,
+					interface=self.callInterface,
+					rpc=rpc
+				)
+			)
 
 		return self.rpcs
 
