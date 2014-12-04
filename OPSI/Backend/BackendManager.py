@@ -48,8 +48,7 @@ elif os.name == 'nt':
 	import win32net
 	import win32security
 
-
-from OPSI.Logger import *
+from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import *
 from OPSI.Object import BaseObject
 from OPSI.Backend.Backend import *
