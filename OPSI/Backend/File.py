@@ -724,7 +724,8 @@ class FileBackend(ConfigDataBackend):
 		logger.debug2(u"Returning filtered idents." % ())
 		return filteredObjIdents
 
-	def _adaptObjectHashAttributes(self, objHash, ident, attributes):
+	@staticmethod
+	def _adaptObjectHashAttributes(objHash, ident, attributes):
 		logger.debug2(u"Adapting objectHash with '%s', '%s', '%s'" % (objHash, ident, attributes))
 		if not attributes:
 			return objHash
