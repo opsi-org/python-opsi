@@ -53,11 +53,11 @@ class SQLite(SQL):
 		self._databaseCharset = 'utf8'
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('database',):
+			if option == 'database':
 				self._database = forceFilename(value)
-			elif option in ('synchronous',):
+			elif option == 'synchronous':
 				self._synchronous = forceBool(value)
-			elif option in ('databasecharset',):
+			elif option == 'databasecharset':
 				self._databaseCharset = str(value)
 
 		self._connection = None

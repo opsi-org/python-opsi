@@ -58,15 +58,15 @@ class HostControlSafeBackend(ExtendedBackend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('opsiclientdport',):
+			if option == 'opsiclientdport':
 				self._opsiclientdPort = forceInt(value)
-			elif option in ('hostrpctimeout',):
+			elif option == 'hostrpctimeout':
 				self._hostRpcTimeout = forceInt(value)
-			elif option in ('resolvehostaddress',):
+			elif option == 'resolvehostaddress':
 				self._resolveHostAddress = forceBool(value)
-			elif option in ('maxconnections',):
+			elif option == 'maxconnections':
 				self._maxConnections = forceInt(value)
-			elif option in ('broadcastaddresses',):
+			elif option == 'broadcastaddresses':
 				self._broadcastAddresses = forceUnicodeList(value)
 
 		if (self._maxConnections < 1):

@@ -78,16 +78,16 @@ class MultiplexBackend(object):
 
 		# Parse arguments
 		for (option, value) in dict(kwargs).items():
-			if   (option.lower() == 'sockettimeout') and not value is None:
+			if option.lower() == 'sockettimeout' and value is not None:
 				self.__socketTimeout = forceInt(value)
 				del(kwargs[option])
-			elif (option.lower() == 'connecttimeout') and not value is None:
+			elif option.lower() == 'connecttimeout' and value is not None:
 				self.__connectTimeout = forceInt(value)
 				del(kwargs[option])
-			elif (option.lower() == 'defaultdomain'):
+			elif option.lower() == 'defaultdomain':
 				self._defaultDomain = forceUnicode(value)
 				del(kwargs[option])
-			elif (option.lower() == 'context'):
+			elif option.lower() == 'context':
 				self._context = value
 				del(kwargs[option])
 				logger.info(u"Backend context was set to %s" % self._context)

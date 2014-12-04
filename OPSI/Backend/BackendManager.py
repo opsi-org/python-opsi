@@ -161,39 +161,39 @@ class BackendManager(ExtendedBackend):
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('username',):
+			if option == 'username':
 				username = value
-			elif option in ('password',):
+			elif option == 'password':
 				password = value
-			elif option in ('backend',):
+			elif option == 'backend':
 				if type(value) in (str, unicode):
 					loadBackend = value
 				else:
 					self._backend = value
 				del kwargs[option]
-			elif option in ('backendconfigdir',):
+			elif option == 'backendconfigdir':
 				self._backendConfigDir = value
 			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
 				dispatch = True
-			elif option in ('depotbackend',):
+			elif option == 'depotbackend':
 				depotBackend = forceBool(value)
-			elif option in ('hostcontrolbackend',):
+			elif option == 'hostcontrolbackend':
 				hostControlBackend = forceBool(value)
-			elif option in ('hostcontrolsafebackend',):
+			elif option == 'hostcontrolsafebackend':
 				hostControlSafeBackend = forceBool(value)
-			elif option in ('extensionconfigdir',) and value:
+			elif option == 'extensionconfigdir' and value:
 				extensionConfigDir = value
 				extend = True
-			elif option in ('extensionclass',):
+			elif option == 'extensionclass':
 				extensionClass = value
 				extend = True
-			elif option in ('extend',):
+			elif option == 'extend':
 				extend = forceBool(value)
 			elif option in ('acl', 'aclfile') and value:
 				accessControl = True
-			elif option in ('messagebusnotifier',) and value:
+			elif option == 'messagebusnotifier' and value:
 				messageBusNotifier = True
-			elif option in ('startreactor',) and value is False:
+			elif option == 'startreactor' and value is False:
 				startReactor = False
 
 		if loadBackend:
@@ -295,15 +295,15 @@ class BackendDispatcher(Backend):
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('dispatchconfig',):
+			if option == 'dispatchconfig':
 				self._dispatchConfig = value
-			elif option in ('dispatchconfigfile',):
+			elif option == 'dispatchconfigfile':
 				self._dispatchConfigFile = value
-			elif option in ('dispatchignoremodules',) and value:
+			elif option == 'dispatchignoremodules' and value:
 				self._dispatchIgnoreModules = forceList(value)
-			elif option in ('backendconfigdir',):
+			elif option == 'backendconfigdir':
 				self._backendConfigDir = value
-			elif option in ('context',):
+			elif option == 'context':
 				self._context = value
 
 		if self._dispatchConfigFile:
@@ -463,9 +463,9 @@ class BackendExtender(ExtendedBackend):
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if (option == 'extensionconfigdir'):
+			if option == 'extensionconfigdir':
 				self._extensionConfigDir = value
-			if (option == 'extensionclass'):
+			elif option == 'extensionclass':
 				self._extensionClass = value
 
 		self.__createExtensions()
@@ -538,25 +538,27 @@ class BackendAccessControl(object):
 			self._pamService = 'system-auth'
 			if (DISTRELEASE.startswith('6.')):
 				self._pamService = 'password-auth'
+
 		if os.path.exists("/etc/pam.d/opsi-auth"):
+			# TODO: does this need to be included in the elif-part above?
 			self._pamService = 'opsi-auth'
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('username',):
+			if option == 'username':
 				self._username = value
-			elif option in ('password',):
+			elif option == 'password':
 				self._password = value
-			elif option in ('acl',):
+			elif option == 'acl':
 				self._acl = value
-			elif option in ('aclfile',):
+			elif option == 'aclfile':
 				self._aclFile = value
-			elif option in ('pamservice',):
+			elif option == 'pamservice':
 				self._pamService = value
 			elif option in ('context', 'accesscontrolcontext'):
 				self._context = value
-			elif option in ('forcegroups',):
-				if not value is None:
+			elif option == 'forcegroups':
+				if value is not None:
 					self._forceGroups = forceUnicodeList(value)
 
 		if not self._acl:

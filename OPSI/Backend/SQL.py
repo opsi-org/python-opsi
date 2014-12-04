@@ -112,7 +112,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		self._lastModificationOnly = False
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('lastmodificationonly',):
+			if option == 'lastmodificationonly':
 				self._lastModificationOnly = forceBool(value)
 
 	def _createTables(self):

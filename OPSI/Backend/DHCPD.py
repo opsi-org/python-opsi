@@ -70,17 +70,17 @@ class DHCPDBackend(ConfigDataBackend):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('dhcpdconfigfile',):
+			if option == 'dhcpdconfigfile':
 				self._dhcpdConfigFile = value
-			elif option in ('reloadconfigcommand',):
+			elif option == 'reloadconfigcommand':
 				self._reloadConfigCommand = value
-			elif option in ('defaultclientparameters',):
+			elif option == 'defaultclientparameters':
 				self._defaultClientParameters = forceDict(value)
-			elif option in ('fixedaddressformat',):
+			elif option == 'fixedaddressformat':
 				if value not in (u'IP', u'FQDN'):
 					raise BackendBadValueError(u"Bad value '%s' for fixedAddressFormat, possible values are %s" % (value, u', '.join(('IP', 'FQDN'))))
 				self._fixedAddressFormat = value
-			elif option in ('dhcpdondepot',):
+			elif option == 'dhcpdondepot':
 				self._dhcpdOnDepot = forceBool(value)
 
 		if self._defaultClientParameters.get('next-server') and self._defaultClientParameters['next-server'].startswith(u'127'):

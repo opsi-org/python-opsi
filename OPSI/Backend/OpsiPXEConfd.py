@@ -83,20 +83,20 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self._name    = 'opsipxeconfd'
 		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
-
-		# Parse arguments
-		for (option, value) in kwargs.items():
-			option = option.lower()
-			if option in ('port',):
-				self._port = value
-			if option in ('timeout',):
-				self._timeout = forceInt(value)
-
 		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._opsiHostKey = None
-		self._depotConnections  = {}
+		self._depotConnections = {}
 		self._updateThreads = {}
 		self._updateThreadsLock = threading.Lock()
+		self._parseArguments(kwargs)
+
+	def _parseArguments(self, kwargs):
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option == 'port':
+				self._port = value
+			elif option == 'timeout':
+				self._timeout = forceInt(value)
 
 	def _getDepotConnection(self, depotId):
 		depotId = forceHostId(depotId)

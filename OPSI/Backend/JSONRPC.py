@@ -278,35 +278,35 @@ class JSONRPCBackend(Backend):
 		retry = True
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('application',):
+			if option == 'application':
 				self._application = str(value)
-			elif option in ('sessionid',):
+			elif option == 'sessionid':
 				self._sessionId = str(value)
-			elif option in ('deflate',):
+			elif option == 'deflate':
 				self._deflate = forceBool(value)
-			elif option in ('connectoninit',):
+			elif option == 'connectoninit':
 				self._connectOnInit = forceBool(value)
-			elif option in ('connecttimeout',) and not value is None:
+			elif option == 'connecttimeout' and value is not None:
 				self._connectTimeout = forceInt(value)
-			elif option in ('connectionpoolsize',) and not value is None:
+			elif option == 'connectionpoolsize' and value is not None:
 				self._connectionPoolSize = forceInt(value)
-			elif option in ('timeout', 'sockettimeout') and not value is None:
+			elif option in ('timeout', 'sockettimeout') and value is not None:
 				self._socketTimeout = forceInt(value)
-			elif option in ('retry',):
+			elif option == 'retry':
 				retry = forceBool(value)
-			elif option in ('retrytime',):
+			elif option == 'retrytime':
 				self._retryTime = forceInt(value)
-			elif option in ('rpcqueuepollingtime',):
+			elif option == 'rpcqueuepollingtime':
 				self._rpcQueuePollingTime = forceFloat(value)
-			elif option in ('rpcqueuesize',):
+			elif option == 'rpcqueuesize':
 				self._rpcQueueSize = forceInt(value)
-			elif option in ('servercertfile',) and not value is None:
+			elif option == 'servercertfile' and value is not None:
 				self._serverCertFile = forceFilename(value)
-			elif option in ('verifyservercert',):
+			elif option == 'verifyservercert':
 				self._verifyServerCert = forceBool(value)
-			elif option in ('cacertfile',) and not value is None:
+			elif option == 'cacertfile' and value is not None:
 				self._caCertFile = forceFilename(value)
-			elif option in ('verifyservercertbyca',):
+			elif option == 'verifyservercertbyca':
 				self._verifyServerCertByCa = forceBool(value)
 
 		if not retry:

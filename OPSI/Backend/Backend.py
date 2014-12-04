@@ -156,18 +156,18 @@ This defaults to ``self``.
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('name',):
+			if option == 'name':
 				self._name = value
-			elif option in ('username',):
+			elif option == 'username':
 				self._username = value
-			elif option in ('password',):
+			elif option == 'password':
 				self._password = value
-			elif option in ('context',):
+			elif option == 'context':
 				self._context = value
 				logger.info(u"Backend context was set to %s" % self._context)
-			elif option in ('opsimodulesfile',):
+			elif option == 'opsimodulesfile':
 				self._opsiModulesFile = forceFilename(value)
-			elif option in ('opsiversionfile',):
+			elif option == 'opsiversionfile':
 				self._opsiVersionFile = forceFilename(value)
 		self._options = {}
 
@@ -504,15 +504,15 @@ containing the localisation of the hardware audit.
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('audithardwareconfigfile',):
+			if option == 'audithardwareconfigfile':
 				self._auditHardwareConfigFile = forceFilename(value)
-			elif option in ('audithardwareconfiglocalesdir',):
+			elif option == 'audithardwareconfiglocalesdir':
 				self._auditHardwareConfigLocalesDir = forceFilename(value)
-			elif option in ('opsipasswdfile',):
+			elif option == 'opsipasswdfile':
 				self._opsiPasswdFile = forceFilename(value)
 			elif option in ('depotid', 'serverid'):
 				self._depotId = value
-			elif option in ('maxlogfilesize',):
+			elif option == 'maxlogfilesize':
 				self._maxLogfileSize = forceInt(value)
 
 		if not self._depotId:

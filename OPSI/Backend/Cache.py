@@ -60,17 +60,17 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('workbackend',):
+			if option == 'workbackend':
 				self._workBackend = value
-			elif option in ('snapshotbackend',):
+			elif option == 'snapshotbackend':
 				self._snapshotBackend = value
-			elif option in ('masterbackend',):
+			elif option == 'masterbackend':
 				self._masterBackend = value
-			elif option in ('clientid',):
+			elif option == 'clientid':
 				self._clientId = forceHostId(value)
-			elif option in ('depotid',):
+			elif option == 'depotid':
 				self._depotId = forceHostId(value)
-			elif option in ('backendinfo',):
+			elif option == 'backendinfo':
 				self._backendInfo = value
 
 		if not self._workBackend:

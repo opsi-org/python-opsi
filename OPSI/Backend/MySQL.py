@@ -113,21 +113,21 @@ class MySQL(SQL):
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('address',):
+			if option == 'address':
 				self._address = forceUnicode(value)
-			elif option in ('username',):
+			elif option == 'username':
 				self._username = forceUnicode(value)
 			elif option in ('password'):
 				self._password = forceUnicode(value)
-			elif option in ('database',):
+			elif option == 'database':
 				self._database = forceUnicode(value)
-			elif option in ('databasecharset',):
+			elif option == 'databasecharset':
 				self._databaseCharset = str(value)
-			elif option in ('connectionpoolsize',):
+			elif option == 'connectionpoolsize':
 				self._connectionPoolSize = forceInt(value)
-			elif option in ('connectionpoolmaxoverflow',):
+			elif option == 'connectionpoolmaxoverflow':
 				self._connectionPoolMaxOverflow = forceInt(value)
-			elif option in ('connectionpooltimeout',):
+			elif option == 'connectionpooltimeout':
 				self._connectionPoolTimeout = forceInt(value)
 
 		self._transactionLock = threading.Lock()
