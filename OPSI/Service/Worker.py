@@ -235,8 +235,8 @@ class WorkerOpsi:
 	def __init__(self, service, request, resource):
 		self.service   = service
 		if request.headers.hasHeader("x-forwarded-for"):
-                        # overloading request because proxy detected
-                        request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
+			# overloading request because proxy detected
+			request.remoteAddr.host = request.headers.getRawHeaders("x-forwarded-for")[0]
 		self.request   = request
 		self.query     = u''
 		self.gzip      = False
