@@ -294,17 +294,17 @@ class FileBackend(ConfigDataBackend):
 			logger.debug(u"Cannot create existing file, setting rights ..." % ())
 		self._setRights(filename)
 
-	def __escape(self, string):
+	@staticmethod
+	def __escape(string):
 		string = forceUnicode(string)
 		logger.debug2(u"Escaping string: '%s'" % (string))
-		string = string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
-		return string
+		return string.replace(u'\n', u'\\n').replace(u';', u'\\;').replace(u'#', u'\\#').replace(u'%', u'%%')
 
-	def __unescape(self, string):
+	@staticmethod
+	def __unescape(string):
 		string = forceUnicode(string)
 		logger.debug2(u"Unescaping string: '%s'" % (string))
-		string = string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
-		return string
+		return string.replace(u'\\n', u'\n').replace(u'\\;', u';').replace(u'\\#', u'#').replace(u'%%', u'%')
 
 	def _getConfigFile(self, objType, ident, fileType):
 		logger.debug(u"Getting config file for '%s', '%s', '%s'" % (objType, ident, fileType))
