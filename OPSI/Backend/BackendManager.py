@@ -40,11 +40,11 @@ import socket
 import sys
 import types
 
-if (os.name == 'posix'):
+if os.name == 'posix':
 	import grp
 	import PAM
 	import pwd
-elif (os.name == 'nt'):
+elif os.name == 'nt':
 	import win32net
 	import win32security
 
@@ -507,7 +507,7 @@ class BackendExtender(ExtendedBackend):
 
 
 					for (key, val) in locals().items():
-						if ( type(val) == types.FunctionType ):
+						if type(val) == types.FunctionType:
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
 							setattr( self, key, new.instancemethod(val, self, self.__class__) )
 			except Exception as e:
