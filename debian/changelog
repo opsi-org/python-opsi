@@ -6,8 +6,10 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * OPSI/Object.py overhauled module
   * Added OPSI.System.Posix.runCommandInSession to have access to this
     function not only when running Windows.
+  * OPSI.Backend.File: Various refactorings, not only to avoid unnecessary
+    creation of temporary objects.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 20 Nov 2014 13:52:19 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 04 Dec 2014 15:13:19 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
