@@ -595,6 +595,7 @@ class FileBackend(ConfigDataBackend):
 						{'filename': self._getConfigFile(objType, {'type': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
 						{'filename': self._getConfigFile(objType, {'type': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'}
 					]
+
 			for p in passes:
 				groupType = p['groupType']
 				iniFile = IniFile(filename=p['filename'], ignoreCase=False)
@@ -679,6 +680,7 @@ class FileBackend(ConfigDataBackend):
 							'language': None,
 							'architecture': None
 						}
+
 						for key in objIdent.keys():
 							option = key.lower()
 							if cp.has_option(section, option):
@@ -790,6 +792,7 @@ class FileBackend(ConfigDataBackend):
 					if not hostKeys:
 						hostKeys = HostKeyFile(filename=filename)
 						hostKeys.parse()
+
 					for m in mapping:
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 
@@ -803,14 +806,18 @@ class FileBackend(ConfigDataBackend):
 						if cp.has_section('LocalbootProduct_product_states'):
 							if not cp.has_section('localboot_product_states'):
 								cp.add_section('localboot_product_states')
+
 							for (k, v) in cp.items('LocalbootProduct_product_states'):
 								cp.set('localboot_product_states', k, v)
+
 							cp.remove_section('LocalbootProduct_product_states')
 						if cp.has_section('NetbootProduct_product_states'):
 							if not cp.has_section('netboot_product_states'):
 								cp.add_section('netboot_product_states')
+
 							for (k, v) in cp.items('NetbootProduct_product_states'):
 								cp.set('netboot_product_states', k, v)
+
 							cp.remove_section('NetbootProduct_product_states')
 						IniFile(filename=filename, ignoreCase=False).generate(cp)
 
@@ -878,6 +885,7 @@ class FileBackend(ConfigDataBackend):
 								if objIdent[key] != value:
 									matches = False
 									break
+
 							if matches:
 								objHash = obj.toHash()
 								break
@@ -916,6 +924,7 @@ class FileBackend(ConfigDataBackend):
 				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
 					if not os.path.exists(filename):
 						self._touch(filename)
+
 					hostKeys = HostKeyFile(filename=filename)
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
@@ -952,6 +961,7 @@ class FileBackend(ConfigDataBackend):
 					for section in removeSections:
 						if cp.has_section(section):
 							cp.remove_section(section)
+
 					for (section, options) in removeOptions.items():
 						if cp.has_section(section):
 							for option in options:
@@ -1247,10 +1257,9 @@ class FileBackend(ConfigDataBackend):
 							logger.debug2(u"Removed section '%s'" % section)
 
 				iniFile.generate(cp)
-
 		else:
 			logger.warning(u"_delete(): unhandled objType: '%s' object: %s" % (objType, objList[0]))
-			
+
 	def getRawData(self, query):
 		raise BackendConfigurationError(u"You have tried to execute a method, that will not work with filebackend.")
 
@@ -1623,6 +1632,7 @@ class FileBackend(ConfigDataBackend):
 				elif ini.get(section, attribute) != auditSoftware[attribute]:
 					matches = False
 					break
+
 			if matches:
 				removeSection = section
 				newNum = num
@@ -1658,6 +1668,7 @@ class FileBackend(ConfigDataBackend):
 				if self.__unescape(ini.get(section, key.lower())) != value:
 					found = False
 					break
+
 			if found:
 				for (key, value) in auditSoftware.toHash().items():
 					if value is None:
@@ -1736,8 +1747,10 @@ class FileBackend(ConfigDataBackend):
 					if self.__unescape(ini.get(section, key.lower())) != value:
 						found = False
 						break
+
 				if found and not section in removeSections:
 					removeSections.append(section)
+
 		if removeSections:
 			for section in removeSections:
 				ini.remove_section(section)
@@ -1778,6 +1791,7 @@ class FileBackend(ConfigDataBackend):
 				elif ini.get(section, attribute) != auditSoftwareOnClient[attribute]:
 					matches = False
 					break
+
 			if matches:
 				removeSection = section
 				newNum = num
@@ -1813,6 +1827,7 @@ class FileBackend(ConfigDataBackend):
 				if self.__unescape(ini.get(section, key.lower())) != value:
 					found = False
 					break
+
 			if found:
 				for (key, value) in auditSoftwareOnClient.toHash().items():
 					if value is None:
@@ -1892,6 +1907,7 @@ class FileBackend(ConfigDataBackend):
 							break
 					if found and not section in removeSections:
 						removeSections.append(section)
+
 			if removeSections:
 				for section in removeSections:
 					ini.remove_section(section)
@@ -1951,7 +1967,6 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 
 		logger.debug(u"Inserting auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-
 		self.__doAuditHardwareObj(auditHardwareOnHost, mode='insert')
 
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
@@ -1959,7 +1974,6 @@ class FileBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 
 		logger.debug(u"Updating auditHardwareOnHost: '%s'" % auditHardwareOnHost.getIdent())
-
 		self.__doAuditHardwareObj(auditHardwareOnHost, mode='update')
 
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
@@ -1975,6 +1989,7 @@ class FileBackend(ConfigDataBackend):
 		for (hostId, filename) in filenames.items():
 			if not os.path.exists(filename):
 				continue
+
 			iniFile = IniFile(filename=filename)
 			ini = iniFile.parse()
 			for section in ini.sections():
@@ -2022,6 +2037,7 @@ class FileBackend(ConfigDataBackend):
 		for (attribute, value) in auditHardwareObj.toHash().items():
 			if attribute.lower() in ('hostid', 'type'):
 				continue
+
 			if value is None:
 				objHash[attribute.lower()] = u''
 			else:
@@ -2033,6 +2049,7 @@ class FileBackend(ConfigDataBackend):
 			for (attribute, value) in objHash.items():
 				if attribute in ('firstseen', 'lastseen', 'state'):
 					continue
+
 				if ini.has_option(section, attribute):
 					if self.__unescape(ini.get(section, attribute)) != value:
 						matches = False
@@ -2072,4 +2089,5 @@ class FileBackend(ConfigDataBackend):
 			ini.add_section(sectionFound)
 			for (attribute, value) in objHash.items():
 				ini.set(sectionFound, attribute, self.__escape(value))
+
 		iniFile.generate(ini)
