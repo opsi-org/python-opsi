@@ -852,11 +852,10 @@ class FileBackend(ConfigDataBackend):
 								index = value.find(':')
 								if index == -1:
 									raise Exception(u"No ':' found in section '%s' in option '%s' in '%s'" % (section, option, filename))
+
 								if attribute == 'installationStatus':
-									# value = value.split(u':', 1)[0]
 									value = value[:index]
 								elif attribute == 'actionRequest':
-									# value = value.split(u':', 1)[1]
 									value = value[index + 1:]
 
 							objHash[attribute] = value
@@ -2003,7 +2002,6 @@ class FileBackend(ConfigDataBackend):
 
 		logger.debug(u"Deleting auditHardwareOnHosts ...")
 
-		# TODO: forceObjectClassList necessary?
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			self.__doAuditHardwareObj(auditHardwareOnHost, mode='delete')
 
@@ -2014,9 +2012,6 @@ class FileBackend(ConfigDataBackend):
 		objType = auditHardwareObj.getType()
 		if objType not in ('AuditHardware', 'AuditHardwareOnHost'):
 			raise Exception(u"Unknown type: %s" % objType)
-
-		# if (objType == 'AuditHardwareOnHost') and (auditHardwareObj.getState() == 0):
-		# 	mode = 'delete'
 
 		filename = self._getConfigFile(objType, auditHardwareObj.getIdent(returnType='dict'), 'hw')
 		self._touch(filename)
