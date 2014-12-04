@@ -121,9 +121,10 @@ class JsonRpc(object):
 
 			pString = forceUnicode(params)[1:-1]
 			if keywords:
-				pString += u', ' + forceUnicode(keywords)
-			if (len(pString) > 200):
-				pString = pString[:200] + u'...'
+				pString = u'{0}, {1}'.format(pString,forceUnicode(keywords))
+
+			if len(pString) > 200:
+				pString = u'{0}...'.format(pString[:200])
 
 			logger.notice(u"-----> Executing: %s(%s)" % (self.getMethodName(), pString))
 
