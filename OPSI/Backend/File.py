@@ -316,32 +316,32 @@ class FileBackend(ConfigDataBackend):
 		elif fileType == 'ini':
 			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
 				filename = self.__configFile
-			elif objType in ('OpsiClient',):
+			elif objType == 'OpsiClient':
 				filename = os.path.join(self.__clientConfigDir, ident['id'] + u'.ini')
 			elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
 				filename = os.path.join(self.__depotConfigDir, ident['id'] + u'.ini')
-			elif objType in ('ConfigState',):
+			elif objType == 'ConfigState':
 				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini'))):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
-			elif objType in ('ProductOnDepot',):
+			elif objType == 'ProductOnDepot':
 				filename = os.path.join(self.__depotConfigDir, ident['depotId'] + u'.ini')
-			elif objType in ('ProductOnClient',):
+			elif objType == 'ProductOnClient':
 				filename = os.path.join(self.__clientConfigDir, ident['clientId'] + u'.ini')
-			elif objType in ('ProductPropertyState',):
+			elif objType == 'ProductPropertyState':
 				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini'))):
 					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + u'.ini')
 				else:
 					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + u'.ini')
 			elif objType in ('Group', 'HostGroup', 'ProductGroup'):
-				if objType in ('ProductGroup',) or (objType in ('Group',) and ident.get('type') in ('ProductGroup',)):
+				if objType == 'ProductGroup' or (objType == 'Group' and ident.get('type', '') == 'ProductGroup'):
 					filename = os.path.join(self.__productGroupsFile)
-				elif objType in ('HostGroup',) or (objType in ('Group',) and ident.get('type') in ('HostGroup',)):
+				elif objType == 'HostGroup' or (objType == 'Group' and ident.get('type', '') == 'HostGroup'):
 					filename = os.path.join(self.__clientGroupsFile)
 				else:
 					raise Exception(u"Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
-			elif objType in ('ObjectToGroup',):
+			elif objType == 'ObjectToGroup':
 				if ident.get('groupType') in ('ProductGroup',):
 					filename = os.path.join(self.__productGroupsFile)
 				elif ident.get('groupType') in ('HostGroup',):
@@ -443,11 +443,12 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': hostId})
 
 		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
-			idFilter = {}
 			if objType in ('OpsiDepotserver', 'OpsiConfigserver') and filter.get('id'):
 				idFilter = {'id': filter['id']}
-			elif objType in ('ProductOnDepot',) and filter.get('depotId'):
+			elif objType == 'ProductOnDepot' and filter.get('depotId'):
 				idFilter = {'id': filter['depotId']}
+			else:
+				idFilter = {}
 
 			for entry in os.listdir(self.__depotConfigDir):
 				if not entry.lower().endswith('.ini'):
@@ -574,8 +575,7 @@ class FileBackend(ConfigDataBackend):
 								)
 
 		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
-			passes = []
-			if objType in ('ObjectToGroup',):
+			if objType == 'ObjectToGroup':
 				if filter.get('groupType'):
 					passes = [{'filename': self._getConfigFile(objType, {'groupType': filter['groupType']}, 'ini'), 'groupType': filter['groupType']}]
 				else:
@@ -643,9 +643,9 @@ class FileBackend(ConfigDataBackend):
 
 
 				idFilter = {}
-				if objType in ('AuditSoftwareOnClient', ) and filter.get('clientId'):
+				if objType == 'AuditSoftwareOnClient' and filter.get('clientId'):
 					idFilter = {'id': filter['clientId']}
-				elif objType in ('AuditHardwareOnHost', ) and filter.get('hostId'):
+				elif objType == 'AuditHardwareOnHost' and filter.get('hostId'):
 					idFilter = {'id': filter['hostId']}
 
 				for entry in os.listdir(self.__auditDir):
@@ -867,8 +867,7 @@ class FileBackend(ConfigDataBackend):
 						objHash = packageControlFile.getProduct().toHash()
 
 					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-						knownObjects = []
-						if objType in ('ProductDependency',):
+						if objType == 'ProductDependency':
 							knownObjects = packageControlFile.getProductDependencies()
 						else:
 							knownObjects = packageControlFile.getProductProperties()
@@ -925,7 +924,7 @@ class FileBackend(ConfigDataBackend):
 			elif fileType == 'ini':
 				iniFile = IniFile(filename=filename, ignoreCase=False)
 				if mode == 'create':
-					if objType in ('OpsiClient',) and not iniFile.exists():
+					if objType == 'OpsiClient' and not iniFile.exists():
 						proto = os.path.join(self.__clientTemplateDir, os.path.basename(filename))
 						if not os.path.isfile(proto):
 							proto = self.__defaultClientTemplatePath
@@ -975,7 +974,7 @@ class FileBackend(ConfigDataBackend):
 						match = self._placeholderRegex.search(section)
 						if match:
 							section = u'%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
-							if objType in ('ProductOnClient',):
+							if objType == 'ProductOnClient':
 								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
 
 						match = self._placeholderRegex.search(option)
@@ -985,7 +984,7 @@ class FileBackend(ConfigDataBackend):
 						if not cp.has_section(section):
 							cp.add_section(section)
 
-						if objType in ('ProductOnClient',):
+						if objType == 'ProductOnClient':
 							if attribute in ('installationStatus', 'actionRequest'):
 								(installationStatus, actionRequest) = (u'not_installed', u'none')
 								combined = u''
@@ -1001,7 +1000,7 @@ class FileBackend(ConfigDataBackend):
 									elif attribute == 'actionRequest':
 										actionRequest = value
 								value = installationStatus + u':' + actionRequest
-						elif objType in ('ObjectToGroup',):
+						elif objType == 'ObjectToGroup':
 							value = 1
 
 						if not value is None:
@@ -1099,7 +1098,7 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Removed section '%s'" % obj.getId())
 			iniFile.generate(cp)
 
-		elif objType in ('ConfigState',):
+		elif objType == 'ConfigState':
 			filenames = []
 			for obj in objList:
 				filename = self._getConfigFile(
@@ -1193,7 +1192,7 @@ class FileBackend(ConfigDataBackend):
 
 				iniFile.generate(cp)
 
-		elif objType in ('ProductPropertyState',):
+		elif objType == 'ProductPropertyState':
 			for obj in objList:
 				logger.debug(u"Deleting %s: '%s'" % (obj.getType(), obj.getIdent()))
 				filename = self._getConfigFile(
