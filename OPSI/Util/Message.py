@@ -48,8 +48,8 @@ logger = Logger()
 
 class Subject(object):
 	def __init__(self, id, type=u'', title=u'', **args):
-		self._id    = forceUnicode(id)
-		self._type  = forceUnicode(type)
+		self._id = forceUnicode(id)
+		self._type = forceUnicode(type)
 		self._title = forceUnicode(title)
 		self._observers = []
 
@@ -124,7 +124,7 @@ class MessageSubject(Subject):
 
 	def serializable(self):
 		s = Subject.serializable(self)
-		s['message']  = self.getMessage()
+		s['message'] = self.getMessage()
 		s['severity'] = self.getSeverity()
 		return s
 
@@ -159,7 +159,7 @@ class ChoiceSubject(MessageSubject):
 			if (selectedIndex < 0) or (selectedIndex > len(self._choices)-1) or selectedIndex in self._selectedIndexes:
 				continue
 			if self._multiValue:
-				self._selectedIndexes = [ selectedIndex ]
+				self._selectedIndexes = [selectedIndex]
 			else:
 				self._selectedIndexes.append(selectedIndex)
 		self._notifySelectedIndexesChanged()
@@ -169,8 +169,8 @@ class ChoiceSubject(MessageSubject):
 
 	def setChoices(self, choices):
 		self._choices = forceUnicodeList(choices)
-		if (len(self._choices) > 0) and not self._selectedIndexes:
-			self._selectedIndexes = [ 0 ]
+		if len(self._choices) > 0 and not self._selectedIndexes:
+			self._selectedIndexes = [0]
 		self._notifyChoicesChanged()
 
 	def getChoices(self):
@@ -198,7 +198,7 @@ class ChoiceSubject(MessageSubject):
 
 	def serializable(self):
 		s = MessageSubject.serializable(self)
-		s['choices']         = self.getChoices()
+		s['choices'] = self.getChoices()
 		s['selectedIndexes'] = self.getSelectedIndexes()
 		return s
 
@@ -649,6 +649,7 @@ class NotificationClientProtocol(LineReceiver):
 
 	def connectionLost(self, reason):
 		self.factory.connectionLost(reason)
+
 
 class NotificationClientFactory(ClientFactory):
 	protocol = NotificationClientProtocol
