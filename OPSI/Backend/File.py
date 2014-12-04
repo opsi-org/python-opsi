@@ -926,7 +926,7 @@ class FileBackend(ConfigDataBackend):
 			filename = self._getConfigFile(objType, obj.getIdent(returnType='dict'), fileType)
 
 			if fileType == 'key':
-				if (mode == 'create') or (mode == 'update' and obj.getOpsiHostKey()):
+				if mode == 'create' or (mode == 'update' and obj.getOpsiHostKey()):
 					if not os.path.exists(filename):
 						self._touch(filename)
 
@@ -960,7 +960,7 @@ class FileBackend(ConfigDataBackend):
 							removeOptions[obj.getId()].append(m['option'])
 					elif objType in ('ProductOnDepot', 'ProductOnClient'):
 						removeSections = [obj.getProductId() + u'-state']
-					elif objType in ('ProductPropertyState',):
+					elif objType == 'ProductPropertyState':
 						removeSections = [obj.getPropertyId() + u'-install']
 
 					for section in removeSections:
@@ -976,7 +976,7 @@ class FileBackend(ConfigDataBackend):
 				objHash = obj.toHash()
 
 				for (attribute, value) in objHash.items():
-					if value is None and (mode == 'update'):
+					if value is None and mode == 'update':
 						continue
 
 					attributeMapping = mapping.get(attribute, mapping.get('*'))
@@ -1634,7 +1634,7 @@ class FileBackend(ConfigDataBackend):
 
 		ini.add_section(section)
 		for (attribute, value) in auditSoftware.items():
-			if (value is None) or (attribute == 'type'):
+			if value is None or attribute == 'type':
 				continue
 			ini.set(section, attribute, value)
 		iniFile.generate(ini)
@@ -1793,7 +1793,7 @@ class FileBackend(ConfigDataBackend):
 
 		ini.add_section(section)
 		for (attribute, value) in auditSoftwareOnClient.items():
-			if (value is None):
+			if value is None:
 				continue
 			ini.set(section, attribute, value)
 		iniFile.generate(ini)
