@@ -44,6 +44,33 @@ from OPSI.Logger import Logger
 encoding = sys.getfilesystemencoding()
 logger = Logger()
 
+_HARDWARE_ID_REGEX = re.compile('^[a-fA-F0-9]{4}$')
+_OPSI_TIMESTAMP_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
+_OPSI_DATE_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
+_FQDN_REGEX = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
+_HARDWARE_ADDRESS_REGEX = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
+_IP_ADDRESS_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+_NETMASK_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+_NETWORK_ADDRESS_REGEX = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+_URL_REGEX = re.compile('^[a-z0-9]+://[/a-zA-Z0-9]')
+_OPSI_HOST_KEY_REGEX = re.compile('^[0-9a-f]{32}$')
+_PRODUCT_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,32}$')
+_PACKAGE_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,16}$')
+_PRODUCT_ID_REGEX = re.compile('^[a-z0-9-_\.]{1,128}$')
+_PACKAGE_CUSTOM_NAME_REGEX = re.compile('^[a-zA-Z0-9]+$')
+_PRODUCT_PROPERTY_ID_REGEX = re.compile('^\S+$')
+_CONFIG_ID_REGEX = re.compile('^\S+$')
+_GROUP_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+_OBJECT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
+_EMAIL_REGEX = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
+_DOMAIN_REGEX = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
+_HOSTNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\-]*$')
+_LICENSE_CONTRACT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
+_SOFTWARE_LICENSE_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
+_LICENSE_POOL_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
+_LANGUAGE_CODE_REGEX = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
+_ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
+
 
 def forceList(var):
 	if type(var) not in (types.ListType, types.TupleType):
@@ -182,7 +209,6 @@ def forceTime(var):
 	raise ValueError(u"Not a time '%s'" % var)
 
 
-_HARDWARE_ID_REGEX = re.compile('^[a-fA-F0-9]{4}$')
 def forceHardwareVendorId(var):
 	var = forceUnicodeUpper(var)
 	if not re.search(_HARDWARE_ID_REGEX, var):
@@ -197,8 +223,6 @@ def forceHardwareDeviceId(var):
 	return var
 
 
-_OPSI_TIMESTAMP_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
-_OPSI_DATE_REGEX = re.compile('^(\d{4})-?(\d{2})-?(\d{2})$')
 def forceOpsiTimestamp(var):
 	if not var:
 		var = u'0000-00-00 00:00:00'
@@ -214,7 +238,6 @@ def forceOpsiTimestamp(var):
 	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
 
-_FQDN_REGEX = re.compile('^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceFqdn(var):
 	var = forceObjectId(var)
 	if not _FQDN_REGEX.search(var):
@@ -229,7 +252,6 @@ def forceHostIdList(var):
 	return [forceHostId(element) for element in forceList(var)]
 
 
-_HARDWARE_ADDRESS_REGEX = re.compile('^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
 def forceHardwareAddress(var):
 	var = forceUnicodeLower(var)
 	if not var:
@@ -240,7 +262,6 @@ def forceHardwareAddress(var):
 	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
 
 
-_IP_ADDRESS_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceIPAddress(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_IP_ADDRESS_REGEX, var):
@@ -264,7 +285,6 @@ def forceHostAddress(var):
 	return var
 
 
-_NETMASK_REGEX = re.compile('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 def forceNetmask(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_NETMASK_REGEX, var):
@@ -272,7 +292,6 @@ def forceNetmask(var):
 	return var
 
 
-_NETWORK_ADDRESS_REGEX = re.compile('^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 def forceNetworkAddress(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_NETWORK_ADDRESS_REGEX, var):
@@ -280,7 +299,6 @@ def forceNetworkAddress(var):
 	return var
 
 
-_URL_REGEX = re.compile('^[a-z0-9]+://[/a-zA-Z0-9]')
 def forceUrl(var):
 	"""
 	Forces ``var`` to be an valid URL.
@@ -293,7 +311,6 @@ def forceUrl(var):
 	return var
 
 
-_OPSI_HOST_KEY_REGEX = re.compile('^[0-9a-f]{32}$')
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_OPSI_HOST_KEY_REGEX, var):
@@ -301,7 +318,6 @@ def forceOpsiHostKey(var):
 	return var
 
 
-_PRODUCT_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,32}$')
 def forceProductVersion(var):
 	var = forceUnicode(var)
 	if not _PRODUCT_VERSION_REGEX.search(var):
@@ -313,7 +329,6 @@ def forceProductVersionList(var):
 	return [forceProductVersion(element) for element in forceList(var)]
 
 
-_PACKAGE_VERSION_REGEX = re.compile('^[a-z0-9\.]{1,16}$')
 def forcePackageVersion(var):
 	var = forceUnicode(var)
 	if not _PACKAGE_VERSION_REGEX.search(var):
@@ -325,7 +340,6 @@ def forcePackageVersionList(var):
 	return [forcePackageVersion(element) for element in forceList(var)]
 
 
-_PRODUCT_ID_REGEX = re.compile('^[a-z0-9-_\.]{1,128}$')
 def forceProductId(var):
 	var = forceObjectId(var)
 	if not _PRODUCT_ID_REGEX.search(var):
@@ -337,7 +351,6 @@ def forceProductIdList(var):
 	return [forceProductId(element) for element in forceList(var)]
 
 
-_PACKAGE_CUSTOM_NAME_REGEX = re.compile('^[a-zA-Z0-9]+$')
 def forcePackageCustomName(var):
 	var = forceUnicodeLower(var)
 	if not _PACKAGE_CUSTOM_NAME_REGEX.search(var):
@@ -355,7 +368,6 @@ def forceProductType(var):
 		raise ValueError(u"Unknown product type: '%s'" % var)
 
 
-_PRODUCT_PROPERTY_ID_REGEX = re.compile('^\S+$')
 def forceProductPropertyId(var):
 	var = forceUnicodeLower(var)
 	if not _PRODUCT_PROPERTY_ID_REGEX.search(var):
@@ -363,10 +375,9 @@ def forceProductPropertyId(var):
 	return var
 
 
-CONFIG_ID_REGEX = re.compile('^\S+$')
 def forceConfigId(var):
 	var = forceUnicodeLower(var)
-	if not CONFIG_ID_REGEX.search(var):
+	if not _CONFIG_ID_REGEX.search(var):
 		raise ValueError(u"Bad config id: '%s'" % var)
 	return var
 
@@ -490,7 +501,6 @@ def forceObjectClassList(var, objectClass):
 	return [forceObjectClass(element, objectClass) for element in forceList(var)]
 
 
-_GROUP_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceGroupId(var):
 	var = forceObjectId(var)
 	if not _GROUP_ID_REGEX.search(var):
@@ -517,7 +527,6 @@ def forceGroupIdList(var):
 	return [forceGroupId(element) for element in forceList(var)]
 
 
-_OBJECT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_. ]*$')
 def forceObjectId(var):
 	var = forceUnicodeLower(var).strip()
 	if not _OBJECT_ID_REGEX.search(var):
@@ -529,7 +538,6 @@ def forceObjectIdList(var):
 	return [forceObjectId(element) for element in forceList(var)]
 
 
-_EMAIL_REGEX = re.compile('^(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|([A-Za-z0-9]+\++))*[A-Za-z0-9]+@((\w+\-+)|(\w+\.))*\w*')
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
 	if not _EMAIL_REGEX.search(var):
@@ -537,7 +545,6 @@ def forceEmailAddress(var):
 	return var
 
 
-_DOMAIN_REGEX = re.compile('^((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
 def forceDomain(var):
 	var = forceUnicodeLower(var)
 	if not _DOMAIN_REGEX.search(var):
@@ -545,7 +552,6 @@ def forceDomain(var):
 	return var
 
 
-_HOSTNAME_REGEX = re.compile('^[a-z0-9][a-z0-9\-]*$')
 def forceHostname(var):
 	var = forceUnicodeLower(var)
 	if not _HOSTNAME_REGEX.search(var):
@@ -553,7 +559,6 @@ def forceHostname(var):
 	return var
 
 
-_LICENSE_CONTRACT_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicenseContractId(var):
 	var = forceUnicodeLower(var)
 	if not _LICENSE_CONTRACT_ID_REGEX.search(var):
@@ -565,7 +570,6 @@ def forceLicenseContractIdList(var):
 	return [forceLicenseContractId(element) for element in forceList(var)]
 
 
-_SOFTWARE_LICENSE_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceSoftwareLicenseId(var):
 	var = forceUnicodeLower(var)
 	if not _SOFTWARE_LICENSE_ID_REGEX.search(var):
@@ -577,7 +581,6 @@ def forceSoftwareLicenseIdList(var):
 	return [forceSoftwareLicenseId(element) for element in forceList(var)]
 
 
-_LICENSE_POOL_ID_REGEX = re.compile('^[a-z0-9][a-z0-9-_\. :]*$')
 def forceLicensePoolId(var):
 	var = forceUnicodeLower(var)
 	if not _LICENSE_POOL_ID_REGEX.search(var):
@@ -596,7 +599,6 @@ def forceAuditState(var):
 	return var
 
 
-_LANGUAGE_CODE_REGEX = re.compile('^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 def forceLanguageCode(var):
 	var = forceUnicodeLower(var)
 	match = _LANGUAGE_CODE_REGEX.search(var)
@@ -614,7 +616,6 @@ def forceLanguageCodeList(var):
 	return [forceLanguageCode(element) for element in forceList(var)]
 
 
-_ARCHITECTURE_REGX = re.compile('^(x86|x64)$')
 def forceArchitecture(var):
 	var = forceUnicodeLower(var)
 	if not _ARCHITECTURE_REGEX.search(var):
