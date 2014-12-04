@@ -8,8 +8,9 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
     function not only when running Windows.
   * OPSI.Backend.File: Various refactorings, not only to avoid unnecessary
     creation of temporary objects.
+  * Backends: speed up option parsing during initalisation.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 04 Dec 2014 15:13:19 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 04 Dec 2014 16:19:59 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
