@@ -76,10 +76,10 @@ class FileBackend(ConfigDataBackend):
 		logger.debug2('kwargs are: {0}'.format(kwargs))
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option in ('basedir',):
+			if option == 'basedir':
 				self.__baseDir = forceFilename(value)
 				logger.debug2('Setting __basedir to "{0}"'.format(value))
-			elif option in ('hostkeyfile',):
+			elif option == 'hostkeyfile':
 				self.__hostKeyFile = forceFilename(value)
 				logger.debug2('Setting __hostKeyFile to "{0}"'.format(value))
 			elif option in ('filegroupname', ):
