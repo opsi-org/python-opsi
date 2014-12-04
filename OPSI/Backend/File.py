@@ -1971,7 +1971,7 @@ class FileBackend(ConfigDataBackend):
 		logger.debug(u"Getting auditHardwareOnHosts ...")
 		filenames = {}
 		for ident in self._getIdents('AuditHardwareOnHost', **filter):
-			if not ident['hostId'] in filenames.keys():
+			if ident['hostId'] not in filenames:
 				filenames[ident['hostId']] = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
 
 		result = []
