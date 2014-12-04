@@ -729,9 +729,11 @@ class FileBackend(ConfigDataBackend):
 		logger.debug2(u"Adapting objectHash with '%s', '%s', '%s'" % (objHash, ident, attributes))
 		if not attributes:
 			return objHash
+
 		for attribute in objHash.keys():
-			if not attribute in attributes and not attribute in ident.keys():
+			if attribute not in attributes and attribute not in ident:
 				del objHash[attribute]
+
 		return objHash
 
 	def _read(self, objType, attributes, **filter):
@@ -914,7 +916,7 @@ class FileBackend(ConfigDataBackend):
 
 		mappings = {}
 		for mapping in self._mappings[objType]:
-			if not mappings.has_key(mapping['fileType']):
+			if mapping['fileType'] not in mappings:
 				mappings[mapping['fileType']] = {}
 			mappings[mapping['fileType']][mapping['attribute']] = mapping
 
@@ -1826,7 +1828,7 @@ class FileBackend(ConfigDataBackend):
 		logger.debug(u"Getting auditSoftwareOnClients ...")
 		filenames = {}
 		for ident in self._getIdents('AuditSoftwareOnClient', **filter):
-			if not ident['clientId'] in filenames.keys():
+			if ident['clientId'] not in filenames:
 				filenames[ident['clientId']] = self._getConfigFile('AuditSoftwareOnClient', ident, 'sw')
 
 		result = []
@@ -2001,11 +2003,11 @@ class FileBackend(ConfigDataBackend):
 			self.__doAuditHardwareObj(auditHardwareOnHost, mode='delete')
 
 	def __doAuditHardwareObj(self, auditHardwareObj, mode):
-		if not mode in ('insert', 'update', 'delete'):
+		if mode not in ('insert', 'update', 'delete'):
 			raise Exception(u"Unknown mode: %s" % mode)
 
 		objType = auditHardwareObj.getType()
-		if not objType in ('AuditHardware', 'AuditHardwareOnHost'):
+		if objType not in ('AuditHardware', 'AuditHardwareOnHost'):
 			raise Exception(u"Unknown type: %s" % objType)
 
 		# if (objType == 'AuditHardwareOnHost') and (auditHardwareObj.getState() == 0):
