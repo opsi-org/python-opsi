@@ -146,7 +146,7 @@ class ProductPackageFile(object):
 			for f in os.listdir(self.tmpUnpackDir):
 				logger.info(u"Processing file '%s'" % f)
 				archiveName = u''
-				if   f.endswith('.cpio.gz'):
+				if f.endswith('.cpio.gz'):
 					archiveName = f[:-8]
 				elif f.endswith('.cpio'):
 					archiveName = f[:-5]
@@ -393,7 +393,7 @@ class ProductPackageFile(object):
 			self.cleanup()
 			raise Exception(u"Failed to create package content file of package '%s': %s" % (self.packageFile, e))
 
-	def _runPackageScript(self, scriptName, env = {}):
+	def _runPackageScript(self, scriptName, env={}):
 		logger.notice(u"Running package script '%s'" % scriptName)
 		try:
 			if not self.packageControlFile:
@@ -409,30 +409,30 @@ class ProductPackageFile(object):
 
 			os.chmod(script, 0700)
 
-			os.putenv('PRODUCT_ID',      self.packageControlFile.getProduct().getId())
-			os.putenv('PRODUCT_TYPE',    self.packageControlFile.getProduct().getType())
+			os.putenv('PRODUCT_ID', self.packageControlFile.getProduct().getId())
+			os.putenv('PRODUCT_TYPE', self.packageControlFile.getProduct().getType())
 			os.putenv('PRODUCT_VERSION', self.packageControlFile.getProduct().getProductVersion())
 			os.putenv('PACKAGE_VERSION', self.packageControlFile.getProduct().getPackageVersion())
 			os.putenv('CLIENT_DATA_DIR', self.getProductClientDataDir())
 			for (k, v) in env.items():
 				os.putenv(k, v)
 
-			return execute(script, timeout = PACKAGE_SCRIPT_TIMEOUT)
-		except Exception as e:
-			logger.logException(e, LOG_ERROR)
+			return execute(script, timeout=PACKAGE_SCRIPT_TIMEOUT)
+		except Exception as error:
+			logger.logException(error, LOG_ERROR)
 			self.cleanup()
-			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, e))
+			raise Exception(u"Failed to execute package script '%s' of package '%s': %s" % (scriptName, self.packageFile, error))
 
-	def runPreinst(self, env = {}):
-		return self._runPackageScript(u'preinst', env = env)
+	def runPreinst(self, env={}):
+		return self._runPackageScript(u'preinst', env=env)
 
-	def runPostinst(self, env = {}):
-		return self._runPackageScript(u'postinst', env = env)
+	def runPostinst(self, env={}):
+		return self._runPackageScript(u'postinst', env=env)
 
 
 class ProductPackageSource(object):
 
-	def __init__(self, packageSourceDir, tempDir = None, customName = None, customOnly = False, packageFileDestDir = None, format = 'cpio', compression = 'gzip', dereference = False):
+	def __init__(self, packageSourceDir, tempDir=None, customName=None, customOnly=False, packageFileDestDir=None, format='cpio', compression='gzip', dereference=False):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
 		if not os.path.isdir(self.packageSourceDir):
 			raise Exception(u"Package source directory '%s' not found" % self.packageSourceDir)
