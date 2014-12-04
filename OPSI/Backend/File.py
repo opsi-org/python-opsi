@@ -2050,8 +2050,7 @@ class FileBackend(ConfigDataBackend):
 		if mode == 'delete':
 			if sectionFound:
 				ini.remove_section(sectionFound)
-
-		if mode == 'update':
+		elif mode == 'update':
 			if sectionFound:
 				for (attribute, value) in objHash.items():
 					if attribute in ('firstseen', 'lastseen', 'state') and not value:
