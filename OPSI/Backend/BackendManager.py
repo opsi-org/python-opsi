@@ -61,7 +61,6 @@ from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
 
-# Get logger instance
 logger = Logger()
 
 try:
@@ -398,10 +397,6 @@ class BackendDispatcher(Backend):
 				exec(u'def %s(self, %s): return self._dispatchMethod(%s, "%s", %s)' % (methodName, argString, methodBackends, methodName, callString))
 				setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
-				# for be in self._backends.keys():
-				# 	setattr(self._backends[be]['instance'], '_realcall_' + methodName, getattr(self._backends[be]['instance'], methodName))
-				# 	setattr(self._backends[be]['instance'], methodName, new.instancemethod(eval(methodName), self, self.__class__))
-
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
@@ -480,8 +475,6 @@ class BackendExtender(ExtendedBackend):
 				new_function = new.function( member[1].func_code, member[1].func_globals, member[1].func_code.co_name )
 				new_method = new.instancemethod( new_function, self, self.__class__ )
 				setattr( self, methodName, new_method )
-				# setattr( sldworks.ISldWorks, 'OpenDoc6', new_method )
-				# setattr( self, methodName, new.instancemethod(member[1], self, self.__class__) )
 
 		if self._extensionConfigDir:
 			if not os.path.exists(self._extensionConfigDir):
