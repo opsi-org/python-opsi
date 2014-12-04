@@ -25,7 +25,7 @@ Products.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.6.1'
 
 import os
 import re
@@ -113,7 +113,7 @@ class ProductPackageFile(object):
 
 		productId = self.packageControlFile.getProduct().getId()
 		for f in os.listdir(self.clientDataDir):
-			if (f.lower() == productId.lower()):
+			if f.lower() == productId.lower():
 				clientDataDir = os.path.join(self.clientDataDir, f)
 				logger.info("Deleting client data dir '%s'" % clientDataDir)
 				removeDirectory(clientDataDir)
