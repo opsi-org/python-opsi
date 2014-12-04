@@ -800,10 +800,11 @@ class FileBackend(ConfigDataBackend):
 						objHash[m['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
 
 				elif fileType == 'ini':
-					if not iniFileCache.has_key(filename):
+					try:
+						cp = iniFileCache[filename]
+					except KeyError:
 						iniFile = IniFile(filename=filename, ignoreCase=False)
-						iniFileCache[filename] = iniFile.parse()
-					cp = iniFileCache[filename]
+						cp = iniFileCache[filename] = iniFile.parse()
 
 					if cp.has_section('LocalbootProduct_product_states') or cp.has_section('NetbootProduct_product_states'):
 						if cp.has_section('LocalbootProduct_product_states'):
@@ -867,10 +868,12 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Got object hash from ini file: %s" % objHash)
 
 				elif fileType == 'pro':
-					if not packageControlFileCache.has_key(filename):
+					try:
+						packageControlFile = packageControlFileCache[filename]
+					except KeyError:
 						packageControlFileCache[filename] = PackageControlFile(filename=filename)
 						packageControlFileCache[filename].parse()
-					packageControlFile = packageControlFileCache[filename]
+						packageControlFile = packageControlFileCache[filename]
 
 					if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
 						objHash = packageControlFile.getProduct().toHash()
@@ -1873,10 +1876,12 @@ class FileBackend(ConfigDataBackend):
 		idents = {}
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
 			ident = auditSoftwareOnClient.getIdent(returnType='dict')
-			if not idents.has_key(ident['clientId']):
-				idents[ident['clientId']] = []
-			idents[ident['clientId']].append(ident)
-			if not ident['clientId'] in filenames.keys():
+			try:
+				idents[ident['clientId']].append(ident)
+			except KeyError:
+				idents[ident['clientId']] = [ident]
+
+			if ident['clientId'] not in filenames:
 				filenames[ident['clientId']] = self._getConfigFile('AuditSoftwareOnClient', ident, 'sw')
 
 		for (clientId, filename) in filenames.items():
