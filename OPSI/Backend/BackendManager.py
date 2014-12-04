@@ -69,20 +69,21 @@ except ImportError:
 	# Probably running on Windows.
 	DISTRIBUTOR = 'unknown'
 
-DISTRIBUTION = 'unknown'
 try:
 	f = os.popen('lsb_release -d 2>/dev/null')
 	DISTRIBUTION = f.read().split(':')[1].strip()
 	f.close()
-except Exception as e:
-	pass
-DISTRELEASE = 'unknown'
+except Exception as error:
+	logger.debug("Reading Distribution failed: {0}".format(error))
+	DISTRIBUTION = 'unknown'
+
 try:
 	f = os.popen('lsb_release -r 2>/dev/null')
 	DISTRELEASE = f.read().split(':')[1].strip()
 	f.close()
-except Exception as e:
-	pass
+except Exception as error:
+	logger.debug("Reading release failed: {0}".format(error))
+	DISTRELEASE = 'unknown'
 
 
 class MessageBusNotifier(BackendModificationListener):
