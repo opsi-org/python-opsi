@@ -100,7 +100,7 @@ class File(object):
 		if type(user) is int:
 			if (user > -1):
 				uid = user
-		elif not user is None:
+		elif user is not None:
 			try:
 				uid = pwd.getpwnam(user)[2]
 			except KeyError:
@@ -110,7 +110,7 @@ class File(object):
 		if type(group) is int:
 			if (group > -1):
 				gid = group
-		elif not group is None:
+		elif group is not None:
 			try:
 				gid = grp.getgrnam(group)[2]
 			except KeyError:
@@ -127,9 +127,9 @@ class File(object):
 			self.open('w')
 			self.close()
 
-		if not user is None or not group is None:
+		if user is not None or group is not None:
 			self.chown(user, group)
-		if not mode is None:
+		if mode is not None:
 			self.chmod(mode)
 
 	def open(self, mode='r'):

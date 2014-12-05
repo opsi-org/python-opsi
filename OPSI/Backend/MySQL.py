@@ -571,7 +571,7 @@ class MySQLBackend(SQLBackend):
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
-		if not possibleValues is None:
+		if possibleValues is not None:
 			(conn, cursor) = self._sql.connect()
 			myTransactionSuccess = False
 			myMaxRetryTransaction = 10
@@ -706,7 +706,7 @@ class MySQLBackend(SQLBackend):
 			del data['defaultValues']
 			self._sql.update('PRODUCT_PROPERTY', where, data)
 
-			if not possibleValues is None:
+			if possibleValues is not None:
 				self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
 			for value in possibleValues:

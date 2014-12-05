@@ -1263,7 +1263,7 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
-		if not possibleValues is None:
+		if possibleValues is not None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
 		[self._sql.insert('PRODUCT_PROPERTY_VALUE',
@@ -1294,7 +1294,7 @@ class SQLBackend(ConfigDataBackend):
 		del data['defaultValues']
 		self._sql.update('PRODUCT_PROPERTY', where, data)
 
-		if not possibleValues is None:
+		if possibleValues is not None:
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 
 		[self._sql.insert('PRODUCT_PROPERTY_VALUE',
@@ -2202,7 +2202,7 @@ class SQLBackend(ConfigDataBackend):
 					break
 				if valueInfo.get('Scope', '') != 'g':
 					continue
-				if not value is None:
+				if value is not None:
 					value = forceList(value)
 				classFilter[attribute] = value
 
@@ -2347,9 +2347,10 @@ class SQLBackend(ConfigDataBackend):
 		update = {}
 		for (attribute, value) in data.items():
 			if attribute in ('state', 'lastseen', 'firstseen'):
-				if not value is None:
+				if value is not None:
 					update[attribute] = value
 				del data[attribute]
+
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
 			self._sql.update('HARDWARE_CONFIG_%s' % auditHardwareOnHost.hardwareClass, where, update)
@@ -2398,7 +2399,7 @@ class SQLBackend(ConfigDataBackend):
 						continue
 					if (valueInfo.get('Scope', '') != 'i'):
 						continue
-				if not value is None:
+				if value is not None:
 					value = forceList(value)
 				classFilter[attribute] = value
 

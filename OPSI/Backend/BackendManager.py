@@ -420,7 +420,7 @@ class BackendDispatcher(Backend):
 				result.extend(res)
 			elif type(result) is types.DictType and type(res) is types.DictType:
 				result.update(res)
-			elif not res is None:
+			elif res is not None:
 				result = res
 		return result
 
@@ -683,7 +683,7 @@ class BackendAccessControl(object):
 
 		try:
 			win32security.LogonUser(self._username, 'None', self._password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
-			if not self._forceGroups is None:
+			if self._forceGroups is not None:
 				self._userGroups = self._forceGroups
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
@@ -755,7 +755,7 @@ class BackendAccessControl(object):
 			auth.authenticate()
 			auth.acct_mgmt()
 
-			if not self._forceGroups is None:
+			if self._forceGroups is not None:
 				self._userGroups = self._forceGroups
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:

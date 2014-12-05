@@ -1394,7 +1394,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 def getPids(process, sessionId=None):
 	process = forceUnicode(process)
-	if not sessionId is None:
+	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 
 	logger.info(u"Searching pids of process name %s (session id: %s)" % (process, sessionId))
@@ -1433,7 +1433,7 @@ def getPids(process, sessionId=None):
 
 def getPid(process, sessionId=None):
 	process = forceUnicode(process)
-	if not sessionId is None:
+	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 
 	processId = 0
@@ -1503,7 +1503,7 @@ def closeProcessWindows(processId):
 
 
 def terminateProcess(processHandle=None, processId=None):
-	if not processId is None:
+	if processId is not None:
 		processId = forceInt(processId)
 
 	if not processHandle and not processId:
@@ -1516,7 +1516,7 @@ def terminateProcess(processHandle=None, processId=None):
 
 
 def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
-	if not sessionId is None:
+	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 	duplicateFrom = forceUnicode(duplicateFrom)
 
@@ -1554,7 +1554,7 @@ def getUserToken(sessionId=None, duplicateFrom=u"winlogon.exe"):
 
 def runCommandInSession(command, sessionId=None, desktop=u"default", duplicateFrom=u"winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0):
 	command = forceUnicode(command)
-	if not sessionId is None:
+	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 	desktop = forceUnicodeLower(desktop)
 	if desktop.find(u'\\') == -1:

@@ -717,18 +717,20 @@ class PackageControlFile(TextFile):
 				)
 			)
 			if isinstance(self._productProperties[-1], UnicodeProductProperty):
-				if not productProperty.get('values') is None:
+				if productProperty.get('values') is not None:
 					self._productProperties[-1].setPossibleValues(productProperty.get('values'))
 				else:
 					self._productProperties[-1].possibleValues = []
-				if not productProperty.get('editable') is None:
+
+				if productProperty.get('editable') is not None:
 					self._productProperties[-1].setEditable(productProperty['editable'])
 				else:
 					if not productProperty.get('values') in (None, []):
 						self._productProperties[-1].setEditable(False)
 					else:
 						self._productProperties[-1].setEditable(True)
-				if not productProperty.get('multivalue') is None:
+
+				if productProperty.get('multivalue') is not None:
 					self._productProperties[-1].setMultiValue(productProperty['multivalue'])
 
 			self._productProperties[-1].setDefaults()
@@ -824,7 +826,7 @@ class PackageControlFile(TextFile):
 		self._lines.append(u'version: %s' % self._product.getProductVersion())
 		self._lines.append(u'priority: %s' % self._product.getPriority())
 		self._lines.append(u'licenseRequired: %s' % self._product.getLicenseRequired())
-		if not self._product.getProductClassIds() is None:
+		if self._product.getProductClassIds() is not None:
 			self._lines.append(u'productClasses: %s'  % u', '.join(self._product.getProductClassIds()))
 		self._lines.append(u'setupScript: %s' % self._product.getSetupScript())
 		self._lines.append(u'uninstallScript: %s' % self._product.getUninstallScript())
