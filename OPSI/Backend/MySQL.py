@@ -186,15 +186,15 @@ class MySQL(SQL):
 
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e.args[0] == 2006):
+				if e.args[0] == 2006:
 					# 2006: 'MySQL server has gone away'
 					myConnectionSuccess = False
-					if (myRetryConnectionCounter >= myMaxRetryConnection):
+					if myRetryConnectionCounter >= myMaxRetryConnection:
 						logger.error(u'MySQL server has gone away (Code 2006) - giving up after %d retries' % myRetryConnectionCounter)
 						raise
 					else:
 						logger.notice(u'MySQL server has gone away (Code 2006) - restarting Connection: retry %s' % myRetryConnectionCounter)
-						myRetryConnectionCounter = myRetryConnectionCounter +1
+						myRetryConnectionCounter = myRetryConnectionCounter + 1
 						self._transactionLock.release()
 						logger.debug(u"Thread lock released")
 						time.sleep(0.1)
@@ -220,7 +220,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
+				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
 				self._createConnectionPool()
@@ -245,7 +245,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception, e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
+				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
 				self._createConnectionPool()
@@ -273,7 +273,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
+				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
 				self._createConnectionPool()
@@ -323,7 +323,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
+				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
 				self._createConnectionPool()
@@ -368,7 +368,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
+				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
 				self._createConnectionPool()
@@ -394,7 +394,7 @@ class MySQL(SQL):
 				self.execute(query, conn, cursor)
 			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
-				if (e[0] != 2006):
+				if e[0] != 2006:
 					# 2006: MySQL server has gone away
 					raise
 				self._createConnectionPool()
@@ -590,11 +590,11 @@ class MySQLBackend(SQLBackend):
 					myTransactionSuccess = True
 				except Exception as e:
 					logger.debug(u"Execute error: %s" % e)
-					if (e.args[0] == 1213):
+					if e.args[0] == 1213:
 						# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
 						# 1213: May be table locked because of concurrent access - retrying
 						myTransactionSuccess = False
-						if (myRetryTransactionCounter >= myMaxRetryTransaction):
+						if myRetryTransactionCounter >= myMaxRetryTransaction:
 							logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
 							raise
 						else:
@@ -614,7 +614,7 @@ class MySQLBackend(SQLBackend):
 			try:
 				# transform arguments for sql
 				# from uniqueCondition
-				if (value in defaultValues):
+				if value in defaultValues:
 					myPPVdefault = u"`isDefault` = 1"
 				else:
 					myPPVdefault = u"`isDefault` = 0"
@@ -669,11 +669,11 @@ class MySQLBackend(SQLBackend):
 						myTransactionSuccess = True
 					except Exception as e:
 						logger.debug(u"Execute error: %s" % e)
-						if (e.args[0] == 1213):
+						if e.args[0] == 1213:
 							# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
 							# 1213: May be table locked because of concurrent access - retrying
 							myTransactionSuccess = False
-							if (myRetryTransactionCounter >= myMaxRetryTransaction):
+							if myRetryTransactionCounter >= myMaxRetryTransaction:
 								logger.error(u'Table locked (Code 2013) - giving up after %d retries' % myRetryTransactionCounter)
 								raise
 							else:

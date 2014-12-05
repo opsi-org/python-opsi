@@ -90,8 +90,8 @@ class JSONRPC(DeferredCall):
 					try:
 						exceptionClass = eval(error.get('class', 'Exception'))
 						index = message.find(':')
-						if (index != -1) and (len(message) > index):
-							message = message[index+1:].lstrip()
+						if index != -1 and len(message) > index:
+							message = message[index + 1:].lstrip()
 						exception = exceptionClass(u'%s (error on server)' % message)
 					except:
 						pass
@@ -172,7 +172,7 @@ class RpcQueue(threading.Thread):
 					if jsonrpc:
 						logger.debug(u'Got jsonrpc %s from queue' % jsonrpc)
 						jsonrpcs.append(jsonrpc)
-						if (len(jsonrpcs) >= self.size):
+						if len(jsonrpcs) >= self.size:
 							break
 				except Empty:
 					break
@@ -198,11 +198,13 @@ class RpcQueue(threading.Thread):
 					isExit = True
 				else:
 					isExit = False
+
 				if jsonrpc.retry:
 					retry = True
+
 				if not baseUrl:
 					baseUrl = jsonrpc.baseUrl
-				elif (baseUrl != jsonrpc.baseUrl):
+				elif baseUrl != jsonrpc.baseUrl:
 					raise Exception(u"Can't execute jsonrpcs with different base urls at once: (%s != %s)" % (baseUrl, jsonrpc.baseUrl))
 				rpc.append(jsonrpc.getRpc())
 			rpc = json.dumps(rpc)

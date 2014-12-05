@@ -129,7 +129,7 @@ def forceUnicode(var):
 		return var
 	if type(var) is types.StringType:
 		return unicode(var, 'utf-8', 'replace')
-	if (os.name == 'nt') and type(var) is WindowsError:
+	elif os.name == 'nt' and type(var) is WindowsError:
 		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
 
 	if hasattr(var, '__unicode__'):

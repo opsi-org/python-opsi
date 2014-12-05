@@ -98,7 +98,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 	def _getDepotConnection(self, depotId):
 		depotId = forceHostId(depotId)
-		if (depotId == self._depotId):
+		if depotId == self._depotId:
 			return self
 		if not self._depotConnections.get(depotId):
 			if not self._opsiHostKey:
@@ -130,7 +130,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		return depotId
 
 	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):
-		if (productOnClient.productType != 'NetbootProduct'):
+		if productOnClient.productType != 'NetbootProduct':
 			logger.debug(u"Not a netboot product: '%s', nothing to do" % productOnClient.productId)
 			return False
 
@@ -145,7 +145,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			return
 
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
-		if (depotId != self._depotId):
+		if depotId != self._depotId:
 			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
 			return self._getDepotConnection(depotId).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
@@ -168,7 +168,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 						self._delay = 3.0
 
 					def run(self):
-						while (self._delay > 0):
+						while self._delay > 0:
 							try:
 								time.sleep(0.2)
 							except:
@@ -247,13 +247,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
-		if (configState.configId != 'clientconfig.depot.id'):
+		if configState.configId != 'clientconfig.depot.id':
 			return
 
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
 	def configState_updateObject(self, configState):
-		if (configState.configId != 'clientconfig.depot.id'):
+		if configState.configId != 'clientconfig.depot.id':
 			return
 
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
@@ -261,7 +261,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def configState_deleteObjects(self, configStates):
 		errors = []
 		for configState in configStates:
-			if (configState.configId != 'clientconfig.depot.id'):
+			if configState.configId != 'clientconfig.depot.id':
 				continue
 
 			try:

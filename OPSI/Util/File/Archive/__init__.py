@@ -380,12 +380,12 @@ class CpioArchive(BaseArchive, PigzMixin):
 				raise Exception(u"Archive file not found: '%s'" % self._filename)
 			names = []
 			cat = System.which('cat')
-			if (self._compression == 'gzip'):
+			if self._compression == 'gzip':
 				if self.pigz_detected:
 					cat = u'%s -cd' % (System.which('pigz'), )
 				else:
 					cat = System.which('zcat')
-			if (self._compression == 'bzip2'):
+			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
 			for line in System.execute(u'%s "%s" | %s --quiet -it' % (cat, self._filename, System.which('cpio'))):
 				if line:

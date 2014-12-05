@@ -2474,7 +2474,7 @@ class Harddisk:
 					lastMsg = buf[-2]
 					buf[:-1] = []
 
-				elif (timeout >= 100):
+				elif timeout >= 100:
 					raise Exception(u"Failed: %s" % lastMsg)
 				else:
 					timeout += 1

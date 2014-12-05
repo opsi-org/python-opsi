@@ -66,11 +66,11 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 	for auditHardware in auditHardwares:
 		hwClass = auditHardware.getHardwareClass()
 		baseDir = ''
-		if   (hwClass == 'PCI_DEVICE'):
+		if hwClass == 'PCI_DEVICE':
 			baseDir = u'pciids'
-		elif (hwClass == 'USB_DEVICE'):
+		elif hwClass == 'USB_DEVICE':
 			baseDir = u'usbids'
-		elif (hwClass == 'HDAUDIO_DEVICE'):
+		elif hwClass == 'HDAUDIO_DEVICE':
 			baseDir = u'hdaudioids'
 		else:
 			logger.debug(u"Skipping unhandled hardware class '%s' (%s)" % (hwClass, auditHardware))
@@ -121,13 +121,13 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		logger.notice(u"Found driver for %s device '%s', in dir '%s'" % (hwClass, name, srcDriverPath))
 		driver['directory'] = srcDriverPath
 		for entry in listdir(srcDriverPath):
-			if (entry.lower() == 'txtsetup.oem'):
+			if entry.lower() == 'txtsetup.oem':
 				driver['textmode'] = True
 				break
 		if not driver['textmode']:
 			srcDriverPath = os.path.dirname(srcDriverPath)
 			for entry in listdir(srcDriverPath):
-				if (entry.lower() == 'txtsetup.oem'):
+				if entry.lower() == 'txtsetup.oem':
 					driver['directory'] = srcDriverPath
 					driver['textmode'] = True
 					break
@@ -175,7 +175,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		if not os.path.isdir(dirname):
 			continue
 		if re.search('^\d+$', filename):
-			if (forceInt(filename) >= driverNumber):
+			if forceInt(filename) >= driverNumber:
 				driverNumber = forceInt(filename)
 
 	integratedDrivers = {}
@@ -386,10 +386,10 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 					section = line.strip().lower()[1:-1]
 					if section in (u'massstoragedrivers', u'oembootfiles'):
 						continue
-				if (section == u'massstoragedrivers'):
+				if section == u'massstoragedrivers':
 					massStorageDriverLines.append(line)
 					continue
-				if (section == u'oembootfiles'):
+				if section == u'oembootfiles':
 					oemBootFileLines.append(line)
 					continue
 				lines.append(line)
@@ -511,7 +511,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			parentDir = os.path.dirname(additionalDriverDir)
 			try:
 				for entry in listdir(parentDir):
-					if (entry.lower() == 'txtsetup.oem'):
+					if entry.lower() == 'txtsetup.oem':
 						additionalDriverDir = parentDir
 						break
 			except Exception as e:

@@ -2200,7 +2200,7 @@ class SQLBackend(ConfigDataBackend):
 					skipHardwareClass = True
 					logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 					break
-				if (valueInfo.get('Scope', '') != 'g'):
+				if valueInfo.get('Scope', '') != 'g':
 					continue
 				if not value is None:
 					value = forceList(value)

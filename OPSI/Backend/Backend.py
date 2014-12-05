@@ -195,15 +195,15 @@ This defaults to ``self``.
 				logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
 							% (filter[attribute], attribute, value))
 				filterValues = forceUnicodeList(filter[attribute])
-				if (forceUnicodeList(value) == filterValues) or forceUnicode(value) in filterValues:
+				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
 					matched = True
 				else:
 					for filterValue in filterValues:
-						if (attribute == 'type'):
+						if attribute == 'type':
 							match = False
 							Class = eval(filterValue)
 							for subClass in Class.subClasses:
-								if (subClass == value):
+								if subClass == value:
 									matched = True
 									break
 							continue
@@ -677,9 +677,11 @@ the opsi host key.
 			match = lineRegex.search(line)
 			if not match:
 				continue
-			if (match.group(1) == username):
+
+			if match.group(1) == username:
 				result['password'] = match.group(2)
 				break
+
 		if not result['password']:
 			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, self._opsiPasswdFile))
 
@@ -1035,7 +1037,7 @@ depot where the method is.
 			raise BackendReferentialIntegrityError(u"Cannot set installationStatus for product '%s', client '%s' to 'installed' without productVersion and packageVersion" \
 				% (productOnClient.productId, productOnClient.clientId))
 
-		if (productOnClient.installationStatus != 'installed'):
+		if productOnClient.installationStatus != 'installed':
 			productOnClient.productVersion = None
 			productOnClient.packageVersion = None
 
@@ -1557,11 +1559,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							result1IdentIndex = i
 							result2IdentIndex = j
 							break
-			if (result1IdentIndex == -1):
+
+			if result1IdentIndex == -1:
 				logger.debug(u"No matching identAttributes found (%s, %s)" % (result1['identAttributes'], result2['identAttributes']))
 
-			if (result1IdentIndex == -1):
-				# if (len(result1['identAttributes']) == 1) and result1['foreignIdAttributes']:
+			if result1IdentIndex == -1:
 				if 'id' in result1['identAttributes'] and result1['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result1: %s" % result1['foreignIdAttributes'])
 					for attr in result1['foreignIdAttributes']:
@@ -1576,8 +1578,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					logger.debug(u"Cannot use foreignIdAttributes of result1")
 
-			if (result1IdentIndex == -1):
-				# if (len(result2['identAttributes']) == 1) and result2['foreignIdAttributes']:
+			if result1IdentIndex == -1:
 				if 'id' in result2['identAttributes'] and result2['foreignIdAttributes']:
 					logger.debug(u"Trying foreignIdAttributes of result2: %s" % result2['foreignIdAttributes'])
 					for attr in result2['foreignIdAttributes']:
@@ -1592,7 +1593,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					logger.debug(u"Cannot use foreignIdAttributes of result2")
 
-			if (result1IdentIndex == -1):
+			if result1IdentIndex == -1:
 				raise BackendBadValueError(u"Failed to combine partial results %s(%s | %s) %s(%s | %s)" \
 					% (result1['objectClass'], result1['identAttributes'], result1['foreignIdAttributes'],
 					   result2['objectClass'], result2['identAttributes'], result2['foreignIdAttributes']))
@@ -1645,7 +1646,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			if isinstance(f, pureldap.LDAPFilter_equalityMatch):
 				logger.debug(u"Handle equality attribute '%s', value '%s'" % (f.attributeDesc.value, f.assertionValue.value))
-				if (f.attributeDesc.value.lower() == 'objectclass'):
+				if f.attributeDesc.value.lower() == 'objectclass':
 					objectClass = f.assertionValue.value
 				else:
 					objectFilter = {f.attributeDesc.value: f.assertionValue.value}
@@ -1660,7 +1661,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			elif isinstance(f, pureldap.LDAPFilter_substrings):
 				logger.debug(u"Handle substrings type %s: %s" % (f.type, repr(f.substrings)))
-				if (f.type.lower() == 'objectclass'):
+				if f.type.lower() == 'objectclass':
 					raise BackendBadValueError(u"Substring search not allowed for objectClass")
 				if isinstance(f.substrings[0], pureldap.LDAPFilter_substrings_initial):
 					# string*
@@ -1711,7 +1712,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						this = self
 						objectFilterNew = {}
 						for (key, value) in objectFilter.items():
-							if (key != 'type'):
+							if key != 'type':
 								try:
 									value = eval(value)
 								except:
@@ -3027,7 +3028,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			# 	nextProductOnClient.setActionResult('none')
 			# if not nextProductOnClient.actionProgress:
 			# 	nextProductOnClient.setActionProgress(u'')
-			if (nextProductOnClient.installationStatus == 'installed'):
+			if nextProductOnClient.installationStatus == 'installed':
 				# TODO: Check if product exists?
 				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
 					clientToDepots = self.configState_getClientToDepotserver(clientIds = [nextProductOnClient.clientId])
@@ -3627,9 +3628,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					if auditSoftwareToLicensePools:
 						licensePoolIds.append(auditSoftwareToLicensePools[0].licensePoolId)
 
-			if (len(licensePoolIds) < 1):
+			if len(licensePoolIds) < 1:
 				raise LicenseConfigurationError(u"No license pool for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
-			elif (len(licensePoolIds) > 1):
+			elif len(licensePoolIds) > 1:
 				raise LicenseConfigurationError(u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found: %s" \
 						% (productId, windowsSoftwareId, licensePoolIds))
 			licensePoolId = licensePoolIds[0]
@@ -3690,7 +3691,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			for softwareLicense in self._backend.softwareLicense_getObjects(id = softwareLicenseIds, boundToHost = [ None, '' ]):
 				logger.debug(u"Checking license '%s', maxInstallations %d" \
 					% (softwareLicense.getId(), softwareLicense.getMaxInstallations()))
-				if (softwareLicense.getMaxInstallations() == 0):
+				if softwareLicense.getMaxInstallations() == 0:
 					# 0 = infinite
 					softwareLicenseId = softwareLicense.getId()
 					break

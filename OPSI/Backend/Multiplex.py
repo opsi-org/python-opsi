@@ -158,7 +158,7 @@ class MultiplexBackend(object):
 
 	def _getOpsiHostKey(self, depotId):
 		for name, service in self.__services.iteritems():
-			if (name.split("/")[2].split(":")[0].lower() == depotId.lower()):
+			if name.split("/")[2].split(":")[0].lower() == depotId.lower():
 				return service.opsiHostKey
 		raise BackendMissingDataError(u"Depot id '%s' not found in config" % depotId)
 
