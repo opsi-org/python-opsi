@@ -327,7 +327,7 @@ class BackendDispatcher(Backend):
 			raise BackendConfigurationError(u"Failed to load dispatch config file '%s': %s" % (self._dispatchConfigFile, e))
 
 	def __loadBackends(self):
-		backends = []
+		backends = set()
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
@@ -335,13 +335,13 @@ class BackendDispatcher(Backend):
 
 		for i in xrange(len(self._dispatchConfig)):
 			if not type(self._dispatchConfig[i][1]) is list:
-				self._dispatchConfig[i][1] = [ self._dispatchConfig[i][1] ]
+				self._dispatchConfig[i][1] = [self._dispatchConfig[i][1]]
+
 			for value in self._dispatchConfig[i][1]:
 				if not value:
 					raise BackendConfigurationError(u"Bad dispatcher config '%s'" % self._dispatchConfig[i])
-				if value in backends:
-					continue
-				backends.append(value)
+
+				backends.add(value)
 
 		for backend in backends:
 			self._backends[backend] = {}
