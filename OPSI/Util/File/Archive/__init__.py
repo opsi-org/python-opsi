@@ -33,7 +33,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
    Control the usage of pigz via ``PIGZ_ENABLED``
 """
 
-__version__ = "4.0.5.1"
+
+__version__ = "4.0.6.1"
 
 import locale
 import os
@@ -378,19 +379,19 @@ class CpioArchive(BaseArchive, PigzMixin):
 		try:
 			if not os.path.exists(self._filename):
 				raise Exception(u"Archive file not found: '%s'" % self._filename)
-			names = []
+
 			cat = System.which('cat')
 			if self._compression == 'gzip':
 				if self.pigz_detected:
-					cat = u'%s -cd' % (System.which('pigz'), )
+					cat = u'{pigz} -cd'.format(pigz=System.which('pigz'))
 				else:
 					cat = System.which('zcat')
 			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
-			for line in System.execute(u'%s "%s" | %s --quiet -it' % (cat, self._filename, System.which('cpio'))):
-				if line:
-					names.append(unicode(line))
-			return names
+
+			return [unicode(line) for line in
+					System.execute(u'{cat} "{filename}" | {cpio} --quiet -it'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
+					if line]
 		except Exception as e:
 			raise Exception(u"Failed to get archive content '%s': %s" % (self._filename, e))
 
