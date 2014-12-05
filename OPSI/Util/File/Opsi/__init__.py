@@ -669,10 +669,10 @@ class PackageControlFile(TextFile):
 			windowsSoftwareIds=self._sections.get('windows',[{}])[0].get('softwareids', []),
 			changelog=self._sections.get('changelog')
 		)
-		if isinstance(self._product, NetbootProduct) and not product.get('pxeconfigtemplate') is None:
+		if isinstance(self._product, NetbootProduct) and product.get('pxeconfigtemplate') is not None:
 			self._product.setPxeConfigTemplate(product.get('pxeconfigtemplate'))
 
-		if isinstance(self._product, LocalbootProduct) and not product.get('userloginscript') is None:
+		if isinstance(self._product, LocalbootProduct) and product.get('userloginscript') is not None:
 			self._product.setUserLoginScript(product.get('userloginscript'))
 		self._product.setDefaults()
 
