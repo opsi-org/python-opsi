@@ -140,26 +140,28 @@ class HostControlBackend(ExtendedBackend):
 		self._opsiclientdPort = 4441
 		self._hostRpcTimeout = 15
 		self._hostReachableTimeout = 3
-		self._resolveHostAddress   = False
-		self._maxConnections       = 50
-		self._broadcastAddresses   = ["255.255.255.255"]
+		self._resolveHostAddress = False
+		self._maxConnections = 50
+		self._broadcastAddresses = ["255.255.255.255"]
 
-		# Parse arguments
+		self._parseArguments(kwargs)
+
+		if self._maxConnections < 1:
+			self._maxConnections = 1
+
+	def _parseArguments(self, kwargs):
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if   option in ('opsiclientdport',):
+			if option == 'opsiclientdport':
 				self._opsiclientdPort = forceInt(value)
-			elif option in ('hostrpctimeout',):
+			elif option == 'hostrpctimeout':
 				self._hostRpcTimeout = forceInt(value)
-			elif option in ('resolvehostaddress',):
+			elif option == 'resolvehostaddress':
 				self._resolveHostAddress = forceBool(value)
-			elif option in ('maxconnections',):
+			elif option == 'maxconnections':
 				self._maxConnections = forceInt(value)
-			elif option in ('broadcastaddresses',):
+			elif option == 'broadcastaddresses':
 				self._broadcastAddresses = forceUnicodeList(value)
-
-		if (self._maxConnections < 1):
-			self._maxConnections = 1
 
 	def _getHostAddress(self, host):
 		address = None
