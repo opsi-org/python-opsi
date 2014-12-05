@@ -67,6 +67,7 @@ class ConnectionPool(object):
 				if key in kwargs.keys():
 					poolArgs[key] = kwargs[key]
 					del kwargs[key]
+
 			def creator():
 				return MySQLdb.connect(**kwargs)
 			ConnectionPool.__instance = pool.QueuePool(creator, **poolArgs)

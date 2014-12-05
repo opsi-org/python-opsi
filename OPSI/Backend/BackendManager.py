@@ -391,6 +391,7 @@ class BackendDispatcher(Backend):
 						methodBackends.append(backend)
 					logger.debug(u"'%s' matches method '%s', dispatching to backends: %s" % (regex, methodName, u', '.join(methodBackends)))
 					break
+
 				if not methodBackends:
 					continue
 

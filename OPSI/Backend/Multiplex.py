@@ -507,6 +507,7 @@ class MultiplexBackend(object):
 			return [result]
 		return self.dispatch("softwareLicense_getObjects", attributes, **filter)
 
+
 class Service(object):
 	def __init__(self, master=False):
 		self.clients = []

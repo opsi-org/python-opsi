@@ -3322,9 +3322,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.objectToGroup_getObjects(
-						groupType = objectToGroup.groupType,
-						groupId   = objectToGroup.groupId,
-						objectId  = objectToGroup.objectId
+						groupType=objectToGroup.groupType,
+						groupId=objectToGroup.groupId,
+						objectId=objectToGroup.objectId
 					)
 				)
 		return result
@@ -3335,9 +3335,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for objectToGroup in objectToGroups:
 			logger.info(u"Updating objectToGroup %s" % objectToGroup)
 			if self.objectToGroup_getIdents(
-					groupType = objectToGroup.groupType,
-					groupId   = objectToGroup.groupId,
-					objectId  = objectToGroup.objectId):
+					groupType=objectToGroup.groupType,
+					groupId=objectToGroup.groupId,
+					objectId=objectToGroup.objectId):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
 				logger.info(u"ObjectToGroup %s does not exist, creating" % objectToGroup)
@@ -3358,14 +3358,19 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return self.objectToGroup_createObjects(ObjectToGroup.fromHash(hash))
 
 	def objectToGroup_delete(self, groupType, groupId, objectId):
-		if not groupType: groupType  = []
-		if not groupId:   groupId  = []
-		if not objectId:  objectId = []
+		if not groupType:
+			groupType = []
+		if not groupId:
+			groupId = []
+		if not objectId:
+			objectId = []
 		return self._backend.objectToGroup_deleteObjects(
-				self._backend.objectToGroup_getObjects(
-					groupType = groupType,
-					groupId   = groupId,
-					objectId  = objectId))
+			self._backend.objectToGroup_getObjects(
+				groupType=groupType,
+				groupId=groupId,
+				objectId=objectId
+			)
+		)
 
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4066,8 +4071,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			lastseen = []
 		if state is None:
 			state = []
-		for key in kwargs.keys():
-			if kwargs[key] is None: kwargs[key] = []
+
+		for key in kwargs:
+			if kwargs[key] is None:
+				kwargs[key] = []
 
 		return self._backend.auditHardwareOnHost_deleteObjects(
 			self._backend.auditHardwareOnHost_getObjects(

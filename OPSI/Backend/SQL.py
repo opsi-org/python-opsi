@@ -268,13 +268,16 @@ class SQLBackend(ConfigDataBackend):
 		if 'id' in newFilter:
 			newFilter[id] = newFilter['id']
 			del newFilter['id']
+
 		if 'id' in newAttributes:
 			newAttributes.remove('id')
 			newAttributes.append(id)
+
 		if 'type' in filter:
 			for oc in forceList(filter['type']):
 				if objectClass.__name__ == oc:
 					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
+
 		if newAttributes:
 			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
 				newAttributes.append('type')
