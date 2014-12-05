@@ -3622,11 +3622,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if licensePoolId:
 			licensePoolId = forceLicensePoolId(licensePoolId)
 		elif productId or windowsSoftwareId:
-			licensePoolIds = []
 			if productId:
 				productId = forceProductId(productId)
 				licensePoolIds = self.licensePool_getIdents(productIds=productId, returnType='unicode')
 			elif windowsSoftwareId:
+				licensePoolIds = []
 				windowsSoftwareId = forceUnicode(windowsSoftwareId)
 
 				auditSoftwares = self.auditSoftware_getObjects(windowsSoftwareId=windowsSoftwareId)
@@ -3980,20 +3980,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   AuditHardwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditHardware_createObjects(self, auditHardwares):
-		result = []
-		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
-		for auditHardware in auditHardwares:
+		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
 			logger.info(u"Creating auditHardware %s" % auditHardware)
 			self.auditHardware_insertObject(auditHardware)
-		return result
+		return []
 
 	def auditHardware_updateObjects(self, auditHardwares):
-		result = []
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
 			logger.info(u"Updating auditHardware %s" % auditHardware)
 			# You can't update auditHardwares, because the ident contains all attributes
 			self.auditHardware_insertObject(auditHardware)
-		return result
+		return []
 
 	def auditHardware_create(self, hardwareClass, **kwargs):
 		hash = locals()
@@ -4028,11 +4025,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 
 	def auditHardwareOnHost_createObjects(self, auditHardwareOnHosts):
-		result = []
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			logger.info(u"Creating auditHardwareOnHost %s" % auditHardwareOnHost)
 			self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
-		return result
+		return []
 
 	def auditHardwareOnHost_updateObjects(self, auditHardwareOnHosts):
 		result = []
