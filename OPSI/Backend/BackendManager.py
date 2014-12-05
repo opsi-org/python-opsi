@@ -779,10 +779,7 @@ class BackendAccessControl(object):
 		return False
 
 	def _isUser(self, ids):
-		for id in forceUnicodeList(ids):
-			if (id == self._username):
-				return True
-		return False
+		return forceBool(self._username in forceUnicodeList(ids))
 
 	def _isOpsiDepotserver(self, ids=[]):
 		if not self._host or not isinstance(self._host, OpsiDepotserver):
@@ -798,12 +795,11 @@ class BackendAccessControl(object):
 	def _isOpsiClient(self, ids=[]):
 		if not self._host or not isinstance(self._host, OpsiClient):
 			return False
+
 		if not ids:
 			return True
-		for id in forceUnicodeList(ids):
-			if (id == self._host.id):
-				return True
-		return False
+
+		return forceBool(self._host.id in forceUnicodeList(ids))
 
 	def _isSelf(self, **params):
 		if not params:
