@@ -4090,11 +4090,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def auditHardwareOnHost_setObsolete(self, hostId):
 		if hostId is None:
 			hostId = []
+
 		hostId = forceHostIdList(hostId)
 		auditHardwareOnHosts = self.auditHardwareOnHost_getObjects(hostId=hostId, state=1)
-		for i in range(len(auditHardwareOnHosts)):
-			auditHardwareOnHosts[i].setState(0)
-			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
+		[ahoh.setState(0) for ahoh in auditHardwareOnHosts]
+		self._backend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   BootConfigurations                                                                        -
