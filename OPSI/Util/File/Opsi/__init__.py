@@ -63,10 +63,11 @@ from OPSI.Object import *
 from OPSI.Types import (BackendBadValueError, OpsiBackupBackendNotFound,
 	OpsiBackupFileError, OpsiBackupFileNotFound, forceActionRequest, forceBool,
 	forceDictList, forceFilename, forceHostId, forceInstallationStatus,
-	forceList, forceObjectClass, forceObjectClassList, forceOpsiHostKey,
-	forcePackageVersion, forceProductId, forceProductPriority,
-	forceProductPropertyType, forceProductType, forceProductVersion,
-	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower)
+	forceInt, forceList, forceObjectClass, forceObjectClassList,
+	forceOpsiHostKey, forcePackageVersion, forceProductId,
+	forceProductPriority, forceProductPropertyType, forceProductType,
+	forceProductVersion, forceRequirementType, forceUnicode, forceUnicodeList,
+	forceUnicodeLower)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 
@@ -977,6 +978,9 @@ class OpsiConfFile(IniFile):
 
 				if key == 'use_pigz':
 					self._opsiConfig['packages'][key] = forceBool(value)
+			elif sectionType == 'logfiles':
+				if key == 'max_size':
+					self._opsiConfig['logfiles'][key] = forceInt(value)
 
 		self._parsed = True
 		return self._opsiConfig
@@ -1007,6 +1011,13 @@ class OpsiConfFile(IniFile):
 			return self._opsiConfig["packages"]["use_pigz"]
 		else:
 			return True
+
+	@requiresParsing
+	def getMaxLogFileSize(self):
+		if "logfiles" in self._opsiConfig and "max_size" in self._opsiConfig["logfiles"]:
+			return self._opsiConfig["logfiles"]["max_size"]
+		else:
+			return 5000000
 
 
 class OpsiBackupArchive(tarfile.TarFile):

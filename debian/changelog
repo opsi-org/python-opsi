@@ -15,6 +15,9 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * Improve speed of configState_getClientToDepotserver
   * OPSI.Backend.SQL: Refactored working with the hardware audit
   * Speed up OPSI.Backend.Backend.log_read
+  * The size limit of log_read and log_write can now be controlled
+    through /etc/opsi/opsi.conf and the value of "max_size" in the
+    section "logfiles".
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Dec 2014 10:32:46 +0100
 

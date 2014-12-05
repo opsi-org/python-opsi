@@ -68,7 +68,12 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE  = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF  = u'/etc/opsi/global.conf'
 LOG_DIR           = u'/var/log/opsi'
-MAX_LOGFILE_SIZE  = 5000000
+
+try:
+	import OPSI.Util.File.Opsi
+	MAX_LOGFILE_SIZE = OPSI.Util.File.Opsi.OpsiConfFile().getMaxLogFileSize()
+except IOError:
+	MAX_LOGFILE_SIZE = 5000000
 
 
 def getArgAndCallString(method):
@@ -570,51 +575,49 @@ overwrite the log.
 		:type append: bool
 		"""
 		logType = forceUnicode(logType)
-		data = forceUnicode(data)
-		if not objectId:
-			objectId = None
-		else:
-			objectId = forceObjectId(objectId)
-		append = forceBool(append)
-
 		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
 			raise BackendBadValueError(u"Unknown log type '%s'" % logType)
 
-		if not objectId and logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog', 'opsiconfd'):
-			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+		if not objectId:
+			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog', 'opsiconfd'):
+				raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+		else:
+			objectId = forceObjectId(objectId)
 
-		if not os.path.exists( os.path.join(LOG_DIR, logType) ):
+		if not os.path.exists(os.path.join(LOG_DIR, logType)):
 			os.mkdir(os.path.join(LOG_DIR, logType), 02770)
 
-		logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
+		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		if not os.path.exists(logFile):
-			open(logFile, 'w').close()
+			with open(logFile, 'w'):
+				# Making sure that a file exists for the call of os.stat
+				pass
 
-		if (self._maxLogfileSize > 0) and (len(data) > self._maxLogfileSize):
-			start = data.find('\n', len(data)-self._maxLogfileSize)
-			if (start == -1):
-				start = len(data)-self._maxLogfileSize
-			data = data[start+1:]
+		data = forceUnicode(data)
+		if self._maxLogfileSize > 0 and len(data) > self._maxLogfileSize:
+			start = data.find('\n', len(data) - self._maxLogfileSize)
+			if start == -1:
+				start = len(data) - self._maxLogfileSize
+			data = data[start + 1:]
 
-		f = None
-		if append and (self._maxLogfileSize > 0):
+		logWriteMode = None
+		if forceBool(append) and (self._maxLogfileSize > 0):
 			currentSize = os.stat(logFile).st_size
 			maxFileSize = self._maxLogfileSize - len(data)
-			if (currentSize > maxFileSize):
-				fc = codecs.open(logFile, 'r', 'utf-8', 'replace')
-				fc.seek(currentSize - maxFileSize)
-				data = fc.read() + data
-				data = data[data.find('\n')+1:]
-				fc.close()
+			if currentSize > maxFileSize:
+				with codecs.open(logFile, 'r', 'utf-8', 'replace') as fc:
+					fc.seek(currentSize - maxFileSize)
+					data = fc.read() + data
+					data = data[data.find('\n') + 1:]
 			else:
-				f = codecs.open(logFile, 'a+', 'utf-8', 'replace')
-		if not f:
-			f = codecs.open(logFile, 'w', 'utf-8', 'replace')
-		f.write(data)
-		f.close()
+				logWriteMode = 'a+'
+
+		with codecs.open(logFile, logWriteMode or "w", 'utf-8', 'replace') as f:
+			f.write(data)
+
 		os.chmod(logFile, 0640)
 
-	def log_read(self, logType, objectId=None, maxSize=5000000):
+	def log_read(self, logType, objectId=None, maxSize=MAX_LOGFILE_SIZE):
 		"""
 		Return the content of a log.
 
@@ -644,13 +647,14 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		with codecs.open(logFile, 'r', 'utf-8', 'replace') as logFile:
 			data = logFile.read()
 
-		maxSize = forceInt(maxSize)
+		if maxSize:
+			maxSize = forceInt(maxSize)
 
-		if maxSize and (len(data) > maxSize):
-			start = data.find('\n', len(data) - maxSize)
-			if start == -1:
-				start = len(data) - maxSize
-			return data[start+1:]
+			if len(data) > maxSize:
+				start = data.find('\n', len(data) - maxSize)
+				if start == -1:
+					start = len(data) - maxSize
+				return data[start + 1:]
 
 		return data
 
