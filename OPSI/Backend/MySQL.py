@@ -252,12 +252,13 @@ class MySQL(SQL):
 				self._createConnectionPool()
 				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 				self.execute(query, conn, cursor)
-                	valueSet = cursor.fetchall()
-                	if not valueSet:
-                		logger.debug(u"No result for query '%s'" % query)
-                		valueSet = []
-                finally:
-                	self.close(conn, cursor)
+				valueSet = cursor.fetchall()
+				if not valueSet:
+					logger.debug(u"No result for query '%s'" % query)
+					valueSet = []
+		finally:
+			self.close(conn, cursor)
+
 		return valueSet
 
 	def getRow(self, query, conn=None, cursor=None):
