@@ -2220,14 +2220,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		# Create data structure for config states to find missing ones
 		css = {}
 		for cs in self._backend.configState_getObjects(
-						attributes = ['objectId', 'configId'],
-						objectId   = filter.get('objectId', []),
-						configId   = filter.get('configId', [])):
-			if not css.has_key(cs.objectId):
-				css[cs.objectId] = []
-			css[cs.objectId].append(cs.configId)
+						attributes=['objectId', 'configId'],
+						objectId=filter.get('objectId', []),
+						configId=filter.get('configId', [])):
 
-		clientIds = self.host_getIdents(id = filter.get('objectId'), returnType = 'unicode')
+			try:
+				css[cs.objectId].append(cs.configId)
+			except KeyError:
+				css[cs.objectId] = [cs.configId]
+
+		clientIds = self.host_getIdents(id=filter.get('objectId'), returnType='unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id=filter.get('configId')):
 			logger.debug(u"Default values for '%s': %s" % (config.id, config.defaultValues))
@@ -2360,10 +2362,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return result
 
 		productOnDepotsByDepotIdAndProductId = {}
-		for pod in self.productOnDepot_getObjects(productId = productIds):
-			if not productOnDepotsByDepotIdAndProductId.has_key(pod.depotId):
-				productOnDepotsByDepotIdAndProductId[pod.depotId] = {}
-			productOnDepotsByDepotIdAndProductId[pod.depotId][pod.productId] = pod
+		for pod in self.productOnDepot_getObjects(productId=productIds):
+			try:
+				productOnDepotsByDepotIdAndProductId[pod.depotId][pod.productId] = pod
+			except KeyError:
+				productOnDepotsByDepotIdAndProductId[pod.depotId] = {pod.productId: pod}
 
 		pHash = {}
 		for (depotId, productOnDepotsByProductId) in productOnDepotsByDepotIdAndProductId.items():
