@@ -35,7 +35,8 @@ from hashlib import md5
 from twisted.conch.ssh import keys
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
+	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 

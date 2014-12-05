@@ -45,7 +45,7 @@ from sys import version_info
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import (forceBool, forceFilename, forceFloat, forceInt,
 						forceList, forceUnicode)
-from Backend import *
+from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 

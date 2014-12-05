@@ -31,11 +31,11 @@ Functions and classes for the use with a POSIX operating system.
 
 __version__ = '4.0.5.1'
 
-# Imports
-import os, re, codecs
+import os
+import re
+import codecs
 
-# OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI import System
@@ -44,8 +44,8 @@ from OPSI.Util.File import *
 from OPSI.Util.Message import *
 from OPSI.Util.Repository import Repository
 
-# Get logger instance
 logger = Logger()
+
 
 def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepository=None):
 	driverDir = forceFilename(driverDir)

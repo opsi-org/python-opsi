@@ -28,17 +28,17 @@ OpsiPXEConfd-Backend
 
 __version__ = '4.0.0.1'
 
-# Imports
-import socket, threading, time
+import socket
+import threading
+import time
 
-# OPSI imports
-from OPSI.Logger import *
-from OPSI.Types import *
+from OPSI.Logger import Logger
+from OPSI.Types import forceInt, forceUnicode, forceHostId
 from OPSI.Object import *
 from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util import getfqdn
-# Get logger instance
+
 logger = Logger()
 
 

@@ -39,7 +39,7 @@ from twisted.conch.ssh import keys
 from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import *
 from OPSI.Util.Thread import *
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Object import *
 
