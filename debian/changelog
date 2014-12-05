@@ -10,8 +10,10 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
     creation of temporary objects.
   * Backends: speed up option parsing during initalisation.
   * Make excessive use of List Comprehensions for faster processing.
+  * OPSI.Backend.HostControl: Using the timeout-parameter available on
+    httplib.HTTP(S)Connection in RpcThread and ConnectionThread
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 04 Dec 2014 16:35:47 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Dec 2014 10:32:46 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 

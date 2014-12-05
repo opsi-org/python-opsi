@@ -64,20 +64,30 @@ class RpcThread(KillableThread):
 		self.ended = 0
 
 	def run(self):
+		self.started = time.time()
+		timeout = self.hostControlBackend._hostRpcTimeout
+		if timeout < 0:
+			timeout = 0
+
 		try:
-			self.started = time.time()
-			timeout = self.hostControlBackend._hostRpcTimeout
-			if (timeout < 0):
-				timeout = 0
+			query = toJson(
+				{
+					'id': 1,
+					'method': self.method,
+					'params': self.params
+				}
+			).encode('utf-8')
 
-			query = toJson({ 'id': 1, 'method': self.method, 'params': self.params }).encode('utf-8')
-
-			connection = httplib.HTTPSConnection(self.address, self.hostControlBackend._opsiclientdPort)
+			connection = httplib.HTTPSConnection(
+				host=self.address,
+				port=self.hostControlBackend._opsiclientdPort,
+				timeout=timeout
+			)
 			non_blocking_connect_https(connection, timeout)
 			connection.putrequest('POST', '/opsiclientd')
 			connection.putheader('content-type', 'application/json-rpc')
 			connection.putheader('content-length', str(len(query)))
-			auth = u'%s:%s' % (self.username, self.password)
+			auth = u'{0}:{1}'.format(self.username, self.password)
 			connection.putheader('Authorization', 'Basic '+ base64.encodestring(auth.encode('latin-1')).strip())
 			connection.endheaders()
 			connection.send(query)
@@ -107,14 +117,18 @@ class ConnectionThread(KillableThread):
 		self.ended = 0
 
 	def run(self):
-		try:
-			self.started = time.time()
-			timeout = self.hostControlBackend._hostReachableTimeout
-			if (timeout < 0):
-				timeout = 0
+		self.started = time.time()
+		timeout = self.hostControlBackend._hostReachableTimeout
+		if timeout < 0:
+			timeout = 0
 
+		try:
 			logger.info(u"Trying connection to '%s:%d'" % (self.address, self.hostControlBackend._opsiclientdPort))
-			conn = httplib.HTTPSConnection(host = self.address, port = self.hostControlBackend._opsiclientdPort)
+			conn = httplib.HTTPSConnection(
+				host=self.address,
+				port=self.hostControlBackend._opsiclientdPort,
+				timeout=timeout
+			)
 			non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)
 			if conn:
 				self.result = True
