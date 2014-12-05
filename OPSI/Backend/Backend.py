@@ -2334,30 +2334,40 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		masterOnly = forceBool(masterOnly)
 		productIds = forceProductIdList(productIds)
 
-		result = []
-		depotIds = self.host_getIdents(type = 'OpsiDepotserver', id = depotIds)
+		depotIds = self.host_getIdents(type='OpsiDepotserver', id=depotIds)
 		if not depotIds:
-			return result
-		clientIds = self.host_getIdents(type = 'OpsiClient', id = clientIds)
+			return []
+		depotIds = set(depotIds)
+
+		clientIds = self.host_getIdents(type='OpsiClient', id=clientIds)
 		if not clientIds:
-			return result
-		usedDepotIds = []
+			return []
+
+		usedDepotIds = set()
+		result = []
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
 			logger.debug(u"Calling backend_setOptions on %s" % self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
-			for configState in self.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientIds):
+			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
 				if not configState.values or not configState.values[0]:
 					logger.error(u"No depot server configured for client '%s'" % configState.objectId)
 					continue
 				depotId = configState.values[0]
-				if not depotId in depotIds:
+				if depotId not in depotIds:
 					continue
-				if not depotId in usedDepotIds:
-					usedDepotIds.append(depotId)
-				result.append({ 'depotId': depotId, 'clientId': configState.objectId, 'alternativeDepotIds': [] })
+				usedDepotIds.add(depotId)
+
+				result.append(
+					{
+						'depotId': depotId,
+						'clientId': configState.objectId,
+						'alternativeDepotIds': []
+					}
+				)
 		finally:
 			self.backend_setOptions({'addConfigStateDefaults': addConfigStateDefaults})
+
 		if masterOnly:
 			return result
 
@@ -2370,24 +2380,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		pHash = {}
 		for (depotId, productOnDepotsByProductId) in productOnDepotsByDepotIdAndProductId.items():
-			pHash[depotId] = u''
-			pids = productOnDepotsByProductId.keys()
-			pids.sort()
-			for productId in pids:
-				pHash[depotId] += u'|%s;%s;%s' % (
-					productId,
-					productOnDepotsByProductId[productId].productVersion,
-					productOnDepotsByProductId[productId].packageVersion)
+			productString = [u'|{0};{1};{2}'.format(
+				productId,
+				productOnDepotsByProductId[productId].productVersion,
+				productOnDepotsByProductId[productId].packageVersion)
+				for productId in sorted(productOnDepotsByProductId.keys())]
+
+			pHash[depotId] = u''.join(productString)
 
 		for usedDepotId in usedDepotIds:
-			alternativeDepotIds = []
 			pString = pHash.get(usedDepotId, u'')
-			for (depotId, ps) in pHash.items():
-				if (depotId != usedDepotId) and (pString == ps):
-					alternativeDepotIds.append(depotId)
+			alternativeDepotIds = [depotId for (depotId, ps) in pHash.items() if depotId != usedDepotId and pString == ps]
+
 			for i in range(len(result)):
-				if (result[i]['depotId'] == usedDepotId):
+				if result[i]['depotId'] == usedDepotId:
 					result[i]['alternativeDepotIds'] = alternativeDepotIds
+
 		return result
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
