@@ -625,32 +625,33 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 		:param maxSize: Limit for the amount of returned characters.
 		"""
 		logType = forceUnicode(logType)
-		if not objectId:
-			objectId = None
-		else:
-			objectId = forceObjectId(objectId)
-		maxSize = forceInt(maxSize)
+
 		if logType not in ('bootimage', 'clientconnect', 'instlog', 'userlogin', 'opsiconfd'):
 			raise BackendBadValueError(u'Unknown log type %s' % logType)
 
-		if not objectId and logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
-			raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
-
-		if not objectId:
-			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
+		if objectId:
+			objectId = forceObjectId(objectId)
+			logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
 		else:
-			logFile = os.path.join(LOG_DIR, logType, objectId + '.log')
-		data = u''
+			if logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
+				raise BackendBadValueError(u"Log type '%s' requires objectId" % logType)
+
+			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
+
 		if not os.path.exists(logFile):
-			return data
-		logFile = codecs.open(logFile, 'r', 'utf-8', 'replace')
-		data = logFile.read()
-		logFile.close()
+			return u''
+
+		with codecs.open(logFile, 'r', 'utf-8', 'replace') as logFile:
+			data = logFile.read()
+
+		maxSize = forceInt(maxSize)
+
 		if maxSize and (len(data) > maxSize):
-			start = data.find('\n', len(data)-maxSize)
-			if (start == -1):
-				start = len(data)-maxSize
+			start = data.find('\n', len(data) - maxSize)
+			if start == -1:
+				start = len(data) - maxSize
 			return data[start+1:]
+
 		return data
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
