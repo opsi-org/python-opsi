@@ -42,9 +42,6 @@ from OPSI.Util import getfqdn
 logger = Logger()
 
 
-# ======================================================================================================
-# =                                   CLASS SERVERCONNECTION                                           =
-# ======================================================================================================
 class ServerConnection:
 	def __init__(self, port, timeout=10):
 		self.port = port
@@ -224,9 +221,6 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		self.opsipxeconfd_updatePXEBootConfiguration(host.id)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductOnClients                                                                          -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
 		self._updateByProductOnClient(productOnClient)
 
@@ -244,9 +238,6 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if errors:
 			raise Exception(u', '.join(errors))
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ConfigStates                                                                              -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
 			return

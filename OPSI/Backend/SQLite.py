@@ -66,7 +66,6 @@ class SQLite(SQL):
 		logger.debug(u'SQLite created: %s' % self)
 
 	def connect(self):
-		# self._transactionLock.acquire()
 		try:
 			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
 			if not self._connection:
@@ -163,7 +162,6 @@ class SQLite(SQL):
 			logger.debug2(u"insert: %s" % query)
 
 			self.execute(query, conn, cursor)
-			# result = conn.changes()
 			result = conn.last_insert_rowid()
 		finally:
 			self.close(conn, cursor)

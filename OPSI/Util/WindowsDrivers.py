@@ -102,21 +102,15 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		srcDriverPath = os.path.join(driverDir, baseDir, auditHardware.vendorId)
 		if not exists(srcDriverPath):
 			logger.error(u"%s vendor directory '%s' not found" % (hwClass, srcDriverPath))
-			#if messageSubject:
-			#	messageSubject.setMessage("%s vendor directory '%s' not found" % (hwClass, srcDriverPath))
 			continue
 
 		srcDriverPath = os.path.join(srcDriverPath, auditHardware.deviceId)
 		if not exists(srcDriverPath):
 			logger.error(u"%s device directory '%s' not found" % (hwClass, srcDriverPath))
-			#if messageSubject:
-			#	messageSubject.setMessage(u"%s device directory '%s' not found" % (hwClass, srcDriverPath))
 			continue
 
 		if exists(os.path.join(srcDriverPath, 'WINDOWS_BUILDIN')):
 			logger.notice(u"Found windows build-in driver")
-			#if messageSubject:
-			#	messageSubject.setMessage(u"Found windows build-in driver")
 			driver['buildin'] = True
 			drivers.append(driver)
 			continue
@@ -244,10 +238,6 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 					if dev['device'] not in driversOnMachine.get(dev['vendor'], []):
 						continue
 					if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
-						#if drivers and not dev['device'] in driversOnMachine.get(dev['vendor'], []):
-						#	logger.debug(u"Device %s:%s not found in HardwareInventory (%s)." \
-						#		% (dev['vendor'],dev['device'],driversOnMachine.get(dev['vendor'], [])))
-						#	continue
 						logger.notice(u"Driver for %s device %s:%s already integrated" \
 							% (dev['type'], dev['vendor'], dev['device']))
 						driverNeeded = False
