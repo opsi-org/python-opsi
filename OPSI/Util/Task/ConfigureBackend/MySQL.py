@@ -171,12 +171,20 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	Create a database and grant the OPSI user the needed rights on it.
 	"""
 	def createUser(host):
-		notificationFunction(u"Creating user '%s' and granting all rights on '%s'" % (config['username'], config['database']))
-		db.query(u'USE %s;' % config['database'])
-		db.query(u'GRANT ALL ON %s .* TO %s@%s IDENTIFIED BY \'%s\'' \
-			% (config['database'], config['username'], host, config['password']))
+		notificationFunction(u"Creating user '{username}' and granting"
+							 u" all rights on '{database}'".format(**config))
+		db.query(u'USE {database};'.format(**config))
+		db.query(
+				u'GRANT ALL ON {database} .* TO {username}@{address} '
+				u'IDENTIFIED BY \'{password}\''.format(
+					address=host,
+					**config,
+			)
+		)
 		db.query(u'FLUSH PRIVILEGES;')
-		notificationFunction(u"User '%s' created and privileges set" % config['username'])
+		notificationFunction(
+			u"User '{username}' created and privileges set".format(**config)
+		)
 
 	if notificationFunction is None:
 		notificationFunction = LOGGER.notice
@@ -188,7 +196,8 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 		systemConfig = _getSysConfig()
 
 	# Connect to database host
-	notificationFunction(u"Connecting to host '%s' as user '%s'" % (config['address'], dbAdminUser))
+	notificationFunction(u"Connecting to host '{0[address]}' as user "
+						u"'{username}'".format(config, username=dbAdminUser))
 	try:
 		db = MySQLdb.connect(
 			host=config['address'],
@@ -197,12 +206,16 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 		)
 	except Exception as error:
 		raise DatabaseConnectionFailedException(error)
-	notificationFunction(u"Successfully connected to host '%s' as user '%s'" % (config['address'], dbAdminUser))
+	notificationFunction(u"Successfully connected to host '{0[address]}'"
+						u" as user '{username}'".format(config,
+														username=dbAdminUser
+		)
+	)
 
 	# Create opsi database and user
-	notificationFunction(u"Creating database '%s'" % config['database'])
+	notificationFunction(u"Creating database '{database}'".format(**config))
 	try:
-		db.query(u'CREATE DATABASE %s DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;' % config['database'])
+		db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
 	except MySQLdb.OperationalError as error:
 		if error[0] == ACCESS_DENIED_ERROR_CODE:
 			raise DatabaseConnectionFailedException(error)
@@ -210,9 +223,10 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	except MySQLdb.ProgrammingError as error:
 		if error[0] != DATABASE_EXISTS_ERROR_CODE:
 			raise error
-	notificationFunction(u"Database '%s' created" % config['database'])
+	notificationFunction(u"Database '{database}' created".format(**config))
 
-	if config['address'] in ("localhost", "127.0.0.1", systemConfig['hostname'], systemConfig['fqdn']):
+	if config['address'] in ("localhost", "127.0.0.1",
+							 systemConfig['hostname'], systemConfig['fqdn']):
 		createUser("localhost")
 		if config['address'] not in ("localhost", "127.0.0.1"):
 			createUser(config['address'])
@@ -225,7 +239,10 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	db.close()
 
 	# Test connection / credentials
-	notificationFunction(u"Testing connection to database '%s' as user '%s'" % (config['database'], config['username']))
+	notificationFunction(
+		u"Testing connection to database '{database}' as "
+		u"user '{username}'".format(**config)
+	)
 
 	try:
 		db = MySQLdb.connect(
@@ -238,4 +255,7 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 	except Exception as error:
 		raise DatabaseConnectionFailedException(error)
 
-	notificationFunction(u"Successfully connected to host '%s' as user '%s'" % (config['address'], config['username']))
+	notificationFunction(
+		u"Successfully connected to host '{address}' as user"
+		u" '{username}'".format(**config)
+	)
