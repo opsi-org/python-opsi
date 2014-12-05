@@ -158,7 +158,7 @@ class BaseArchive(object):
 				raise Exception(u"Base dir '%s' not found" % baseDir)
 			os.chdir(baseDir)
 
-			logger.info(u"Executing: %s" % command )
+			logger.info(u"Executing: %s" % command)
 			proc = subprocess.Popen(command,
 				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE
@@ -371,7 +371,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 
 class CpioArchive(BaseArchive, PigzMixin):
-	def __init__(self, filename, compression = None, progressSubject=None):
+	def __init__(self, filename, compression=None, progressSubject=None):
 		BaseArchive.__init__(self, filename, compression, progressSubject)
 
 	def content(self):
@@ -397,7 +397,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 	def extract(self, targetPath='.', patterns=[]):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
-			patterns   = forceUnicodeList(patterns)
+			patterns = forceUnicodeList(patterns)
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)

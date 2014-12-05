@@ -94,21 +94,20 @@ class MySQL(SQL):
 
 	AUTOINCREMENT = 'AUTO_INCREMENT'
 	ALTER_TABLE_CHANGE_SUPPORTED = True
-	ESCAPED_BACKSLASH  = "\\\\"
+	ESCAPED_BACKSLASH = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
-	ESCAPED_ASTERISK   = "\\*"
+	ESCAPED_ASTERISK = "\\*"
 	doCommit = True
 
 	def __init__(self, **kwargs):
-
-		self._address                   = u'localhost'
-		self._username                  = u'opsi'
-		self._password                  = u'opsi'
-		self._database                  = u'opsi'
-		self._databaseCharset           = 'utf8'
-		self._connectionPoolSize        = 20
+		self._address = u'localhost'
+		self._username = u'opsi'
+		self._password = u'opsi'
+		self._database = u'opsi'
+		self._databaseCharset = 'utf8'
+		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
-		self._connectionPoolTimeout     = 30
+		self._connectionPoolTimeout = 30
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -147,16 +146,16 @@ class MySQL(SQL):
 				conv[FIELD_TYPE.DATETIME] = str
 				conv[FIELD_TYPE.TIMESTAMP] = str
 				self._pool = ConnectionPool(
-						host         = self._address,
-						user         = self._username,
-						passwd       = self._password,
-						db           = self._database,
-						use_unicode  = True,
-						charset      = self._databaseCharset,
-						pool_size    = self._connectionPoolSize,
-						max_overflow = self._connectionPoolMaxOverflow,
-						timeout      = self._connectionPoolTimeout,
-						conv         = conv
+						host=self._address,
+						user=self._username,
+						passwd=self._password,
+						db=self._database,
+						use_unicode=True,
+						charset=self._databaseCharset,
+						pool_size=self._connectionPoolSize,
+						max_overflow=self._connectionPoolMaxOverflow,
+						timeout=self._connectionPoolTimeout,
+						conv=conv
 				)
 			except Exception as e:
 				logger.logException(e)
@@ -413,6 +412,7 @@ class MySQL(SQL):
 		if not conn or not cursor:
 			(conn, cursor) = self.connect()
 			needClose = True
+
 		try:
 			query = forceUnicode(query)
 			logger.debug2(u"SQL query: %s" % query)
@@ -567,7 +567,7 @@ class MySQLBackend(SQLBackend):
 
 		where = self._uniqueCondition(productProperty)
 		if self._sql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
-			self._sql.update('PRODUCT_PROPERTY', where, data, updateWhereNone = True)
+			self._sql.update('PRODUCT_PROPERTY', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('PRODUCT_PROPERTY', data)
 
@@ -607,7 +607,7 @@ class MySQLBackend(SQLBackend):
 				logger.debug2(u'End Transaction')
 				self._sql.doCommit = True
 				logger.debug2(u'doCommit set to true')
-			self._sql.close(conn,cursor)
+			self._sql.close(conn, cursor)
 
 		(conn, cursor) = self._sql.connect()
 		for value in possibleValues:

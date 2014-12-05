@@ -1061,6 +1061,7 @@ class SQLBackend(ConfigDataBackend):
 
 				if not filter['configId']:
 					return []
+
 			del filter['possibleValues']
 		attrs = [attr for attr in attributes if attr not in ('defaultValues', 'possibleValues')]
 		for res in self._sql.getSet(self._createQuery('CONFIG', attrs, filter)):
@@ -1333,6 +1334,7 @@ class SQLBackend(ConfigDataBackend):
 					res['possibleValues'].append(res2['value'])
 					if res2['isDefault']:
 						res['defaultValues'].append(res2['value'])
+
 			productProperties.append(ProductProperty.fromHash(res))
 
 		return productProperties
@@ -2141,7 +2143,7 @@ class SQLBackend(ConfigDataBackend):
 		filter = {}
 		for (attribute, value) in auditHardware.toHash().items():
 			if value is None:
-				filter[attribute] = [ None ]
+				filter[attribute] = [None]
 		if not self.auditHardware_getObjects(**filter):
 			raise Exception(u"AuditHardware '%s' not found" % auditHardware.getIdent())
 

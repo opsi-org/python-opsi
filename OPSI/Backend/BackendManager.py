@@ -98,6 +98,7 @@ class MessageBusNotifier(BackendModificationListener):
 		if not self._messageBusClient.isInitialized():
 			logger.error(u"Cannot notify: message bus not initialized")
 			return
+
 		try:
 			self._messageBusClient.notifyObjectCreated(obj)
 		except Exception as e:
@@ -129,7 +130,7 @@ class MessageBusNotifier(BackendModificationListener):
 
 	def stop(self):
 		logger.info(u"Stopping message bus client")
-		self._messageBusClient.stop(stopReactor = self._startReactor)
+		self._messageBusClient.stop(stopReactor=self._startReactor)
 		self._messageBusClient.join(5)
 
 
@@ -496,11 +497,10 @@ class BackendExtender(ExtendedBackend):
 						logger.logException(e)
 						raise Exception(u"Error reading file '%s': %s" % (confFile, e))
 
-
 					for (key, val) in locals().items():
 						if type(val) == types.FunctionType:
 							logger.debug2(u"Extending %s with instancemethod: '%s'" % (self._backend.__class__.__name__, key))
-							setattr( self, key, new.instancemethod(val, self, self.__class__) )
+							setattr(self, key, new.instancemethod(val, self, self.__class__))
 			except Exception as e:
 				raise BackendConfigurationError(u"Failed to read extensions from '%s': %s" % (self._extensionConfigDir, e))
 
@@ -509,16 +509,16 @@ class BackendAccessControl(object):
 
 	def __init__(self, backend, **kwargs):
 
-		self._backend       = backend
-		self._context       = backend
-		self._username      = None
-		self._password      = None
-		self._acl           = None
-		self._aclFile       = None
-		self._pamService    = 'common-auth'
-		self._userGroups    = []
-		self._forceGroups   = None
-		self._host          = None
+		self._backend = backend
+		self._context = backend
+		self._username = None
+		self._password = None
+		self._acl = None
+		self._aclFile = None
+		self._pamService = 'common-auth'
+		self._userGroups = []
+		self._forceGroups = None
+		self._host = None
 		self._authenticated = False
 
 		if (DISTRIBUTOR.lower().find('suse') != -1):

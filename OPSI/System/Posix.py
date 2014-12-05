@@ -640,10 +640,10 @@ def reboot(wait = 10):
 
 	try:
 		wait = forceInt(wait)
-		if (wait > 0):
-			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait = True)
+		if wait > 0:
+			execute(u'%s %d; %s -r now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
-			execute(u'%s -r now' % which('shutdown'), nowait = True)
+			execute(u'%s -r now' % which('shutdown'), nowait=True)
 		# execute(u'%s %d; %s -r now' % (which('sleep'), int(wait), which('shutdown')), nowait = True)
 		# execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s b > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
 		# 	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
@@ -656,16 +656,16 @@ def reboot(wait = 10):
 		hook.post_reboot(wait)
 
 
-def halt(wait = 10):
+def halt(wait=10):
 	for hook in hooks:
 		wait = hook.pre_halt(wait)
 
 	try:
 		wait = forceInt(wait)
-		if (wait > 0):
-			execute(u'%s %d; %s -h now' % (which('sleep'), wait, which('shutdown')), nowait = True)
+		if wait > 0:
+			execute(u'%s %d; %s -h now' % (which('sleep'), wait, which('shutdown')), nowait=True)
 		else:
-			execute(u'%s -h now' % which('shutdown'), nowait = True)
+			execute(u'%s -h now' % which('shutdown'), nowait=True)
 		# execute(u'(%s %d; %s s > /proc/sysrq-trigger; %s u > /proc/sysrq-trigger; %s o > /proc/sysrq-trigger) >/dev/null 2>/dev/null </dev/null &' \
 		# 	% (which('sleep'), int(wait), which('echo'), which('echo'), which('echo')), nowait = True)
 	except Exception as e:
@@ -2385,7 +2385,7 @@ class Harddisk:
 			imageType = None
 			image = None
 
-			saveImageResult = {'TotalTime': 'n/a','AveRate': 'n/a', 'AveUnit': 'n/a',}
+			saveImageResult = {'TotalTime': 'n/a', 'AveRate': 'n/a', 'AveUnit': 'n/a',}
 
 			part = self.getPartition(partition)
 			if not part:

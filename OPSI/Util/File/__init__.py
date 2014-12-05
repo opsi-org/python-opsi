@@ -122,7 +122,7 @@ class File(object):
 		mode = forceOct(mode)
 		os.chmod(self._filename, mode)
 
-	def create(self, user = None, group = None, mode = None):
+	def create(self, user=None, group=None, mode=None):
 		if not os.path.exists(self._filename):
 			self.open('w')
 			self.close()
@@ -132,7 +132,7 @@ class File(object):
 		if not mode is None:
 			self.chmod(mode)
 
-	def open(self, mode = 'r'):
+	def open(self, mode='r'):
 		self._fileHandle = __builtins__['open'](self._filename, mode)
 		return self._fileHandle
 
@@ -330,14 +330,14 @@ class ChangelogFile(TextFile):
 						self.addEntry(currentEntry)
 
 					currentEntry = {
-						'package':         match.group(1),
-						'version':         match.group(2),
-						'release':         match.group(3),
-						'urgency':         match.group(4),
-						'changelog':       [],
+						'package': match.group(1),
+						'version': match.group(2),
+						'release': match.group(3),
+						'urgency': match.group(4),
+						'changelog': [],
 						'maintainerName':  u'',
 						'maintainerEmail': u'',
-						'date':            None
+						'date': None
 					}
 					continue
 

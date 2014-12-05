@@ -55,9 +55,7 @@ class MultiplexBackend(object):
 
 	__serviceCache = {}
 
-	def __init__(self, username = '', password = '', address = '', *args, **kwargs):
-
-		# self.__dict__['__services'] = self.__serviceCache
+	def __init__(self, username='', password='', address='', *args, **kwargs):
 
 		# Default values
 		self.__services = self.__serviceCache
@@ -152,7 +150,7 @@ class MultiplexBackend(object):
 			raise Exception(u"Disabling mmultiplex backend: modules file invalid")
 		logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 
-		self._threadPool = getGlobalThreadPool(size = len(self.__services.keys()))
+		self._threadPool = getGlobalThreadPool(size=len(self.__services.keys()))
 		self.connect()
 
 	def _getDepotIds(self):
@@ -172,6 +170,7 @@ class MultiplexBackend(object):
 					if not service.isConnected():
 						logger.notice(u"Service not connected. Trying to connect: %s" % service)
 						service.connect()
+
 				while not self.isReady():
 					time.sleep(0.01)
 			finally:
@@ -180,7 +179,7 @@ class MultiplexBackend(object):
 	def isReady(self):
 		ready = True
 		for service in self.__services.values():
-			serviceReady = ( service.isConnected() or service.error is not None )
+			serviceReady = (service.isConnected() or service.error is not None)
 			ready = ready and serviceReady
 		return ready
 
@@ -527,6 +526,7 @@ class Service(object):
 	def connect(self):
 		pass
 
+
 class RemoteService(Service, JSONRPCBackend):
 	def __init__(self, url, domain, opsiHostKey, rpcQueuePollingTime, socketTimeout, connectTimeout, multiplexBackend, **kwargs):
 		self.url = url
@@ -572,10 +572,10 @@ class RemoteService(Service, JSONRPCBackend):
 		self.setAsync(True)
 		self.clients = []
 		self.depots = []
-		jsonrpc1 = self.host_getObjects(attributes = ['id'])
+		jsonrpc1 = self.host_getObjects(attributes=['id'])
 		jsonrpc2 = self.licensePool_getObjects()
 		for host in jsonrpc1.waitForResult():
-			if   host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
+			if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
 				self.depots.append(host)
 			elif host.getType() in ('OpsiClient'):
 				self.clients.append(host)

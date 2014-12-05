@@ -48,12 +48,12 @@ class HostControlSafeBackend(ExtendedBackend):
 
 		ExtendedBackend.__init__(self, backend)
 
-		self._opsiclientdPort      = 4441
-		self._hostRpcTimeout       = 15
+		self._opsiclientdPort = 4441
+		self._hostRpcTimeout = 15
 		self._hostReachableTimeout = 3
-		self._resolveHostAddress   = False
-		self._maxConnections       = 50
-		self._broadcastAddresses   = ["255.255.255.255"]
+		self._resolveHostAddress = False
+		self._maxConnections = 50
+		self._broadcastAddresses = ["255.255.255.255"]
 
 		# Parse arguments
 		for (option, value) in kwargs.items():

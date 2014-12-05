@@ -48,8 +48,8 @@ class SQLite(SQL):
 	ESCAPED_ASTERISK   = "**"
 
 	def __init__(self, **kwargs):
-		self._database        = ":memory:"
-		self._synchronous     = True
+		self._database = ":memory:"
+		self._synchronous = True
 		self._databaseCharset = 'utf8'
 		for (option, value) in kwargs.items():
 			option = option.lower()
@@ -71,10 +71,10 @@ class SQLite(SQL):
 			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
 			if not self._connection:
 				self._connection = Connection(
-					filename           = self._database,
-					flags              = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
-					vfs                = None,
-					statementcachesize = 100
+					filename=self._database,
+					flags=SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
+					vfs=None,
+					statementcachesize=100
 				)
 			if not self._cursor:
 				def rowtrace(cursor, row):
@@ -167,6 +167,7 @@ class SQLite(SQL):
 			result = conn.last_insert_rowid()
 		finally:
 			self.close(conn, cursor)
+
 		return result
 
 	def update(self, table, where, valueHash, updateWhereNone=False):

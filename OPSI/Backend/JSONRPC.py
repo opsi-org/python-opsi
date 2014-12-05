@@ -97,7 +97,7 @@ class JSONRPC(DeferredCall):
 						pass
 					raise exception
 				raise Exception(u'%s (error on server)' % error)
-			self.result = deserialize(result.get('result'), preventObjectCreation = self.method.endswith('_getHashes'))
+			self.result = deserialize(result.get('result'), preventObjectCreation=self.method.endswith('_getHashes'))
 		except Exception as e:
 			logger.logException(e)
 			self.error = e
@@ -123,7 +123,14 @@ class JSONRPCThread(JSONRPC, threading.Thread):
 		if params is None:
 			params = []
 		threading.Thread.__init__(self)
-		JSONRPC.__init__(self, jsonrpcBackend=jsonrpcBackend, baseUrl=baseUrl, method=method, params=params, retry=retry, callback=callback)
+		JSONRPC.__init__(self,
+			jsonrpcBackend=jsonrpcBackend,
+			baseUrl=baseUrl,
+			method=method,
+			params=params,
+			retry=retry,
+			callback=callback
+		)
 
 	def execute(self):
 		self.start()

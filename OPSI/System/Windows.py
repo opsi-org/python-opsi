@@ -1708,7 +1708,7 @@ def getAdminGroupName():
 	groupName = forceUnicode(win32security.LookupAccountSid(None, sidAdmins)[0])
 	logger.info(u"Admin group name is '%s'" % groupName)
 	return groupName
-	
+
 def setLocalSystemTime(timestring):
 	"""
 	Method sets the local systemtime
@@ -1723,12 +1723,12 @@ def setLocalSystemTime(timestring):
 	wMinute         Integer-The current minute.
 	wSecond         Integer-The current second.
 	wMilliseconds   Integer-The current millisecond.
-				
-	
+
+
 	win32api.SetSystemTime
 
 	int = SetSystemTime(year, month , dayOfWeek , day , hour , minute , second , millseconds )
-	
+
 	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
 	"""
 	if not timestring:
@@ -1739,8 +1739,8 @@ def setLocalSystemTime(timestring):
 		winapi32.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 	except Exception as e:
 		logger.error(u"Failed to set System Time: '%s'" % e)
-		
-	
+
+
 
 
 class Impersonate:

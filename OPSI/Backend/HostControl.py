@@ -51,16 +51,16 @@ class RpcThread(KillableThread):
 	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[]):
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
-		self.hostId   = forceHostId(hostId)
-		self.address  = forceIpAddress(address)
+		self.hostId = forceHostId(hostId)
+		self.address = forceIpAddress(address)
 		self.username = forceUnicode(username)
 		self.password = forceUnicode(password)
-		self.method   = forceUnicode(method)
-		self.params   = forceList(params)
-		self.error    = None
-		self.result   = None
-		self.started  = 0
-		self.ended    = 0
+		self.method = forceUnicode(method)
+		self.params = forceList(params)
+		self.error = None
+		self.result = None
+		self.started = 0
+		self.ended = 0
 
 	def run(self):
 		try:
@@ -86,7 +86,7 @@ class RpcThread(KillableThread):
 			response = fromJson(unicode(response, 'utf-8'))
 
 			if response and type(response) is dict:
-				self.error  = response.get('error')
+				self.error = response.get('error')
 				self.result = response.get('result')
 			else:
 				self.error = u"Bad response from client: %s" % forceUnicode(response)
@@ -99,11 +99,11 @@ class ConnectionThread(KillableThread):
 	def __init__(self, hostControlBackend, hostId, address):
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
-		self.hostId   = forceHostId(hostId)
-		self.address  = forceIpAddress(address)
-		self.result   = False
-		self.started  = 0
-		self.ended    = 0
+		self.hostId = forceHostId(hostId)
+		self.address = forceIpAddress(address)
+		self.result = False
+		self.started = 0
+		self.ended = 0
 
 	def run(self):
 		try:
@@ -136,8 +136,8 @@ class HostControlBackend(ExtendedBackend):
 
 		ExtendedBackend.__init__(self, backend)
 
-		self._opsiclientdPort      = 4441
-		self._hostRpcTimeout       = 15
+		self._opsiclientdPort = 4441
+		self._hostRpcTimeout = 15
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress   = False
 		self._maxConnections       = 50
@@ -182,8 +182,8 @@ class HostControlBackend(ExtendedBackend):
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
-		method  = forceUnicode(method)
-		params  = forceList(params)
+		method = forceUnicode(method)
+		params = forceList(params)
 		if not timeout:
 			timeout = self._hostRpcTimeout
 		timeout = forceInt(timeout)
@@ -195,13 +195,15 @@ class HostControlBackend(ExtendedBackend):
 				address = self._getHostAddress(host)
 				rpcts.append(
 					RpcThread(
-						hostControlBackend = self,
-						hostId   = host.id,
-						address  = address,
-						username = u'',
-						password = host.opsiHostKey,
-						method   = method,
-						params   = params))
+						hostControlBackend=self,
+						hostId=host.id,
+						address=address,
+						username=u'',
+						password=host.opsiHostKey,
+						method=method,
+						params=params
+					)
+				)
 			except Exception as e:
 				result[host.id] = {"result": None, "error": forceUnicode(e)}
 
@@ -311,24 +313,27 @@ class HostControlBackend(ExtendedBackend):
 		return self._opsiclientdRpc(hostIds = hostIds, method = method, params = params, timeout = timeout)
 
 	def hostControl_reachable(self, hostIds=[], timeout=None):
-		hostIds = self._context.host_getIdents(id = hostIds, returnType = 'unicode')
+		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')
 		if not hostIds:
 			raise BackendMissingDataError(u"No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
+
 		if not timeout:
 			timeout = self._hostReachableTimeout
 		timeout = forceInt(timeout)
 
 		result = {}
 		threads = []
-		for host in self._context.host_getObjects(id = hostIds):
+		for host in self._context.host_getObjects(id=hostIds):
 			try:
 				address = self._getHostAddress(host)
 				threads.append(
 					ConnectionThread(
-						hostControlBackend = self,
-						hostId             = host.id,
-						address            = address))
+						hostControlBackend=self,
+						hostId=host.id,
+						address=address
+					)
+				)
 			except Exception as e:
 				logger.debug("Problem found: '%s'" % e)
 				result[host.id] = False

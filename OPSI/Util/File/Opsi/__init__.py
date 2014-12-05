@@ -400,6 +400,7 @@ class PackageControlFile(TextFile):
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
 		self._parsed = False
 		self._sections = {}
 		self._product = None

@@ -46,7 +46,7 @@ logger = Logger()
 # =                                   CLASS SERVERCONNECTION                                           =
 # ======================================================================================================
 class ServerConnection:
-	def __init__(self, port, timeout = 10):
+	def __init__(self, port, timeout=10):
 		self.port = port
 		self.timeout = forceInt(timeout)
 
@@ -56,32 +56,30 @@ class ServerConnection:
 		self._socket.settimeout(self.timeout)
 		try:
 			self._socket.connect(self.port)
-		except Exception as e:
-			raise Exception(u"Failed to connect to socket '%s': %s" % (self.port, e))
+		except Exception as exc:
+			raise Exception(u"Failed to connect to socket '%s': %s" % (self.port, exc))
 
 	def sendCommand(self, cmd):
 		self.createUnixSocket()
-		self._socket.send( forceUnicode(cmd).encode('utf-8') )
+		self._socket.send(forceUnicode(cmd).encode('utf-8'))
 		result = None
 		try:
 			result = forceUnicode(self._socket.recv(4096))
-		except Exception as e:
-			raise Exception(u"Failed to receive: %s" % e)
+		except Exception as exc:
+			raise Exception(u"Failed to receive: %s" % exc)
 		self._socket.close()
 		if result.startswith(u'(ERROR)'):
 			raise Exception(u"Command '%s' failed: %s" % (cmd, result))
 		return result
 
-# ======================================================================================================
-# =                                 CLASS OPSIPXECONFDBACKEND                                          =
-# ======================================================================================================
+
 class OpsiPXEConfdBackend(ConfigDataBackend):
 
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 
-		self._name    = 'opsipxeconfd'
-		self._port    = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+		self._name = 'opsipxeconfd'
+		self._port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
 		self._depotId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._opsiHostKey = None
@@ -104,27 +102,28 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			return self
 		if not self._depotConnections.get(depotId):
 			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id = self._depotId)
+				depots = self._context.host_getObjects(id=self._depotId)
 				if not depots or not depots[0].getOpsiHostKey():
 					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
 				self._opsiHostKey = depots[0].getOpsiHostKey()
 
 			try:
 				self._depotConnections[depotId] = JSONRPCBackend(
-									address  = u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
-									username = self._depotId,
-									password = self._opsiHostKey)
+					address=u'https://%s:4447/rpc/backend/%s' % (depotId, self._name),
+					username=self._depotId,
+					password=self._opsiHostKey
+				)
 			except Exception as e:
 				raise Exception(u"Failed to connect to depot '%s': %s" % (depotId, e))
 
 		return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self._context.configState_getObjects(configId = u'clientconfig.depot.id', objectId = clientId)
+		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
-			configs = self._context.config_getObjects(id = u'clientconfig.depot.id')
+			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')
 			if not configs or not configs[0].defaultValues:
 				raise Exception(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
 			depotId = configs[0].defaultValues[0]
@@ -134,18 +133,22 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		if (productOnClient.productType != 'NetbootProduct'):
 			logger.debug(u"Not a netboot product: '%s', nothing to do" % productOnClient.productId)
 			return False
+
 		if not productOnClient.actionRequest:
 			logger.debug(u"No action request update for product '%s', client '%s', nothing to do" % (productOnClient.productId, productOnClient.clientId))
 			return False
+
 		return True
 
 	def _updateByProductOnClient(self, productOnClient):
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
+
 		depotId = self._getResponsibleDepotId(productOnClient.clientId)
 		if (depotId != self._depotId):
 			logger.info(u"Not responsible for client '%s', forwarding request to depot '%s'" % (productOnClient.clientId, depotId))
 			return self._getDepotConnection(depotId).opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
+
 		self.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
@@ -159,10 +162,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 					def __init__(self, opsiPXEConfdBackend, clientId, command):
 						threading.Thread.__init__(self)
 						self._opsiPXEConfdBackend = opsiPXEConfdBackend
-						self._clientId            = clientId
-						self._command             = command
-						self._updateEvent         = threading.Event()
-						self._delay               = 3.0
+						self._clientId = clientId
+						self._command = command
+						self._updateEvent = threading.Event()
+						self._delay = 3.0
 
 					def run(self):
 						while (self._delay > 0):
@@ -236,6 +239,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				self._updateByProductOnClient(productOnClient)
 			except Exception as e:
 				errors.append(forceUnicode(e))
+
 		if errors:
 			raise Exception(u', '.join(errors))
 
@@ -245,11 +249,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 	def configState_insertObject(self, configState):
 		if (configState.configId != 'clientconfig.depot.id'):
 			return
+
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
 	def configState_updateObject(self, configState):
 		if (configState.configId != 'clientconfig.depot.id'):
 			return
+
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
 	def configState_deleteObjects(self, configStates):
@@ -257,24 +263,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		for configState in configStates:
 			if (configState.configId != 'clientconfig.depot.id'):
 				continue
+
 			try:
 				self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 			except Exception as e:
 				errors.append(forceUnicode(e))
+
 		if errors:
 			raise Exception(u', '.join(errors))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
