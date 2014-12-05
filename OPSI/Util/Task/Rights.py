@@ -38,6 +38,7 @@ import os
 import pwd
 import re
 
+from OPSI.Backend.Backend import OPSI_GLOBAL_CONF
 from OPSI.Logger import Logger
 from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
@@ -45,17 +46,14 @@ from OPSI.Util.File.Opsi import OpsiConfFile
 
 logger = Logger()
 
-_OPSICONFD_USER = u'opsiconfd'  # TODO: import from elsewhere?
-_ADMIN_GROUP = u'opsiadmin'  # TODO: import from elsewhere?
-_CLIENT_USER = u'pcpatch'  # TODO: import from elsewhere?
-
-_OPSI_CONF = u'/etc/opsi/opsi.conf'  # TODO: import from elsewhere?
-_OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'  # TODO: import from elsewhere?
+_OPSICONFD_USER = u'opsiconfd'
+_ADMIN_GROUP = u'opsiadmin'
+_CLIENT_USER = u'pcpatch'
 
 try:
-	FILE_ADMIN_GROUP = OpsiConfFile(OPSI_CONF).getOpsiFileAdminGroup()
+	_FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except Exception:
-	FILE_ADMIN_GROUP = u'pcpatch'
+	_FILE_ADMIN_GROUP = u'pcpatch'
 
 
 # TODO: better ways!
@@ -89,9 +87,9 @@ def setRights(path=u'/'):
 		basedir = os.path.dirname(basedir)
 
 	clientUserUid = pwd.getpwnam(CLIENT_USER)[2]
-	opsiconfdUid = pwd.getpwnam(OPSICONFD_USER)[2]
-	adminGroupGid = grp.getgrnam(ADMIN_GROUP)[2]
-	fileAdminGroupGid = grp.getgrnam(FILE_ADMIN_GROUP)[2]
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
 	distribution = getDistribution()
 
