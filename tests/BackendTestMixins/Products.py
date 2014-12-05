@@ -428,7 +428,7 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
                     productProperty = productProperty.toHash()
                     p = p.toHash()
                     for (attribute, value) in p.items():
-                        if not value is None:
+                        if value is not None:
                             if type(value) is list:
                                 for v in value:
                                     assert v in productProperty[attribute], u"'%s' not in '%s'" % (

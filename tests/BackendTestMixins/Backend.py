@@ -89,9 +89,9 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
                 host.getIpAddress(), None)
             assert host.getInventoryNumber() is None, u"got: '%s', expected: '%s'" % (
                 host.getInventoryNumber(), None)
-            assert not host.getNotes() is None, u"got: '%s', expected: '%s'" % (
+            assert host.getNotes() is not None, u"got: '%s', expected: '%s'" % (
                 host.getNotes(), not None)
-            assert not host.getDescription() is None, u"got: '%s', expected: '%s'" % (
+            assert host.getDescription() is not None, u"got: '%s', expected: '%s'" % (
                 host.getDescription(), not None)
 
         hosts = self.backend.host_getObjects(
