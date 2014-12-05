@@ -93,8 +93,7 @@ class SQLite(SQL):
 					self._cursor.execute('PRAGMA encoding="UTF-8"')
 				self._cursor.setrowtrace(rowtrace)
 			return (self._connection, self._cursor)
-		except:
-			# self._transactionLock.release()
+		except Exception:
 			raise
 
 	def close(self, conn, cursor):
@@ -127,8 +126,9 @@ class SQLite(SQL):
 			self.execute(query, conn, cursor)
 			try:
 				row = cursor.next()
-			except:
+			except Exception:
 				pass
+
 			if not row:
 				logger.debug(u"No result for query '%s'" % query)
 				row = {}

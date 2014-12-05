@@ -172,7 +172,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 						while self._delay > 0:
 							try:
 								time.sleep(0.2)
-							except:
+							except Exception:
 								pass
 							self._delay -= 0.2
 

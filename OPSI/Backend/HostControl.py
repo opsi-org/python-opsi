@@ -136,7 +136,7 @@ class ConnectionThread(KillableThread):
 					if conn.sock:
 						conn.sock.close()
 					conn.close()
-				except:
+				except Exception:
 					pass
 		except Exception as e:
 			logger.logException(e, LOG_DEBUG)

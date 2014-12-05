@@ -963,7 +963,7 @@ def mount(dev, mountpoint, **options):
 			try:
 				if not options['domain']:
 					del options['domain']
-			except:
+			except KeyError:
 				pass
 			del options['username']
 			del options['password']

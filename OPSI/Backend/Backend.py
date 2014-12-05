@@ -1718,7 +1718,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							if key != 'type':
 								try:
 									value = eval(value)
-								except:
+								except Exception:
 									pass
 							objectFilterNew[str(key)] = value
 						objectFilter = objectFilterNew

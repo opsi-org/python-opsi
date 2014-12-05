@@ -94,7 +94,7 @@ class JSONRPC(DeferredCall):
 						if index != -1 and len(message) > index:
 							message = message[index + 1:].lstrip()
 						exception = exceptionClass(u'%s (error on server)' % message)
-					except:
+					except Exception:
 						pass
 					raise exception
 				raise Exception(u'%s (error on server)' % error)

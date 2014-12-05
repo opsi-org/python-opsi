@@ -140,7 +140,7 @@ def forceUnicode(var):
 
 	try:
 		return unicode(var)
-	except:
+	except Exception:
 		pass
 
 	if hasattr(var, '__repr__'):

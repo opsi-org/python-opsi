@@ -157,9 +157,9 @@ class MySQL(SQL):
 						timeout=self._connectionPoolTimeout,
 						conv=conv
 				)
-			except Exception as e:
-				logger.logException(e)
-				raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, e))
+			except Exception as error:
+				logger.logException(error)
+				raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 		finally:
 			self._transactionLock.release()
 

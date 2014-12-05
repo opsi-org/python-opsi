@@ -59,10 +59,9 @@ def _getSysConfig():
 	try:
 		fqdn = getfqdn(conf=OPSI_GLOBAL_CONF)
 		sysConfig['fqdn'] = forceHostId(fqdn)
-	except Exception:
+	except Exception as exc:
 		raise Exception(
-			u"Failed to get fully qualified domain name, "
-			u"got '{0}'".format(fqdn)
+			u"Failed to get fully qualified domain name: {0}".format(fqdn)
 		)
 
 	sysConfig['hostname'] = fqdn.split(u'.')[0]
