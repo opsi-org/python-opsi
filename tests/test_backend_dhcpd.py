@@ -109,9 +109,8 @@ class DHCPBackendTestCase(unittest.TestCase, DHCPDConfMixin):
         )
 
     def testUpdatingHostWhereAddressCantBeResolvedFails(self):
-        hostname = 'client4hostFile'
         client = OpsiClient(
-            id='{0}.some.network'.format(hostname),
+            id='unknown-client.test.invalid',
             hardwareAddress='00:99:88:77:77:21'
         )
 
