@@ -240,9 +240,6 @@ class RpcQueue(threading.Thread):
 		self.idle.set()
 
 
-# ======================================================================================================
-# =                                   CLASS JSONRPCBACKEND                                             =
-# ======================================================================================================
 class JSONRPCBackend(Backend):
 
 	def __init__(self, address, **kwargs):
