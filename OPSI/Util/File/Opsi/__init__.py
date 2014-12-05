@@ -104,11 +104,9 @@ class HostKeyFile(ConfigFile):
 		return self._opsiHostKeys
 
 	def generate(self):
-		self._lines = []
-		hostIds = self._opsiHostKeys.keys()
-		hostIds.sort()
-		for hostId in hostIds:
-			self._lines.append(u'%s:%s' % (hostId, self._opsiHostKeys[hostId]))
+		self._lines = [u'{0}:{1}'.format(hostId, self._opsiHostKeys[hostId])
+			for hostId in sorted(self._opsiHostKeys.keys())]
+
 		self.open('w')
 		self.writelines()
 		self.close()
