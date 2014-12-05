@@ -117,7 +117,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 	def _createTables(self):
 		tables = self._sql.getTables()
-		if not 'OBJECT_MODIFICATION_TRACKER' in tables.keys():
+		if 'OBJECT_MODIFICATION_TRACKER' not in tables.keys():
 			logger.debug(u'Creating table OBJECT_MODIFICATION_TRACKER')
 			table = u'''CREATE TABLE `OBJECT_MODIFICATION_TRACKER` (
 					`id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -283,13 +283,15 @@ class SQLBackend(ConfigDataBackend):
 				for arg in mandatoryConstructorArgs(oc):
 					if arg == 'id':
 						arg = id
-					if not arg in newAttributes:
+
+					if arg not in newAttributes:
 						newAttributes.append(arg)
+
 		return (newAttributes, newFilter)
 
 	def _adjustResult(self, objectClass, result):
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
-		if result.has_key(id):
+		if id in result:
 			result['id'] = result[id]
 			del result[id]
 		return result
@@ -397,10 +399,10 @@ class SQLBackend(ConfigDataBackend):
 		logger.notice(u'Creating opsi base')
 
 		# Host table
-		if not 'HOST' in tables.keys():
+		if 'HOST' not in tables.keys():
 			self._createTableHost()
 
-		if not 'CONFIG' in tables.keys():
+		if 'CONFIG' not in tables.keys():
 			logger.debug(u'Creating table CONFIG')
 			table = u'''CREATE TABLE `CONFIG` (
 					`configId` varchar(200) NOT NULL,
@@ -415,7 +417,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_config_type` on `CONFIG` (`type`);')
 
-		if not 'CONFIG_VALUE' in tables.keys():
+		if 'CONFIG_VALUE' not in tables.keys():
 			logger.debug(u'Creating table CONFIG_VALUE')
 			table = u'''CREATE TABLE `CONFIG_VALUE` (
 					`config_value_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -429,7 +431,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 
-		if not 'CONFIG_STATE' in tables.keys():
+		if 'CONFIG_STATE' not in tables.keys():
 			logger.debug(u'Creating table CONFIG_STATE')
 			table = u'''CREATE TABLE `CONFIG_STATE` (
 					`config_state_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -444,7 +446,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_config_state_configId` on `CONFIG_STATE` (`configId`);')
 			self._sql.execute('CREATE INDEX `index_config_state_objectId` on `CONFIG_STATE` (`objectId`);')
 
-		if not 'PRODUCT' in tables.keys():
+		if 'PRODUCT' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT')
 			table = u'''CREATE TABLE `PRODUCT` (
 					`productId` varchar(255) NOT NULL,
@@ -473,7 +475,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
 
 		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
-		if not 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' in tables.keys():
+		if 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' not in tables.keys():
 			logger.debug(u'Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
 			table = u'''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
 					`windowsSoftwareId` VARCHAR(100) NOT NULL,
@@ -484,7 +486,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 
-		if not 'PRODUCT_ON_DEPOT' in tables.keys():
+		if 'PRODUCT_ON_DEPOT' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_DEPOT')
 			table = u'''CREATE TABLE `PRODUCT_ON_DEPOT` (
 					`productId` varchar(255) NOT NULL,
@@ -502,7 +504,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_product_on_depot_productType` on `PRODUCT_ON_DEPOT` (`productType`);')
 
-		if not 'PRODUCT_PROPERTY' in tables.keys():
+		if 'PRODUCT_PROPERTY' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY` (
 					`productId` varchar(255) NOT NULL,
@@ -521,7 +523,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_product_property_type` on `PRODUCT_PROPERTY` (`type`);')
 
-		if not 'PRODUCT_PROPERTY_VALUE' in tables.keys():
+		if 'PRODUCT_PROPERTY_VALUE' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY_VALUE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
 					`product_property_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -538,7 +540,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 
-		if not 'PRODUCT_DEPENDENCY' in tables.keys():
+		if 'PRODUCT_DEPENDENCY' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_DEPENDENCY')
 			table = u'''CREATE TABLE `PRODUCT_DEPENDENCY` (
 					`productId` varchar(255) NOT NULL,
@@ -559,7 +561,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 
 		# FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
-		if not 'PRODUCT_ON_CLIENT' in tables.keys():
+		if 'PRODUCT_ON_CLIENT' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ON_CLIENT')
 			table = u'''CREATE TABLE `PRODUCT_ON_CLIENT` (
 					`productId` varchar(255) NOT NULL,
@@ -582,7 +584,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 
 		# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
-		if not 'PRODUCT_PROPERTY_STATE' in tables.keys():
+		if 'PRODUCT_PROPERTY_STATE' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_PROPERTY_STATE')
 			table = u'''CREATE TABLE `PRODUCT_PROPERTY_STATE` (
 					`product_property_state_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -597,7 +599,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_product_property_state_objectId` on `PRODUCT_PROPERTY_STATE` (`objectId`);')
 
-		if not 'GROUP' in tables.keys():
+		if 'GROUP' not in tables.keys():
 			logger.debug(u'Creating table GROUP')
 			table = u'''CREATE TABLE `GROUP` (
 					`type` varchar(30) NOT NULL,
@@ -612,7 +614,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);')
 
-		if not 'OBJECT_TO_GROUP' in tables.keys():
+		if 'OBJECT_TO_GROUP' not in tables.keys():
 			logger.debug(u'Creating table OBJECT_TO_GROUP')
 			table = u'''CREATE TABLE `OBJECT_TO_GROUP` (
 					`object_to_group_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -627,7 +629,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
 
-		if not 'LICENSE_CONTRACT' in tables.keys():
+		if 'LICENSE_CONTRACT' not in tables.keys():
 			logger.debug(u'Creating table LICENSE_CONTRACT')
 			table = u'''CREATE TABLE `LICENSE_CONTRACT` (
 					`licenseContractId` VARCHAR(100) NOT NULL,
@@ -645,7 +647,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);')
 
-		if not 'SOFTWARE_LICENSE' in tables.keys():
+		if 'SOFTWARE_LICENSE' not in tables.keys():
 			logger.debug(u'Creating table SOFTWARE_LICENSE')
 			table = u'''CREATE TABLE `SOFTWARE_LICENSE` (
 					`softwareLicenseId` VARCHAR(100) NOT NULL,
@@ -663,7 +665,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);')
 			self._sql.execute('CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
 
-		if not 'LICENSE_POOL' in tables.keys():
+		if 'LICENSE_POOL' not in tables.keys():
 			logger.debug(u'Creating table LICENSE_POOL')
 			table = u'''CREATE TABLE `LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
@@ -676,7 +678,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);')
 
-		if not 'AUDIT_SOFTWARE_TO_LICENSE_POOL' in tables.keys():
+		if 'AUDIT_SOFTWARE_TO_LICENSE_POOL' not in tables.keys():
 			logger.debug(u'Creating table AUDIT_SOFTWARE_TO_LICENSE_POOL')
 			table = u'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
@@ -692,7 +694,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 
-		if not 'PRODUCT_ID_TO_LICENSE_POOL' in tables.keys():
+		if 'PRODUCT_ID_TO_LICENSE_POOL' not in tables.keys():
 			logger.debug(u'Creating table PRODUCT_ID_TO_LICENSE_POOL')
 			table = u'''CREATE TABLE `PRODUCT_ID_TO_LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
@@ -704,7 +706,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 
-		if not 'SOFTWARE_LICENSE_TO_LICENSE_POOL' in tables.keys():
+		if 'SOFTWARE_LICENSE_TO_LICENSE_POOL' not in tables.keys():
 			logger.debug(u'Creating table SOFTWARE_LICENSE_TO_LICENSE_POOL')
 			table = u'''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
 					`softwareLicenseId` VARCHAR(100) NOT NULL,
@@ -718,7 +720,7 @@ class SQLBackend(ConfigDataBackend):
 			logger.debug(table)
 			self._sql.execute(table)
 
-		if not 'LICENSE_ON_CLIENT' in tables.keys():
+		if 'LICENSE_ON_CLIENT' not in tables.keys():
 			logger.debug(u'Creating table LICENSE_ON_CLIENT')
 			table = u'''CREATE TABLE `LICENSE_ON_CLIENT` (
 					`license_on_client_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -735,7 +737,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 			self._sql.execute('CREATE INDEX `index_license_on_client_clientId` on `LICENSE_ON_CLIENT` (`clientId`);')
 
-		if not 'BOOT_CONFIGURATION' in tables.keys():
+		if 'BOOT_CONFIGURATION' not in tables.keys():
 			logger.debug(u'Creating table BOOT_CONFIGURATION')
 			table = u'''CREATE TABLE `BOOT_CONFIGURATION` (
 					`name` varchar(64) NOT NULL,
@@ -760,7 +762,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute(table)
 
 		# Software audit tables
-		if not 'SOFTWARE' in tables.keys():
+		if 'SOFTWARE' not in tables.keys():
 			logger.debug(u'Creating table SOFTWARE')
 			table = u'''CREATE TABLE `SOFTWARE` (
 					`name` varchar(100) NOT NULL,
@@ -781,7 +783,7 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.execute('CREATE INDEX `index_software_windowsSoftwareId` on `SOFTWARE` (`windowsSoftwareId`);')
 			self._sql.execute('CREATE INDEX `index_software_type` on `SOFTWARE` (`type`);')
 
-		if not 'SOFTWARE_CONFIG' in tables.keys():
+		if 'SOFTWARE_CONFIG' not in tables.keys():
 			logger.debug(u'Creating table SOFTWARE_CONFIG')
 			table = u'''CREATE TABLE `SOFTWARE_CONFIG` (
 					`config_id` integer NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
@@ -1030,7 +1032,7 @@ class SQLBackend(ConfigDataBackend):
 		configs = []
 		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
 
-		if filter.has_key('defaultValues'):
+		if 'defaultValues' in filter:
 			if filter['defaultValues']:
 				configIds = filter.get('configId')
 				filter['configId'] = [res['configId'] for res in
@@ -1045,8 +1047,10 @@ class SQLBackend(ConfigDataBackend):
 
 				if not filter['configId']:
 					return []
+
 			del filter['defaultValues']
-		if filter.has_key('possibleValues'):
+
+		if 'possibleValues' in filter:
 			if filter['possibleValues']:
 				configIds = filter.get('configId')
 				filter['configId'] = [res['configId'] for res in

@@ -429,7 +429,7 @@ class PackageControlFile(TextFile):
 				if sectionType == 'changelog':
 					self._sections[sectionType] = u''
 				else:
-					if self._sections.has_key(sectionType):
+					if sectionType in self._sections:
 						self._sections[sectionType].append({})
 					else:
 						self._sections[sectionType] = [{}]

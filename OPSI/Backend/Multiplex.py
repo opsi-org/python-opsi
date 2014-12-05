@@ -90,7 +90,7 @@ class MultiplexBackend(object):
 				context = self._context
 
 		logger.notice(u"Initializing services")
-		if kwargs.has_key('services'):
+		if 'services' in kwargs:
 			services = kwargs['services']
 			for service in services:
 				if service["url"] not in self.__services.keys():

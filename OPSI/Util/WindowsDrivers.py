@@ -189,9 +189,9 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	for infFile in infFiles:
 		infFile = InfFile(infFile)
 		for dev in infFile.getDevices():
-			if not integratedDrivers.has_key(dev['type']):
+			if dev['type'] not in integratedDrivers:
 				integratedDrivers[dev['type']] = {}
-			if not integratedDrivers[dev['type']].has_key(dev['vendor']):
+			if dev['vendor'] not in integratedDrivers[dev['type']]:
 				integratedDrivers[dev['type']][dev['vendor']] = []
 			if dev['device'] in integratedDrivers[dev['type']][dev['vendor']]:
 				continue
@@ -232,7 +232,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			})
 			if checkDups:
 				for dev in devices:
-					if not dev['device'] in driversOnMachine.get(dev['vendor'], []):
+					if dev['device'] not in driversOnMachine.get(dev['vendor'], []):
 						continue
 					if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
 						#if drivers and not dev['device'] in driversOnMachine.get(dev['vendor'], []):
@@ -261,9 +261,9 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				newDriversTmp[i]['directory'] = dstDriverPath
 				newDriversTmp[i]['infFile'] = os.path.join(dstDriverPath, newDriversTmp[i]['infFile'])
 				for dev in newDriversTmp[i]['devices']:
-					if not integratedDrivers.has_key(dev['type']):
+					if dev['type'] not in integratedDrivers:
 						integratedDrivers[dev['type']] = {}
-					if not integratedDrivers[dev['type']].has_key(dev['vendor']):
+					if dev['vendor'] not in integratedDrivers[dev['type']]:
 						integratedDrivers[dev['type']][dev['vendor']] = []
 					integratedDrivers[dev['type']][dev['vendor']].append(dev['device'])
 			newDrivers.extend(newDriversTmp)
@@ -447,7 +447,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		if not auditHardwareOnHost.hardwareClass in  ("COMPUTER_SYSTEM", "BASE_BOARD"):
 			continue
 		else:
-			if not auditInfoByClass.has_key(auditHardwareOnHost.hardwareClass):
+			if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
 				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
 			
 				

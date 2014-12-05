@@ -681,7 +681,7 @@ def halt(wait=10):
 # -                                        PROCESS HANDLING                                           -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def which(cmd):
-	if not WHICH_CACHE.has_key(cmd):
+	if cmd not in WHICH_CACHE:
 		w = os.popen(u'%s "%s" 2>/dev/null' % (BIN_WHICH, cmd))
 		path = w.readline().strip()
 		w.close()

@@ -100,7 +100,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		depotId = forceHostId(depotId)
 		if depotId == self._depotId:
 			return self
-		if not self._depotConnections.get(depotId):
+
+		if depotId not in self._depotConnections:
 			if not self._opsiHostKey:
 				depots = self._context.host_getObjects(id=self._depotId)
 				if not depots or not depots[0].getOpsiHostKey():

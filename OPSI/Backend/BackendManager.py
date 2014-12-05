@@ -384,7 +384,7 @@ class BackendDispatcher(Backend):
 						continue
 
 					for backend in forceList(backends):
-						if not backend in self._backends.keys():
+						if backend not in self._backends:
 							logger.debug(u"Ignoring backend '%s': backend not available" % backend)
 							continue
 						methodBackends.append(backend)
@@ -772,8 +772,8 @@ class BackendAccessControl(object):
 			raise BackendAuthenticationError(u"PAM authentication failed for user '%s': %s" % (self._username, e))
 
 	def _isMemberOfGroup(self, ids):
-		for id in forceUnicodeList(ids):
-			if id in self._userGroups:
+		for groupId in forceUnicodeList(ids):
+			if groupId in self._userGroups:
 				return True
 		return False
 
@@ -788,8 +788,9 @@ class BackendAccessControl(object):
 			return False
 		if not ids:
 			return True
-		for id in forceUnicodeList(ids):
-			if (id == self._host.id):
+
+		for hostId in forceUnicodeList(ids):
+			if hostId == self._host.id:
 				return True
 		return False
 

@@ -259,12 +259,13 @@ This defaults to ``self``.
 		"""
 		options = forceDict(options)
 		for (key, value) in options.items():
-			if not key in self._options.keys():
-				# raise ValueError(u"No such option '%s'" % key)
+			if key not in self._options:
 				continue
+
 			if type(value) != type(self._options[key]):
 				# raise ValueError(u"Wrong type '%s' for option '%s', expecting type '%s'" % (type(value), key, type(self._options[key])))
 				continue
+
 			self._options[key] = value
 
 	def backend_getOptions(self):
@@ -525,13 +526,14 @@ containing the localisation of the hardware audit.
 	def _testFilterAndAttributes(self, Class, attributes, **filter):
 		if not attributes:
 			attributes = []
-		attributes = forceUnicodeList(attributes)
+
 		possibleAttributes = getPossibleClassAttributes(Class)
-		for attribute in attributes:
-			if not attribute in possibleAttributes:
+		for attribute in forceUnicodeList(attributes):
+			if attribute not in possibleAttributes:
 				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
-		for attribute in filter.keys():
-			if not attribute in possibleAttributes:
+
+		for attribute in filter:
+			if attribute not in possibleAttributes:
 				raise BackendBadValueError("Class '%s' has not attribute '%s'" % (Class, attribute))
 
 	def backend_createBase(self):
@@ -1373,8 +1375,9 @@ depot where the method is.
 		try:
 			lf = ConfigFile(localeFile)
 			for line in lf.parse():
-				if (line.count('=') == 0):
+				if '=' not in line:
 					continue
+
 				(k, v) = line.split('=', 1)
 				locale[k.strip()] = v.strip()
 		except Exception as e:
@@ -1702,11 +1705,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 					try:
 						oc = eval(objectClass)
-						if not ('type' in objectFilter):
-							types = [ objectClass ]
-							for c in oc.subClasses:
-								types.append(c)
-							if (len(types) > 1):
+						if 'type' not in objectFilter:
+							types = [c for c in oc.subClasses]
+							types.insert(0, objectClass)
+
+							if len(types) > 1:
 								objectFilter['type'] = types
 
 						this = self
@@ -2229,7 +2232,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		for config in self._backend.config_getObjects(id=filter.get('configId')):
 			logger.debug(u"Default values for '%s': %s" % (config.id, config.defaultValues))
 			for clientId in clientIds:
-				if not config.id in css.get(clientId, []):
+				if config.id not in css.get(clientId, []):
 					# Config state does not exist for client => create default
 					cf = ConfigState(
 						configId=config.id,
@@ -2247,7 +2250,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		if configs and not configs[0].defaultValues and (len(configs[0].defaultValues) == len(configState.values)):
 			isDefault = True
 			for v in configState.values:
-				if not v in configs[0].defaultValues:
+				if v not in configs[0].defaultValues:
 					isDefault = False
 					break
 		return isDefault
@@ -3265,8 +3268,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def group_updateObjects(self, groups):
 		result = []
-		groups = forceObjectClassList(groups, Group)
-		for group in groups:
+		for group in forceObjectClassList(groups, Group):
 			logger.info(u"Updating group '%s'" % group)
 			if self.group_getIdents(id=group.id):
 				self._backend.group_updateObject(group)

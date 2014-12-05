@@ -168,7 +168,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				logger.error(u"Failed to sync backend modification %s: %s" % (modification, e))
 				continue
 
-		if modifiedObjects.has_key('AuditHardwareOnHost'):
+		if 'AuditHardwareOnHost' in modifiedObjects:
 			self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
 			objects = []
 			for mo in modifiedObjects['AuditHardwareOnHost']:
