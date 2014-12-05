@@ -171,6 +171,13 @@ This defaults to ``self``.
 				self._opsiVersionFile = forceFilename(value)
 		self._options = {}
 
+		try:
+			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
+				self._opsiVersion = f.readline().strip()
+		except Exception as e:
+			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
+			self._opsiVersion = 'unknown'
+
 	def _setContext(self, context):
 		"""Setting the context backend."""
 		self._context = context
@@ -319,13 +326,6 @@ This defaults to ``self``.
 
 		:returntype: dict
 		"""
-		opsiVersion = 'unknown'
-		try:
-			with codecs.open(self._opsiVersionFile, 'r', 'utf-8') as f:
-				opsiVersion = f.readline().strip()
-		except Exception as e:
-			logger.error(u"Failed to read version info from file '%s': %s" % (self._opsiVersionFile, e))
-
 		modules = {}
 		helpermodules = {}
 		try:
