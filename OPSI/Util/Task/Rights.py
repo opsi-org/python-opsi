@@ -55,6 +55,8 @@ try:
 except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
+SPECIAL_FILES = [u'setup.py', u'show_drivers.py', u'create_driver_links.py', u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe']
+
 
 # TODO: better ways!
 def getDistribution():
@@ -94,10 +96,7 @@ def setRights(path=u'/'):
 	distribution = getDistribution()
 
 	depotDir = ''
-	specialfiles = [u'setup.py', u'show_drivers.py', u'create_driver_links.py', u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe']
-	dirnames = [u'/tftpboot/linux', u'/home/opsiproducts', u'/var/log/opsi', u'/etc/opsi', u'/var/lib/opsi']
-	if 'suse linux enterprise server' in distribution.lower():
-		dirnames = [u'/var/lib/tftpboot/opsi', u'/var/log/opsi', u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench']
+	dirnames = getDirectoriesToProcess()
 	if not path.startswith('/etc') and not path.startswith('/tftpboot'):
 		try:
 			from OPSI.Backend.BackendManager import BackendManager
@@ -184,7 +183,7 @@ def setRights(path=u'/'):
 			elif os.path.isfile(f):
 				logger.debug(u"Setting rights on file '%s'" % f)
 				if isProduct:
-					if os.path.basename(f) in specialfiles:
+					if os.path.basename(f) in SPECIAL_FILES:
 						logger.debug(u"Setting rights on special file '{0}'".format(f))
 						os.chmod(f, 0770)
 					else:
