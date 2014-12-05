@@ -49,8 +49,7 @@ class ExtendedBackendTestsMixin(object):
         self.assertEquals(len(clientToDepots), len(clients))
 
         for depotserver in self.depotservers:
-            productOnDepots = self.backend.productOnDepot_getObjects(
-                depotId=depotserver.id)
+            productOnDepots = self.backend.productOnDepot_getObjects(depotId=depotserver.id)
 
             # TODO: richtige Tests
             # for productOnDepot in productOnDepots:

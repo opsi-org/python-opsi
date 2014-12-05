@@ -487,6 +487,7 @@ class ProductPropertiesTestMixin(ProductPropertiesMixin):
 
         assert excepted, u"faulty objectId accepted!"
 
+
 class ProductDependenciesMixin(ProductsMixin):
     def setUpProductDependencies(self):
         self.setUpProducts()

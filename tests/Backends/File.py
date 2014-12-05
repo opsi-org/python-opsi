@@ -104,7 +104,6 @@ config = {{
 
             config.write(new_configuration)
 
-
     @classmethod
     def _createClientTemplateFolders(cls, targetDirectory):
         templateDirectory = os.path.join(targetDirectory, 'config', 'templates')
