@@ -12,6 +12,8 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * Make excessive use of List Comprehensions for faster processing.
   * OPSI.Backend.HostControl: Using the timeout-parameter available on
     httplib.HTTP(S)Connection in RpcThread and ConnectionThread
+  * Improve speed of configState_getClientToDepotserver
+  * OPSI.Backend.SQL: Refactored working with the hardware audit
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Dec 2014 10:32:46 +0100
 

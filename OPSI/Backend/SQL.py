@@ -813,54 +813,85 @@ class SQLBackend(ConfigDataBackend):
 		# Hardware audit tables
 		for (hwClass, values) in self._auditHardwareConfig.items():
 			logger.debug(u"Processing hardware class '%s'" % hwClass)
-			hardwareDeviceTableName = u'HARDWARE_DEVICE_' + hwClass
-			hardwareConfigTableName = u'HARDWARE_CONFIG_' + hwClass
-
-			hardwareDeviceTable = u'CREATE TABLE `' + hardwareDeviceTableName + '` (\n' + \
-						u'`hardware_id` INTEGER NOT NULL ' + self._sql.AUTOINCREMENT + ',\n'
-			hardwareConfigTable = u'CREATE TABLE `' + hardwareConfigTableName + '` (\n' + \
-						u'`config_id` INTEGER NOT NULL ' + self._sql.AUTOINCREMENT + ',\n' + \
-						u'`hostId` varchar(50) NOT NULL,\n' + \
-						u'`hardware_id` INTEGER NOT NULL,\n' + \
-						u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
-						u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n' + \
-						u'`state` TINYINT NOT NULL,\n'
+			hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
+			hardwareConfigTableName = u'HARDWARE_CONFIG_{0}'.format(hwClass)
 
 			hardwareDeviceTableExists = hardwareDeviceTableName in tables.keys()
 			hardwareConfigTableExists = hardwareConfigTableName in tables.keys()
 
 			if hardwareDeviceTableExists:
-				hardwareDeviceTable = u'ALTER TABLE `' + hardwareDeviceTableName + u'`\n'
+				hardwareDeviceTable = u'ALTER TABLE `{name}`\n'.format(
+					name=hardwareDeviceTableName
+				)
+			else:
+				hardwareDeviceTable = (
+					u'CREATE TABLE `{name}` (\n'
+					u'`hardware_id` INTEGER NOT NULL {autoincrement},\n'.format(
+						name=hardwareDeviceTableName,
+						autoincrement=self._sql.AUTOINCREMENT
+					)
+				)
+
 			if hardwareConfigTableExists:
-				hardwareConfigTable = u'ALTER TABLE `' + hardwareConfigTableName + u'`\n'
+				hardwareConfigTable = u'ALTER TABLE `{name}`\n'.format(
+					name=hardwareConfigTableName
+				)
+			else:
+				hardwareConfigTable = (
+					u'CREATE TABLE `{name}` (\n'
+					u'`config_id` INTEGER NOT NULL {autoincrement},\n'
+					u'`hostId` varchar(50) NOT NULL,\n'
+					u'`hardware_id` INTEGER NOT NULL,\n'
+					u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+					u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
+					u'`state` TINYINT NOT NULL,\n'.format(
+						name=hardwareConfigTableName,
+						autoincrement=self._sql.AUTOINCREMENT
+					)
+				)
 
 			hardwareDeviceValuesProcessed = 0;
 			hardwareConfigValuesProcessed = 0;
 			for (value, valueInfo) in values.items():
 				logger.debug(u"  Processing value '%s'" % value)
-				if   (valueInfo['Scope'] == 'g'):
+				if valueInfo['Scope'] == 'g':
 					if hardwareDeviceTableExists:
 						if value in tables[hardwareDeviceTableName]:
 							# Column exists => change
 							if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
 								continue
-							hardwareDeviceTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
+							hardwareDeviceTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
+								column=value,
+								type=valueInfo['Type']
+							)
 						else:
 							# Column does not exist => add
-							hardwareDeviceTable += u'ADD `%s` %s NULL,\n' % (value, valueInfo["Type"])
+							hardwareDeviceTable += u'ADD `{column}` {type} NULL,\n'.format(
+								column=value,
+								type=valueInfo["Type"]
+							)
 					else:
-						hardwareDeviceTable += u'`%s` %s NULL,\n' % (value, valueInfo["Type"])
+						hardwareDeviceTable += u'`{column}` {type} NULL,\n'.format(
+							column=value,
+							type=valueInfo["Type"]
+						)
 					hardwareDeviceValuesProcessed += 1
-				elif (valueInfo['Scope'] == 'i'):
+				elif valueInfo['Scope'] == 'i':
 					if hardwareConfigTableExists:
 						if value in tables[hardwareConfigTableName]:
 							# Column exists => change
 							if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
 								continue
-							hardwareConfigTable += u'CHANGE `%s` `%s` %s NULL,\n' % (value, value, valueInfo['Type'])
+							hardwareConfigTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
+								column=value,
+								type=valueInfo['Type']
+							)
 						else:
 							# Column does not exist => add
-							hardwareConfigTable += u'ADD `%s` %s NULL,\n' % (value, valueInfo['Type'])
+							hardwareConfigTable += u'ADD `{column}` {type} NULL,\n'.format(
+								column=value,
+								type=valueInfo['Type']
+							)
 					else:
 						hardwareConfigTable += u'`%s` %s NULL,\n' % (value, valueInfo['Type'])
 					hardwareConfigValuesProcessed += 1
@@ -875,9 +906,9 @@ class SQLBackend(ConfigDataBackend):
 			hardwareConfigTable = hardwareConfigTable.strip()
 
 			# Remove trailing comma
-			if (hardwareDeviceTable[-1] == u','):
+			if hardwareDeviceTable.endswith(u','):
 				hardwareDeviceTable = hardwareDeviceTable[:-1]
-			if (hardwareConfigTable[-1] == u','):
+			if hardwareConfigTable.endswith(u','):
 				hardwareConfigTable = hardwareConfigTable[:-1]
 
 			# Finish sql query
@@ -923,7 +954,7 @@ class SQLBackend(ConfigDataBackend):
 				`isMasterDepot` bool,
 				`masterDepotId` varchar(255),
 				PRIMARY KEY (`hostId`)
-			) %s;''' % self._sql.getTableCreationOptions('HOST')
+			) {0};'''.format(self._sql.getTableCreationOptions('HOST'))
 		logger.debug(table)
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
@@ -935,7 +966,7 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
-		if self._sql.getRow('select * from `HOST` where %s' % where):
+		if self._sql.getRow('select * from `HOST` where {0}'.format(where)):
 			self._sql.update('HOST', where, data, updateWhereNone=True)
 		else:
 			self._sql.insert('HOST', data)
@@ -2156,30 +2187,28 @@ class SQLBackend(ConfigDataBackend):
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
 		logger.info(u"Getting auditHardwares, filter: %s" % filter)
-		auditHardwares = []
-		for h in self.auditHardware_getHashes(attributes, **filter):
-			auditHardwares.append(AuditHardware.fromHash(h))
-		return auditHardwares
+		return [AuditHardware.fromHash(h) for h in
+				self.auditHardware_getHashes(attributes, **filter)]
 
 	def auditHardware_getHashes(self, attributes=[], **filter):
 		return self._auditHardware_search(returnHardwareIds=False, attributes = attributes, **filter)
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
 		results = []
-		hardwareClasses = []
+		hardwareClasses = set([])
 		hardwareClass = filter.get('hardwareClass')
-		if not hardwareClass in ([], None):
+		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
 				for key in self._auditHardwareConfig.keys():
 					if regex.search(key):
-						if not key in hardwareClasses:
-							hardwareClasses.append(key)
+						hardwareClasses.add(key)
+
 			if not hardwareClasses:
 				return results
+
 		if not hardwareClasses:
-			for key in self._auditHardwareConfig.keys():
-				hardwareClasses.append(key)
+			hardwareClasses = set([key for key in self._auditHardwareConfig.keys()])
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
