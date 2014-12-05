@@ -25,7 +25,7 @@ HostControl Backend: Safe edition
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.3.1'
+__version__ = '4.0.6.1'
 
 import socket
 import time
@@ -42,6 +42,10 @@ logger = Logger()
 
 
 class HostControlSafeBackend(ExtendedBackend):
+	"""
+	This backend is the same as the HostControl-backend but it will not
+	allow to call methods without hostId
+	"""
 
 	def __init__(self, backend, **kwargs):
 		self._name = 'hostcontrolsafe'
