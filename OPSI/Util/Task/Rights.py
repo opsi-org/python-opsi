@@ -213,3 +213,12 @@ def setRights(path=u'/'):
 				if os.path.exists(authorizedKeys):
 					os.chmod(authorizedKeys, 0600)
 					os.chown(authorizedKeys, clientUserUid, fileAdminGroupGid)
+
+
+def getDirectoriesToProcess():
+	if 'suse linux enterprise server' in distribution.lower():
+		return [u'/var/lib/tftpboot/opsi', u'/var/log/opsi', u'/etc/opsi',
+				u'/var/lib/opsi', u'/var/lib/opsi/workbench']
+	else:
+		return [u'/tftpboot/linux', u'/home/opsiproducts', u'/var/log/opsi',
+				u'/etc/opsi', u'/var/lib/opsi']
