@@ -46,8 +46,7 @@ class ExtendedBackendTestsMixin(object):
 
         clients = self.backend.host_getObjects(type='OpsiClient')
         clientToDepots = self.backend.configState_getClientToDepotserver()
-        assert len(clientToDepots) == len(
-            clients), u"got: '%s', expected: '%s'" % (clientToDepots, len(clients))
+        self.assertEquals(len(clientToDepots), len(clients))
 
         for depotserver in self.depotservers:
             productOnDepots = self.backend.productOnDepot_getObjects(
