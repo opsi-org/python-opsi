@@ -791,6 +791,12 @@ class LoggerImplementation:
 			self.log(LOG_CRITICAL, u"    Failed to log traceback for '%s': %s" % (tb, e))
 
 	def logWarnings(self):
+		"""
+		Use OPSI.Logger to log warning messages.
+
+		This redirects messages emitted to the ``warnings`` modules to
+		the opsi logger.
+		"""
 		def _logWarning(message, category, filename, lineno, file=None, line=None):
 			if file is not None:
 				_showwarning(message, category, filename, lineno, file, line)
