@@ -170,10 +170,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
 		if 'AuditHardwareOnHost' in modifiedObjects:
 			self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
-			objects = []
-			for mo in modifiedObjects['AuditHardwareOnHost']:
-				objects.append(mo['object'])
-			self._masterBackend.auditHardwareOnHost_updateObjects(objects)
+			self._masterBackend.auditHardwareOnHost_updateObjects([mo['object'] for mo in modifiedObjects['AuditHardwareOnHost']])
 
 		if modifiedObjects.has_key('AuditSoftware'):
 			objects = []
