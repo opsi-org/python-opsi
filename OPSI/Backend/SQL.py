@@ -174,7 +174,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 
 class SQLBackend(ConfigDataBackend):
 
-	OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
+	_OPERATOR_IN_CONDITION_PATTERN = re.compile('^\s*([>=<]+)\s*(\d\.?\d*)')
 
 	def __init__(self, **kwargs):
 		self._name = 'sql'
@@ -222,7 +222,7 @@ class SQLBackend(ConfigDataBackend):
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, u'\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
-					match = self.OPERATOR_IN_CONDITION_PATTERN.search(value)
+					match = self._OPERATOR_IN_CONDITION_PATTERN.search(value)
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
