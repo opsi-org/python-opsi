@@ -48,9 +48,10 @@ logger = Logger()
 
 class MultiplexBackend(object):
 	'''
-	This backend acts as a dispatcher to multiplex commands received from one client
-	onto multiple config servers. It relays all commands to all available servers, collects all results
-	and maps the results transparently back to the client.
+	This backend acts as a dispatcher to multiplex commands received
+	from one client	onto multiple config servers. It relays all commands
+	to all available servers, collects all results and maps the results
+	transparently back to the client.
 	'''
 
 	__serviceCache = {}
