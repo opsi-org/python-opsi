@@ -70,9 +70,10 @@ class JSONRPC(DeferredCall):
 
 	def getRpc(self):
 		if self.jsonrpcBackend.isLegacyOpsi():
-			for i in range(len(self.params)):
+			for i in xrange(len(self.params)):
 				if self.params[i] == '__UNDEF__':
 					self.params[i] = None
+
 		return {
 			"id": self.id,
 			"method": self.method,

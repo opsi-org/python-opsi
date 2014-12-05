@@ -292,7 +292,7 @@ This defaults to ``self``.
 
 			if defaults is not None and len(defaults) > 0:
 				offset = len(params) - len(defaults)
-				for i in range(len(defaults)):
+				for i in xrange(len(defaults)):
 					index = offset + i
 					params[index] = '*{0}'.format(params[index])
 
@@ -1397,7 +1397,7 @@ depot where the method is.
 						newValues = []
 						for newValue in clcopy['Values']:
 							foundAt = -1
-							for i in range(len(c['Values'])):
+							for i in xrange(len(c['Values'])):
 								if (c['Values'][i]['Opsi'] == newValue['Opsi']):
 									if not c['Values'][i].get('UI'):
 										c['Values'][i]['UI'] = newValue.get('UI', '')
@@ -1417,7 +1417,7 @@ depot where the method is.
 		classes = []
 		try:
 			execfile(self._auditHardwareConfigFile)
-			for i in range(len(OPSI_HARDWARE_CLASSES)):
+			for i in xrange(len(OPSI_HARDWARE_CLASSES)):
 				opsiClass = OPSI_HARDWARE_CLASSES[i]['Class']['Opsi']
 				if (OPSI_HARDWARE_CLASSES[i]['Class']['Type'] == 'STRUCTURAL'):
 					if locale.get(opsiClass):
@@ -1425,7 +1425,7 @@ depot where the method is.
 					else:
 						logger.error(u"No translation for class '%s' found" % opsiClass)
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
-				for j in range(len(OPSI_HARDWARE_CLASSES[i]['Values'])):
+				for j in xrange(len(OPSI_HARDWARE_CLASSES[i]['Values'])):
 					opsiProperty = OPSI_HARDWARE_CLASSES[i]['Values'][j]['Opsi']
 					if locale.get(opsiClass + '.' + opsiProperty):
 						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
@@ -1441,7 +1441,7 @@ depot where the method is.
 						del ccopy['Class']['Type']
 
 						# Fill up empty display names
-						for j in range(len(ccopy.get('Values', []))):
+						for j in xrange(len(ccopy.get('Values', []))):
 							if not ccopy['Values'][j].get('UI'):
 								logger.warning("No translation for property '%s.%s' found" % (ccopy['Class']['Opsi'], ccopy['Values'][j]['Opsi']))
 								ccopy['Values'][j]['UI'] = ccopy['Values'][j]['Opsi']
@@ -1555,8 +1555,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			result1IdentIndex = -1
 			result2IdentIndex = -1
 
-			for i in range(len(result1['identAttributes'])):
-				for j in range(len(result2['identAttributes'])):
+			for i in xrange(len(result1['identAttributes'])):
+				for j in xrange(len(result2['identAttributes'])):
 					if (result1['identAttributes'][i] == result2['identAttributes'][j]):
 						if (result1['identAttributes'][i] != 'id') or (result1['objectClass'] == result2['objectClass']):
 							result1IdentIndex = i

@@ -332,7 +332,8 @@ class BackendDispatcher(Backend):
 			raise BackendConfigurationError(u"Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
-		for i in range(len(self._dispatchConfig)):
+
+		for i in xrange(len(self._dispatchConfig)):
 			if not type(self._dispatchConfig[i][1]) is list:
 				self._dispatchConfig[i][1] = [ self._dispatchConfig[i][1] ]
 			for value in self._dispatchConfig[i][1]:
@@ -378,7 +379,7 @@ class BackendDispatcher(Backend):
 					continue
 
 				methodBackends = []
-				for i in range(len(self._dispatchConfig)):
+				for i in xrange(len(self._dispatchConfig)):
 					(regex, backends) = self._dispatchConfig[i]
 					if not re.search(regex, methodName):
 						continue
