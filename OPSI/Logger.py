@@ -376,20 +376,21 @@ class LoggerImplementation:
 			pass
 
 	def setMessageSubjectLevel(self, level=LOG_NONE):
-		if level < LOG_NONE:
-			level = LOG_NONE
-		if level > LOG_CONFIDENTIAL:
-			level = LOG_CONFIDENTIAL
-		self.__messageSubjectLevel = level
+		self.__messageSubjectLevel = self._sanitizeLogLevel(level)
 
 	def setConsoleLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to print to stderr
 		Set LOG_NONE to disable output to stderr (default)'''
+		self.__consoleLevel = self._sanitizeLogLevel(level)
+
+	@staticmethod
+	def _sanitizeLogLevel(level):
 		if level < LOG_NONE:
-			level = LOG_NONE
-		if level > LOG_CONFIDENTIAL:
-			level = LOG_CONFIDENTIAL
-		self.__consoleLevel = level
+			return LOG_NONE
+		elif level > LOG_CONFIDENTIAL:
+			return LOG_CONFIDENTIAL
+		else:
+			return level
 
 	def getConsoleLevel(self):
 		return self.__consoleLevel
@@ -447,11 +448,7 @@ class LoggerImplementation:
 	def setFileLevel(self, level=LOG_NONE):
 		''' Maximum level of messages to appear in logfile
 		Set LOG_NONE to disable output to logfile (default)'''
-		if level < LOG_NONE:
-			level = LOG_NONE
-		if level > LOG_CONFIDENTIAL:
-			level = LOG_CONFIDENTIAL
-		self.__fileLevel = level
+		self.__fileLevel = self._sanitizeLogLevel(level)
 
 	def exit(self, object=None):
 		if object:
