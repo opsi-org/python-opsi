@@ -30,7 +30,7 @@ This holds the basic backend classes.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.7'
+__version__ = '4.0.6.1'
 
 import base64
 import codecs

@@ -30,7 +30,7 @@ Functions and classes for the use with a POSIX operating system.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.16'
+__version__ = '4.0.6.1'
 
 import codecs
 import fcntl

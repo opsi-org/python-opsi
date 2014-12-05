@@ -25,7 +25,7 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.3.4'
+__version__ = '4.0.6.1'
 
 import threading
 
