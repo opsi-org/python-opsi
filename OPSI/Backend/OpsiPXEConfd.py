@@ -151,9 +151,9 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 	def opsipxeconfd_updatePXEBootConfiguration(self, clientId):
 		clientId = forceHostId(clientId)
-		self._updateThreadsLock.acquire()
-		try:
-			if not self._updateThreads.has_key(clientId):
+
+		with self._updateThreadsLock:
+			if clientId not in self._updateThreads:
 				command = u'update %s' % clientId
 
 				class UpdateThread(threading.Thread):
@@ -173,29 +173,26 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 								pass
 							self._delay -= 0.2
 
-						self._opsiPXEConfdBackend._updateThreadsLock.acquire()
-						try:
-							logger.info(u"Updating pxe boot configuration for client '%s'" % self._clientId)
-							sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
-							logger.info(u"Sending command '%s'" % self._command)
-							result = sc.sendCommand(self._command)
-							logger.info(u"Got result '%s'" % result)
+						with self._opsiPXEConfdBackend._updateThreadsLock:
+							try:
+								logger.info(u"Updating pxe boot configuration for client '%s'" % self._clientId)
+								sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
+								logger.info(u"Sending command '%s'" % self._command)
+								result = sc.sendCommand(self._command)
+								logger.info(u"Got result '%s'" % result)
+							except Exception as e:
+								logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, e))
 
-						except Exception as e:
-							logger.critical(u"Failed to update PXE boot configuration for client '%s': %s" % (self._clientId, e))
-
-						del self._opsiPXEConfdBackend._updateThreads[self._clientId]
-						self._opsiPXEConfdBackend._updateThreadsLock.release()
+							del self._opsiPXEConfdBackend._updateThreads[self._clientId]
 
 					def delay(self):
 						self._delay = 3.0
 
-				self._updateThreads[clientId] = UpdateThread(self, clientId, command)
-				self._updateThreads[clientId].start()
+				updater = UpdateThread(self, clientId, command)
+				self._updateThreads[clientId] = updater
+				updater.start()
 			else:
 				self._updateThreads[clientId].delay()
-		finally:
-			self._updateThreadsLock.release()
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
@@ -203,14 +200,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				self._depotConnections.backend_exit()
 			except:
 				pass
-		self._updateThreadsLock.acquire()
-		for updateThread in self._updateThreads.values():
-			updateThread.join(5)
-		self._updateThreadsLock.release()
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Hosts                                                                                     -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+		with self._updateThreadsLock:
+			for updateThread in self._updateThreads.values():
+				updateThread.join(5)
+
 	def host_updateObject(self, host):
 		if not isinstance(host, OpsiClient):
 			return
