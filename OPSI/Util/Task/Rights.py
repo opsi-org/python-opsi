@@ -55,19 +55,10 @@ try:
 except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
-SPECIAL_FILES = [u'setup.py', u'show_drivers.py', u'create_driver_links.py', u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe']
-
-
-# TODO: better ways!
-def getDistribution():
-	distribution = ''
-	try:
-		f = os.popen('lsb_release -d 2>/dev/null')
-		distribution = f.read().split(':')[1].strip()
-		f.close()
-	except:
-		pass
-	return distribution
+SPECIAL_FILES = [
+	u'setup.py', u'show_drivers.py', u'create_driver_links.py',
+	u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe'
+]
 
 
 # TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
@@ -92,8 +83,6 @@ def setRights(path=u'/'):
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
-
-	distribution = getDistribution()
 
 	depotDir = ''
 	dirnames = getDirectoriesToProcess()
@@ -215,9 +204,24 @@ def setRights(path=u'/'):
 
 
 def getDirectoriesToProcess():
-	if 'suse linux enterprise server' in distribution.lower():
+	if _isSLES():
 		return [u'/var/lib/tftpboot/opsi', u'/var/log/opsi', u'/etc/opsi',
 				u'/var/lib/opsi', u'/var/lib/opsi/workbench']
 	else:
 		return [u'/tftpboot/linux', u'/home/opsiproducts', u'/var/log/opsi',
 				u'/etc/opsi', u'/var/lib/opsi']
+
+
+def _isSLES():
+	return 'suse linux enterprise server' in getDistribution().lower()
+
+
+# TODO: better ways!
+def getDistribution():
+	try:
+		f = os.popen('lsb_release -d 2>/dev/null')
+		distribution = f.read().split(':')[1].strip()
+		f.close()
+		return distribution
+	except Exception:
+		return ''
