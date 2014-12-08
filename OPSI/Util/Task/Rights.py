@@ -154,7 +154,7 @@ def setRights(path=u'/'):
 		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
 			uid = -1
 			dmod = 02770
-		if dirname in (depotDir,):
+		if dirname == depotDir:
 			dmod = 02770
 
 		if os.path.isfile(path):
