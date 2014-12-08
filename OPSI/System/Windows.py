@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.6.1'
 
 import difflib
 import locale
@@ -682,15 +682,45 @@ def getDiskSpaceUsage(path):
 
 
 def mount(dev, mountpoint, **options):
+	"""
+	Mount *dev* to the given *mountpoint*.
+
+	The mountpoint can either be a Windows drive letter ranging from
+	``a:`` to ``z:`` or ``'dynamic'``.
+	If *mountpoint* is ``'dynamic'`` it will try to find a free
+	mountpoint for the operation.
+	This may raise an exception if no free mountpoint is found.
+	"""
 	dev = forceUnicode(dev)
 	mountpoint = forceUnicode(mountpoint)
 
-	fs = u''
-
-	match = re.search('^[a-zA-Z]:$', mountpoint)
+	match = re.search('^([a-z]:|dynamic)$', mountpoint, re.IGNORECASE)
 	if not match:
 		logger.error(u"Bad mountpoint '%s'" % mountpoint)
 		raise ValueError(u"Bad mountpoint '%s'" % mountpoint)
+
+	if mountpoint == u'dynamic':
+		usedDriveletters = set(
+			[
+				x[0].lower()
+				for x in win32api.GetLogicalDriveStrings().split('\0')
+				if x
+			]
+		)
+
+		if mountpoint.lower() in usedDriveletters:
+			logger.debug(
+				u"Mountpoint '{0}' is in use. Trying to find a free "
+				u"mountpoint.".format(mountpoint)
+			)
+
+			for i in xrange(ord('c'), ord('z')):
+				mountpoint = forceUnicode(chr(i))
+				if mountpoint not in usedDriveletters:
+					logger.info(u"Using the free mountpoint '{0}'".format(mountpoint))
+					break
+			else:
+				raise Exception("Dynamic mountpoint detection could not find a a free mountpoint!")
 
 	if dev.lower().startswith('smb://') or dev.lower().startswith('cifs://'):
 		match = re.search('^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)

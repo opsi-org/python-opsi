@@ -1,4 +1,4 @@
-python-opsi (4.0.6.1-2) UNRELEASED; urgency=low
+python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
 
   * Reverting the changes made for UCS in OPSI.System.Posix.locateDHCPDinit
   * setup.py: Exclude test folders.
@@ -18,9 +18,12 @@ python-opsi (4.0.6.1-2) UNRELEASED; urgency=low
   * The size limit of log_read and log_write can now be controlled
     through /etc/opsi/opsi.conf and the value of "max_size" in the
     section "logfiles".
-  * New module: OPSI.Util.Task.Rights 
+  * New module: OPSI.Util.Task.Rights
+  * OPSI.System.Windows: function "mount" accepts "dynamic" as mountpoint to
+    enable the automatic search for a free mountpoint on the system.
+    Thanks to Markus Kötter for the initial patch!
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 05 Dec 2014 16:48:43 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 08 Dec 2014 10:28:55 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
