@@ -46,7 +46,8 @@ from OPSI.Logger import Logger
 from OPSI.Types import BackendIOError, BackendBadValueError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
+from OPSI.Backend.SQL import (SQL, SQLBackend,
+	SQLBackendObjectModificationTracker, requiresEnabledSQLBackendModule)
 
 logger = Logger()
 
@@ -552,10 +553,8 @@ class MySQLBackend(SQLBackend):
 
 	# Overwriting productProperty_insertObject and
 	# productProperty_updateObject to implement Transaction
+	@requiresEnabledSQLBackendModule
 	def productProperty_insertObject(self, productProperty):
-		if not self._sqlBackendModule:
-			raise Exception(u"SQL backend module disabled")
-
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		possibleValues = data['possibleValues']
@@ -691,10 +690,8 @@ class MySQLBackend(SQLBackend):
 				logger.debug2(u'doCommit set to true')
 		self._sql.close(conn,cursor)
 
+		@requiresEnabledSQLBackendModule
 		def productProperty_updateObject(self, productProperty):
-			if not self._sqlBackendModule:
-				raise Exception(u"SQL backend module disabled")
-
 			ConfigDataBackend.productProperty_updateObject(self, productProperty)
 			data = self._objectToDatabaseHash(productProperty)
 			where = self._uniqueCondition(productProperty)
