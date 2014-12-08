@@ -148,10 +148,10 @@ def setRights(path=u'/'):
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
 			fmod = 0664
 			dmod = 0775
-		if dirname in (u'/var/log/opsi', u'/etc/opsi'):
+		elif dirname in (u'/var/log/opsi', u'/etc/opsi'):
 			gid = adminGroupGid
 			correctLinks = True
-		if dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
+		elif dirname in (u'/home/opsiproducts', '/var/lib/opsi/workbench'):
 			uid = -1
 			dmod = 02770
 		if dirname in (depotDir,):
