@@ -28,6 +28,7 @@ provides helpers for this task.
 
 .. versionadded:: 4.0.6.1
 
+
 :copyright:  uib GmbH <info@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -130,9 +131,7 @@ def setRights(path=u'/'):
 		dmod = 0770
 		correctLinks = False
 
-		isProduct = False
-		if dirname not in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi', u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench'):
-			isProduct = True
+		isProduct = dirname not in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi', u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench')
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
 			fmod = 0664
