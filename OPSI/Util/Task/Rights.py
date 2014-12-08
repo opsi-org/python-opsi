@@ -80,7 +80,7 @@ def setRights(path=u'/'):
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	clientUserUid = pwd.getpwnam(CLIENT_USER)[2]
+	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
 	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
