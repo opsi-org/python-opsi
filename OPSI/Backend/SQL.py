@@ -510,7 +510,7 @@ class SQLBackend(ConfigDataBackend):
 					`productId` varchar(255) NOT NULL,
 					`productVersion` varchar(32) NOT NULL,
 					`packageVersion` varchar(16) NOT NULL,
-					`depotId` varchar(50) NOT NULL,
+					`depotId` varchar(255) NOT NULL,
 					`productType` varchar(16) NOT NULL,
 					`locked` bool,
 					PRIMARY KEY (`productId`, `depotId`),
@@ -857,7 +857,7 @@ class SQLBackend(ConfigDataBackend):
 				hardwareConfigTable = (
 					u'CREATE TABLE `{name}` (\n'
 					u'`config_id` INTEGER NOT NULL {autoincrement},\n'
-					u'`hostId` varchar(50) NOT NULL,\n'
+					u'`hostId` varchar(255) NOT NULL,\n'
 					u'`hardware_id` INTEGER NOT NULL,\n'
 					u'`firstseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
 					u'`lastseen` TIMESTAMP NOT NULL DEFAULT \'0000-00-00 00:00:00\',\n'
