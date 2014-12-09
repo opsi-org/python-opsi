@@ -234,8 +234,9 @@ def forceOpsiTimestamp(var):
 		match = re.search(_OPSI_DATE_REGEX, var)
 		if not match:
 			raise ValueError(u"Bad opsi timestamp: '%s'" % var)
-		return u'%s-%s-%s 00:00:00' % ( match.group(1), match.group(2), match.group(3) )
-	return u'%s-%s-%s %s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
+		return u'%s-%s-%s 00:00:00' % (match.group(1), match.group(2), match.group(3))
+
+	return u'%s-%s-%s %s:%s:%s' % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
 
 
 def forceFqdn(var):
@@ -256,10 +257,12 @@ def forceHardwareAddress(var):
 	var = forceUnicodeLower(var)
 	if not var:
 		return var
+
 	match = re.search(_HARDWARE_ADDRESS_REGEX, var)
 	if not match:
 		raise ValueError(u"Bad hardware address: %s" % var)
-	return u'%s:%s:%s:%s:%s:%s' % ( match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6) )
+
+	return u'%s:%s:%s:%s:%s:%s' % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
 
 
 def forceIPAddress(var):
@@ -405,7 +408,7 @@ def forceProductPriority(var):
 def forceBootConfigurationPriority(var):
 	var = forceInt(var)
 	if var < 0:
-		var =   0
+		var = 0
 	elif var > 100:
 		var = 100
 
@@ -697,7 +700,7 @@ class OpsiError(Exception):
 	ExceptionShortDescription = "Opsi error"
 	_message = None
 
-	def __init__(self, message = ''):
+	def __init__(self, message=''):
 		self._message = forceUnicode(message)
 
 	def __unicode__(self):
