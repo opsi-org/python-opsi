@@ -37,7 +37,8 @@ import time
 
 from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceHostId, forceHostIdList, forceInt,
-						forceList, forceUnicode, forceUnicodeList)
+						forceIpAddress, forceList, forceUnicode,
+						forceUnicodeList)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
