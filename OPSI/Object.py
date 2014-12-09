@@ -258,7 +258,7 @@ class BaseObject(object):
 			return False
 		if self.isGeneratedDefault() or other.isGeneratedDefault():
 			return False
-		return (self.getIdent() == other.getIdent())
+		return self.getIdent() == other.getIdent()
 
 	def __ne__(self, other):
 		return not self.__eq__(other)
