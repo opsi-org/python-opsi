@@ -39,7 +39,7 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Types import (forceBool, forceHostId, forceHostIdList, forceInt,
 						forceList, forceUnicode, forceUnicodeList)
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
