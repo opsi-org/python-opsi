@@ -32,10 +32,10 @@ import time
 import struct
 
 from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Types import BackendMissingDataError
 from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 	forceUnicode, forceUnicodeList)
-from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
 
 logger = Logger()
