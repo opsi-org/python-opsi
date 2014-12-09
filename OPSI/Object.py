@@ -484,7 +484,7 @@ class OpsiClient(Host):
 
 	def __init__(self, id, opsiHostKey=None, description=None, notes=None,
 				hardwareAddress=None, ipAddress=None, inventoryNumber=None,
-				oneTimePassword = None, created=None, lastSeen=None):
+				oneTimePassword=None, created=None, lastSeen=None):
 
 		Host.__init__(self, id, description, notes, hardwareAddress, ipAddress,
 			inventoryNumber)
@@ -1183,7 +1183,7 @@ class LocalbootProduct(Product):
 				productClassIds=None, windowsSoftwareIds=None):
 
 		Product.__init__(self, id, productVersion, packageVersion, name,
-			licenseRequired,  setupScript, uninstallScript, updateScript,
+			licenseRequired, setupScript, uninstallScript, updateScript,
 			alwaysScript, onceScript, customScript, userLoginScript, priority,
 			description, advice, changelog, productClassIds, windowsSoftwareIds)
 
