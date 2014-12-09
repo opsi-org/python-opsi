@@ -36,6 +36,7 @@ import struct
 import time
 
 from OPSI.Logger import Logger, LOG_DEBUG
+from OPSI.Types import BackendMissingDataError
 from OPSI.Types import (forceBool, forceHostId, forceHostIdList, forceInt,
 						forceIpAddress, forceList, forceUnicode,
 						forceUnicodeList)
