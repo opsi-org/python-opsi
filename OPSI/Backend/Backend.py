@@ -140,6 +140,9 @@ class DeferredCall(object):
 
 
 class Backend:
+
+	matchCache = {}
+
 	def __init__(self, **kwargs):
 		"""
 		Constructor that only accepts keyword arguments.
@@ -191,7 +194,6 @@ This defaults to ``self``.
 		"""Getting the context backend."""
 		return self._context
 
-	matchCache = {}
 	def _objectHashMatches(self, objHash, **filter):
 		"""
 		Checks if the opsi object hash matches the filter.
