@@ -50,6 +50,11 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	:type configServer: OPSI.Object.OpsiConfigserver
 	:param pathToSMBConf: The path the samba configuration.
 	:type pathToSMBConf: str
+
+
+	.. versionchanged:: 4.0.6.1
+
+	  Adding ``dynamic`` as value for ``clientconfig.depot.drive`` if missing.
 	"""
 	def runningOnUCS():
 		return 'univention' in Posix.Distribution().distributor.lower()
@@ -130,7 +135,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 				possibleValues=[
 					u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
 					u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
-					u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:'
+					u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+					u'dynamic'
 				],
 				defaultValues=[u'p:'],
 				editable=False,
@@ -254,6 +260,8 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.config_createObjects(configs)
 		LOGGER.notice('Finished setting up default values.')
 
+	addDynamicDepotDriveSelection(backend)
+
 	if not backendProvided:
 		backend.backend_exit()
 
@@ -279,3 +287,29 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 					break
 
 	return winDomain
+
+
+def addDynamicDepotDriveSelection(backend):
+	config = backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+
+	if u'dynamic' not in config.possibleValues:
+		LOGGER.debug(
+				u"Could not find possibility to select dynamic drive "
+				u"selection. Adding it to 'clientconfig.depot.drive'."
+		)
+
+		backend.config_insertObject(
+			oobject.UnicodeConfig(
+				id=u'clientconfig.depot.drive',
+				description=u'Drive letter for depot share',
+				possibleValues=[
+					u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
+					u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
+					u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+					u'dynamic'
+				],
+				defaultValues=[u'p:'],
+				editable=False,
+				multiValue=False
+			)
+		)
