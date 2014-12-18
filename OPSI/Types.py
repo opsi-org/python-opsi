@@ -469,10 +469,10 @@ def forceRequirementType(var):
 
 
 def forceObjectClass(var, objectClass):
-	import OPSI.Object
-	from OPSI.Util import fromJson
 	exception = None
 	if type(var) in (types.UnicodeType, types.StringType) and var.lstrip() and var.lstrip().startswith('{'):
+		from OPSI.Util import fromJson
+
 		try:
 			var = fromJson(var)
 		except Exception as e:
@@ -483,6 +483,7 @@ def forceObjectClass(var, objectClass):
 		if 'type' not in var:
 			raise ValueError(u"Key 'type' missing in hash '%s'" % var)
 
+		import OPSI.Object
 		try:
 			c = eval('OPSI.Object.%s' % var['type'])
 			if issubclass(c, objectClass):
