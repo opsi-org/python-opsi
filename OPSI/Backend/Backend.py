@@ -775,52 +775,59 @@ depot where the method is.
 			# Remove from groups
 			self._context.objectToGroup_deleteObjects(
 				self._context.objectToGroup_getObjects(
-					groupType = 'HostGroup',
-					objectId  = host.id ))
+					groupType='HostGroup',
+					objectId=host.id
+				)
+			)
+
 			if isinstance(host, OpsiClient):
 				# Remove product states
 				self._context.productOnClient_deleteObjects(
-					self._context.productOnClient_getObjects(
-						clientId = host.id ))
+					self._context.productOnClient_getObjects(clientId=host.id)
+				)
 			elif isinstance(host, OpsiDepotserver):
 				# This is also true for OpsiConfigservers
 				# Remove products
 				self._context.productOnDepot_deleteObjects(
-					self._context.productOnDepot_getObjects(
-						depotId = host.id ))
+					self._context.productOnDepot_getObjects(depotId=host.id)
+				)
 			# Remove product property states
 			self._context.productPropertyState_deleteObjects(
-				self._context.productPropertyState_getObjects(
-					objectId = host.id ))
+				self._context.productPropertyState_getObjects(objectId=host.id)
+			)
 			# Remove config states
 			self._context.configState_deleteObjects(
-				self._context.configState_getObjects(
-					objectId = host.id ))
+				self._context.configState_getObjects(objectId=host.id)
+			)
 
 			if isinstance(host, OpsiClient):
 				# Remove boot configurations
 				self._context.bootConfiguration_deleteObjects(
 					self._context.bootConfiguration_getObjects(
-						name     = [],
-						clientId = host.id ))
+						name=[],
+						clientId=host.id
+					)
+				)
 
 				# Remove audit softwares
 				self._context.auditSoftwareOnClient_deleteObjects(
 					self._context.auditSoftwareOnClient_getObjects(
-						clientId = host.id ))
+						clientId=host.id
+					)
+				)
 
 			# Remove audit hardwares
 			self._context.auditHardwareOnHost_deleteObjects(
-				self._context.auditHardwareOnHost_getObjects(
-					hostId = host.id ))
+				self._context.auditHardwareOnHost_getObjects(hostId=host.id)
+			)
 
 			if isinstance(host, OpsiClient):
 				# Free software licenses
 				self._context.licenseOnClient_deleteObjects(
-					self._context.licenseOnClient_getObjects(
-						clientId = host.id ))
+					self._context.licenseOnClient_getObjects(clientId=host.id)
+				)
 
-				for softwareLicense in self._context.softwareLicense_getObjects(boundToHost = host.id):
+				for softwareLicense in self._context.softwareLicense_getObjects(boundToHost=host.id):
 					softwareLicense.boundToHost = None
 					self._context.softwareLicense_insertObject(softwareLicense)
 
@@ -919,6 +926,7 @@ depot where the method is.
 					productId      = product.id,
 					productVersion = product.productVersion,
 					packageVersion = product.packageVersion ))
+
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersionsWillBeDeleted = True
 			for product in self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'], id = productId):
@@ -948,10 +956,12 @@ depot where the method is.
 		productProperty.setDefaults()
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-					id             = productProperty.productId,
-					productVersion = productProperty.productVersion,
-					packageVersion = productProperty.packageVersion):
+			if not self._context.product_getObjects(
+					attributes=['id', 'productVersion', 'packageVersion'],
+					id=productProperty.productId,
+					productVersion=productProperty.productVersion,
+					packageVersion=productProperty.packageVersion):
+
 				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
 					% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
 
@@ -977,10 +987,12 @@ depot where the method is.
 		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
 			raise BackendBadValueError(u"Either a required action or a required installation status must be given")
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-					id                = productDependency.productId,
-					productVersion    = productDependency.productVersion,
-					packageVersion    = productDependency.packageVersion):
+			if not self._context.product_getObjects(
+					attributes=['id', 'productVersion', 'packageVersion'],
+					id=productDependency.productId,
+					productVersion=productDependency.productVersion,
+					packageVersion=productDependency.packageVersion):
+
 				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
 					% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion))
 
@@ -1017,10 +1029,11 @@ depot where the method is.
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-				id = productOnDepot.productId,
-				productVersion = productOnDepot.productVersion,
-				packageVersion = productOnDepot.packageVersion):
+			if not self._context.product_getObjects(
+				attributes=['id', 'productVersion', 'packageVersion'],
+				id=productOnDepot.productId,
+				productVersion=productOnDepot.productVersion,
+				packageVersion=productOnDepot.packageVersion):
 
 				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
 					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
@@ -1071,9 +1084,11 @@ depot where the method is.
 		productPropertyState.setDefaults()
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.productProperty_getObjects(attributes = ['productId', 'propertyId'],
-						productId  = productPropertyState.productId,
-						propertyId = productPropertyState.propertyId):
+			if not self._context.productProperty_getObjects(
+				attributes=['productId', 'propertyId'],
+				productId=productPropertyState.productId,
+				propertyId=productPropertyState.propertyId):
+
 				raise BackendReferentialIntegrityError(u"ProductProperty with id '%s' for product '%s' not found"
 					% (productPropertyState.propertyId, productPropertyState.productId))
 
@@ -1170,13 +1185,13 @@ depot where the method is.
 			raise BackendBadValueError(u"License contract missing")
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.licenseContract_getObjects(attributes = ['id'], id = softwareLicense.licenseContractId):
+			if not self._context.licenseContract_getObjects(attributes=['id'], id=softwareLicense.licenseContractId):
 				raise BackendReferentialIntegrityError(u"License contract with id '%s' not found" % softwareLicense.licenseContractId)
 
 	def softwareLicense_updateObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 
-	def softwareLicense_getHashes(self, attributes = [], **filter):
+	def softwareLicense_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.softwareLicense_getObjects(attributes, **filter)]
 
 	def softwareLicense_getObjects(self, attributes=[], **filter):
@@ -1202,7 +1217,7 @@ depot where the method is.
 	def licensePool_updateObject(self, licensePool):
 		licensePool = forceObjectClass(licensePool, LicensePool)
 
-	def licensePool_getHashes(self, attributes = [], **filter):
+	def licensePool_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.licensePool_getObjects(attributes, **filter)]
 
 	def licensePool_getObjects(self, attributes=[], **filter):
@@ -1217,14 +1232,17 @@ depot where the method is.
 			if softwareLicenseToLicensePools:
 				raise BackendReferentialIntegrityError(u"Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
 					(licensePoolIds, softwareLicenseToLicensePools))
+
 			self._context.auditSoftwareToLicensePool_deleteObjects(
 				self._context.auditSoftwareToLicensePool_getObjects(
-								name          = [],
-								version       = [],
-								subVersion    = [],
-								language      = [],
-								architecture  = [],
-								licensePoolId = licensePoolIds))
+					name=[],
+					version=[],
+					subVersion=[],
+					language=[],
+					architecture=[],
+					licensePoolId=licensePoolIds
+				)
+			)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools                                                             -
@@ -1234,15 +1252,15 @@ depot where the method is.
 		softwareLicenseToLicensePool.setDefaults()
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.softwareLicense_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.softwareLicenseId):
+			if not self._context.softwareLicense_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.softwareLicenseId):
 				raise BackendReferentialIntegrityError(u"Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
-			if not self._context.licensePool_getObjects(attributes = ['id'], id = softwareLicenseToLicensePool.licensePoolId):
+			if not self._context.licensePool_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.licensePoolId):
 				raise BackendReferentialIntegrityError(u"License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
 
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 
-	def softwareLicenseToLicensePool_getHashes(self, attributes = [], **filter):
+	def softwareLicenseToLicensePool_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.softwareLicenseToLicensePool_getObjects(attributes, **filter)]
 
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):
@@ -2872,7 +2890,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 	def productOnClient_generateSequence(self, productOnClients):
 		generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
-		configs = self._context.config_getObjects(id = "product_sort_algorithm")
+		configs = self._context.config_getObjects(id="product_sort_algorithm")
 		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
@@ -3224,9 +3242,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.productPropertyState_getObjects(
-						productId  = productPropertyState.productId,
-						objectId   = productPropertyState.objectId,
-						propertyId = productPropertyState.propertyId
+						productId=productPropertyState.productId,
+						objectId=productPropertyState.objectId,
+						propertyId=productPropertyState.propertyId
 					)
 				)
 		return result
