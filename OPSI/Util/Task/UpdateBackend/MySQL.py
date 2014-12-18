@@ -28,7 +28,8 @@ Functionality to update an MySQL backend.
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Logger import Logger
 from OPSI.Types import (forceHardwareDeviceId, forceHardwareVendorId,
-						forceLicenseContractId, forceLicensePoolId)
+						forceLicenseContractId, forceSoftwareLicenseId,
+						forceLicensePoolId)
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
 logger = Logger()
