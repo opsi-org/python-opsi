@@ -465,6 +465,25 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 		logger.notice(u"Fixing DEFAULT for colum 'created' on table HOST")
 		mysql.execute(u"alter table HOST modify `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
 
+	# Changing the length of too small hostId / depotId column
+	def tableNeedsHostIDLengthFix(table, columnName="hostId"):
+		for column in mysql.getSet(u'SHOW COLUMNS FROM `{0}`;'.format(table)):
+			if column['Field'] != columnName:
+				continue
+
+			if column['Type'].lower() != "varchar(255)":
+				return True
+
+		return False
+
+	for tablename in tables.keys():
+		if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDFix(tablename, columnName="depotId")
+			logger.notice(u"Fixing length of 'depotId' column on {table}".format(tablename))
+			mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
+		elif tablename.startswith(u'HARDWARE_CONFIG') and tableNeedsHostIDFix(tablename):
+			logger.notice(u"Fixing length of 'hostId' column on {table}".format(tablename))
+			mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
+
 	mysqlBackend = MySQLBackend(**config)
 	mysqlBackend.backend_createBase()
 	mysqlBackend.backend_exit()

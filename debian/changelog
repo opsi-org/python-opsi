@@ -26,8 +26,9 @@ python-opsi (4.0.5.17-1) UNRELEASED; urgency=low
     to enable the dynamic mountpoint selection.
   * OPSI.Backend.SQL: the columns referencing hostId are now of the same size
   * New module OPSI.Util.Task.UpdateBackend.MySQL
+  * OPSI.Util.Task.UpdateBackend.MySQL: Fix too small hostId columns
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Dec 2014 11:10:16 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Dec 2014 15:09:24 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
