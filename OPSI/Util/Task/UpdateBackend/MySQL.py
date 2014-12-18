@@ -38,7 +38,6 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 						additionalBackendConfiguration={}):
 
 	config = getBackendConfiguration(backendConfigFile)
-	# config.update(backendConfig)   # TODO: fix in opsi4ucs / opsi-depotserver
 	config.update(additionalBackendConfiguration)
 	logger.info(u"Current mysql backend config: %s" % config)
 
