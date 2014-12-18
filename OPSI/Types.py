@@ -89,12 +89,12 @@ def forceUnicode(var):
 	if hasattr(var, '__unicode__'):
 		try:
 			return var.__unicode__()
-		except:
+		except Exception:
 			pass
 
 	try:
 		return unicode(var)
-	except:
+	except Exception:
 		pass
 
 	if hasattr(var, '__repr__'):
