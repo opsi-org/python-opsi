@@ -54,7 +54,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 
 	.. versionchanged:: 4.0.5.17
 
-	  Adding ``dynamic`` as value for ``clientconfig.depot.drive`` if missing.
+		Adding ``dynamic`` as value for ``clientconfig.depot.drive`` if missing.
 	"""
 	def runningOnUCS():
 		return 'univention' in Posix.Distribution().distributor.lower()
