@@ -1660,10 +1660,6 @@ class SQLBackend(ConfigDataBackend):
 			logger.warning(u"License management module disabled")
 			return
 
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 			logger.info(u"Deleting licenseContract %s" % licenseContract)
