@@ -20,16 +20,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-opsi python library - Posix
-
-Functions and classes for the use with a POSIX operating system.
+Functions to work with Windows drivers.
 
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.1'
+__version__ = '4.0.5.17'
 
 import os
 import re
@@ -149,7 +147,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			deviceId = driver.get('deviceId', '')
 			if not vendorId or not deviceId:
 				continue
-			if not driversOnMachine.has_key(vendorId):
+			if vendorId not in driversOnMachine:
 				driversOnMachine[vendorId] = []
 			driversOnMachine[vendorId].append(deviceId)
 
@@ -454,7 +452,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
 
 	byAuditIntegrated = False
-	if exists(rulesdir) and auditInfoByClass.has_key("COMPUTER_SYSTEM"):
+	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
 		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
