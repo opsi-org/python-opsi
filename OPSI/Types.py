@@ -676,8 +676,8 @@ def args(*vars, **typeVars):
 
 			for var in vars:
 				varName = var.lstrip("_")
-				if ka.has_key(varName):
-					if typeVars.has_key(var):
+				if varName in ka:
+					if var in typeVars:
 						func = typeVars[var]
 						ka[var] = func(ka[varName])
 					else:
