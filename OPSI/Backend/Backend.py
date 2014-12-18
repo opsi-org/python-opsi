@@ -240,12 +240,14 @@ This defaults to ``self``.
 								v = match.group(2)
 								if operator == '=':
 									operator = '=='
+
 							try:
 								matched = compareVersions(value, operator, v)
 								if matched:
 									break
-							except:
+							except Exception:
 								pass
+
 							continue
 
 						if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
