@@ -52,7 +52,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 	:type pathToSMBConf: str
 
 
-	.. versionchanged:: 4.0.6.1
+	.. versionchanged:: 4.0.5.17
 
 	  Adding ``dynamic`` as value for ``clientconfig.depot.drive`` if missing.
 	"""

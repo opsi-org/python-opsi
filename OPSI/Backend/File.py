@@ -27,7 +27,7 @@ This backend stores all it's data in plaintext files.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.5.17'
 
 import grp
 import os
