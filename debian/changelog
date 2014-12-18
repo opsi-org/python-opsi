@@ -27,6 +27,7 @@ python-opsi (4.0.5.17-1) UNRELEASED; urgency=low
   * OPSI.Backend.SQL: the columns referencing hostId are now of the same size
   * New module OPSI.Util.Task.UpdateBackend.MySQL
   * OPSI.Util.Task.UpdateBackend.MySQL: Fix too small hostId columns
+  * OPSI.Backend.SQL: replacing duplicate code with a simple decorator
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Dec 2014 15:09:24 +0100
 

@@ -57,6 +57,21 @@ def requiresEnabledSQLBackendModule(function, *args, **kwargs):
 	return checkedFunction
 
 
+def requiresEnabledLicenseManagementModule(function, *args, **kwargs):
+	"""
+	This decorator will only return values if the license management
+	module is enabled. If it is not enabled it will return ``None``.
+	"""
+	def checkedFunction(self, *args, **kwargs):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
+		return function(self, *args, **kwargs)
+
+	return checkedFunction
+
+
 class SQL(object):
 
 	AUTOINCREMENT = 'AUTO_INCREMENT'
@@ -1617,11 +1632,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@requiresEnabledLicenseManagementModule
 	def licenseContract_insertObject(self, licenseContract):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 
@@ -1631,21 +1643,15 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('LICENSE_CONTRACT', data)
 
+	@requiresEnabledLicenseManagementModule
 	def licenseContract_updateObject(self, licenseContract):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 		where = self._uniqueCondition(licenseContract)
 		self._sql.update('LICENSE_CONTRACT', where, data)
 
+	@requiresEnabledLicenseManagementModule
 	def licenseContract_getObjects(self, attributes=[], **filter):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
-
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseContracts, filter: %s" % filter)
 		licenseContracts = []
@@ -1655,11 +1661,8 @@ class SQLBackend(ConfigDataBackend):
 			licenseContracts.append(LicenseContract.fromHash(res))
 		return licenseContracts
 
+	@requiresEnabledLicenseManagementModule
 	def licenseContract_deleteObjects(self, licenseContracts):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 			logger.info(u"Deleting licenseContract %s" % licenseContract)
@@ -1669,11 +1672,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenses                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@requiresEnabledLicenseManagementModule
 	def softwareLicense_insertObject(self, softwareLicense):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 
@@ -1683,21 +1683,15 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('SOFTWARE_LICENSE', data)
 
+	@requiresEnabledLicenseManagementModule
 	def softwareLicense_updateObject(self, softwareLicense):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 		where = self._uniqueCondition(softwareLicense)
 		self._sql.update('SOFTWARE_LICENSE', where, data)
 
+	@requiresEnabledLicenseManagementModule
 	def softwareLicense_getObjects(self, attributes=[], **filter):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return []
-
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
 		softwareLicenses = []
@@ -1707,11 +1701,8 @@ class SQLBackend(ConfigDataBackend):
 			softwareLicenses.append(SoftwareLicense.fromHash(res))
 		return softwareLicenses
 
+	@requiresEnabledLicenseManagementModule
 	def softwareLicense_deleteObjects(self, softwareLicenses):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 			logger.info(u"Deleting softwareLicense %s" % softwareLicense)
@@ -1721,11 +1712,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@requiresEnabledLicenseManagementModule
 	def licensePool_insertObject(self, licensePool):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
@@ -1770,12 +1758,8 @@ class SQLBackend(ConfigDataBackend):
 			}
 		) for productId in productIds]
 
-
+	@requiresEnabledLicenseManagementModule
 	def licensePool_updateObject(self, licensePool):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		where = self._uniqueCondition(licensePool)
@@ -1821,11 +1805,8 @@ class SQLBackend(ConfigDataBackend):
 			licensePools.append(LicensePool.fromHash(res))
 		return licensePools
 
+	@requiresEnabledLicenseManagementModule
 	def licensePool_deleteObjects(self, licensePools):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			logger.info(u"Deleting licensePool %s" % licensePool)
@@ -1836,11 +1817,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools                                                             -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 
@@ -1850,11 +1828,8 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
 
+	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
@@ -1876,11 +1851,8 @@ class SQLBackend(ConfigDataBackend):
 				)
 		]
 
+	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			logger.info(u"Deleting softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
@@ -1890,11 +1862,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_insertObject(self, licenseOnClient):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 
@@ -1904,11 +1873,8 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('LICENSE_ON_CLIENT', data)
 
+	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_updateObject(self, licenseOnClient):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 		where = self._uniqueCondition(licenseOnClient)
@@ -1928,11 +1894,8 @@ class SQLBackend(ConfigDataBackend):
 				)
 		]
 
+	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)
