@@ -663,11 +663,11 @@ def args(*vars, **typeVars):
 			pass
 	"""
 	vars = list(vars)
-	def wrapper(cls):
 
+	def wrapper(cls):
 		def new(typ, *args, **kwargs):
 			if getattr(cls, "__base__", None) in (object, None):
-				obj = object.__new__(typ) ### Suppress deprecation warning
+				obj = object.__new__(typ)  # Suppress deprecation warning
 			else:
 				obj = cls.__base__.__new__(typ, *args, **kwargs)
 
@@ -684,13 +684,16 @@ def args(*vars, **typeVars):
 						ka[var] = ka[varName]
 				else:
 					ka[var] = None
+
 			for key, value in ka.iteritems():
 				if getattr(obj, key, None) is None:
 					setattr(obj, key, value)
+
 			return obj
 
 		cls.__new__ = staticmethod(new)
 		return cls
+
 	return wrapper
 
 
@@ -719,8 +722,10 @@ class OpsiError(Exception):
 	def message():
 		def get(self):
 			return self._message
+
 		def set(self, message):
 			self._message = forceUnicode(message)
+
 		return property(get, set)
 
 
