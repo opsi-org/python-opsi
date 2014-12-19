@@ -1380,10 +1380,8 @@ depot where the method is.
 	def auditHardware_getConfig(self, language=None):
 		if self._auditHardwareConfigFile.endswith('.json'):
 			try:
-				f = codecs.open(self._auditHardwareConfigFile, 'r', 'utf8')
-				result = json.loads(f.read())
-				f.close()
-				return result
+				with codecs.open(self._auditHardwareConfigFile, 'r', 'utf8') as f:
+					return json.loads(f.read())
 			except Exception as e:
 				logger.warning(u"Failed to read audit hardware configuration from file '%s': %s" % (self._auditHardwareConfigFile, e))
 				return []
