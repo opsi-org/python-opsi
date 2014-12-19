@@ -73,6 +73,9 @@ def updateConfigFile(backendConfigFile, newConfig, notificationFunction=None):
 on to. Defaults to logger.notice
 	:type notificationFunction: func
 	"""
+	def correctBooleans(text):
+		return text.replace("true", "True").replace("false", "False")
+
 	if notificationFunction is None:
 		notificationFunction = LOGGER.notice
 
@@ -87,7 +90,7 @@ on to. Defaults to logger.notice
 
 	with codecs.open(backendConfigFile, 'w', 'utf-8') as backendFile:
 		backendFile.writelines(lines)
-		backendConfigData = objectToBeautifiedText(newConfig).replace("true","True").replace("false","False")
+		backendConfigData = correctBooleans(objectToBeautifiedText(newConfig))
 		backendFile.write("config = %s\n" % backendConfigData)
 
 	notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
