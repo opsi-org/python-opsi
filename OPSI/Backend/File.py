@@ -408,9 +408,9 @@ class FileBackend(ConfigDataBackend):
 					objIdents.append({'id': section})
 
 		elif objType in ('OpsiClient', 'ProductOnClient'):
-			if objType in ('OpsiClient', ) and filter.get('id'):
+			if objType == 'OpsiClient' and filter.get('id'):
 				idFilter = {'id': filter['id']}
-			elif objType in ('ProductOnClient', ) and filter.get('clientId'):
+			elif objType == 'ProductOnClient' and filter.get('clientId'):
 				idFilter = {'id': filter['clientId']}
 			else:
 				idFilter = {}
