@@ -110,7 +110,7 @@ class MultiplexBackend(object):
 					logger.notice(u"Using cached service for %s" % service['url'])
 			del(kwargs['services'])
 
-		for option in kwargs.keys():
+		for option in kwargs:
 			logger.warning(u"Unknown argument '%s' passed to MultiplexBackend constructor" % option)
 
 		backendinfo = self._context.backend_info()
