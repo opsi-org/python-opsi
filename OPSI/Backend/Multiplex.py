@@ -206,8 +206,9 @@ class MultiplexBackend(object):
 					dispatcher.update(getDispatcherFromFilter(**arg))
 				else:
 					for service in self.__services.values():
-						if arg in map((lambda x: x.id), service.clients) \
-						or arg in map((lambda x: x.id), service.depots):
+						if (arg in map((lambda x: x.id), service.clients)
+							or arg in map((lambda x: x.id), service.depots):
+
 							dispatcher.add(service)
 
 			return dispatcher
@@ -405,8 +406,9 @@ class MultiplexBackend(object):
 				return self.dispatch("configState_insertObject", configState)
 
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
-		if "licensePoolId" in filter.keys() and "clientId" in filter.keys() \
-		    and filter["licensePoolId"] != [] and filter["clientId"] != []:
+		if ("licensePoolId" in filter and "clientId" in filter
+			and filter["licensePoolId"] != [] and filter["clientId"] != []):
+
 			dispatcher = set()
 			for service in self.__services.values():
 				for licensePoolId in filter["licensePoolId"]:
