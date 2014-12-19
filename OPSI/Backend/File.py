@@ -111,7 +111,7 @@ class FileBackend(ConfigDataBackend):
 		self.__clientTemplateDir = os.path.join(self.__baseDir, u'templates')
 
 		self.__defaultClientTemplateName = u'pcproto'
-		self.__defaultClientTemplatePath = os.path.join(os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + u'.ini'))
+		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, u'{0}.ini'.format(self.__defaultClientTemplateName))
 
 		self.__serverId = forceHostId(getfqdn(conf=OPSI_GLOBAL_CONF))
 		self._placeholderRegex = re.compile('^(.*)<([^>]+)>(.*)$')
