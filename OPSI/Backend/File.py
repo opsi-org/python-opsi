@@ -35,7 +35,9 @@ import pwd
 import shutil
 
 from OPSI.Logger import Logger
-from OPSI.Types import *
+from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
+						forceObjectClass, forceObjectClassList, forceProductId,
+						forceUnicode, forceUnicodeList)
 from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import *
 from OPSI.Util.File.Opsi import *
