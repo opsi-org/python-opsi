@@ -218,10 +218,11 @@ class BackendReplicator:
 					elif (objClass == 'ConfigState'):
 						filter = { 'objectId': hostIds }
 					elif (objClass == 'ObjectToGroup'):
-						objectIds = []
 						if productIds and hostIds:
-							objectIds.extend(productIds)
-							objectIds.extend(hostIds)
+							objectIds = productIds + hostIds
+						else:
+							objectIds = []
+
 						filter = { 'objectId': objectIds }
 					elif (objClass == 'LicenseOnClient'):
 						filter = { 'clientId': clientIds }
