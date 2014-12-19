@@ -28,7 +28,7 @@ backends.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0'
+__version__ = '4.0.5.17'
 
 import functools
 import sys
@@ -99,12 +99,12 @@ class MultiplexBackend(object):
 					logger.debug(u"Initializing service %s as type %s" % (service["url"], type))
 
 					s = getattr(sys.modules[__name__], "%sService" % type.lower().capitalize())
-					self.__services[service['url']] = (
-						s(	rpcQueuePollingTime = self.__rpcQueuePollingTime,
-							socketTimeout       = self.__socketTimeout,
-							connectTimeout      = self.__connectTimeout,
-							multiplexBackend    = self,
-							**service )
+					self.__services[service['url']] = s(
+						rpcQueuePollingTime=self.__rpcQueuePollingTime,
+						socketTimeout=self.__socketTimeout,
+						connectTimeout=self.__connectTimeout,
+						multiplexBackend=self,
+						**service
 					)
 				else:
 					logger.notice(u"Using cached service for %s" % service['url'])
@@ -190,7 +190,7 @@ class MultiplexBackend(object):
 			func = functools.partial(self.dispatch, name)
 			setattr(self, name, func)
 			return func
-		raise AttributeError(u"No service implements method %s." %name)
+		raise AttributeError(u"No service implements method %s." % name)
 
 	def _getDispatcher(self, *args, **kwargs):
 		def getDispatcherFromFilter(*args, **kwargs):
@@ -199,7 +199,7 @@ class MultiplexBackend(object):
 			args.extend(kwargs.values())
 			for arg in args:
 				if isinstance(arg, BaseObject):
-					dispatcher.update(getDispatcherFromFilter(*arg.getIdent(returnType = 'list')))
+					dispatcher.update(getDispatcherFromFilter(*arg.getIdent(returnType='list')))
 				elif isinstance(arg, list):
 					dispatcher.update(getDispatcherFromFilter(*arg))
 				elif isinstance(arg, dict):
@@ -209,19 +209,21 @@ class MultiplexBackend(object):
 						if arg in map((lambda x: x.id), service.clients) \
 						or arg in map((lambda x: x.id), service.depots):
 							dispatcher.add(service)
+
 			return dispatcher
 
 		dispatcher = getDispatcherFromFilter(*args, **kwargs)
 		if not len(dispatcher):
 			dispatcher = self.__services.values()
 
-		logger.debug2(u"Got dispatcher %s for args %s and kwargs %s." %(dispatcher, args, kwargs))
+		logger.debug2(u"Got dispatcher %s for args %s and kwargs %s." % (dispatcher, args, kwargs))
 		return dispatcher
 
 	def dispatch(self, methodName, *args, **kwargs):
 		logger.debug2(u"Dispatching %s with args %s and kwargs %s" % (methodName, args, kwargs))
 		results = []
 		calls = 0
+
 		def pushResult(jsonrpc, results):
 			results.append((not jsonrpc.error, jsonrpc.result, jsonrpc.error))
 
@@ -245,7 +247,7 @@ class MultiplexBackend(object):
 					res.setCallback(pushResult, results)
 				else:
 					results.append((True, res, None))
-				calls +=1
+				calls += 1
 				# Wait a little bit to avoid that all calls will start at once
 				time.sleep(self.__timeBetweenCalls)
 			if self.__maxConcurrentCalls:
@@ -263,7 +265,7 @@ class MultiplexBackend(object):
 		errors = []
 		for (success, result, error) in results:
 			if success:
-				if   type(r) is list:
+				if type(r) is list:
 					r.extend(forceList(result))
 				elif type(r) is dict:
 					r.update(forceDict(result))
@@ -297,22 +299,24 @@ class MultiplexBackend(object):
 				if service.isConnected():
 					if service.isMasterService:
 						return service.backend_getInterface()
+
 			if self.__services.values()[0].isConnected():
 				return self.__services.values()[0].backend_getInterface()
+
 		raise AttributeError(u"Could not determine the interface of any service.")
 
 	def configState_insertObject(self, configState):
-		self._configState_insertOrupdateObject(configState, isUpdate = False)
+		self._configState_insertOrupdateObject(configState, isUpdate=False)
 
 	def configState_updateObject(self, configState):
-		self._configState_insertOrupdateObject(configState, isUpdate = True)
+		self._configState_insertOrupdateObject(configState, isUpdate=True)
 
 	def _configState_insertOrupdateObject(self, configState, isUpdate=False):
 		if (configState.configId == u"clientconfig.depot.id"):
 			for service in self.__services.values():
 				dispatcher = self._getDispatcher(configState.values).pop()
 				if "OpsiClient.%s" % configState.objectId in self._buffer:
-					logger.notice(u"Creating client %s from buffer on depot %s" % (configState.objectId,dispatcher.url ))
+					logger.notice(u"Creating client %s from buffer on depot %s" % (configState.objectId, dispatcher.url))
 					dispatcher.host_insertObject(self._buffer["OpsiClient.%s" % configState.objectId])
 					del(self._buffer["OpsiClient.%s" % configState.objectId])
 					dispatcher.configState_updateObjects(configState)
@@ -329,19 +333,19 @@ class MultiplexBackend(object):
 					try:
 						logger.notice(u"Moving client from %s to %s" %(source.url, dispatcher.url))
 
-						clients = source.host_getObjects(type = 'OpsiClient', id = configState.objectId)
+						clients = source.host_getObjects(type='OpsiClient', id=configState.objectId)
 						dispatcher.host_insertObject(clients[0])
 
-						otgs = source.objectToGroup_getObjects(groupType = 'HostGroup', objectId = configState.objectId)
-						groups = source.group_getObjects(id = [otg.groupId for otg in otgs])
+						otgs = source.objectToGroup_getObjects(groupType='HostGroup', objectId=configState.objectId)
+						groups = source.group_getObjects(id=[otg.groupId for otg in otgs])
 						if otgs:
 							dispatcher.objectToGroup_createObjects(otgs)
 
-						pocs = source.productOnClient_getObjects(clientId = configState.objectId)
+						pocs = source.productOnClient_getObjects(clientId=configState.objectId)
 						if pocs:
 							dispatcher.productOnClient_createObjects(poc)
 
-						pps = source.productPropertyState_getObjects(objectId = configState.objectId)
+						pps = source.productPropertyState_getObjects(objectId=configState.objectId)
 						if pps:
 							dispatcher.productPropertyState_createObjects(pps)
 
@@ -354,18 +358,18 @@ class MultiplexBackend(object):
 						if css:
 							dispatcher.configState_createObjects(css)
 
-						asoc = source.auditSoftwareOnClient_getObjects(clientId = configState.objectId)
+						asoc = source.auditSoftwareOnClient_getObjects(clientId=configState.objectId)
 						if asoc:
 							try:
 								dispatcher.auditSoftwareOnClient_createObjects(asoc)
 							except Exception as e:
 								logger.error(u"Failed do create auditSoftwareOnClients: %s" % e)
 
-						ahoc = source.auditHardwareOnHost_getObjects(clientId = configState.objectId)
+						ahoc = source.auditHardwareOnHost_getObjects(clientId=configState.objectId)
 						if ahoc:
 							dispatcher.auditHardwareOnHost_createObjects(ahoc)
 
-						softwareLicenses = source.softwareLicense_getObjects(boundToHost = configState.objectId)
+						softwareLicenses = source.softwareLicense_getObjects(boundToHost=configState.objectId)
 						if softwareLicenses:
 							for license in softwareLicenses:
 								license.setBoundToHost(None)
@@ -375,7 +379,7 @@ class MultiplexBackend(object):
 
 						dispatcher.refresh()
 						try:
-							if configState.objectId in map((lambda x:x.id), dispatcher.clients):
+							if configState.objectId in map((lambda x: x.id), dispatcher.clients):
 								logger.notice(u"Client successfully moved to %s" % dispatcher.url)
 								source.host_deleteObjects(clients[0])
 								if pocs:
@@ -384,7 +388,7 @@ class MultiplexBackend(object):
 									source.auditSoftwareOnClient_deleteObjects(asoc)
 								if ahoc:
 									source.auditHardwareOnHost_deleteObjects(ahoc)
-								source.licenseOnClient_deleteObjects(source.licenseOnClient_getObjects(clientId = configState.objectId))
+								source.licenseOnClient_deleteObjects(source.licenseOnClient_getObjects(clientId=configState.objectId))
 								if softwareLicenses:
 									source.softwareLicense_deleteObjects(softwareLicenses)
 								source.refresh()
