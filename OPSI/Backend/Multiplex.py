@@ -236,7 +236,7 @@ class MultiplexBackend(object):
 				meth = getattr(service, methodName)
 				serviceKwargs = dict(kwargs)
 				for attribute in ('id', 'objectId', 'hostId', 'depotId', 'clientId'):
-					if serviceKwargs.has_key(attribute):
+					if attribute in serviceKwargs:
 						objectIds = [objectId for objectId in
 							forceUnicodeList(serviceKwargs[attribute])
 							if objectId in map((lambda x: x.id), service.clients) or objectId in map((lambda x: x.id), service.depots)]
