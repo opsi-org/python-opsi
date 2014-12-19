@@ -271,7 +271,7 @@ class MultiplexBackend(object):
 				elif type(r) is dict:
 					r.update(forceDict(result))
 				elif type(r) in (str, unicode):
-					r = ''.join((forceUnicode(r), forceUnicode(result))
+					r = ''.join((forceUnicode(r), forceUnicode(result)))
 				elif not r:
 					r = result
 			else:
