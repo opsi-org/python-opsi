@@ -32,18 +32,20 @@ __version__ = '4.0.5.17'
 import grp
 import os
 import pwd
+import re
 import shutil
 
+from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
 from OPSI.Logger import Logger
 from OPSI.Types import BackendIOError
 from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
 						forceObjectClass, forceObjectClassList, forceProductId,
 						forceUnicode, forceUnicodeList)
 from OPSI.Util import toJson, fromJson, getfqdn
-from OPSI.Util.File import *
+from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
-from OPSI.Object import *
-from OPSI.Backend.Backend import OPSI_GLOBAL_CONF, ConfigDataBackend
+from OPSI.Object import *  # needed for calls to "eval"
+
 
 
 logger = Logger()
