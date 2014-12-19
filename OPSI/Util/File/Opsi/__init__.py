@@ -1484,7 +1484,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 					os.remove(name)
 
 	def hasLDAPBackend(self):
-		#TODO: Implement this when LDAP is supported
+		#TODO: LDAP-Backend will not be supported in future version. Mark deprecated.
 		return False
 
 	def backupLDAPBackend(self):

@@ -163,7 +163,6 @@ chmod 660 /etc/opsi/passwd
 %config(noreplace) /etc/opsi/backends/file.conf
 %config(noreplace) /etc/opsi/backends/hostcontrol.conf
 %config(noreplace) /etc/opsi/backends/jsonrpc.conf
-%config(noreplace) /etc/opsi/backends/ldap.conf
 %config(noreplace) /etc/opsi/backends/mysql.conf
 %config(noreplace) /etc/opsi/backends/multiplex.conf
 %config(noreplace) /etc/opsi/backends/opsipxeconfd.conf
@@ -176,8 +175,6 @@ chmod 660 /etc/opsi/passwd
 %config /etc/opsi/hwaudit/opsihwaudit.conf
 %config /etc/opsi/hwaudit/locales/de_DE
 %config /etc/opsi/hwaudit/locales/en_US
-%config /etc/openldap/schema/opsi.schema
-%config /etc/openldap/schema/opsi-standalone.schema
 
 # other files
 #/usr/share/locale/de/LC_MESSAGES/opsi_system.mo
@@ -200,7 +197,6 @@ chmod 660 /etc/opsi/passwd
 #%dir /etc/opsi/backendManager/extend.d/configed
 #%dir /etc/opsi/backends
 #%dir /etc/opsi/hwaudit/locales
-#%dir /etc/ldap/schema
 
 %if 0%{?rhel_version} || 0%{?centos_version} || 0%{?fedora_version}
 %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib()')

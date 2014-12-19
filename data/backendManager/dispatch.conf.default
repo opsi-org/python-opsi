@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-# =      backend dispatch configuration                                                                         =
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = =
+# =      backend dispatch configuration       =
+# = = = = = = = = = = = = = = = = = = = = = = =
 #
 # This file configures which methods are dispatched to which backends.
 # Entries has to follow the form:
@@ -22,15 +22,15 @@
 #       backend_.*         : jsonrpc, opsipxeconfd, dhcpd
 #       .*                 : jsonrpc
 #
-#    ldap as main backend, mysql as hw/sw invent and license management backend, opsipxeconfd and dhcpd backend:
-#       backend_.*         : ldap, mysql, opsipxeconfd, dhcpd
-#       host_.*            : ldap, opsipxeconfd, dhcpd
-#       productOnClient_.* : ldap, opsipxeconfd
-#       configState_.*     : ldap, opsipxeconfd
+#    file as main backend, mysql as hw/sw invent and license management backend, opsipxeconfd and dhcpd backend:
+#       backend_.*         : file, mysql, opsipxeconfd, dhcpd
+#       host_.*            : file, opsipxeconfd, dhcpd
+#       productOnClient_.* : file, opsipxeconfd
+#       configState_.*     : file, opsipxeconfd
 #       license.*          : mysql
 #       softwareLicense.*  : mysql
 #       audit.*            : mysql
-#       .*                 : ldap
+#       .*                 : file
 #
 
 backend_.*         : file, opsipxeconfd

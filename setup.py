@@ -98,22 +98,6 @@ data_files = [
 	)
 ]
 
-if bool(os.getenv("RPM_BUILD_ROOT")):
-	data_files.append(
-		(
-			'/etc/openldap/schema/', ['data/opsi.schema', 'data/opsi-standalone.schema'])
-	)
-else:
-	data_files.append(
-		(
-			'/etc/ldap/schema/',
-			[
-				'data/opsi.schema',
-				'data/opsi-standalone.schema'
-			]
-		)
-	)
-
 for language in LANGUAGES:
 	languageFile = os.path.join('gettext', 'python-opsi_{0}.po'.format(language))
 	if not os.path.exists(languageFile):
