@@ -207,7 +207,7 @@ class MultiplexBackend(object):
 				else:
 					for service in self.__services.values():
 						if (arg in map((lambda x: x.id), service.clients)
-							or arg in map((lambda x: x.id), service.depots):
+							or arg in map((lambda x: x.id), service.depots)):
 
 							dispatcher.add(service)
 
