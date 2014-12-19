@@ -35,6 +35,7 @@ import pwd
 import shutil
 
 from OPSI.Logger import Logger
+from OPSI.Types import BackendIOError
 from OPSI.Types import (forceBool, forceHostId, forceFilename, forceList,
 						forceObjectClass, forceObjectClassList, forceProductId,
 						forceUnicode, forceUnicodeList)
