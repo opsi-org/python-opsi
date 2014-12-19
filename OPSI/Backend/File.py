@@ -1118,12 +1118,7 @@ class FileBackend(ConfigDataBackend):
 			iniFile.generate(cp)
 
 		elif objType == 'ConfigState':
-			filenames = []
-			for obj in objList:
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'ini')
-				if not filename in filenames:
-					filenames.append(filename)
+			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType='dict'), 'ini') for obj in objList)
 
 			for filename in filenames:
 				iniFile = IniFile(filename=filename, ignoreCase=False)
@@ -1149,12 +1144,7 @@ class FileBackend(ConfigDataBackend):
 					logger.debug2(u"Removed file '%s'" % filename)
 
 		elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-			filenames = []
-			for obj in objList:
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'pro')
-				if not filename in filenames:
-					filenames.append(filename)
+			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType='dict'), 'pro') for obj in objList)
 
 			for filename in filenames:
 				packageControlFile = PackageControlFile(filename=filename)
@@ -1184,19 +1174,7 @@ class FileBackend(ConfigDataBackend):
 				packageControlFile.generate()
 
 		elif objType in ('ProductOnDepot', 'ProductOnClient'):
-			filenames = []
-			for obj in objList:
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'ini')
-
-				inFilenames = False
-				for f in filenames:
-					if filename == f:
-						inFilenames = True
-						break
-
-				if not inFilenames:
-					filenames.append(filename)
+			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType='dict'), 'ini') for obj in objList)
 
 			for filename in filenames:
 				iniFile = IniFile(filename=filename, ignoreCase=False)
