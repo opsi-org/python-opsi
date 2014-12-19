@@ -155,7 +155,7 @@ class MultiplexBackend(object):
 		self.connect()
 
 	def _getDepotIds(self):
-		return [service.split("/")[2].split(":")[0]) for service in self.__services.keys()]
+		return [service.split("/")[2].split(":")[0] for service in self.__services.keys()]
 
 	def _getOpsiHostKey(self, depotId):
 		for name, service in self.__services.iteritems():
