@@ -295,11 +295,10 @@ class MultiplexBackend(object):
 				return deferredCall.waitForResult()
 
 	def backend_getInterface(self):
-		if len(self.__services.values()):
+		if self.__services:
 			for service in self.__services.values():
-				if service.isConnected():
-					if service.isMasterService:
-						return service.backend_getInterface()
+				if service.isConnected() and service.isMasterService:
+					return service.backend_getInterface()
 
 			if self.__services.values()[0].isConnected():
 				return self.__services.values()[0].backend_getInterface()
