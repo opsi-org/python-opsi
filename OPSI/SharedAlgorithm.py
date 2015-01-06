@@ -8,7 +8,7 @@
    This module is part of the desktop management solution opsi
    (open pc server integration) http://www.opsi.org
 
-   Copyright (C) 2010 uib GmbH
+   Copyright (C) 2010-2014 uib GmbH
 
    http://www.uib.de/
 
@@ -28,7 +28,7 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
    @copyright:	uib GmbH <info@uib.de>
-   @author: Jan Schneider <j.schneider@uib.de>
+   @author: Jan Schneider <j.schneider@uib.de>, Rupert Röder <r.roeder@uib.de>
    @license: GNU General Public License version 2
 """
 
@@ -42,6 +42,13 @@ from OPSI.Types import forceInt, forceBool
 
 # Get logger instance
 logger = Logger()
+TESTTHIS=True
+def_debugprint=\
+u'''
+def debugprint(s):
+	if TESTTHIS:
+		print(s)
+'''
 
 def_addActionRequest = \
 u'''
@@ -72,6 +79,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		if productOnClientByProductId.has_key(dependency.requiredProductId):
 			installationStatus = productOnClientByProductId[dependency.requiredProductId].installationStatus
 			actionRequest      = productOnClientByProductId[dependency.requiredProductId].actionRequest
+		logger.debug(u"addActionRequest: requiredAction %s " % requiredAction)
 		if not requiredAction:
 			if   (dependency.requiredInstallationStatus == installationStatus):
 				logger.debug(u"   required installation status '%s' is fulfilled" % dependency.requiredInstallationStatus)
@@ -155,112 +163,17 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 	for productOnClient in productOnClients:
 		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
 			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
+		#debugprint (u"%s " % productOnClient)
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
+		#debugprint (u"%s " % 	productOnClientsByClientIdAndProductId)
 
 	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
-		logger.debug(u"Adding dependend productOnClients for client '%s'" % clientId)
+		logger.debug(u"Adding dependent productOnClients for client '%s'" % clientId)
 
 		addedInfo = {}
 		for productId in productOnClientByProductId.keys():
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 	return productOnClientByProductId.values()
-'''
-
-def_generateProductOnClientSequence_algorithm1 = \
-u'''
-def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
-	productDependenciesByProductId = {}
-	for productDependency in productDependencies:
-		if not productDependenciesByProductId.has_key(productDependency.productId):
-			productDependenciesByProductId[productDependency.productId] = []
-		productDependenciesByProductId[productDependency.productId].append(productDependency)
-
-	productOnClientsByClientIdAndProductId = {}
-	for productOnClient in productOnClients:
-		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
-			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
-		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
-
-	logger.debug(u"Sorting available products by priority")
-	priorityToProductIds = {}
-	availableProductsByProductId = {}
-	for availableProduct in availableProducts:
-		# add id to collection
-		availableProductsByProductId[availableProduct.id] = availableProduct
-		# if necessary initialize priorityToProductIds [priority]
-		if not priorityToProductIds.has_key(availableProduct.priority):
-			priorityToProductIds[availableProduct.priority] = []
-		# set id as value for priorityToProductIds [priority]
-		priorityToProductIds[availableProduct.priority].append(availableProduct.id)
-
-	priorities = priorityToProductIds.keys()
-	priorities.sort()
-	priorities.reverse()
-
-	productSequence = []
-	for priority in priorities:
-		productSequence.extend(priorityToProductIds[priority])
-
-	logger.debug2(u"Sequence of available products after priority sorting:")
-	for i in range(len(productSequence)):
-		logger.debug2(u"   [%2.0f] %s" % (i, productSequence[i]))
-
-	sortedProductOnClients = []
-
-	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
-		logger.debug(u"Sorting available products by dependency for client '%s'" % clientId)
-		sequence = []
-		for productId in productSequence:
-			if productId in productOnClientByProductId.keys():
-				sequence.append(productId)
-
-		run = 0
-		sequenceChanged = True
-		while sequenceChanged:
-			if (run > 5):
-				raise BackendUnaccomplishableError(u"Cannot resolve sequence for products %s after %d runs" \
-					% (productOnClientByProductId.keys(), run))
-			run += 1
-			sequenceChanged = False
-			for productId in productOnClientByProductId.keys():
-				if (productOnClientByProductId[productId].actionRequest == 'none') or not productDependenciesByProductId.get(productId):
-					continue
-
-				requiredProductId = None
-				requirementType = None
-				for dependency in productDependenciesByProductId[productId]:
-					if not productOnClientByProductId.get(dependency.requiredProductId):
-						continue
-					if (dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest):
-						continue
-
-					requiredProductId = dependency.requiredProductId
-					requirementType = dependency.requirementType
-
-					if not requirementType in ('before', 'after'):
-						continue
-
-					ppos = sequence.index(productId)
-					dpos = sequence.index(requiredProductId)
-					if (requirementType == 'before') and (ppos < dpos):
-						logger.info("%s requires %s before, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, requiredProductId, productId))
-						sequence.remove(requiredProductId)
-						sequence.insert(ppos, requiredProductId)
-						sequenceChanged = True
-					elif (requirementType == 'after') and (dpos < ppos):
-						logger.info("%s requires %s after, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, productId, requiredProductId))
-						sequence.remove(productId)
-						sequence.insert(dpos, productId)
-						sequenceChanged = True
-					else:
-						logger.debug("%s requires %s %s => no sequence change required." % (productId, requiredProductId, requirementType))
-		logger.debug2(u"Sequence of available products after dependency sorting (client %s):" % clientId)
-		for i in range(len(sequence)):
-			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))
-			productOnClient = productOnClientByProductId[sequence[i]]
-			productOnClient.setActionSequence(i+1)
-			sortedProductOnClients.append(productOnClient)
-	return sortedProductOnClients
 '''
 
 class_OrderRequirement = \
@@ -294,7 +207,7 @@ class Requirements:
 		self.orderByPosterior=[]
 
 	def add(self, requirement):
-		assert isinstance(requirement, OrderRequirement)
+		assert isinstance(requirement, OrderRequirement), "not an OrderRequirement"
 		self.list.append(requirement)
 		# Extend the other lists by dummy valuesnoInListOrderedByPriors
 		self.orderByPrior.append(-1)
@@ -421,7 +334,7 @@ class Requirements:
 			noInListOrderedByPriors = j
 			return (candidate, noInListOrderedByPriors)
 
-		logger.error(errorS0)
+		logger.error(errorS0 + u'  (raise error)')
 		raise OpsiProductOrderingError(errorS0)
 
 
@@ -443,12 +356,14 @@ u'''
 class OrderBuild:
 	# Describes the building of an ordering
 
-	def __init__(self,elementCount, requs):
+	def __init__(self,elementCount, requs, completing):
 		self.ordering = []
 		self.elementCount = elementCount
+		self.completing = completing
 		self.errorFound = False
 		self.allFulfilled = False
-		assert isinstance(requs, Requirements)
+		#logger.debug(u"requs is Requirements:  %s is really %s " %(requs, Requirements))
+		assert isinstance(requs, Requirements), "not Requirements"
 		self.requs = requs
 		self.indexIsAmongPosteriors = []
 		j = 0
@@ -461,14 +376,17 @@ class OrderBuild:
 			self.indexUsed.append(False)
 			j += 1
 		self.usedCount = 0
+		logger.debug(u"OrderBuild initialized")
 
 	def proceed(self):
 		result = True
 		lastSortedCount = 0
+		#logger.debug(u"proceed usedCount, elementCount %s, %s " % (self.usedCount, self.elementCount))
 		if (self.usedCount >= self.elementCount):
 			return result
 
 		indexRequToFulfill = self.requs.indexOfFirstNotFulfilledRequirementOrderedByPrior()
+		#logger.debug(u"proceed indexRequToFulfill %s " % indexRequToFulfill)
 		if (indexRequToFulfill == -1):
 			self.allFulfilled = True
 			# Get the posteriors that did not occur as priors
@@ -481,33 +399,34 @@ class OrderBuild:
 				j += 1
 			lastSortedCount = self.usedCount
 
-			# Take rest from list
-			j = 0
-			while (j < self.elementCount):
-				if not self.indexUsed[j]:
-					self.ordering.append(j)
-					self.indexUsed[j] = True
-					self.usedCount = self.usedCount + 1
-				j += 1
+			if self.completing:
+				# Take rest from list
+				j = 0
+				while (j < self.elementCount):
+					if not self.indexUsed[j]:
+						self.ordering.append(j)
+						self.indexUsed[j] = True
+						self.usedCount = self.usedCount + 1
+					j += 1
 
-			# Move the sorted items to the end of the list
-			if (lastSortedCount > 0):
-				newordering = []
-				k = 0
-				while (k < self.elementCount):
-					newordering.append(k)
-					k += 1
+				# Move the sorted items to the end of the list
+				if (lastSortedCount > 0):
+					newordering = []
+					k = 0
+					while (k < self.elementCount):
+						newordering.append(k)
+						k += 1
 
-				# Rearrange not sorted elements
-				for k in range(self.elementCount - lastSortedCount):
-					newordering[k] = self.ordering[lastSortedCount + k]
+					# Rearrange not sorted elements
+					for k in range(self.elementCount - lastSortedCount):
+						newordering[k] = self.ordering[lastSortedCount + k]
 
-				# Sorted elements
-				for k in range(lastSortedCount):
-					newordering[self.elementCount - lastSortedCount + k] = self.ordering[k]
+					# Sorted elements
+					for k in range(lastSortedCount):
+						newordering[self.elementCount - lastSortedCount + k] = self.ordering[k]
 
-				# Put back
-				self.ordering = newordering
+					# Put back
+					self.ordering = newordering
 		else:
 			# At indexRequToFulfill we found a not fulfilled requirement, lets try to fulfill a requirement
 			# look only at not fulfilled reqirements
@@ -515,11 +434,17 @@ class OrderBuild:
 			# take it as newEntry for the ordered list
 			# Automatically any requirement is fulfilled where newEntry is the prior; do the markings
 
+
+
 			(newEntry, requNoInListOrderedByPriors) = self.requs.firstPriorNotOccurringAsPosterior(indexRequToFulfill)
+
+			#logger.debug(u"proceed newEntry %s " % newEntry)
+
 			if (newEntry == -1):
 				result = False
 			else:
 				self.ordering.append(newEntry)
+				#logger.debug(u"proceed appended newEntry %s " % newEntry)
 				#self.ordering[self.usedCount] = newEntry
 				self.usedCount = self.usedCount + 1
 				# Mark all requirements with candidate in prior position as fulfilled and collect the posteriors
@@ -527,22 +452,264 @@ class OrderBuild:
 				orderByPrior = self.requs.getOrderByPrior()
 				requK = self.requs.getRequList()[orderByPrior[k]]
 				while (k < self.requs.getCount()) and (newEntry == requK.prior):
+					#logger.debug(u"proceed k %s " % k)
 					requK.fulfilled = True
+					#logger.debug(u"proceed requK %s " % requK)
+					#logger.debug(u"proceed  indexIsAmongPosteriors %s " % self.indexIsAmongPosteriors)
 					self.indexIsAmongPosteriors[ requK.posterior ] = True
 					k += 1
+					#logger.debug(u"proceed k %s " % k)
 					if (k < self.requs.getCount()):
 						requK = self.requs.getRequList()[orderByPrior[k]]
 				self.indexUsed[newEntry] = True
+
+			logger.debug(u"proceed newEntry %s " % newEntry)
+
+		logger.debug(u"proceed result %s " % result)
 		return result
 
 	def getOrdering(self):
 		return self.ordering
 '''
 
-def_generateProductOnClientSequence_algorithm2 = \
+def_generateProductOnClientSequence=\
 '''
-def generateProductOnClientSequence_algorithm2(productOnClients, availableProducts, productDependencies):
+def generateProductOnClientSequence(productOnClients, sortedList):
+	productOnClientsByClientIdAndProductId = {}
+	for productOnClient in productOnClients:
+		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
+			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
+		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
+
+	productOnClients = []
+	for (clientId, productOnClientsByProductId) in productOnClientsByClientIdAndProductId.items():
+		sequence = 0
+		#logger.debug(u"sortedList %s " % sortedList)
+		for productId in sortedList:
+			#logger.debug(u"handle product %s for client %s  " %(productId, clientId))
+			if productOnClientsByProductId.has_key(productId):
+				productOnClientsByProductId[productId].actionSequence = sequence
+				productOnClients.append(productOnClientsByProductId[productId])
+				del productOnClientsByProductId[productId]
+				sequence += 1
+		#logger.debug(u"sortedList %s " % sortedList)
+		if sortedList:
+			logger.debug(u"handle remaining if existing  " )
+			for productId in productOnClientsByProductId.keys():
+				#logger.debug(u"handle product %s for client %s  " %(productId, clientId) )
+				productOnClientsByProductId[productId].actionSequence = sequence
+				productOnClients.append(productOnClientsByProductId[productId])
+				sequence += 1
+	return productOnClients
+'''
+
+def_generateProductSequence_algorithm1 = \
+'''
+def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	# Build priority classes and indices
+	logger.debug(u"*********running algorithm1")
+	debugprint("******* running algorithm1 ***")
+	logger.debug(u"availableProducts %s " % availableProducts )
+
+	productIds = []
+	productIndex = {}
+
+	priorityClasses = {}
+
+	productById = {}
+	for product in availableProducts:
+		productIds.append(product.id)
+		productById[product.id] = product
+		productIndex[product.id] = len(productIds)-1
+
+		prio = str(0)
+		if product.priority:
+			prio = str(product.priority)
+		if not priorityClasses.has_key(prio):
+			priorityClasses[prio] = []
+		priorityClasses[prio] .append(product.id)
+
+
+	logger.debug(u"productById %s " % productById)
+	logger.debug(u"productIndex %s " % productIndex)
+	logger.debug(u"priorityClasses %s " % priorityClasses)
+
+	# Requirements are list of pairs (installproduct_prior, installrproduct_posterior)
+	# We treat only setup requirements
+	setupRequirements = []
+
+	#requirements are list of pairs (index_prior, index_posterior)
+	requirements = []
+
+	for dependency in productDependencies:
+		if (dependency.productAction != u"setup"):
+			continue
+		if (dependency.requiredInstallationStatus != u"installed") and (dependency.requiredAction != u"setup"):
+			continue
+		if (dependency.requirementType == u"before"):
+			setupRequirements.append([ dependency.requiredProductId, dependency.productId ])
+		elif (dependency.requirementType == u"after"):
+			setupRequirements.append([ dependency.productId, dependency.requiredProductId ])
+
+
+	for requ in setupRequirements:
+		prod1 = requ[0]
+		prod2 = requ[1]
+
+		logger.debug(u"requ %s" % requ)
+		if not productById.has_key(prod1):
+			logger.warning(u"Product %s is requested but not available" %  prod1)
+			continue
+		prio1 = productById[prod1].priority
+		if not prio1:
+			prio1 = 0
+
+
+		if not productById.has_key(prod2):
+			logger.warning(u"Product %s is requested but not available" %  prod2)
+			continue
+		prio2 = productById[prod2].priority
+		if not prio2:
+			prio2 = 0
+
+
+		requirements.append([productIndex[prod1],productIndex[prod2]])
+
+	logger.debug(u"requirements %s " % requirements)
+
+	prioRange = []
+	for r in range(201):
+		prioRange.append(100 - r)
+
+	foundClasses = []
+	sortedList = []
+	try:
+		requs = requirements
+
+		logger.debug(u"requs %s " % requs)
+
+		requObjects = []
+
+		requObjects = Requirements(len(requirements))
+		for item in requs:
+			requObj = OrderRequirement(item[0], item[1], False)
+			logger.debug(u"requObj %s " % requObj)
+			requObjects.add(requObj)
+
+		#logger.debug(u"requObjects %s " % requObjects)
+
+		ob = OrderBuild(len(availableProducts), requObjects, False)
+		try:
+			for k in range(len(availableProducts)):
+				ob.proceed()
+				logger.debug(u"ordering '%s' " % ob.getOrdering())
+
+		except OpsiProductOrderingError as e:
+			logger.warning(u"algo1 catched OpsiProductOrderingError")
+			for i in range(len(availableProducts)):
+				logger.warning(u" product %s %s " % (i, availableProducts[i].getId()))
+			raise e
+
+		ordering = ob.getOrdering()
+		logger.debug(u"completed ordering '%s' " % ordering)
+
+
+		for idx in ordering:
+			sortedList.append(productIds[idx])
+
+		logger.debug(u"sortedList algo1 '%s' " % sortedList)
+
+	except OpsiProductOrderingError as e:
+		logger.warning(u"algo1 outer catched OpsiProductOrderingError")
+		sortedList = []
+
+
+	mixedSortedList = []
+	logger.debug(u"+++++++++show sorted list %s " % sortedList)
+
+	shrinkingSortedList = []
+	for element in sortedList:
+		shrinkingSortedList.append(element)
+
+	prioClassStart = 100
+
+	while len(shrinkingSortedList) > 0:
+
+		prioClassHead = -100
+
+		productHeading = None
+		for productId in shrinkingSortedList:
+			logger.debug(u"product %s " %productId)
+			prioClass = productById[productId].priority
+			if prioClass >= prioClassHead :
+				prioClassHead = prioClass
+				productHeading = productId
+
+			logger.debug(u"product %s has priority class %s, prioClassHead now  %s " %(productId, prioClass, prioClassHead))
+
+
+		#get all products with priority class <= prioClassHead
+
+		prioList = range(0, prioClassStart - prioClassHead)
+		for p in prioList:
+			q = prioClassStart - p
+			#logger.debug(u" prio %s " % (q))
+			qs = str(q)
+			if priorityClasses.has_key(qs):
+				for productId in priorityClasses[qs]:
+					logger.debug(u"append to mixed list %s " %productId)
+					if productId not in mixedSortedList:
+						mixedSortedList.append(productId)
+		logger.debug(u"mixed list %s " % mixedSortedList)
+		logger.debug(u"sorted list was %s " % shrinkingSortedList)
+		qs = str(prioClassHead)
+		logger.debug(u"mix to this the elements of prio class  %s, i.e. %s " % (qs, priorityClasses[qs] ))
+		for productId in priorityClasses[qs]:
+			if productId not in shrinkingSortedList:
+				mixedSortedList.append(productId)
+		logger.debug(u"mixed list, added elements not in sorted list %s " % mixedSortedList)
+		logger.debug(u"add elements from sorted list up to productHeading %s " % productHeading)
+
+		while len(shrinkingSortedList) >= 1:
+			productId = shrinkingSortedList[0]
+			logger.debug(u"add element %s  from %s "  %(productId, shrinkingSortedList) )
+			mixedSortedList.append(productId)
+			shrinkingSortedList.remove(productId)
+			if productId == productHeading:
+				break
+		logger.debug(u"+++++++++++mixed list with elements of sorted List %s " % mixedSortedList)
+
+		prioClassStart = prioClassHead-1
+		logger.debug(u"new prioClassStart %s " % prioClassStart)
+
+
+
+	logger.debug(u"++++++++")
+	logger.debug(u"++  sortedList %s " % sortedList)
+	logger.debug(u"++ mixedSortedList %s " % mixedSortedList)
+
+	return mixedSortedList
+'''
+
+
+def_generateProductOnClientSequence_algorithm1 = \
+'''
+def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
+	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+	return productOnClients
+'''
+
+
+def_generateProductSequence_algorithm2 = \
+'''
+def generateProductSequence_algorithm2(availableProducts, productDependencies):
+	# Build priority classes and indices
+
+	logger.debug(u"*********running algorithm2")
+	debugprint("******* running algorithm2")
+	logger.debug(u"availableProducts %s " % availableProducts )
+
 	productIds = []
 	priorityClasses = {}
 	productIndexInClass = {}
@@ -557,6 +724,9 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 			priorityClasses[prio] = []
 		priorityClasses[prio] .append(product.id)
 		productIndexInClass[product.id] = len(priorityClasses[prio])-1
+
+	logger.debug(u"productIndexInClass %s " % productIndexInClass)
+	logger.debug(u"priorityClasses %s " % priorityClasses)
 
 	# Requirements are list of pairs (install_prior, install_posterior)
 	# We treat only setup requirements
@@ -623,35 +793,66 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 
 			if requirementsByClasses.has_key(prioclasskey):
 				requs = requirementsByClasses[prioclasskey]
-
 				requObjects = Requirements(len(prioclass))
 				for item in requs:
 					requObjects.add(OrderRequirement(item[0], item[1], False))
 
-				ob = OrderBuild(len(prioclass), requObjects)
+				ob = OrderBuild(len(prioclass), requObjects, True)
 				try:
 					for k in range(len(prioclass)):
 						ob.proceed()
 
 				except OpsiProductOrderingError as e:
+					logger.warning(u"algo2 catched OpsiProductOrderingError")
 					for i in range(len(prioclass)):
 						logger.warning(u" product %s %s " % (i, prioclass[i]))
 					raise e
 
 				orderingsByClasses[prioclasskey] = ob.getOrdering()
+				logger.debug(u"prioclasskey, ordering '%s' , '%s'" % (prioclasskey,ob.getOrdering()))
 
 		for prioclasskey in foundClasses:
 			prioclass =  priorityClasses[prioclasskey]
+			logger.debug(u"prioclasskey has prioclass %s, %s " % (prioclasskey, prioclass))
 			if orderingsByClasses.has_key(prioclasskey):
 				ordering = orderingsByClasses[prioclasskey]
+
+				logger.debug(u"prioclasskey in found classes, ordering '%s',  '%s'" % (prioclasskey,ob.getOrdering()))
+
+
 				for idx in ordering:
 					sortedList.append(prioclass[idx])
 			else:
 				for element in prioclass:
 					sortedList.append(element)
 
+		logger.debug(u"sortedList algo2  '%s' " % sortedList)
+
 	except OpsiProductOrderingError as e:
+		logger.warning(u"algo2 outer catched OpsiProductOrderingError")
 		sortedList = []
+
+	return sortedList
+'''
+
+def_generateProductOnClientSequence_algorithm2 = \
+'''
+def generateProductOnClientSequence_algorithm2(productOnClients, availableProducts, productDependencies):
+	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+	return productOnClients
+'''
+
+def_generateProductOnClientSequence_algorithm3 = \
+u'''
+def generateProductOnClientSequence_algorithm3(productOnClients, availableProducts, productDependencies):
+	logger.debug(u"*********  running algorithm3")
+	debugprint("******* running algorithm3")
+	productDependenciesByProductId = {}
+	for productDependency in productDependencies:
+		if not productDependenciesByProductId.has_key(productDependency.productId):
+			productDependenciesByProductId[productDependency.productId] = []
+		productDependenciesByProductId[productDependency.productId].append(productDependency)
 
 	productOnClientsByClientIdAndProductId = {}
 	for productOnClient in productOnClients:
@@ -659,30 +860,135 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 
-	productOnClients = []
-	for (clientId, productOnClientsByProductId) in productOnClientsByClientIdAndProductId.items():
-		sequence = 0
-		for productId in sortedList:
-			if productOnClientsByProductId.has_key(productId):
-				productOnClientsByProductId[productId].actionSequence = sequence
-				productOnClients.append(productOnClientsByProductId[productId])
-				del productOnClientsByProductId[productId]
-				sequence += 1
-		if sortedList:
-			for productId in productOnClientsByProductId.keys():
-				productOnClientsByProductId[productId].actionSequence = sequence
-				productOnClients.append(productOnClientsByProductId[productId])
-				sequence += 1
-	return productOnClients
+	logger.debug(u"Sorting available products by priority")
+	priorityToProductIds = {}
+	availableProductsByProductId = {}
+	for availableProduct in availableProducts:
+		# add id to collection
+		availableProductsByProductId[availableProduct.id] = availableProduct
+		# if necessary initialize priorityToProductIds [priority]
+		if not priorityToProductIds.has_key(availableProduct.priority):
+			priorityToProductIds[availableProduct.priority] = []
+		# set id as value for priorityToProductIds [priority]
+		priorityToProductIds[availableProduct.priority].append(availableProduct.id)
+
+	priorities = priorityToProductIds.keys()
+	priorities.sort()
+	priorities.reverse()
+
+	productSequence = []
+	for priority in priorities:
+		productSequence.extend(priorityToProductIds[priority])
+
+	logger.debug2(u"Sequence of available products after priority sorting:")
+	for i in range(len(productSequence)):
+		logger.debug2(u"   [%2.0f] %s" % (i, productSequence[i]))
+
+	sortedProductOnClients = []
+
+	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
+		logger.debug(u"Sorting available products by dependency for client '%s'" % clientId)
+		sequence = []
+		for productId in productSequence:
+			if productId in productOnClientByProductId.keys():
+				sequence.append(productId)
+
+		run = 0
+		sequenceChanged = True
+		while sequenceChanged:
+			if (run > 5):
+				raise BackendUnaccomplishableError(u"Cannot resolve sequence for products %s after %d runs" \
+					% (productOnClientByProductId.keys(), run))
+			run += 1
+			sequenceChanged = False
+			for productId in productOnClientByProductId.keys():
+				if (productOnClientByProductId[productId].actionRequest == 'none') or not productDependenciesByProductId.get(productId):
+					continue
+
+				requiredProductId = None
+				requirementType = None
+				for dependency in productDependenciesByProductId[productId]:
+					if not productOnClientByProductId.get(dependency.requiredProductId):
+						continue
+					if (dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest):
+						continue
+
+					requiredProductId = dependency.requiredProductId
+					requirementType = dependency.requirementType
+
+					if not requirementType in ('before', 'after'):
+						continue
+
+					ppos = sequence.index(productId)
+					dpos = sequence.index(requiredProductId)
+					if (requirementType == 'before') and (ppos < dpos):
+						logger.info("%s requires %s before, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, requiredProductId, productId))
+						sequence.remove(requiredProductId)
+						sequence.insert(ppos, requiredProductId)
+						sequenceChanged = True
+					elif (requirementType == 'after') and (dpos < ppos):
+						logger.info("%s requires %s after, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, productId, requiredProductId))
+						sequence.remove(productId)
+						sequence.insert(dpos, productId)
+						sequenceChanged = True
+					else:
+						logger.debug("%s requires %s %s => no sequence change required." % (productId, requiredProductId, requirementType))
+		logger.debug2(u"Sequence of available products after dependency sorting (client %s):" % clientId)
+		for i in range(len(sequence)):
+			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))
+			productOnClient = productOnClientByProductId[sequence[i]]
+			productOnClient.setActionSequence(i+1)
+			sortedProductOnClients.append(productOnClient)
+	return sortedProductOnClients
 '''
 
+
+
+
+def_showState = \
+'''
+def showState(productOnClients, availableProducts, productDependencies, start=True):
+	# show situation
+
+
+
+	if not start:
+		debugprint ("result:")
+
+		debugprint("productOnClients:")
+		if not productOnClients  or productOnClients == []:
+			debugprint("no ordering")
+		else:
+			for productOnClient in productOnClients:
+				#debugprint("[%d] %s" % (productOnClient.getActionSequence(), productOnClient))
+				debugprint("%s" % (productOnClient))
+
+
+	debugprint("---")
+	if start:
+		for product in availableProducts:
+			debugprint("%s  priority: %s " % (product.id, product.priority))
+		debugprint("---")
+		for dependency in deps:
+			debugprint("%s " % (dependency))
+	debugprint("---")
+'''
+
+exec(def_debugprint)
 exec(def_addActionRequest)
 exec(def_addDependentProductOnClients)
-exec(def_generateProductOnClientSequence_algorithm1)
 exec(class_OrderRequirement)
 exec(class_Requirements)
 exec(class_OrderBuild)
+exec(def_generateProductOnClientSequence)
+exec(def_generateProductSequence_algorithm1)
+exec(def_generateProductSequence_algorithm2)
+exec(def_showState)
+exec(def_generateProductOnClientSequence_algorithm1)
 exec(def_generateProductOnClientSequence_algorithm2)
+exec(def_generateProductOnClientSequence_algorithm3)
+
+
 
 if (__name__ == "__main__"):
 	logger.setConsoleLevel(LOG_DEBUG)
@@ -716,7 +1022,7 @@ if (__name__ == "__main__"):
 		updateScript       = None,
 		alwaysScript       = None,
 		onceScript         = None,
-		priority           = 90,
+		priority           = 0,
 		description        = None,
 		advice             = "",
 		windowsSoftwareIds = []
@@ -733,7 +1039,7 @@ if (__name__ == "__main__"):
 		updateScript       = "update.ins",
 		alwaysScript       = None,
 		onceScript         = None,
-		priority           = -70,
+		priority           = 0,
 		description        = None,
 		advice             = "",
 		windowsSoftwareIds = []
@@ -750,7 +1056,25 @@ if (__name__ == "__main__"):
 		updateScript       = None,
 		alwaysScript       = None,
 		onceScript         = None,
-		priority           = -20,
+		priority           = 0,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = []
+	)
+
+
+	sysessential = LocalbootProduct(
+		id                 = 'sysessential',
+		name               = u'Sys Essential',
+		productVersion     = '1.10.0',
+		packageVersion     = 2,
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = u"uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 55,
 		description        = None,
 		advice             = "",
 		windowsSoftwareIds = []
@@ -760,6 +1084,23 @@ if (__name__ == "__main__"):
 		id                 = 'javavm',
 		name               = u'Sun Java',
 		productVersion     = '1.6.20',
+		packageVersion     = 2,
+		licenseRequired    = False,
+		setupScript        = "setup.ins",
+		uninstallScript    = u"uninstall.ins",
+		updateScript       = None,
+		alwaysScript       = None,
+		onceScript         = None,
+		priority           = 0,
+		description        = None,
+		advice             = "",
+		windowsSoftwareIds = []
+	)
+
+	jedit = LocalbootProduct(
+		id                 = 'jedit',
+		name               = u'jEdit',
+		productVersion     = '5.1.0',
 		packageVersion     = 2,
 		licenseRequired    = False,
 		setupScript        = "setup.ins",
@@ -797,6 +1138,58 @@ if (__name__ == "__main__"):
 		requiredProductId          = firefox.id,
 		requiredProductVersion     = firefox.productVersion,
 		requiredPackageVersion     = firefox.packageVersion,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'before'
+	)
+
+	jeditDependency1 = ProductDependency(
+		productId                  = jedit.id,
+		productVersion             = jedit.productVersion,
+		packageVersion             = jedit.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = javavm.id,
+		requiredProductVersion     = javavm.productVersion,
+		requiredPackageVersion     = javavm.packageVersion,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'before'
+	)
+
+
+	ultravncDependency1 = ProductDependency(
+		productId                  = ultravnc.id,
+		productVersion             = ultravnc.productVersion,
+		packageVersion             = ultravnc.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = javavm.id,
+		requiredProductVersion     = javavm.productVersion,
+		requiredPackageVersion     = javavm.packageVersion,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'before'
+	)
+
+	sysessentialDependency1 = ProductDependency(
+		productId                  = sysessential.id,
+		productVersion             =sysessential.productVersion,
+		packageVersion             = sysessential.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = ultravnc.id,
+		requiredProductVersion     = ultravnc.productVersion,
+		requiredPackageVersion     = ultravnc.packageVersion,
+		requiredAction             = None,
+		requiredInstallationStatus = 'installed',
+		requirementType            = 'before'
+	)
+	firefoxDependency1 = ProductDependency(
+		productId                  = firefox.id,
+		productVersion             =firefox.productVersion,
+		packageVersion             = firefox.packageVersion,
+		productAction              = 'setup',
+		requiredProductId          = ultravnc.id,
+		requiredProductVersion     = ultravnc.productVersion,
+		requiredPackageVersion     = ultravnc.packageVersion,
 		requiredAction             = None,
 		requiredInstallationStatus = 'installed',
 		requirementType            = 'before'
@@ -850,134 +1243,242 @@ if (__name__ == "__main__"):
 		modificationTime   = '2009-07-01 12:00:00'
 	)
 
-	productOnClients = addDependentProductOnClients(
-		[ productOnClient1, productOnClient2, productOnClient3, productOnClient4 ],
-		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
-		[ flashplayerDependency1, javavmDependency1 ])
-
-	for productOnClient in productOnClients:
-		print productOnClient
-
-	assert len(productOnClients) == 5
-
-	productOnClients = generateProductOnClientSequence_algorithm1(
-		productOnClients,
-		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
-		[ flashplayerDependency1, javavmDependency1 ])
-	for productOnClient in productOnClients:
-		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
-
-	productOnClients = addDependentProductOnClients(
-		[ productOnClient1, productOnClient2, productOnClient3, productOnClient4 ],
-		[ opsiAgent, ultravnc, firefox, flashplayer, javavm ],
-		[ flashplayerDependency1, javavmDependency1 ])
-
-	# for productOnClient in productOnClients:
-	# 	print productOnClient
-
-	print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
-
-	fsv = LocalbootProduct(
-		id                 = 'fsv',
-		name               = u'HIS FSV',
-		productVersion     = '15.0.0.0',
-		packageVersion     = '1',
-		licenseRequired    = False,
-		setupScript        = u"fsv.ins",
-		uninstallScript    = u"",
-		updateScript       = u"fsvreg.ins",
-		alwaysScript       = None,
-		onceScript         = None,
-		priority           = 12,
-		description        = None,
-		advice             = "",
-		windowsSoftwareIds = []
-	)
-
-	psqlclient = LocalbootProduct(
-		id                 = 'psql-client',
-		name               = u'PostgreSQL',
-		productVersion     = '9.1.200',
-		packageVersion     = '1',
-		licenseRequired    = False,
-		setupScript        = u"psqlclient.ins",
-		uninstallScript    = u"delpsqlclient.ins",
-		updateScript       = None,
-		alwaysScript       = None,
-		onceScript         = None,
-		priority           = 2,
-		description        = None,
-		advice             = "",
-		windowsSoftwareIds = []
-	)
-
-	fsvDependency = ProductDependency(
-		productId                  = fsv.id,
-		productVersion             = fsv.productVersion,
-		packageVersion             = fsv.packageVersion,
-		productAction              = 'setup',
-		requiredProductId          = psqlclient.id,
-		requiredProductVersion     = psqlclient.productVersion,
-		requiredPackageVersion     = psqlclient.packageVersion,
-		requiredAction             = 'setup',
-		requiredInstallationStatus = 'installed',
-		requirementType            = 'before'
-	)
-
-	productOnClient1 = ProductOnClient(
-		productId          = fsv.getId(),
-		productType        = fsv.getType(),
+	productOnClient5 = ProductOnClient(
+		productId          = sysessential.getId(),
+		productType        =sysessential .getType(),
 		clientId           = 'client1.uib.local',
-		installationStatus = 'installed',
+		installationStatus = 'not_installed',
 		actionRequest      = 'setup',
-		actionProgress     = '',
-		productVersion     = fsv.getProductVersion(),
-		packageVersion     = fsv.getPackageVersion(),
-		modificationTime   = '2013-07-01 12:00:00'
-	)
-	productOnClient2 = ProductOnClient(
-		productId          = psqlclient.getId(),
-		productType        = psqlclient.getType(),
-		clientId           = 'client1.uib.local',
-		installationStatus = 'installed',
-		actionRequest      = None,
 		actionProgress     = '',
 		productVersion     = None,
 		packageVersion     = None,
-		modificationTime   = '2013-07-01 12:00:00'
+		modificationTime   = '2009-07-01 12:00:00'
 	)
 
-	print "Result with algorithm 1:"
-	print "========================"
+	productOnClient6 = ProductOnClient(
+		productId          = javavm.getId(),
+		productType        = javavm .getType(),
+		clientId           = 'client2.uib.local',
+		installationStatus = 'not_installed',
+		actionRequest      = 'setup',
+		actionProgress     = '',
+		productVersion     = None,
+		packageVersion     = None,
+		modificationTime   = '2009-07-01 12:00:00'
+	)
+	debugprint("**********************************************************")
+	debugprint("**********************************************************")
+
+	debugprint("CASE: priority levels and dependency do not interfer")
+
+	availProducts = [ opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox,sysessential ]
+	logger.debug(u"availProducts %s " % availProducts)
+	deps = [ flashplayerDependency1, javavmDependency1, jeditDependency1, ultravncDependency1 ]
+	logger.debug(u"deps %s " % deps)
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
 	productOnClients = addDependentProductOnClients(
-		[ productOnClient1 ],
-		[ fsv, psqlclient ],
-		[ fsvDependency ])
-
-	productOnClients = generateProductOnClientSequence_algorithm1(
 		productOnClients,
-		[ fsv, psqlclient ],
-		[ fsvDependency ])
-
-	for productOnClient in productOnClients:
-		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
+		availProducts,
+		deps)
 
 
-	print "Result with algorithm 2:"
-	print "========================"
+	assert len(productOnClients) == 6, "length not 6"
+
+
+
+
+	debugprint("algorithm 1:")
+	debugprint("========================")
+
+	showState(productOnClients, availProducts, deps)
+
+	sortedProductList = generateProductSequence_algorithm1(availProducts, deps)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+	debugprint("algorithm 2:")
+	debugprint("========================")
+
+
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
 	productOnClients = addDependentProductOnClients(
-		[ productOnClient1, productOnClient2 ],
-		[ fsv, psqlclient ],
-		[ fsvDependency ])
-
-	productOnClients = generateProductOnClientSequence_algorithm2(
 		productOnClients,
-		[ fsv, psqlclient ],
-		[ fsvDependency ])
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	sortedProductList = generateProductSequence_algorithm2(availProducts, deps)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 
 
-	for productOnClient in productOnClients:
-		print "[%d] %s" % (productOnClient.getActionSequence(), productOnClient)
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+	debugprint("algorithm 3:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = generateProductOnClientSequence_algorithm3(productOnClients, availProducts, deps)
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+
+
+
+	debugprint("CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority ")
+
+	deps.append(sysessentialDependency1)
+
+	debugprint("algorithm 1:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	sortedProductList = generateProductSequence_algorithm1(availProducts, deps)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+	debugprint("algorithm 2:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+
+	showState(productOnClients, availProducts, deps)
+
+	sortedProductList = generateProductSequence_algorithm2(availProducts, deps)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+
+	debugprint("algorithm 3:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = generateProductOnClientSequence_algorithm3(productOnClients, availProducts, deps)
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+
+
+
+	debugprint("CASE: circular dependency ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc  ")
+	deps.remove(sysessentialDependency1)
+	deps.append(firefoxDependency1)
+
+
+	debugprint("algorithm 1:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	sortedProductList = generateProductSequence_algorithm1(availProducts, deps)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+	debugprint("algorithm 2:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	sortedProductList = generateProductSequence_algorithm2(availProducts, deps)
+	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
+
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
+
+	debugprint("algorithm 3:")
+	debugprint("========================")
+
+	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = addDependentProductOnClients(
+		productOnClients,
+		availProducts,
+		deps)
+
+	showState(productOnClients, availProducts, deps)
+
+	productOnClients = generateProductOnClientSequence_algorithm3(productOnClients, availProducts, deps)
+
+	showState(productOnClients, availProducts, deps, False)
+
+	debugprint("**********************************************************")
+
 
 
