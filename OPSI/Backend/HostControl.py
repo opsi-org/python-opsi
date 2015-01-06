@@ -27,7 +27,7 @@ This backend can be used to control hosts.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-__version__ = '4.0.5.17'
+__version__ = '4.0.6.1'
 
 import base64
 import httplib

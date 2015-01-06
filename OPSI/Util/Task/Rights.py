@@ -26,7 +26,7 @@ during its use. To ease the setting of these permissions this modules
 provides helpers for this task.
 
 
-.. versionadded:: 4.0.5.17
+.. versionadded:: 4.0.6.1
 
 
 :copyright:  uib GmbH <info@uib.de>

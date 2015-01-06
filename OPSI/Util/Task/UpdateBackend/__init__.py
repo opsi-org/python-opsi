@@ -19,7 +19,7 @@
 """
 Functionality to update OPSI backends.
 
-.. versionadded:: 4.0.5.17
+.. versionadded:: 4.0.6.1
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3

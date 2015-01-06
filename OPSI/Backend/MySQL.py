@@ -28,7 +28,7 @@ MySQL-Backend
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.5.17'
+__version__ = '4.0.6.1'
 
 import base64
 import warnings

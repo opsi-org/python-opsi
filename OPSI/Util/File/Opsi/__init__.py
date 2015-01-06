@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 :license: GNU General Public License version 2
 """
 
-__version__ = '4.0.5.17'
+__version__ = '4.0.6.1'
 
 import bz2
 import collections
