@@ -2261,8 +2261,7 @@ class SQLBackend(ConfigDataBackend):
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 
-		hardwareClass = auditHardwareOnHost.getHardwareClass()
-		table = u'HARDWARE_CONFIG_' + hardwareClass
+		table = u'HARDWARE_CONFIG_{0}'.format(auditHardwareOnHost.getHardwareClass())
 
 		where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
 		if not self._sql.getRow('select * from `%s` where %s' % (table, where)):
@@ -2381,7 +2380,7 @@ class SQLBackend(ConfigDataBackend):
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			logger.info(u"Deleting auditHardwareOnHost: %s" % auditHardwareOnHost)
 			where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
-			self._sql.delete( u'HARDWARE_CONFIG_' + auditHardwareOnHost.getHardwareClass(), where)
+			self._sql.delete( u'HARDWARE_CONFIG_{0}'.format(auditHardwareOnHost.getHardwareClass()), where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   BootConfigurations                                                                        -
