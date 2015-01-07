@@ -30,8 +30,11 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * OPSI.Backend.SQL: replacing duplicate code with a simple decorator
   * Removed LDAP schema files and backend configuration.
   * OPSI.Backend.SQL: Functions getData and getRawData only allow SELECT
+  * Making method backend_getSharedAlgorithm nonfunctional.
+  * OPSI.SharedAlgorithm: No more working with code-as-text and evaluation
+    of the text to get objects to work with. Now there are only the objects.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Jan 2015 15:47:29 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Jan 2015 15:50:34 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 

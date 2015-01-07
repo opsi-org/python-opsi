@@ -56,6 +56,7 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
+from OPSI.Types import BackendError
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt, getfqdn
@@ -401,10 +402,11 @@ This defaults to ``self``.
 		}
 
 	def backend_getSharedAlgorithm(self, function):
-		if not hasattr(OPSI.SharedAlgorithm, 'def_%s' % function):
-			raise ValueError(u"No such function: %s" % function)
-
-		return getattr(OPSI.SharedAlgorithm, 'def_%s' % function)
+		raise BackendError(
+			u"This function has been removed. "
+			u"If you rely on this feature please get in touch with us "
+			u"on the forums - https://forum.opsi.org/"
+		)
 
 	def backend_exit(self):
 		pass

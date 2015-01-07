@@ -32,6 +32,8 @@ import time
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
 
+from OPSI.Types import BackendError
+
 
 class BackendTestsMixin(ClientsMixin, HostsMixin):
     def testObjectMethods(self):
@@ -409,6 +411,9 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         self.assertTrue('opsiVersion' in info)
         self.assertTrue('modules' in info)
         self.assertTrue('realmodules' in info)
+
+    def testBackend_getSharedAlgorithmThrowsException(self):
+        self.assertRaises(BackendError, self.backend.backend_getSharedAlgorithm, "foo")
 
 
 class BackendPerformanceTestMixin(object):

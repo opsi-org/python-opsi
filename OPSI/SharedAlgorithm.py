@@ -42,8 +42,6 @@ from OPSI.Types import forceInt, forceBool
 logger = Logger()
 
 
-def_addActionRequest = \
-u'''
 def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo = {}):
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 
@@ -136,10 +134,8 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		productOnClientByProductId[dependency.requiredProductId].setActionRequest(requiredAction)
 
 		addActionRequest(productOnClientByProductId, dependency.requiredProductId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
-'''
 
-def_addDependentProductOnClients = \
-u'''
+
 def addDependentProductOnClients(productOnClients, availableProducts, productDependencies):
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
@@ -164,10 +160,8 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 		for productId in productOnClientByProductId.keys():
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
 	return productOnClientByProductId.values()
-'''
 
-class_OrderRequirement = \
-u'''
+
 class OrderRequirement:
 	# Represents a request for ordering of two elements with a notice if it is fulfilled
 
@@ -184,10 +178,8 @@ class OrderRequirement:
 
 	def __repr__(self):
 		return self.__str__()
-'''
 
-class_Requirements = \
-u'''
+
 class Requirements:
 	# Comprises a list with ordering requirements and ordered lists of them
 
@@ -339,10 +331,8 @@ class Requirements:
 
 	def getOrderByPosteriors(self):
 		return self.orderByPosteriors
-'''
 
-class_OrderBuild = \
-u'''
+
 class OrderBuild:
 	# Describes the building of an ordering
 
@@ -460,10 +450,8 @@ class OrderBuild:
 
 	def getOrdering(self):
 		return self.ordering
-'''
 
-def_generateProductOnClientSequence=\
-'''
+
 def generateProductOnClientSequence(productOnClients, sortedList):
 	productOnClientsByClientIdAndProductId = {}
 	for productOnClient in productOnClients:
@@ -491,10 +479,8 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 				productOnClients.append(productOnClientsByProductId[productId])
 				sequence += 1
 	return productOnClients
-'''
 
-def_generateProductSequence_algorithm1 = \
-'''
+
 def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm1")
@@ -678,20 +664,14 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	logger.debug(u"++ mixedSortedList %s " % mixedSortedList)
 
 	return mixedSortedList
-'''
 
 
-def_generateProductOnClientSequence_algorithm1 = \
-'''
 def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
 	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
-'''
 
 
-def_generateProductSequence_algorithm2 = \
-'''
 def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	# Build priority classes and indices
 
@@ -821,18 +801,14 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		sortedList = []
 
 	return sortedList
-'''
 
-def_generateProductOnClientSequence_algorithm2 = \
-'''
+
 def generateProductOnClientSequence_algorithm2(productOnClients, availableProducts, productDependencies):
 	sortedProductList = generateProductSequence_algorithm2(availableProducts, productDependencies)
 	productOnClients = generateProductOnClientSequence(productOnClients, sortedProductList)
 	return productOnClients
-'''
 
-def_generateProductOnClientSequence_algorithm3 = \
-u'''
+
 def generateProductOnClientSequence_algorithm3(productOnClients, availableProducts, productDependencies):
 	logger.debug(u"*********  running algorithm3")
 	productDependenciesByProductId = {}
@@ -927,20 +903,6 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 			productOnClient.setActionSequence(i+1)
 			sortedProductOnClients.append(productOnClient)
 	return sortedProductOnClients
-'''
-
-
-exec(def_addActionRequest)
-exec(def_addDependentProductOnClients)
-exec(class_OrderRequirement)
-exec(class_Requirements)
-exec(class_OrderBuild)
-exec(def_generateProductOnClientSequence)
-exec(def_generateProductSequence_algorithm1)
-exec(def_generateProductSequence_algorithm2)
-exec(def_generateProductOnClientSequence_algorithm1)
-exec(def_generateProductOnClientSequence_algorithm2)
-exec(def_generateProductOnClientSequence_algorithm3)
 
 
 if (__name__ == "__main__"):
