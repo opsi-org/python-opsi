@@ -32,10 +32,10 @@
    @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
+__version__ = '4.0.6'
 
 # OPSI imports
-from OPSI.Logger import *
+from OPSI.Logger import Logger
 from OPSI.Object import *
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
@@ -991,6 +991,8 @@ exec(def_generateProductOnClientSequence_algorithm3)
 
 
 if (__name__ == "__main__"):
+	from OPSI.Logger import LOG_DEBUG
+
 	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
 
