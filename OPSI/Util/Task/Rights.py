@@ -184,22 +184,7 @@ def setRights(path=u'/'):
 		if startPath.startswith(u'/var/lib/opsi'):
 			os.chmod(u'/var/lib/opsi', 0750)
 			os.chown(u'/var/lib/opsi', clientUserUid, fileAdminGroupGid)
-			sshDir = u'/var/lib/opsi/.ssh'
-			if os.path.exists(sshDir):
-				os.chown(sshDir, clientUserUid, fileAdminGroupGid)
-				os.chmod(sshDir, 0750)
-				idRsa = os.path.join(sshDir, u'id_rsa')
-				if os.path.exists(idRsa):
-					os.chmod(idRsa, 0640)
-					os.chown(idRsa, clientUserUid, fileAdminGroupGid)
-				idRsaPub = os.path.join(sshDir, u'id_rsa.pub')
-				if os.path.exists(idRsaPub):
-					os.chmod(idRsaPub, 0644)
-					os.chown(idRsaPub, clientUserUid, fileAdminGroupGid)
-				authorizedKeys = os.path.join(sshDir, u'authorized_keys')
-				if os.path.exists(authorizedKeys):
-					os.chmod(authorizedKeys, 0600)
-					os.chown(authorizedKeys, clientUserUid, fileAdminGroupGid)
+			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
 
 
 def getDirectoriesToProcess():
@@ -224,3 +209,24 @@ def getDistribution():
 		return distribution
 	except Exception:
 		return ''
+
+
+def setRightsOnSSHDirectory(userId, groupId, path=u'/var/lib/opsi/.ssh'):
+	if os.path.exists(path):
+		os.chown(path, userId, groupId)
+		os.chmod(path, 0750)
+
+		idRsa = os.path.join(path, u'id_rsa')
+		if os.path.exists(idRsa):
+			os.chmod(idRsa, 0640)
+			os.chown(idRsa, userId, groupId)
+
+		idRsaPub = os.path.join(path, u'id_rsa.pub')
+		if os.path.exists(idRsaPub):
+			os.chmod(idRsaPub, 0644)
+			os.chown(idRsaPub, userId, groupId)
+
+		authorizedKeys = os.path.join(path, u'authorized_keys')
+		if os.path.exists(authorizedKeys):
+			os.chmod(authorizedKeys, 0600)
+			os.chown(authorizedKeys, userId, groupId)
