@@ -930,38 +930,6 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 '''
 
 
-
-
-def_showState = \
-'''
-def showState(productOnClients, availableProducts, productDependencies, start=True):
-	# show situation
-
-
-
-	if not start:
-		debugprint ("result:")
-
-		debugprint("productOnClients:")
-		if not productOnClients  or productOnClients == []:
-			debugprint("no ordering")
-		else:
-			for productOnClient in productOnClients:
-				#debugprint("[%d] %s" % (productOnClient.getActionSequence(), productOnClient))
-				debugprint("%s" % (productOnClient))
-
-
-	debugprint("---")
-	if start:
-		for product in availableProducts:
-			debugprint("%s  priority: %s " % (product.id, product.priority))
-		debugprint("---")
-		for dependency in deps:
-			debugprint("%s " % (dependency))
-	debugprint("---")
-'''
-
-exec(def_debugprint)
 exec(def_addActionRequest)
 exec(def_addDependentProductOnClients)
 exec(class_OrderRequirement)
@@ -970,11 +938,9 @@ exec(class_OrderBuild)
 exec(def_generateProductOnClientSequence)
 exec(def_generateProductSequence_algorithm1)
 exec(def_generateProductSequence_algorithm2)
-exec(def_showState)
 exec(def_generateProductOnClientSequence_algorithm1)
 exec(def_generateProductOnClientSequence_algorithm2)
 exec(def_generateProductOnClientSequence_algorithm3)
-
 
 
 if (__name__ == "__main__"):
@@ -982,6 +948,27 @@ if (__name__ == "__main__"):
 
 	logger.setConsoleLevel(LOG_DEBUG)
 	logger.setConsoleColor(True)
+
+	def showState(productOnClients, availableProducts, productDependencies, start=True):
+		if not start:
+			print ("result:")
+
+			print("productOnClients:")
+			if not productOnClients  or productOnClients == []:
+				print("no ordering")
+			else:
+				for productOnClient in productOnClients:
+					#print("[%d] %s" % (productOnClient.getActionSequence(), productOnClient))
+					print("%s" % (productOnClient))
+
+		print("---")
+		if start:
+			for product in availableProducts:
+				print("%s  priority: %s " % (product.id, product.priority))
+			print("---")
+			for dependency in deps:
+				print("%s " % (dependency))
+		print("---")
 
 	opsiAgent = LocalbootProduct(
 		id                 = 'opsi-agent',
