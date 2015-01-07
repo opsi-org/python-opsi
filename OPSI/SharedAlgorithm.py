@@ -34,21 +34,13 @@
 
 __version__ = '4.0.6'
 
-# OPSI imports
 from OPSI.Logger import Logger
 from OPSI.Object import *
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-# Get logger instance
 logger = Logger()
-TESTTHIS=True
-def_debugprint=\
-u'''
-def debugprint(s):
-	if TESTTHIS:
-		print(s)
-'''
+
 
 def_addActionRequest = \
 u'''
@@ -163,9 +155,7 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 	for productOnClient in productOnClients:
 		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
 			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
-		#debugprint (u"%s " % productOnClient)
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
-		#debugprint (u"%s " % 	productOnClientsByClientIdAndProductId)
 
 	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
 		logger.debug(u"Adding dependent productOnClients for client '%s'" % clientId)
@@ -508,7 +498,6 @@ def_generateProductSequence_algorithm1 = \
 def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm1")
-	debugprint("******* running algorithm1 ***")
 	logger.debug(u"availableProducts %s " % availableProducts )
 
 	productIds = []
@@ -707,7 +696,6 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	# Build priority classes and indices
 
 	logger.debug(u"*********running algorithm2")
-	debugprint("******* running algorithm2")
 	logger.debug(u"availableProducts %s " % availableProducts )
 
 	productIds = []
@@ -847,7 +835,6 @@ def_generateProductOnClientSequence_algorithm3 = \
 u'''
 def generateProductOnClientSequence_algorithm3(productOnClients, availableProducts, productDependencies):
 	logger.debug(u"*********  running algorithm3")
-	debugprint("******* running algorithm3")
 	productDependenciesByProductId = {}
 	for productDependency in productDependencies:
 		if not productDependenciesByProductId.has_key(productDependency.productId):
@@ -1268,10 +1255,10 @@ if (__name__ == "__main__"):
 		packageVersion     = None,
 		modificationTime   = '2009-07-01 12:00:00'
 	)
-	debugprint("**********************************************************")
-	debugprint("**********************************************************")
+	print("**********************************************************")
+	print("**********************************************************")
 
-	debugprint("CASE: priority levels and dependency do not interfer")
+	print("CASE: priority levels and dependency do not interfer")
 
 	availProducts = [ opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox,sysessential ]
 	logger.debug(u"availProducts %s " % availProducts)
@@ -1292,8 +1279,8 @@ if (__name__ == "__main__"):
 
 
 
-	debugprint("algorithm 1:")
-	debugprint("========================")
+	print("algorithm 1:")
+	print("========================")
 
 	showState(productOnClients, availProducts, deps)
 
@@ -1302,10 +1289,10 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
-	debugprint("algorithm 2:")
-	debugprint("========================")
+	print("algorithm 2:")
+	print("========================")
 
 
 
@@ -1325,10 +1312,10 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
-	debugprint("algorithm 3:")
-	debugprint("========================")
+	print("algorithm 3:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 
@@ -1343,17 +1330,17 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
 
 
 
-	debugprint("CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority ")
+	print("CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority ")
 
 	deps.append(sysessentialDependency1)
 
-	debugprint("algorithm 1:")
-	debugprint("========================")
+	print("algorithm 1:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 	showState(productOnClients, availProducts, deps)
@@ -1370,10 +1357,10 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
-	debugprint("algorithm 2:")
-	debugprint("========================")
+	print("algorithm 2:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 	showState(productOnClients, availProducts, deps)
@@ -1392,11 +1379,11 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
 
-	debugprint("algorithm 3:")
-	debugprint("========================")
+	print("algorithm 3:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 
@@ -1411,18 +1398,18 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
 
 
 
-	debugprint("CASE: circular dependency ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc  ")
+	print("CASE: circular dependency ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc  ")
 	deps.remove(sysessentialDependency1)
 	deps.append(firefoxDependency1)
 
 
-	debugprint("algorithm 1:")
-	debugprint("========================")
+	print("algorithm 1:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 	showState(productOnClients, availProducts, deps)
@@ -1439,10 +1426,10 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
-	debugprint("algorithm 2:")
-	debugprint("========================")
+	print("algorithm 2:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 	showState(productOnClients, availProducts, deps)
@@ -1460,11 +1447,11 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
+	print("**********************************************************")
 
 
-	debugprint("algorithm 3:")
-	debugprint("========================")
+	print("algorithm 3:")
+	print("========================")
 
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
 	showState(productOnClients, availProducts, deps)
@@ -1480,7 +1467,4 @@ if (__name__ == "__main__"):
 
 	showState(productOnClients, availProducts, deps, False)
 
-	debugprint("**********************************************************")
-
-
-
+	print("**********************************************************")
