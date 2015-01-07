@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -41,6 +41,16 @@ from OPSI.Object import *
 from OPSI.Backend.Backend import *
 
 logger = Logger()
+
+
+def onlySelectAllowed(function):
+	def checkQueryBeforeCallingFunction(self, query):
+		if not forceUnicodeLower(query).startswith('select'):
+			raise ValueError('Only queries to SELECT data are allowed.')
+
+		return function(self, query)
+
+	return checkQueryBeforeCallingFunction
 
 
 def requiresEnabledSQLBackendModule(function, *args, **kwargs):
@@ -2421,12 +2431,14 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@onlySelectAllowed
 	def getData(self, query):
 		logger.debug(u'start query {0}'.format(query))
 		result = self._sql.getSet(query)
 		logger.debug(u'ended query {0}'.format(query))
 		return result
 
+	@onlySelectAllowed
 	def getRawData(self, query):
 		logger.debug(u'start query {0}'.format(query))
 		result = self._sql.getRows(query)

@@ -25,6 +25,8 @@ Testing the opsi file backend.
 
 import unittest
 
+from OPSI.Types import BackendConfigurationError
+
 from Backends.File import FileBackendMixin
 from BackendTestMixins import (ConfigStateTestsMixin, ProductPropertiesTestMixin,
     ProductDependenciesTestMixin, AuditTestsMixin,
@@ -53,6 +55,9 @@ class FileBackendTestCase(unittest.TestCase, FileBackendMixin,
 
     def testMethod(self):
         self.assertNotEqual(None, self.backend)
+
+    def testGetRawDataFailsBecauseNoQuerySupport(self):
+        self.assertRaises(BackendConfigurationError, self.backend.getRawData, "blabla")
 
 
 if __name__ == '__main__':

@@ -29,8 +29,9 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.UpdateBackend.MySQL: Fix too small hostId columns
   * OPSI.Backend.SQL: replacing duplicate code with a simple decorator
   * Removed LDAP schema files and backend configuration.
+  * OPSI.Backend.SQL: Functions getData and getRawData only allow SELECT
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 18 Dec 2014 15:09:24 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Jan 2015 15:47:29 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
