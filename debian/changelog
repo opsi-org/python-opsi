@@ -33,6 +33,7 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * Making method backend_getSharedAlgorithm nonfunctional.
   * OPSI.SharedAlgorithm: No more working with code-as-text and evaluation
     of the text to get objects to work with. Now there are only the objects.
+  * WindowsDrivers: Fallback if directories ends with "." or with whitespace.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Jan 2015 15:50:34 +0100
 

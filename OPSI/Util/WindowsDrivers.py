@@ -460,9 +460,16 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 
 		if vendorFromHost and modelFromHost:
 			vendordirectories = listdir(rulesdir)
+			if not vendorFromHost in vendordirectories:
+				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
+					vendorFromHost = "%s_" % vendorFromHost[:-1]
+				
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
+					if not modelFromHost in modeldirectories:
+						if modelFromHost.endswith(".") or modelFromHost.endswith(" "):
+							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
 						if modeldirectory.lower() == modelFromHost.lower():
 							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, modeldirectory))
@@ -473,12 +480,20 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
 		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
 		productFromHost  = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product)
-
+		
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
+			if not vendorFromHost in vendordirectories:
+				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
+					vendorFromHost = "%s_" % vendorFromHost[:-1]
+					
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					productdirectories = listdir(os.path.join(rulesdir,vendordirectory))
+					if not productFromHost in productdirectories:
+						if productFromHost.endswith(".") or productFromHost.endswith(" "):
+							productFromHost = "%s_" % productFromHost[:-1]
+							
 					for productdirectory in productdirectories:
 						if productdirectory.lower() == productFromHost.lower():
 							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, productdirectory))
