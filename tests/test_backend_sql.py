@@ -29,7 +29,7 @@ import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
 
 
-class MySQLBackendWithoutConnectonTestCase(unittest.TestCase):
+class MySQLBackendWithoutConnectionTestCase(unittest.TestCase):
     """
     Testing the backend functions that do not require an connection
     to an actual database.
@@ -42,7 +42,7 @@ class MySQLBackendWithoutConnectonTestCase(unittest.TestCase):
         del self.backend
 
 
-class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
+class FilterToSQLTestCase(MySQLBackendWithoutConnectionTestCase):
     def testCreatingFilter(self):
         self.assertEquals('', self.backend._filterToSql())
         self.assertEquals(u'(`lol` = 0)', self.backend._filterToSql({'lol': False}))
@@ -105,7 +105,7 @@ class FilterToSQLTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertEquals(u"(`a` <=> 1)", self.backend._filterToSql({'a': '<=> 1'}))
 
 
-class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
+class QueryCreationTestCase(MySQLBackendWithoutConnectionTestCase):
     def testCreatingQueryIncludesTableName(self):
         self.assertTrue("foo" in self.backend._createQuery('foo'))
 
@@ -120,7 +120,7 @@ class QueryCreationTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertTrue(u'where' in self.backend._createQuery('foo', filter={'a': 1}))
 
 
-class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
+class UniqueConditionTestCase(MySQLBackendWithoutConnectionTestCase):
     """
     Testing the creation of an unique condition.
 
@@ -211,7 +211,7 @@ class UniqueConditionTestCase(MySQLBackendWithoutConnectonTestCase):
         self.assertEquals('`param` = 4', self.backend._uniqueCondition(FooParam(4L)))
 
 
-class UniqueAuditHardwareConditionTestCase(MySQLBackendWithoutConnectonTestCase):
+class UniqueAuditHardwareConditionTestCase(MySQLBackendWithoutConnectionTestCase):
     def testCreatingUniqueHardwareConditionIgnoresHardwareClassAndType(self):
         hwDict = {
             "hardwareClass": "abc",
