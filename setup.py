@@ -69,7 +69,6 @@ data_files = [
 			'data/backends/dhcpd.conf',
 			'data/backends/file.conf',
 			'data/backends/jsonrpc.conf',
-			'data/backends/ldap.conf',
 			'data/backends/mysql.conf',
 			'data/backends/sqlite.conf',
 			'data/backends/multiplex.conf',
