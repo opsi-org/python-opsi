@@ -162,24 +162,24 @@ def setRights(path=u'/'):
 		logger.notice(u"Setting rights on directory '%s'" % startPath)
 		os.chown(startPath, uid, gid)
 		os.chmod(startPath, dmod)
-		for f in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
-			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=f, user=uid, group=gid))
-			os.chown(f, uid, gid)
-			if os.path.isdir(f):
-				logger.debug(u"Setting rights on directory '%s'" % f)
-				os.chmod(f, dmod)
-			elif os.path.isfile(f):
-				logger.debug(u"Setting rights on file '%s'" % f)
+		for filepath in findFiles(startPath, prefix=startPath, returnLinks=correctLinks, excludeFile=re.compile("(.swp|~)$")):
+			logger.debug(u"Setting ownership to {user}:{group} on file '{file}'".format(file=filepath, user=uid, group=gid))
+			os.chown(filepath, uid, gid)
+			if os.path.isdir(filepath):
+				logger.debug(u"Setting rights on directory '%s'" % filepath)
+				os.chmod(filepath, dmod)
+			elif os.path.isfile(filepath):
+				logger.debug(u"Setting rights on file '%s'" % filepath)
 				if isProduct:
-					if os.path.basename(f) in SPECIAL_FILES:
-						logger.debug(u"Setting rights on special file '{0}'".format(f))
-						os.chmod(f, 0770)
+					if os.path.basename(filepath) in SPECIAL_FILES:
+						logger.debug(u"Setting rights on special file '{0}'".format(filepath))
+						os.chmod(filepath, 0770)
 					else:
-						logger.debug(u"Setting rights on file '{0}'".format(f))
-						os.chmod(f, (os.stat(f)[0] | 0660) & 0770)
+						logger.debug(u"Setting rights on file '{0}'".format(filepath))
+						os.chmod(filepath, (os.stat(filepath)[0] | 0660) & 0770)
 				else:
-					logger.debug(u"Setting rights {rights} on file '{file}'".format(file=f, rights=fmod))
-					os.chmod(f, fmod)
+					logger.debug(u"Setting rights {rights} on file '{file}'".format(file=filepath, rights=fmod))
+					os.chmod(filepath, fmod)
 
 		if startPath.startswith(u'/var/lib/opsi'):
 			os.chmod(u'/var/lib/opsi', 0750)
