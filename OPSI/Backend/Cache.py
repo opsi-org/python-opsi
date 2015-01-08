@@ -172,10 +172,9 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
 		if 'AuditSoftwareOnClient' in modifiedObjects:
 			self._masterBackend.auditSoftwareOnClient_setObsolete(self._clientId)
-			objects = []
-			for mo in modifiedObjects['AuditSoftwareOnClient']:
-				objects.append(mo['object'])
-			self._masterBackend.auditSoftwareOnClient_updateObjects(objects)
+			self._masterBackend.auditSoftwareOnClient_updateObjects(
+				[mo['object'] for mo in modifiedObjects['AuditSoftwareOnClient']]
+			)
 
 		if 'ProductOnClient' in modifiedObjects:
 			def objectsDifferFunction(snapshotObj, masterObj):
