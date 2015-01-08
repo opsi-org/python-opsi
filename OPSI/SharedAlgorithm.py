@@ -325,7 +325,7 @@ class Requirements:
 		return self.orderByPrior
 
 	def getOrderByPosteriors(self):
-		return self.orderByPosteriors
+		return self.orderByPosterior
 
 
 class OrderBuild:
