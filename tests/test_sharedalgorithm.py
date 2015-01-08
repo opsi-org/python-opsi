@@ -23,15 +23,13 @@ Testing OPSI.SharedAlgorithm
 :license: GNU Affero General Public License version 3
 """
 # for testing install python-pip, and then pip install nose
-#nosetests -s tests/test_sharedalgorithm.py 
+#nosetests -s tests/test_sharedalgorithm.py
 
 
 from __future__ import absolute_import
 
 import unittest
 
-
-from OPSI.Logger import *
 from OPSI.Object import *
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
@@ -106,8 +104,8 @@ class TestFrame(unittest.TestCase):
 		advice             = "",
 		windowsSoftwareIds = []
 	)
-	
-	
+
+
 	sysessential = LocalbootProduct(
 		id                 = 'sysessential',
 		name               = u'Sys Essential',
@@ -141,7 +139,7 @@ class TestFrame(unittest.TestCase):
 		advice             = "",
 		windowsSoftwareIds = []
 	)
-	
+
 	jedit = LocalbootProduct(
 		id                 = 'jedit',
 		name               = u'jEdit',
@@ -187,7 +185,7 @@ class TestFrame(unittest.TestCase):
 		requiredInstallationStatus = 'installed',
 		requirementType            = 'before'
 	)
-	
+
 	jeditDependency1 = ProductDependency(
 		productId                  = jedit.id,
 		productVersion             = jedit.productVersion,
@@ -200,8 +198,8 @@ class TestFrame(unittest.TestCase):
 		requiredInstallationStatus = 'installed',
 		requirementType            = 'before'
 	)
-	
-	
+
+
 	ultravncDependency1 = ProductDependency(
 		productId                  = ultravnc.id,
 		productVersion             = ultravnc.productVersion,
@@ -214,7 +212,7 @@ class TestFrame(unittest.TestCase):
 		requiredInstallationStatus = 'installed',
 		requirementType            = 'before'
 	)
-	
+
 	sysessentialDependency1 = ProductDependency(
 		productId                  = sysessential.id,
 		productVersion             =sysessential.productVersion,
@@ -239,8 +237,6 @@ class TestFrame(unittest.TestCase):
 		requiredInstallationStatus = 'installed',
 		requirementType            = 'before'
 	)
-	
-	
 
 
 	productOnClient1 = ProductOnClient(
@@ -287,7 +283,7 @@ class TestFrame(unittest.TestCase):
 		packageVersion     = None,
 		modificationTime   = '2009-07-01 12:00:00'
 	)
-	
+
 	productOnClient5 = ProductOnClient(
 		productId          = sysessential.getId(),
 		productType        =sysessential .getType(),
@@ -299,7 +295,7 @@ class TestFrame(unittest.TestCase):
 		packageVersion     = None,
 		modificationTime   = '2009-07-01 12:00:00'
 	)
-	
+
 	productOnClient6 = ProductOnClient(
 		productId          = jedit.getId(),
 		productType        = javavm .getType(),
@@ -311,88 +307,38 @@ class TestFrame(unittest.TestCase):
 		packageVersion     = None,
 		modificationTime   = '2009-07-01 12:00:00'
 	)
-	
-	
+
 	availProducts = [ opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox,sysessential ]
 	deps = [ flashplayerDependency1, javavmDependency1, jeditDependency1, ultravncDependency1 ]
-	
+
 	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
-	
-	def show(self):
-		print 
-		print ("testing %s " % self)
-	
-	def weHave(self):	
-		print
-		
-	def weHaveWithMoreContent(self):
-		print( u"data is ")
-		print ( u"availProducts")
-		for prod in self.availProducts :
-			print prod
-		print
-		print ( u"dependencies :")
-		for dep in self.deps:
-			print dep
-		print
-		print ( u"productOnClients")
-		for prod in self.productOnClients:
-			print prod
-		print	
-		print ( u"productOnClients with dependent products")
-		self.productOnClients = SharedAlgorithm.addDependentProductOnClients(
-			self.productOnClients,
-			self.availProducts,
-			self.deps)
-		print ( u"productOnClients")
-		for prod in self.productOnClients:
-			print prod
-		print "**********************************************************"
-		print "**********************************************************"
-	
-	
-		
+
 
 class DependenciesOnlyInsideAPriorityclassTestCase(TestFrame):
 	"""
 	CASE: priority levels and dependency do not interfer
 	"""
+
 	availProducts =  TestFrame.availProducts
 	productOnClients = TestFrame.productOnClients
 	deps = TestFrame.deps
-	sortedProductList = [u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit'] 
+	sortedProductList = [u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit']
 	sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(availProducts, deps)
 	sortedProductList2 =SharedAlgorithm.generateProductSequence_algorithm2(availProducts, deps)
-	
-	def setUp(self):
-		self.weHave()
-		
-	def tearDown(self):
-		pass
-	
+
 	def testAlgo1(self):
-		#print("++++++++++")
 		print("availProducts %s "  % self.availProducts)
 		print("dependencies %s "  % self.deps)
 		print(u"compare to sortedProductList %s " % self.sortedProductList)
-		#sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
 		print(u"produced sorted list  with 1: %s " % self.sortedProductList1)
 		self.assertEqual( self.sortedProductList1, self.sortedProductList, "not the expected ordering")
-		
-	
+
 	def testAlgo2(self):
-		#print(u"availProducts %s " % self.availProducts)
 		print(u"compare to sortedProductList %s " % self.sortedProductList)
-		#sortedProductList =SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % self.sortedProductList2)
 		self.assertEqual( self.sortedProductList2, self.sortedProductList, "not the expected ordering")
-		pass
-	
-	def testCompAlgo1_3(self):
-		#self.assertTrue( False, "not the expected ordering")
-		pass
-	
-	
+
+
 class DependenciesCrossingPriorityclassesTestCase(TestFrame):
 	"""
 	CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority
@@ -401,104 +347,66 @@ class DependenciesCrossingPriorityclassesTestCase(TestFrame):
 	productOnClients = TestFrame.productOnClients
 	deps = TestFrame.deps
 	deps.append(TestFrame.sysessentialDependency1)
-	
+
 	sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(availProducts, deps)
 	sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(availProducts, deps)
 
-	
-	def setUp(self):
-		self.weHave()
-		pass
-	
-	def tearDown(self):
-		pass
-	
 	def testAlgo1(self):
 		sortedProductListTarget = ['opsi-agent', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit', u'sysessential']
-		#sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % self.sortedProductList1)
 		self.assertEqual( self.sortedProductList1, sortedProductListTarget, "not the expected ordering")
-	
+
 	def testAlgo2(self):
-		sortedProductListTarget=[u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit'] 
-		#sortedProductList = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
+		sortedProductListTarget=[u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit']
 		print(u"produced sorted list : %s " % self.sortedProductList2)
 		self.assertEqual( self.sortedProductList2, sortedProductListTarget, "not the expected ordering")
-	
-	#def testCompAlgo1_3 (self):
-		#sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
-		#productOnClients0 = self.productOnClients
-		#productOnClients1 = SharedAlgorithm.generateProductOnClientSequence(productOnClients0, self.sortedProductList1)
-		
-		#productOnClients3=SharedAlgorithm. generateProductOnClientSequence_algorithm3(productOnClients0, self.availProducts, self.deps)
-		
-		#print(u'productOnClients1 %s ' % productOnClients1)
-		#print
-		#print(u'productOnClients3 %s ' % productOnClients3)
-		#self.assertEquals(productOnClients0, productOnClients3, u'different results from 1 vs. 3')
-	
-	
+
+
 class CircularDependenciesTestCase(TestFrame):
 	"""
-	CASE: ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc 
+	CASE: ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc
 	"""
-	
+
 	availProducts =  TestFrame.availProducts
 	productOnClients = TestFrame.productOnClients
 	deps = TestFrame.deps
 	deps.append(TestFrame.firefoxDependency1)
-	
-	
-	def setUp(self):
-		self.weHave()
-		pass
-	
-	def tearDown(self):
-		pass
-	
+
 	def testAlgo1(self):
 		sortedProductListTarget = []
-		
-		print ( u"availProducts %s " %self.availProducts)
-		print ( u"dependencies %s " %self.deps)
-		
+
+		print(u"availProducts %s " %self.availProducts)
+		print(u"dependencies %s " %self.deps)
+
 		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % sortedProductList)
 		self.assertEqual( sortedProductList, sortedProductListTarget, "not the expected ordering")
-	
+
 	def testAlgo2(self):
 		sortedProductListTarget = []
 		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % sortedProductList)
 		self.assertEqual( sortedProductList, sortedProductListTarget, "not the expected ordering")
-	
+
 	def testCompAlgo1_3 (self):
-		print ( u"availProducts ")
+		print(u"availProducts ")
 		for p in self.availProducts:
-			print p
-		print
-		print ( u"dependencies ")
+			print(p)
+
+		print(u"dependencies ")
 		for dep in self.deps:
-			print dep
-		print
+			print(dep)
+
 		sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
 		print(u'sortedList 1 %s ' % sortedProductList1)
-		print
 		productOnClients0 = self.productOnClients
 		print(u'productOnClients0 %s ' % productOnClients0)
-		print
 		productOnClients1 = SharedAlgorithm.generateProductOnClientSequence(productOnClients0, sortedProductList1)
 		print(u'productOnClients1 %s ' % productOnClients1)
-		print
 		productOnClients3=SharedAlgorithm. generateProductOnClientSequence_algorithm3(productOnClients0, self.availProducts, self.deps)
 		print(u'productOnClients3 %s ' % productOnClients3)
 		self.assertNotEquals(productOnClients0, productOnClients3, u'different results from 1 vs. 3')
-	
-	
-	
-	
+
+
 if __name__ == '__main__':
     unittest.main()
-
-	
-    
