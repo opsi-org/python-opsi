@@ -167,20 +167,17 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			self._masterBackend.auditHardwareOnHost_setObsolete(self._clientId)
 			self._masterBackend.auditHardwareOnHost_updateObjects([mo['object'] for mo in modifiedObjects['AuditHardwareOnHost']])
 
-		if modifiedObjects.has_key('AuditSoftware'):
-			objects = []
-			for mo in modifiedObjects['AuditSoftware']:
-				objects.append(mo['object'])
-			self._masterBackend.auditSoftware_updateObjects(objects)
+		if 'AuditSoftware' in modifiedObjects:
+			self._masterBackend.auditSoftware_updateObjects([mo['object'] for mo in modifiedObjects['AuditSoftware']])
 
-		if modifiedObjects.has_key('AuditSoftwareOnClient'):
+		if 'AuditSoftwareOnClient' in modifiedObjects:
 			self._masterBackend.auditSoftwareOnClient_setObsolete(self._clientId)
 			objects = []
 			for mo in modifiedObjects['AuditSoftwareOnClient']:
 				objects.append(mo['object'])
 			self._masterBackend.auditSoftwareOnClient_updateObjects(objects)
 
-		if modifiedObjects.has_key('ProductOnClient'):
+		if 'ProductOnClient' in modifiedObjects:
 			def objectsDifferFunction(snapshotObj, masterObj):
 				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult', 'lastAction'])
 
@@ -197,7 +194,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
 			self._syncModifiedObjectsWithMaster(ProductOnClient, modifiedObjects['ProductOnClient'], {"clientId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 
-		if modifiedObjects.has_key('LicenseOnClient'):
+		if 'LicenseOnClient' in modifiedObjects:
 			def objectsDifferFunction(snapshotObj, masterObj):
 				result = objectsDiffer(snapshotObj, masterObj)
 				return result
@@ -222,19 +219,22 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				if len(snapshotObj.values) != len(masterObj.values):
 					logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
 					return None
+
 				if snapshotObj.values:
 					for v in snapshotObj.values:
-						if not v in masterObj.values:
+						if v not in masterObj.values:
 							logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
 							return None
+
 				if masterObj.values:
 					for v in masterObj.values:
-						if not v in snapshotObj.values:
+						if v not in snapshotObj.values:
 							logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
 							return None
+
 				return updateObj
 
-			if modifiedObjects.has_key(objectClassName):
+			if objectClassName in modifiedObjects:
 				self._syncModifiedObjectsWithMaster(eval(objectClassName), modifiedObjects[objectClassName], {"objectId": self._clientId}, objectsDifferFunction, createUpdateObjectFunction, mergeObjectsFunction)
 
 	def _replicateMasterToWorkBackend(self):
