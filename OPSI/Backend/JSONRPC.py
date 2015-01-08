@@ -36,6 +36,7 @@ import json
 import new
 import socket
 import time
+import types
 import threading
 import zlib
 from Queue import Queue, Empty
