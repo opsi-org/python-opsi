@@ -953,7 +953,7 @@ class BackendAccessControl(object):
 				in mandatoryConstructorArgs(obj.__class__)]
 
 			for key in objHash.keys():
-				if not key in allowedAttributes:
+				if key not in allowedAttributes:
 					if exceptionOnTruncate:
 						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
 					del objHash[key]
