@@ -931,7 +931,7 @@ class BackendAccessControl(object):
 
 			allowedAttributes = set()
 			for acl in acls:
-				if (acl.get('type') == 'self'):
+				if acl.get('type') == 'self':
 					objectId = objHash.get('id', objHash.get('objectId', objHash.get('hostId', objHash.get('clientId', objHash.get('depotId', objHash.get('serverId'))))))
 					if not objectId or (objectId != self._username):
 						continue
@@ -962,11 +962,12 @@ class BackendAccessControl(object):
 				newObjects.append(objHash)
 			else:
 				newObjects.append(obj.__class__.fromHash(objHash))
+
 		orilen = len(objects)
 		newlen = len(newObjects)
-		if (newlen < orilen):
-			logger.warning(u"%d objects removed by acl, %d objects left" % (orilen-newlen, newlen))
-			if (newlen == 0) and exceptionIfAllRemoved:
+		if newlen < orilen:
+			logger.warning(u"{0} objects removed by acl, {1} objects left".format((orilen - newlen, newlen)))
+			if newlen == 0 and exceptionIfAllRemoved:
 				raise BackendPermissionDeniedError(u"Access denied")
 
 		return newObjects
