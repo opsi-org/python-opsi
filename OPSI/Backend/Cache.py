@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 """
 
 import codecs
+import collections
 import inspect
 import json
 import time
@@ -147,12 +148,11 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 			meth = getattr(self._masterBackend, '%s_updateObjects' % objectClass.backendMethodPrefix)
 			meth(updateObjects)
 
-	def _updateMasterFromWorkBackend(self, modifications = []):
-		modifiedObjects = {}
+	def _updateMasterFromWorkBackend(self, modifications=[]):
+		modifiedObjects = collections.defaultdict(list)
+
 		for modification in modifications:
 			try:
-				if not modifiedObjects.has_key(modification['objectClass']):
-					modifiedObjects[modification['objectClass']] = []
 				ObjectClass = eval(modification['objectClass'])
 				identValues = modification['ident'].split(ObjectClass.identSeparator)
 				identAttributes = getIdentAttributes(ObjectClass)
