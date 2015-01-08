@@ -356,16 +356,16 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		oemBootFiles = []
 		for fn in txtSetupOemFile.getFilesForDevice(vendorId=supportedDevice['vendorId'], deviceId=supportedDevice['deviceId'], fileTypes=['inf', 'driver', 'catalog', 'dll']):
 			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
-			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$',fn))
+			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$', fn))
 			oemBootFiles.append(fn)
 
 		# Apply workarounds for windows setup errors
 		txtSetupOemFile.applyWorkarounds()
 		txtSetupOemFile.generate()
 
-		oemBootFiles.append( os.path.basename(txtSetupOem) )
-		for textmodePath in ( 	os.path.join(destination, u'$', u'textmode'), \
-					os.path.join(destination, u'$win_nt$.~bt', u'$oem$') ):
+		oemBootFiles.append(os.path.basename(txtSetupOem))
+		for textmodePath in (os.path.join(destination, u'$', u'textmode'),
+							os.path.join(destination, u'$win_nt$.~bt', u'$oem$')):
 			System.mkdir(textmodePath)
 			System.copy(txtSetupOem, textmodePath)
 
@@ -421,7 +421,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None, auditHardwareOnHosts=None):
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
-	if not type(additionalDrivers) is list:
+	if type(additionalDrivers) is not list:
 		additionalDrivers = [additionalDriver.strip() for additionalDriver in forceUnicodeList(additionalDrivers.split(','))]
 	else:
 		additionalDrivers = forceUnicodeList(additionalDrivers)
@@ -445,7 +445,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 
 	auditInfoByClass = {}
 	for auditHardwareOnHost in auditHardwareOnHosts:
-		if not auditHardwareOnHost.hardwareClass in  ("COMPUTER_SYSTEM", "BASE_BOARD"):
+		if auditHardwareOnHost.hardwareClass not in ("COMPUTER_SYSTEM", "BASE_BOARD"):
 			continue
 		else:
 			if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
@@ -463,7 +463,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if not vendorFromHost in vendordirectories:
 				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
-				
+
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir,vendordirectory))
@@ -480,20 +480,20 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
 		vendorFromHost = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor)
 		productFromHost  = re.sub("[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product)
-		
+
 		if vendorFromHost and productFromHost:
 			vendordirectories = listdir(rulesdir)
 			if not vendorFromHost in vendordirectories:
 				if vendorFromHost.endswith(".") or vendorFromHost.endswith(" "):
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
-					
+
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					productdirectories = listdir(os.path.join(rulesdir,vendordirectory))
 					if not productFromHost in productdirectories:
 						if productFromHost.endswith(".") or productFromHost.endswith(" "):
 							productFromHost = "%s_" % productFromHost[:-1]
-							
+
 					for productdirectory in productdirectories:
 						if productdirectory.lower() == productFromHost.lower():
 							additionalDrivers.append(os.path.join("byAudit" , vendordirectory, productdirectory))
@@ -543,6 +543,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		return []
 
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject=messageSubject, srcRepository=srcRepository)
+
 
 def getOemPnpDriversPath(driverDirectory, target, separator=u';', prePath=u'', postPath=u''):
 	logger.info(u"Generating oemPnpDriversPath")
