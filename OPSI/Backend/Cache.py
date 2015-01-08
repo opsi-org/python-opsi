@@ -178,11 +178,10 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
 		if 'ProductOnClient' in modifiedObjects:
 			def objectsDifferFunction(snapshotObj, masterObj):
-				return objectsDiffer(snapshotObj, masterObj, excludeAttributes = ['modificationTime', 'actionProgress', 'actionResult', 'lastAction'])
+				return objectsDiffer(snapshotObj, masterObj, excludeAttributes=['modificationTime', 'actionProgress', 'actionResult', 'lastAction'])
 
 			def createUpdateObjectFunction(modifiedObj):
-				updateObj = modifiedObj.clone(identOnly = False)
-				return updateObj
+				return modifiedObj.clone(identOnly=False)
 
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
 				if snapshotObj.actionRequest != masterObj.actionRequest:
@@ -195,12 +194,10 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 
 		if 'LicenseOnClient' in modifiedObjects:
 			def objectsDifferFunction(snapshotObj, masterObj):
-				result = objectsDiffer(snapshotObj, masterObj)
-				return result
+				return objectsDiffer(snapshotObj, masterObj)
 
 			def createUpdateObjectFunction(modifiedObj):
-				updateObj = modifiedObj.clone(identOnly = False)
-				return updateObj
+				return modifiedObj.clone(identOnly=False)
 
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
 				return updateObj
