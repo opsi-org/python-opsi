@@ -932,7 +932,12 @@ class BackendAccessControl(object):
 			allowedAttributes = set()
 			for acl in acls:
 				if acl.get('type') == 'self':
-					objectId = objHash.get('id', objHash.get('objectId', objHash.get('hostId', objHash.get('clientId', objHash.get('depotId', objHash.get('serverId'))))))
+					objectId = None
+					for identifier in ('id', 'objectId', 'hostId', 'clientId', 'depotId', 'serverId'):
+						if identifier in objHash:
+							objectId = objHash[identifier]
+							break
+
 					if not objectId or (objectId != self._username):
 						continue
 
