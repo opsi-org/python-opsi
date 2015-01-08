@@ -936,9 +936,9 @@ class BackendAccessControl(object):
 					if not objectId or (objectId != self._username):
 						continue
 
-				if   acl.get('allowAttributes', []):
+				if acl.get('allowAttributes'):
 					[allowedAttributes.add(attribute) for attribute in acl['allowAttributes']]
-				elif acl.get('denyAttributes', []):
+				elif acl.get('denyAttributes'):
 					[allowedAttributes.add(attribute) for attribute in objHash.keys() if attribute not in acl['denyAttributes']]
 				else:
 					[allowedAttributes.add(attribute) for attribute in objHash.keys()]
