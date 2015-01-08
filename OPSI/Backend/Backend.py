@@ -2895,10 +2895,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return productOnClients
 
 	def productOnClient_generateSequence(self, productOnClients):
-		generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
 		configs = self._context.config_getObjects(id="product_sort_algorithm")
 		if configs and ("product_on_client" in configs[0].getDefaultValues() or "algorithm1" in configs[0].getDefaultValues()):
 			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
+		else:
+			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
 
 		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
 
