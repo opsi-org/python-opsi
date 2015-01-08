@@ -153,7 +153,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				identAttributes = getIdentAttributes(ObjectClass)
 				filter = {}
 				for i in range(len(identAttributes)):
-					if (i >= len(identValues)):
+					if i >= len(identValues):
 						raise Exception(u"Bad ident '%s' for objectClass '%s'" % (identValues, modification['objectClass']))
 					filter[identAttributes[i]] = identValues[i]
 				meth = getattr(self._workBackend, ObjectClass.backendMethodPrefix + '_getObjects')
@@ -189,7 +189,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return updateObj
 
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
-				if (snapshotObj.actionRequest != masterObj.actionRequest):
+				if snapshotObj.actionRequest != masterObj.actionRequest:
 					logger.info(u"Action request of %s changed on server since last sync, not updating actionRequest" % snapshotObj)
 					updateObj.actionRequest = None
 					updateObj.targetConfiguration = None
@@ -219,7 +219,7 @@ class ClientCacheBackend(ConfigDataBackend, ModificationTrackingBackend):
 				return modifiedObj.clone()
 
 			def mergeObjectsFunction(snapshotObj, updateObj, masterObj):
-				if (len(snapshotObj.values) != len(masterObj.values)):
+				if len(snapshotObj.values) != len(masterObj.values):
 					logger.info(u"Values of %s changed on server since last sync, not updating values" % snapshotObj)
 					return None
 				if snapshotObj.values:
