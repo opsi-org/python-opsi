@@ -923,13 +923,13 @@ class BackendAccessControl(object):
 		logger.info(u"Filtering objects by acls")
 		newObjects = []
 		for obj in forceList(objects):
-			allowedAttributes = []
 			isDict = type(obj) is types.DictType
 			if isDict:
 				objHash = obj
 			else:
 				objHash = obj.toHash()
 
+			allowedAttributes = set()
 			for acl in acls:
 				if (acl.get('type') == 'self'):
 					objectId = objHash.get('id', objHash.get('objectId', objHash.get('hostId', objHash.get('clientId', objHash.get('depotId', objHash.get('serverId'))))))
@@ -937,32 +937,27 @@ class BackendAccessControl(object):
 						continue
 
 				if   acl.get('allowAttributes', []):
-					for attribute in acl['allowAttributes']:
-						if not attribute in allowedAttributes:
-							allowedAttributes.append(attribute)
+					[allowedAttributes.add(attribute) for attribute in acl['allowAttributes']]
 				elif acl.get('denyAttributes', []):
-					for attribute in objHash.keys():
-						if not attribute in acl['denyAttributes'] and not attribute in allowedAttributes:
-							allowedAttributes.append(attribute)
+					[allowedAttributes.add(attribute) for attribute in objHash.keys() if attribute not in acl['denyAttributes']]
 				else:
-					for attribute in objHash.keys():
-						if not attribute in allowedAttributes:
-							allowedAttributes.append(attribute)
+					[allowedAttributes.add(attribute) for attribute in objHash.keys()]
 
 			if not allowedAttributes:
 				continue
 
 			if not isDict:
-				if not 'type' in allowedAttributes:
-					allowedAttributes.append('type')
-				for attribute in mandatoryConstructorArgs(obj.__class__):
-					if not attribute in allowedAttributes:
-						allowedAttributes.append(attribute)
+				allowedAttributes.add('type')
+
+				[allowedAttributes.add(attribute) for attribute
+				in mandatoryConstructorArgs(obj.__class__)]
+
 			for key in objHash.keys():
 				if not key in allowedAttributes:
 					if exceptionOnTruncate:
 						raise BackendPermissionDeniedError(u"Access to attribute '%s' denied" % key)
 					del objHash[key]
+
 			if isDict:
 				newObjects.append(objHash)
 			else:
