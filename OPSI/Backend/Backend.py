@@ -2499,24 +2499,31 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return
 
 		# Check if productPropertyStates are possible
-		depotIds = []
-		for productOnDepot in self.productOnDepot_getObjects(
-					productId      = productProperty.productId,
-					productVersion = productProperty.productVersion,
-					packageVersion = productProperty.packageVersion):
-			if not productOnDepot.depotId in depotIds:
-				depotIds.append(productOnDepot.depotId)
+		depotIds = set(
+			[
+				productOnDepot.depotId
+				for productOnDepot in self.productOnDepot_getObjects(
+					productId=productProperty.productId,
+					productVersion=productProperty.productVersion,
+					packageVersion=productProperty.packageVersion
+				)
+			]
+		)
 
 		if not depotIds:
 			return
 
 		# Get depot to client assignment
-		clientIds = []
-		for clientToDepot in self.configState_getClientToDepotserver(depotIds = depotIds):
-			if not clientToDepot['clientId'] in clientIds:
-				clientIds.append(clientToDepot['clientId'])
-		objectIds = depotIds
-		objectIds.extend(clientIds)
+		objectIds = depotIds.union(
+			set(
+				[
+					clientToDepot['clientId'] for clientToDepot
+					in self.configState_getClientToDepotserver(
+						depotIds=depotIds
+					)
+				]
+			)
+		)
 
 		deleteProductPropertyStates = []
 		updateProductPropertyStates = []
