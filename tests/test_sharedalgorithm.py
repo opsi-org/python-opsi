@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,15 +22,12 @@ Testing OPSI.SharedAlgorithm
 :author: Rupert Röder <r.roeder@uib.de>
 :license: GNU Affero General Public License version 3
 """
-# for testing install python-pip, and then pip install nose
-#nosetests -s tests/test_sharedalgorithm.py
-
 
 from __future__ import absolute_import
 
 import unittest
 
-from OPSI.Object import *
+from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 from OPSI import SharedAlgorithm
