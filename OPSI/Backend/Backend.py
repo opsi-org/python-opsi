@@ -34,6 +34,7 @@ __version__ = '4.0.6.1'
 
 import base64
 import codecs
+import collections
 import copy as pycopy
 import inspect
 import json
@@ -907,12 +908,8 @@ depot where the method is.
 		return []
 
 	def product_deleteObjects(self, products):
-		productByIdAndVersion = {}
+		productByIdAndVersion = collections.defaultdict(lambda: collections.defaultdict(list))
 		for product in forceObjectClassList(products, Product):
-			if not productByIdAndVersion.has_key(product.id):
-				productByIdAndVersion[product.id] = {}
-			if not productByIdAndVersion[product.id].has_key(product.productVersion):
-				productByIdAndVersion[product.id][product.productVersion] = []
 			productByIdAndVersion[product.id][product.productVersion].append(product.packageVersion)
 
 			self._context.productProperty_deleteObjects(
@@ -3199,23 +3196,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			return productPropertyStates
 
 		# Get depot to client assignment
-		depotToClients = {}
+		depotToClients = collections.defaultdict(list)
 		for clientToDepot in self.configState_getClientToDepotserver(clientIds = filter.get('objectId', [])):
-			if not depotToClients.has_key(clientToDepot['depotId']):
-				depotToClients[clientToDepot['depotId']] = []
 			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 
 		# Create data structure for product property states to find missing ones
-		ppss = {}
+		ppss = collections.defaultdict(collections.defaultdict(list))
 		for pps in self._backend.productPropertyState_getObjects(
 						attributes = ['objectId', 'productId', 'propertyId'],
 						objectId   = filter.get('objectId', []),
 						productId  = filter.get('productId', []),
 						propertyId = filter.get('propertyId', [])):
-			if not ppss.has_key(pps.objectId):
-				ppss[pps.objectId] = {}
-			if not ppss[pps.objectId].has_key(pps.productId):
-				ppss[pps.objectId][pps.productId] = []
 			ppss[pps.objectId][pps.productId].append(pps.propertyId)
 
 		# Create missing product property states
