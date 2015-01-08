@@ -638,14 +638,11 @@ class BackendAccessControl(object):
 			raise BackendConfigurationError(u"Failed to load acl file '%s': %s" % (self._aclFile, e))
 
 	def _createInstanceMethods(self):
-		protectedMethods = []
+		protectedMethods = set()
 		for Class in (ExtendedConfigDataBackend, ConfigDataBackend, DepotserverBackend, HostControlBackend, HostControlSafeBackend):
-			for member in inspect.getmembers(Class, inspect.ismethod):
-				methodName = member[0]
-				if methodName.startswith('_'):
-					continue
-				if not methodName in protectedMethods:
-					protectedMethods.append(methodName)
+			methodnames = (method[0] for method in inspect.getmembers(Class, inspect.ismethod))
+			[protectedMethods.add(methodName) for methodName in
+			(name for name in methodnames if not name.startswith('_'))]
 
 		for member in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = member[0]
