@@ -102,7 +102,6 @@ class TestFrame(unittest.TestCase):
 		windowsSoftwareIds = []
 	)
 
-
 	sysessential = LocalbootProduct(
 		id                 = 'sysessential',
 		name               = u'Sys Essential',
@@ -153,8 +152,6 @@ class TestFrame(unittest.TestCase):
 		advice             = "",
 		windowsSoftwareIds = []
 	)
-
-
 
 
 	flashplayerDependency1 = ProductDependency(
@@ -328,12 +325,12 @@ class DependenciesOnlyInsideAPriorityclassTestCase(TestFrame):
 		print("dependencies %s "  % self.deps)
 		print(u"compare to sortedProductList %s " % self.sortedProductList)
 		print(u"produced sorted list  with 1: %s " % self.sortedProductList1)
-		self.assertEqual( self.sortedProductList1, self.sortedProductList, "not the expected ordering")
+		self.assertEqual( self.sortedProductList1, self.sortedProductList)
 
 	def testAlgo2(self):
 		print(u"compare to sortedProductList %s " % self.sortedProductList)
 		print(u"produced sorted list : %s " % self.sortedProductList2)
-		self.assertEqual( self.sortedProductList2, self.sortedProductList, "not the expected ordering")
+		self.assertEqual( self.sortedProductList2, self.sortedProductList)
 
 
 class DependenciesCrossingPriorityclassesTestCase(TestFrame):
@@ -351,12 +348,12 @@ class DependenciesCrossingPriorityclassesTestCase(TestFrame):
 	def testAlgo1(self):
 		sortedProductListTarget = ['opsi-agent', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit', u'sysessential']
 		print(u"produced sorted list : %s " % self.sortedProductList1)
-		self.assertEqual( self.sortedProductList1, sortedProductListTarget, "not the expected ordering")
+		self.assertEqual(self.sortedProductList1, sortedProductListTarget)
 
 	def testAlgo2(self):
 		sortedProductListTarget=[u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit']
 		print(u"produced sorted list : %s " % self.sortedProductList2)
-		self.assertEqual( self.sortedProductList2, sortedProductListTarget, "not the expected ordering")
+		self.assertEqual(self.sortedProductList2, sortedProductListTarget)
 
 
 class CircularDependenciesTestCase(TestFrame):
@@ -377,13 +374,13 @@ class CircularDependenciesTestCase(TestFrame):
 
 		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % sortedProductList)
-		self.assertEqual( sortedProductList, sortedProductListTarget, "not the expected ordering")
+		self.assertEqual(sortedProductList, sortedProductListTarget)
 
 	def testAlgo2(self):
 		sortedProductListTarget = []
 		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % sortedProductList)
-		self.assertEqual( sortedProductList, sortedProductListTarget, "not the expected ordering")
+		self.assertEqual(sortedProductList, sortedProductListTarget)
 
 	def testCompAlgo1_3 (self):
 		print(u"availProducts ")
