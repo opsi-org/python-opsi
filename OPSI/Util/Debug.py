@@ -30,13 +30,9 @@ from twisted.internet import defer
 from twisted.python import failure
 
 from twisted.conch.manhole import ColoredManhole
-from twisted.conch.insults import insults
-from twisted.conch.telnet import TelnetTransport, TelnetBootstrapProtocol
 from twisted.conch.manhole_ssh import ConchFactory, TerminalRealm
 
-from twisted.internet import protocol
 from twisted.cred import portal
-from twisted.cred import checkers
 from twisted.internet import reactor
 
 from OPSI.Backend.BackendManager import BackendAccessControl
