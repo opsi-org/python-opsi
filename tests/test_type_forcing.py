@@ -94,7 +94,13 @@ class ForceListTestCase(unittest.TestCase):
 		self.assertEquals(forceList('x'), ['x'])
 
 	def testSetGetsConverted(self):
-		self.assertEquals(forceList(set('abc')), ['a', 'b', 'c'])
+		inputset = set('abc')
+		resultList = forceList(inputset)
+
+		self.assertEquals(len(inputset), len(resultList))
+
+		for element in inputset:
+			self.assertTrue(element in resultList)
 
 
 class ForceUnicodeTestCase(unittest.TestCase):
