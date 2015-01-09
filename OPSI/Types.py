@@ -73,8 +73,9 @@ _ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
 
 
 def forceList(var):
-	if type(var) not in (types.ListType, types.TupleType):
+	if not isinstance(var, (set, list, tuple)):
 		return [var]
+
 	return list(var)
 
 
