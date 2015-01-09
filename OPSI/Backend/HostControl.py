@@ -264,7 +264,7 @@ class HostControlBackend(ExtendedBackend):
 
 	def hostControl_start(self, hostIds=[]):
 		''' Switches on remote computers using WOL. '''
-		hosts = self._context.host_getObjects(attributes = ['hardwareAddress'], id = hostIds)
+		hosts = self._context.host_getObjects(attributes=['hardwareAddress'], id=hostIds)
 		result = {}
 		for host in hosts:
 			try:
