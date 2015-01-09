@@ -34,8 +34,9 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * OPSI.SharedAlgorithm: No more working with code-as-text and evaluation
     of the text to get objects to work with. Now there are only the objects.
   * WindowsDrivers: Fallback if directories ends with "." or with whitespace.
+  * OPSI.Types.forceList now is able to do proper handling of sets.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 07 Jan 2015 15:50:34 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Fri, 09 Jan 2015 10:24:25 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
