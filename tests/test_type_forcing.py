@@ -93,6 +93,9 @@ class ForceListTestCase(unittest.TestCase):
 	def testForceListCreatesAListIfOnlyOneObjectIsGiven(self):
 		self.assertEquals(forceList('x'), ['x'])
 
+	def testSetGetsConverted(self):
+		self.assertEquals(forceList(set('abc')), ['a', 'b', 'c'])
+
 
 class ForceUnicodeTestCase(unittest.TestCase):
 	def testForcingResultsInUnicode(self):
