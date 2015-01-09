@@ -126,7 +126,10 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 		LOGGER.notice(u"   Creating backup of %s" % sudoersFile)
 		shutil.copy(
 			sudoersFile,
-			sudoersFile + u'.' + time.strftime("%Y-%m-%d_%H:%M")
+			u'{filename}.{timestamp}'.format(
+				filename=sudoersFile,
+				timestamp=time.strftime("%Y-%m-%d_%H:%M")
+			)
 		)
 
 		LOGGER.notice(u"   Writing new %s" % sudoersFile)
