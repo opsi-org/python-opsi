@@ -57,8 +57,8 @@ class BackendExtendedThroughOPSITestCase(unittest.TestCase, ExtendedFileBackendM
 
 		self.backendManager.host_createObjects([client, depot])
 
-		firstProduct = LocalbootProduct('already_installed', '1.0', '1.0')
-		secondProduct = LocalbootProduct('to_install', '1.0', '1.0')
+		firstProduct = LocalbootProduct('to_install', '1.0', '1.0')
+		secondProduct = LocalbootProduct('already_installed', '1.0', '1.0')
 
 		prodDependency = ProductDependency(
 			productId=firstProduct.id,
