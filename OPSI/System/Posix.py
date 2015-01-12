@@ -3508,6 +3508,48 @@ instead of throwing an error.
 	raise RuntimeError(u"Could not locate dhcpd init file.")
 
 
+def getDHCPDRestartCommand(default=None):
+	serviceName = getDHCPServiceName()
+	if serviceName:
+		return u"service {name} restart".format(name=serviceName)
+
+	locations = (
+		u"/etc/init.d/dhcpd",  # suse / redhat / centos
+		u"/etc/init.d/isc-dhcp-server",  # newer debian / ubuntu
+		u"/etc/init.d/dhcp3-server"  # older debian / ubuntu
+	)
+
+	for filename in locations:
+		if os.path.exists(filename):
+			return u"{initscript} restart".format(initscript=filename)
+
+	if default is not None:
+		logger.debug(
+			u"Could not find dhcpd restart command but default is given. "#
+			u"Making use of default: {0}".format(default)
+		)
+		return default
+
+	raise RuntimeError(u"Could not find DHCPD restart command.")
+
+
+def getDHCPServiceName():
+	"""
+	Tries to read the name of the used dhcpd.
+	Returns `None` if no known service was detected.
+	"""
+	knownServices = (
+		u"dhcpd", u"univention-dhcp", u"isc-dhcp-server", u"dhcp3-server"
+	)
+
+	try:
+		for servicename in getServiceNames():
+			if servicename in knownServices:
+				return servicename
+	except Exception:
+		pass
+
+
 def getSambaServiceName(default=None, staticFallback=True):
 	"""
 	Get the name for the samba service.

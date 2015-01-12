@@ -34,8 +34,9 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
     of the text to get objects to work with. Now there are only the objects.
   * WindowsDrivers: Fallback if directories ends with "." or with whitespace.
   * OPSI.Types.forceList now is able to handle of sets and generators
+  * New function OPSI.System.Posix.getDHCPDRestartCommand
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 12 Jan 2015 10:13:01 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 12 Jan 2015 15:33:48 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
