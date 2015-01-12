@@ -73,7 +73,7 @@ _ARCHITECTURE_REGEX = re.compile('^(x86|x64)$')
 
 
 def forceList(var):
-	if not isinstance(var, (set, list, tuple)):
+	if not isinstance(var, (set, list, tuple, types.GeneratorType)):
 		return [var]
 
 	return list(var)

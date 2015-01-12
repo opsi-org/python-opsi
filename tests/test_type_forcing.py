@@ -90,10 +90,27 @@ class ForceObjectClassHashTestCase(unittest.TestCase):
 
 
 class ForceListTestCase(unittest.TestCase):
-	def testForceListCreatesAListIfOnlyOneObjectIsGiven(self):
+	def testForceListDoesNotIterateOverString(self):
 		self.assertEquals(forceList('x'), ['x'])
 
-	def testSetGetsConverted(self):
+	def testTupleGetsConvertedToList(self):
+		self.assertEquals(forceList(('x', 'a')), ['x', 'a'])
+
+	def testListIsListAfterwartds(self):
+		self.assertEquals(forceList(['x', 'a']), ['x', 'a'])
+
+	def testGeneratorGetsConsumed(self):
+		def generatorFunc():
+			yield "y"
+			yield "u"
+			yield "so"
+			yield "funky"
+
+		generator = generatorFunc()
+
+		self.assertEquals(forceList(generator), ['y', 'u', 'so', 'funky'])
+
+	def testSetGetsConvertedToList(self):
 		inputset = set('abc')
 		resultList = forceList(inputset)
 
