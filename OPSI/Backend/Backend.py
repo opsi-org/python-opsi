@@ -526,7 +526,7 @@ containing the localisation of the hardware audit.
 				self._opsiPasswdFile = forceFilename(value)
 			elif option in ('depotid', 'serverid'):
 				self._depotId = value
-			elif option == 'maxlogfilesize':
+			elif option == 'maxlogsize':
 				self._maxLogfileSize = forceInt(value)
 
 		if not self._depotId:
