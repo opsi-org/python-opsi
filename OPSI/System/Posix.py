@@ -3495,12 +3495,9 @@ instead of throwing an error.
 		if os.path.exists(filename):
 			return filename
 
-	try:
-		for servicename in getServiceNames():
-			if servicename in (u"dhcpd", u"isc-dhcp-server", u"dhcp3-server"):
-				return "service {name}".format(servicename)
-	except Exception:
-		pass
+	serviceName = getDHCPServiceName()
+	if serviceName:
+		return "service {name}".format(serviceName)
 
 	if default is not None:
 		return default
