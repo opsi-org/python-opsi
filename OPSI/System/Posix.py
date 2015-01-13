@@ -3519,7 +3519,7 @@ def getDHCPDRestartCommand(default=None):
 	if serviceName:
 		try:
 			return u"{service} {name} restart".format(
-				name=serviceName
+				name=serviceName,
 				service=which('service')
 			)
 
