@@ -3522,6 +3522,10 @@ def getDHCPDRestartCommand(default=None):
 				name=serviceName,
 				service=which('service')
 			)
+		except Exception as err:
+			logger.debug(
+				"Ooops, getting the path to service failed: {0}".format(err)
+			)
 
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
