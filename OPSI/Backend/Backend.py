@@ -846,10 +846,10 @@ depot where the method is.
 	def config_updateObject(self, config):
 		config = forceObjectClass(config, Config)
 
-	def config_getHashes(self, attributes = [], **filter):
+	def config_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.config_getObjects(attributes, **filter)]
 
-	def config_getObjects(self, attributes = [], **filter):
+	def config_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Config, attributes, **filter)
 		return []
 
@@ -2870,6 +2870,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found" \
 							% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
 				products.append(product)
+
 				def addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion):
 					dependencies = productDependenciesByProductIdAndVersion.get(product.id, {}).get(product.productVersion, {}).get(product.packageVersion, [])
 					for dep in dependencies:
@@ -2880,6 +2881,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							if not dep in productDependencies:
 								productDependencies.append(dep)
 								addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
+
 				addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
 
 			for clientId in clientIds:
