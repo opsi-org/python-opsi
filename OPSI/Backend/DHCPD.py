@@ -58,7 +58,9 @@ class DHCPDBackend(ConfigDataBackend):
 			pathToService = u"/sbin/service"
 
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
-		self._reloadConfigCommand = u'%s %s restart' % (pathToService, System.Posix.locateDHCPDInit(u'/etc/init.d/isc-dhcp-server').split("/")[-1])
+		self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
+			command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
+		)
 
 		self._fixedAddressFormat = u'IP'
 		self._defaultClientParameters = {
