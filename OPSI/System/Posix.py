@@ -3506,6 +3506,15 @@ instead of throwing an error.
 
 
 def getDHCPDRestartCommand(default=None):
+	"""
+	Returns a command that can be used to restart the used DHCPD.
+
+	The command will include the full path to tools used, i.e. service.
+
+	If no command can be automatically determined and `default` is given
+	this will be returned. If `default` is not given an ``RuntimeError``
+	will be risen.
+	"""
 	serviceName = getDHCPServiceName()
 	if serviceName:
 		try:
