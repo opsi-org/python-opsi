@@ -3508,7 +3508,11 @@ instead of throwing an error.
 def getDHCPDRestartCommand(default=None):
 	serviceName = getDHCPServiceName()
 	if serviceName:
-		return u"service {name} restart".format(name=serviceName)
+		try:
+			return u"{service} {name} restart".format(
+				name=serviceName
+				service=which('service')
+			)
 
 	locations = (
 		u"/etc/init.d/dhcpd",  # suse / redhat / centos
