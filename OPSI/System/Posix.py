@@ -3535,7 +3535,7 @@ def getDHCPDRestartCommand(default=None):
 
 	if default is not None:
 		logger.debug(
-			u"Could not find dhcpd restart command but default is given. "#
+			u"Could not find dhcpd restart command but default is given. "
 			u"Making use of default: {0}".format(default)
 		)
 		return default
