@@ -60,7 +60,8 @@ bm = BackendManager(
 	dispatchConfigFile = dispatchConfigFile,
 	backendConfigDir = backendConfigDir)
 bt = BackendManagerTest(bm)
-bt.cleanupBackend()
+bt.backend_deleteBase()
+bt.backend_createBase()
 bt.testObjectMethods()
 
 if False:
@@ -71,7 +72,8 @@ if False:
 		password           = bt.configserver1.getOpsiHostKey(),
 		aclFile            = aclFile)
 	bt = BackendManagerTest(bm)
-	bt.cleanupBackend()
+	bt.backend_deleteBase()
+	bt.backend_createBase()
 	bt.testObjectMethods()
 
 def testComposition():
