@@ -1,64 +1,48 @@
 #!/usr/bin/python
 # -*- coding utf-8 -*-
 
-import sys, types
-
-from OPSI.Logger import *
+from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Object import *
-from backend import *
+from backend import *  # TODO: this
 
 logger = Logger()
 
-loglevel = LOG_NONE
-loglevel = LOG_COMMENT
-loglevel = LOG_CRITICAL
-loglevel = LOG_ERROR
-loglevel = LOG_WARNING
-loglevel = LOG_NOTICE
-loglevel = LOG_INFO
-loglevel = LOG_DEBUG
-loglevel = LOG_DEBUG2
-#loglevel = LOG_CONFIDENTIAL
-
-
-logger.setConsoleLevel(loglevel)
+logger.setConsoleLevel(LOG_DEBUG)
 logger.setConsoleColor(True)
-#logger.setConsoleFormat('%D [%L] %M (%F|%N)')
 
 
 def main():
 	#init and reset
 	fileBackend = ExtendedConfigDataBackend(FileBackend())
-	btfileBackend = BackendTest(fileBackend)
+	btfileBackend = BackendTest(fileBackend)  # TODO: this
 	btfileBackend.cleanupBackend()
 
 	mysqlBackend = ExtendedConfigDataBackend(MySQLBackend(username = 'opsi', password = 'opsi', database='opsi'))
-	btmysqlBackend = BackendTest(mysqlBackend)
+	btmysqlBackend = BackendTest(mysqlBackend) # TODO: this
 	btmysqlBackend.cleanupBackend()
-
 
 	#create data
 	btfileBackend.testObjectMethods()
 	mysqlBackend.backend_createBase()
 
 	def check(one, two):
-		for objectType in ('host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup'):
-			oneIdents = []
-			twoIdents = []
+		objectTypesToCheck = (
+			'host', 'config', 'configState', 'product', 'productProperty',
+			'productDependency', 'productOnDepot', 'productOnClient',
+			'productPropertyState', 'group', 'objectToGroup'
+		)
 
+		for objectType in objectTypesToCheck:
 			oneObjects = eval('%s.%s_getObjects()' % (one, objectType))
 			twoObjects = eval('%s.%s_getObjects()' % (two, objectType))
 
-			for oneObject in oneObjects:
-				oneIdents.append(oneObject.getIdent(returnType = 'unicode'))
-			for twoObject in twoObjects:
-				twoIdents.append(twoObject.getIdent(returnType = 'unicode'))
+			oneIdents = [oneObject.getIdent(returnType='unicode') for oneObject in oneObjects]
+			twoIdents = [twoObject.getIdent(returnType='unicode') for twoObject in twoObjects]
 
-			logger.warning(u"assert length %s\noneIdents: '%s'\ntwoIdents: '%s'" \
-				% (objectType, oneIdents, twoIdents))
+			logger.warning(u"assert length %s\noneIdents: '%s'\ntwoIdents: '%s'" % (objectType, oneIdents, twoIdents))
 			assert len(oneIdents) == len(twoIdents)
 
 			for oneIdent in oneIdents:
@@ -67,18 +51,9 @@ def main():
 					if oneIdent == twoIdent:
 						isSameIdent = True
 						break
+
 				logger.warning(u"assert oneIdent '%s' is in twoIdents: '%s'" % (oneIdent, isSameIdent))
 				assert isSameIdent
-
-
-
-
-
-
-
-
-
-
 
 	#convert fileBackend -> mysqlBackend
 	mysqlBackend.host_createObjects(                  fileBackend.host_getObjects()                 )
@@ -108,14 +83,14 @@ def main():
 	fileBackend.objectToGroup_deleteObjects(         fileBackend.objectToGroup_getObjects()        )
 
 
-
-	for objectType in ('host', 'config', 'configState', 'product', 'productProperty', 'productDependency', 'productOnDepot', 'productOnClient', 'productPropertyState', 'group', 'objectToGroup'):
-		idents = []
-
+	objectTypes = (
+		'host', 'config', 'configState', 'product', 'productProperty',
+		'productDependency', 'productOnDepot', 'productOnClient',
+		'productPropertyState', 'group', 'objectToGroup'
+	)
+	for objectType in objectTypes:
 		objects = eval('fileBackend.%s_getObjects()' % objectType)
-
-		for obj in objects:
-			idents.append(obj.getIdent(returnType = 'unicode'))
+		idents = [obj.getIdent(returnType = 'unicode') for obj in objects]
 
 		logger.warning(u"assert length %s-idents: '%s'" \
 			% (objectType, idents))
@@ -139,6 +114,7 @@ def main():
 	print "-------------------------------------"
 	print "- seem to work ... all tests passed -"
 	print "-------------------------------------"
+
 
 if __name__ == '__main__':
 	main()
