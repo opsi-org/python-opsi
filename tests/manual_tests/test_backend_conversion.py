@@ -31,9 +31,6 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 
 logger = Logger()
 
-logger.setConsoleLevel(LOG_DEBUG)
-logger.setConsoleColor(True)
-
 
 def main():
 	#init and reset
@@ -138,4 +135,7 @@ def main():
 
 
 if __name__ == '__main__':
+	logger.setConsoleLevel(LOG_DEBUG)
+	logger.setConsoleColor(True)
+
 	main()
