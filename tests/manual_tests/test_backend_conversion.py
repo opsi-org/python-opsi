@@ -17,12 +17,12 @@ logger.setConsoleColor(True)
 def main():
 	#init and reset
 	fileBackend = ExtendedConfigDataBackend(FileBackend())
-	btfileBackend = BackendTest(fileBackend)  # TODO: this
-	btfileBackend.cleanupBackend()
+	btfileBackend.backend_deleteBase()
+	btfileBackend.backend_createBase()
 
 	mysqlBackend = ExtendedConfigDataBackend(MySQLBackend(username = 'opsi', password = 'opsi', database='opsi'))
-	btmysqlBackend = BackendTest(mysqlBackend) # TODO: this
-	btmysqlBackend.cleanupBackend()
+	btmysqlBackend.backend_deleteBase()
+	btmysqlBackend.backend_createBase()
 
 	#create data
 	btfileBackend.testObjectMethods()
