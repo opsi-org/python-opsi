@@ -5,8 +5,6 @@ from OPSI.Logger import Logger, LOG_DEBUG
 from OPSI.Backend.MySQL import MySQLBackend
 from OPSI.Backend.File import FileBackend
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
-from OPSI.Object import *
-from backend import *  # TODO: this
 
 logger = Logger()
 
