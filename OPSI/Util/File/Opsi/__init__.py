@@ -978,9 +978,6 @@ class OpsiConfFile(IniFile):
 
 				if key == 'use_pigz':
 					self._opsiConfig['packages'][key] = forceBool(value)
-			elif sectionType == 'logfiles':
-				if key == 'max_size':
-					self._opsiConfig['logfiles'][key] = forceInt(value)
 
 		self._parsed = True
 		return self._opsiConfig
