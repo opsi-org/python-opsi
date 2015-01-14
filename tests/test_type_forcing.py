@@ -537,6 +537,12 @@ class ForceFqdnTestCase(unittest.TestCase):
 
 		forceFqdn('hostname.rootzone.tld')
 
+	def testForcingMakesLowercase(self):
+		self.assertEquals('bla.domain.invalid', forceFqdn('BLA.domain.invalid'))
+		self.assertEquals('bla.domain.invalid', forceFqdn('bla.doMAIN.invalid'))
+		self.assertEquals('bla.domain.invalid', forceFqdn('bla.domain.iNVAlid'))
+
+
 class ForceGroupTypeTestCase(unittest.TestCase):
 	def testUnknownHostGroupsResultInError(self):
 		self.assertRaises(ValueError, forceGroupType, 'asdf')
