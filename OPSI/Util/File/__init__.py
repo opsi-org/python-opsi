@@ -40,11 +40,11 @@ import StringIO
 import threading
 import time
 
-if (os.name == 'posix'):
+if os.name == 'posix':
 	import fcntl
 	import grp
 	import pwd
-elif (os.name == 'nt'):
+elif os.name == 'nt':
 	import win32con
 	import win32file
 	import pywintypes
