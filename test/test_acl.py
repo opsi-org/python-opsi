@@ -37,7 +37,8 @@ backend = MySQLBackend(username='opsi', password='opsi', address='localhost', da
 
 # Fill backend
 backendTest = BackendTest(backend)
-backendTest.cleanupBackend()
+backendTest.backend_deleteBase()
+backendTest.backend_createBase()
 backendTest.testObjectMethods()
 
 
