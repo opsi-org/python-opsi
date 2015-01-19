@@ -144,7 +144,19 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 
 		if dependency.requiredProductId in addedInfo:
 			logger.warning(u"   => Product dependency loop detected, skipping")
-			continue
+			logger.debug(
+				u"Circular dependency at {productId}. Processed product: {0}"
+				u"addedInfo: {1}".format(
+					productId,
+					addedInfo,
+					productId=dependency.requiredProductId
+				)
+			)
+			raise CircularProductDependencyError(
+				u"Circular dependency detected at {productId}".format(
+					productId=dependency.requiredProductId,
+				)
+			)
 
 		if dependency.requiredProductId not in productOnClientByProductId:
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
