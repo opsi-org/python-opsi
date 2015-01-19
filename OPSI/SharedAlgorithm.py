@@ -85,12 +85,10 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			setActionRequestToNone = True
 
 		elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion):
-			logger.error(u"   product '%s' defines dependency to product '%s', but product version '%s' is not available" \
-								% (productId, dependency.requiredProductId, dependency.requiredProductVersion))
+			logger.error(u"   product '%s' defines dependency to product '%s', but product version '%s' is not available" % (productId, dependency.requiredProductId, dependency.requiredProductVersion))
 			setActionRequestToNone = True
 		elif (not dependency.requiredPackageVersion is None and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion):
-			logger.error(u"   product '%s' defines dependency to product '%s', but package version '%s' is not available" \
-								% (productId, dependency.requiredProductId, dependency.requiredPackageVersion))
+			logger.error(u"   product '%s' defines dependency to product '%s', but package version '%s' is not available" % (productId, dependency.requiredProductId, dependency.requiredPackageVersion))
 			setActionRequestToNone = True
 
 		if setActionRequestToNone:
@@ -103,8 +101,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.debug(u"   => required action '%s' is already set" % requiredAction)
 			continue
 		elif actionRequest not in (None, 'none'):
-			logger.error(u"   => cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
-						% (productId, dependency.requiredProductId, requiredAction, actionRequest))
+			logger.error(u"   => cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" % (productId, dependency.requiredProductId, requiredAction, actionRequest))
 			continue
 			#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
 			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
