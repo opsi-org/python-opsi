@@ -486,7 +486,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 				sequence += 1
 
 		if sortedList:
-			logger.debug(u"handle remaining if existing  " )
+			logger.debug(u"handle remaining if existing  ")
 			for productId in productOnClientsByProductId.keys():
 				productOnClientsByProductId[productId].actionSequence = sequence
 				productOnClients.append(productOnClientsByProductId[productId])
@@ -498,7 +498,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	# Build priority classes and indices
 	logger.debug(u"*********running algorithm1")
-	logger.debug(u"availableProducts %s " % availableProducts )
+	logger.debug(u"availableProducts %s " % availableProducts)
 
 	productIds = []
 	productIndex = {}
@@ -884,7 +884,7 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 		for i in range(len(sequence)):
 			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))
 			productOnClient = productOnClientByProductId[sequence[i]]
-			productOnClient.setActionSequence(i+1)
+			productOnClient.setActionSequence(i + 1)
 			sortedProductOnClients.append(productOnClient)
 
 	return sortedProductOnClients
