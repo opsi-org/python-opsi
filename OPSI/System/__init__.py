@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -19,9 +19,11 @@
 """
 System library.
 
-#TODO: long descrition
-tell about import from whatever os we use
-<long module description - can be multiple lines>
+This library holds functionality to work with different operating
+systems. For the every day use you should import the method / class you
+want to use directly from this module.
+Because most functions are implemented for Windows and POSIX systems you
+should end up with runnable commands.
 
 :author: Jan Schneider <j.schneider@uib.de>
 :author: Niko Wenselowski <n.wenselowski@uib.de>
