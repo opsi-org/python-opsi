@@ -862,7 +862,7 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 					requiredProductId = dependency.requiredProductId
 					requirementType = dependency.requirementType
 
-					if not requirementType in ('before', 'after'):
+					if requirementType not in ('before', 'after'):
 						continue
 
 					ppos = sequence.index(productId)
