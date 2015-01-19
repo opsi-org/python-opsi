@@ -367,8 +367,8 @@ class CircularDependenciesTestCase(TestFrame):
 	def testAlgo1(self):
 		sortedProductListTarget = []
 
-		print(u"availProducts %s " %self.availProducts)
-		print(u"dependencies %s " %self.deps)
+		print(u"availProducts %s " % self.availProducts)
+		print(u"dependencies %s " % self.deps)
 
 		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
 		print(u"produced sorted list : %s " % sortedProductList)
@@ -401,4 +401,4 @@ class CircularDependenciesTestCase(TestFrame):
 
 
 if __name__ == '__main__':
-    unittest.main()
+	unittest.main()
