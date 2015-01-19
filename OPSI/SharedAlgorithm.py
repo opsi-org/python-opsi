@@ -157,7 +157,7 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 	return productOnClientByProductId.values()
 
 
-class OrderRequirement:
+class OrderRequirement(object):
 	# Represents a request for ordering of two elements with a notice if it is fulfilled
 
 	def __init__(self, prior, posterior, fulfilled=False):
@@ -175,7 +175,7 @@ class OrderRequirement:
 		return self.__str__()
 
 
-class Requirements:
+class Requirements(object):
 	# Comprises a list with ordering requirements and ordered lists of them
 
 	def __init__(self, allItemsCount):
@@ -328,7 +328,7 @@ class Requirements:
 		return self.orderByPosterior
 
 
-class OrderBuild:
+class OrderBuild(object):
 	# Describes the building of an ordering
 
 	def __init__(self,elementCount, requs, completing):
