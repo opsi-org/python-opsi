@@ -27,6 +27,7 @@ import unittest
 
 from OPSI.Object import Product
 
+
 class ProductTestCase(unittest.TestCase):
     def setUp(self):
         self.product = Product(
