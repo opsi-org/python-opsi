@@ -39,6 +39,10 @@ from OPSI.Types import forceInt, forceBool
 logger = Logger()
 
 
+class CircularProductDependencyError(BackendUnaccomplishableError):
+	ExceptionShortDescription = "A circular dependency between products."
+
+
 def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo={}):
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 
