@@ -58,15 +58,15 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 						% (productId, dependency.requiredInstallationStatus, dependency.requiredProductId, dependency.requiredProductVersion,
 						   dependency.requiredPackageVersion, dependency.productAction))
 
-		requiredAction     = dependency.requiredAction
+		requiredAction = dependency.requiredAction
 		installationStatus = 'not_installed'
-		actionRequest      = 'none'
+		actionRequest = 'none'
 		if productOnClientByProductId.has_key(dependency.requiredProductId):
 			installationStatus = productOnClientByProductId[dependency.requiredProductId].installationStatus
-			actionRequest      = productOnClientByProductId[dependency.requiredProductId].actionRequest
+			actionRequest = productOnClientByProductId[dependency.requiredProductId].actionRequest
 		logger.debug(u"addActionRequest: requiredAction %s " % requiredAction)
 		if not requiredAction:
-			if   (dependency.requiredInstallationStatus == installationStatus):
+			if (dependency.requiredInstallationStatus == installationStatus):
 				logger.debug(u"   required installation status '%s' is fulfilled" % dependency.requiredInstallationStatus)
 				continue
 			elif (dependency.requiredInstallationStatus == 'installed'):
@@ -115,11 +115,11 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 
 		if not productOnClientByProductId.has_key(dependency.requiredProductId):
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
-				productId          = dependency.requiredProductId,
-				productType        = availableProductsByProductId[dependency.requiredProductId].getType(),
-				clientId           = poc.clientId,
-				installationStatus = None,
-				actionRequest      = u'none',
+				productId=dependency.requiredProductId,
+				productType=availableProductsByProductId[dependency.requiredProductId].getType(),
+				clientId=poc.clientId,
+				installationStatus=None,
+				actionRequest=u'none',
 			)
 		addedInfo[dependency.requiredProductId] = {
 			'addedForProduct': productId,
@@ -161,7 +161,7 @@ class OrderRequirement(object):
 	# Represents a request for ordering of two elements with a notice if it is fulfilled
 
 	def __init__(self, prior, posterior, fulfilled=False):
-		self.prior     = forceInt(prior)
+		self.prior = forceInt(prior)
 		self.posterior = forceInt(posterior)
 		self.fulfilled = forceBool(fulfilled)
 
@@ -210,7 +210,7 @@ class Requirements(object):
 				# shift all items by one place
 				j = len(self.list) - 1
 				while (j > i):
-					self.orderByPrior[j] = self.orderByPrior[j-1]
+					self.orderByPrior[j] = self.orderByPrior[j - 1]
 					j -= 1
 				# finally we map place i to the new element
 				self.orderByPrior[i] = len(self.list) - 1
@@ -220,7 +220,7 @@ class Requirements(object):
 			# if i = len(self.list) - 1 nothing is moved
 			self.orderByPrior[i] = len(self.list) - 1
 
-		logger.debug2(u"Set orderByPrior[%d] = %d" % (i, (len(self.list) - 1) ))
+		logger.debug2(u"Set orderByPrior[%d] = %d" % (i, (len(self.list) - 1)))
 
 		# The analogous procedure to get a transformation
 		# i -> orderByPosterior[i] such that the sequence
@@ -239,7 +239,7 @@ class Requirements(object):
 				# shift all items by one place
 				j = len(self.list) - 1
 				while (j > i):
-					self.orderByPosterior[j] = self.orderByPosterior[j-1]
+					self.orderByPosterior[j] = self.orderByPosterior[j - 1]
 					j -= 1
 				# Finally we map place i to the new element
 				self.orderByPosterior[i] = len(self.list) - 1
@@ -247,7 +247,6 @@ class Requirements(object):
 		if not located:
 			# If i = len(self.list) - 1 nothing is moved
 			self.orderByPosterior[i] = len(self.list) - 1
-
 
 	def posteriorIndexOf(self, posti):
 		# Searches first occurrence of posti as posterior value in the posterior-ordered sequence of requirements
@@ -314,7 +313,6 @@ class Requirements(object):
 		logger.error(errorS0 + u'  (raise error)')
 		raise OpsiProductOrderingError(errorS0)
 
-
 	def getCount(self):
 		return len(self.list)
 
@@ -331,7 +329,7 @@ class Requirements(object):
 class OrderBuild(object):
 	# Describes the building of an ordering
 
-	def __init__(self,elementCount, requs, completing):
+	def __init__(self, elementCount, requs, completing):
 		self.ordering = []
 		self.elementCount = elementCount
 		self.completing = completing
@@ -425,7 +423,7 @@ class OrderBuild(object):
 				requK = self.requs.getRequList()[orderByPrior[k]]
 				while (k < self.requs.getCount()) and (newEntry == requK.prior):
 					requK.fulfilled = True
-					self.indexIsAmongPosteriors[ requK.posterior ] = True
+					self.indexIsAmongPosteriors[requK.posterior] = True
 					k += 1
 					if (k < self.requs.getCount()):
 						requK = self.requs.getRequList()[orderByPrior[k]]
@@ -480,11 +478,12 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	for product in availableProducts:
 		productIds.append(product.id)
 		productById[product.id] = product
-		productIndex[product.id] = len(productIds)-1
+		productIndex[product.id] = len(productIds) - 1
 
 		prio = str(0)
 		if product.priority:
 			prio = str(product.priority)
+
 		if not priorityClasses.has_key(prio):
 			priorityClasses[prio] = []
 		priorityClasses[prio] .append(product.id)
@@ -508,10 +507,9 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		if (dependency.requiredInstallationStatus != u"installed") and (dependency.requiredAction != u"setup"):
 			continue
 		if (dependency.requirementType == u"before"):
-			setupRequirements.append([ dependency.requiredProductId, dependency.productId ])
+			setupRequirements.append([dependency.requiredProductId, dependency.productId])
 		elif (dependency.requirementType == u"after"):
-			setupRequirements.append([ dependency.productId, dependency.requiredProductId ])
-
+			setupRequirements.append([dependency.productId, dependency.requiredProductId])
 
 	for requ in setupRequirements:
 		prod1 = requ[0]
@@ -519,7 +517,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 		logger.debug(u"requ %s" % requ)
 		if not productById.has_key(prod1):
-			logger.warning(u"Product %s is requested but not available" %  prod1)
+			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
 		prio1 = productById[prod1].priority
 		if not prio1:
@@ -527,12 +525,11 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 
 		if not productById.has_key(prod2):
-			logger.warning(u"Product %s is requested but not available" %  prod2)
+			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
 		prio2 = productById[prod2].priority
 		if not prio2:
 			prio2 = 0
-
 
 		requirements.append([productIndex[prod1],productIndex[prod2]])
 
@@ -571,7 +568,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		ordering = ob.getOrdering()
 		logger.debug(u"completed ordering '%s' " % ordering)
 
-
 		for idx in ordering:
 			sortedList.append(productIds[idx])
 
@@ -580,7 +576,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	except OpsiProductOrderingError as e:
 		logger.warning(u"algo1 outer catched OpsiProductOrderingError")
 		sortedList = []
-
 
 	mixedSortedList = []
 	logger.debug(u"+++++++++show sorted list %s " % sortedList)
@@ -597,30 +592,28 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 		productHeading = None
 		for productId in shrinkingSortedList:
-			logger.debug(u"product %s " %productId)
+			logger.debug(u"product %s " % productId)
 			prioClass = productById[productId].priority
-			if prioClass >= prioClassHead :
+			if prioClass >= prioClassHead:
 				prioClassHead = prioClass
 				productHeading = productId
 
-			logger.debug(u"product %s has priority class %s, prioClassHead now  %s " %(productId, prioClass, prioClassHead))
-
+			logger.debug(u"product %s has priority class %s, prioClassHead now  %s " % (productId, prioClass, prioClassHead))
 
 		#get all products with priority class <= prioClassHead
-
 		prioList = range(0, prioClassStart - prioClassHead)
 		for p in prioList:
 			q = prioClassStart - p
 			qs = str(q)
 			if priorityClasses.has_key(qs):
 				for productId in priorityClasses[qs]:
-					logger.debug(u"append to mixed list %s " %productId)
+					logger.debug(u"append to mixed list %s " % productId)
 					if productId not in mixedSortedList:
 						mixedSortedList.append(productId)
 		logger.debug(u"mixed list %s " % mixedSortedList)
 		logger.debug(u"sorted list was %s " % shrinkingSortedList)
 		qs = str(prioClassHead)
-		logger.debug(u"mix to this the elements of prio class  %s, i.e. %s " % (qs, priorityClasses[qs] ))
+		logger.debug(u"mix to this the elements of prio class  %s, i.e. %s " % (qs, priorityClasses[qs]))
 		for productId in priorityClasses[qs]:
 			if productId not in shrinkingSortedList:
 				mixedSortedList.append(productId)
@@ -629,17 +622,15 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 		while len(shrinkingSortedList) >= 1:
 			productId = shrinkingSortedList[0]
-			logger.debug(u"add element %s  from %s "  %(productId, shrinkingSortedList) )
+			logger.debug(u"add element %s  from %s " % (productId, shrinkingSortedList))
 			mixedSortedList.append(productId)
 			shrinkingSortedList.remove(productId)
 			if productId == productHeading:
 				break
 		logger.debug(u"+++++++++++mixed list with elements of sorted List %s " % mixedSortedList)
 
-		prioClassStart = prioClassHead-1
+		prioClassStart = prioClassHead - 1
 		logger.debug(u"new prioClassStart %s " % prioClassStart)
-
-
 
 	logger.debug(u"++++++++")
 	logger.debug(u"++  sortedList %s " % sortedList)
@@ -656,9 +647,8 @@ def generateProductOnClientSequence_algorithm1(productOnClients, availableProduc
 
 def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	# Build priority classes and indices
-
 	logger.debug(u"*********running algorithm2")
-	logger.debug(u"availableProducts %s " % availableProducts )
+	logger.debug(u"availableProducts %s " % availableProducts)
 
 	productIds = []
 	priorityClasses = {}
@@ -673,7 +663,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		if not priorityClasses.has_key(prio):
 			priorityClasses[prio] = []
 		priorityClasses[prio] .append(product.id)
-		productIndexInClass[product.id] = len(priorityClasses[prio])-1
+		productIndexInClass[product.id] = len(priorityClasses[prio]) - 1
 
 	logger.debug(u"productIndexInClass %s " % productIndexInClass)
 	logger.debug(u"priorityClasses %s " % priorityClasses)
@@ -688,9 +678,9 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		if (dependency.requiredInstallationStatus != u"installed") and (dependency.requiredAction != u"setup"):
 			continue
 		if (dependency.requirementType == u"before"):
-			setupRequirements.append([ dependency.requiredProductId, dependency.productId ])
+			setupRequirements.append([dependency.requiredProductId, dependency.productId])
 		elif (dependency.requirementType == u"after"):
-			setupRequirements.append([ dependency.productId, dependency.requiredProductId ])
+			setupRequirements.append([dependency.productId, dependency.requiredProductId])
 
 	requirementsByClasses = {}
 
@@ -700,7 +690,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 		logger.debug(u"Product 1 %s" % prod1)
 		if not productById.has_key(prod1):
-			logger.warning(u"Product %s is requested but not available" %  prod1)
+			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
 		prio1 = productById[prod1].priority
 		if not prio1:
@@ -708,7 +698,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 		logger.debug(u"Product 2 %s" % prod2)
 		if not productById.has_key(prod2):
-			logger.warning(u"Product %s is requested but not available" %  prod2)
+			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
 		prio2 = productById[prod2].priority
 		if not prio2:
@@ -768,7 +758,6 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 				ordering = orderingsByClasses[prioclasskey]
 
 				logger.debug(u"prioclasskey in found classes, ordering '%s',  '%s'" % (prioclasskey,ob.getOrdering()))
-
 
 				for idx in ordering:
 					sortedList.append(prioclass[idx])
@@ -842,8 +831,7 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 		sequenceChanged = True
 		while sequenceChanged:
 			if (run > 5):
-				raise BackendUnaccomplishableError(u"Cannot resolve sequence for products %s after %d runs" \
-					% (productOnClientByProductId.keys(), run))
+				raise BackendUnaccomplishableError(u"Cannot resolve sequence for products %s after %d runs" % (productOnClientByProductId.keys(), run))
 			run += 1
 			sequenceChanged = False
 			for productId in productOnClientByProductId.keys():
@@ -878,10 +866,12 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 						sequenceChanged = True
 					else:
 						logger.debug("%s requires %s %s => no sequence change required." % (productId, requiredProductId, requirementType))
+
 		logger.debug2(u"Sequence of available products after dependency sorting (client %s):" % clientId)
 		for i in range(len(sequence)):
 			logger.debug2(u"   [%2.0f] %s" % (i, sequence[i]))
 			productOnClient = productOnClientByProductId[sequence[i]]
 			productOnClient.setActionSequence(i+1)
 			sortedProductOnClients.append(productOnClient)
+
 	return sortedProductOnClients
