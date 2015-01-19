@@ -43,11 +43,11 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 
 	poc = productOnClientByProductId[productId]
-	if (poc.actionRequest == 'none') or not productDependenciesByProductId.get(productId):
+	if poc.actionRequest == 'none' or not productDependenciesByProductId.get(productId):
 		return
 
 	for dependency in productDependenciesByProductId[productId]:
-		if (dependency.productAction != poc.actionRequest):
+		if dependency.productAction != poc.actionRequest:
 			continue
 
 		logger.debug(u"   need to check dependency to product '%s'" % (dependency.requiredProductId))
@@ -68,12 +68,12 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			actionRequest = productOnClientByProductId[dependency.requiredProductId].actionRequest
 		logger.debug(u"addActionRequest: requiredAction %s " % requiredAction)
 		if not requiredAction:
-			if (dependency.requiredInstallationStatus == installationStatus):
+			if dependency.requiredInstallationStatus == installationStatus:
 				logger.debug(u"   required installation status '%s' is fulfilled" % dependency.requiredInstallationStatus)
 				continue
-			elif (dependency.requiredInstallationStatus == 'installed'):
+			elif dependency.requiredInstallationStatus == 'installed':
 				requiredAction = 'setup'
-			elif (dependency.requiredInstallationStatus == 'not_installed'):
+			elif dependency.requiredInstallationStatus == 'not_installed':
 				requiredAction = 'uninstall'
 
 		# An action is required => check if possible
@@ -100,7 +100,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			# return
 			continue
 
-		if   (actionRequest == requiredAction):
+		if actionRequest == requiredAction:
 			logger.debug(u"   => required action '%s' is already set" % requiredAction)
 			continue
 		elif actionRequest not in (None, 'none'):
@@ -198,16 +198,16 @@ class Requirements(object):
 		#  then fix orderByPrior such that it gets this place
 		i = 0
 		located = False
-		while (i < len(self.list)-1) and not located:
+		while (i < len(self.list) - 1) and not located:
 			logger.debug2("Requirement.prior: %s, self.list[self.orderByPrior[i]].prior: %s " % (requirement.prior, self.list[self.orderByPrior[i]].prior))
-			if (requirement.prior > self.list[self.orderByPrior[i]].prior):
+			if requirement.prior > self.list[self.orderByPrior[i]].prior:
 				i += 1
 			else:
 				located = True
 				# we take the first place that fits to the ordering
 				# shift all items by one place
 				j = len(self.list) - 1
-				while (j > i):
+				while j > i:
 					self.orderByPrior[j] = self.orderByPrior[j - 1]
 					j -= 1
 				# finally we map place i to the new element
@@ -236,7 +236,7 @@ class Requirements(object):
 				# We take the first place that fits to the ordering
 				# shift all items by one place
 				j = len(self.list) - 1
-				while (j > i):
+				while j > i:
 					self.orderByPosterior[j] = self.orderByPosterior[j - 1]
 					j -= 1
 				# Finally we map place i to the new element
@@ -263,7 +263,7 @@ class Requirements(object):
 			return -1
 		else:
 			# Candidate is not fulfilled and has posterior value >= posti
-			if (candidate.posterior == posti):
+			if candidate.posterior == posti:
 				return j
 			else:
 				# There are no more possible occurrences of posterior
@@ -273,7 +273,7 @@ class Requirements(object):
 		i = 0
 		found = False
 		while not found and (i < len(self.list)):
-			if (self.list[self.orderByPrior[i]].fulfilled):
+			if self.list[self.orderByPrior[i]].fulfilled:
 				i = i + 1
 			else:
 				found = True
@@ -290,7 +290,7 @@ class Requirements(object):
 		errorS0 = u'Potentially conflicting requirements for:'
 
 		while (j < len(self.list)) and not found:
-			if not self.list[self.orderByPrior[j]].fulfilled and (self.posteriorIndexOf(candidate) == -1):
+			if not self.list[self.orderByPrior[j]].fulfilled and self.posteriorIndexOf(candidate) == -1:
 				# If requ j still not fulfilled and candidate does not occur
 				# as posterior among the not fulfilled
 				# then we adopt candidate (i.e. the prior element of requ j in requ list ordered by priors)
@@ -302,7 +302,7 @@ class Requirements(object):
 					lastcandidate = candidate
 				# Go on searching
 				j += 1
-				if (j < len(self.list)):
+				if j < len(self.list):
 					candidate = self.list[self.orderByPrior[j]].prior
 		if found:
 			noInListOrderedByPriors = j
@@ -338,14 +338,16 @@ class OrderBuild(object):
 		self.requs = requs
 		self.indexIsAmongPosteriors = []
 		j = 0
-		while (j < elementCount):
+		while j < elementCount:
 			self.indexIsAmongPosteriors.append(False)
 			j += 1
+
 		self.indexUsed = []
 		j = 0
-		while (j < elementCount):
+		while j < elementCount:
 			self.indexUsed.append(False)
 			j += 1
+
 		self.usedCount = 0
 		logger.debug(u"OrderBuild initialized")
 
@@ -353,15 +355,15 @@ class OrderBuild(object):
 		result = True
 		lastSortedCount = 0
 
-		if (self.usedCount >= self.elementCount):
+		if self.usedCount >= self.elementCount:
 			return result
 
 		indexRequToFulfill = self.requs.indexOfFirstNotFulfilledRequirementOrderedByPrior()
-		if (indexRequToFulfill == -1):
+		if indexRequToFulfill == -1:
 			self.allFulfilled = True
 			# Get the posteriors that did not occur as priors
 			j = 0
-			while (j < self.elementCount):
+			while j < self.elementCount:
 				if self.indexIsAmongPosteriors[j] and not self.indexUsed[j]:
 					self.ordering.append(j)
 					self.indexUsed[j] = True
@@ -372,7 +374,7 @@ class OrderBuild(object):
 			if self.completing:
 				# Take rest from list
 				j = 0
-				while (j < self.elementCount):
+				while j < self.elementCount:
 					if not self.indexUsed[j]:
 						self.ordering.append(j)
 						self.indexUsed[j] = True
@@ -380,10 +382,10 @@ class OrderBuild(object):
 					j += 1
 
 				# Move the sorted items to the end of the list
-				if (lastSortedCount > 0):
+				if lastSortedCount > 0:
 					newordering = []
 					k = 0
-					while (k < self.elementCount):
+					while k < self.elementCount:
 						newordering.append(k)
 						k += 1
 
@@ -409,7 +411,7 @@ class OrderBuild(object):
 
 			(newEntry, requNoInListOrderedByPriors) = self.requs.firstPriorNotOccurringAsPosterior(indexRequToFulfill)
 
-			if (newEntry == -1):
+			if newEntry == -1:
 				result = False
 			else:
 				self.ordering.append(newEntry)
@@ -423,7 +425,7 @@ class OrderBuild(object):
 					requK.fulfilled = True
 					self.indexIsAmongPosteriors[requK.posterior] = True
 					k += 1
-					if (k < self.requs.getCount()):
+					if k < self.requs.getCount():
 						requK = self.requs.getRequList()[orderByPrior[k]]
 				self.indexUsed[newEntry] = True
 
@@ -495,13 +497,13 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	requirements = []
 
 	for dependency in productDependencies:
-		if (dependency.productAction != u"setup"):
+		if dependency.productAction != u"setup":
 			continue
-		if (dependency.requiredInstallationStatus != u"installed") and (dependency.requiredAction != u"setup"):
+		if dependency.requiredInstallationStatus != u"installed" and dependency.requiredAction != u"setup":
 			continue
-		if (dependency.requirementType == u"before"):
+		if dependency.requirementType == u"before":
 			setupRequirements.append([dependency.requiredProductId, dependency.productId])
-		elif (dependency.requirementType == u"after"):
+		elif dependency.requirementType == u"after":
 			setupRequirements.append([dependency.productId, dependency.requiredProductId])
 
 	for requ in setupRequirements:
@@ -663,13 +665,13 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	setupRequirements = []
 
 	for dependency in productDependencies:
-		if (dependency.productAction != u"setup"):
+		if dependency.productAction != u"setup":
 			continue
-		if (dependency.requiredInstallationStatus != u"installed") and (dependency.requiredAction != u"setup"):
+		if dependency.requiredInstallationStatus != u"installed" and dependency.requiredAction != u"setup":
 			continue
-		if (dependency.requirementType == u"before"):
+		if dependency.requirementType == u"before":
 			setupRequirements.append([dependency.requiredProductId, dependency.productId])
-		elif (dependency.requirementType == u"after"):
+		elif dependency.requirementType == u"after":
 			setupRequirements.append([dependency.productId, dependency.requiredProductId])
 
 	requirementsByClasses = defaultdict(list)
@@ -696,9 +698,9 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 		logger.debug(u"Priority product 1 %s" % prio1)
 		logger.debug(u"Priority product 2 %s" % prio2)
-		if (prio1 > prio2):
+		if prio1 > prio2:
 			logger.notice(u"The ordering is guaranteed by priority handling")
-		elif (prio1 < prio2):
+		elif prio1 < prio2:
 			logger.warning(u"Dependency declaration between %s and %s contradicts priority declaration, will be ignored" % (prod1, prod2))
 		else:
 			prioclasskey = str(prio1)
@@ -809,12 +811,12 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 		run = 0
 		sequenceChanged = True
 		while sequenceChanged:
-			if (run > 5):
+			if run > 5:
 				raise BackendUnaccomplishableError(u"Cannot resolve sequence for products %s after %d runs" % (productOnClientByProductId.keys(), run))
 			run += 1
 			sequenceChanged = False
 			for productId in productOnClientByProductId.keys():
-				if (productOnClientByProductId[productId].actionRequest == 'none') or not productDependenciesByProductId.get(productId):
+				if productOnClientByProductId[productId].actionRequest == 'none' or not productDependenciesByProductId.get(productId):
 					continue
 
 				requiredProductId = None
@@ -822,7 +824,7 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 				for dependency in productDependenciesByProductId[productId]:
 					if not productOnClientByProductId.get(dependency.requiredProductId):
 						continue
-					if (dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest):
+					if dependency.productAction != productOnClientByProductId[dependency.requiredProductId].actionRequest:
 						continue
 
 					requiredProductId = dependency.requiredProductId
@@ -833,12 +835,12 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 
 					ppos = sequence.index(productId)
 					dpos = sequence.index(requiredProductId)
-					if (requirementType == 'before') and (ppos < dpos):
+					if requirementType == 'before' and ppos < dpos:
 						logger.info("%s requires %s before, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, requiredProductId, productId))
 						sequence.remove(requiredProductId)
 						sequence.insert(ppos, requiredProductId)
 						sequenceChanged = True
-					elif (requirementType == 'after') and (dpos < ppos):
+					elif requirementType == 'after' and dpos < ppos:
 						logger.info("%s requires %s after, moving product '%s' in sequence one before '%s'." % (productId, requiredProductId, productId, requiredProductId))
 						sequence.remove(productId)
 						sequence.insert(dpos, productId)
