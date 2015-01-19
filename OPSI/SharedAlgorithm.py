@@ -535,9 +535,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 	logger.debug(u"requirements %s " % requirements)
 
-	prioRange = []
-	for r in range(201):
-		prioRange.append(100 - r)
+	prioRange = list(reversed(range(-100, 101)))
 
 	sortedList = []
 	try:
@@ -716,9 +714,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 				requirementsByClasses[prioclasskey] = []
 			requirementsByClasses[prioclasskey].append([productIndexInClass[prod1],productIndexInClass[prod2]])
 
-	prioRange = []
-	for r in range(201):
-		prioRange.append(100 - r)
+	prioRange = list(reversed(range(-100, 101)))
 
 	foundClasses = []
 	orderingsByClasses = {}
