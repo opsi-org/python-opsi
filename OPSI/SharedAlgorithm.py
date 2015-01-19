@@ -29,6 +29,8 @@ Algorithms to get a product order for an installation.
 
 __version__ = '4.0.6'
 
+from collections import defaultdict
+
 from OPSI.Logger import Logger
 from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
@@ -136,16 +138,12 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 	for availableProduct in availableProducts:
 		availableProductsByProductId[availableProduct.id] = availableProduct
 
-	productDependenciesByProductId = {}
+	productDependenciesByProductId = defaultdict(list)
 	for productDependency in productDependencies:
-		if not productDependenciesByProductId.has_key(productDependency.productId):
-			productDependenciesByProductId[productDependency.productId] = []
 		productDependenciesByProductId[productDependency.productId].append(productDependency)
 
-	productOnClientsByClientIdAndProductId = {}
+	productOnClientsByClientIdAndProductId = defaultdict(dict)
 	for productOnClient in productOnClients:
-		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
-			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 
 	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
@@ -439,10 +437,8 @@ class OrderBuild(object):
 
 
 def generateProductOnClientSequence(productOnClients, sortedList):
-	productOnClientsByClientIdAndProductId = {}
+	productOnClientsByClientIdAndProductId = defaultdict(dict)
 	for productOnClient in productOnClients:
-		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
-			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 
 	productOnClients = []
@@ -472,7 +468,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	productIds = []
 	productIndex = {}
 
-	priorityClasses = {}
+	priorityClasses = defaultdict(list)
 
 	productById = {}
 	for product in availableProducts:
@@ -484,10 +480,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		if product.priority:
 			prio = str(product.priority)
 
-		if not priorityClasses.has_key(prio):
-			priorityClasses[prio] = []
 		priorityClasses[prio] .append(product.id)
-
 
 	logger.debug(u"productById %s " % productById)
 	logger.debug(u"productIndex %s " % productIndex)
@@ -649,7 +642,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	logger.debug(u"availableProducts %s " % availableProducts)
 
 	productIds = []
-	priorityClasses = {}
+	priorityClasses = defaultdict(list)
 	productIndexInClass = {}
 	productById = {}
 	for product in availableProducts:
@@ -658,9 +651,8 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		prio = str(0)
 		if product.priority:
 			prio = str(product.priority)
-		if not priorityClasses.has_key(prio):
-			priorityClasses[prio] = []
-		priorityClasses[prio] .append(product.id)
+
+		priorityClasses[prio].append(product.id)
 		productIndexInClass[product.id] = len(priorityClasses[prio]) - 1
 
 	logger.debug(u"productIndexInClass %s " % productIndexInClass)
@@ -680,14 +672,14 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		elif (dependency.requirementType == u"after"):
 			setupRequirements.append([dependency.productId, dependency.requiredProductId])
 
-	requirementsByClasses = {}
+	requirementsByClasses = defaultdict(list)
 
 	for requ in setupRequirements:
 		prod1 = requ[0]
 		prod2 = requ[1]
 
 		logger.debug(u"Product 1 %s" % prod1)
-		if not productById.has_key(prod1):
+		if prod1 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
 		prio1 = productById[prod1].priority
@@ -710,9 +702,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 			logger.warning(u"Dependency declaration between %s and %s contradicts priority declaration, will be ignored" % (prod1, prod2))
 		else:
 			prioclasskey = str(prio1)
-			if not requirementsByClasses.has_key(prioclasskey):
-				requirementsByClasses[prioclasskey] = []
-			requirementsByClasses[prioclasskey].append([productIndexInClass[prod1],productIndexInClass[prod2]])
+			requirementsByClasses[prioclasskey].append([productIndexInClass[prod1], productIndexInClass[prod2]])
 
 	prioRange = list(reversed(range(-100, 101)))
 
@@ -778,27 +768,20 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 
 def generateProductOnClientSequence_algorithm3(productOnClients, availableProducts, productDependencies):
 	logger.debug(u"*********  running algorithm3")
-	productDependenciesByProductId = {}
+	productDependenciesByProductId = defaultdict(list)
 	for productDependency in productDependencies:
-		if not productDependenciesByProductId.has_key(productDependency.productId):
-			productDependenciesByProductId[productDependency.productId] = []
 		productDependenciesByProductId[productDependency.productId].append(productDependency)
 
-	productOnClientsByClientIdAndProductId = {}
+	productOnClientsByClientIdAndProductId = defaultdict(dict)
 	for productOnClient in productOnClients:
-		if not productOnClientsByClientIdAndProductId.has_key(productOnClient.clientId):
-			productOnClientsByClientIdAndProductId[productOnClient.clientId] = {}
 		productOnClientsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 
 	logger.debug(u"Sorting available products by priority")
-	priorityToProductIds = {}
+	priorityToProductIds = defaultdict(list)
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
 		# add id to collection
 		availableProductsByProductId[availableProduct.id] = availableProduct
-		# if necessary initialize priorityToProductIds [priority]
-		if not priorityToProductIds.has_key(availableProduct.priority):
-			priorityToProductIds[availableProduct.priority] = []
 		# set id as value for priorityToProductIds [priority]
 		priorityToProductIds[availableProduct.priority].append(availableProduct.id)
 
