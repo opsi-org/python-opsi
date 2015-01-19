@@ -63,7 +63,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		requiredAction = dependency.requiredAction
 		installationStatus = 'not_installed'
 		actionRequest = 'none'
-		if productOnClientByProductId.has_key(dependency.requiredProductId):
+		if dependency.requiredProductId in productOnClientByProductId:
 			installationStatus = productOnClientByProductId[dependency.requiredProductId].installationStatus
 			actionRequest = productOnClientByProductId[dependency.requiredProductId].actionRequest
 		logger.debug(u"addActionRequest: requiredAction %s " % requiredAction)
@@ -80,9 +80,8 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		logger.debug(u"   need to set action '%s' for product '%s' to fulfill dependency" % (requiredAction, dependency.requiredProductId))
 
 		setActionRequestToNone = False
-		if not availableProductsByProductId.has_key(dependency.requiredProductId):
-			logger.error(u"   product '%s' defines dependency to product '%s', which is not avaliable on depot" \
-								% (productId, dependency.requiredProductId))
+		if dependency.requiredProductId not in availableProductsByProductId:
+			logger.error(u"   product '%s' defines dependency to product '%s', which is not avaliable on depot" % (productId, dependency.requiredProductId))
 			setActionRequestToNone = True
 
 		elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion):
@@ -111,11 +110,11 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
 		logger.info(u"   => adding action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
 
-		if addedInfo.has_key(dependency.requiredProductId):
+		if dependency.requiredProductId in addedInfo:
 			logger.warning(u"   => Product dependency loop detected, skipping")
 			continue
 
-		if not productOnClientByProductId.has_key(dependency.requiredProductId):
+		if dependency.requiredProductId not in productOnClientByProductId:
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
 				productId=dependency.requiredProductId,
 				productType=availableProductsByProductId[dependency.requiredProductId].getType(),
@@ -452,7 +451,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 	for (clientId, productOnClientsByProductId) in productOnClientsByClientIdAndProductId.items():
 		sequence = 0
 		for productId in sortedList:
-			if productOnClientsByProductId.has_key(productId):
+			if productId in productOnClientsByProductId:
 				productOnClientsByProductId[productId].actionSequence = sequence
 				productOnClients.append(productOnClientsByProductId[productId])
 				del productOnClientsByProductId[productId]
@@ -517,7 +516,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		prod2 = requ[1]
 
 		logger.debug(u"requ %s" % requ)
-		if not productById.has_key(prod1):
+		if prod1 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
 
@@ -525,8 +524,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		if not prio1:
 			prio1 = 0
 
-
-		if not productById.has_key(prod2):
+		if prod2 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
 
@@ -606,7 +604,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		for p in prioList:
 			q = prioClassStart - p
 			qs = str(q)
-			if priorityClasses.has_key(qs):
+			if qs in priorityClasses:
 				for productId in priorityClasses[qs]:
 					logger.debug(u"append to mixed list %s " % productId)
 					if productId not in mixedSortedList:
@@ -698,7 +696,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 			prio1 = 0
 
 		logger.debug(u"Product 2 %s" % prod2)
-		if not productById.has_key(prod2):
+		if prod2 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
 
@@ -724,12 +722,12 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	try:
 		for p in prioRange:
 			prioclasskey = str(p)
-			if not priorityClasses.has_key(prioclasskey):
+			if prioclasskey not in priorityClasses:
 				continue
 			foundClasses.append(prioclasskey)
 			prioclass = priorityClasses[prioclasskey]
 
-			if requirementsByClasses.has_key(prioclasskey):
+			if prioclasskey in requirementsByClasses:
 				requs = requirementsByClasses[prioclasskey]
 				requObjects = Requirements(len(prioclass))
 				for item in requs:
@@ -752,7 +750,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		for prioclasskey in foundClasses:
 			prioclass = priorityClasses[prioclasskey]
 			logger.debug(u"prioclasskey has prioclass %s, %s " % (prioclasskey, prioclass))
-			if orderingsByClasses.has_key(prioclasskey):
+			if prioclasskey in orderingsByClasses:
 				ordering = orderingsByClasses[prioclasskey]
 
 				logger.debug(u"prioclasskey in found classes, ordering '%s',  '%s'" % (prioclasskey, ob.getOrdering()))
