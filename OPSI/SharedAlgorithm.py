@@ -333,7 +333,7 @@ class Requirements(object):
 		found = False
 		candidate = self.list[self.orderByPrior[startI]].prior
 		lastcandidate = -1
-		errorS0 = u'Potentially conflicting requirements for:'
+		candidatesCausingProblemes = []
 
 		while (j < len(self.list)) and not found:
 			if not self.list[self.orderByPrior[j]].fulfilled and self.posteriorIndexOf(candidate) == -1:
@@ -344,7 +344,7 @@ class Requirements(object):
 				found = True
 			else:
 				if (self.posteriorIndexOf(candidate) > -1) and (lastcandidate != candidate):
-					errorS0 = u"%s %s" % (errorS0, candidate)
+					candidatesCausingProblemes.append(candidate)
 					lastcandidate = candidate
 
 				# Go on searching
@@ -356,8 +356,9 @@ class Requirements(object):
 			noInListOrderedByPriors = j
 			return (candidate, noInListOrderedByPriors)
 
-		logger.error(errorS0 + u'  (raise error)')
-		raise OpsiProductOrderingError(errorS0)
+		errorMessage = u'Potentially conflicting requirements for: {0}'.format(candidatesCausingProblemes)
+		logger.error(errorMessage)
+		raise OpsiProductOrderingError(errorMessage)
 
 	def getCount(self):
 		return len(self.list)
