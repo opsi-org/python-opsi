@@ -180,8 +180,8 @@ class Requirements(object):
 
 	def __init__(self, allItemsCount):
 		self.list = []
-		self.orderByPrior=[]
-		self.orderByPosterior=[]
+		self.orderByPrior = []
+		self.orderByPosterior = []
 
 	def add(self, requirement):
 		assert isinstance(requirement, OrderRequirement), "not an OrderRequirement"
