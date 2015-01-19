@@ -790,7 +790,10 @@ class BackendConfigurationError(OpsiError):
 
 
 class BackendReferentialIntegrityError(OpsiError):
-	""" Exception raised if there is a referential integration error occurs in the backend. """
+	"""
+	Exception raised if there is a referential integration
+	error occurs in the backend.
+	"""
 	ExceptionShortDescription = u"Backend referential integrity error"
 
 
@@ -820,7 +823,8 @@ class BackendTemporaryError(OpsiError):
 
 
 class BackendUnaccomplishableError(OpsiError):
-	""" Exception raised if a temporary error occurs. """
+	"Exception raised if an unaccomplishable situation appears"
+
 	ExceptionShortDescription = u"Backend unaccomplishable error"
 
 
@@ -830,7 +834,9 @@ class BackendModuleDisabledError(OpsiError):
 
 
 class LicenseConfigurationError(OpsiError):
-	""" Exception raised if a configuration error occurs in the license data base. """
+	"""
+	Exception raised if a configuration error occurs in the license data base.
+	"""
 	ExceptionShortDescription = u"License configuration error"
 
 
