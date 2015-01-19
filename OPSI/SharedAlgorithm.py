@@ -39,7 +39,7 @@ from OPSI.Types import forceInt, forceBool
 logger = Logger()
 
 
-def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo = {}):
+def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo={}):
 	logger.debug(u"checking dependencies for product '%s', action '%s'" % (productId, productOnClientByProductId[productId].actionRequest))
 
 	poc = productOnClientByProductId[productId]
@@ -123,9 +123,10 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				installationStatus=None,
 				actionRequest=u'none',
 			)
+
 		addedInfo[dependency.requiredProductId] = {
 			'addedForProduct': productId,
-			'requiredAction':  requiredAction,
+			'requiredAction': requiredAction,
 			'requirementType': dependency.requirementType
 		}
 		productOnClientByProductId[dependency.requiredProductId].setActionRequest(requiredAction)
@@ -152,6 +153,7 @@ def addDependentProductOnClients(productOnClients, availableProducts, productDep
 		addedInfo = {}
 		for productId in productOnClientByProductId.keys():
 			addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo)
+
 	return productOnClientByProductId.values()
 
 
@@ -277,6 +279,7 @@ class Requirements(object):
 				i = i + 1
 			else:
 				found = True
+
 		if not found:
 			return -1
 		else:
@@ -297,13 +300,15 @@ class Requirements(object):
 				# as next element in our ordered sequence
 				found = True
 			else:
-				if (self.posteriorIndexOf(candidate) > -1) and ( lastcandidate != candidate ):
+				if (self.posteriorIndexOf(candidate) > -1) and (lastcandidate != candidate):
 					errorS0 = u"%s %s" % (errorS0, candidate)
 					lastcandidate = candidate
+
 				# Go on searching
 				j += 1
 				if j < len(self.list):
 					candidate = self.list[self.orderByPrior[j]].prior
+
 		if found:
 			noInListOrderedByPriors = j
 			return (candidate, noInListOrderedByPriors)
@@ -459,6 +464,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 				productOnClientsByProductId[productId].actionSequence = sequence
 				productOnClients.append(productOnClientsByProductId[productId])
 				sequence += 1
+
 	return productOnClients
 
 
@@ -514,6 +520,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		if not productById.has_key(prod1):
 			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
+
 		prio1 = productById[prod1].priority
 		if not prio1:
 			prio1 = 0
@@ -522,11 +529,12 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		if not productById.has_key(prod2):
 			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
+
 		prio2 = productById[prod2].priority
 		if not prio2:
 			prio2 = 0
 
-		requirements.append([productIndex[prod1],productIndex[prod2]])
+		requirements.append([productIndex[prod1], productIndex[prod2]])
 
 	logger.debug(u"requirements %s " % requirements)
 
@@ -684,6 +692,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		if prod1 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
+
 		prio1 = productById[prod1].priority
 		if not prio1:
 			prio1 = 0
@@ -692,6 +701,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		if not productById.has_key(prod2):
 			logger.warning(u"Product %s is requested but not available" % prod2)
 			continue
+
 		prio2 = productById[prod2].priority
 		if not prio2:
 			prio2 = 0
@@ -737,15 +747,15 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 					raise e
 
 				orderingsByClasses[prioclasskey] = ob.getOrdering()
-				logger.debug(u"prioclasskey, ordering '%s' , '%s'" % (prioclasskey,ob.getOrdering()))
+				logger.debug(u"prioclasskey, ordering '%s' , '%s'" % (prioclasskey, ob.getOrdering()))
 
 		for prioclasskey in foundClasses:
-			prioclass =  priorityClasses[prioclasskey]
+			prioclass = priorityClasses[prioclasskey]
 			logger.debug(u"prioclasskey has prioclass %s, %s " % (prioclasskey, prioclass))
 			if orderingsByClasses.has_key(prioclasskey):
 				ordering = orderingsByClasses[prioclasskey]
 
-				logger.debug(u"prioclasskey in found classes, ordering '%s',  '%s'" % (prioclasskey,ob.getOrdering()))
+				logger.debug(u"prioclasskey in found classes, ordering '%s',  '%s'" % (prioclasskey, ob.getOrdering()))
 
 				for idx in ordering:
 					sortedList.append(prioclass[idx])
