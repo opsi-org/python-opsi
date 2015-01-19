@@ -94,7 +94,6 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		if setActionRequestToNone:
 			logger.warning(u"   => setting action request for product '%s' to 'none'!" % productId)
 			productOnClientByProductId[productId].actionRequest = 'none'
-			# return
 			continue
 
 		if actionRequest == requiredAction:
@@ -532,8 +531,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		requirements.append([productIndex[prod1], productIndex[prod2]])
 
 	logger.debug(u"requirements %s " % requirements)
-
-	prioRange = list(reversed(range(-100, 101)))
 
 	sortedList = []
 	try:
