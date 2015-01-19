@@ -601,11 +601,11 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 				ob.proceed()
 				logger.debug(u"ordering '%s' " % ob.getOrdering())
 
-		except OpsiProductOrderingError as e:
-			logger.warning(u"algo1 catched OpsiProductOrderingError")
+		except OpsiProductOrderingError as error:
+			logger.warning(u"algo1 catched OpsiProductOrderingError: {0}".format(error))
 			for i in range(len(availableProducts)):
 				logger.warning(u" product %s %s " % (i, availableProducts[i].getId()))
-			raise e
+			raise error
 
 		ordering = ob.getOrdering()
 		logger.debug(u"completed ordering '%s' " % ordering)
@@ -615,8 +615,8 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 		logger.debug(u"sortedList algo1 '%s' " % sortedList)
 
-	except OpsiProductOrderingError as e:
-		logger.warning(u"algo1 outer catched OpsiProductOrderingError")
+	except OpsiProductOrderingError as error:
+		logger.warning(u"algo1 outer catched OpsiProductOrderingError: {0}".format(error))
 		sortedList = []
 
 	mixedSortedList = []
@@ -781,11 +781,11 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 					for k in range(len(prioclass)):
 						ob.proceed()
 
-				except OpsiProductOrderingError as e:
-					logger.warning(u"algo2 catched OpsiProductOrderingError")
+				except OpsiProductOrderingError as error:
+					logger.warning(u"algo2 catched OpsiProductOrderingError: {0}".format(error))
 					for i in range(len(prioclass)):
 						logger.warning(u" product %s %s " % (i, prioclass[i]))
-					raise e
+					raise error
 
 				orderingsByClasses[prioclasskey] = ob.getOrdering()
 				logger.debug(u"prioclasskey, ordering '%s' , '%s'" % (prioclasskey, ob.getOrdering()))
@@ -806,8 +806,8 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 		logger.debug(u"sortedList algo2  '%s' " % sortedList)
 
-	except OpsiProductOrderingError as e:
-		logger.warning(u"algo2 outer catched OpsiProductOrderingError")
+	except OpsiProductOrderingError as error:
+		logger.warning(u"algo2 outer catched OpsiProductOrderingError: {0}".format(error))
 		sortedList = []
 
 	return sortedList
