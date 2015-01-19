@@ -52,13 +52,26 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 
 		logger.debug(u"   need to check dependency to product '%s'" % (dependency.requiredProductId))
 		if dependency.requiredAction:
-			logger.debug(u"   product '%s' requires action '%s' of product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
-						% (productId, dependency.requiredAction, dependency.requiredProductId, dependency.requiredProductVersion,
-						   dependency.requiredPackageVersion, dependency.productAction))
+			logger.debug(
+				u"   product '%s' requires action '%s' of product '%s', "
+				u"productVersion '%s', packageVersion '%s' on "
+				u"action '%s'" % (
+					productId, dependency.requiredAction,
+					dependency.requiredProductId,
+					dependency.requiredProductVersion,
+					dependency.requiredPackageVersion, dependency.productAction
+				)
+			)
 		elif dependency.requiredInstallationStatus:
-			logger.debug(u"   product '%s' requires status '%s' of product '%s', productVersion '%s', packageVersion '%s' on action '%s'" \
-						% (productId, dependency.requiredInstallationStatus, dependency.requiredProductId, dependency.requiredProductVersion,
-						   dependency.requiredPackageVersion, dependency.productAction))
+			logger.debug(
+				u"   product '%s' requires status '%s' of product '%s', "
+				u"productVersion '%s', packageVersion '%s' on action '%s'" % (
+					productId, dependency.requiredInstallationStatus,
+					dependency.requiredProductId,
+					dependency.requiredProductVersion,
+					dependency.requiredPackageVersion, dependency.productAction
+				)
+			)
 
 		requiredAction = dependency.requiredAction
 		installationStatus = 'not_installed'
@@ -84,11 +97,23 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.error(u"   product '%s' defines dependency to product '%s', which is not avaliable on depot" % (productId, dependency.requiredProductId))
 			setActionRequestToNone = True
 
-		elif (not dependency.requiredProductVersion is None and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion):
-			logger.error(u"   product '%s' defines dependency to product '%s', but product version '%s' is not available" % (productId, dependency.requiredProductId, dependency.requiredProductVersion))
+		elif dependency.requiredProductVersion is not None and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion:
+			logger.error(
+				u"   product '%s' defines dependency to product '%s', "
+				u"but product version '%s' is not available" % (
+					productId, dependency.requiredProductId,
+					dependency.requiredProductVersion
+				)
+			)
 			setActionRequestToNone = True
-		elif (not dependency.requiredPackageVersion is None and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion):
-			logger.error(u"   product '%s' defines dependency to product '%s', but package version '%s' is not available" % (productId, dependency.requiredProductId, dependency.requiredPackageVersion))
+		elif dependency.requiredPackageVersion is not None and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion:
+			logger.error(
+				u"   product '%s' defines dependency to product '%s', "
+				u"but package version '%s' is not available" % (
+					productId, dependency.requiredProductId,
+					dependency.requiredPackageVersion
+				)
+			)
 			setActionRequestToNone = True
 
 		if setActionRequestToNone:
@@ -100,7 +125,14 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 			logger.debug(u"   => required action '%s' is already set" % requiredAction)
 			continue
 		elif actionRequest not in (None, 'none'):
-			logger.error(u"   => cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" % (productId, dependency.requiredProductId, requiredAction, actionRequest))
+			logger.error(
+				u"   => cannot fulfill dependency of product '%s' to "
+				u"product '%s': action '%s' needed but action '%s' "
+				u"already set" % (
+					productId, dependency.requiredProductId,
+					requiredAction, actionRequest
+				)
+			)
 			continue
 			#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
 			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
