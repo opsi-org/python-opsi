@@ -789,9 +789,7 @@ def generateProductOnClientSequence_algorithm3(productOnClients, availableProduc
 		# set id as value for priorityToProductIds [priority]
 		priorityToProductIds[availableProduct.priority].append(availableProduct.id)
 
-	priorities = priorityToProductIds.keys()
-	priorities.sort()
-	priorities.reverse()
+	priorities = reversed(sorted(priorityToProductIds.keys()))
 
 	productSequence = []
 	for priority in priorities:
