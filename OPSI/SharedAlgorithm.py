@@ -337,7 +337,7 @@ class OrderBuild(object):
 		self.completing = completing
 		self.errorFound = False
 		self.allFulfilled = False
-		#logger.debug(u"requs is Requirements:  %s is really %s " %(requs, Requirements))
+
 		assert isinstance(requs, Requirements), "not Requirements"
 		self.requs = requs
 		self.indexIsAmongPosteriors = []
@@ -356,12 +356,11 @@ class OrderBuild(object):
 	def proceed(self):
 		result = True
 		lastSortedCount = 0
-		#logger.debug(u"proceed usedCount, elementCount %s, %s " % (self.usedCount, self.elementCount))
+
 		if (self.usedCount >= self.elementCount):
 			return result
 
 		indexRequToFulfill = self.requs.indexOfFirstNotFulfilledRequirementOrderedByPrior()
-		#logger.debug(u"proceed indexRequToFulfill %s " % indexRequToFulfill)
 		if (indexRequToFulfill == -1):
 			self.allFulfilled = True
 			# Get the posteriors that did not occur as priors
@@ -403,37 +402,31 @@ class OrderBuild(object):
 					# Put back
 					self.ordering = newordering
 		else:
-			# At indexRequToFulfill we found a not fulfilled requirement, lets try to fulfill a requirement
+			# At indexRequToFulfill we found a not fulfilled requirement,
+			# lets try to fulfill a requirement
 			# look only at not fulfilled reqirements
-			# Find the first one, in ordering by priors, with the property that it does not occur as posterior
+			# Find the first one, in ordering by priors, with the
+			# property that it does not occur as posterior
 			# take it as newEntry for the ordered list
-			# Automatically any requirement is fulfilled where newEntry is the prior; do the markings
-
-
+			# Automatically any requirement is fulfilled where newEntry
+			# is the prior; do the markings
 
 			(newEntry, requNoInListOrderedByPriors) = self.requs.firstPriorNotOccurringAsPosterior(indexRequToFulfill)
-
-			#logger.debug(u"proceed newEntry %s " % newEntry)
 
 			if (newEntry == -1):
 				result = False
 			else:
 				self.ordering.append(newEntry)
-				#logger.debug(u"proceed appended newEntry %s " % newEntry)
-				#self.ordering[self.usedCount] = newEntry
 				self.usedCount = self.usedCount + 1
-				# Mark all requirements with candidate in prior position as fulfilled and collect the posteriors
+				# Mark all requirements with candidate in prior position
+				# as fulfilled and collect the posteriors
 				k = requNoInListOrderedByPriors
 				orderByPrior = self.requs.getOrderByPrior()
 				requK = self.requs.getRequList()[orderByPrior[k]]
 				while (k < self.requs.getCount()) and (newEntry == requK.prior):
-					#logger.debug(u"proceed k %s " % k)
 					requK.fulfilled = True
-					#logger.debug(u"proceed requK %s " % requK)
-					#logger.debug(u"proceed  indexIsAmongPosteriors %s " % self.indexIsAmongPosteriors)
 					self.indexIsAmongPosteriors[ requK.posterior ] = True
 					k += 1
-					#logger.debug(u"proceed k %s " % k)
 					if (k < self.requs.getCount()):
 						requK = self.requs.getRequList()[orderByPrior[k]]
 				self.indexUsed[newEntry] = True
@@ -457,19 +450,16 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 	productOnClients = []
 	for (clientId, productOnClientsByProductId) in productOnClientsByClientIdAndProductId.items():
 		sequence = 0
-		#logger.debug(u"sortedList %s " % sortedList)
 		for productId in sortedList:
-			#logger.debug(u"handle product %s for client %s  " %(productId, clientId))
 			if productOnClientsByProductId.has_key(productId):
 				productOnClientsByProductId[productId].actionSequence = sequence
 				productOnClients.append(productOnClientsByProductId[productId])
 				del productOnClientsByProductId[productId]
 				sequence += 1
-		#logger.debug(u"sortedList %s " % sortedList)
+
 		if sortedList:
 			logger.debug(u"handle remaining if existing  " )
 			for productId in productOnClientsByProductId.keys():
-				#logger.debug(u"handle product %s for client %s  " %(productId, clientId) )
 				productOnClientsByProductId[productId].actionSequence = sequence
 				productOnClients.append(productOnClientsByProductId[productId])
 				sequence += 1
@@ -504,11 +494,12 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	logger.debug(u"productIndex %s " % productIndex)
 	logger.debug(u"priorityClasses %s " % priorityClasses)
 
-	# Requirements are list of pairs (installproduct_prior, installrproduct_posterior)
+	# Requirements are list of pairs
+	# (installproduct_prior, installrproduct_posterior)
 	# We treat only setup requirements
 	setupRequirements = []
 
-	#requirements are list of pairs (index_prior, index_posterior)
+	# requirements are list of pairs (index_prior, index_posterior)
 	requirements = []
 
 	for dependency in productDependencies:
@@ -551,7 +542,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	for r in range(201):
 		prioRange.append(100 - r)
 
-	foundClasses = []
 	sortedList = []
 	try:
 		requs = requirements
@@ -565,8 +555,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 			requObj = OrderRequirement(item[0], item[1], False)
 			logger.debug(u"requObj %s " % requObj)
 			requObjects.add(requObj)
-
-		#logger.debug(u"requObjects %s " % requObjects)
 
 		ob = OrderBuild(len(availableProducts), requObjects, False)
 		try:
@@ -623,7 +611,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		prioList = range(0, prioClassStart - prioClassHead)
 		for p in prioList:
 			q = prioClassStart - p
-			#logger.debug(u" prio %s " % (q))
 			qs = str(q)
 			if priorityClasses.has_key(qs):
 				for productId in priorityClasses[qs]:
