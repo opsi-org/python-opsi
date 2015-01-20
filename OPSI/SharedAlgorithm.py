@@ -582,10 +582,10 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	logger.debug(u"requirements %s " % requirements)
 
 	sortedList = []
-	try:
-		requs = requirements
-		logger.debug(u"requs %s " % requs)
+	requs = requirements
+	logger.debug(u"requs %s " % requs)
 
+	try:
 		requObjects = Requirements(len(requirements))
 		for item in requs:
 			requObj = OrderRequirement(item[0], item[1], False)
