@@ -623,7 +623,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 	prioClassStart = 100
 
-	while len(shrinkingSortedList) > 0:
+	while shrinkingSortedList:
 
 		prioClassHead = -100
 
@@ -657,13 +657,14 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		logger.debug(u"mixed list, added elements not in sorted list %s " % mixedSortedList)
 		logger.debug(u"add elements from sorted list up to productHeading %s " % productHeading)
 
-		while len(shrinkingSortedList) >= 1:
-			productId = shrinkingSortedList[0]
+		while shrinkingSortedList:
+			productId = shrinkingSortedList.pop(0)
 			logger.debug(u"add element %s  from %s " % (productId, shrinkingSortedList))
 			mixedSortedList.append(productId)
-			shrinkingSortedList.remove(productId)
+
 			if productId == productHeading:
 				break
+
 		logger.debug(u"+++++++++++mixed list with elements of sorted List %s " % mixedSortedList)
 
 		prioClassStart = prioClassHead - 1
