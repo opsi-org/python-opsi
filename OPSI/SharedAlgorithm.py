@@ -543,9 +543,6 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 	# We treat only setup requirements
 	setupRequirements = []
 
-	# requirements are list of pairs (index_prior, index_posterior)
-	requirements = []
-
 	for dependency in productDependencies:
 		if dependency.productAction != u"setup":
 			continue
@@ -555,6 +552,9 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 			setupRequirements.append([dependency.requiredProductId, dependency.productId])
 		elif dependency.requirementType == u"after":
 			setupRequirements.append([dependency.productId, dependency.requiredProductId])
+
+	# requirements are list of pairs (index_prior, index_posterior)
+	requirements = []
 
 	for requ in setupRequirements:
 		prod1 = requ[0]
