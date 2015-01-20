@@ -616,12 +616,10 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		logger.warning(u"algo1 outer catched OpsiProductOrderingError: {0}".format(error))
 		sortedList = []
 
-	mixedSortedList = []
 	logger.debug(u"+++++++++show sorted list %s " % sortedList)
 
-	shrinkingSortedList = []
-	for element in sortedList:
-		shrinkingSortedList.append(element)
+	mixedSortedList = []
+	shrinkingSortedList = [element for element in sortedList]
 
 	prioClassStart = 100
 
