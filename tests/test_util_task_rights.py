@@ -39,7 +39,7 @@ class SetRightsTestCase(unittest.TestCase):
         self.assertTrue(u'/etc/opsi' in directories)
         self.assertTrue(u'/var/lib/opsi' in directories)
 
-        # # TODO: make a test for that patches reading the distribution and pretend to be SLES SLES
+        # TODO: make a test for that patches reading the distribution and pretend to be SLES
         # if 'suse linux enterprise server' in distribution.lower():
         #     return [u'/var/lib/tftpboot/opsi', u'/var/lib/opsi/workbench']
         # else:
