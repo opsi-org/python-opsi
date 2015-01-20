@@ -549,18 +549,17 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 		if dependency.requiredInstallationStatus != u"installed" and dependency.requiredAction != u"setup":
 			continue
 		if dependency.requirementType == u"before":
-			setupRequirements.append([dependency.requiredProductId, dependency.productId])
+			setupRequirements.append((dependency.requiredProductId, dependency.productId))
 		elif dependency.requirementType == u"after":
-			setupRequirements.append([dependency.productId, dependency.requiredProductId])
+			setupRequirements.append((dependency.productId, dependency.requiredProductId))
 
 	# requirements are list of pairs (index_prior, index_posterior)
 	requirements = []
 
-	for requ in setupRequirements:
-		prod1 = requ[0]
-		prod2 = requ[1]
-
-		logger.debug(u"requ %s" % requ)
+	# TODO: the following code may be a duplicate. Refactor?
+	for (prod1, prod2) in setupRequirements:
+		logger.debug(u"product1: {0}".format(prod1))
+		logger.debug(u"product2: {0}".format(prod2))
 		if prod1 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod1)
 			continue
@@ -715,16 +714,13 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 		if dependency.requiredInstallationStatus != u"installed" and dependency.requiredAction != u"setup":
 			continue
 		if dependency.requirementType == u"before":
-			setupRequirements.append([dependency.requiredProductId, dependency.productId])
+			setupRequirements.append((dependency.requiredProductId, dependency.productId))
 		elif dependency.requirementType == u"after":
-			setupRequirements.append([dependency.productId, dependency.requiredProductId])
+			setupRequirements.append((dependency.productId, dependency.requiredProductId))
 
 	requirementsByClasses = defaultdict(list)
 
-	for requ in setupRequirements:
-		prod1 = requ[0]
-		prod2 = requ[1]
-
+	for (prod1, prod2) in setupRequirements:
 		logger.debug(u"Product 1 %s" % prod1)
 		if prod1 not in productById:
 			logger.warning(u"Product %s is requested but not available" % prod1)
