@@ -228,12 +228,11 @@ This defaults to ``self``.
 							if filterValue in value:
 								matched = True
 								break
-							continue
 
-						if type(value) in (types.NoneType, types.BooleanType):
 							continue
-
-						if type(value) in (float, long, int) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+						elif type(value) in (types.NoneType, types.BooleanType):
+							continue
+						elif type(value) in (float, long, int) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
 							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
@@ -255,7 +254,6 @@ This defaults to ``self``.
 						if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
-
 
 				if matched:
 					logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
