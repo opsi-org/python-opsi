@@ -328,7 +328,7 @@ class SQLBackend(ConfigDataBackend):
 			pass
 
 		if newAttributes:
-			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
+			if issubclass(objectClass, Entity) and 'type' not in newAttributes:
 				newAttributes.append('type')
 			objectClasses = [objectClass]
 			objectClasses.extend(objectClass.subClasses.values())
