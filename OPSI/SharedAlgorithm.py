@@ -152,11 +152,7 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 					productId=dependency.requiredProductId
 				)
 			)
-			raise CircularProductDependencyError(
-				u"Circular dependency detected at {productId}".format(
-					productId=dependency.requiredProductId,
-				)
-			)
+			continue
 
 		if dependency.requiredProductId not in productOnClientByProductId:
 			productOnClientByProductId[dependency.requiredProductId] = ProductOnClient(
