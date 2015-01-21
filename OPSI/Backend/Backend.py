@@ -224,15 +224,15 @@ This defaults to ``self``.
 									break
 							continue
 
-						if type(value) is list:
+						if isinstance(value, list):
 							if filterValue in value:
 								matched = True
 								break
 
 							continue
-						elif type(value) in (types.NoneType, types.BooleanType):
+						elif isinstance(value, (types.NoneType, types.BooleanType)):
 							continue
-						elif type(value) in (float, long, int) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
+						elif isinstance(value, (float, long, int)) or re.search('^\s*([>=<]+)\s*([\d\.]+)', forceUnicode(filterValue)):
 							operator = '=='
 							v = forceUnicode(filterValue)
 							match = re.search('^\s*([>=<]+)\s*([\d\.]+)', filterValue)
