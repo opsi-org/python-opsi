@@ -2846,6 +2846,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				additionalProductIds.append(productDependency.requiredProductId)
 				for productDependency in self._backend.productDependency_getObjects(productId = productDependency.requiredProductId):
 					addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
+
 		for productDependency in self._backend.productDependency_getObjects(productId = productIds):
 			addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
 
@@ -4168,6 +4169,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			name = []
 		if clientId is None:
 			clientId = []
+
 		return self._backend.bootConfiguration_deleteObjects(
 			self._backend.bootConfiguration_getObjects(
 				name=name,
@@ -4189,7 +4191,7 @@ class ModificationTrackingBackend(ExtendedBackend):
 		self._backendChangeListeners.append(backendChangeListener)
 
 	def removeBackendChangeListener(self, backendChangeListener):
-		if not backendChangeListener in self._backendChangeListeners:
+		if backendChangeListener not in self._backendChangeListeners:
 			return
 		self._backendChangeListeners.remove(backendChangeListener)
 
@@ -4217,6 +4219,7 @@ class ModificationTrackingBackend(ExtendedBackend):
 			elif action == 'deleteObjects':
 				self._fireEvent('objectsDeleted', kwargs.values()[0])
 			self._fireEvent('backendModified')
+
 		return result
 
 
