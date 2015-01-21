@@ -302,10 +302,10 @@ class SQLBackend(ConfigDataBackend):
 
 		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
-		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
 
 		try:
-			newFilter[id] = newFilter['id']
+			newFilter[objectId] = newFilter['id']
 			del newFilter['id']
 		except KeyError:
 			# No key 'id' - everything okay
@@ -313,7 +313,7 @@ class SQLBackend(ConfigDataBackend):
 
 		try:
 			newAttributes.remove('id')
-			newAttributes.append(id)
+			newAttributes.append(objectId)
 		except ValueError:
 			# No element 'id' - everything okay
 			pass
@@ -334,7 +334,7 @@ class SQLBackend(ConfigDataBackend):
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
 					if arg == 'id':
-						arg = id
+						arg = objectId
 
 					if arg not in newAttributes:
 						newAttributes.append(arg)
