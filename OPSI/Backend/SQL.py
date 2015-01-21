@@ -53,7 +53,7 @@ def onlySelectAllowed(function):
 	return checkQueryBeforeCallingFunction
 
 
-def requiresEnabledSQLBackendModule(function, *args, **kwargs):
+def requiresEnabledSQLBackendModule(function):
 	"""
 	This decorator will raise an exception if the SQL backend module is
 	not enabled and just execute the function otherwise.
@@ -67,7 +67,7 @@ def requiresEnabledSQLBackendModule(function, *args, **kwargs):
 	return checkedFunction
 
 
-def requiresEnabledLicenseManagementModule(function, *args, **kwargs):
+def requiresEnabledLicenseManagementModule(function):
 	"""
 	This decorator will only return values if the license management
 	module is enabled. If it is not enabled it will return ``None``.
