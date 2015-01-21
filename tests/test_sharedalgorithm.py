@@ -311,12 +311,12 @@ class DependenciesOnlyInsideAPriorityclassTestCase(TestFrame):
 	CASE: priority levels and dependency do not interfer
 	"""
 
-	availProducts =  TestFrame.availProducts
+	availProducts = TestFrame.availProducts
 	productOnClients = TestFrame.productOnClients
 	deps = TestFrame.deps
 	sortedProductList = [u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit']
 	sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(availProducts, deps)
-	sortedProductList2 =SharedAlgorithm.generateProductSequence_algorithm2(availProducts, deps)
+	sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(availProducts, deps)
 
 	def testAlgo1(self):
 		print("availProducts %s "  % self.availProducts)
@@ -335,7 +335,7 @@ class DependenciesCrossingPriorityclassesTestCase(TestFrame):
 	"""
 	CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority
 	"""
-	availProducts =  TestFrame.availProducts
+	availProducts = TestFrame.availProducts
 	productOnClients = TestFrame.productOnClients
 	deps = TestFrame.deps
 	deps.append(TestFrame.sysessentialDependency1)
@@ -359,7 +359,7 @@ class CircularDependenciesTestCase(TestFrame):
 	CASE: ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc
 	"""
 
-	availProducts =  TestFrame.availProducts
+	availProducts = TestFrame.availProducts
 	productOnClients = TestFrame.productOnClients
 	deps = TestFrame.deps
 	deps.append(TestFrame.firefoxDependency1)
