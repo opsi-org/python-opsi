@@ -67,9 +67,9 @@ import OPSI.SharedAlgorithm
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
 OPSI_MODULES_FILE = u'/etc/opsi/modules'
-OPSI_PASSWD_FILE  = u'/etc/opsi/passwd'
-OPSI_GLOBAL_CONF  = u'/etc/opsi/global.conf'
-LOG_DIR           = u'/var/log/opsi'
+OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
+OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
+LOG_DIR = u'/var/log/opsi'
 
 try:
 	import OPSI.Util.File.Opsi
