@@ -20,6 +20,7 @@
 Testing OPSI.SharedAlgorithm
 
 :author: Rupert Röder <r.roeder@uib.de>
+:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -300,10 +301,18 @@ class TestFrame(unittest.TestCase):
 		modificationTime='2009-07-01 12:00:00'
 	)
 
-	availProducts = [ opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox,sysessential ]
-	deps = [ flashplayerDependency1, javavmDependency1, jeditDependency1, ultravncDependency1 ]
+	availProducts = [
+		opsiAgent, ultravnc, flashplayer, javavm, jedit, firefox, sysessential
+	]
+	deps = [
+		flashplayerDependency1, javavmDependency1, jeditDependency1,
+		ultravncDependency1
+	]
 
-	productOnClients = [ productOnClient1, productOnClient2, productOnClient3, productOnClient4,productOnClient5,productOnClient6 ]
+	productOnClients = [
+		productOnClient1, productOnClient2, productOnClient3,
+		productOnClient4, productOnClient5,productOnClient6
+	]
 
 
 class DependenciesOnlyInsideAPriorityclassTestCase(TestFrame):
@@ -311,45 +320,61 @@ class DependenciesOnlyInsideAPriorityclassTestCase(TestFrame):
 	CASE: priority levels and dependency do not interfer
 	"""
 
-	availProducts = TestFrame.availProducts
-	productOnClients = TestFrame.productOnClients
-	deps = TestFrame.deps
-	sortedProductList = [u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit']
-	sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(availProducts, deps)
-	sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(availProducts, deps)
+	def setUp(self):
+		self.sortedProductList = [
+			u'opsi-agent', u'sysessential', u'firefox', u'javavm',
+			u'ultravnc', u'flashplayer', u'jedit'
+		]
+		self.sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
+		self.sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
+
+	def tearDown(self):
+		del self.sortedProductList
+		del self.sortedProductList1
+		del self.sortedProductList2
 
 	def testAlgo1(self):
-		print("availProducts %s "  % self.availProducts)
-		print("dependencies %s "  % self.deps)
+		print("availProducts %s " % self.availProducts)
+		print("dependencies %s " % self.deps)
 		print(u"compare to sortedProductList %s " % self.sortedProductList)
 		print(u"produced sorted list  with 1: %s " % self.sortedProductList1)
-		self.assertEqual( self.sortedProductList1, self.sortedProductList)
+		self.assertEqual(self.sortedProductList1, self.sortedProductList)
 
 	def testAlgo2(self):
 		print(u"compare to sortedProductList %s " % self.sortedProductList)
 		print(u"produced sorted list : %s " % self.sortedProductList2)
-		self.assertEqual( self.sortedProductList2, self.sortedProductList)
+		self.assertEqual(self.sortedProductList2, self.sortedProductList)
 
 
 class DependenciesCrossingPriorityclassesTestCase(TestFrame):
 	"""
 	CASE: the sysessential dependency tries to move the product ultravnc to front in contradiction to priority
 	"""
-	availProducts = TestFrame.availProducts
-	productOnClients = TestFrame.productOnClients
-	deps = TestFrame.deps
-	deps.append(TestFrame.sysessentialDependency1)
 
-	sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(availProducts, deps)
-	sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(availProducts, deps)
+	def setUp(self):
+		self.deps = TestFrame.deps[:]
+		self.deps.append(TestFrame.sysessentialDependency1)
+
+		self.sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
+		self.sortedProductList2 = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
+
+	def tearDown(self):
+		del self.sortedProductList1
+		del self.sortedProductList2
 
 	def testAlgo1(self):
-		sortedProductListTarget = ['opsi-agent', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit', u'sysessential']
+		sortedProductListTarget = [
+			'opsi-agent', u'firefox', u'javavm', u'ultravnc', u'flashplayer',
+			u'jedit', u'sysessential'
+		]
 		print(u"produced sorted list : %s " % self.sortedProductList1)
 		self.assertEqual(self.sortedProductList1, sortedProductListTarget)
 
 	def testAlgo2(self):
-		sortedProductListTarget=[u'opsi-agent', u'sysessential', u'firefox', u'javavm', u'ultravnc', u'flashplayer', u'jedit']
+		sortedProductListTarget = [
+			u'opsi-agent', u'sysessential', u'firefox', u'javavm',
+			u'ultravnc', u'flashplayer', u'jedit'
+		]
 		print(u"produced sorted list : %s " % self.sortedProductList2)
 		self.assertEqual(self.sortedProductList2, sortedProductListTarget)
 
