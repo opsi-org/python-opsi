@@ -845,10 +845,8 @@ def _generateProductOnClientSequence_algorithm3(productOnClients, availableProdu
 
 	for (clientId, productOnClientByProductId) in productOnClientsByClientIdAndProductId.items():
 		logger.debug(u"Sorting available products by dependency for client '%s'" % clientId)
-		sequence = []
-		for productId in productSequence:
-			if productId in productOnClientByProductId.keys():
-				sequence.append(productId)
+		sequence = [productId for productId in productSequence
+					if productId in productOnClientByProductId]
 
 		run = 0
 		sequenceChanged = True
