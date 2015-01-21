@@ -304,18 +304,28 @@ class SQLBackend(ConfigDataBackend):
 		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
-		if 'id' in newFilter:
+
+		try:
 			newFilter[id] = newFilter['id']
 			del newFilter['id']
+		except KeyError:
+			# No key 'id' - everything okay
+			pass
 
-		if 'id' in newAttributes:
+		try:
 			newAttributes.remove('id')
 			newAttributes.append(id)
+		except ValueError:
+			# No element 'id' - everything okay
+			pass
 
-		if 'type' in filter:
+		try:
 			for oc in forceList(filter['type']):
 				if objectClass.__name__ == oc:
 					newFilter['type'] = forceList(filter['type']).append(objectClass.subClasses.values())
+		except KeyError:
+			# No key 'type' - everything okay
+			pass
 
 		if newAttributes:
 			if issubclass(objectClass, Entity) and not 'type' in newAttributes:
