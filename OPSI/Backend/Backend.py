@@ -1942,21 +1942,21 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return result
 
 	def host_updateObjects(self, hosts):
-		result = []
-		for host in forceObjectClassList(hosts, Host):
+		def updateOrInsert(host):
 			logger.info(u"Updating host '%s'" % host)
-			if self.host_getIdents(id = host.id):
+			if self.host_getIdents(id=host.id):
 				self._backend.host_updateObject(host)
 			else:
 				logger.info(u"Host %s does not exist, creating" % host)
 				self._backend.host_insertObject(host)
 
-			if self._options['returnObjectsOnUpdateAndCreate']:
-				result.extend(
-					self._backend.host_getObjects(id = host.id)
-				)
+		hostList = forceObjectClassList(hosts, Host)
+		[updateOrInsert(host) for host in hostList]
 
-		return result
+		if self._options['returnObjectsOnUpdateAndCreate']:
+			return self._backend.host_getObjects(id=[host.id for host in hostList])
+		else:
+			return []
 
 	def host_renameOpsiClient(self, id, newId):
 		id = forceHostId(id)
