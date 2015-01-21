@@ -609,7 +609,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 	except OpsiProductOrderingError as error:
 		logger.warning(u"algo1 outer catched OpsiProductOrderingError: {0}".format(error))
-		sortedList = []
+		raise error
 
 	logger.debug(u"+++++++++show sorted list %s " % sortedList)
 
@@ -796,7 +796,7 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 
 	except OpsiProductOrderingError as error:
 		logger.warning(u"algo2 outer catched OpsiProductOrderingError: {0}".format(error))
-		sortedList = []
+		raise error
 
 	return sortedList
 

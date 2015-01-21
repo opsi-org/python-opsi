@@ -30,6 +30,7 @@ import unittest
 
 from OPSI.Object import LocalbootProduct, ProductDependency, ProductOnClient
 from OPSI import SharedAlgorithm
+from OPSI.Types import OpsiProductOrderingError
 
 
 class TestFrame(unittest.TestCase):
@@ -381,48 +382,21 @@ class DependenciesCrossingPriorityclassesTestCase(TestFrame):
 
 class CircularDependenciesTestCase(TestFrame):
 	"""
-	CASE: ultravnc depends on javavm, javavm on firefox and, now added, firefox on ultravnc
+	This testcase shows how Circular Dependencies raise an exception.
+
+	The testcase is that ultravnc depends on javavm, javavm on firefox
+	and, now added, firefox on ultravnc.
 	"""
 
-	availProducts = TestFrame.availProducts
-	productOnClients = TestFrame.productOnClients
-	deps = TestFrame.deps
-	deps.append(TestFrame.firefoxDependency1)
+	def setUp(self):
+		self.deps = TestFrame.deps[:]
+		self.deps.append(TestFrame.firefoxDependency1)
 
-	def testAlgo1(self):
-		sortedProductListTarget = []
+	def testAlgo1RaisesAnException(self):
+		self.assertRaises(OpsiProductOrderingError, SharedAlgorithm.generateProductSequence_algorithm1, self.availProducts, self.deps)
 
-		print(u"availProducts %s " % self.availProducts)
-		print(u"dependencies %s " % self.deps)
-
-		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
-		print(u"produced sorted list : %s " % sortedProductList)
-		self.assertEqual(sortedProductList, sortedProductListTarget)
-
-	def testAlgo2(self):
-		sortedProductListTarget = []
-		sortedProductList = SharedAlgorithm.generateProductSequence_algorithm2(self.availProducts, self.deps)
-		print(u"produced sorted list : %s " % sortedProductList)
-		self.assertEqual(sortedProductList, sortedProductListTarget)
-
-	def testCompAlgo1_3 (self):
-		print(u"availProducts ")
-		for p in self.availProducts:
-			print(p)
-
-		print(u"dependencies ")
-		for dep in self.deps:
-			print(dep)
-
-		sortedProductList1 = SharedAlgorithm.generateProductSequence_algorithm1(self.availProducts, self.deps)
-		print(u'sortedList 1 %s ' % sortedProductList1)
-		productOnClients0 = self.productOnClients
-		print(u'productOnClients0 %s ' % productOnClients0)
-		productOnClients1 = SharedAlgorithm.generateProductOnClientSequence(productOnClients0, sortedProductList1)
-		print(u'productOnClients1 %s ' % productOnClients1)
-		productOnClients3=SharedAlgorithm. generateProductOnClientSequence_algorithm3(productOnClients0, self.availProducts, self.deps)
-		print(u'productOnClients3 %s ' % productOnClients3)
-		self.assertNotEquals(productOnClients0, productOnClients3, u'different results from 1 vs. 3')
+	def testAlgo2RaisesAnException(self):
+		self.assertRaises(OpsiProductOrderingError, SharedAlgorithm.generateProductSequence_algorithm2, self.availProducts, self.deps)
 
 
 if __name__ == '__main__':
