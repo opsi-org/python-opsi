@@ -807,7 +807,12 @@ def generateProductOnClientSequence_algorithm2(productOnClients, availableProduc
 	return productOnClients
 
 
-def generateProductOnClientSequence_algorithm3(productOnClients, availableProducts, productDependencies):
+def _generateProductOnClientSequence_algorithm3(productOnClients, availableProducts, productDependencies):
+	"""
+	Generate a product on client sequence for installation.
+
+	This is the *old* variant and only available for historic reasons.
+	"""
 	logger.debug(u"*********  running algorithm3")
 	productDependenciesByProductId = defaultdict(list)
 	for productDependency in productDependencies:
