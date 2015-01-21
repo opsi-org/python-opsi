@@ -299,8 +299,7 @@ class SQLBackend(ConfigDataBackend):
 	def _adjustAttributes(self, objectClass, attributes, filter):
 		if not attributes:
 			attributes = []
-		# Work on copies of attributes and filter!
-		# TODO: horribly slow code :<
+
 		newAttributes = forceUnicodeList(attributes)
 		newFilter = forceDict(filter)
 		id = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
