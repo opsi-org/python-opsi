@@ -1771,7 +1771,7 @@ class SQLBackend(ConfigDataBackend):
 					val = 'yes'
 
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 			logger.error(u"Failed to verify modules signature")
 			return
 
@@ -2124,7 +2124,7 @@ class SQLBackend(ConfigDataBackend):
 				self.auditHardware_getHashes(attributes, **filter)]
 
 	def auditHardware_getHashes(self, attributes=[], **filter):
-		return self._auditHardware_search(returnHardwareIds=False, attributes = attributes, **filter)
+		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes, **filter)
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
 		results = []
