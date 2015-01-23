@@ -452,8 +452,8 @@ class SQLBackend(ConfigDataBackend):
 				try:
 					logger.debug(u'DROP TABLE `%s`;' % i)
 					self._sql.execute(u'DROP TABLE `%s`;' % i)
-				except Exception as e:
-					logger.error(e)
+				except Exception as error:
+					logger.error(error)
 					done = False
 					errors += 1
 
