@@ -697,7 +697,7 @@ the opsi host key.
 		if not result['password']:
 			raise BackendMissingDataError(u"Username '%s' not found in '%s'" % (username, self._opsiPasswdFile))
 
-		depot = self.host_getObjects(id = self._depotId)
+		depot = self.host_getObjects(id=self._depotId)
 		if not depot:
 			raise Exception(u"Depot '%s' not found in backend" % self._depotId)
 		depot = depot[0]
@@ -715,6 +715,7 @@ the opsi host key.
 				f.close()
 			except Exception as e:
 				logger.debug(e)
+
 		if hostId:
 			host = self._context.host_getObjects(id=hostId)
 			if not host:
@@ -723,6 +724,7 @@ the opsi host key.
 			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
 			if result['rsaPrivateKey']:
 				result['rsaPrivateKey'] = blowfishEncrypt(host.opsiHostKey, result['rsaPrivateKey'])
+
 		return result
 
 	def user_setCredentials(self, username, password):
