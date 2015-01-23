@@ -30,6 +30,7 @@ databases and their implementation.
 :license: GNU Affero General Public License version 3
 """
 
+import re
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -40,7 +41,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
 from OPSI.Object import *
-from OPSI.Backend.Backend import *
+from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 
 logger = Logger()
 
