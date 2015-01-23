@@ -1020,9 +1020,9 @@ class SQLBackend(ConfigDataBackend):
 		self._sql.execute(table)
 		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Hosts                                                                                     -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Hosts
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
@@ -1059,9 +1059,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(host)
 			self._sql.delete('HOST', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Configs                                                                                   -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Configs
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def config_insertObject(self, config):
 		ConfigDataBackend.config_insertObject(self, config)
@@ -1176,9 +1176,9 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.delete('CONFIG_VALUE', where)
 			self._sql.delete('CONFIG', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ConfigStates                                                                              -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ConfigStates
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def configState_insertObject(self, configState):
 		ConfigDataBackend.configState_insertObject(self, configState)
@@ -1219,9 +1219,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(configState)
 			self._sql.delete('CONFIG_STATE', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Products                                                                                  -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Products
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def product_insertObject(self, product):
 		backendinfo = self._context.backend_info()
@@ -1312,9 +1312,9 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.delete('WINDOWS_SOFTWARE_ID_TO_PRODUCT', "`productId` = '%s'" % product.getId())
 			self._sql.delete('PRODUCT', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductProperties                                                                         -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductProperties
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def productProperty_insertObject(self, productProperty):
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
@@ -1415,9 +1415,9 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
 			self._sql.delete('PRODUCT_PROPERTY', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductDependencies                                                                         -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductDependencies
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def productDependency_insertObject(self, productDependency):
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
@@ -1452,9 +1452,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(productDependency)
 			self._sql.delete('PRODUCT_DEPENDENCY', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductOnDepots                                                                           -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnDepots
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def productOnDepot_insertObject(self, productOnDepot):
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
@@ -1492,9 +1492,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(productOnDepot)
 			self._sql.delete('PRODUCT_ON_DEPOT', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductOnClients                                                                          -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductOnClients
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def productOnClient_insertObject(self, productOnClient):
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
@@ -1534,9 +1534,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(productOnClient)
 			self._sql.delete('PRODUCT_ON_CLIENT', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ProductPropertyStates                                                                     -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ProductPropertyStates
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def productPropertyState_insertObject(self, productPropertyState):
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
@@ -1581,9 +1581,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(productPropertyState)
 			self._sql.delete('PRODUCT_PROPERTY_STATE', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Groups                                                                                    -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Groups
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def group_insertObject(self, group):
 		ConfigDataBackend.group_insertObject(self, group)
@@ -1621,9 +1621,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(group)
 			self._sql.delete('GROUP', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   ObjectToGroups                                                                            -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   ObjectToGroups
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	def objectToGroup_insertObject(self, objectToGroup):
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
@@ -1658,9 +1658,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(objectToGroup)
 			self._sql.delete('OBJECT_TO_GROUP', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   LicenseContracts                                                                          -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseContracts
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledLicenseManagementModule
 	def licenseContract_insertObject(self, licenseContract):
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
@@ -1698,9 +1698,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(licenseContract)
 			self._sql.delete('LICENSE_CONTRACT', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   SoftwareLicenses                                                                          -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenses
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledLicenseManagementModule
 	def softwareLicense_insertObject(self, softwareLicense):
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
@@ -1738,9 +1738,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(softwareLicense)
 			self._sql.delete('SOFTWARE_LICENSE', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   LicensePools                                                                              -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicensePools
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledLicenseManagementModule
 	def licensePool_insertObject(self, licensePool):
 		backendinfo = self._context.backend_info()
@@ -1843,9 +1843,9 @@ class SQLBackend(ConfigDataBackend):
 			self._sql.delete('PRODUCT_ID_TO_LICENSE_POOL', "`licensePoolId` = '%s'" % licensePool.id)
 			self._sql.delete('LICENSE_POOL', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   SoftwareLicenseToLicensePools                                                             -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   SoftwareLicenseToLicensePools
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
@@ -1888,9 +1888,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(softwareLicenseToLicensePool)
 			self._sql.delete('SOFTWARE_LICENSE_TO_LICENSE_POOL', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   LicenseOnClients                                                                          -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   LicenseOnClients
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_insertObject(self, licenseOnClient):
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
@@ -1931,9 +1931,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(licenseOnClient)
 			self._sql.delete('LICENSE_ON_CLIENT', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   AuditSoftwares                                                                            -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwares
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftware_insertObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		data = self._objectToDatabaseHash(auditSoftware)
@@ -1968,9 +1968,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(auditSoftware)
 			self._sql.delete('SOFTWARE', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   AuditSoftwareToLicensePools                                                               -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareToLicensePools
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
 		ConfigDataBackend.auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool)
 		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
@@ -2004,9 +2004,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(auditSoftwareToLicensePool)
 			self._sql.delete('AUDIT_SOFTWARE_TO_LICENSE_POOL', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   AuditSoftwareOnClients                                                                    -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditSoftwareOnClients
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		data = self._objectToDatabaseHash(auditSoftwareOnClient)
@@ -2040,9 +2040,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(auditSoftwareOnClient)
 			self._sql.delete('SOFTWARE_CONFIG', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   AuditHardwares                                                                            -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwares
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _uniqueAuditHardwareCondition(self, auditHardware):
 		if hasattr(auditHardware, 'toHash'):
 			auditHardware = auditHardware.toHash()
@@ -2201,9 +2201,9 @@ class SQLBackend(ConfigDataBackend):
 
 			self._sql.delete(u'HARDWARE_DEVICE_{0}'.format(auditHardware.getHardwareClass()), where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   AuditHardwareOnHosts                                                                      -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   AuditHardwareOnHosts
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _extractAuditHardwareHash(self, auditHardwareOnHost):
 		if hasattr(auditHardwareOnHost, 'toHash'):
 			auditHardwareOnHost = auditHardwareOnHost.toHash()
@@ -2411,9 +2411,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
 			self._sql.delete(u'HARDWARE_CONFIG_{0}'.format(auditHardwareOnHost.getHardwareClass()), where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   BootConfigurations                                                                        -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   BootConfigurations
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def bootConfiguration_insertObject(self, bootConfiguration):
 		ConfigDataBackend.bootConfiguration_insertObject(self, bootConfiguration)
 		data = self._objectToDatabaseHash(bootConfiguration)
@@ -2447,9 +2447,9 @@ class SQLBackend(ConfigDataBackend):
 			where = self._uniqueCondition(bootConfiguration)
 			self._sql.delete('BOOT_CONFIGURATION', where)
 
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	# -   Extension for direct connect to db                                           -
-	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	# -   Extension for direct connect to db
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	@requiresEnabledSQLBackendModule
 	@onlySelectAllowed
 	def getData(self, query):
