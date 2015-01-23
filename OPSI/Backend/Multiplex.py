@@ -343,7 +343,7 @@ class MultiplexBackend(object):
 
 						pocs = source.productOnClient_getObjects(clientId=configState.objectId)
 						if pocs:
-							dispatcher.productOnClient_createObjects(poc)
+							dispatcher.productOnClient_createObjects(pocs)
 
 						pps = source.productPropertyState_getObjects(objectId=configState.objectId)
 						if pps:
