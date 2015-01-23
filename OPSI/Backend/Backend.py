@@ -710,9 +710,8 @@ the opsi host key.
 			try:
 				import pwd
 				idRsa = os.path.join(pwd.getpwnam(username)[5], u'.ssh', u'id_rsa')
-				f = open(idRsa, 'r')
-				result['rsaPrivateKey'] = f.read()
-				f.close()
+				with open(idRsa, 'r') as r:
+					result['rsaPrivateKey'] = f.read()
 			except Exception as e:
 				logger.debug(e)
 
