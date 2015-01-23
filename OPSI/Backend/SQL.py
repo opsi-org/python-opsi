@@ -915,8 +915,8 @@ class SQLBackend(ConfigDataBackend):
 					)
 				)
 
-			hardwareDeviceValuesProcessed = 0;
-			hardwareConfigValuesProcessed = 0;
+			hardwareDeviceValuesProcessed = 0
+			hardwareConfigValuesProcessed = 0
 			for (value, valueInfo) in values.items():
 				logger.debug(u"  Processing value '%s'" % value)
 				if valueInfo['Scope'] == 'g':
