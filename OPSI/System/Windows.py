@@ -6,7 +6,7 @@ opsi python library - Windows
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2013-2014 uib GmbH
+Copyright (C) 2013-2015 uib GmbH
 
 http://www.uib.de/
 
@@ -1762,7 +1762,8 @@ def setLocalSystemTime(timestring):
 	http://docs.activestate.com/activepython/2.5/pywin32/win32api__SetSystemTime_meth.html
 	"""
 	if not timestring:
-		raise Exeption(u"Not Valid Timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+		raise Exception(u"Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
+
 	try:
 		dt = datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
 		logger.info(u"Setting Systemtime Time to %s" % timestring)
