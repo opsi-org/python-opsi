@@ -31,6 +31,8 @@ databases and their implementation.
 """
 
 import time
+from contextlib import contextmanager
+from datetime import datetime
 from hashlib import md5
 from twisted.conch.ssh import keys
 
@@ -80,6 +82,14 @@ def requiresEnabledLicenseManagementModule(function):
 		return function(self, *args, **kwargs)
 
 	return checkedFunction
+
+
+@contextmanager
+def timeQuery(query):
+	startingTime = datetime.now()
+	logger.debug(u'start query {0}'.format(query))
+	yield
+	logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
 
 
 class SQL(object):
@@ -2443,15 +2453,11 @@ class SQLBackend(ConfigDataBackend):
 	@requiresEnabledSQLBackendModule
 	@onlySelectAllowed
 	def getData(self, query):
-		logger.debug(u'start query {0}'.format(query))
-		result = self._sql.getSet(query)
-		logger.debug(u'ended query {0}'.format(query))
-		return result
+		with timeQuery(query):
+			return self._sql.getSet(query)
 
 	@requiresEnabledSQLBackendModule
 	@onlySelectAllowed
 	def getRawData(self, query):
-		logger.debug(u'start query {0}'.format(query))
-		result = self._sql.getRows(query)
-		logger.debug(u'ended query {0}'.format(query))
-		return result
+		with timeQuery(query):
+			return self._sql.getRows(query)
