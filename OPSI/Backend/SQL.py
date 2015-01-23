@@ -1765,8 +1765,10 @@ class SQLBackend(ConfigDataBackend):
 					modules[module] = True
 			else:
 				val = modules[module]
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				if val == False:
+					val = 'no'
+				if val == True:
+					val = 'yes'
 
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
 		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
