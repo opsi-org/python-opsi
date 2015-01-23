@@ -2189,7 +2189,7 @@ class SQLBackend(ConfigDataBackend):
 					del res['hardware_id']
 				res['hardwareClass'] = hardwareClass
 				for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
-					if (valueInfo.get('Scope', 'g') == 'i'):
+					if valueInfo.get('Scope', 'g') == 'i':
 						continue
 					if attribute not in res:
 						res[attribute] = None
@@ -2360,10 +2360,10 @@ class SQLBackend(ConfigDataBackend):
 						logger.debug(u"Skipping hardwareClass '%s', because of missing info for attribute '%s'" % (hardwareClass, attribute))
 						skipHardwareClass = True
 						break
-					if (valueInfo.get('Scope', '') == 'g'):
+					if valueInfo.get('Scope', '') == 'g':
 						auditHardwareFilter[attribute] = value
 						continue
-					if (valueInfo.get('Scope', '') != 'i'):
+					if valueInfo.get('Scope', '') != 'i':
 						continue
 				if value is not None:
 					value = forceList(value)
