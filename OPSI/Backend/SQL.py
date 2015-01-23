@@ -45,7 +45,7 @@ logger = Logger()
 
 def onlySelectAllowed(function):
 	def checkQueryBeforeCallingFunction(self, query):
-		if not forceUnicodeLower(query).startswith('select'):
+		if not forceUnicodeLower(query).strip().startswith('select'):
 			raise ValueError('Only queries to SELECT data are allowed.')
 
 		return function(self, query)
