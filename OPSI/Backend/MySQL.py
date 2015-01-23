@@ -245,7 +245,7 @@ class MySQL(SQL):
 		try:
 			try:
 				self.execute(query, conn, cursor)
-			except Exception, e:
+			except Exception as e:
 				logger.debug(u"Execute error: %s" % e)
 				if e[0] != 2006:
 					# 2006: MySQL server has gone away
