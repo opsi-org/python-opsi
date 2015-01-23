@@ -2440,6 +2440,7 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db                                           -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	@requiresEnabledSQLBackendModule
 	@onlySelectAllowed
 	def getData(self, query):
 		logger.debug(u'start query {0}'.format(query))
@@ -2447,6 +2448,7 @@ class SQLBackend(ConfigDataBackend):
 		logger.debug(u'ended query {0}'.format(query))
 		return result
 
+	@requiresEnabledSQLBackendModule
 	@onlySelectAllowed
 	def getRawData(self, query):
 		logger.debug(u'start query {0}'.format(query))
