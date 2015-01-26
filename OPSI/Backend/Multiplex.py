@@ -19,8 +19,8 @@
 """
 Backend multiplexer.
 
-This backend does the multiplexing of backend calls to the various
-backends.
+This backend is intended for accessing multiple backends in remote
+locations.
 
 :author: Christian Kampka <c.kampka@uib.de>
 :author: Jan Schneider <j.schneider@uib.de>
