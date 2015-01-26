@@ -3211,7 +3211,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
 
 		# Create data structure for product property states to find missing ones
-		ppss = collections.defaultdict(collections.defaultdict(list))
+		ppss = collections.defaultdict(lambda: collections.defaultdict(list))
 		for pps in self._backend.productPropertyState_getObjects(
 						attributes = ['objectId', 'productId', 'propertyId'],
 						objectId   = filter.get('objectId', []),
