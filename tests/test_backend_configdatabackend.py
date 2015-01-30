@@ -53,12 +53,18 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 	def test_reading_log_requires_objectId(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
-		for logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog', 'opsiconfd'):
+		for logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
+			print("Logtype: {0}".format(logType))
 			self.assertRaises(BackendBadValueError, cdb.log_read, logType)
 
 	def test_reading_opsiconfd_log_does_not_require_objectId(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 		cdb.log_read('opsiconfd')
+
+	def test_reading_non_existing_log_returns_empty_string(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+		self.assertEquals("", cdb.log_read('opsiconfd'))
+		self.assertEquals("", cdb.log_read('opsiconfd', 'unknown_object'))
 
 
 if __name__ == '__main__':
