@@ -76,7 +76,7 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 
 	def testWritingLogRequiresObjectId(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
-		self.assertRaises(BackendBadValueError, cdb.log_write, 'foobar', '')
+		self.assertRaises(BackendBadValueError, cdb.log_write, 'opsiconfd', None)
 
 	def testWritingLogCreatesFile(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
