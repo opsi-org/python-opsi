@@ -602,15 +602,15 @@ overwrite the log.
 			currentSize = os.stat(logFile).st_size
 			maxFileSize = self._maxLogfileSize - len(data)
 			if currentSize > maxFileSize:
-				with codecs.open(logFile, 'r', 'utf-8', 'replace') as fc:
-					fc.seek(currentSize - maxFileSize)
-					data = fc.read() + data
+				with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
+					log.seek(currentSize - maxFileSize)
+					data = log.read() + data
 					data = data[data.find('\n') + 1:]
 			else:
 				logWriteMode = 'a+'
 
-		with codecs.open(logFile, logWriteMode or "w", 'utf-8', 'replace') as f:
-			f.write(data)
+		with codecs.open(logFile, logWriteMode or "w", 'utf-8', 'replace') as log:
+			log.write(data)
 
 		os.chmod(logFile, 0640)
 
