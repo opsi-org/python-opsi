@@ -100,5 +100,13 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 
 		self.assertEquals('data4\n', cdb.log_read('opsiconfd', 'foo.bar.baz'))
 
+	def testWritingAndThenReadingDataFromLogWithLimitedRead(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+
+		longData = 'data1\ndata2\ndata3\ndata4\n'
+		cdb.log_write('opsiconfd', longData, objectId='foo.bar.baz')
+
+		self.assertEquals('data4\n', cdb.log_read('opsiconfd', 'foo.bar.baz', maxSize=10))
+
 if __name__ == '__main__':
 	unittest.main()
