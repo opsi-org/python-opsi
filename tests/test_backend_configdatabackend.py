@@ -78,7 +78,6 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 		self.assertRaises(BackendBadValueError, cdb.log_write, 'foobar', '')
 
-
 	def testWritingLogCreatesFile(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 		cdb.log_write('opsiconfd', 'data', objectId='foo.bar.baz')
@@ -86,6 +85,12 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 		expectedLogPath = os.path.join(self.logDirectory, 'opsiconfd', 'foo.bar.baz.log')
 		self.assertTrue(os.path.exists(expectedLogPath),
 						"Log path {0} should exist.".format(expectedLogPath))
+
+	def testWritingAndThenReadingDataFromLog(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+		cdb.log_write('opsiconfd', 'data', objectId='foo.bar.baz')
+
+		self.assertEquals('data', cdb.log_read('opsiconfd', 'foo.bar.baz'))
 
 
 
