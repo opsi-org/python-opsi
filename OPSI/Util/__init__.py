@@ -464,7 +464,7 @@ def compareVersions(v1, condition, v2):
 
 	if not condition:
 		condition = u'=='
-	if not condition in (u'==', u'=', u'<', u'<=', u'>', u'>='):
+	if condition not in (u'==', u'=', u'<', u'<=', u'>', u'>='):
 		raise Exception(u"Bad condition '%s'" % condition)
 	if condition == u'=':
 		condition = u'=='
