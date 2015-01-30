@@ -518,7 +518,7 @@ def compareVersions(v1, condition, v2):
 				if type(cv2) is not int:
 					cv2 = u"'%s'" % cv2
 
-				b = eval( u"%s %s %s" % (cv1, condition, cv2) )
+				b = eval(u"%s %s %s" % (cv1, condition, cv2))
 				logger.debug2(u"%s(%s) %s %s(%s) => %s | '%s' '%s'" % (type(cv1), cv1, condition, type(cv2), cv2, b, v1p[i], v2p[i]) )
 				if not b:
 					logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
@@ -528,10 +528,12 @@ def compareVersions(v1, condition, v2):
 					logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
 						% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
 					return True
+
 	if u'=' not in condition:
 		logger.debug(u"Unfulfilled condition: %s-%s %s %s-%s" \
 			% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
 		return False
+
 	logger.debug(u"Fulfilled condition: %s-%s %s %s-%s" \
 		% (v1ProductVersion, v1PackageVersion, condition, v2ProductVersion, v2PackageVersion ))
 	return True
