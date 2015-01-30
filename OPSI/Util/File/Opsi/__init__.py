@@ -1009,13 +1009,6 @@ class OpsiConfFile(IniFile):
 		else:
 			return True
 
-	@requiresParsing
-	def getMaxLogFileSize(self):
-		if "logfiles" in self._opsiConfig and "max_size" in self._opsiConfig["logfiles"]:
-			return self._opsiConfig["logfiles"]["max_size"]
-		else:
-			return 5000000
-
 
 class OpsiBackupArchive(tarfile.TarFile):
 
