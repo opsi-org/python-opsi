@@ -599,11 +599,8 @@ overwrite the log.
 				pass
 
 		data = forceUnicode(data)
-		if self._maxLogfileSize > 0 and len(data) > self._maxLogfileSize:
-			start = data.find('\n', len(data) - self._maxLogfileSize)
-			if start == -1:
-				start = len(data) - self._maxLogfileSize
-			data = data[start + 1:]
+		if self._maxLogfileSize:
+			data = self._truncateLogData(data, self._maxLogfileSize)
 
 		logWriteMode = None
 		if forceBool(append) and (self._maxLogfileSize > 0):
@@ -622,7 +619,17 @@ overwrite the log.
 
 		os.chmod(logFile, 0640)
 
-	def log_read(self, logType, objectId=None, maxSize=MAX_LOGFILE_SIZE):
+	@staticmethod
+	def _truncateLogData(data, maxSize):
+		if len(data) > maxSize:
+			start = data.find('\n', len(data) - maxSize)
+			if start == -1:
+				start = len(data) - maxSize
+			return data[start + 1:]
+
+		return data
+
+	def log_read(self, logType, objectId=None, maxSize=DEFAULT_MAX_LOGFILE_SIZE):
 		"""
 		Return the content of a log.
 
@@ -653,13 +660,7 @@ Currently supported: *bootimage*, *clientconnect*, *instlog* or *opsiconfd*.
 			data = logFile.read()
 
 		if maxSize:
-			maxSize = forceInt(maxSize)
-
-			if len(data) > maxSize:
-				start = data.find('\n', len(data) - maxSize)
-				if start == -1:
-					start = len(data) - maxSize
-				return data[start + 1:]
+			return self._truncateLogData(data, forceInt(maxSize))
 
 		return data
 
