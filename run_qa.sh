@@ -9,4 +9,7 @@ echo "Running flake8"
 flake8 --exit-zero OPSI/ > pep8.txt
 
 echo "Running nosetests"
+if [ -e coverage.xml ]; then
+	rm coverage.xml
+fi
 nosetests --with-xunit --with-xcoverage --cover-erase --cover-package=OPSI tests/ || echo 'nosetests did not finish with return code 0'
