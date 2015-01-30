@@ -1210,7 +1210,7 @@ class SQLBackend(ConfigDataBackend):
 		configStates = []
 		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
 		for res in self._sql.getSet(self._createQuery('CONFIG_STATE', attributes, filter)):
-			if res.has_key('values'):
+			if 'values' in res:
 				res['values'] = json.loads(res['values'])
 			configStates.append(ConfigState.fromHash(res))
 		return configStates
