@@ -45,23 +45,27 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 
 		self.logDirectoryPatch.stop()
 
-	def test_reading_log_fails_if_type_unknown(self):
+	def testReadingLogFailsIfTypeUnknown(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
 		self.assertRaises(BackendBadValueError, cdb.log_read, 'blablabla')
 
-	def test_reading_log_requires_objectId(self):
+	def testReadingLogRequiresObjectId(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 
 		for logType in ('bootimage', 'clientconnect', 'userlogin', 'instlog'):
 			print("Logtype: {0}".format(logType))
 			self.assertRaises(BackendBadValueError, cdb.log_read, logType)
 
-	def test_reading_opsiconfd_log_does_not_require_objectId(self):
+	def testReadingOpsiconfdLogDoesNotRequireObjectId(self):
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 		cdb.log_read('opsiconfd')
 
-	def test_reading_non_existing_log_returns_empty_string(self):
+	def testReadingNonExistingLogReturnsEmptyString(self):
+		"""
+		Valid calls to read logs should return empty strings if no file
+		does exist.
+		"""
 		cdb = OPSI.Backend.Backend.ConfigDataBackend()
 		self.assertEquals("", cdb.log_read('opsiconfd'))
 		self.assertEquals("", cdb.log_read('opsiconfd', 'unknown_object'))
