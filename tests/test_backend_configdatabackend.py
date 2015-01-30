@@ -70,6 +70,24 @@ class ConfigDataBackendTestCase(unittest.TestCase):
 		self.assertEquals("", cdb.log_read('opsiconfd'))
 		self.assertEquals("", cdb.log_read('opsiconfd', 'unknown_object'))
 
+	def testOnlyValidLogTypesAreWritten(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+		self.assertRaises(BackendBadValueError, cdb.log_write, 'foobar', '')
+
+	def testWritingLogRequiresObjectId(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+		self.assertRaises(BackendBadValueError, cdb.log_write, 'foobar', '')
+
+
+	def testWritingLogCreatesFile(self):
+		cdb = OPSI.Backend.Backend.ConfigDataBackend()
+		cdb.log_write('opsiconfd', 'data', objectId='foo.bar.baz')
+
+		expectedLogPath = os.path.join(self.logDirectory, 'opsiconfd', 'foo.bar.baz.log')
+		self.assertTrue(os.path.exists(expectedLogPath),
+						"Log path {0} should exist.".format(expectedLogPath))
+
+
 
 if __name__ == '__main__':
 	unittest.main()
