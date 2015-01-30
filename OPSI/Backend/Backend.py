@@ -70,12 +70,7 @@ OPSI_MODULES_FILE = u'/etc/opsi/modules'
 OPSI_PASSWD_FILE = u'/etc/opsi/passwd'
 OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
 LOG_DIR = u'/var/log/opsi'
-
-try:
-	import OPSI.Util.File.Opsi
-	MAX_LOGFILE_SIZE = OPSI.Util.File.Opsi.OpsiConfFile().getMaxLogFileSize()
-except IOError:
-	MAX_LOGFILE_SIZE = 5000000
+DEFAULT_MAX_LOGFILE_SIZE = 5000000
 
 
 def getArgAndCallString(method):
@@ -511,7 +506,7 @@ containing the localisation of the hardware audit.
 		self._auditHardwareConfigFile = u'/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = u'/etc/opsi/hwaudit/locales'
 		self._opsiPasswdFile = OPSI_PASSWD_FILE
-		self._maxLogfileSize = MAX_LOGFILE_SIZE
+		self._maxLogfileSize = DEFAULT_MAX_LOGFILE_SIZE
 		self._depotId = None
 
 		for (option, value) in kwargs.items():
