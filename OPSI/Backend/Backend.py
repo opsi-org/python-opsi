@@ -57,7 +57,7 @@ if os.name == 'posix':
 			from OPSI.ldaptor import ldapfilter
 
 from OPSI.Logger import Logger
-from OPSI.Types import BackendError
+from OPSI.Types import BackendError, BackendBadValueError
 from OPSI.Types import *
 from OPSI.Object import *
 from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt, getfqdn
