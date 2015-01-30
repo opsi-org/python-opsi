@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,7 @@ import unittest
 from OPSI.Util import (compareVersions, flattenSequence, formatFileSize,
     generateOpsiHostKey, getGlobalConfig, ipAddressInNetwork,
     isRegularExpressionPattern, md5sum, objectToBeautifiedText, objectToHtml,
-    randomString)
+    randomString, removeUnit)
 from OPSI.Object import LocalbootProduct
 
 
@@ -327,6 +327,14 @@ class IsRegularExpressionTestCase(unittest.TestCase):
 
         self.assertTrue(isRegularExpressionPattern(re.compile("ABC")))
 
+
+class RemoveUnitTestCase(unittest.TestCase):
+    def testNoUnitMeansNoRemoval(self):
+        self.assertEquals(2, removeUnit(2))
+        self.assertEquals(2, removeUnit('2'))
+
+    def testRemovingMegabyte(self):
+        self.assertEquals(2048 * 1024, removeUnit('2MB'))
 
 if __name__ == '__main__':
     unittest.main()
