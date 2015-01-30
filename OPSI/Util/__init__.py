@@ -541,7 +541,6 @@ def compareVersions(v1, condition, v2):
 
 unitRegex = re.compile('^(\d+\.*\d*)\s*([\w]{0,4})$')
 def removeUnit(x):
-	# TODO: tests!
 	x = forceUnicode(x)
 	match = unitRegex.search(x)
 	if not match:
@@ -551,6 +550,7 @@ def removeUnit(x):
 		value = float(match.group(1))
 	else:
 		value = int(match.group(1))
+
 	unit = match.group(2)
 	mult = 1000
 
@@ -568,13 +568,13 @@ def removeUnit(x):
 	if unit.endswith('n'):
 		return float(value) / (mult * mult)
 	elif unit.endswith('m'):
-		return float(value) / (mult)
+		return float(value) / mult
 	elif unit.lower().endswith('k'):
 		return value * mult
 	elif unit.endswith('M'):
 		return value * mult * mult
 	elif unit.endswith('G'):
-		return value*mult*mult*mult
+		return value * mult * mult * mult
 
 	return value
 
