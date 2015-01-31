@@ -490,9 +490,8 @@ class NetworkPerformanceCounter(threading.Thread):
 			time.sleep(1)
 
 	def _getStatistics(self):
-		f = open('/proc/net/dev', 'r')
-		try:
-			for line in f.readlines():
+		with open('/proc/net/dev', 'r') as f:
+			for line in f:
 				line = line.strip()
 				match = self._regex.search(line)
 				if match and match.group(1) == self.interface:
@@ -516,8 +515,6 @@ class NetworkPerformanceCounter(threading.Thread):
 					self._lastBytesOut = bytesOut
 					self._lastTime = now
 					break
-		finally:
-			f.close()
 
 	def getBytesInPerSecond(self):
 		return self._bytesInPerSecond
