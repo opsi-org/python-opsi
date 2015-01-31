@@ -338,26 +338,24 @@ def getKernelParams():
 	containing all key=value pairs.
 	keys are converted to lower case
 	"""
-	params = {}
-	cmdline = None
-	f = None
+	cmdline = ''
 	try:
 		logger.debug(u'Reading /proc/cmdline')
-		f = codecs.open("/proc/cmdline", "r", "utf-8")
-		cmdline = f.readline()
+		with codecs.open("/proc/cmdline", "r", "utf-8") as f:
+			cmdline = f.readline()
+
 		cmdline = cmdline.strip()
-		f.close()
 	except IOError as e:
-		if f:
-			f.close()
 		raise Exception(u"Error reading '/proc/cmdline': %s" % e)
-	if cmdline:
-		for option in cmdline.split():
-			keyValue = option.split(u"=")
-			if len(keyValue) < 2:
-				params[keyValue[0].strip().lower()] = u''
-			else:
-				params[keyValue[0].strip().lower()] = keyValue[1].strip()
+
+	params = {}
+	for option in cmdline.split():
+		keyValue = option.split(u"=")
+		if len(keyValue) < 2:
+			params[keyValue[0].strip().lower()] = u''
+		else:
+			params[keyValue[0].strip().lower()] = keyValue[1].strip()
+
 	return params
 
 
