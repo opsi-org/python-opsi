@@ -412,6 +412,7 @@ def getNetworkDeviceConfig(device):
 		if match:
 			result['hardwareAddress'] = forceHardwareAddress(match.group(1))
 			continue
+
 		if line.startswith('inet '):
 			parts = line.split(':')
 			if (len(parts) != 4):
@@ -446,7 +447,7 @@ def getNetworkDeviceConfig(device):
 			# FIXME: what is wrong with virtio devices?
 			x += 0xfff
 		x = "%x" % x
-		result['deviceId'] = forceHardwareDeviceId(((4-len(x))*'0') + x)
+		result['deviceId'] = forceHardwareDeviceId(((4 - len(x)) * '0') + x)
 	except Exception:
 		logger.warning(u"Failed to get vendor/device id for network device %s" % device)
 	return result
