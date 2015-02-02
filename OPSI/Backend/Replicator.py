@@ -41,7 +41,7 @@ from OPSI.Backend.Backend import ExtendedConfigDataBackend
 logger = Logger()
 
 
-class BackendReplicator:
+class BackendReplicator(object):
 	OBJECT_CLASSES = [
 		'Host',
 		'Product',
