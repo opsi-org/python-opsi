@@ -624,30 +624,37 @@ class GetNetworkDeviceConfigTestCase(unittest.TestCase):
 
 		This was obtained on CentOS 7.
 		"""
-		output = [
-			"eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500"
-			"	inet 172.26.2.25  netmask 255.255.0.0  broadcast 172.26.255.255"
-			"	inet6 fe80::215:5dff:fe01:151b  prefixlen 64  scopeid0x20<link>",
-			"	ether 00:15:5d:01:15:1b  txqueuelen 1000  (thernet)",
-			"	RX packets 12043  bytes 958928 (936.4 KiB)"
-			"	RX errors 0  dropped 0  overruns 0  frame ",
-			"	TX packets 1176  bytes 512566 (500.5 KiB)"
-			"	TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0",
-		]
+		def fakeExecute(command):
+			if command.startswith('ifconfig'):
+				return [
+					"eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500"
+					"	inet 172.26.2.25  netmask 255.255.0.0  broadcast 172.26.255.255"
+					"	inet6 fe80::215:5dff:fe01:151b  prefixlen 64  scopeid0x20<link>",
+					"	ether 00:15:5d:01:15:1b  txqueuelen 1000  (thernet)",
+					"	RX packets 12043  bytes 958928 (936.4 KiB)"
+					"	RX errors 0  dropped 0  overruns 0  frame ",
+					"	TX packets 1176  bytes 512566 (500.5 KiB)"
+					"	TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0"
+				]
+			elif command.startswith('ip'):
+				return []
+			else:
+				raise Exception("Ooops, unexpected code.")
 
-		config = Posix.getNetworkDeviceConfig('eth0', _ifconfigOutput=output)
+		with mock.patch('OPSI.System.Posix.execute', fakeExecute):
+			with mock.patch('OPSI.System.Posix.which', self.fakeWhich):
+				config = Posix.getNetworkDeviceConfig('eth0')
 
 		expectedConfig = {
 			'device': 'eth0',
-			'gateway': u'192.168.1.254',
 			'hardwareAddress': u'00:15:5d:01:15:1b',
+			'gateway': None,
 			'broadcast': None,
 			'ipAddress': None,
 			'netmask': None,
 		}
 
-		# The following values must exist in the config but may not have
-		# a value.
+		# The following values must but may not have a value.
 		self.assertTrue('vendorId' in config)
 		self.assertTrue('deviceId' in config)
 
@@ -659,6 +666,52 @@ class GetNetworkDeviceConfigTestCase(unittest.TestCase):
 				)
 			)
 
+	@staticmethod
+	def fakeWhich(command):
+		return command
+
+	def testOldIfconfigOutput(self):
+		def fakeExecute(command):
+			if command.startswith('ifconfig'):
+				return [
+					"eth0      Link encap:Ethernet  Hardware Adresse 54:52:00:63:99:b3  ",
+					"  inet Adresse:192.168.1.14  Bcast:192.168.255.255  Maske:255.255.0.0",
+					"  inet6-Adresse: fe80::5652:ff:fe63:993b/64 Gültigkeitsbereich:Verbindung",
+					"  UP BROADCAST RUNNING MULTICAST  MTU:1500  Metrik:1",
+					"  RX packets:271140257 errors:0 dropped:0 overruns:0 frame:0",
+					"  TX packets:181955440 errors:0 dropped:0 overruns:0 carrier:0",
+					"  Kollisionen:0 Sendewarteschlangenlänge:1000 ",
+					"  RX bytes:227870261729 (212.2 GiB)  TX bytes:926518540483 (862.8 GiB)"
+				]
+			elif command.startswith('ip'):
+				return []
+			else:
+				raise Exception("Ooops, unexpected code.")
+
+		with mock.patch('OPSI.System.Posix.execute', fakeExecute):
+			with mock.patch('OPSI.System.Posix.which', self.fakeWhich):
+				config = Posix.getNetworkDeviceConfig('eth0')
+
+		expectedConfig = {
+			'device': 'eth0',
+			'gateway': None,
+			'hardwareAddress': u'54:52:00:63:99:b3',
+			'broadcast': u"192.168.255.255",
+			'ipAddress': u"192.168.1.14",
+			'netmask': u"255.255.0.0",
+		}
+
+		# The following values must exist but may not have a value.
+		self.assertTrue('vendorId' in config)
+		self.assertTrue('deviceId' in config)
+
+		for key in expectedConfig:
+			self.assertEquals(
+				expectedConfig[key], config[key],
+				'Key {key} differs: {0} vs. {1}'.format(
+					expectedConfig[key], config[key], key=key
+				)
+			)
 
 
 if __name__ == '__main__':
