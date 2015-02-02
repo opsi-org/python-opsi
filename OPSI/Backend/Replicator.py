@@ -197,36 +197,36 @@ class BackendReplicator:
 				for subClass in subClasses:
 					filter = {}
 					if subClass == 'OpsiConfigserver':
-						filter = { 'type': subClass, 'id': serverIds }
+						filter = {'type': subClass, 'id': serverIds}
 					elif subClass == 'OpsiDepotserver':
-						filter = { 'type': subClass, 'id': depotIds }
+						filter = {'type': subClass, 'id': depotIds}
 					elif subClass == 'OpsiClient':
-						filter = { 'type': subClass, 'id': clientIds }
+						filter = {'type': subClass, 'id': clientIds}
 					elif objClass == 'Group':
-						filter = { 'type': subClass, 'id': groupIds }
+						filter = {'type': subClass, 'id': groupIds}
 					elif objClass == 'Product':
-						filter = { 'type': subClass, 'id': productIds }
+						filter = {'type': subClass, 'id': productIds}
 					elif objClass == 'ProductOnClient':
-						filter = { 'productType': productTypes, 'productId': productIds, 'clientId': clientIds }
+						filter = {'productType': productTypes, 'productId': productIds, 'clientId': clientIds}
 					elif objClass == 'ProductOnDepot':
-						filter = { 'productType': productTypes, 'productId': productIds, 'depotId': depotIds }
+						filter = {'productType': productTypes, 'productId': productIds, 'depotId': depotIds}
 					elif objClass == 'ProductDependency':
-						filter = { 'productId': productIds }
+						filter = {'productId': productIds}
 					elif objClass == 'ProductProperty':
-						filter = { 'productId': productIds }
+						filter = {'productId': productIds}
 					elif objClass == 'ProductPropertyState':
-						filter = { 'productId': productIds, 'objectId': hostIds }
+						filter = {'productId': productIds, 'objectId': hostIds}
 					elif objClass == 'ConfigState':
-						filter = { 'objectId': hostIds }
+						filter = {'objectId': hostIds}
 					elif objClass == 'ObjectToGroup':
 						if productIds and hostIds:
 							objectIds = productIds + hostIds
 						else:
 							objectIds = []
 
-						filter = { 'objectId': objectIds }
+						filter = {'objectId': objectIds}
 					elif (objClass == 'LicenseOnClient'):
-						filter = { 'clientId': clientIds }
+						filter = {'clientId': clientIds}
 
 					logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
 					if not subClass:
@@ -312,16 +312,16 @@ class BackendReplicator:
 
 				if self.__oldServerId and self.__oldServerId != self.__newServerId:
 					logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
-					wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
+					wb.host_renameOpsiDepotserver(id=self.__oldServerId, newId=self.__newServerId)
 
 					newDepots = []
-					for depot in wb.host_getObjects(type = 'OpsiDepotserver'):
+					for depot in wb.host_getObjects(type='OpsiDepotserver'):
 						hash = depot.toHash()
 						del hash['type']
 						if depot.id == self.__newServerId:
-							newDepots.append( OpsiConfigserver.fromHash(hash) )
+							newDepots.append(OpsiConfigserver.fromHash(hash))
 						else:
-							newDepots.append( OpsiDepotserver.fromHash(hash) )
+							newDepots.append(OpsiDepotserver.fromHash(hash))
 					wb.host_createObjects(newDepots)
 		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
