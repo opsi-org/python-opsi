@@ -74,11 +74,8 @@ class BackendReplicator:
 		self._extendedWriteBackend = ExtendedConfigDataBackend(self.__writeBackend)
 
 		self.__newServerId = None
-		if newServerId:
-			self.__newServerId = forceHostId(newServerId)
 		self.__oldServerId = None
-		if oldServerId:
-			self.__oldServerId = forceHostId(oldServerId)
+
 		self.__cleanupFirst = forceBool(cleanupFirst)
 		self.__strict = False
 		self.__serverIds = []
@@ -86,6 +83,11 @@ class BackendReplicator:
 		self.__clientIds = []
 		self.__groupIds = []
 		self.__productIds = []
+
+		if newServerId:
+			self.__newServerId = forceHostId(newServerId)
+		if oldServerId:
+			self.__oldServerId = forceHostId(oldServerId)
 
 		self.__overallProgressSubject = ProgressSubject(id=u'overall_replication', title=u'Replicating', end=100, fireAlways=True)
 		self.__currentProgressSubject = ProgressSubject(id=u'current_replication', fireAlways=True)
