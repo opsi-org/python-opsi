@@ -618,6 +618,48 @@ class GetNetworkDeviceConfigTestCase(unittest.TestCase):
 	def testNoDeviceRaisesAnException(self):
 		self.assertRaises(Exception, Posix.getNetworkDeviceConfig, None)
 
+	def testNewIfconfigOutput(self):
+		"""
+		Testing output from new version of ifconfig.
+
+		This was obtained on CentOS 7.
+		"""
+		output = [
+			"eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500"
+			"	inet 172.26.2.25  netmask 255.255.0.0  broadcast 172.26.255.255"
+			"	inet6 fe80::215:5dff:fe01:151b  prefixlen 64  scopeid0x20<link>",
+			"	ether 00:15:5d:01:15:1b  txqueuelen 1000  (thernet)",
+			"	RX packets 12043  bytes 958928 (936.4 KiB)"
+			"	RX errors 0  dropped 0  overruns 0  frame ",
+			"	TX packets 1176  bytes 512566 (500.5 KiB)"
+			"	TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0",
+		]
+
+		config = Posix.getNetworkDeviceConfig('eth0', _ifconfigOutput=output)
+
+		expectedConfig = {
+			'device': 'eth0',
+			'gateway': u'192.168.1.254',
+			'hardwareAddress': u'00:15:5d:01:15:1b',
+			'broadcast': None,
+			'ipAddress': None,
+			'netmask': None,
+		}
+
+		# The following values must exist in the config but may not have
+		# a value.
+		self.assertTrue('vendorId' in config)
+		self.assertTrue('deviceId' in config)
+
+		for key in expectedConfig:
+			self.assertEquals(
+				expectedConfig[key], config[key],
+				'Key {key} differs: {0} vs. {1}'.format(
+					expectedConfig[key], config[key], key=key
+				)
+			)
+
+
 
 if __name__ == '__main__':
 	unittest.main()

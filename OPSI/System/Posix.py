@@ -392,9 +392,12 @@ def getNetworkInterfaces():
 	return [getNetworkDeviceConfig(device) for device in getEthernetDevices()]
 
 
-def getNetworkDeviceConfig(device):
+def getNetworkDeviceConfig(device, _ifconfigOutput=None):
 	if not device:
 		raise Exception(u"No device given")
+
+	if _ifconfigOutput is None:
+		_ifconfigOutput = execute(u"%s %s" % (which(u'ifconfig'), device))
 
 	result = {
 		'device': device,
@@ -406,7 +409,7 @@ def getNetworkDeviceConfig(device):
 		'vendorId': None,
 		'deviceId': None
 	}
-	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
+	for line in _ifconfigOutput:
 		line = line.lower().strip()
 		match = re.search('\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
 		if match:
