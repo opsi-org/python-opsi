@@ -397,14 +397,14 @@ def getNetworkDeviceConfig(device):
 		raise Exception(u"No device given")
 
 	result = {
-		'device':          device,
+		'device': device,
 		'hardwareAddress': None,
-		'ipAddress':       None,
-		'broadcast':       None,
-		'netmask':         None,
-		'gateway':         None,
-		'vendorId':        None,
-		'deviceId':        None
+		'ipAddress': None,
+		'broadcast': None,
+		'netmask': None,
+		'gateway': None,
+		'vendorId': None,
+		'deviceId': None
 	}
 	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
 		line = line.lower().strip()
@@ -419,7 +419,7 @@ def getNetworkDeviceConfig(device):
 				continue
 			result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
 			result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
-			result['netmask']   = forceIpAddress(parts[3].split()[0].strip())
+			result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
 
 	for line in execute(u"%s route" % which(u'ip')):
 		line = line.lower().strip()
