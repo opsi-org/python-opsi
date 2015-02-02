@@ -407,7 +407,7 @@ def getNetworkDeviceConfig(device):
 		'deviceId': None
 	}
 
-	for line in execute(u"%s %s" % (which(u'ifconfig'), device)):
+	for line in execute(u"{ifconfig} {device}".format(ifconfig=which(u'ifconfig'), device=device)):
 		line = line.lower().strip()
 		match = re.search('\s([\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}:[\da-f]{2}).*', line)
 		if match:
@@ -423,7 +423,7 @@ def getNetworkDeviceConfig(device):
 			result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
 			result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
 
-	for line in execute(u"%s route" % which(u'ip')):
+	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
 		match = re.search('via\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\sdev\s(\S+)\s*', line)
 		if match and match.group(2).lower() == device.lower():
