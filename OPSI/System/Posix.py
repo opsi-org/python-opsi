@@ -415,6 +415,8 @@ def getNetworkDeviceConfig(device):
 			continue
 
 		if line.startswith('inet '):
+			logger.debug('Found inet line: {0}'.format(line))
+
 			parts = line.split(':')
 			if len(parts) == 4:
 				result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
