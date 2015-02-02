@@ -196,29 +196,29 @@ class BackendReplicator:
 				self.__currentProgressSubject.setTitle(u"Replicating %s" % objClass)
 				for subClass in subClasses:
 					filter = {}
-					if   (subClass == 'OpsiConfigserver'):
+					if subClass == 'OpsiConfigserver':
 						filter = { 'type': subClass, 'id': serverIds }
-					elif (subClass == 'OpsiDepotserver'):
+					elif subClass == 'OpsiDepotserver':
 						filter = { 'type': subClass, 'id': depotIds }
-					elif (subClass == 'OpsiClient'):
+					elif subClass == 'OpsiClient':
 						filter = { 'type': subClass, 'id': clientIds }
-					elif (objClass == 'Group'):
+					elif objClass == 'Group':
 						filter = { 'type': subClass, 'id': groupIds }
-					elif (objClass == 'Product'):
+					elif objClass == 'Product':
 						filter = { 'type': subClass, 'id': productIds }
-					elif (objClass == 'ProductOnClient'):
+					elif objClass == 'ProductOnClient':
 						filter = { 'productType': productTypes, 'productId': productIds, 'clientId': clientIds }
-					elif (objClass == 'ProductOnDepot'):
+					elif objClass == 'ProductOnDepot':
 						filter = { 'productType': productTypes, 'productId': productIds, 'depotId': depotIds }
-					elif (objClass == 'ProductDependency'):
+					elif objClass == 'ProductDependency':
 						filter = { 'productId': productIds }
-					elif (objClass == 'ProductProperty'):
+					elif objClass == 'ProductProperty':
 						filter = { 'productId': productIds }
-					elif (objClass == 'ProductPropertyState'):
+					elif objClass == 'ProductPropertyState':
 						filter = { 'productId': productIds, 'objectId': hostIds }
-					elif (objClass == 'ConfigState'):
+					elif objClass == 'ConfigState':
 						filter = { 'objectId': hostIds }
-					elif (objClass == 'ObjectToGroup'):
+					elif objClass == 'ObjectToGroup':
 						if productIds and hostIds:
 							objectIds = productIds + hostIds
 						else:
@@ -238,7 +238,7 @@ class BackendReplicator:
 					self.__currentProgressSubject.setEnd(1)
 					objs = []
 
-					if (objClass == 'ProductOnDepot') and productOnDepots:
+					if objClass == 'ProductOnDepot' and productOnDepots:
 						objs = productOnDepots
 					else:
 						meth = '%s_getObjects' % Class.backendMethodPrefix
@@ -246,7 +246,7 @@ class BackendReplicator:
 						objs = meth(**filter)
 
 					self.__currentProgressSubject.addToState(1)
-					if (objClass == 'Group'):
+					if objClass == 'Group':
 						# Sort groups
 						sortedObjs = []
 						groupIds = []
@@ -274,10 +274,10 @@ class BackendReplicator:
 
 					self.__currentProgressSubject.reset()
 					self.__currentProgressSubject.setMessage(u"Writing objects")
-					if (subClass == 'OpsiConfigserver') and objs:
+					if subClass == 'OpsiConfigserver' and objs:
 						configServer = objs[0]
 						depotServers.extend(objs)
-					if (subClass == 'OpsiDepotserver'):
+					if subClass == 'OpsiDepotserver':
 						depotServers.extend(objs)
 
 					if self.__strict:
@@ -310,7 +310,7 @@ class BackendReplicator:
 					else:
 						logger.error(u"No config/depot servers found")
 
-				if self.__oldServerId and (self.__oldServerId != self.__newServerId):
+				if self.__oldServerId and self.__oldServerId != self.__newServerId:
 					logger.notice(u"Renaming config server '%s' to '%s'" % (self.__oldServerId, self.__newServerId))
 					wb.host_renameOpsiDepotserver(id = self.__oldServerId, newId = self.__newServerId)
 
@@ -318,7 +318,7 @@ class BackendReplicator:
 					for depot in wb.host_getObjects(type = 'OpsiDepotserver'):
 						hash = depot.toHash()
 						del hash['type']
-						if (depot.id == self.__newServerId):
+						if depot.id == self.__newServerId:
 							newDepots.append( OpsiConfigserver.fromHash(hash) )
 						else:
 							newDepots.append( OpsiDepotserver.fromHash(hash) )
