@@ -429,17 +429,17 @@ def getNetworkDeviceConfig(device):
 			result['gateway'] = forceIpAddress(match.group(1))
 
 	try:
-		f = open('/sys/class/net/%s/device/vendor' % device)
-		x = f.read().strip()
-		f.close()
+		with open('/sys/class/net/%s/device/vendor' % device) as f:
+			x = f.read().strip()
+
 		if x.startswith('0x'):
 			x = eval(x)
 		x = "%x" % int(x)
 		result['vendorId'] = forceHardwareVendorId(((4-len(x))*'0') + x)
 
-		f = open('/sys/class/net/%s/device/device' % device)
-		x = f.read().strip()
-		f.close()
+		with open('/sys/class/net/%s/device/device' % device) as f:
+			x = f.read().strip()
+
 		if x.startswith('0x'):
 			x = eval(x)
 		x = int(x)
