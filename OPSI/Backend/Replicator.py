@@ -98,7 +98,7 @@ class BackendReplicator:
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 
-	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], productTypes = [], audit=True, license=True):
+	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], productTypes=[], audit=True, license=True):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
