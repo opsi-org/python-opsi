@@ -131,15 +131,18 @@ class BackendReplicator(object):
 					depotIds = rb.host_getIdents(type='OpsiDepotserver', returnType=list)
 				if not clientIds:
 					clientIds = rb.host_getIdents(type='OpsiClient', returnType=list)
+
 			hostIds = []
 			for serverId in serverIds:
-				if not serverId in hostIds:
+				if serverId not in hostIds:
 					hostIds.append(serverId)
+
 			for depotId in depotIds:
-				if not depotId in hostIds:
+				if depotId not in hostIds:
 					hostIds.append(depotId)
+
 			for clientId in clientIds:
-				if not clientId in hostIds:
+				if clientId not in hostIds:
 					hostIds.append(clientId)
 
 			self.__overallProgressSubject.reset()
