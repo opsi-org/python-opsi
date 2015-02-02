@@ -627,13 +627,13 @@ class GetNetworkDeviceConfigTestCase(unittest.TestCase):
 		def fakeExecute(command):
 			if command.startswith('ifconfig'):
 				return [
-					"eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500"
-					"	inet 172.26.2.25  netmask 255.255.0.0  broadcast 172.26.255.255"
+					"eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500",
+					"	inet 172.26.2.25  netmask 255.255.0.0  broadcast 172.26.255.255",
 					"	inet6 fe80::215:5dff:fe01:151b  prefixlen 64  scopeid0x20<link>",
 					"	ether 00:15:5d:01:15:1b  txqueuelen 1000  (thernet)",
 					"	RX packets 12043  bytes 958928 (936.4 KiB)"
 					"	RX errors 0  dropped 0  overruns 0  frame ",
-					"	TX packets 1176  bytes 512566 (500.5 KiB)"
+					"	TX packets 1176  bytes 512566 (500.5 KiB)",
 					"	TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0"
 				]
 			elif command.startswith('ip'):
@@ -649,9 +649,9 @@ class GetNetworkDeviceConfigTestCase(unittest.TestCase):
 			'device': 'eth0',
 			'hardwareAddress': u'00:15:5d:01:15:1b',
 			'gateway': None,
-			'broadcast': None,
-			'ipAddress': None,
-			'netmask': None,
+			'broadcast': u"172.26.255.255",
+			'ipAddress': u"172.26.2.25",
+			'netmask': u"255.255.0.0",
 		}
 
 		# The following values must but may not have a value.

@@ -422,9 +422,21 @@ def getNetworkDeviceConfig(device):
 				result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
 				result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
 				result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
-			else:
-				logger.error(u"Unexpected ifconfig line '%s'" % line)
 				continue
+
+			match = re.search(
+				"^\w+\s+(?P<ipAddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+				"\w+\s+(?P<netmask>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+"
+				"\w+\s+(?P<broadcast>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$",
+				line
+			)
+			if match:
+				result['ipAddress'] = forceIpAddress(match.group('ipAddress'))
+				result['broadcast'] = forceIpAddress(match.group('broadcast'))
+				result['netmask'] = forceIpAddress(match.group('netmask'))
+				continue
+
+			logger.error(u"Unexpected ifconfig line '%s'" % line)
 
 	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
