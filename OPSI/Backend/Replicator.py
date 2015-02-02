@@ -6,7 +6,7 @@ opsi python library - Replicator
 This module is part of the desktop management solution opsi
 (open pc server integration) http://www.opsi.org
 
-Copyright (C) 2010-2013 uib GmbH
+Copyright (C) 2010-2015 uib GmbH
 
 http://www.uib.de/
 
@@ -124,11 +124,11 @@ class BackendReplicator:
 		try:
 			if serverIds or depotIds or clientIds:
 				if not serverIds:
-					serverIds = rb.host_getIdents(type = 'OpsiConfigserver', returnType = list)
+					serverIds = rb.host_getIdents(type='OpsiConfigserver', returnType=list)
 				if not depotIds:
-					depotIds  = rb.host_getIdents(type = 'OpsiDepotserver', returnType = list)
+					depotIds  = rb.host_getIdents(type='OpsiDepotserver', returnType=list)
 				if not clientIds:
-					clientIds = rb.host_getIdents(type = 'OpsiClient', returnType = list)
+					clientIds = rb.host_getIdents(type='OpsiClient', returnType=list)
 			hostIds = []
 			for serverId in serverIds:
 				if not serverId in hostIds:
@@ -160,11 +160,12 @@ class BackendReplicator:
 
 			productOnDepots = []
 			if depotIds:
-				productOnDepots = rb.productOnDepot_getObjects(depotId = depotIds, productId = productIds, productType = productTypes)
+				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)
 				productIdsOnDepot = []
 				for productOnDepot in productOnDepots:
 					if not productOnDepot.productId in productIdsOnDepot:
 						productIdsOnDepot.append(productOnDepot.productId)
+
 				if productIdsOnDepot:
 					if not productIds:
 						productIds = productIdsOnDepot
@@ -186,8 +187,8 @@ class BackendReplicator:
 
 				subClasses = [ None ]
 				ids = []
-				if (objClass == 'Host'):
-					subClasses = [ 'OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient' ]
+				if objClass == 'Host':
+					subClasses = ['OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient']
 
 				methodPrefix = eval("%s.backendMethodPrefix" % objClass)
 
