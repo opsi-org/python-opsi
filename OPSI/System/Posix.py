@@ -416,12 +416,13 @@ def getNetworkDeviceConfig(device):
 
 		if line.startswith('inet '):
 			parts = line.split(':')
-			if (len(parts) != 4):
+			if len(parts) == 4:
+				result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
+				result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
+				result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
+			else:
 				logger.error(u"Unexpected ifconfig line '%s'" % line)
 				continue
-			result['ipAddress'] = forceIpAddress(parts[1].split()[0].strip())
-			result['broadcast'] = forceIpAddress(parts[2].split()[0].strip())
-			result['netmask'] = forceIpAddress(parts[3].split()[0].strip())
 
 	for line in execute(u"{ip} route".format(ip=which(u'ip'))):
 		line = line.lower().strip()
