@@ -128,7 +128,7 @@ class BackendReplicator(object):
 				if not serverIds:
 					serverIds = rb.host_getIdents(type='OpsiConfigserver', returnType=list)
 				if not depotIds:
-					depotIds  = rb.host_getIdents(type='OpsiDepotserver', returnType=list)
+					depotIds = rb.host_getIdents(type='OpsiDepotserver', returnType=list)
 				if not clientIds:
 					clientIds = rb.host_getIdents(type='OpsiClient', returnType=list)
 			hostIds = []
