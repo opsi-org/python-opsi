@@ -119,7 +119,7 @@ class MySQL(SQL):
 				self._address = forceUnicode(value)
 			elif option == 'username':
 				self._username = forceUnicode(value)
-			elif option in ('password'):
+			elif option == 'password':
 				self._password = forceUnicode(value)
 			elif option == 'database':
 				self._database = forceUnicode(value)
@@ -176,7 +176,7 @@ class MySQL(SQL):
 
 		while (not myConnectionSuccess) and (myRetryConnectionCounter < myMaxRetryConnection):
 			try:
-				if (myRetryConnectionCounter > 0):
+				if myRetryConnectionCounter > 0:
 					self._createConnectionPool()
 				logger.debug(u"Connecting to connection pool")
 				self._transactionLock.acquire()
