@@ -205,9 +205,17 @@ class BackendReplicator(object):
 					elif objClass == 'Product':
 						filter = {'type': subClass, 'id': productIds}
 					elif objClass == 'ProductOnClient':
-						filter = {'productType': productTypes, 'productId': productIds, 'clientId': clientIds}
+						filter = {
+							'productType': productTypes,
+							'productId': productIds,
+							'clientId': clientIds
+						}
 					elif objClass == 'ProductOnDepot':
-						filter = {'productType': productTypes, 'productId': productIds, 'depotId': depotIds}
+						filter = {
+							'productType': productTypes,
+							'productId': productIds,
+							'depotId': depotIds
+						}
 					elif objClass == 'ProductDependency':
 						filter = {'productId': productIds}
 					elif objClass == 'ProductProperty':
