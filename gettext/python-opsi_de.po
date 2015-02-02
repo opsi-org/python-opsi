@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2013-01-08 13:18+CET\n"
+"POT-Creation-Date: 2015-02-02 10:44+CET\n"
 "PO-Revision-Date: 2010-09-03 14:30+CEST\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,70 +16,69 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../OPSI/UI.py:112 ../OPSI/UI.py:115 ../OPSI/UI.py:136 ../OPSI/UI.py:139
-#: ../OPSI/UI.py:142 ../OPSI/UI.py:145 ../OPSI/UI.py:242 ../OPSI/UI.py:281
-#: ../OPSI/UI.py:394 ../OPSI/UI.py:470 ../OPSI/UI.py:579 ../OPSI/UI.py:679
+#: ../OPSI/UI.py:114 ../OPSI/UI.py:117 ../OPSI/UI.py:138 ../OPSI/UI.py:141
+#: ../OPSI/UI.py:144 ../OPSI/UI.py:147 ../OPSI/UI.py:244 ../OPSI/UI.py:283
+#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:580 ../OPSI/UI.py:680
 msgid "OK"
 msgstr "OK"
 
-#: ../OPSI/UI.py:112 ../OPSI/UI.py:242
+#: ../OPSI/UI.py:114 ../OPSI/UI.py:244
 msgid "An error occured"
 msgstr "Ein Fehler ist aufgetreten"
 
-#: ../OPSI/UI.py:115 ../OPSI/UI.py:281
+#: ../OPSI/UI.py:117 ../OPSI/UI.py:283
 msgid "Message"
 msgstr "Nachricht"
 
-#: ../OPSI/UI.py:118 ../OPSI/UI.py:124 ../OPSI/UI.py:320 ../OPSI/UI.py:350
+#: ../OPSI/UI.py:120 ../OPSI/UI.py:126 ../OPSI/UI.py:322 ../OPSI/UI.py:352
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: ../OPSI/UI.py:121 ../OPSI/UI.py:127 ../OPSI/UI.py:335 ../OPSI/UI.py:365
+#: ../OPSI/UI.py:123 ../OPSI/UI.py:129 ../OPSI/UI.py:337 ../OPSI/UI.py:367
 msgid "Copy progress"
 msgstr "Kopier-Fortschritt"
 
-#: ../OPSI/UI.py:130 ../OPSI/UI.py:380
+#: ../OPSI/UI.py:132 ../OPSI/UI.py:382
 msgid "Text"
 msgstr "Text"
 
-#: ../OPSI/UI.py:136 ../OPSI/UI.py:139 ../OPSI/UI.py:142 ../OPSI/UI.py:145
-#: ../OPSI/UI.py:394 ../OPSI/UI.py:470 ../OPSI/UI.py:579 ../OPSI/UI.py:679
+#: ../OPSI/UI.py:138 ../OPSI/UI.py:141 ../OPSI/UI.py:144 ../OPSI/UI.py:147
+#: ../OPSI/UI.py:396 ../OPSI/UI.py:472 ../OPSI/UI.py:580 ../OPSI/UI.py:680
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: ../OPSI/UI.py:136 ../OPSI/UI.py:394
+#: ../OPSI/UI.py:138 ../OPSI/UI.py:396
 msgid "Please type text"
 msgstr "Bitte Test eingeben"
 
-#: ../OPSI/UI.py:139 ../OPSI/UI.py:470
+#: ../OPSI/UI.py:141 ../OPSI/UI.py:472
 msgid "Please select"
 msgstr "Bitte auswählen"
 
-#: ../OPSI/UI.py:142 ../OPSI/UI.py:579
+#: ../OPSI/UI.py:144 ../OPSI/UI.py:580
 msgid "Please fill in"
 msgstr "Bitte einfüllen"
 
-#: ../OPSI/UI.py:145 ../OPSI/UI.py:679
+#: ../OPSI/UI.py:147 ../OPSI/UI.py:680
 msgid "Question"
 msgstr "Frage"
 
-#: ../OPSI/UI.py:149 ../OPSI/UI.py:166 ../OPSI/UI.py:179 ../OPSI/UI.py:733
-#: ../OPSI/UI.py:832 ../OPSI/UI.py:896
+#: ../OPSI/UI.py:152 ../OPSI/UI.py:169 ../OPSI/UI.py:184 ../OPSI/UI.py:734
+#: ../OPSI/UI.py:834 ../OPSI/UI.py:899
 msgid "Title"
 msgstr "Titel"
 
-#: ../OPSI/UI.py:273 ../OPSI/UI.py:312
+#: ../OPSI/UI.py:275 ../OPSI/UI.py:314
 msgid "<F12> %s | <Space> select | <Up/Down> scroll text"
 msgstr "<F12> %s | <Space> wählen | <Up/Down> Text scrollen"
 
-#: ../OPSI/UI.py:449 ../OPSI/UI.py:552 ../OPSI/UI.py:651 ../OPSI/UI.py:711
+#: ../OPSI/UI.py:451 ../OPSI/UI.py:553 ../OPSI/UI.py:652 ../OPSI/UI.py:712
 msgid "<ESC> %s | <F12> %s | <Tab> move cursor | <Space> select"
 msgstr "<ESC> %s | <F12> %s | <Tab> bewegen | <Space> wählen"
 
-#: ../OPSI/UI.py:451 ../OPSI/UI.py:554 ../OPSI/UI.py:653 ../OPSI/UI.py:713
+#: ../OPSI/UI.py:453 ../OPSI/UI.py:555 ../OPSI/UI.py:654 ../OPSI/UI.py:714
 msgid " | <Up/Down> scroll text"
 msgstr " | <Up/Down> Text scrollen"
 
-#: ../OPSI/UI.py:1083
-msgid "Nothing selected"
-msgstr "Nichts ausgewählt"
+#~ msgid "Nothing selected"
+#~ msgstr "Nichts ausgewählt"
