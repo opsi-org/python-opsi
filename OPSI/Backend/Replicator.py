@@ -333,12 +333,21 @@ class BackendReplicator(object):
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
 		def _getNumberOfObjectClassesToProcess(self):
+			auditClasses = (
+				'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
+				'AuditSoftwareOnClient'
+			)
+			licenseManagementClasses = (
+				'LicenseContract', 'SoftwareLicense', 'LicensePool',
+				'SoftwareLicenseToLicensePool', 'LicenseOnClient',
+				'AuditSoftwareToLicensePool'
+			)
+
 			end = 0
 			for objClass in self.OBJECT_CLASSES:
-				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
+				if not audit and objClass in auditClasses:
 					continue
-				if not license and objClass in ('LicenseContract', 'SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
-								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
+				if not license and objClass in licenseManagementClasses:
 					continue
 
 				end += 1
