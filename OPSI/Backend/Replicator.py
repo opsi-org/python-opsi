@@ -158,7 +158,7 @@ class BackendReplicator:
 				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)
 				productIdsOnDepot = []
 				for productOnDepot in productOnDepots:
-					if not productOnDepot.productId in productIdsOnDepot:
+					if productOnDepot.productId not in productIdsOnDepot:
 						productIdsOnDepot.append(productOnDepot.productId)
 
 				if productIdsOnDepot:
