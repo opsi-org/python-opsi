@@ -37,8 +37,10 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * New function OPSI.System.Posix.getDHCPDRestartCommand
   * OPSI.SharedAlgorithm: Raising an error when a circular dependecy is
     detected between products.
+  * OPSI.System.Posix.getNetworkDeviceConfig is now able to parse output
+    from newer ifconfig versions like on CentOS 7.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 21 Jan 2015 10:22:28 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 02 Feb 2015 15:14:41 +0100
 
 python-opsi (4.0.5.16-1) experimental; urgency=low
 
