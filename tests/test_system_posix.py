@@ -614,6 +614,9 @@ class GetSambaServiceNameTestCase(unittest.TestCase):
 		)
 
 
+class GetNetworkDeviceConfigTestCase(unittest.TestCase):
+	def testNoDeviceRaisesAnException(self):
+		self.assertRaises(Exception, Posix.getNetworkDeviceConfig, None)
 
 
 if __name__ == '__main__':
