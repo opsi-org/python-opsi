@@ -183,7 +183,7 @@ class BackendReplicator(object):
 								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
 					continue
 
-				subClasses = [ None ]
+				subClasses = [None]
 				ids = []
 				if objClass == 'Host':
 					subClasses = ['OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient']
