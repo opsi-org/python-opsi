@@ -143,14 +143,7 @@ class BackendReplicator:
 					hostIds.append(clientId)
 
 			self.__overallProgressSubject.reset()
-			end = 0
-			for objClass in self.OBJECT_CLASSES:
-				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
-					continue
-				if not license and objClass in ('LicenseContract', 'SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
-								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
-					continue
-				end += 1
+			end = self._getNumberOfObjectClassesToProcess()
 			if self.__cleanupFirst:
 				end += 1
 			self.__overallProgressSubject.setEnd(end)
@@ -327,3 +320,16 @@ class BackendReplicator:
 					wb.host_createObjects(newDepots)
 		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
+
+		def _getNumberOfObjectClassesToProcess(self):
+			end = 0
+			for objClass in self.OBJECT_CLASSES:
+				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
+					continue
+				if not license and objClass in ('LicenseContract', 'SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
+								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
+					continue
+
+				end += 1
+
+			return end
