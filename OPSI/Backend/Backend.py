@@ -521,6 +521,7 @@ containing the localisation of the hardware audit.
 				self._depotId = value
 			elif option == 'maxlogsize':
 				self._maxLogfileSize = forceInt(value)
+				logger.info(u'Logsize limited to: {0}'.format(self._maxLogfileSize))
 
 		if not self._depotId:
 			self._depotId = getfqdn(conf=OPSI_GLOBAL_CONF)
