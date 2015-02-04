@@ -385,7 +385,7 @@ This defaults to ``self``.
 				if module in ('valid', 'signature'):
 					continue
 
-				if helpermodules.has_key(module):
+				if module in helpermodules:
 					val = helpermodules[module]
 				else:
 					val = modules[module]
