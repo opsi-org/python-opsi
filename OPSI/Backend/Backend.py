@@ -363,7 +363,7 @@ This defaults to ``self``.
 					except ValueError:
 						logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 						continue
-				if isinstance(state,int):
+				if isinstance(state, int):
 					modules[module] = (state > 0)
 				else:
 					modules[module] = (state == 'yes')
@@ -377,7 +377,7 @@ This defaults to ``self``.
 			if (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
 				modules = {'valid': False}
 				raise Exception(u"Signature expired")
-			publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+			publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 			data = u''
 			mks = modules.keys()
 			mks.sort()
@@ -389,12 +389,13 @@ This defaults to ``self``.
 					val = helpermodules[module]
 				else:
 					val = modules[module]
-					if (val == False): val = 'no'
-					if (val == True):  val = 'yes'
-
+					if val is False:
+						val = 'no'
+					elif val is True:
+						val = 'yes'
 
 				data += u'%s = %s\r\n' % (module.lower().strip(), val)
-			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ]))
+			modules['valid'] = bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])]))
 		except Exception as e:
 			logger.warning(u"Failed to read opsi modules file '%s': %s" % (self._opsiModulesFile, e))
 
@@ -762,7 +763,6 @@ depot where the method is.
 		cf.writelines(lines)
 		cf.close()
 
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -773,10 +773,10 @@ depot where the method is.
 	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
 
-	def host_getHashes(self, attributes = [], **filter):
+	def host_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.host_getObjects(attributes, **filter)]
 
-	def host_getObjects(self, attributes = [], **filter):
+	def host_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Host, attributes, **filter)
 		return []
 
@@ -885,10 +885,10 @@ depot where the method is.
 	def configState_updateObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
 
-	def configState_getHashes(self, attributes = [], **filter):
+	def configState_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.configState_getObjects(attributes, **filter)]
 
-	def configState_getObjects(self, attributes = [], **filter):
+	def configState_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
 		return []
 
@@ -905,10 +905,10 @@ depot where the method is.
 	def product_updateObject(self, product):
 		product = forceObjectClass(product, Product)
 
-	def product_getHashes(self, attributes = [], **filter):
+	def product_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.product_getObjects(attributes, **filter)]
 
-	def product_getObjects(self, attributes = [], **filter):
+	def product_getObjects(self, attributes=[], **filter):
 		self._testFilterAndAttributes(Product, attributes, **filter)
 		return []
 
@@ -919,23 +919,29 @@ depot where the method is.
 
 			self._context.productProperty_deleteObjects(
 				self._context.productProperty_getObjects(
-					productId      = product.id,
-					productVersion = product.productVersion,
-					packageVersion = product.packageVersion ))
+					productId=product.id,
+					productVersion=product.productVersion,
+					packageVersion=product.packageVersion
+				)
+			)
 			self._context.productDependency_deleteObjects(
 				self._context.productDependency_getObjects(
-					productId      = product.id,
-					productVersion = product.productVersion,
-					packageVersion = product.packageVersion ))
+					productId=product.id,
+					productVersion=product.productVersion,
+					packageVersion=product.packageVersion
+				)
+			)
 			self._context.productOnDepot_deleteObjects(
 				self._context.productOnDepot_getObjects(
-					productId      = product.id,
-					productVersion = product.productVersion,
-					packageVersion = product.packageVersion ))
+					productId=product.id,
+					productVersion=product.productVersion,
+					packageVersion=product.packageVersion
+				)
+			)
 
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersionsWillBeDeleted = True
-			for product in self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'], id = productId):
+			for product in self._context.product_getObjects(attributes=['id', 'productVersion', 'packageVersion'], id=productId):
 				if not product.packageVersion in versions.get(product.productVersion, []):
 					allProductVersionsWillBeDeleted = False
 					break
@@ -945,13 +951,15 @@ depot where the method is.
 			# Remove from groups, when allProductVerionsWillBeDelted
 			self._context.objectToGroup_deleteObjects(
 				self._context.objectToGroup_getObjects(
-					groupType = 'ProductGroup',
-					objectId  = productId ))
+					groupType='ProductGroup',
+					objectId=productId
+				)
+			)
 			self._context.productOnClient_deleteObjects(
-				self._context.productOnClient_getObjects(productId = productId)
+				self._context.productOnClient_getObjects(productId=productId)
 			)
 			self._context.productPropertyState_deleteObjects(
-				self._context.productPropertyState_getObjects(productId = productId)
+				self._context.productPropertyState_getObjects(productId=productId)
 			)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -999,13 +1007,19 @@ depot where the method is.
 					productVersion=productDependency.productVersion,
 					packageVersion=productDependency.packageVersion):
 
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-					% (productDependency.productId, productDependency.productVersion, productDependency.packageVersion))
+				raise BackendReferentialIntegrityError(
+					u"Product with id '%s', productVersion '%s', "
+					u"packageVersion '%s' not found".format(
+						productDependency.productId,
+						productDependency.productVersion,
+						productDependency.packageVersion
+					)
+				)
 
 	def productDependency_updateObject(self, productDependency):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 
-	def productDependency_getHashes(self, attributes = [], **filter):
+	def productDependency_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.productDependency_getObjects(attributes, **filter)]
 
 	def productDependency_getObjects(self, attributes=[], **filter):
@@ -1023,10 +1037,11 @@ depot where the method is.
 		productOnDepot.setDefaults()
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.product_getObjects(attributes = ['id', 'productVersion', 'packageVersion'],
-				id = productOnDepot.productId,
-				productVersion = productOnDepot.productVersion,
-				packageVersion = productOnDepot.packageVersion):
+			if not self._context.product_getObjects(
+				attributes=['id', 'productVersion', 'packageVersion'],
+				id=productOnDepot.productId,
+				productVersion=productOnDepot.productVersion,
+				packageVersion=productOnDepot.packageVersion):
 
 				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
 					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
@@ -1041,10 +1056,16 @@ depot where the method is.
 				productVersion=productOnDepot.productVersion,
 				packageVersion=productOnDepot.packageVersion):
 
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+				raise BackendReferentialIntegrityError(
+					u"Product with id '{0}', productVersion '{1}', "
+					u"packageVersion '{2}' not found".format(
+						productOnDepot.productId,
+						productOnDepot.productVersion,
+						productOnDepot.packageVersion
+					)
+				)
 
-	def productOnDepot_getHashes(self, attributes = [], **filter):
+	def productOnDepot_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.productOnDepot_getObjects(attributes, **filter)]
 
 	def productOnDepot_getObjects(self, attributes=[], **filter):
@@ -1101,7 +1122,7 @@ depot where the method is.
 	def productPropertyState_updateObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 
-	def productPropertyState_getHashes(self, attributes = [], **filter):
+	def productPropertyState_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.productPropertyState_getObjects(attributes, **filter)]
 
 	def productPropertyState_getObjects(self, attributes=[], **filter):
@@ -1119,13 +1140,13 @@ depot where the method is.
 		group.setDefaults()
 
 		if self._options['additionalReferentialIntegrityChecks']:
-			if group.parentGroupId and not self._context.group_getObjects(attributes = ['id'], id = group.parentGroupId):
+			if group.parentGroupId and not self._context.group_getObjects(attributes=['id'], id=group.parentGroupId):
 				raise BackendReferentialIntegrityError(u"Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))
 
 	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
 
-	def group_getHashes(self, attributes = [], **filter):
+	def group_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.group_getObjects(attributes, **filter)]
 
 	def group_getObjects(self, attributes=[], **filter):
@@ -1171,7 +1192,7 @@ depot where the method is.
 	def licenseContract_updateObject(self, licenseContract):
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
 
-	def licenseContract_getHashes(self, attributes = [], **filter):
+	def licenseContract_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.licenseContract_getObjects(attributes, **filter)]
 
 	def licenseContract_getObjects(self, attributes=[], **filter):
@@ -1292,7 +1313,7 @@ depot where the method is.
 	def licenseOnClient_updateObject(self, licenseOnClient):
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
 
-	def licenseOnClient_getHashes(self, attributes = [], **filter):
+	def licenseOnClient_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.licenseOnClient_getObjects(attributes, **filter)]
 
 	def licenseOnClient_getObjects(self, attributes=[], **filter):
@@ -1494,7 +1515,7 @@ depot where the method is.
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 
-	def auditHardwareOnHost_getHashes(self, attributes = [], **filter):
+	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.auditHardwareOnHost_getObjects(attributes, **filter)]
 
 	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):
@@ -1513,7 +1534,7 @@ depot where the method is.
 	def bootConfiguration_updateObject(self, bootConfiguration):
 		bootConfiguration = forceObjectClass(bootConfiguration, BootConfiguration)
 
-	def bootConfiguration_getHashes(self, attributes = [], **filter):
+	def bootConfiguration_getHashes(self, attributes=[], **filter):
 		return [obj.toHash() for obj in self.bootConfiguration_getObjects(attributes, **filter)]
 
 	def bootConfiguration_getObjects(self, attributes=[], **filter):
