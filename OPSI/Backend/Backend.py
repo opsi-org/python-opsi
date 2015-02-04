@@ -2190,11 +2190,12 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		result = []
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Updating config %s" % config)
-			if self.config_getIdents(id = config.id):
+			if self.config_getIdents(id=config.id):
 				self._backend.config_updateObject(config)
 			else:
 				logger.info(u"Config %s does not exist, creating" % config)
 				self._backend.config_insertObject(config)
+
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
 					self._backend.config_getObjects(id = config.id)
