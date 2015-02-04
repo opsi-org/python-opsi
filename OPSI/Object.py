@@ -2927,11 +2927,11 @@ class AuditHardware(Entity):
 		infos = [self.getType()]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
-			infos.append("hardwareClass '{0}'".format(hardwareClass))
+			infos.append(u"hardwareClass '{0}'".format(hardwareClass))
 		if hasattr(self, 'name'):
-			infos.append("name '{0}'".format(self.name))
+			infos.append(u"name '{0}'".format(self.name))
 
-		return "<{0}>".format(', '.join(infos))
+		return u"<{0}>".format(', '.join(infos))
 
 Entity.subClasses['AuditHardware'] = AuditHardware
 
@@ -3105,7 +3105,7 @@ class AuditHardwareOnHost(Relationship):
 		return fromJson(jsonString, 'AuditHardwareOnHost')
 
 	def __unicode__(self):
-		additional = ["hostId='{0}'".format(self.hostId)]
+		additional = [u"hostId='{0}'".format(self.hostId)]
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
 			additional.append(u"hardwareClass='{0}'".format(hardwareClass))
