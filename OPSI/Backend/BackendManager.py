@@ -662,8 +662,10 @@ class BackendAccessControl(object):
 			setattr(self, methodName, new.instancemethod(eval(methodName), self, self.__class__))
 
 	def _authenticateUser(self):
-		''' Authenticate a user by the underlying operating system.
-		    Throws BackendAuthenticationError on failure. '''
+		'''
+		Authenticate a user by the underlying operating system.
+		Throws BackendAuthenticationError on failure.
+		'''
 		if (os.name == 'posix'):
 			# Posix os => authenticate by PAM
 			self._pamAuthenticateUser()
