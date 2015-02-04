@@ -4119,8 +4119,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		hostId = forceHostIdList(hostId)
 		auditHardwareOnHosts = self.auditHardwareOnHost_getObjects(hostId=hostId, state=1)
-		[ahoh.setState(0) for ahoh in auditHardwareOnHosts]
-		self._backend.auditHardwareOnHost_updateObjects(auditHardwareOnHosts)
+		for i in range(len(auditHardwareOnHosts)):
+			auditHardwareOnHosts[i].setState(0)
+			self._backend.auditHardwareOnHost_updateObject(auditHardwareOnHosts[i])
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   BootConfigurations                                                                        -
