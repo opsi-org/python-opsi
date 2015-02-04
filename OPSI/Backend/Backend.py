@@ -1453,19 +1453,19 @@ depot where the method is.
 				sc = None
 				found = False
 				for cl in classes:
-					if (cl['Class'].get('Opsi') == scname):
+					if cl['Class'].get('Opsi') == scname:
 						clcopy = pycopy.deepcopy(cl)
 						__inheritFromSuperClasses(classes, clcopy)
 						newValues = []
 						for newValue in clcopy['Values']:
 							foundAt = -1
 							for i in xrange(len(c['Values'])):
-								if (c['Values'][i]['Opsi'] == newValue['Opsi']):
+								if c['Values'][i]['Opsi'] == newValue['Opsi']:
 									if not c['Values'][i].get('UI'):
 										c['Values'][i]['UI'] = newValue.get('UI', '')
 									foundAt = i
 									break
-							if (foundAt > -1):
+							if foundAt > -1:
 								newValue = c['Values'][foundAt]
 								del c['Values'][foundAt]
 							newValues.append(newValue)
@@ -1481,12 +1481,13 @@ depot where the method is.
 			execfile(self._auditHardwareConfigFile)
 			for i in xrange(len(OPSI_HARDWARE_CLASSES)):
 				opsiClass = OPSI_HARDWARE_CLASSES[i]['Class']['Opsi']
-				if (OPSI_HARDWARE_CLASSES[i]['Class']['Type'] == 'STRUCTURAL'):
+				if OPSI_HARDWARE_CLASSES[i]['Class']['Type'] == 'STRUCTURAL':
 					if locale.get(opsiClass):
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = locale[opsiClass]
 					else:
 						logger.error(u"No translation for class '%s' found" % opsiClass)
 						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
+
 				for j in xrange(len(OPSI_HARDWARE_CLASSES[i]['Values'])):
 					opsiProperty = OPSI_HARDWARE_CLASSES[i]['Values'][j]['Opsi']
 					if locale.get(opsiClass + '.' + opsiProperty):
@@ -1494,7 +1495,7 @@ depot where the method is.
 
 			for c in OPSI_HARDWARE_CLASSES:
 				try:
-					if (c['Class'].get('Type') == 'STRUCTURAL'):
+					if c['Class'].get('Type') == 'STRUCTURAL':
 						logger.debug(u"Found STRUCTURAL hardware class '%s'" % c['Class'].get('Opsi'))
 						ccopy = pycopy.deepcopy(c)
 						if ccopy['Class'].has_key('Super'):
@@ -1619,7 +1620,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			for i in xrange(len(result1['identAttributes'])):
 				for j in xrange(len(result2['identAttributes'])):
-					if (result1['identAttributes'][i] == result2['identAttributes'][j]):
+					if result1['identAttributes'][i] == result2['identAttributes'][j]:
 						if (result1['identAttributes'][i] != 'id') or (result1['objectClass'] == result2['objectClass']):
 							result1IdentIndex = i
 							result2IdentIndex = j
@@ -1634,10 +1635,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					for attr in result1['foreignIdAttributes']:
 						for i in range(len(result2['identAttributes'])):
 							logger.debug2("%s == %s" % (attr, result2['identAttributes'][i]))
-							if (attr == result2['identAttributes'][i]):
+							if attr == result2['identAttributes'][i]:
 								result2IdentIndex = i
 								for a in range(len(result1['identAttributes'])):
-									if (result1['identAttributes'][a] == 'id'):
+									if result1['identAttributes'][a] == 'id':
 										result1IdentIndex = a
 								break
 				else:
@@ -1649,10 +1650,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					for attr in result2['foreignIdAttributes']:
 						for i in range(len(result1['identAttributes'])):
 							logger.debug2("%s == %s" % (attr, result1['identAttributes'][i]))
-							if (attr == result1['identAttributes'][i]):
+							if attr == result1['identAttributes'][i]:
 								result1IdentIndex = i
 								for a in range(len(result2['identAttributes'])):
-									if (result2['identAttributes'][a] == 'id'):
+									if result2['identAttributes'][a] == 'id':
 										result2IdentIndex = a
 								break
 				else:
@@ -1684,16 +1685,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				"identValues":         []
 			}
 
-			if (operator == 'OR'):
-				vals = []
+			if operator == 'OR':
+				vals = [] # TODO: here
 				values1.extend(values2)
 				for v in values1:
 					if v in vals:
 						continue
 					vals.append(v)
 					result['identValues'].append([v])
-			elif (operator == 'AND'):
-				vals = []
+			elif operator == 'AND':
+				vals = [] # TODO: here
 				for v in values2:
 					if not v in values1 or v in vals:
 						continue
@@ -1789,11 +1790,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						addProductOnClientDefaults = self._options.get('addProductOnClientDefaults', False)
 						addConfigStateDefaults = self._options.get('addConfigStateDefaults', False)
 						addProductPropertyStateDefaults = self._options.get('addProductPropertyStateDefaults', False)
-						if (objectClass == 'ProductOnClient'):
+						if objectClass == 'ProductOnClient':
 							self._options['addProductOnClientDefaults'] = True
-						elif (objectClass == 'ConfigState'):
+						elif objectClass == 'ConfigState':
 							self._options['addConfigStateDefaults'] = True
-						elif (objectClass == 'ProductPropertyState'):
+						elif objectClass == 'ProductPropertyState':
 							self._options['addProductPropertyStateDefaults'] = True
 						try:
 							res = {
@@ -1806,7 +1807,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							self._options['addProductOnClientDefaults'] = addProductOnClientDefaults
 							self._options['addConfigStateDefaults'] = addConfigStateDefaults
 							self._options['addProductPropertyStateDefaults'] = addProductPropertyStateDefaults
-						if (level == 0):
+
+						if level == 0:
 							result = combineResults(result, res, operator)
 						else:
 							result = res
