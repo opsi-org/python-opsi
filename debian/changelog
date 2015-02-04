@@ -33,7 +33,7 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * OPSI.SharedAlgorithm: No more working with code-as-text and evaluation
     of the text to get objects to work with. Now there are only the objects.
   * WindowsDrivers: Fallback if directories ends with "." or with whitespace.
-  * OPSI.Types.forceList now is able to handle of sets and generators
+  * OPSI.Types.forceList is now able to handle sets and generators
   * New function OPSI.System.Posix.getDHCPDRestartCommand
   * OPSI.SharedAlgorithm: Raising an error when a circular dependecy is
     detected between products.
