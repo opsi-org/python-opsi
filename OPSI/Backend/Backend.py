@@ -204,8 +204,10 @@ This defaults to ``self``.
 				continue
 			matched = False
 			try:
-				logger.debug(u"Testing match of filter '%s' of attribute '%s' with value '%s'" \
-							% (filter[attribute], attribute, value))
+				logger.debug(
+					u"Testing match of filter '{0}' of attribute '{1}' with"
+					u"value '{2}'".format(filter[attribute], attribute, value)
+				)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
 					matched = True
@@ -252,14 +254,20 @@ This defaults to ``self``.
 							break
 
 				if matched:
-					logger.debug(u"Value '%s' matched filter '%s', attribute '%s'" \
-								% (value, filter[attribute], attribute))
+					logger.debug(
+						u"Value '{0}' matched filter '{1}', attribute "
+						u"'{2}'".format(value, filter[attribute], attribute)
+					)
 				else:
 					matchedAll = False
 					break
-			except Exception as e:
-				raise Exception(u"Testing match of filter '%s' of attribute '%s' with value '%s' failed: %s" \
-							% (filter[attribute], attribute, value, e))
+			except Exception as err:
+				raise Exception(
+					u"Testing match of filter '{0}' of attribute '{1}' with "
+					u"value '{2}' failed: {3}".format(
+						filter[attribute], attribute, value, error=err
+					)
+				)
 		return matchedAll
 
 	def backend_setOptions(self, options):
