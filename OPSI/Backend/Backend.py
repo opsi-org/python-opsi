@@ -322,7 +322,7 @@ This defaults to ``self``.
 				'defaults': defaults
 			}
 
-		return [methods[methodName] for methodName in sorted(methods.keys())]
+		return [methods[name] for name in sorted(methods.keys())]
 
 	def backend_info(self):
 		"""
