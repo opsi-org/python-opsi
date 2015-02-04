@@ -1758,8 +1758,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					if of:
 						objectFilter.update(of)
 					if res:
-						# if (objectClass or objectFilter):
-						# 	raise BackendBadValueError(u"Unsupported search filter: %s" % repr(f))
 						result = combineResults(result, res, operator)
 
 				if objectFilter or objectClass:
@@ -3156,10 +3154,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			nextProductOnClient = productOnClient.clone()
 
 		if nextProductOnClient.installationStatus:
-			# if not nextProductOnClient.actionResult:
-			# 	nextProductOnClient.setActionResult('none')
-			# if not nextProductOnClient.actionProgress:
-			# 	nextProductOnClient.setActionProgress(u'')
 			if nextProductOnClient.installationStatus == 'installed':
 				# TODO: Check if product exists?
 				if not nextProductOnClient.productVersion or not nextProductOnClient.packageVersion:
@@ -3180,22 +3174,6 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			else:
 				nextProductOnClient.productVersion = None
 				nextProductOnClient.packageVersion = None
-
-		# if productOnClient.actionRequest:
-		# 	# An action request is about to change
-		# 	if not productOnClient.lastAction and (productOnClient.actionRequest != 'none'):
-		# 		nextProductOnClient.setLastAction(productOnClient.actionRequest)
-		# 	if not productOnClient.targetConfiguration:
-		# 		if   (productOnClient.actionRequest == 'setup'):
-		# 			nextProductOnClient.setTargetConfiguration('installed')
-		# 		elif (productOnClient.actionRequest == 'always'):
-		# 			nextProductOnClient.setTargetConfiguration('always')
-		# 		elif (productOnClient.actionRequest == 'uninstall'):
-		# 			nextProductOnClient.setTargetConfiguration('undefined')
-		# 	if not productOnClient.actionResult:
-		# 		nextProductOnClient.setActionResult('none')
-		# 	if not productOnClient.actionProgress:
-		# 		nextProductOnClient.setActionProgress(u'')
 
 		nextProductOnClient.setModificationTime(timestamp())
 
