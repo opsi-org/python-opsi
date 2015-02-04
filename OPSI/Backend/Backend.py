@@ -2320,7 +2320,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		return isDefault
 
 	def _configState_checkValid(self, configState):
-		if (configState.configId == 'clientconfig.depot.id'):
+		if configState.configId == 'clientconfig.depot.id':
 			if not configState.values or not configState.values[0]:
 				raise ValueError(u"No valid depot id given")
 			depotId = forceHostId(configState.values[0])
@@ -2588,14 +2588,16 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				if v in productProperty.possibleValues:
 					newValues.append(v)
 					continue
-				if (productProperty.getType() == 'BoolProductProperty') and forceBool(v) in productProperty.possibleValues:
+
+				if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
 					newValues.append(forceBool(v))
 					changed = True
 					continue
-				if (productProperty.getType() == 'UnicodeProductProperty'):
+
+				if productProperty.getType() == 'UnicodeProductProperty':
 					newValue = None
 					for pv in productProperty.possibleValues:
-						if (forceUnicodeLower(pv) == forceUnicodeLower(v)):
+						if forceUnicodeLower(pv) == forceUnicodeLower(v):
 							newValue = pv
 							break
 
