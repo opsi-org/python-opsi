@@ -1679,10 +1679,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				foreignIdAttributes.append(attr)
 
 			result = {
-				"objectClass":         result2["objectClass"],
+				"objectClass": result2["objectClass"],
 				"foreignIdAttributes": foreignIdAttributes,
-				"identAttributes":     [ result2['identAttributes'][result2IdentIndex] ],
-				"identValues":         []
+				"identAttributes": [result2['identAttributes'][result2IdentIndex]],
+				"identValues": []
 			}
 
 			if operator == 'OR':
@@ -1741,7 +1741,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 				else:
 					raise BackendBadValueError(u"Unsupported substring class: %s" % repr(f))
 			elif isinstance(f, pureldap.LDAPFilter_present):
-				objectFilter = { f.value: '*' }
+				objectFilter = {f.value: '*'}
 
 			elif isinstance(f, pureldap.LDAPFilter_and) or isinstance(f, pureldap.LDAPFilter_or):
 				operator = None
@@ -1798,10 +1798,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 							self._options['addProductPropertyStateDefaults'] = True
 						try:
 							res = {
-								"objectClass":         objectClass,
+								"objectClass": objectClass,
 								"foreignIdAttributes": getForeignIdAttributes(oc),
-								"identAttributes":     getIdentAttributes(oc),
-								"identValues":         eval("this.%s_getIdents(returnType = 'list', **objectFilter)" % getBackendMethodPrefix(oc))
+								"identAttributes": getIdentAttributes(oc),
+								"identValues": eval("this.%s_getIdents(returnType='list', **objectFilter)" % getBackendMethodPrefix(oc))
 							}
 						finally:
 							self._options['addProductOnClientDefaults'] = addProductOnClientDefaults
@@ -2076,22 +2076,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.softwareLicense_createObjects(softwareLicenses)
 
 	def host_renameOpsiDepotserver(self, id, newId):
-		id          = forceHostId(id)
-		newId       = forceHostId(newId)
+		id = forceHostId(id)
+		newId = forceHostId(newId)
 		oldHostname = id.split('.')[0]
 		newHostname = newId.split('.')[0]
 
-		depots = self._backend.host_getObjects(type = 'OpsiDepotserver', id = id)
+		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=id)
 		if not depots:
 			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % id)
-		if self._backend.host_getObjects(id = newId):
+		if self._backend.host_getObjects(id=newId):
 			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
 
 		depot = depots[0]
-		isConfigServer = bool(self.host_getIdents(type = 'OpsiConfigserver', id = id))
+		isConfigServer = bool(self.host_getIdents(type='OpsiConfigserver', id=id))
 
 		productOnDepots = []
-		for productOnDepot in self._backend.productOnDepot_getObjects(depotId = id):
+		for productOnDepot in self._backend.productOnDepot_getObjects(depotId=id):
 			productOnDepot.setDepotId(newId)
 			productOnDepots.append(productOnDepot)
 
@@ -2111,7 +2111,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.productProperty_updateObjects(modifiedProductProperties)
 
 		productPropertyStates = []
-		for productPropertyState in self._backend.productPropertyState_getObjects(objectId = id):
+		for productPropertyState in self._backend.productPropertyState_getObjects(objectId=id):
 			productPropertyState.setObjectId(newId)
 			if productPropertyState.values and id in productPropertyState.values:
 				productPropertyState.values.remove(id)
@@ -2134,7 +2134,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.config_updateObjects(modifiedConfigs)
 
 		configStates = []
-		for configState in self._backend.configState_getObjects(objectId = id):
+		for configState in self._backend.configState_getObjects(objectId=id):
 			configState.setObjectId(newId)
 			if configState.values and id in configState.values:
 				configState.values.remove(id)
@@ -2142,7 +2142,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			configStates.append(configState)
 
 		logger.info(u"Deleting depot '%s'" % depot)
-		self._backend.host_deleteObjects([ depot ])
+		self._backend.host_deleteObjects([depot])
 
 		depot.setId(newId)
 		if depot.repositoryRemoteUrl:
@@ -2151,7 +2151,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			depot.setDepotRemoteUrl(depot.depotRemoteUrl.replace(id, newId).replace(oldHostname, newHostname))
 		if depot.depotWebdavUrl:
 			depot.setDepotWebdavUrl(depot.depotWebdavUrl.replace(id, newId).replace(oldHostname, newHostname))
-		self.host_createObjects([ depot ])
+		self.host_createObjects([depot])
 
 		if productOnDepots:
 			self.productOnDepot_createObjects(productOnDepots)
@@ -2161,7 +2161,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.configState_createObjects(configStates)
 
 		updateConfigs = []
-		for config in self._backend.config_getObjects(id = ['clientconfig.configserver.url', 'clientconfig.depot.id']):
+		for config in self._backend.config_getObjects(id=['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if config.defaultValues:
 				changed = False
 				for i in range(len(config.defaultValues)):
@@ -2174,7 +2174,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.config_updateObjects(updateConfigs)
 
 		updateConfigStates = []
-		for configState in self._backend.configState_getObjects(configId = ['clientconfig.configserver.url', 'clientconfig.depot.id']):
+		for configState in self._backend.configState_getObjects(configId=['clientconfig.configserver.url', 'clientconfig.depot.id']):
 			if configState.values:
 				changed = False
 				for i in range(len(configState.values)):
@@ -2187,7 +2187,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self.configState_updateObjects(updateConfigStates)
 
 		modifiedDepots = []
-		for depot in self._backend.host_getObjects(type = 'OpsiDepotserver'):
+		for depot in self._backend.host_getObjects(type='OpsiDepotserver'):
 			if depot.masterDepotId and (depot.masterDepotId == id):
 				depot.masterDepotId = newId
 				modifiedDepots.append(depot)
@@ -2226,7 +2226,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			self._backend.config_insertObject(config)
 			if self._options['returnObjectsOnUpdateAndCreate']:
 				result.extend(
-					self._backend.config_getObjects(id = config.id)
+					self._backend.config_getObjects(id=config.id)
 				)
 		return result
 
