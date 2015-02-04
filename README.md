@@ -19,7 +19,7 @@ system please get the _getting started_ from opsi.org.
 
 First we create the API documentation from the Python files:
 
-  sphinx-apidoc --output-dir=doc/src OPSI/
+  sphinx-apidoc --separate --output-dir=doc/src OPSI/
 
 After that we can build the documentation:
 
