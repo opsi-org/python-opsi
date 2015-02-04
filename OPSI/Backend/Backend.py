@@ -249,7 +249,7 @@ This defaults to ``self``.
 
 							continue
 
-						if (filterValue.find('*') != -1) and re.search('^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search('^%s$' % filterValue.replace('*', '.*'), value):
 							matched = True
 							break
 
@@ -346,7 +346,7 @@ This defaults to ``self``.
 			f = codecs.open(self._opsiModulesFile, 'r', 'utf-8')
 			for line in f.readlines():
 				line = line.strip()
-				if (line.find('=') == -1):
+				if '=' not in line:
 					logger.error(u"Found bad line '%s' in modules file '%s'" % (line, self._opsiModulesFile))
 					continue
 				(module, state) = line.split('=', 1)
