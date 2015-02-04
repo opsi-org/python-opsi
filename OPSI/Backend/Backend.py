@@ -347,7 +347,7 @@ This defaults to ``self``.
 					modules[module] = state
 					continue
 				state = state.lower()
-				if not state in ('yes', 'no'):
+				if state not in ('yes', 'no'):
 					try:
 						helpermodules[module] = state
 						state = int(state)
