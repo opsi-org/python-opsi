@@ -60,7 +60,8 @@ from OPSI.Logger import Logger
 from OPSI.Types import BackendError, BackendBadValueError
 from OPSI.Types import *
 from OPSI.Object import *
-from OPSI.Util import timestamp, compareVersions, blowfishDecrypt, blowfishEncrypt, getfqdn
+from OPSI.Util import (timestamp, compareVersions, blowfishDecrypt,
+	blowfishEncrypt, getfqdn)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
 
