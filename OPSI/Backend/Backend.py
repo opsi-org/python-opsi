@@ -976,8 +976,14 @@ depot where the method is.
 					productVersion=productProperty.productVersion,
 					packageVersion=productProperty.packageVersion):
 
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-					% (productProperty.productId, productProperty.productVersion, productProperty.packageVersion))
+				raise BackendReferentialIntegrityError(
+					u"Product with id '{0}', productVersion '{1}', "
+					u"packageVersion '{2}' not found".format(
+						productProperty.productId,
+						productProperty.productVersion,
+						productProperty.packageVersion
+					)
+				)
 
 	def productProperty_updateObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
@@ -1043,8 +1049,14 @@ depot where the method is.
 				productVersion=productOnDepot.productVersion,
 				packageVersion=productOnDepot.packageVersion):
 
-				raise BackendReferentialIntegrityError(u"Product with id '%s', productVersion '%s', packageVersion '%s' not found" \
-					% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+				raise BackendReferentialIntegrityError(
+					u"Product with id '{0}', productVersion '{1}', "
+					u"packageVersion '{2}' not found".format(
+						productOnDepot.productId,
+						productOnDepot.productVersion,
+						productOnDepot.packageVersion
+					)
+				)
 
 	def productOnDepot_updateObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
