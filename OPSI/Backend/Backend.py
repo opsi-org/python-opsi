@@ -4004,8 +4004,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			clientId = []
 		clientId = forceHostIdList(clientId)
 		self._backend.auditSoftwareOnClient_deleteObjects(
-			self._backend.auditSoftwareOnClient_getObjects(
-				clientId = clientId))
+			self._backend.auditSoftwareOnClient_getObjects(clientId=clientId)
+		)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
