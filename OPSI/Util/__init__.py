@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
 # http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ or to JSON, working with librsync and more.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.16'
+__version__ = '4.0.6.1'
 
 import base64
 import codecs
@@ -580,14 +580,15 @@ def removeUnit(x):
 
 
 def blowfishEncrypt(key, cleartext):
-	''' Takes cleartext string,
-	    returns hex-encoded, blowfish-encrypted string '''
+	"Takes cleartext string, returns hex-encoded, blowfish-encrypted string"
+
 	cleartext = forceUnicode(cleartext).encode('utf-8')
 	key = forceUnicode(key)
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
+
 	try:
 		key = key.decode("hex")
 	except TypeError:
@@ -599,8 +600,8 @@ def blowfishEncrypt(key, cleartext):
 
 
 def blowfishDecrypt(key, crypt):
-	''' Takes hex-encoded, blowfish-encrypted string,
-	    returns cleartext string '''
+	"Takes hex-encoded, blowfish-encrypted string, returns cleartext string"
+
 	key = forceUnicode(key)
 	crypt = forceUnicode(crypt)
 	try:
@@ -611,8 +612,9 @@ def blowfishDecrypt(key, crypt):
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	cleartext = blowfish.decrypt(crypt)
 	# Remove possible \0-chars
-	if (cleartext.find('\0') != -1):
+	if cleartext.find('\0') != -1:
 		cleartext = cleartext[:cleartext.find('\0')]
+
 	try:
 		return unicode(cleartext, 'utf-8')
 	except Exception as e:
