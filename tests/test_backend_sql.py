@@ -27,6 +27,7 @@ import unittest
 
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
+from OPSI.Types import BackendModuleDisabledError
 
 
 class SQLBackendWithoutConnectionTestCase(unittest.TestCase):
@@ -260,6 +261,34 @@ class UniqueAuditHardwareConditionTestCase(SQLBackendWithoutConnectionTestCase):
         self.assertTrue(u'`bool_false` = False' in condition)
         self.assertTrue(u'`bool_true` = True' in condition)
         self.assertTrue(u"`string` = 'caramba'" in condition)
+
+
+class RequiringEnabledSQLModuleTestCase(unittest.TestCase):
+    class FakeSQL(object):
+            def __init__(self, sqlEnabled):
+                self._sqlBackendModule = sqlEnabled
+
+            @sql.requiresEnabledSQLBackendModule
+            def someFunction(self, oneArgument):
+                print('someFunction({0})'.format(repr(oneArgument)))
+                return oneArgument
+
+            @sql.requiresEnabledSQLBackendModule
+            def functionWithMultiArgs(self, *args):
+                print('functionWithMultiArgs({0})'.format(repr(args)))
+                return args
+
+    def testDisabledSQLRaisesException(self):
+        backend = self.FakeSQL(False)
+        self.assertRaises(BackendModuleDisabledError, backend.someFunction, 'o')
+        self.assertRaises(BackendModuleDisabledError, backend.functionWithMultiArgs, 'y', 'o', 'l', 'o')
+        self.assertRaises(BackendModuleDisabledError, backend.someFunction, 'o')
+
+    def testWithEnabledSQLWorksFine(self):
+        backend = self.FakeSQL(True)
+        self.assertEquals('o', backend.someFunction('o'))
+        self.assertEquals(['y', 'o', 'l', 'o'], backend.functionWithMultiArgs('y', 'o', 'l', 'o'))
+
 
 
 if __name__ == '__main__':
