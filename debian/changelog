@@ -26,7 +26,7 @@ python-opsi (4.0.6.1-1) UNRELEASED; urgency=low
   * OPSI.Backend.SQL: the columns referencing hostId are now of the same size
   * New module OPSI.Util.Task.UpdateBackend.MySQL
   * OPSI.Util.Task.UpdateBackend.MySQL: Fix too small hostId columns
-  * OPSI.Backend.SQL: replacing duplicate code with a simple decorator
+  * OPSI.Backend.SQL: replacing duplicate code
   * Removed LDAP schema files and backend configuration.
   * OPSI.Backend.SQL: Functions getData and getRawData only allow SELECT
   * Making method backend_getSharedAlgorithm nonfunctional.
