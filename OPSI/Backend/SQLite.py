@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -136,24 +136,25 @@ class SQLite(SQL):
 		(conn, cursor) = self.connect()
 		result = -1
 		try:
-			colNames = values = u''
+			colNames = []
+			values = []
 			for (key, value) in valueHash.items():
-				colNames += u"`%s`, " % key
+				colNames.append(u"`{0}`".format(key))
 				if value is None:
-					values += u"NULL, "
+					values.append(u"NULL")
 				elif type(value) is bool:
 					if value:
-						values += u"1, "
+						values.append(u"1")
 					else:
-						values += u"0, "
+						values.append(u"0")
 				elif type(value) in (float, long, int):
-					values += u"%s, " % value
+					values.append(u"{0}".format(value))
 				elif type(value) is str:
-					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
+					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
-					values += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
+					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
 
-			query = u'INSERT INTO `%s` (%s) VALUES (%s);' % (table, colNames[:-2], values[:-2])
+			query = u'INSERT INTO `{table}` ({columns}) VALUES ({values});'.format(columns=', '.join(colNames), values=', '.join(values), table=table)
 			logger.debug2(u"insert: %s" % query)
 
 			self.execute(query, conn, cursor)
@@ -169,26 +170,27 @@ class SQLite(SQL):
 		try:
 			if not valueHash:
 				raise BackendBadValueError(u"No values given")
-			query = u"UPDATE `%s` SET " % table
+
+			values = []
 			for (key, value) in valueHash.items():
 				if value is None and not updateWhereNone:
 					continue
-				query += u"`%s` = " % key
+
 				if value is None:
-					query += u"NULL, "
+					values.append(u"`{0}` = NULL".format(key))
 				elif type(value) is bool:
 					if value:
-						query += u"1, "
+						values.append(u"`{0}` = 1".format(key))
 					else:
-						query += u"0, "
+						values.append(u"`{0}` = 0".format(key))
 				elif type(value) in (float, long, int):
-					query += u"%s, " % value
+					values.append(u"`{0}` = {1}".format(key, value))
 				elif type(value) is str:
-					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8"))))
+					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
 				else:
-					query += u"\'%s\', " % (u'%s' % self.escapeApostrophe(self.escapeBackslash(value)))
+					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value))))
 
-			query = u'%s WHERE %s;' % (query[:-2], where)
+			query = u"UPDATE `{table}` SET {values} WHERE {condition};".format(table=table, values=', '.join(values), condition=where)
 			logger.debug2(u"update: %s" % query)
 			self.execute(query, conn, cursor)
 			result = conn.changes()
