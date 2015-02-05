@@ -258,7 +258,7 @@ class MultiplexBackend(object):
 					time.sleep(0.05)
 		logTime = 0
 		while len(results) != calls:
-			if (logTime >= 1):
+			if logTime >= 1:
 				logTime = 0
 				logger.info(u'Waiting for results, got (%d/%d)' % (len(results), calls))
 			time.sleep(0.05)
