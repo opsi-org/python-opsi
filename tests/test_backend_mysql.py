@@ -54,17 +54,6 @@ class MySQLBackendTestCase(unittest.TestCase, MySQLBackend.MySQLBackendMixin, Ba
     def testWeHaveABackend(self):
         self.assertNotEqual(None, self.backend)
 
-    def testOnlySelectAllowedDecorator(self):
-        @onlySelectAllowed
-        def returnQuery(self, query):
-            return query
-
-        self.assertRaises(ValueError, returnQuery, "ALTER TABLE blabla")
-        self.assertRaises(ValueError, returnQuery, "DROP TABLE blabla")
-
-        testQuery = "SELECT something"
-        self.assertEquals(testQuery, returnQuery(testQuery))
-
 
 @unittest.skipIf(not MySQLBackend.MySQLconfiguration,
     'no MySQL backend configuration given.')
