@@ -231,7 +231,7 @@ class BackendReplicator(object):
 							objectIds = []
 
 						filter = {'objectId': objectIds}
-					elif (objClass == 'LicenseOnClient'):
+					elif objClass == 'LicenseOnClient':
 						filter = {'clientId': clientIds}
 
 					logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
