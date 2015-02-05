@@ -584,3 +584,19 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
         auditHardwareOnHosts = self.backend.auditHardwareOnHost_getObjects()
         assert len(auditHardwareOnHosts) == len(self.auditHardwareOnHosts), u"got: '%s', expected: '%s'" % (
             auditHardwareOnHosts, len(self.auditHardwareOnHosts))
+
+    def testDeletingHostShouldDeleteHardwareAuditData(self):
+        self.setUpAuditHardwareOnHosts()
+
+        self.backend.host_createObjects(self.client1)
+        self.backend.auditHardwareOnHost_createObjects(self.auditHardwareOnHost1)
+
+        self.assertEquals(1, len(self.backend.host_getObjects()),
+            'Self-test failed: Too much hosts.')
+        self.assertEquals(1, len(self.backend.auditHardwareOnHost_getObjects()),
+            'Self-test failed: Too much auditHardwareOnHosts.')
+
+        self.backend.host_deleteObjects([self.client1])
+
+        self.assertEquals(0, len(self.backend.host_getObjects()))
+        self.assertEquals(0, len(self.backend.auditHardwareOnHost_getObjects()))
