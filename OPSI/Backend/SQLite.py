@@ -97,11 +97,6 @@ class SQLite(SQL):
 
 	def close(self, conn, cursor):
 		pass
-		# try:
-		# 	self._transactionLock.release()
-		# except:
-		# 	pass
-		# cursor.close()
 
 	def getSet(self, query):
 		logger.debug2(u"getSet: %s" % query)
@@ -219,14 +214,14 @@ class SQLite(SQL):
 		if not conn or not cursor:
 			(conn, cursor) = self.connect()
 			needClose = True
+
 		try:
-			# query = forceUnicode(query)
 			logger.debug2(u"SQL query: %s" % forceUnicode(query))
 			res = cursor.execute(query)
-			# cursor.execute("commit")
 		finally:
 			if needClose:
 				self.close(conn, cursor)
+
 		return res
 
 	def getTables(self):
