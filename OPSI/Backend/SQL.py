@@ -31,6 +31,7 @@ databases and their implementation.
 """
 
 import base64
+import functools
 import json
 import re
 import time
@@ -50,6 +51,7 @@ logger = Logger()
 
 
 def onlySelectAllowed(function):
+	@functools.wraps(function)
 	def checkQueryBeforeCallingFunction(self, query):
 		if not forceUnicodeLower(query).strip().startswith('select'):
 			raise ValueError('Only queries to SELECT data are allowed.')
@@ -64,6 +66,7 @@ def requiresEnabledSQLBackendModule(function):
 	This decorator will raise an exception if the SQL backend module is
 	not enabled and just execute the function otherwise.
 	"""
+	@functools.wraps(function)
 	def checkedFunction(self, *args, **kwargs):
 		if not self._sqlBackendModule:
 			raise Exception(u"SQL backend module disabled")
@@ -78,6 +81,7 @@ def requiresEnabledLicenseManagementModule(function):
 	This decorator will only return values if the license management
 	module is enabled. If it is not enabled it will return ``None``.
 	"""
+	@functools.wraps(function)
 	def checkedFunction(self, *args, **kwargs):
 		if not self._licenseManagementModule:
 			logger.warning(u"License management module disabled")
@@ -381,6 +385,7 @@ class SQLBackend(ConfigDataBackend):
 			if key != arg:
 				hash[arg] = hash[key]
 				del hash[key]
+
 		return hash
 
 	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):
