@@ -412,7 +412,7 @@ class BackendTestsMixin(ClientsMixin, HostsMixin):
         self.assertTrue('modules' in info)
         self.assertTrue('realmodules' in info)
 
-    def testBackend_getSharedAlgorithmThrowsException(self):
+    def testBackend_getSharedAlgorithmThrowsExceptionIfAlgoUnknown(self):
         self.assertRaises(BackendError, self.backend.backend_getSharedAlgorithm, "foo")
 
 
