@@ -43,9 +43,9 @@ logger = Logger()
 class SQLite(SQL):
 	AUTOINCREMENT = ''
 	ALTER_TABLE_CHANGE_SUPPORTED = False
-	ESCAPED_BACKSLASH  = "\\"
+	ESCAPED_BACKSLASH = "\\"
 	ESCAPED_APOSTROPHE = "''"
-	ESCAPED_ASTERISK   = "**"
+	ESCAPED_ASTERISK = "**"
 
 	def __init__(self, **kwargs):
 		self._database = ":memory:"
