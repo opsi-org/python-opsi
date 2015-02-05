@@ -287,8 +287,7 @@ class RequiringEnabledSQLModuleTestCase(unittest.TestCase):
     def testWithEnabledSQLWorksFine(self):
         backend = self.FakeSQL(True)
         self.assertEquals('o', backend.someFunction('o'))
-        self.assertEquals(['y', 'o', 'l', 'o'], backend.functionWithMultiArgs('y', 'o', 'l', 'o'))
-
+        self.assertEquals(('y', 'o', 'l', 'o'), backend.functionWithMultiArgs('y', 'o', 'l', 'o'))
 
 
 if __name__ == '__main__':
