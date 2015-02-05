@@ -43,7 +43,7 @@ from twisted.conch.ssh import keys
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict, forceObjectClassList)
-from OPSI.Types import BackendReferentialIntegrityError
+from OPSI.Types import BackendReferentialIntegrityError, BackendModuleDisabledError
 from OPSI.Object import *
 from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 
@@ -69,7 +69,7 @@ def requiresEnabledSQLBackendModule(function):
 	@functools.wraps(function)
 	def checkedFunction(self, *args, **kwargs):
 		if not self._sqlBackendModule:
-			raise Exception(u"SQL backend module disabled")
+			raise BackendModuleDisabledError(u"SQL backend module disabled")
 
 		return function(self, *args, **kwargs)
 
