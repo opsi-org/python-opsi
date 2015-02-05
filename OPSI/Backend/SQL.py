@@ -31,7 +31,6 @@ databases and their implementation.
 """
 
 import base64
-import functools
 import json
 import re
 import time
@@ -50,54 +49,20 @@ from OPSI.Backend.Backend import BackendModificationListener, ConfigDataBackend
 logger = Logger()
 
 
-def onlySelectAllowed(function):
-	@functools.wraps(function)
-	def checkQueryBeforeCallingFunction(self, query):
-		if not forceUnicodeLower(query).strip().startswith('select'):
-			raise ValueError('Only queries to SELECT data are allowed.')
-
-		return function(self, query)
-
-	return checkQueryBeforeCallingFunction
-
-
-def requiresEnabledSQLBackendModule(function):
-	"""
-	This decorator will raise an exception if the SQL backend module is
-	not enabled and just execute the function otherwise.
-	"""
-	@functools.wraps(function)
-	def checkedFunction(self, *args, **kwargs):
-		if not self._sqlBackendModule:
-			raise BackendModuleDisabledError(u"SQL backend module disabled")
-
-		return function(self, *args, **kwargs)
-
-	return checkedFunction
-
-
-def requiresEnabledLicenseManagementModule(function):
-	"""
-	This decorator will only return values if the license management
-	module is enabled. If it is not enabled it will return ``None``.
-	"""
-	@functools.wraps(function)
-	def checkedFunction(self, *args, **kwargs):
-		if not self._licenseManagementModule:
-			logger.warning(u"License management module disabled")
-			return
-
-		return function(self, *args, **kwargs)
-
-	return checkedFunction
-
-
 @contextmanager
 def timeQuery(query):
 	startingTime = datetime.now()
 	logger.debug(u'start query {0}'.format(query))
 	yield
 	logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
+
+
+@contextmanager
+def onlySelectAllowed(query):
+	if not forceUnicodeLower(query).strip().startswith('select'):
+		raise ValueError('Only queries to SELECT data are allowed.')
+
+	yield
 
 
 class SQL(object):
@@ -252,6 +217,14 @@ class SQLBackend(ConfigDataBackend):
 					'Type': value["Type"],
 					'Scope': value["Scope"]
 				}
+
+	def _requiresEnabledSQLBackendModule(self):
+		"""
+		This will raise an exception if the SQL backend module is
+		not enabled.
+		"""
+		if not self._sqlBackendModule:
+			raise BackendModuleDisabledError(u"SQL backend module disabled")
 
 	def _filterToSql(self, filter={}):
 		"""
@@ -1063,16 +1036,23 @@ class SQLBackend(ConfigDataBackend):
 
 	def host_deleteObjects(self, hosts):
 		ConfigDataBackend.host_deleteObjects(self, hosts)
+
 		for host in forceObjectClassList(hosts, Host):
 			logger.info(u"Deleting host %s" % host)
 			where = self._uniqueCondition(host)
 			self._sql.delete('HOST', where)
 
+			auditHardwareOnDeletedHost = self.auditHardwareOnHost_getObjects([], objectId=host.id)
+			self.auditHardwareOnHost_deleteObjects(auditHardwareOnDeletedHost)
+
+			# TODO: Delete audit data!
+			# Siehe: https://redmine.uib.local/issues/869
+
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def config_insertObject(self, config):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.config_insertObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		possibleValues = data['possibleValues']
@@ -1098,8 +1078,8 @@ class SQLBackend(ConfigDataBackend):
 				'isDefault': (value in defaultValues)
 				})
 
-	@requiresEnabledSQLBackendModule
 	def config_updateObject(self, config):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
@@ -1121,8 +1101,8 @@ class SQLBackend(ConfigDataBackend):
 			}
 		) for value in possibleValues]
 
-	@requiresEnabledSQLBackendModule
 	def config_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configs, filter: %s" % filter)
 		configs = []
@@ -1176,8 +1156,8 @@ class SQLBackend(ConfigDataBackend):
 			configs.append(Config.fromHash(res))
 		return configs
 
-	@requiresEnabledSQLBackendModule
 	def config_deleteObjects(self, configs):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		for config in forceObjectClassList(configs, Config):
 			logger.info(u"Deleting config %s" % config)
@@ -1188,8 +1168,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def configState_insertObject(self, configState):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		data['values'] = json.dumps(data['values'])
@@ -1200,16 +1180,16 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('CONFIG_STATE', data)
 
-	@requiresEnabledSQLBackendModule
 	def configState_updateObject(self, configState):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_updateObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		where = self._uniqueCondition(configState)
 		data['values'] = json.dumps(data['values'])
 		self._sql.update('CONFIG_STATE', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def configState_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting configStates, filter: %s" % filter)
 		configStates = []
@@ -1220,8 +1200,8 @@ class SQLBackend(ConfigDataBackend):
 			configStates.append(ConfigState.fromHash(res))
 		return configStates
 
-	@requiresEnabledSQLBackendModule
 	def configState_deleteObjects(self, configStates):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info("Deleting configState %s" % configState)
@@ -1231,8 +1211,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def product_insertObject(self, product):
+		self._requiresEnabledSQLBackendModule()
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
@@ -1278,8 +1258,8 @@ class SQLBackend(ConfigDataBackend):
 			}
 		) for windowsSoftwareId in windowsSoftwareIds]
 
-	@requiresEnabledSQLBackendModule
 	def product_updateObject(self, product):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_updateObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		where = self._uniqueCondition(product)
@@ -1296,8 +1276,8 @@ class SQLBackend(ConfigDataBackend):
 				}
 			) for windowsSoftwareId in windowsSoftwareIds]
 
-	@requiresEnabledSQLBackendModule
 	def product_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting products, filter: %s" % filter)
 		products = []
@@ -1314,8 +1294,8 @@ class SQLBackend(ConfigDataBackend):
 			products.append(Product.fromHash(res))
 		return products
 
-	@requiresEnabledSQLBackendModule
 	def product_deleteObjects(self, products):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.product_deleteObjects(self, products)
 		for product in forceObjectClassList(products, Product):
 			logger.info("Deleting product %s" % product)
@@ -1326,8 +1306,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def productProperty_insertObject(self, productProperty):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		possibleValues = data['possibleValues']
@@ -1359,8 +1339,8 @@ class SQLBackend(ConfigDataBackend):
 			}
 		) for value in possibleValues]
 
-	@requiresEnabledSQLBackendModule
 	def productProperty_updateObject(self, productProperty):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		where = self._uniqueCondition(productProperty)
@@ -1388,8 +1368,8 @@ class SQLBackend(ConfigDataBackend):
 			}
 		) for value in possibleValues]
 
-	@requiresEnabledSQLBackendModule
 	def productProperty_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product properties, filter: %s" % filter)
 		productProperties = []
@@ -1417,8 +1397,8 @@ class SQLBackend(ConfigDataBackend):
 
 		return productProperties
 
-	@requiresEnabledSQLBackendModule
 	def productProperty_deleteObjects(self, productProperties):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info("Deleting product property %s" % productProperty)
@@ -1429,8 +1409,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def productDependency_insertObject(self, productDependency):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
 
@@ -1440,23 +1420,23 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('PRODUCT_DEPENDENCY', data)
 
-	@requiresEnabledSQLBackendModule
 	def productDependency_updateObject(self, productDependency):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
 		where = self._uniqueCondition(productDependency)
 
 		self._sql.update('PRODUCT_DEPENDENCY', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def productDependency_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting product dependencies, filter: %s" % filter)
 		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
 		return [ProductDependency.fromHash(res) for res in self._sql.getSet(self._createQuery('PRODUCT_DEPENDENCY', attributes, filter))]
 
-	@requiresEnabledSQLBackendModule
 	def productDependency_deleteObjects(self, productDependencies):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info("Deleting product dependency %s" % productDependency)
@@ -1466,8 +1446,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def productOnDepot_insertObject(self, productOnDepot):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 
@@ -1481,22 +1461,22 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('PRODUCT_ON_DEPOT', data)
 
-	@requiresEnabledSQLBackendModule
 	def productOnDepot_updateObject(self, productOnDepot):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		where = self._uniqueCondition(productOnDepot)
 		self._sql.update('PRODUCT_ON_DEPOT', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def productOnDepot_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
 		return [ProductOnDepot.fromHash(res) for res in
 				self._sql.getSet(self._createQuery('PRODUCT_ON_DEPOT', attributes, filter))]
 
-	@requiresEnabledSQLBackendModule
 	def productOnDepot_deleteObjects(self, productOnDepots):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 			logger.info(u"Deleting productOnDepot %s" % productOnDepot)
@@ -1506,8 +1486,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def productOnClient_insertObject(self, productOnClient):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 
@@ -1522,23 +1502,23 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('PRODUCT_ON_CLIENT', data)
 
-	@requiresEnabledSQLBackendModule
 	def productOnClient_updateObject(self, productOnClient):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		where = self._uniqueCondition(productOnClient)
 		self._sql.update('PRODUCT_ON_CLIENT', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def productOnClient_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productOnClients, filter: %s" % filter)
 		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
 		return [ProductOnClient.fromHash(res) for res in
 				self._sql.getSet(self._createQuery('PRODUCT_ON_CLIENT', attributes, filter))]
 
-	@requiresEnabledSQLBackendModule
 	def productOnClient_deleteObjects(self, productOnClients):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
 			logger.info(u"Deleting productOnClient %s" % productOnClient)
@@ -1548,8 +1528,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def productPropertyState_insertObject(self, productPropertyState):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		if not self._sql.getSet(self._createQuery('HOST', ['hostId'], {"hostId": productPropertyState.objectId})):
 			raise BackendReferentialIntegrityError(u"Object '%s' does not exist" % productPropertyState.objectId)
@@ -1562,16 +1542,16 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('PRODUCT_PROPERTY_STATE', data)
 
-	@requiresEnabledSQLBackendModule
 	def productPropertyState_updateObject(self, productPropertyState):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		where = self._uniqueCondition(productPropertyState)
 		data['values'] = json.dumps(data['values'])
 		self._sql.update('PRODUCT_PROPERTY_STATE', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def productPropertyState_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting productPropertyStates, filter: %s" % filter)
 		productPropertyStates = []
@@ -1584,8 +1564,8 @@ class SQLBackend(ConfigDataBackend):
 			productPropertyStates.append(ProductPropertyState.fromHash(res))
 		return productPropertyStates
 
-	@requiresEnabledSQLBackendModule
 	def productPropertyState_deleteObjects(self, productPropertyStates):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 			logger.info(u"Deleting productPropertyState %s" % productPropertyState)
@@ -1595,8 +1575,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def group_insertObject(self, group):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
 
@@ -1606,15 +1586,15 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('GROUP', data)
 
-	@requiresEnabledSQLBackendModule
 	def group_updateObject(self, group):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.group_updateObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		where = self._uniqueCondition(group)
 		self._sql.update('GROUP', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def group_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting groups, filter: %s" % filter)
 		groups = []
@@ -1624,8 +1604,8 @@ class SQLBackend(ConfigDataBackend):
 			groups.append(Group.fromHash(res))
 		return groups
 
-	@requiresEnabledSQLBackendModule
 	def group_deleteObjects(self, groups):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		for group in forceObjectClassList(groups, Group):
 			logger.info(u"Deleting group %s" % group)
@@ -1635,8 +1615,8 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
 	def objectToGroup_insertObject(self, objectToGroup):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 
@@ -1646,23 +1626,23 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('OBJECT_TO_GROUP', data)
 
-	@requiresEnabledSQLBackendModule
 	def objectToGroup_updateObject(self, objectToGroup):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 		where = self._uniqueCondition(objectToGroup)
 		self._sql.update('OBJECT_TO_GROUP', where, data)
 
-	@requiresEnabledSQLBackendModule
 	def objectToGroup_getObjects(self, attributes=[], **filter):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting objectToGroups, filter: %s" % filter)
 		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
 		return [ObjectToGroup.fromHash(res) for res in
 				self._sql.getSet(self._createQuery('OBJECT_TO_GROUP', attributes, filter))]
 
-	@requiresEnabledSQLBackendModule
 	def objectToGroup_deleteObjects(self, objectToGroups):
+		self._requiresEnabledSQLBackendModule()
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 			logger.info(u"Deleting objectToGroup %s" % objectToGroup)
@@ -1672,8 +1652,11 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledLicenseManagementModule
 	def licenseContract_insertObject(self, licenseContract):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 
@@ -1683,15 +1666,21 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('LICENSE_CONTRACT', data)
 
-	@requiresEnabledLicenseManagementModule
 	def licenseContract_updateObject(self, licenseContract):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 		where = self._uniqueCondition(licenseContract)
 		self._sql.update('LICENSE_CONTRACT', where, data)
 
-	@requiresEnabledLicenseManagementModule
 	def licenseContract_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting licenseContracts, filter: %s" % filter)
 		licenseContracts = []
@@ -1701,8 +1690,11 @@ class SQLBackend(ConfigDataBackend):
 			licenseContracts.append(LicenseContract.fromHash(res))
 		return licenseContracts
 
-	@requiresEnabledLicenseManagementModule
 	def licenseContract_deleteObjects(self, licenseContracts):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 			logger.info(u"Deleting licenseContract %s" % licenseContract)
@@ -1712,8 +1704,11 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenses
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledLicenseManagementModule
 	def softwareLicense_insertObject(self, softwareLicense):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 
@@ -1723,15 +1718,21 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('SOFTWARE_LICENSE', data)
 
-	@requiresEnabledLicenseManagementModule
 	def softwareLicense_updateObject(self, softwareLicense):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 		where = self._uniqueCondition(softwareLicense)
 		self._sql.update('SOFTWARE_LICENSE', where, data)
 
-	@requiresEnabledLicenseManagementModule
 	def softwareLicense_getObjects(self, attributes=[], **filter):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info(u"Getting softwareLicenses, filter: %s" % filter)
 		softwareLicenses = []
@@ -1741,8 +1742,11 @@ class SQLBackend(ConfigDataBackend):
 			softwareLicenses.append(SoftwareLicense.fromHash(res))
 		return softwareLicenses
 
-	@requiresEnabledLicenseManagementModule
 	def softwareLicense_deleteObjects(self, softwareLicenses):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 			logger.info(u"Deleting softwareLicense %s" % softwareLicense)
@@ -1752,8 +1756,11 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledLicenseManagementModule
 	def licensePool_insertObject(self, licensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
@@ -1800,8 +1807,11 @@ class SQLBackend(ConfigDataBackend):
 			}
 		) for productId in productIds]
 
-	@requiresEnabledLicenseManagementModule
 	def licensePool_updateObject(self, licensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		where = self._uniqueCondition(licensePool)
@@ -1847,8 +1857,11 @@ class SQLBackend(ConfigDataBackend):
 			licensePools.append(LicensePool.fromHash(res))
 		return licensePools
 
-	@requiresEnabledLicenseManagementModule
 	def licensePool_deleteObjects(self, licensePools):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
 		for licensePool in forceObjectClassList(licensePools, LicensePool):
 			logger.info(u"Deleting licensePool %s" % licensePool)
@@ -1859,8 +1872,11 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 
@@ -1870,8 +1886,11 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
 
-	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
@@ -1893,8 +1912,11 @@ class SQLBackend(ConfigDataBackend):
 				)
 		]
 
-	@requiresEnabledLicenseManagementModule
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 			logger.info(u"Deleting softwareLicenseToLicensePool %s" % softwareLicenseToLicensePool)
@@ -1904,8 +1926,11 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_insertObject(self, licenseOnClient):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 
@@ -1915,8 +1940,11 @@ class SQLBackend(ConfigDataBackend):
 		else:
 			self._sql.insert('LICENSE_ON_CLIENT', data)
 
-	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_updateObject(self, licenseOnClient):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 		where = self._uniqueCondition(licenseOnClient)
@@ -1936,8 +1964,11 @@ class SQLBackend(ConfigDataBackend):
 				)
 		]
 
-	@requiresEnabledLicenseManagementModule
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
+		if not self._licenseManagementModule:
+			logger.warning(u"License management module disabled")
+			return
+
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 			logger.info(u"Deleting licenseOnClient %s" % licenseOnClient)
@@ -2463,14 +2494,14 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	@requiresEnabledSQLBackendModule
-	@onlySelectAllowed
 	def getData(self, query):
-		with timeQuery(query):
-			return self._sql.getSet(query)
+		self._requiresEnabledSQLBackendModule()
+		with onlySelectAllowed(query):
+			with timeQuery(query):
+				return self._sql.getSet(query)
 
-	@requiresEnabledSQLBackendModule
-	@onlySelectAllowed
 	def getRawData(self, query):
-		with timeQuery(query):
-			return self._sql.getRows(query)
+		self._requiresEnabledSQLBackendModule()
+		with onlySelectAllowed(query):
+			with timeQuery(query):
+				return self._sql.getRows(query)
