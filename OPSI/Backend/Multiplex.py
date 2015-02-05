@@ -129,7 +129,7 @@ class MultiplexBackend(object):
 			raise Exception(u"Disabling mmultiplex backend: not in modules")
 
 		logger.info(u"Verifying modules file signature")
-		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
 		data = u''
 		mks = modules.keys()
 		mks.sort()
@@ -143,11 +143,13 @@ class MultiplexBackend(object):
 					modules[module] = True
 			else:
 				val = modules[module]
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				if val == False:
+					val = 'no'
+				if val == True:
+					val = 'yes'
 
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 			raise Exception(u"Disabling mmultiplex backend: modules file invalid")
 		logger.notice(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
 
@@ -440,8 +442,10 @@ class MultiplexBackend(object):
 		backendinfo = self._context.backend_info()
 		modules = backendinfo['modules']
 		helpermodules = backendinfo['realmodules']
-		publicKey = keys.Key.fromString(data = base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
-		data = u''; mks = modules.keys(); mks.sort()
+		publicKey = keys.Key.fromString(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP')).keyObject
+		data = u''
+		mks = modules.keys()
+		mks.sort()
 		for module in mks:
 			if module in ('valid', 'signature'):
 				continue
@@ -451,10 +455,12 @@ class MultiplexBackend(object):
 					modules[module] = True
 			else:
 				val = modules[module]
-				if (val == False): val = 'no'
-				if (val == True):  val = 'yes'
+				if val == False:
+					val = 'no'
+				if val == True:
+					val = 'yes'
 			data += u'%s = %s\r\n' % (module.lower().strip(), val)
-		if not bool(publicKey.verify(md5(data).digest(), [ long(modules['signature']) ])):
+		if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
 			raise Exception(u"Failed to verify modules signature")
 		if isinstance(host, OpsiClient):
 			self._buffer["OpsiClient.%s" % host.id] = host
@@ -545,15 +551,15 @@ class RemoteService(Service, JSONRPCBackend):
 		Service.__init__(self, **kwargs)
 		JSONRPCBackend.__init__(
 			self,
-			address             = url,
-			connectOnInit       = False,
-			connectTimeout      = self.connectTimeout,
-			socketTimeout       = self.socketTimeout,
-			username            = self.url.split('/')[2].split(':')[0],
-			password            = self.opsiHostKey,
-			application         = u'opsi multiplex backend %s' % __version__,
-			deflate             = True,
-			rpcQueuePollingTime = rpcQueuePollingTime,
+			address= url,
+			connectOnInit=False,
+			connectTimeout=self.connectTimeout,
+			socketTimeout=self.socketTimeout,
+			username=self.url.split('/')[2].split(':')[0],
+			password=self.opsiHostKey,
+			application=u'opsi multiplex backend %s' % __version__,
+			deflate=True,
+			rpcQueuePollingTime=rpcQueuePollingTime,
 			**kwargs
 		)
 		self.error = None
@@ -564,7 +570,7 @@ class RemoteService(Service, JSONRPCBackend):
 			service.refresh()
 		logger.debug(u"Connecting to service %s" %self.url )
 
-		self.multiplexBackend._threadPool.addJob(function = _connect, callback = self._onConnect, service = self)
+		self.multiplexBackend._threadPool.addJob(function=_connect, callback=self._onConnect, service=self)
 
 	def _onConnect(self, success, result, error):
 		if success:
