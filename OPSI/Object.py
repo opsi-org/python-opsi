@@ -291,7 +291,7 @@ class Entity(BaseObject):
 	def fromHash(hash):
 		try:
 			hash['type']
-		except KeyError
+		except KeyError:
 			hash['type'] = 'Entity'
 
 		Class = eval(hash['type'])
@@ -418,7 +418,7 @@ class Object(Entity):
 	def fromHash(hash):
 		try:
 			hash['type']
-		except KeyError
+		except KeyError:
 			hash['type'] = 'Object'
 
 		return Entity.fromHash(hash)
