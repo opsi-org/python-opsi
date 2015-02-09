@@ -600,3 +600,7 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
 
         self.assertEquals(0, len(self.backend.host_getObjects()))
         self.assertEquals(0, len(self.backend.auditHardwareOnHost_getObjects()))
+
+        self.backend.host_createObjects(self.client1)
+        self.assertEquals(1, len(self.backend.host_getObjects()))
+        self.assertEquals(0, len(self.backend.auditHardwareOnHost_getObjects()))
