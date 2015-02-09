@@ -265,14 +265,15 @@ class UniqueAuditHardwareConditionTestCase(SQLBackendWithoutConnectionTestCase):
 class AvoidingMaliciousQueryTestCase(SQLBackendWithoutConnectionTestCase):
     def testOnlySelectAllowedDecorator(self):
         def returnQuery(query):
-            with sql.onlySelectAllowed(query):
-                return query
+            sql.SQLBackend._onlyAllowSelect(query)
+            return query
 
         self.assertRaises(ValueError, returnQuery, "ALTER TABLE blabla")
         self.assertRaises(ValueError, returnQuery, "DROP TABLE blabla")
 
         testQuery = "SELECT something"
         self.assertEquals(testQuery, returnQuery(testQuery))
+
 
 if __name__ == '__main__':
     unittest.main()
