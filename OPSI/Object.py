@@ -289,7 +289,9 @@ class Entity(BaseObject):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError
 			hash['type'] = 'Entity'
 
 		Class = eval(hash['type'])
@@ -414,8 +416,11 @@ class Object(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError
 			hash['type'] = 'Object'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -476,8 +481,11 @@ class Host(Object):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'Host'
+
 		return Object.fromHash(hash)
 
 	@staticmethod
@@ -549,8 +557,11 @@ class OpsiClient(Host):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'OpsiClient'
+
 		return Host.fromHash(hash)
 
 	@staticmethod
@@ -677,7 +688,9 @@ class OpsiDepotserver(Host):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'OpsiDepotserver'
 		return Host.fromHash(hash)
 
@@ -714,8 +727,11 @@ class OpsiConfigserver(OpsiDepotserver):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'OpsiConfigserver'
+
 		return OpsiDepotserver.fromHash(hash)
 
 	@staticmethod
@@ -824,8 +840,11 @@ class Config(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'Config'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -867,8 +886,11 @@ class UnicodeConfig(Config):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'UnicodeConfig'
+
 		return Config.fromHash(hash)
 
 	@staticmethod
@@ -901,8 +923,11 @@ class BoolConfig(Config):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'BoolConfig'
+
 		return Config.fromHash(hash)
 
 	@staticmethod
@@ -950,8 +975,11 @@ class ConfigState(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ConfigState'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1170,8 +1198,11 @@ class Product(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'Product'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -1204,8 +1235,11 @@ class LocalbootProduct(Product):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'LocalbootProduct'
+
 		return Product.fromHash(hash)
 
 	@staticmethod
@@ -1245,8 +1279,11 @@ class NetbootProduct(Product):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'NetbootProduct'
+
 		return Product.fromHash(hash)
 
 	@staticmethod
@@ -1375,8 +1412,11 @@ class ProductProperty(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ProductProperty'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -1423,8 +1463,11 @@ class UnicodeProductProperty(ProductProperty):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'UnicodeProductProperty'
+
 		return ProductProperty.fromHash(hash)
 
 	@staticmethod
@@ -1466,8 +1509,11 @@ class BoolProductProperty(ProductProperty):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'BoolProductProperty'
+
 		return ProductProperty.fromHash(hash)
 
 	@staticmethod
@@ -1572,8 +1618,11 @@ class ProductDependency(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ProductDependency'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1645,8 +1694,11 @@ class ProductOnDepot(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ProductOnDepot'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1793,8 +1845,11 @@ class ProductOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ProductOnClient'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1853,8 +1908,11 @@ class ProductPropertyState(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ProductPropertyState'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -1898,8 +1956,11 @@ class Group(Object):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'Group'
+
 		return Object.fromHash(hash)
 
 	@staticmethod
@@ -1923,8 +1984,11 @@ class HostGroup(Group):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'HostGroup'
+
 		return Group.fromHash(hash)
 
 	@staticmethod
@@ -1945,8 +2009,11 @@ class ProductGroup(Group):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ProductGroup'
+
 		return Group.fromHash(hash)
 
 	@staticmethod
@@ -1988,8 +2055,11 @@ class ObjectToGroup(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ObjectToGroup'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2091,8 +2161,11 @@ class LicenseContract(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'LicenseContract'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2165,8 +2238,11 @@ class SoftwareLicense(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'SoftwareLicense'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2194,8 +2270,11 @@ class RetailSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'RetailSoftwareLicense'
+
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2229,8 +2308,11 @@ class OEMSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'OEMSoftwareLicense'
+
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2255,8 +2337,11 @@ class VolumeSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'VolumeSoftwareLicense'
+
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2279,8 +2364,11 @@ class ConcurrentSoftwareLicense(SoftwareLicense):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'ConcurrentSoftwareLicense'
+
 		return SoftwareLicense.fromHash(hash)
 
 	@staticmethod
@@ -2333,8 +2421,11 @@ class LicensePool(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'LicensePool'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2411,8 +2502,11 @@ class AuditSoftwareToLicensePool(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'AuditSoftwareToLicensePool'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2464,8 +2558,11 @@ class SoftwareLicenseToLicensePool(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'SoftwareLicenseToLicensePool'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2536,8 +2633,11 @@ class LicenseOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'LicenseOnClient'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -2645,8 +2745,11 @@ class AuditSoftware(Entity):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'AuditSoftware'
+
 		return Entity.fromHash(hash)
 
 	@staticmethod
@@ -2810,8 +2913,11 @@ class AuditSoftwareOnClient(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'AuditSoftwareOnClient'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
@@ -3276,8 +3382,11 @@ class BootConfiguration(Relationship):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'BootConfiguration'
+
 		return Relationship.fromHash(hash)
 
 	@staticmethod
