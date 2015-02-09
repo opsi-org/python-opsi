@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) - http://www.opsi.org
 
-# Copyright (C) 2006-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2006-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -106,12 +106,12 @@ def getBackendMethodPrefix(Class):
 def decodeIdent(Class, hash):
 	try:
 		if hash['ident']:
-			if type(hash['ident']) is dict:
+			if isinstance(hash['ident'], dict):
 				ident = hash['ident']
 			else:
-				if type(hash['ident']) is (str, unicode):
+				if isinstance(hash['ident'], (str, unicode)):
 					identValues = hash['ident'].split(Class.identSeparator)
-				elif type(hash['ident']) is (tuple, list):
+				elif isinstance(hash['ident'], (tuple, list)):
 					identValues = hash['ident']
 				else:
 					identValues = []
@@ -148,14 +148,14 @@ def objectsDiffer(obj1, obj2, excludeAttributes=None):
 		if not type(value1) is type(value2):
 			return True
 
-		if type(value1) is dict:
+		if isinstance(value1, dict):
 			if len(value1) != len(value2):
 				return True
 
 			for (key, value) in value1.items():
 				if value2.get(key) != value:
 					return True
-		elif type(value1) is list:
+		elif isinstance(value1, list):
 			if len(value1) != len(value2):
 				return True
 
