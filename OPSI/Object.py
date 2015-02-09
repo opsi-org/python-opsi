@@ -104,23 +104,28 @@ def getBackendMethodPrefix(Class):
 
 
 def decodeIdent(Class, hash):
-	if 'ident' in hash and hash['ident']:
-		if type(hash['ident']) is dict:
-			ident = hash['ident']
-		else:
-			if type(hash['ident']) in (str, unicode):
-				identValues = hash['ident'].split(Class.identSeparator)
-			elif type(hash['ident']) is (tuple, list):
-				identValues = hash['ident']
+	try:
+		if hash['ident']:
+			if type(hash['ident']) is dict:
+				ident = hash['ident']
 			else:
-				identValues = []
+				if type(hash['ident']) is (str, unicode):
+					identValues = hash['ident'].split(Class.identSeparator)
+				elif type(hash['ident']) is (tuple, list):
+					identValues = hash['ident']
+				else:
+					identValues = []
 
-			args = mandatoryConstructorArgs(Class)
-			if len(identValues) == len(args):
-				ident = dict(zip(args, identValues))
+				args = mandatoryConstructorArgs(Class)
+				if len(identValues) == len(args):
+					ident = dict(zip(args, identValues))
 
-		del hash['ident']
-		hash.update(ident)
+			del hash['ident']
+			hash.update(ident)
+	except KeyError:
+		# No 'ident' in hash. Can happen.
+		pass
+
 	return hash
 
 
