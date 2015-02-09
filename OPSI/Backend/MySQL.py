@@ -3,7 +3,7 @@
 
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 # All rights reserved.
 
 # This program is free software: you can redistribute it and/or modify
@@ -47,7 +47,7 @@ from OPSI.Types import BackendIOError, BackendBadValueError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (SQL, SQLBackend,
-	SQLBackendObjectModificationTracker, onlySelectAllowed)
+	SQLBackendObjectModificationTracker)
 
 logger = Logger()
 
@@ -236,9 +236,10 @@ class MySQL(SQL):
 			self.close(conn, cursor)
 		return valueSet
 
-	@onlySelectAllowed
 	def getRows(self, query):
 		logger.debug2(u"getRows: %s" % query)
+		self._onlyAllowSelect(query)
+
 		(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 		valueSet = []
 		try:
