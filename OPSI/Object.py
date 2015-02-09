@@ -191,15 +191,18 @@ class BaseObject(object):
 	def getIdent(self, returnType='unicode'):
 		returnType = forceUnicodeLower(returnType)
 		identAttributes = self.getIdentAttributes()
-		identValues = []
-		for attr in identAttributes:
+
+		def getIdentvalue(attribute):
 			try:
-				value = getattr(self, attr)
+				value = getattr(self, attribute)
 				if value is None:
 					value = u''
+
+				return value
 			except AttributeError:
-				value = u''
-			identValues.append(forceUnicode(value))
+				return u''
+
+		identValues = [forceUnicode(getIdentvalue(attribute)) for attribute in identAttributes]
 
 		if returnType == 'list':
 			return identValues
