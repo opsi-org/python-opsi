@@ -327,14 +327,18 @@ class Relationship(BaseObject):
 
 	@staticmethod
 	def fromHash(hash):
-		if 'type' not in hash:
+		try:
+			hash['type']
+		except KeyError:
 			hash['type'] = 'Relationship'
+
 		Class = eval(hash['type'])
 		kwargs = {}
 		decodeIdent(Class, hash)
 		for varname in Class.__init__.func_code.co_varnames[1:]:
 			if varname in hash:
 				kwargs[varname] = hash[varname]
+
 		return Class(**kwargs)
 
 	def clone(self, identOnly=False):
