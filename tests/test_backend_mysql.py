@@ -29,7 +29,6 @@ except ImportError:
     import unittest
 
 import Backends.MySQL as MySQLBackend
-from OPSI.Backend.SQL import onlySelectAllowed
 from BackendTestMixins import BackendTestMixin
 from BackendTestMixins.Backend import MultiThreadingTestMixin
 
