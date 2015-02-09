@@ -2165,8 +2165,8 @@ class SQLBackend(ConfigDataBackend):
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
-				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
-				for key in self._auditHardwareConfig.keys():
+				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
+				for key in self._auditHardwareConfig:
 					if regex.search(key):
 						hardwareClasses.add(key)
 
@@ -2174,7 +2174,7 @@ class SQLBackend(ConfigDataBackend):
 				return results
 
 		if not hardwareClasses:
-			hardwareClasses = set([key for key in self._auditHardwareConfig.keys()])
+			hardwareClasses = set(key for key in self._auditHardwareConfig)
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
@@ -2184,8 +2184,9 @@ class SQLBackend(ConfigDataBackend):
 
 		if 'hardwareClass' in attributes:
 			attributes.remove('hardwareClass')
+
 		for attribute in attributes:
-			if not filter.has_key(attribute):
+			if attribute not in filter:
 				filter[attribute] = None
 
 		if returnHardwareIds and attributes and not 'hardware_id' in attributes:
@@ -2356,20 +2357,20 @@ class SQLBackend(ConfigDataBackend):
 
 	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):
 		hashes = []
-		hardwareClasses = []
+		hardwareClasses = set()
 		hardwareClass = filter.get('hardwareClass')
-		if not hardwareClass in ([], None):
+		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
-				regex = re.compile(u'^' + hwc.replace('*', '.*') + u'$')
-				for key in self._auditHardwareConfig.keys():
+				regex = re.compile(u'^{0}$'.format(hwc.replace('*', '.*')))
+				for key in self._auditHardwareConfig:
 					if regex.search(key):
-						if not key in hardwareClasses:
-							hardwareClasses.append(key)
+						hardwareClasses.add(key)
+
 			if not hardwareClasses:
 				return hashes
+
 		if not hardwareClasses:
-			for key in self._auditHardwareConfig.keys():
-				hardwareClasses.append(key)
+			hardwareClasses = set(key for key in self._auditHardwareConfig)
 
 		for unwanted_key in ('hardwareClass', 'type'):
 			try:
