@@ -2161,7 +2161,7 @@ class SQLBackend(ConfigDataBackend):
 
 	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):
 		results = []
-		hardwareClasses = set([])
+		hardwareClasses = set()
 		hardwareClass = filter.get('hardwareClass')
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
