@@ -586,6 +586,9 @@ class AuditTestsMixin(AuditHardwareMixin, AuditSoftwareMixin):
             auditHardwareOnHosts, len(self.auditHardwareOnHosts))
 
     def testDeletingHostShouldDeleteHardwareAuditData(self):
+        """
+        Deleting a host should delete it's audit data.
+        """
         self.setUpAuditHardwareOnHosts()
 
         self.backend.host_createObjects(self.client1)
