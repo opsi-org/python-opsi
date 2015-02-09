@@ -46,7 +46,7 @@ from OPSI.Logger import Logger
 from OPSI.Types import BackendIOError, BackendBadValueError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
-from OPSI.Backend.SQL import (SQL, SQLBackend,
+from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
 logger = Logger()
@@ -238,7 +238,7 @@ class MySQL(SQL):
 
 	def getRows(self, query):
 		logger.debug2(u"getRows: %s" % query)
-		self._onlyAllowSelect(query)
+		onlyAllowSelect(query)
 
 		(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
 		valueSet = []

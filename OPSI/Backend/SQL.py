@@ -57,6 +57,11 @@ def timeQuery(query):
 	logger.debug(u'ended query (duration: {1}) {0}'.format(query, datetime.now() - startingTime))
 
 
+def onlyAllowSelect(query):
+	if not forceUnicodeLower(query).strip().startswith('select'):
+		raise ValueError('Only queries to SELECT data are allowed.')
+
+
 class SQL(object):
 
 	AUTOINCREMENT = 'AUTO_INCREMENT'
@@ -217,11 +222,6 @@ class SQLBackend(ConfigDataBackend):
 		"""
 		if not self._sqlBackendModule:
 			raise BackendModuleDisabledError(u"SQL backend module disabled")
-
-	@staticmethod
-	def _onlyAllowSelect(query):
-		if not forceUnicodeLower(query).strip().startswith('select'):
-			raise ValueError('Only queries to SELECT data are allowed.')
 
 	def _filterToSql(self, filter={}):
 		"""
@@ -2493,14 +2493,14 @@ class SQLBackend(ConfigDataBackend):
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def getData(self, query):
 		self._requiresEnabledSQLBackendModule()
-		self._onlyAllowSelect(query)
+		onlyAllowSelect(query)
 
 		with timeQuery(query):
 			return self._sql.getSet(query)
 
 	def getRawData(self, query):
 		self._requiresEnabledSQLBackendModule()
-		self._onlyAllowSelect(query)
+		onlyAllowSelect(query)
 
 		with timeQuery(query):
 			return self._sql.getRows(query)
