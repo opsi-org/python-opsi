@@ -60,6 +60,7 @@ class GroupsMixin(object):
     def createGroupsOnBackend(self):
         self.backend.group_createObjects(self.groups)
 
+
 class GroupTestsMixin(GroupsMixin):
     def testGroupMethods(self):
         self.setUpGroups()
