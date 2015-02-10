@@ -554,26 +554,20 @@ class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
                     print(u"Thread %s started" % self)
                     time.sleep(1)
                     self._backendTest.backend.host_getObjects()
-                    self._backendTest.backend.host_deleteObjects(
-                        self._backendTest.client1)
+                    self._backendTest.backend.host_deleteObjects(self._backendTest.client1)
+
                     self._backendTest.backend.host_getObjects()
-                    self._backendTest.backend.host_deleteObjects(
-                        self._backendTest.client2)
-                    self._backendTest.backend.host_createObjects(
-                        self._backendTest.client2)
-                    self._backendTest.backend.host_createObjects(
-                        self._backendTest.client1)
-                    self._backendTest.backend.objectToGroup_createObjects(
-                        self._backendTest.objectToGroup1)
-                    self._backendTest.backend.objectToGroup_createObjects(
-                        self._backendTest.objectToGroup2)
+                    self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
+
+                    self._backendTest.backend.host_createObjects(self._backendTest.client2)
+                    self._backendTest.backend.host_createObjects(self._backendTest.client1)
+                    self._backendTest.backend.objectToGroup_createObjects(self._backendTest.objectToGroup1)
+                    self._backendTest.backend.objectToGroup_createObjects(self._backendTest.objectToGroup2)
+
                     self._backendTest.backend.host_getObjects()
-                    self._backendTest.backend.host_createObjects(
-                        self._backendTest.client1)
-                    self._backendTest.backend.host_deleteObjects(
-                        self._backendTest.client2)
-                    self._backendTest.backend.host_createObjects(
-                        self._backendTest.client1)
+                    self._backendTest.backend.host_createObjects(self._backendTest.client1)
+                    self._backendTest.backend.host_deleteObjects(self._backendTest.client2)
+                    self._backendTest.backend.host_createObjects(self._backendTest.client1)
                     self._backendTest.backend.host_getObjects()
                     print(u"Thread %s done" % self)
                 except Exception as e:
