@@ -31,6 +31,7 @@ import time
 
 from .Clients import ClientsMixin
 from .Hosts import HostsMixin
+from .Groups import GroupsMixin, ObjectToGroupsMixin
 
 from OPSI.Types import BackendError
 
@@ -531,15 +532,17 @@ class BackendPerformanceTestMixin(object):
             ((time.time() - start), nrOfproductOnClients))
 
 
-class MultiThreadingTestMixin(HostsMixin, ClientsMixin):
-    NUMBER_OF_THREADS = 50
+class MultiThreadingTestMixin(HostsMixin, ClientsMixin, ObjectToGroupsMixin):
+    NUMBER_OF_THREADS = 1
 
     def testMultithreading(self):
         self.setUpHosts()
         self.setUpClients()
+        self.setUpGroups()
+        self.setUpObjectToGroups()
 
         self.createHostsOnBackend()
-        self.backend.group_createObjects(self.groups)
+        self.createGroupsOnBackend()
 
         class MultiThreadTest(threading.Thread):
             def __init__(self, backendTest):
