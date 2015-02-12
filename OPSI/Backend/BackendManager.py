@@ -725,13 +725,13 @@ class BackendAccessControl(object):
 
 			def __call__(self, auth, query_list, userData=None):
 				response = []
-				for (query, type) in query_list:
-					logger.debug(u"PAM conversation: query '%s', type '%s'" % (query, type))
-					if type == PAM.PAM_PROMPT_ECHO_ON:
+				for (query, qtype) in query_list:
+					logger.debug(u"PAM conversation: query '%s', type '%s'" % (query, qtype))
+					if qtype == PAM.PAM_PROMPT_ECHO_ON:
 						response.append((self.user, 0))
-					elif type == PAM.PAM_PROMPT_ECHO_OFF:
+					elif qtype == PAM.PAM_PROMPT_ECHO_OFF:
 						response.append((self.password, 0))
-					elif type in (PAM.PAM_ERROR_MSG, PAM.PAM_TEXT_INFO):
+					elif qtype in (PAM.PAM_ERROR_MSG, PAM.PAM_TEXT_INFO):
 						response.append(('', 0))
 					else:
 						return None
