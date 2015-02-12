@@ -766,7 +766,7 @@ class BackendAccessControl(object):
 				for group in groups:
 					if self._username in group[3]:
 						gn = forceUnicode(group[0])
-						if not gn in self._userGroups:
+						if gn not in self._userGroups:
 							self._userGroups.append(gn)
 							logger.debug(u"User '%s' is member of group '%s'" % (self._username, gn))
 		except Exception as e:
