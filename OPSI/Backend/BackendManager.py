@@ -555,7 +555,7 @@ class BackendAccessControl(object):
 					self._forceGroups = forceUnicodeList(value)
 
 		if not self._acl:
-			self._acl = [ ['.*', [ {'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []} ] ] ]
+			self._acl = [['.*', [{'type': u'sys_group', 'ids': [u'opsiadmin'], 'denyAttributes': [], 'allowAttributes': []}]]]
 		if not self._username:
 			raise BackendAuthenticationError(u"No username specified")
 		if not self._password:
