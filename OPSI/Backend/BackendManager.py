@@ -717,27 +717,27 @@ class BackendAccessControl(object):
 		'''
 		logger.confidential(u"Trying to authenticate user '%s' with password '%s' by PAM" % (self._username, self._password))
 
-
 		class AuthConv:
 			''' Handle PAM conversation '''
-			def __init__(_, user, password):
-				_.user = user
-				_.password = password
+			def __init__(self, user, password):
+				self.user = user
+				self.password = password
 
-			def __call__(_, auth, query_list, userData=None):
+			def __call__(self, auth, query_list, userData=None):
 				response = []
-				for i in range(len(query_list)):
-					(query, type) = query_list[i]
+				for (query, type) in query_list:
 					logger.debug(u"PAM conversation: query '%s', type '%s'" % (query, type))
 					if (type == PAM.PAM_PROMPT_ECHO_ON):
-						response.append((_.user, 0))
+						response.append((self.user, 0))
 					elif (type == PAM.PAM_PROMPT_ECHO_OFF):
-						response.append((_.password, 0))
+						response.append((self.password, 0))
 					elif (type == PAM.PAM_ERROR_MSG) or (type == PAM.PAM_TEXT_INFO):
 						response.append(('', 0))
 					else:
 						return None
+
 				return response
+
 		try:
 			# Create instance
 			auth = PAM.pam()
