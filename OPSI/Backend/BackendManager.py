@@ -760,7 +760,7 @@ class BackendAccessControl(object):
 				self._userGroups = self._forceGroups
 				logger.info(u"Forced groups for user '%s': %s" % (self._username, self._userGroups))
 			else:
-				self._userGroups = [ forceUnicode( grp.getgrgid( pwd.getpwnam(self._username)[3] )[0] ) ]
+				self._userGroups = [forceUnicode(grp.getgrgid(pwd.getpwnam(self._username)[3])[0])]
 				logger.debug(u"Primary group of user '%s' is '%s'" % (self._username, self._userGroups[0]))
 				groups = grp.getgrall()
 				for group in groups:
