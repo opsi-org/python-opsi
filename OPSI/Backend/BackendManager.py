@@ -727,11 +727,11 @@ class BackendAccessControl(object):
 				response = []
 				for (query, type) in query_list:
 					logger.debug(u"PAM conversation: query '%s', type '%s'" % (query, type))
-					if (type == PAM.PAM_PROMPT_ECHO_ON):
+					if type == PAM.PAM_PROMPT_ECHO_ON:
 						response.append((self.user, 0))
-					elif (type == PAM.PAM_PROMPT_ECHO_OFF):
+					elif type == PAM.PAM_PROMPT_ECHO_OFF:
 						response.append((self.password, 0))
-					elif (type == PAM.PAM_ERROR_MSG) or (type == PAM.PAM_TEXT_INFO):
+					elif type in (PAM.PAM_ERROR_MSG, PAM.PAM_TEXT_INFO):
 						response.append(('', 0))
 					else:
 						return None
