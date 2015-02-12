@@ -751,7 +751,7 @@ class BackendAccessControl(object):
 			#      pam_access: couldn't get the tty name
 			try:
 				auth.set_item(PAM.PAM_TTY, '/dev/null')
-			except:
+			except Exception:
 				pass
 			auth.authenticate()
 			auth.acct_mgmt()
