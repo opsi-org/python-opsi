@@ -523,17 +523,17 @@ class BackendAccessControl(object):
 		self._host = None
 		self._authenticated = False
 
-		if (DISTRIBUTOR.lower().find('suse') != -1):
+		if 'suse' in DISTRIBUTOR.lower():
 			self._pamService = 'sshd'
-		elif (DISTRIBUTOR.lower().find('centos') != -1) or (DISTRIBUTOR.lower().find('scientific') != -1) or (DISTRIBUTOR.lower().find('sme') != -1):
+		elif 'centos' in DISTRIBUTOR.lower() or 'scientific' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
-		elif (DISTRIBUTOR.lower().find('redhat') != -1):
+		elif 'redhat' in DISTRIBUTOR.lower():
 			self._pamService = 'system-auth'
-			if (DISTRELEASE.startswith('6.')):
+			if DISTRELEASE.startswith('6.'):
 				self._pamService = 'password-auth'
 
 		if os.path.exists("/etc/pam.d/opsi-auth"):
-			# TODO: does this need to be included in the elif-part above?
+			# Prefering our own - if present.
 			self._pamService = 'opsi-auth'
 
 		for (option, value) in kwargs.items():
