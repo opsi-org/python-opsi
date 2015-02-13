@@ -561,7 +561,7 @@ class LoggerImplementation:
 								specialConfig = c
 								break
 						f = f.f_back
-			except:
+			except Exception:
 				# call stack not deep enough?
 				pass
 
