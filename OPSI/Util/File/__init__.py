@@ -33,6 +33,7 @@ __version__ = "4.0.6.1"
 
 import codecs
 import ConfigParser
+import functools
 import locale
 import os
 import re
@@ -62,8 +63,11 @@ from OPSI.Util import ipAddressInNetwork
 logger = Logger()
 
 
-def requiresParsing(function, *args, **kwargs):
-	# Decorator that calls parse() on unparsed configs.
+def requiresParsing(function):
+	"""
+	Decorator that calls parse() on unparsed configs.
+	"""
+	@functools.wraps(function)
 	def parsedFile(self, *args, **kwargs):
 		if not self._parsed:
 			self.parse()
