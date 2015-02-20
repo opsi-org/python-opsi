@@ -568,7 +568,7 @@ class RemoteService(Service, JSONRPCBackend):
 		def _connect(service):
 			JSONRPCBackend.connect(service)
 			service.refresh()
-		logger.debug(u"Connecting to service %s" %self.url )
+		logger.debug(u"Connecting to service %s" %self.url)
 
 		self.multiplexBackend._threadPool.addJob(function=_connect, callback=self._onConnect, service=self)
 
