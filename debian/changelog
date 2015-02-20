@@ -1,6 +1,6 @@
 python-opsi (4.0.6.1-1) experimental; urgency=low
 
-  * Reverting the changes made for UCS in OPSI.System.Posix.locateDHCPDinit
+  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
   * setup.py: Exclude test folders.
   * objectToBeautifiedText: indent with only four spaces
   * OPSI/Object.py overhauled module
@@ -43,13 +43,11 @@ python-opsi (4.0.6.1-1) experimental; urgency=low
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 05 Feb 2015 09:46:50 +0100
 
-python-opsi (4.0.5.16-1) experimental; urgency=low
+ python-opsi (4.0.5.16-1) stable; urgency=low
 
-  * OPSI.Util.Repository: correctly set number of retries for dynamic bandwith
-  * OPSI.System.Posix.locateDHCPDinit: Prefer univention-dhcp over
-    isc-dhcp-server to avoid problems on UCS 3.2
+  * JSONRPCBackend: Fix build long authorization headers.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 10 Nov 2014 10:17:09 +0100
+ -- Erol Ueluekmen <e.ueluekmen@uib.de>  Thu, 19 Feb 2015 13:23:19 +0100
 
 python-opsi (4.0.5.15-1) stable; urgency=low
 
