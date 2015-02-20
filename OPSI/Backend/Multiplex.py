@@ -590,7 +590,7 @@ class RemoteService(Service, JSONRPCBackend):
 		for host in jsonrpc1.waitForResult():
 			if host.getType() in ('OpsiConfigserver', 'OpsiDepotserver'):
 				self.depots.append(host)
-			elif host.getType() in ('OpsiClient'):
+			elif host.getType() == 'OpsiClient':
 				self.clients.append(host)
 		self.licensePools = jsonrpc2.waitForResult()
 
