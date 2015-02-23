@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -23,6 +23,11 @@ Testing BackendDispatcher.
 :license: GNU Affero General Public License version 3
 """
 
+import grp
+import os
+import pwd
+import shutil
+import tempfile
 import unittest
 
 from OPSI.Backend.BackendManager import BackendDispatcher
@@ -33,10 +38,70 @@ class BackendDispatcherTestCase(unittest.TestCase):
     def testBackendCreationFailsIfConfigMissing(self):
         self.assertRaises(BackendConfigurationError, BackendDispatcher)
 
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchconfigfile='')
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchconfigfile='nope')
+        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfigfile='')
+        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfigfile='nope')
 
-        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchconfig='')
+        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfig='')
+
+        self.assertRaises(BackendConfigurationError, BackendDispatcher, dispatchConfig=[[u'.*', [u'file']]])
+
+
+class BackendDispatcherWithFilesTestCase(unittest.TestCase):
+    """
+    Testing the BackendDispatcher with files on the disk.
+
+    This will create files that look like an actual backend to simulate
+    correct loading of backend information.
+    """
+    def setUp(self):
+        self.testDir = tempfile.mkdtemp()
+        self.backendDir = os.path.join(self.testDir, 'backends')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def testLoadingDispatchConfigFailsIfBackendConfigMissing(self):
+        self.assertRaises(
+            BackendConfigurationError,
+            BackendDispatcher,
+            dispatchConfig=[[u'.*', [u'file']]],
+            backendConfigDir=self.backendDir
+        )
+
+        os.mkdir(self.backendDir)
+        self.assertRaises(
+            BackendConfigurationError,
+            BackendDispatcher,
+            dispatchConfig=[[u'.*', [u'file']]],
+            backendConfigDir=self.backendDir
+        )
+
+    def testLoadingDispatchConfig(self):
+        self.createTestBackendConfiguration()
+
+        dispatcher = BackendDispatcher(dispatchConfig=[[u'.*', [u'file']]],
+                                        backendConfigDir=self.backendDir)
+
+    def createTestBackendConfiguration(self):
+        os.mkdir(self.backendDir)
+
+        currentGroupId = os.getgid()
+        groupName = grp.getgrgid(currentGroupId)[0]
+        userName = pwd.getpwuid(os.getuid())[0]
+
+        with open(os.path.join(self.backendDir, 'file.conf'), 'w') as config:
+            new_configuration = """
+# -*- coding: utf-8 -*-
+
+module = 'File'
+config = {{
+    "fileGroupName": u"{groupName}",
+    "fileUserName": u"{userName}",
+}}
+""".format(groupName=groupName, userName=userName)
+
+            config.write(new_configuration)
 
 
 if __name__ == '__main__':
