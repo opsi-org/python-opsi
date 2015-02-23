@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013-2014 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -70,6 +70,17 @@ audit.*            : mysql
 			usedBackends
 		)
 
+	def testNotFailingOnInvalidLines(self):
+		"""
+		Reading invalid lines in a config must not lead to an exception.
+		"""
+		exampleConfig = '''
+this does not work
+'''
+
+		dispatchConfig = BackendDispatchConfigFile('not_reading_file')
+		dispatchConfig.parse(lines=exampleConfig.split('\n'))
+
 
 class OpsiConfigFileTestCase(unittest.TestCase):
 	EXAMPLE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
@@ -102,4 +113,3 @@ class OpsiConfigFileTestCase(unittest.TestCase):
 	def testGettingDefaultPigzStatus(self):
 		self.config.parse([''])
 		self.assertEquals(True, self.config.isPigzEnabled())
-
