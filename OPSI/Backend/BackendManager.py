@@ -206,7 +206,7 @@ class BackendManager(ExtendedBackend):
 
 		if dispatch:
 			logger.info(u"* BackendManager is creating BackendDispatcher")
-			self._backend = BackendDispatcher(context = self, **kwargs)
+			self._backend = BackendDispatcher(context=self, **kwargs)
 			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
 
 		if messageBusNotifier:
@@ -220,9 +220,11 @@ class BackendManager(ExtendedBackend):
 			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
 			self._backend = ExtendedConfigDataBackend(self._backend)
 			# self._backend is now an ExtendedConfigDataBackend
+
 		if depotBackend:
 			logger.info(u"* BackendManager is creating DepotserverBackend")
 			self._backend = DepotserverBackend(self._backend)
+
 		if hostControlBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
 			hcc = {}
@@ -231,6 +233,7 @@ class BackendManager(ExtendedBackend):
 			except Exception as e:
 				logger.error(e)
 			self._backend = HostControlBackend(self._backend, **hcc)
+
 		if hostControlSafeBackend:
 			logger.info(u"* BackendManager is creating HostControlBackend")
 			hcc = {}
@@ -239,9 +242,11 @@ class BackendManager(ExtendedBackend):
 			except Exception as e:
 				logger.error(e)
 			self._backend = HostControlSafeBackend(self._backend, **hcc)
+
 		if accessControl:
 			logger.info(u"* BackendManager is creating BackendAccessControl")
-			self._backend = BackendAccessControl(backend = self._backend, **kwargs)
+			self._backend = BackendAccessControl(backend=self._backend, **kwargs)
+
 		if extensionConfigDir or extensionClass:
 			logger.info(u"* BackendManager is creating BackendExtender")
 			self._backend = BackendExtender(self._backend, **kwargs)
@@ -309,16 +314,20 @@ class BackendDispatcher(Backend):
 		if self._dispatchConfigFile:
 			logger.info(u"Loading dispatch config file '%s'" % self._dispatchConfigFile)
 			self.__loadDispatchConfig()
+
 		if not self._dispatchConfig:
 			raise BackendConfigurationError(u"Dispatcher not configured")
+
 		self.__loadBackends()
 		self._createInstanceMethods()
 
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
 			raise BackendConfigurationError(u"No dispatch config file defined")
+
 		if not os.path.exists(self._dispatchConfigFile):
 			raise BackendConfigurationError(u"Dispatch config file '%s' not found" % self._dispatchConfigFile)
+
 		try:
 			self._dispatchConfig = BackendDispatchConfigFile(self._dispatchConfigFile).parse()
 			logger.debug(u"Read dispatch config from file '%s':" % self._dispatchConfigFile)
@@ -330,6 +339,7 @@ class BackendDispatcher(Backend):
 		backends = set()
 		if not self._backendConfigDir:
 			raise BackendConfigurationError(u"Backend config dir not given")
+
 		if not os.path.exists(self._backendConfigDir):
 			raise BackendConfigurationError(u"Backend config dir '%s' not found" % self._backendConfigDir)
 
