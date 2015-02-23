@@ -87,7 +87,6 @@ class JsonRpc(object):
 		return round(self.ended - self.started, 3)
 
 	def execute(self, result=None):
-		# Execute rpc
 		self.result = None
 		params = [param for param in self.params]
 		self.started = time.time()
