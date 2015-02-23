@@ -80,8 +80,13 @@ class BackendDispatcherWithFilesTestCase(unittest.TestCase):
     def testLoadingDispatchConfig(self):
         self.createTestBackendConfiguration()
 
-        dispatcher = BackendDispatcher(dispatchConfig=[[u'.*', [u'file']]],
+        dispatchConfig = [[u'.*', [u'file']]]
+
+        dispatcher = BackendDispatcher(dispatchConfig=dispatchConfig,
                                         backendConfigDir=self.backendDir)
+
+        self.assertTrue('file' in dispatcher.dispatcher_getBackendNames())
+        self.assertEquals(dispatchConfig, dispatcher.dispatcher_getConfig())
 
     def createTestBackendConfiguration(self):
         os.mkdir(self.backendDir)
