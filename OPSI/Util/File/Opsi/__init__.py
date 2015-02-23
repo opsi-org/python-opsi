@@ -465,7 +465,7 @@ class PackageControlFile(TextFile):
 					value = forceBool(value)
 
 			elif (sectionType == 'product' and key in \
-					('id', 'type', 'name', 	'description', 'advice',
+					('id', 'type', 'name', 'description', 'advice',
 					 'version', 'packageversion', 'priority',
 					 'licenserequired', 'productclasses', 'pxeconfigtemplate',
 					 'setupscript', 'uninstallscript', 'updatescript',
@@ -533,8 +533,7 @@ class PackageControlFile(TextFile):
 				elif key == 'requirementtype':
 					value = forceRequirementType(value)
 
-			elif (sectionType == 'productproperty' and key in \
-					('type', 'name', 'default', 'values', 'description', 'editable', 'multivalue')):
+			elif sectionType == 'productproperty' and key in ('type', 'name', 'default', 'values', 'description', 'editable', 'multivalue'):
 				option = key
 				if key == 'type':
 					value = forceProductPropertyType(value)
@@ -667,7 +666,7 @@ class PackageControlFile(TextFile):
 			description=product.get('description'),
 			advice=product.get('advice'),
 			productClassIds=product.get('productclasses'),
-			windowsSoftwareIds=self._sections.get('windows',[{}])[0].get('softwareids', []),
+			windowsSoftwareIds=self._sections.get('windows', [{}])[0].get('softwareids', []),
 			changelog=self._sections.get('changelog')
 		)
 		if isinstance(self._product, NetbootProduct) and product.get('pxeconfigtemplate') is not None:
@@ -1048,7 +1047,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		self._filemap = {}
 
-		assert(self.mode and str(self.mode)[0] in ("r", "w"))
+		assert self.mode and str(self.mode)[0] in ("r", "w")
 		tarfile.TarFile.__init__(self, name, self.mode, fileobj=fileobj, **kwargs)
 
 		if self.mode.startswith("w"):
