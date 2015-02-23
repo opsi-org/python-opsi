@@ -23,6 +23,8 @@ Testing BackendDispatcher.
 :license: GNU Affero General Public License version 3
 """
 
+from __future__ import absolute_import
+
 import grp
 import os
 import pwd
@@ -32,6 +34,8 @@ import unittest
 
 from OPSI.Backend.BackendManager import BackendDispatcher
 from OPSI.Types import BackendConfigurationError
+
+from .Backends.File import FileBackendMixin
 
 
 class BackendDispatcherTestCase(unittest.TestCase):
@@ -77,36 +81,41 @@ class BackendDispatcherWithFilesTestCase(unittest.TestCase):
             backendConfigDir=self.backendDir
         )
 
-    def testLoadingDispatchConfig(self):
-        self.createTestBackendConfiguration()
 
+class BackendDispatcherWithBackendTestCase(unittest.TestCase, FileBackendMixin):
+    """
+    Testing the BackendDispatcher with files on the disk.
+
+    This will create files that look like an actual backend to simulate
+    correct loading of backend information.
+    """
+    def setUp(self):
+        self._fileBackendConfig = {}
+        self._fileTempDir = self._copyOriginalBackendToTemporaryLocation()
+
+        self.setUpBackend()
+
+    def tearDown(self):
+        self.tearDownBackend()
+
+    def testLoadingDispatchConfig(self):
         dispatchConfig = [[u'.*', [u'file']]]
 
-        dispatcher = BackendDispatcher(dispatchConfig=dispatchConfig,
-                                        backendConfigDir=self.backendDir)
+        dispatcher = BackendDispatcher(
+            dispatchConfigFile=self._fileBackendConfig['dispatchConfig'],
+            backendConfigDir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends')
+        )
 
         self.assertTrue('file' in dispatcher.dispatcher_getBackendNames())
         self.assertEquals(dispatchConfig, dispatcher.dispatcher_getConfig())
 
-    def createTestBackendConfiguration(self):
-        os.mkdir(self.backendDir)
+    def testDispatchingMethodAndReceivingResults(self):
+        dispatcher = BackendDispatcher(
+            dispatchConfigFile=self._fileBackendConfig['dispatchConfig'],
+            backendConfigDir=os.path.join(self._fileTempDir, 'etc', 'opsi', 'backends')
+        )
 
-        currentGroupId = os.getgid()
-        groupName = grp.getgrgid(currentGroupId)[0]
-        userName = pwd.getpwuid(os.getuid())[0]
-
-        with open(os.path.join(self.backendDir, 'file.conf'), 'w') as config:
-            new_configuration = """
-# -*- coding: utf-8 -*-
-
-module = 'File'
-config = {{
-    "fileGroupName": u"{groupName}",
-    "fileUserName": u"{userName}",
-}}
-""".format(groupName=groupName, userName=userName)
-
-            config.write(new_configuration)
+        self.assertEquals([], dispatcher.host_getObjects())
 
 
 if __name__ == '__main__':
