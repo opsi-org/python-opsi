@@ -1014,8 +1014,8 @@ depot where the method is.
 					packageVersion=productDependency.packageVersion):
 
 				raise BackendReferentialIntegrityError(
-					u"Product with id '%s', productVersion '%s', "
-					u"packageVersion '%s' not found".format(
+					u"Product with id '{0}', productVersion '{1}', "
+					u"packageVersion '{2}' not found".format(
 						productDependency.productId,
 						productDependency.productVersion,
 						productDependency.packageVersion
