@@ -264,7 +264,7 @@ This defaults to ``self``.
 			except Exception as err:
 				raise Exception(
 					u"Testing match of filter '{0}' of attribute '{1}' with "
-					u"value '{2}' failed: {3}".format(
+					u"value '{2}' failed: {error}".format(
 						filter[attribute], attribute, value, error=err
 					)
 				)
