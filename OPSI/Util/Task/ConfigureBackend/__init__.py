@@ -74,6 +74,9 @@ on to. Defaults to logger.notice
 	:type notificationFunction: func
 	"""
 	def correctBooleans(text):
+		"""
+		Creating correct JSON booleans - they are all lowercase.
+		"""
 		return text.replace("true", "True").replace("false", "False")
 
 	if notificationFunction is None:
