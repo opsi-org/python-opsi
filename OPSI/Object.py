@@ -3047,8 +3047,11 @@ class AuditHardware(Entity):
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
 			infos.append(u"hardwareClass '{0}'".format(hardwareClass))
-		if hasattr(self, 'name'):
+
+		try:
 			infos.append(u"name '{0}'".format(self.name))
+		except AttributeError:
+			pass
 
 		return u"<{0}>".format(', '.join(infos))
 
@@ -3228,8 +3231,11 @@ class AuditHardwareOnHost(Relationship):
 		hardwareClass = self.getHardwareClass()
 		if hardwareClass:
 			additional.append(u"hardwareClass='{0}'".format(hardwareClass))
-		if hasattr(self, 'name'):
+
+		try:
 			additional.append(u"name='{0}'".format(forceUnicode(self.name)))
+		except AttributeError:
+			pass
 
 		return u"<{type} {additional}>".format(
 			type=self.getType(),
