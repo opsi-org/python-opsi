@@ -175,8 +175,9 @@ def initializeDatabase(dbAdminUser, dbAdminPass, config,
 							 u" all rights on '{database}'".format(**config))
 		db.query(u'USE {database};'.format(**config))
 		db.query(
+			(
 				u'GRANT ALL ON {1[database]}.* TO {1[username]}@{0} '
-				u'IDENTIFIED BY \'{1[password]}\''.format(
+				u'IDENTIFIED BY \'{1[password]}\'').format(
 					host,
 					config,
 			)
