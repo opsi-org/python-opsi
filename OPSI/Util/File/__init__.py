@@ -911,7 +911,7 @@ class PciidsFile(ConfigFile):
 					else:
 						(deviceId, deviceName) = line.lstrip().split(None, 1)
 						currentDeviceId = deviceId = forceHardwareDeviceId(deviceId)
-						if not self._subDevices[vendorId].has_key(deviceId):
+						if deviceId not in self._subDevices[vendorId]:
 							self._subDevices[vendorId][deviceId] = {}
 						self._devices[currentVendorId][deviceId] = deviceName.strip()
 				else:
