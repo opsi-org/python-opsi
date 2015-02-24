@@ -1661,13 +1661,17 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 			if result1IdentIndex == -1:
 				raise BackendBadValueError(u"Failed to combine partial results %s(%s | %s) %s(%s | %s)" \
-					% (result1['objectClass'], result1['identAttributes'], result1['foreignIdAttributes'],
-					   result2['objectClass'], result2['identAttributes'], result2['foreignIdAttributes']))
+					% (result1['objectClass'], result1['identAttributes'],
+						result1['foreignIdAttributes'], result2['objectClass'],
+						result2['identAttributes'],
+						result2['foreignIdAttributes']))
 
 			logger.info(u"Using attributes %s.%s and %s.%s to combine results (%s)" \
-				% (result1['objectClass'], result1['identAttributes'][result1IdentIndex],
-				   result2['objectClass'], result2['identAttributes'][result2IdentIndex],
-				   operator))
+				% (result1['objectClass'],
+					result1['identAttributes'][result1IdentIndex],
+					result2['objectClass'],
+					result2['identAttributes'][result2IdentIndex],
+					operator))
 
 			values1 = [v[result1IdentIndex] for v in result1['identValues']]
 			values2 = [v[result2IdentIndex] for v in result2['identValues']]
