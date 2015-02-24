@@ -413,27 +413,20 @@ class BackendDispatcher(Backend):
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug(u"Dispatching method '%s' to backends: %s" % (methodName, methodBackends))
 		result = None
-		objectIdents = []
+
 		for methodBackend in methodBackends:
 			meth = getattr(self._backends[methodBackend]["instance"], methodName)
-			res =  meth(**kwargs)
+			res = meth(**kwargs)
 			if type(res) is types.ListType:
-				# Remove duplicates
-				newRes = []
-				for r in res:
-					if isinstance(r, BaseObject):
-						ident = r.getIdent()
-						if ident in objectIdents:
-							continue
-						objectIdents.append(ident)
-					newRes.append(r)
-				res = newRes
+				res = [r for r in res]
+
 			if type(result) is types.ListType and type(res) is types.ListType:
 				result.extend(res)
 			elif type(result) is types.DictType and type(res) is types.DictType:
 				result.update(res)
 			elif res is not None:
 				result = res
+
 		return result
 
 	def backend_setOptions(self, options):
