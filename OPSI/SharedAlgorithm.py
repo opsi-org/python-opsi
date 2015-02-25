@@ -27,14 +27,14 @@ Algorithms to get a product order for an installation.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6'
-
 from collections import defaultdict
 
 from OPSI.Logger import Logger
 from OPSI.Object import ProductOnClient
 from OPSI.Types import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
+
+__version__ = '4.0.6'
 
 logger = Logger()
 

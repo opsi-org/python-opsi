@@ -32,8 +32,6 @@ or to JSON, working with librsync and more.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import base64
 import codecs
 import json
@@ -56,6 +54,8 @@ except ImportError:
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
 						forceIPAddress, forceNetworkAddress, forceUnicode)
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

@@ -29,8 +29,6 @@ parsing files for information.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = "4.0.6.1"
-
 import codecs
 import ConfigParser
 import functools
@@ -59,6 +57,8 @@ from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
 	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
+
+__version__ = "4.0.6.1"
 
 logger = Logger()
 

@@ -29,8 +29,6 @@ As an example this contains classes for hosts, products, configurations.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import inspect
 
 from OPSI.Logger import Logger
@@ -49,6 +47,8 @@ from OPSI.Types import (forceActionProgress, forceActionRequest,
 	forceRequirementType, forceSoftwareLicenseId, forceUnicode,
 	forceUnicodeList, forceUnicodeLower, forceUnsignedInt, forceUrl)
 from OPSI.Util import fromJson, toJson, generateOpsiHostKey, timestamp
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

@@ -28,14 +28,14 @@ opsi python library - Thread
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import threading
 import inspect
 import ctypes
 from Queue import Queue, Empty
 
 from OPSI.Logger import Logger
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 GlobalPool = None

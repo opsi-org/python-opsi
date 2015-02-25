@@ -30,8 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.6.1'
-
 import difflib
 import locale
 import os
@@ -68,6 +66,8 @@ from datetime import datetime
 
 from OPSI.Logger import *
 from OPSI.Types import *
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 hooks = []

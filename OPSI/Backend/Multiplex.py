@@ -28,8 +28,6 @@ locations.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import functools
 import sys
 import threading
@@ -42,6 +40,8 @@ from OPSI.Util.Thread import *
 from OPSI.Logger import Logger
 from OPSI.Types import *
 from OPSI.Object import *
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

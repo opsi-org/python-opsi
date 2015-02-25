@@ -32,9 +32,6 @@ This include functionality for using Tar-Files and their compression.
    Control the usage of pigz via ``PIGZ_ENABLED``
 """
 
-
-__version__ = "4.0.6.1"
-
 import locale
 import os
 import re
@@ -50,6 +47,8 @@ from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
+
+__version__ = "4.0.6.1"
 
 logger = Logger()
 

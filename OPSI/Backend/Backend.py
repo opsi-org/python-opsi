@@ -30,8 +30,6 @@ This holds the basic backend classes.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import base64
 import codecs
 import collections
@@ -45,6 +43,8 @@ import types
 import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
+
+__version__ = '4.0.6.2'
 
 if os.name == 'posix':
 	with warnings.catch_warnings():

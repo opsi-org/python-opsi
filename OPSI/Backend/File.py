@@ -27,8 +27,6 @@ This backend stores all it's data in plaintext files.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import grp
 import os
 import pwd
@@ -45,6 +43,8 @@ from OPSI.Util import toJson, fromJson, getfqdn
 from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import OpsiConfFile, HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

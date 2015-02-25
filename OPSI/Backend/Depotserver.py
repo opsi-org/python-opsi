@@ -25,8 +25,6 @@ Depotserver backend.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import os
 
 from OPSI.Logger import Logger
@@ -41,6 +39,8 @@ from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util import (compareVersions, getfqdn, md5sum, librsyncSignature,
 	librsyncPatchFile, librsyncDeltaFile, removeDirectory)
 from OPSI.Util.File import ZsyncFile
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

@@ -25,8 +25,6 @@ Products.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import os
 import re
 import shutil
@@ -42,6 +40,8 @@ from OPSI.Util import randomString, findFiles, removeDirectory
 from OPSI.System import execute
 from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
 	forceUnicode)
+
+__version__ = '4.0.6.1'
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile

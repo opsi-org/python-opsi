@@ -27,7 +27,6 @@ This backend can be used to control hosts.
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
-__version__ = '4.0.6.1'
 
 import base64
 import httplib
@@ -44,6 +43,8 @@ from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Util import fromJson, toJson
 from OPSI.Util.Thread import KillableThread
 from OPSI.Util.HTTP import non_blocking_connect_https
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

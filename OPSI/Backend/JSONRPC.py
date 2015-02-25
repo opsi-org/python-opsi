@@ -30,8 +30,6 @@ This backend executes the calls on a remote backend via JSONRPC.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import base64
 import json
 import new
@@ -53,6 +51,7 @@ from OPSI.Backend.Backend import Backend, DeferredCall
 from OPSI.Util import serialize, deserialize
 from OPSI.Util.HTTP import urlsplit, getSharedConnectionPool
 
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

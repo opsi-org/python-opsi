@@ -28,8 +28,6 @@ the daemon afterwards.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import socket
 import threading
 import os
@@ -42,6 +40,8 @@ from OPSI.Backend.Backend import *
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

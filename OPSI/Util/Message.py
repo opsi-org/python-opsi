@@ -30,8 +30,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 @license: GNU General Public License version 2
 """
 
-__version__ = '4.0.1'
-
 import json
 import threading
 import time
@@ -42,6 +40,8 @@ from twisted.internet import reactor, defer
 from OPSI.Logger import Logger
 from OPSI.Types import (forceBool, forceInt, forceIntList, forceIpAddress,
 	forceList, forceUnicode, forceUnicodeList)
+
+__version__ = '4.0.1'
 
 logger = Logger()
 

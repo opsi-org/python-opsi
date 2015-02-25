@@ -30,8 +30,6 @@
 	@license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.5.16'
-
 import base64
 import httplib
 import os
@@ -51,6 +49,8 @@ from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
 from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit, HTTPResponse
 from OPSI.System import *
+
+__version__ = '4.0.5.16'
 
 logger = Logger()
 

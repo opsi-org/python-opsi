@@ -25,8 +25,6 @@ SQLite backend.
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.6.1'
-
 import threading
 
 from apsw import (SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD,
@@ -36,6 +34,8 @@ from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Types import BackendBadValueError
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

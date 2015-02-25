@@ -30,8 +30,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 @license: GNU General Public License version 2
 """
 
-__version__ = '4.0'
-
 import time
 import gettext
 import locale
@@ -43,6 +41,7 @@ from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
 	forceUnicodeList)
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
+__version__ = '4.0'
 
 logger = Logger()
 encoding = locale.getpreferredencoding()

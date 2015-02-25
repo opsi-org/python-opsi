@@ -30,8 +30,6 @@ need to set up you backends, ACL, multiplexing etc. yourself.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import inspect
 import new
 import os
@@ -59,6 +57,8 @@ from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

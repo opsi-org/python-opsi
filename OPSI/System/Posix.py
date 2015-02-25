@@ -30,8 +30,6 @@ Functions and classes for the use with a POSIX operating system.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import codecs
 import fcntl
 import locale
@@ -56,6 +54,8 @@ from OPSI.Types import (forceDomain, forceInt, forceBool, forceUnicode,
 from OPSI.Types import OpsiVersionError
 from OPSI.Object import *
 from OPSI.Util import objectToBeautifiedText, removeUnit
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

@@ -30,8 +30,6 @@ It also is home to various exception classes.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import datetime
 import os
 import re
@@ -40,6 +38,8 @@ import time
 import types
 
 from OPSI.Logger import Logger
+
+__version__ = '4.0.6.1'
 
 encoding = sys.getfilesystemencoding()
 logger = Logger()

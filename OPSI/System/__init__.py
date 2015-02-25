@@ -30,8 +30,6 @@ should end up with runnable commands.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import os
 import shutil
 
@@ -41,6 +39,8 @@ elif os.name == 'nt':
 	from Windows import *
 
 from OPSI.Types import *
+
+__version__ = '4.0.6.1'
 
 
 class SystemHook(SystemSpecificHook):

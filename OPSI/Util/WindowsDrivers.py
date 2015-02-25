@@ -27,8 +27,6 @@ Functions to work with Windows drivers.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import os
 import re
 import codecs
@@ -41,6 +39,8 @@ from OPSI.Util import findFiles
 from OPSI.Util.File import *
 from OPSI.Util.Message import *
 from OPSI.Util.Repository import Repository
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 

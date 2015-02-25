@@ -25,8 +25,6 @@ HostControl Backend: Safe edition
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0.6.1'
-
 import socket
 import time
 import struct
@@ -37,6 +35,8 @@ from OPSI.Types import (forceBool, forceHostIdList, forceInt, forceList,
 	forceUnicode, forceUnicodeList)
 from OPSI.Backend.Backend import ExtendedBackend
 from OPSI.Backend.HostControl import RpcThread, ConnectionThread
+
+__version__ = '4.0.6.1'
 
 logger = Logger()
 
