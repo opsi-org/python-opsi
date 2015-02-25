@@ -439,6 +439,7 @@ class LoggerImplementation:
 		try:
 			if logFile == linkFile:
 				raise Exception(u'logFile and linkFile are the same file!')
+
 			if os.path.exists(linkFile):
 				os.unlink(linkFile)
 			os.symlink(logFile, linkFile)
@@ -455,6 +456,7 @@ class LoggerImplementation:
 			if id(object) in self.__objectConfig:
 				self.debug(u"Deleting config of object 0x%x" % id(object))
 				del self.__objectConfig[id(object)]
+
 			for objectId in self.__objectConfig.keys():
 				self.debug2(u"Got special config for object 0x%x" % objectId)
 
@@ -462,6 +464,7 @@ class LoggerImplementation:
 		if threadId in self.__threadConfig:
 			self.debug(u"Deleting config of thread %s" % threadId)
 			del self.__threadConfig[threadId]
+
 		for threadId in self.__threadConfig.keys():
 			self.debug2(u"Got special config for thread %s" % threadId)
 
@@ -475,8 +478,10 @@ class LoggerImplementation:
 		threadId = unicode(thread.get_ident())
 		if threadId not in self.__threadConfig:
 			return None
+
 		if not key:
 			return self.__threadConfig[threadId]
+
 		return self.__threadConfig[threadId].get(key)
 
 	def _setObjectConfig(self, objectId, key, value):
@@ -487,8 +492,10 @@ class LoggerImplementation:
 	def _getObjectConfig(self, objectId, key=None):
 		if objectId not in self.__objectConfig:
 			return None
+
 		if not key:
 			return self.__objectConfig[objectId]
+
 		return self.__objectConfig[objectId].get(key)
 
 	def log(self, level, message, raiseException=False):
