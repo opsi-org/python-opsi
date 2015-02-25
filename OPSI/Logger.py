@@ -352,10 +352,7 @@ class LoggerImplementation:
 		''' Maximum level of messages to log by syslog.
 		Set LOG_NONE to disable syslog (default)'''
 
-		if level < LOG_NONE:
-			level = LOG_NONE
-		if level > LOG_CONFIDENTIAL:
-			level = LOG_CONFIDENTIAL
+		level = self._sanitizeLogLevel(level)
 
 		self.__syslogLevel = level
 		if syslog is not None:
