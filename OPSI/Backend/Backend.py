@@ -44,8 +44,6 @@ import warnings
 from hashlib import md5
 from twisted.conch.ssh import keys
 
-__version__ = '4.0.6.2'
-
 if os.name == 'posix':
 	with warnings.catch_warnings():
 		warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -64,6 +62,8 @@ from OPSI.Util import (timestamp, compareVersions, blowfishDecrypt,
 	blowfishEncrypt, getfqdn)
 from OPSI.Util.File import ConfigFile
 import OPSI.SharedAlgorithm
+
+__version__ = '4.0.6.2'
 
 logger = Logger()
 OPSI_VERSION_FILE = u'/etc/opsi/version'
