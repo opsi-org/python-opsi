@@ -2896,42 +2896,34 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _productOnClient_processWithFunction(self, productOnClients, function):
-		# Get client and product ids
 		productOnClientsByClient = {}
-		productIds = []
+		productIds = set()
 		for poc in productOnClients:
-			if not poc.getClientId() in productOnClientsByClient.keys():
-				productOnClientsByClient[poc.getClientId()] = []
-			productOnClientsByClient[poc.getClientId()].append(poc)
-			if not poc.productId in productIds:
-				productIds.append(poc.productId)
+			try:
+				productOnClientsByClient[poc.getClientId()].append(poc)
+			except KeyError:
+				productOnClientsByClient[poc.getClientId()] = [poc]
 
-		# Get depot to client assignment
+			productIds.add(poc.productId)
+
 		depotToClients = {}
 		for clientToDepot in self.configState_getClientToDepotserver(clientIds=productOnClientsByClient.keys()):
-			if not depotToClients.has_key(clientToDepot['depotId']):
-				depotToClients[clientToDepot['depotId']] = []
-			depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+			try:
+				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
+			except KeyError:
+				depotToClients[clientToDepot['depotId']] = [clientToDepot['clientId']]
 
-		productByProductIdAndVersion = {}
+		productByProductIdAndVersion = collections.defaultdict(lambda: collections.defaultdict(dict))
 		for product in self._backend.product_getObjects(id=productIds):
-			if not productByProductIdAndVersion.has_key(product.id):
-				productByProductIdAndVersion[product.id] = {}
-			if not productByProductIdAndVersion[product.id].has_key(product.productVersion):
-				productByProductIdAndVersion[product.id][product.productVersion] = {}
 			productByProductIdAndVersion[product.id][product.productVersion][product.packageVersion] = product
 
 		additionalProductIds = []
-		productDependenciesByProductIdAndVersion = {}
+		productDependenciesByProductIdAndVersion = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
+
 		def addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion):
-			if not productDependenciesByProductIdAndVersion.has_key(productDependency.productId):
-				productDependenciesByProductIdAndVersion[productDependency.productId] = {}
-			if not productDependenciesByProductIdAndVersion[productDependency.productId].has_key(productDependency.productVersion):
-				productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion] = {}
-			if not productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion].has_key(productDependency.packageVersion):
-				productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion] = []
 			productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion].append(productDependency)
-			if not productDependency.requiredProductId in productIds and not productDependency.requiredProductId in additionalProductIds:
+
+			if productDependency.requiredProductId not in productIds and productDependency.requiredProductId not in additionalProductIds:
 				additionalProductIds.append(productDependency.requiredProductId)
 				for productDependency in self._backend.productDependency_getObjects(productId=productDependency.requiredProductId):
 					addDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
@@ -2941,40 +2933,41 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		if additionalProductIds:
 			for product in self._backend.product_getObjects(id=additionalProductIds):
-				if not productByProductIdAndVersion.has_key(product.id):
-					productByProductIdAndVersion[product.id] = {}
-				if not productByProductIdAndVersion[product.id].has_key(product.productVersion):
-					productByProductIdAndVersion[product.id][product.productVersion] = {}
 				productByProductIdAndVersion[product.id][product.productVersion][product.packageVersion] = product
-			productIds.extend(additionalProductIds)
+
+			productIds = productIds.union(additionalProductIds)
 
 		productOnClients = []
 		for (depotId, clientIds) in depotToClients.items():
-			products = []
-			productDependencies = []
+			products = set()
+			productDependencies = set()
+
 			for productOnDepot in self._backend.productOnDepot_getObjects(depotId=depotId, productId=productIds):
-				product = productByProductIdAndVersion.get(productOnDepot.productId, {}).get(productOnDepot.productVersion, {}).get(productOnDepot.packageVersion)
+				product = productByProductIdAndVersion[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion]
 				if product is None:
-					raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found" \
-							% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
-				products.append(product)
+					raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found"
+						% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+				products.add(product)
 
 				def addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion):
-					dependencies = productDependenciesByProductIdAndVersion.get(product.id, {}).get(product.productVersion, {}).get(product.packageVersion, [])
+					dependencies = productDependenciesByProductIdAndVersion[product.id][product.productVersion][product.packageVersion]
 					for dep in dependencies:
-						product = productByProductIdAndVersion.get(dep.productId, {}).get(dep.productVersion, {}).get(dep.packageVersion)
+						product = productByProductIdAndVersion[dep.productId][dep.productVersion][dep.packageVersion]
 						if product:
-							if not product in products:
-								products.append(product)
-							if not dep in productDependencies:
-								productDependencies.append(dep)
+							products.add(product)
+
+							if dep not in productDependencies:
+								productDependencies.add(dep)
 								addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
 
 				addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
 
 			for clientId in clientIds:
-				if not productOnClientsByClient.get(clientId):
+				try:
+					productOnClientsByClient[clientId]
+				except KeyError:
 					continue
+
 				productOnClients.extend(
 					function(
 						productOnClients=productOnClientsByClient[clientId],
@@ -2982,6 +2975,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 						productDependencies=productDependencies
 					)
 				)
+
 		return productOnClients
 
 	def productOnClient_generateSequence(self, productOnClients):
