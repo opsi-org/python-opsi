@@ -28,8 +28,6 @@ MySQL-Backend
 :license: GNU Affero GPL version 3
 """
 
-__version__ = '4.0.6.1'
-
 import base64
 import warnings
 import time
@@ -48,6 +46,8 @@ from OPSI.Types import forceInt, forceUnicode
 from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
+
+__version__ = '4.0.6.2'
 
 logger = Logger()
 
