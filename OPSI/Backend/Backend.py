@@ -1673,8 +1673,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					result2['identAttributes'][result2IdentIndex],
 					operator))
 
-			values1 = [v[result1IdentIndex] for v in result1['identValues']]
-			values2 = [v[result2IdentIndex] for v in result2['identValues']]
+			values1 = [value[result1IdentIndex] for value in result1['identValues']]
+			values2 = [value[result2IdentIndex] for value in result2['identValues']]
 
 			foreignIdAttributes = result1["foreignIdAttributes"]
 			for attr in result2["foreignIdAttributes"]:
@@ -1692,18 +1692,18 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			if operator == 'OR':
 				alreadyAddedValues = set()
 				values1.extend(values2)
-				for v in values1:
-					if v in alreadyAddedValues:
+				for value in values1:
+					if value in alreadyAddedValues:
 						continue
-					alreadyAddedValues.add(v)
-					result['identValues'].append([v])
+					alreadyAddedValues.add(value)
+					result['identValues'].append([value])
 			elif operator == 'AND':
 				alreadyAddedValues = set()
-				for v in values2:
-					if not v in values1 or v in alreadyAddedValues:
+				for value in values2:
+					if not value in values1 or value in alreadyAddedValues:
 						continue
-					alreadyAddedValues.add(v)
-					result['identValues'].append([v])
+					alreadyAddedValues.add(value)
+					result['identValues'].append([value])
 
 			return result
 
