@@ -1690,19 +1690,19 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			}
 
 			if operator == 'OR':
-				vals = [] # TODO: here
+				alreadyAddedValues = set()
 				values1.extend(values2)
 				for v in values1:
-					if v in vals:
+					if v in alreadyAddedValues:
 						continue
-					vals.append(v)
+					alreadyAddedValues.add(v)
 					result['identValues'].append([v])
 			elif operator == 'AND':
-				vals = [] # TODO: here
+				alreadyAddedValues = set()
 				for v in values2:
-					if not v in values1 or v in vals:
+					if not v in values1 or v in alreadyAddedValues:
 						continue
-					vals.append(v)
+					alreadyAddedValues.add(v)
 					result['identValues'].append([v])
 
 			return result
