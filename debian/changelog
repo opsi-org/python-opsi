@@ -43,7 +43,7 @@ python-opsi (4.0.6.1-1) experimental; urgency=low
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 05 Feb 2015 09:46:50 +0100
 
- python-opsi (4.0.5.16-1) stable; urgency=low
+python-opsi (4.0.5.16-1) stable; urgency=low
 
   * JSONRPCBackend: Fix build long authorization headers.
 
