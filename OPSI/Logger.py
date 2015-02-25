@@ -40,6 +40,11 @@ import codecs
 import types
 import warnings
 
+try:
+	import syslog
+except ImportError:
+	syslog = None
+
 __version__ = '4.0.6.2'
 
 # Loglevels
@@ -353,12 +358,8 @@ class LoggerImplementation:
 			level = LOG_CONFIDENTIAL
 
 		self.__syslogLevel = level
-		if os.name == 'posix':
+		if syslog is not None:
 			if self.__syslogLevel != LOG_NONE:
-				# Import syslog module
-				global syslog
-				import syslog
-
 				# Set ident string for syslog
 				ident = 'opsi'
 				try:
@@ -369,11 +370,7 @@ class LoggerImplementation:
 					# Get caller's filename
 					filename = frame.f_code.co_filename
 					ident = filename.split('/')[-1]
-				# syslog.openlog(ident, syslog.LOG_PID | syslog.LOG_CONS, syslog.LOG_DAEMON)
 				syslog.openlog(ident, syslog.LOG_CONS, syslog.LOG_DAEMON)
-		else:
-			# TODO: not yet implemented
-			pass
 
 	def setMessageSubjectLevel(self, level=LOG_NONE):
 		self.__messageSubjectLevel = self._sanitizeLogLevel(level)
@@ -712,7 +709,7 @@ class LoggerImplementation:
 					for string in self.__confidentialStrings:
 						m = m.replace(string, u'*** confidential ***')
 
-				if os.name == 'posix':
+				if syslog is not None:
 					if level == LOG_CONFIDENTIAL:
 						syslog.syslog(syslog.LOG_DEBUG, m)
 					elif level == LOG_DEBUG2:
@@ -731,9 +728,6 @@ class LoggerImplementation:
 						syslog.syslog(syslog.LOG_CRIT, m)
 					elif level == LOG_COMMENT:
 						syslog.syslog(syslog.LOG_CRIT, m)
-				else:
-					# TODO: not yet implemented
-					pass
 
 			if self.univentionLogger_priv:
 				# univention log
