@@ -30,13 +30,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 @license: GNU General Public License version 2
 """
 
-import sys
+import codecs
 import locale
-import time
 import os
+import sys
 import thread
 import threading
-import codecs
+import time
 import types
 import warnings
 
