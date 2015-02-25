@@ -4,7 +4,7 @@
 # This module is part of the desktop management solution opsi
 # (open pc server integration) http://www.opsi.org
 
-# Copyright (C) 2014 uib GmbH - http://www.uib.de/
+# Copyright (C) 2014-2015 uib GmbH - http://www.uib.de/
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -80,11 +80,6 @@ def setRights(path=u'/'):
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
 
-	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
-	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
-	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
-	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
-
 	depotDir = ''
 	dirnames = getDirectoriesToProcess()
 	if not path.startswith('/etc') and not path.startswith('/tftpboot'):
@@ -121,6 +116,11 @@ def setRights(path=u'/'):
 	# TODO: split into paths here:
 	# First we want a part that just gives (yield?) us the directories to travel through.
 	# Then we want a part that processes that directory and sets the rights
+
+	clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
+	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
+	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
+	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
 	for dirname in dirnames:
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
