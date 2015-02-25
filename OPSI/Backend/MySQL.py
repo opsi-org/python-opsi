@@ -139,29 +139,41 @@ class MySQL(SQL):
 
 	def _createConnectionPool(self):
 		logger.debug2(u"Creating connection pool")
-		self._transactionLock.acquire(0)
+		self._transactionLock.acquire(False)
 		try:
-			try:
-				if self._pool:
-					self._pool.destroy()
-				conv = dict(conversions)
-				conv[FIELD_TYPE.DATETIME] = str
-				conv[FIELD_TYPE.TIMESTAMP] = str
-				self._pool = ConnectionPool(
-						host=self._address,
-						user=self._username,
-						passwd=self._password,
-						db=self._database,
-						use_unicode=True,
-						charset=self._databaseCharset,
-						pool_size=self._connectionPoolSize,
-						max_overflow=self._connectionPoolMaxOverflow,
-						timeout=self._connectionPoolTimeout,
-						conv=conv
-				)
-			except Exception as error:
-				logger.logException(error)
-				raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
+			for tryNumber in (1, 2):
+				try:
+					if self._pool:
+						self._pool.destroy()
+					conv = dict(conversions)
+					conv[FIELD_TYPE.DATETIME] = str
+					conv[FIELD_TYPE.TIMESTAMP] = str
+					self._pool = ConnectionPool(
+							host=self._address,
+							user=self._username,
+							passwd=self._password,
+							db=self._database,
+							use_unicode=True,
+							charset=self._databaseCharset,
+							pool_size=self._connectionPoolSize,
+							max_overflow=self._connectionPoolMaxOverflow,
+							timeout=self._connectionPoolTimeout,
+							conv=conv
+					)
+				except Exception as error:
+					logger.logException(error)
+
+					if tryNumber < 2:
+						secondsToWait = 5
+						logger.debug(
+							u"We are waiting {0} seconds before trying "
+							u"an reconnect.".format(secondsToWait)
+						)
+						for _ in range(secondsToWait * 10):
+							time.sleep(0.1)
+						continue
+
+					raise BackendIOError(u"Failed to connect to database '%s' address '%s': %s" % (self._database, self._address, error))
 		finally:
 			self._transactionLock.release()
 
