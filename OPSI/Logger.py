@@ -470,9 +470,11 @@ class LoggerImplementation:
 
 	def _setThreadConfig(self, key, value):
 		threadId = unicode(thread.get_ident())
-		if threadId not in self.__threadConfig:
-			self.__threadConfig[threadId] = {}
-		self.__threadConfig[threadId][key] = value
+
+		try:
+			self.__threadConfig[threadId][key] = value
+		except KeyError:
+			self.__threadConfig[threadId] = {key: value}
 
 	def _getThreadConfig(self, key=None):
 		threadId = unicode(thread.get_ident())
@@ -485,9 +487,10 @@ class LoggerImplementation:
 		return self.__threadConfig[threadId].get(key)
 
 	def _setObjectConfig(self, objectId, key, value):
-		if objectId not in self.__objectConfig:
-			self.__objectConfig[objectId] = {}
-		self.__objectConfig[objectId][key] = value
+		try:
+			self.__objectConfig[objectId][key] = value
+		except KeyError:
+			self.__objectConfig[objectId] = {key: value}
 
 	def _getObjectConfig(self, objectId, key=None):
 		if objectId not in self.__objectConfig:
