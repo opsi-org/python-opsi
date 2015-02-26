@@ -141,18 +141,15 @@ class BackendReplicator(object):
 				if not clientIds:
 					clientIds = rb.host_getIdents(type='OpsiClient', returnType=list)
 
-			hostIds = []
+			hostIds = set()
 			for serverId in serverIds:
-				if serverId not in hostIds:
-					hostIds.append(serverId)
+				hostIds.add(serverId)
 
 			for depotId in depotIds:
-				if depotId not in hostIds:
-					hostIds.append(depotId)
+				hostIds.add(depotId)
 
 			for clientId in clientIds:
-				if clientId not in hostIds:
-					hostIds.append(clientId)
+				hostIds.add(clientId)
 
 			self.__overallProgressSubject.reset()
 			end = self._getNumberOfObjectClassesToProcess(audit, license)
@@ -230,12 +227,15 @@ class BackendReplicator(object):
 					elif objClass == 'ProductProperty':
 						filter = {'productId': productIds}
 					elif objClass == 'ProductPropertyState':
-						filter = {'productId': productIds, 'objectId': hostIds}
+						filter = {
+							'productId': productIds,
+							'objectId': forceList(hostIds)
+						}
 					elif objClass == 'ConfigState':
-						filter = {'objectId': hostIds}
+						filter = {'objectId': forceList(hostIds)}
 					elif objClass == 'ObjectToGroup':
 						if productIds and hostIds:
-							objectIds = productIds + hostIds
+							objectIds = productIds + forceList(hostIds)
 						else:
 							objectIds = []
 
