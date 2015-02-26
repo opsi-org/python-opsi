@@ -28,13 +28,14 @@ The replicator allows replication from one backend into another.
 :license: GNU Affero General Public License version 3
 """
 
-__version__ = '4.0'
-
-from OPSI.Logger import LOG_DEBUG, Logger
-from OPSI.Types import forceBool, forceHostId, forceList
-from OPSI.Object import *
-from OPSI.Util.Message import ProgressSubject
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
+from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Object import *
+from OPSI.Types import forceBool, forceHostId, forceList
+from OPSI.Util.Message import ProgressSubject
+
+
+__version__ = '4.0.6.2'
 
 logger = Logger()
 
