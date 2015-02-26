@@ -89,8 +89,16 @@ class BackendReplicator(object):
 		if oldServerId:
 			self.__oldServerId = forceHostId(oldServerId)
 
-		self.__overallProgressSubject = ProgressSubject(id=u'overall_replication', title=u'Replicating', end=100, fireAlways=True)
-		self.__currentProgressSubject = ProgressSubject(id=u'current_replication', fireAlways=True)
+		self.__overallProgressSubject = ProgressSubject(
+			id=u'overall_replication',
+			title=u'Replicating',
+			end=100,
+			fireAlways=True
+		)
+		self.__currentProgressSubject = ProgressSubject(
+			id=u'current_replication',
+			fireAlways=True
+		)
 
 	def getCurrentProgressSubject(self):
 		return self.__currentProgressSubject
@@ -123,6 +131,7 @@ class BackendReplicator(object):
 			wb = self._extendedWriteBackend
 		else:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': False})
+
 		try:
 			if serverIds or depotIds or clientIds:
 				if not serverIds:
