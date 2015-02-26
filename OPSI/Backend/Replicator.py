@@ -189,7 +189,6 @@ class BackendReplicator(object):
 					continue
 
 				subClasses = [None]
-				ids = []
 				if objClass == 'Host':
 					subClasses = ['OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient']
 
