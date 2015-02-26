@@ -179,13 +179,27 @@ class BackendReplicator(object):
 								newProductIds.append(productId)
 						productIds = newProductIds
 
+			auditClasses = set(
+				'AuditHardware',
+				'AuditSoftware',
+				'AuditHardwareOnHost',
+				'AuditSoftwareOnClient'
+			)
+			licenseClasses = set(
+				'LicenseContract',
+				'SoftwareLicense',
+				'LicensePool',
+				'SoftwareLicenseToLicensePool',
+				'LicenseOnClient',
+				'AuditSoftwareToLicensePool'
+			)
+
 			configServer = None
 			depotServers = []
 			for objClass in self.OBJECT_CLASSES:
-				if not audit and objClass in ('AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost', 'AuditSoftwareOnClient'):
+				if not audit and objClass in auditClasses:
 					continue
-				if not license and objClass in ('LicenseContract', 'SoftwareLicense', 'LicensePool', 'SoftwareLicenseToLicensePool',
-								'LicenseOnClient', 'AuditSoftwareToLicensePool'):
+				if not license and objClass in licenseClasses:
 					continue
 
 				subClasses = [None]
