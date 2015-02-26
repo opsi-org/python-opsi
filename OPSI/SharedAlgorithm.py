@@ -138,8 +138,6 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				)
 			)
 			continue
-			#raise BackendUnaccomplishableError(u"Cannot fulfill dependency of product '%s' to product '%s': action '%s' needed but action '%s' already set" \
-			#		% (productId, dependency.requiredProductId, requiredAction, productOnClientsByProductId[dependency.requiredProductId].actionRequest))
 		logger.info(u"   => adding action '%s' for product '%s'" % (requiredAction, dependency.requiredProductId))
 
 		if dependency.requiredProductId in addedInfo:
