@@ -630,7 +630,7 @@ def generateProductSequence_algorithm1(availableProducts, productDependencies):
 
 			logger.debug(u"product %s has priority class %s, prioClassHead now  %s " % (productId, prioClass, prioClassHead))
 
-		#get all products with priority class <= prioClassHead
+		# get all products with priority class <= prioClassHead
 		prioList = range(0, prioClassStart - prioClassHead)
 		for p in prioList:
 			q = prioClassStart - p
