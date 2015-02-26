@@ -3,6 +3,7 @@ python-opsi (4.0.6.2-1) UNRELEASED; urgency=low
   * OPSI.Backend.MySQL: If connecting to DB fails during creation of the
     connection pool we wait 5 seconds before retrying to connect.
   * OPSI.Logger: Easier and faster check if syslog is present.
+  * OPSI.Backend.Replicator: small refactorings.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 25 Feb 2015 12:47:54 +0100
 
