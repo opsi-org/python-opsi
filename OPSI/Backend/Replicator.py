@@ -105,7 +105,8 @@ class BackendReplicator(object):
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 
-	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[], productIds=[], productTypes=[], audit=True, license=True):
+	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[],
+			productIds=[], productTypes=[], audit=True, license=True):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
@@ -120,8 +121,12 @@ class BackendReplicator(object):
 		audit = forceBool(audit)
 		license = forceBool(license)
 
-		logger.info(u"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, productTypes=%s, audit: %s, license: %s" \
-				% (serverIds, depotIds, clientIds, groupIds, productIds, productTypes, audit, license))
+		logger.info(
+			u"Replicating: serverIds={serverIds}, depotIds={depotIds}, "
+			u"clientIds={clientIds}, groupIds={groupIds}, "
+			u"productIds={productIds}, productTypes={productTypes}, "
+			u"audit: {audit}, license: {license}".format(**locals())
+		)
 
 		rb = self._extendedReadBackend
 		wb = self.__writeBackend
