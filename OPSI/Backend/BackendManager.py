@@ -417,8 +417,6 @@ class BackendDispatcher(Backend):
 		for methodBackend in methodBackends:
 			meth = getattr(self._backends[methodBackend]["instance"], methodName)
 			res = meth(**kwargs)
-			if type(res) is types.ListType:
-				res = [r for r in res]
 
 			if type(result) is types.ListType and type(res) is types.ListType:
 				result.extend(res)
