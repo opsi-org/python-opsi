@@ -38,14 +38,6 @@ import socket
 import sys
 import types
 
-if os.name == 'posix':
-	import grp
-	import PAM
-	import pwd
-elif os.name == 'nt':
-	import win32net
-	import win32security
-
 from OPSI.Logger import Logger, LOG_INFO
 from OPSI.Types import *
 from OPSI.Object import BaseObject
@@ -57,6 +49,14 @@ from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Util import objectToBeautifiedText, getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile, BackendDispatchConfigFile, OpsiConfFile
 from OPSI.Util.MessageBus import MessageBusClient
+
+if os.name == 'posix':
+	import grp
+	import PAM
+	import pwd
+elif os.name == 'nt':
+	import win32net
+	import win32security
 
 __version__ = '4.0.6.1'
 
