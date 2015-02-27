@@ -4,6 +4,7 @@ python-opsi (4.0.6.2-1) UNRELEASED; urgency=low
     connection pool we wait 5 seconds before retrying to connect.
   * OPSI.Logger: Easier and faster check if syslog is present.
   * OPSI.Backend.Replicator: small refactorings.
+  * OPSI.Backend.BackendManager: _dispatchMethod creats no more temp. list.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 25 Feb 2015 12:47:54 +0100
 
