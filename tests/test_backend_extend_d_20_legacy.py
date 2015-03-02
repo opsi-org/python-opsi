@@ -55,6 +55,17 @@ class LegacyFunctionsTestCase(unittest.TestCase, ExtendedFileBackendMixin):
         """
         self.backend.getGeneralConfig_hash('some.client.fqdn')
 
+    def testSetGeneralConfigValue(self):
+        # required by File-backend
+        self.backend.host_createOpsiClient('some.client.fqdn')
+
+        self.backend.setGeneralConfigValue('foo', 'bar', 'some.client.fqdn')
+
+        self.assertEquals(
+            'bar',
+            self.backend.getGeneralConfigValue('foo', 'some.client.fqdn')
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
