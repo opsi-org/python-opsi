@@ -153,7 +153,9 @@ class File(object):
 
 	def __getstate__(self):
 		state = self.__dict__.copy()
-		file, state['_fileHandle'], state['fileState'] = self._fileHandle, None, {}
+		file = self._fileHandle
+		state['_fileHandle'] = None
+		state['fileState'] = {}
 		state['fileState']['closed'] = file.closed
 		state['fileState']['encoding'] = file.encoding
 		state['fileState']['mode'] = file.mode
