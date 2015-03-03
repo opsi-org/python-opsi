@@ -781,7 +781,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 		network = network + u'.0'
 
 	if '.' not in netmask:
-		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I',0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
+		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
 
 	while netmask.count('.') < 3:
 		netmask = netmask + u'.0'
