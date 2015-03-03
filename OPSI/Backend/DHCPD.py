@@ -41,7 +41,7 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
-__version__ = '4.0.6.1'
+__version__ = '4.0.6.2'
 
 logger = Logger()
 
@@ -52,10 +52,6 @@ class DHCPDBackend(ConfigDataBackend):
 		self._name = 'dhcpd'
 
 		ConfigDataBackend.__init__(self, **kwargs)
-
-		pathToService = u"/usr/sbin/service"
-		if os.path.exists(u"/sbin/service"):
-			pathToService = u"/sbin/service"
 
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig(u'/etc/dhcp3/dhcpd.conf')
 		self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
