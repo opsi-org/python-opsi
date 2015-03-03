@@ -1510,7 +1510,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 					parameters[key] = value
 		return parameters
 
-	def getParameters(self, inherit = None):
+	def getParameters(self, inherit=None):
 		parameters = []
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Parameter):
