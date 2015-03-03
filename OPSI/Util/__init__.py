@@ -756,36 +756,52 @@ def isRegularExpressionPattern(object):
 
 
 def ipAddressInNetwork(ipAddress, networkAddress):
+	"""
+	Checks if the given IP address is in the given network range.
+	Returns ``True`` if the given address is part of the network.
+	Returns ``False`` if the given address is not part of the network.
+
+	:param ipAddress: The IP which we check.
+	:type ipAddress: str
+	:param networkAddress: The network address written with slash notation.
+	:type networkAddress: str
+	"""
+	def createIntFromAddress(address):
+		"Returns an int representation from an ipAddress."
+		num = [forceInt(part) for part in address.split('.')]
+		return (num[0] << 24) + (num[1] << 16) + (num[2] << 8) + num[3]
+
 	ipAddress = forceIPAddress(ipAddress)
 	networkAddress = forceNetworkAddress(networkAddress)
 
-	n = ipAddress.split('.')
-	for i in range(4):
-		n[i] = forceInt(n[i])
-	ip = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+	ip = createIntFromAddress(ipAddress)
 
 	(network, netmask) = networkAddress.split(u'/')
-	while (network.count('.') < 3):
+	while network.count('.') < 3:
 		network = network + u'.0'
-	if (netmask.find('.') == -1):
+
+	if '.' not in netmask:
 		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I',0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
-	while (netmask.count('.') < 3):
+
+	while netmask.count('.') < 3:
 		netmask = netmask + u'.0'
 
-	logger.debug(u"Testing if ip %s is part of network %s/%s" % (ipAddress, network, netmask))
+	logger.debug(
+		u"Testing if ip {ipAddress} is part of network "
+		u"{network}/{netmask}".format(
+			ipAddress=ipAddress,
+			network=network,
+			netmask=netmask
+		)
+	)
 
-	n = network.split('.')
-	for i in range(4):
-		n[i] = int(n[i])
-	network = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
-	n = netmask.split('.')
-	for i in range(4):
-		n[i] = int(n[i])
-	netmask = (n[0] << 24) + (n[1] << 16) + (n[2] << 8) + n[3]
+	network = createIntFromAddress(network)
+	netmask = createIntFromAddress(netmask)
 
 	wildcard = netmask ^ 0xFFFFFFFFL
 	if (wildcard | ip == wildcard | network):
 		return True
+
 	return False
 
 
