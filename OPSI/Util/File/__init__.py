@@ -1512,10 +1512,6 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 	def getParameters(self, inherit=None):
 		parameters = []
-		for component in self.components:
-			if not isinstance(component, DHCPDConf_Parameter):
-				continue
-			options.append(component)
 
 		if inherit and (self.type != inherit) and self.parentBlock:
 			parameters.extend(self.parentBlock.getParameters(inherit))
