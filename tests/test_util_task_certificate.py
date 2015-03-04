@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -58,7 +58,8 @@ class CertificateCreationWithConfigTestCase(unittest.TestCase):
             'state': 'HE',
             'locality': 'Breidenbach',
             'organization': 'Unittest',
-            'emailAddress': 'no@address.internet'
+            'emailAddress': 'no@address.internet',
+            'serialNumber': 1010,
         }
 
     def tearDown(self):
@@ -73,6 +74,7 @@ class CertificateCreationWithConfigTestCase(unittest.TestCase):
         loadedConfig = loadConfigurationFromCertificate(self.certificate_path)
 
         del self.nonDefaultConfig['expires']  # written as date to config
+        self.nonDefaultConfig['serialNumber'] += 1  # incremented
 
         self.assertEquals(self.nonDefaultConfig, loadedConfig)
 
@@ -122,7 +124,7 @@ class LoadConfigurationTestCase(unittest.TestCase):
         self.assertEqual('test', certparams["organizationalUnit"])
         self.assertEqual('niko-linux', certparams["commonName"])
         self.assertEqual('info@uib.de', certparams["emailAddress"])
-        self.assertEqual(1000, certparams["serialNumber"])
+        self.assertEqual(18428462229954092504, certparams["serialNumber"])
 
 
 class LoadBrokenConfigurationTestCase(unittest.TestCase):
