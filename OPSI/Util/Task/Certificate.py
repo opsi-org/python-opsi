@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2013 uib GmbH <info@uib.de>
+# Copyright (C) 2013-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,6 +25,13 @@ between servers and clients.
 
 .. versionadded:: 4.0.4
 
+
+.. versionchanged:: 4.0.6.2
+
+	Incrementing previously set serial number on re-creation.
+	For new certificates a random number will be generated.
+
+
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
@@ -32,6 +39,7 @@ between servers and clients.
 from __future__ import unicode_literals
 
 import os
+import random
 import shutil
 from OpenSSL import crypto, rand
 from tempfile import NamedTemporaryFile
@@ -174,10 +182,22 @@ If not given will use a default.
 			del certparams['emailAddress']
 
 	LOGGER.notice("Generating new Serialnumber")
-	#TODO: generating serial number
-	#TODO: some info on the serial number:
-	#      	https://tools.ietf.org/html/rfc2459#page-18
-	cert.set_serial_number(1000)
+	# As described in RFC5280 this value is required and must be a
+	# positive and unique integer.
+	# Source: http://tools.ietf.org/html/rfc5280#page-19
+	#
+	# We currently do not have the ability to make the serial unique
+	# but we assume that this is called only once in 2-3 years.
+	# If we have an old serial number present we increment it by 1.
+	# If we do not have an old serial number we create a random one.
+	try:
+		serialNumber = int(certparams['serialNumber']) + 1
+	except KeyError, ValueError:
+		LOGGER.debug("Reading in the existing serial number failed.")
+		LOGGER.info("Creating new random serial number.")
+		serialNumber = random.randint(0, pow(2, 16))
+	cert.set_serial_number(serialNumber)
+
 	LOGGER.notice(
 		"Setting new expiration date (%d years)" % certparams["expires"]
 	)
