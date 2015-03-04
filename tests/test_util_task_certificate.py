@@ -163,6 +163,8 @@ class CertificateRenewalTestCase(unittest.TestCase):
 
         old_config = loadConfigurationFromCertificate(certificate_path)
 
+        configForCreating = old_config
+        configForCreating['commonName'] = forceHostId(getfqdn())
         renewCertificate(path=certificate_path)
 
         self.assertTrue(os.path.exists(certificate_path))
