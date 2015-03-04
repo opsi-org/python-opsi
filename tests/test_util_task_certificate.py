@@ -165,7 +165,7 @@ class CertificateRenewalTestCase(unittest.TestCase):
 
         configForCreating = old_config
         configForCreating['commonName'] = forceHostId(getfqdn())
-        renewCertificate(path=certificate_path)
+        renewCertificate(path=certificate_path, config=configForCreating)
 
         self.assertTrue(os.path.exists(certificate_path))
         backup_file = '{file}.bak'.format(file=certificate_path)
