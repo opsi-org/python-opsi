@@ -174,8 +174,8 @@ class CertificateRenewalTestCase(unittest.TestCase):
 
         new_config = loadConfigurationFromCertificate(certificate_path)
 
-        keysToCompare = ('organizationalUnit', 'expires', 'commonName',
-                        'country', 'state', 'locality', 'organization',
+        keysToCompare = ('organizationalUnit', 'commonName', 'country',
+                        'state', 'locality', 'organization',
                         'emailAddress')
 
         for key in keysToCompare:
