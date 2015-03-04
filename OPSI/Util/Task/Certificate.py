@@ -192,7 +192,7 @@ If not given will use a default.
 	# If we do not have an old serial number we create a random one.
 	try:
 		serialNumber = int(certparams['serialNumber']) + 1
-	except KeyError, ValueError:
+	except (KeyError, ValueError):
 		LOGGER.debug("Reading in the existing serial number failed.")
 		LOGGER.info("Creating new random serial number.")
 		serialNumber = random.randint(0, pow(2, 16))
