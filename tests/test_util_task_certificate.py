@@ -154,7 +154,7 @@ class CertificateRenewalTestCase(unittest.TestCase):
             shutil.rmtree(self.certificate_folder)
 
     def testFailsOnMissingFile(self):
-        self.assertRaises(NoCertificateError, renewCertificate(path='nofile'))
+        self.assertRaises(NoCertificateError, renewCertificate, 'nofile')
 
     def testCertificateFileExistsAfterRecreation(self):
         shutil.copy(self.EXAMPLE_CERTIFICATE, self.certificate_folder)
