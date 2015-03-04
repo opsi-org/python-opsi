@@ -26,11 +26,6 @@ between servers and clients.
 .. versionadded:: 4.0.4
 
 
-.. versionchanged:: 4.0.6.2
-
-	Incrementing previously set serial number on re-creation.
-	For new certificates a random number will be generated.
-
 
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
@@ -122,6 +117,12 @@ def createCertificate(path=None, config=None):
 	Creates a certificate.
 
 	Will overwrite any certificate that may exists in ``path``.
+
+	.. versionchanged:: 4.0.6.2
+
+		Incrementing previously set serial number on re-creation.
+		For new certificates a random number will be generated.
+
 
 	:param path: The path of the certificate. \
 If this is `None` the default will be used.
