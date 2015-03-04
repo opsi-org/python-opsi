@@ -92,6 +92,7 @@ Will always overwrite an existing value in ``config``.
 `None` the values for the configuration will be read from the \
 existing certificate.
 	:type config: dict
+	:raises NoCertificateError: If no certificate found.
 	"""
 	if path is None:
 		path = OPSICONFD_CERTFILE
@@ -128,6 +129,7 @@ If this is `None` the default will be used.
 	:param config: The configuration of the certificate. \
 If not given will use a default.
 	:type config: dict
+	:raises CertificateCreationError: If errors exist in configuration.
 	"""
 	try:
 		which("ucr")
@@ -251,6 +253,8 @@ def loadConfigurationFromCertificate(path=None):
 	:param path: The path to the certificate. \
 Uses `OPSICONFD_CERTFILE` if no path is given.
 	:type path: str
+	:raises NoCertificateError: If no certificate found.
+	:raises UnreadableCertificateError: If certificate can not be read.
 	:return: The configuration as read from the certificate.
 	:rtype: dict
 	"""
