@@ -232,7 +232,6 @@ If not given will use a default.
 			LOGGER.debug("Using workaround with random.getrandbits")
 			# SLES11SP3 ships a version so old that rand.bytes does not
 			# even exist yet. As a workaround we use plain old random
-			import random
 			randomBytes = str(bytearray(random.getrandbits(8) for _ in range(512)))
 		randfile.write(randomBytes)
 
