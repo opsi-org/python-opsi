@@ -20,13 +20,14 @@
 from __future__ import unicode_literals
 
 import os
+import shutil
 import tempfile
 import unittest
 from OPSI.Types import forceHostId
 from OPSI.Util import getfqdn
 from OPSI.Util.Task.Certificate import (NoCertificateError,
     CertificateCreationError, UnreadableCertificateError, createCertificate,
-    loadConfigurationFromCertificate)
+    loadConfigurationFromCertificate, renewCertificate)
 
 
 class CertificateCreationTestCase(unittest.TestCase):
@@ -139,6 +140,51 @@ class LoadBrokenConfigurationTestCase(unittest.TestCase):
         'testdata', 'util', 'task', 'certificate', 'invalid.pem')
 
         self.assertRaises(UnreadableCertificateError, loadConfigurationFromCertificate, corruptCertPath)
+
+
+class CertificateRenewalTestCase(unittest.TestCase):
+    EXAMPLE_CERTIFICATE = os.path.join(os.path.dirname(__file__),
+        'testdata', 'util', 'task', 'certificate', 'example.pem')
+
+    def setUp(self):
+        self.certificate_folder = tempfile.mkdtemp()
+
+    def tearDown(self):
+        if os.path.exists(self.certificate_folder):
+            shutil.rmtree(self.certificate_folder)
+
+    def testFailsOnMissingFile(self):
+        self.assertRaises(NoCertificateError, renewCertificate(path='nofile'))
+
+    def testCertificateFileExistsAfterRecreation(self):
+        shutil.copy(self.EXAMPLE_CERTIFICATE, self.certificate_folder)
+        certificate_path = os.path.join(self.certificate_folder, 'example.pem')
+        self.assertTrue(os.path.exists(certificate_path))
+
+        old_config = loadConfigurationFromCertificate(certificate_path)
+
+        renewCertificate(path=certificate_path)
+
+        self.assertTrue(os.path.exists(certificate_path))
+        backup_file = '{file}.bak'.format(file=certificate_path)
+        self.assertTrue(os.path.exists(certificate_path),
+                        "Missing backup-file!")
+
+        new_config = loadConfigurationFromCertificate(certificate_path)
+
+        keysToCompare = ('organizationalUnit', 'expires', 'commonName',
+                        'country', 'state', 'locality', 'organization',
+                        'emailAddress')
+
+        for key in keysToCompare:
+            self.assertEquals(
+                old_config[key], new_config[key],
+                "Difference at key '{0}' between old and new: {1} vs. {2}".format(
+                    key, old_config[key], new_config[key]
+                )
+            )
+
+        self.assertNotEqual(old_config['serialNumber'], new_config['serialNumber'])
 
 
 if __name__ == '__main__':
