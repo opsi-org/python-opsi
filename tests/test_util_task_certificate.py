@@ -122,6 +122,7 @@ class LoadConfigurationTestCase(unittest.TestCase):
         self.assertEqual('test', certparams["organizationalUnit"])
         self.assertEqual('niko-linux', certparams["commonName"])
         self.assertEqual('info@uib.de', certparams["emailAddress"])
+        self.assertEqual(1000, certparams["serialNumber"])
 
 
 class LoadBrokenConfigurationTestCase(unittest.TestCase):

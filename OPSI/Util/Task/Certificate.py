@@ -263,5 +263,6 @@ Uses `OPSICONFD_CERTFILE` if no path is given.
 		certparams["organizationalUnit"] = cert.get_subject().OU
 		certparams["commonName"] = cert.get_subject().CN
 		certparams["emailAddress"] = cert.get_subject().emailAddress
+		certparams["serialNumber"] = cert.get_serial_number()
 
 	return certparams
