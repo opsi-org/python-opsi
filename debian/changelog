@@ -1,4 +1,4 @@
-python-opsi (4.0.6.2-1) UNRELEASED; urgency=low
+python-opsi (4.0.6.2-1) experimental; urgency=low
 
   * OPSI.Backend.MySQL: If connecting to DB fails during creation of the
     connection pool we wait 5 seconds before retrying to connect.
@@ -8,7 +8,7 @@ python-opsi (4.0.6.2-1) UNRELEASED; urgency=low
   * OPSI.Util.Task.Certificate: do not set the same serial number for
     every certificate.
 
- -- Niko Wenselowski <n.wenselowski@uib.de>  Wed, 25 Feb 2015 12:47:54 +0100
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Mar 2015 10:56:28 +0100
 
 python-opsi (4.0.6.1-1) experimental; urgency=low
 
