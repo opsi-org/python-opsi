@@ -56,10 +56,10 @@ try:
 except Exception:
 	_FILE_ADMIN_GROUP = u'pcpatch'
 
-SPECIAL_FILES = [
+SPECIAL_FILES = set([
 	u'setup.py', u'show_drivers.py', u'create_driver_links.py',
 	u'opsi-deploy-client-agent', u'opsi-deploy-client-agent-old', u'winexe'
-]
+])
 
 
 # TODO: use OPSI.System.Posix.Sysconfig for a more standardized approach
