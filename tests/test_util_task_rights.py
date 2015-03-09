@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,7 +28,7 @@ from __future__ import absolute_import
 import os
 import unittest
 
-from OPSI.Util.Task.Rights import getDirectoriesToProcess
+from OPSI.Util.Task.Rights import getDirectoriesToProcess, removeDuplicatesFromDirectories
 
 
 class SetRightsTestCase(unittest.TestCase):
@@ -44,6 +44,27 @@ class SetRightsTestCase(unittest.TestCase):
         #     return [u'/var/lib/tftpboot/opsi', u'/var/lib/opsi/workbench']
         # else:
         #     return [u'/tftpboot/linux', u'/home/opsiproducts', ]
+
+    def testCleaningDirectoryList(self):
+        self.assertEquals(
+            set(['/home', '/etc']),
+            removeDuplicatesFromDirectories(['/home/', '/etc'])
+        )
+
+        self.assertEquals(
+            set(['/home']),
+            removeDuplicatesFromDirectories(['/home/', '/home/'])
+        )
+
+        self.assertEquals(
+            set(['/home']),
+            removeDuplicatesFromDirectories(['/home/', '/home/abc'])
+        )
+
+        self.assertEquals(
+            set(['/home']),
+            removeDuplicatesFromDirectories(['/home/abc/', '/home/', '/home/def/ghi'])
+        )
 
 
 if __name__ == '__main__':

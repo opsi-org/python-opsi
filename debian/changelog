@@ -1,3 +1,9 @@
+python-opsi (4.0.6.3-2) UNRELEASED; urgency=low
+
+  * OPSI.Util.Task.Rights: avoid duplicate path processing.
+
+ -- Niko Wenselowski <n.wenselowski@uib.de>  Mon, 09 Mar 2015 17:12:19 +0100
+
 python-opsi (4.0.6.2-1) experimental; urgency=low
 
   * OPSI.Backend.MySQL: If connecting to DB fails during creation of the
@@ -54,7 +60,7 @@ python-opsi (4.0.6.1-1) experimental; urgency=low
   * OPSI.Backend.SQLite refactored query creation.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Thu, 05 Feb 2015 09:46:50 +0100
- 
+
 python-opsi (4.0.5.17-1) testing; urgency=medium
 
   * Small bugfix in ConfigureBackend Task.

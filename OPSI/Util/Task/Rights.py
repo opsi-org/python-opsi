@@ -122,7 +122,7 @@ def setRights(path=u'/'):
 	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
 	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
 
-	for dirname in dirnames:
+	for dirname in removeDuplicatesFromDirectories(dirnames):
 		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
 			continue
 		uid  = opsiconfdUid
@@ -209,6 +209,43 @@ def getDistribution():
 		return distribution
 	except Exception:
 		return ''
+
+
+def removeDuplicatesFromDirectories(directories):
+	"""
+	Cleans the iterable `directories` from duplicates and also makes
+	sure that no subfolders are included to avoid duplicate processing.
+
+	:returntype: set
+	"""
+	folders = set()
+
+	for folder in directories:
+		folder = os.path.normpath(folder)
+		folder = os.path.realpath(folder)
+
+		if not folders:
+			logger.debug("Initial fill for folders with: {0}".format(folder))
+			folders.add(folder)
+			continue
+
+		for anotherDir in folders.copy():
+			if folder == anotherDir:
+				logger.debug("Already existing folder: {0}".format(folder))
+				continue
+			elif folder in anotherDir:
+				logger.debug("{0} in {1}. Removing {1}, adding {0}".format(folder, anotherDir))
+				folders.remove(anotherDir)
+				folders.add(folder)
+			elif anotherDir in folder:
+				logger.debug("{1} in {0}. Ignoring.".format(folder, anotherDir))
+				continue
+			else:
+				logger.debug("New folder: {0}".format(folder))
+				folders.add(folder)
+
+	logger.debug("Final folder collection: {0}".format(folders))
+	return folders
 
 
 def setRightsOnSSHDirectory(userId, groupId, path=u'/var/lib/opsi/.ssh'):
