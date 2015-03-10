@@ -47,7 +47,7 @@ from OPSI.Backend.Backend import ConfigDataBackend
 from OPSI.Backend.SQL import (onlyAllowSelect, SQL, SQLBackend,
 	SQLBackendObjectModificationTracker)
 
-__version__ = '4.0.6.2'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
@@ -61,7 +61,7 @@ class ConnectionPool(object):
 
 		# Check whether we already have an instance
 		if ConnectionPool.__instance is None:
-			logger.info(u"Creating ConnectionPool instance")
+			logger.debug(u"Creating ConnectionPool instance")
 			# Create and remember instance
 			poolArgs = {}
 			for key in ('pool_size', 'max_overflow', 'timeout'):
@@ -82,7 +82,7 @@ class ConnectionPool(object):
 		self.__dict__['_ConnectionPool__instance'] = ConnectionPool.__instance
 
 	def destroy(self):
-		logger.notice(u"Destroying ConnectionPool instance")
+		logger.debug(u"Destroying ConnectionPool instance")
 		ConnectionPool.__instance = None
 
 	def __getattr__(self, attr):
