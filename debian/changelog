@@ -2,6 +2,7 @@ python-opsi (4.0.6.3-1) UNRELEASED; urgency=low
 
   * OPSI.Util.Task.Rights: avoid duplicate path processing.
   * OPSI.Backend.MySQL.ConnectionPool: lower log-level for messages.
+  * OPSI.Util.Task.Rights.setRights: show what path is given.
 
  -- Niko Wenselowski <n.wenselowski@uib.de>  Tue, 10 Mar 2015 11:14:52 +0100
 

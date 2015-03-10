@@ -45,6 +45,8 @@ from OPSI.Types import forceHostId
 from OPSI.Util import findFiles, getfqdn
 from OPSI.Util.File.Opsi import OpsiConfFile
 
+__version__ = '4.0.6.3'
+
 logger = Logger()
 
 _OPSICONFD_USER = u'opsiconfd'
@@ -75,7 +77,7 @@ def getLocalFQDN():
 
 
 def setRights(path=u'/'):
-	logger.notice(u"Setting rights")
+	logger.notice(u"Setting rights on '{0}'".format(path))
 	basedir = path
 	if not os.path.isdir(basedir):
 		basedir = os.path.dirname(basedir)
