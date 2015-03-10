@@ -65,9 +65,11 @@ class ConnectionPool(object):
 			# Create and remember instance
 			poolArgs = {}
 			for key in ('pool_size', 'max_overflow', 'timeout'):
-				if key in kwargs.keys():
+				try:
 					poolArgs[key] = kwargs[key]
 					del kwargs[key]
+				except KeyError:
+					pass
 
 			def creator():
 				return MySQLdb.connect(**kwargs)
