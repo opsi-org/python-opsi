@@ -66,6 +66,16 @@ class SetRightsTestCase(unittest.TestCase):
             removeDuplicatesFromDirectories(['/home/abc/', '/home/', '/home/def/ghi'])
         )
 
+        self.assertEquals(
+            set(['/']),
+            removeDuplicatesFromDirectories(['/home/', '/etc', '/'])
+        )
+
+        self.assertEquals(
+            set(['/a/bc/de', '/ab/c', '/bc/de']),
+            removeDuplicatesFromDirectories(['/a/bc/de', '/ab/c', '/bc/de'])
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
