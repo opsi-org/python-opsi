@@ -131,7 +131,10 @@ def setRights(path=u'/'):
 		dmod = 0770
 		correctLinks = False
 
-		isProduct = dirname not in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi', u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench')
+		isProduct = dirname not in (
+			u'/var/lib/tftpboot/opsi', u'/tftpboot/linux', u'/var/log/opsi',
+			u'/etc/opsi', u'/var/lib/opsi', u'/var/lib/opsi/workbench'
+		)
 
 		if dirname in (u'/var/lib/tftpboot/opsi', u'/tftpboot/linux'):
 			fmod = 0664
