@@ -766,15 +766,15 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	:param networkAddress: The network address written with slash notation.
 	:type networkAddress: str
 	"""
-	def createIntFromAddress(address):
-		"Returns an int representation from an ipAddress."
+	def createBytemaskFromAddress(address):
+		"Returns an int representation of an bytemask of an ipAddress."
 		num = [forceInt(part) for part in address.split('.')]
 		return (num[0] << 24) + (num[1] << 16) + (num[2] << 8) + num[3]
 
 	ipAddress = forceIPAddress(ipAddress)
 	networkAddress = forceNetworkAddress(networkAddress)
 
-	ip = createIntFromAddress(ipAddress)
+	ip = createBytemaskFromAddress(ipAddress)
 
 	(network, netmask) = networkAddress.split(u'/')
 
@@ -793,8 +793,8 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 		)
 	)
 
-	network = createIntFromAddress(network)
-	netmask = createIntFromAddress(netmask)
+	network = createBytemaskFromAddress(network)
+	netmask = createBytemaskFromAddress(netmask)
 
 	wildcard = netmask ^ 0xFFFFFFFFL
 	if (wildcard | ip == wildcard | network):
