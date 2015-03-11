@@ -479,10 +479,10 @@ def updateMySQLBackend(backendConfigFile=u'/etc/opsi/backends/mysql.conf',
 
 	for tablename in tables.keys():
 		if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
-			logger.notice(u"Fixing length of 'depotId' column on {table}".format(tablename))
+			logger.notice(u"Fixing length of 'depotId' column on {table}".format(table=tablename))
 			mysql.execute(u"ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
 		elif tablename.startswith(u'HARDWARE_CONFIG') and tableNeedsHostIDLengthFix(tablename):
-			logger.notice(u"Fixing length of 'hostId' column on {table}".format(tablename))
+			logger.notice(u"Fixing length of 'hostId' column on {table}".format(table=tablename))
 			mysql.execute(u"ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
 	mysqlBackend = MySQLBackend(**config)
