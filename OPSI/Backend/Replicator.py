@@ -35,7 +35,7 @@ from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
 
-__version__ = '4.0.6.2'
+__version__ = '4.0.6.3'
 
 logger = Logger()
 
@@ -184,20 +184,20 @@ class BackendReplicator(object):
 								newProductIds.append(productId)
 						productIds = newProductIds
 
-			auditClasses = set(
+			auditClasses = set([
 				'AuditHardware',
 				'AuditSoftware',
 				'AuditHardwareOnHost',
 				'AuditSoftwareOnClient'
-			)
-			licenseClasses = set(
+			])
+			licenseClasses = set([
 				'LicenseContract',
 				'SoftwareLicense',
 				'LicensePool',
 				'SoftwareLicenseToLicensePool',
 				'LicenseOnClient',
 				'AuditSoftwareToLicensePool'
-			)
+			])
 
 			configServer = None
 			depotServers = []
@@ -358,22 +358,22 @@ class BackendReplicator(object):
 		finally:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
-		@classmethod
-		def _getNumberOfObjectClassesToProcess(self, audit=True, license=True):
-			auditClasses = set(
-				'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
-				'AuditSoftwareOnClient'
-			)
-			licenseManagementClasses = set(
-				'LicenseContract', 'SoftwareLicense', 'LicensePool',
-				'SoftwareLicenseToLicensePool', 'LicenseOnClient',
-				'AuditSoftwareToLicensePool'
-			)
+	@classmethod
+	def _getNumberOfObjectClassesToProcess(self, audit=True, license=True):
+		auditClasses = set([
+			'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
+			'AuditSoftwareOnClient'
+		])
+		licenseManagementClasses = set([
+			'LicenseContract', 'SoftwareLicense', 'LicensePool',
+			'SoftwareLicenseToLicensePool', 'LicenseOnClient',
+			'AuditSoftwareToLicensePool'
+		])
 
-			classesToProgress = set(self.OBJECT_CLASSES)
-			if not audit:
-				classesToProgress = classesToProgress - auditClasses
-			if not license:
-				classesToProgress = classesToProgress - licenseManagementClasses
+		classesToProgress = set(self.OBJECT_CLASSES)
+		if not audit:
+			classesToProgress = classesToProgress - auditClasses
+		if not license:
+			classesToProgress = classesToProgress - licenseManagementClasses
 
-			return len(classesToProgress)
+		return len(classesToProgress)
