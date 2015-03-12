@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 # This file is part of python-opsi.
-# Copyright (C) 2014 uib GmbH <info@uib.de>
+# Copyright (C) 2014-2015 uib GmbH <info@uib.de>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ import unittest
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
+from .Backends.File import FileBackendMixin
 from .helpers import copyTestfileToTemporaryFolder
 
 
@@ -100,6 +101,41 @@ class InitialiseConfigsTestCase(unittest.TestCase):
         domain = confData.readWindowsDomainFromSambaConfig(testConfig)
 
         self.assertEquals('WWWORK', domain)
+
+
+class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
+
+    def setUp(self):
+        self.setUpBackend()
+
+    def tearDown(self):
+        self.tearDownBackend()
+
+    def testConfigureBackendAddsMissingEntries(self):
+        wantedConfigs = set([
+            u'clientconfig.depot.dynamic',
+            u'clientconfig.depot.drive',
+            u'clientconfig.depot.protocol',
+            u'clientconfig.windows.domain',
+            u'opsi-linux-bootimage.append',
+            u'license-management.use',
+            u'software-on-demand.active',
+            u'software-on-demand.show-details',
+            u'software-on-demand.product-group-ids',
+            u'product_sort_algorithm',
+            u'clientconfig.dhcpd.filename'
+        ])
+
+        # Making sure we have an empty backend regarding the defaults we want.
+        self.backend.config_delete(id=list(wantedConfigs))
+
+        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+
+        configIdents = set(self.backend.config_getIdents(returnType='unicode'))
+
+        for configId in wantedConfigs:
+            self.assertTrue(configId in configIdents)
 
 
 if __name__ == '__main__':
