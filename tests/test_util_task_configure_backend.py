@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import os
 import unittest
 
+from OPSI.Object import UnicodeConfig
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
 
@@ -136,6 +137,37 @@ class ConfigureBackendTestCase(unittest.TestCase, FileBackendMixin):
 
         for configId in wantedConfigs:
             self.assertTrue(configId in configIdents)
+
+        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+        self.assertTrue(u'dynamic' in config.possibleValues)
+
+    def testAddingDynamicClientConfigDepotDrive(self):
+        """
+        'dynamic' should be a possible value in 'clientconfig.depot.drive'.
+
+        This makes sure that old configs are updated aswell.
+        """
+        self.backend.config_delete(id=[u'clientconfig.depot.drive'])
+
+        oldConfig = UnicodeConfig(
+            id=u'clientconfig.depot.drive',
+            description=u'Drive letter for depot share',
+            possibleValues=[
+                u'c:', u'd:', u'e:', u'f:', u'g:', u'h:', u'i:', u'j:',
+                u'k:', u'l:', u'm:', u'n:', u'o:', u'p:', u'q:', u'r:',
+                u's:', u't:', u'u:', u'v:', u'w:', u'x:', u'y:', u'z:',
+            ],
+            defaultValues=[u'p:'],
+            editable=False,
+            multiValue=False
+        )
+        self.backend.config_createObjects([oldConfig])
+
+        sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
+        confData.initializeConfigs(backend=self.backend, pathToSMBConf=sambaTestConfig)
+
+        config = self.backend.config_getObjects(id=u'clientconfig.depot.drive')[0]
+        self.assertTrue(u'dynamic' in config.possibleValues)
 
 
 if __name__ == '__main__':
