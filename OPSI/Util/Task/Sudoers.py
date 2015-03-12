@@ -53,8 +53,8 @@ call opsi-set-rights.
 	:param sudoersFile: The path to the sudoers file.
 	"""
 	entries = [
-		"opsiconfd ALL=NOPASSWD: %s" % "/usr/bin/opsi-set-rights",
-		"%%%s ALL=NOPASSWD: %s" % (FILE_ADMIN_GROUP, "/usr/bin/opsi-set-rights"),
+		"opsiconfd ALL=NOPASSWD: /usr/bin/opsi-set-rights",
+		"%{group} ALL=NOPASSWD: /usr/bin/opsi-set-rights".format(group=FILE_ADMIN_GROUP),
 	]
 
 	_patchSudoersFileWithEntries(sudoersFile, entries)
