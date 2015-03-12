@@ -23,6 +23,12 @@ Functionality to patch a sudoers file on a Linux system.
 
 .. versionadded:: 4.0.4.3
 
+
+.. versionchanged:: 4.0.6.3
+
+	The path to service is received directly from the OS.
+
+
 :author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
@@ -31,7 +37,11 @@ import shutil
 import time
 
 from OPSI.Logger import Logger
-from OPSI.System.Posix import Distribution
+from OPSI.System.Posix import Distribution, which
+
+__version__ = '4.0.6.3'
+
+LOGGER = Logger()
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
@@ -40,9 +50,12 @@ except Exception:
 	FILE_ADMIN_GROUP = u'pcpatch'
 
 SUDOERS_FILE = u'/etc/sudoers'
-_NO_TTY_FOR_SERVICE_REQUIRED = u"Defaults!/sbin/service !requiretty"
 _NO_TTY_REQUIRED_DEFAULT = u"Defaults:opsiconfd !requiretty"
-LOGGER = Logger()
+
+try:
+	_NO_TTY_FOR_SERVICE_REQUIRED = u"Defaults!{0} !requiretty".format(which('service'))
+except Exception:
+	_NO_TTY_FOR_SERVICE_REQUIRED = u"Defaults!/sbin/service !requiretty"
 
 
 def patchSudoersFileForOpsi(sudoersFile=SUDOERS_FILE):
