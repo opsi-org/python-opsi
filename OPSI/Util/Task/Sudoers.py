@@ -95,6 +95,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 		for line in inputFile:
 			for entry in entries:
 				if entry in line:
+					LOGGER.debug("One line already existing: aborting.")
 					entriesAlreadyExisting = True
 					break
 
