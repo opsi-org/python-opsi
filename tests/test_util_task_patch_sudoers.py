@@ -68,6 +68,24 @@ class PatchSudoersFileForOpsiTestCase(unittest.TestCase):
 
         self.assertEqual(contentAfterFirstPatch, contentAfterSecondPatch)
 
+    def testAlterFileIfPartOfPreviousPatchWasMissing(self):
+        patchSudoersFileForOpsi(sudoersFile=self.fileName)
+        with open(self.fileName) as before:
+            lines = before.readlines()
+
+        lines = [line for line in lines if not line.startswith('opsiconfd')]
+        with open(self.fileName, 'w') as before:
+            before.writelines(lines)
+
+        patchSudoersFileForOpsi(sudoersFile=self.fileName)
+        with open(self.fileName) as after:
+            for line in after:
+                if line.startswith('opsiconfd'):
+                    self.assertTrue(True)
+                    return
+
+        self.fail("Missing line starting with 'opsiconfd'")
+
     def testFileEndsWithNewline(self):
         patchSudoersFileForOpsi(sudoersFile=self.fileName)
 

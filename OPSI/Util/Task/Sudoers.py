@@ -98,20 +98,19 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 	.. versionchanged:: 4.0.5.15
 
 		Do not require a TTY for running the service command.
+
+
+	.. versionchanged:: 4.0.6.3
+
+		Add single entry if missing.
+
 	"""
 	lines = []
-	entriesAlreadyExisting = False
 	ttyPatchRequired = True
 	servicePatchRequired = True
 
 	with codecs.open(sudoersFile, 'r', 'utf-8') as inputFile:
 		for line in inputFile:
-			for entry in entries:
-				if entry in line:
-					LOGGER.debug("One line already existing: aborting.")
-					entriesAlreadyExisting = True
-					break
-
 			if _NO_TTY_REQUIRED_DEFAULT in line:
 				ttyPatchRequired = False
 			elif _NO_TTY_FOR_SERVICE_REQUIRED in line:
@@ -119,14 +118,17 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 
 			lines.append(line)
 
+	# Stripping is important to avoid problems with newlines.
+	entriesToAdd = set(e.strip() for e in entries) - set(l.strip() for l in lines)
+
 	ttyPatchRequired = ttyPatchRequired and distributionRequiresNoTtyPatch()
-	modifyFile = ttyPatchRequired or servicePatchRequired or (not entriesAlreadyExisting)
+	modifyFile = ttyPatchRequired or servicePatchRequired or entriesToAdd
 	if modifyFile:
 		LOGGER.notice(u"   Adding sudoers entries for opsi")
 
-	if not entriesAlreadyExisting:
+	if entriesToAdd:
 		for entry in entries:
-			lines.append("{0}\n".format(entry))
+			lines.append("{0}\n".format(entry.strip()))
 
 	if ttyPatchRequired:
 		lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
