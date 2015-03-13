@@ -85,10 +85,10 @@ class ProductFactory(object):
 
 class ObjectToHTMLTestCase(unittest.TestCase):
     def testWorkingWithManyObjectsMustNotFail(self):
-        obj = [
+        obj = (
             ProductFactory.generateLocalbootProduct(i)
             for i in range(1024)
-        ]
+        )
 
         objectToHtml(obj, level=0)
 
@@ -117,10 +117,10 @@ class ObjectToHTMLTestCase(unittest.TestCase):
 
 class ObjectToBeautifiedTextTestCase(unittest.TestCase):
     def testWorkingWithManyObjectsMustNotFail(self):
-        obj = [
+        obj = (
             ProductFactory.generateLocalbootProduct(i)
             for i in range(10240)
-        ]
+        )
 
         objectToBeautifiedText(obj)
 
