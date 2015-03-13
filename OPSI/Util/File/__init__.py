@@ -1628,7 +1628,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 			lineNumber = 1
 
 		while lineNumber <= self.endLine:
-			if lineNumber not in self.lineRefs.has_key() or not self.lineRefs[lineNumber]:
+			if lineNumber not in self.lineRefs or not self.lineRefs[lineNumber]:
 				lineNumber += 1
 				continue
 
