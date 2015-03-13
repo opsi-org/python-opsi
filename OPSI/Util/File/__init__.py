@@ -412,7 +412,7 @@ class ChangelogFile(TextFile):
 			if loc:
 				try:
 					locale.setlocale(locale.LC_ALL, loc)
-				except:
+				except Exception:
 					pass
 
 	@requiresParsing
@@ -737,7 +737,7 @@ class InfFile(ConfigFile):
 						if string.startswith(u'"') and string.endswith(u'"'):
 							string = string[1:-1]
 						strings[var.strip().lower()] = string
-					except:
+					except Exception:
 						pass
 		logger.debug2(u"        got strings: %s" % strings)
 
