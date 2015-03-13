@@ -819,7 +819,8 @@ class InfFile(ConfigFile):
 					if section and isDeviceSection(section):
 						sectionsParsed.append(section)
 					section = match.group(1)
-					if isDeviceSection(section): logger.debug2(u"   - Parsing device section: %s" % section)
+					if isDeviceSection(section):
+						logger.debug2(u"   - Parsing device section: %s" % section)
 				else:
 					if isDeviceSection(section) and section not in sectionsParsed:
 						try:
