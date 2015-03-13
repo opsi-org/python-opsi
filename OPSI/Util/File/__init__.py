@@ -257,9 +257,6 @@ class TextFile(LockableFile):
 		self._lineSeperator = u'\n'
 
 	def open(self, mode='r', encoding='utf-8', errors='replace'):
-		#self._fileHandle = LockableFile.open(mode, encoding, errors)
-		#self._lockFile(mode)
-		#return self._fileHandle
 		return LockableFile.open(self, mode, encoding, errors)
 
 	def write(self, str):
