@@ -489,7 +489,7 @@ class ConfigFile(TextFile):
 						break
 
 				if cut > -1:
-					line = cc.join(parts[:cut+1])
+					line = cc.join(parts[:cut + 1])
 
 			if not line:
 				continue
