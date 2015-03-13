@@ -61,7 +61,7 @@ def _getSysConfig():
 		sysConfig['fqdn'] = forceHostId(fqdn)
 	except Exception as exc:
 		raise Exception(
-			u"Failed to get fully qualified domain name: {0}".format(fqdn)
+			u"Failed to get fully qualified domain name: {0}".format(exc)
 		)
 
 	sysConfig['hostname'] = fqdn.split(u'.')[0]
