@@ -179,11 +179,11 @@ class File(object):
 class LockableFile(File):
 	_fileLockLock = threading.Lock()
 
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename, lockFailTimeout=2000):
 		File.__init__(self, filename)
 		self._lockFailTimeout = forceInt(lockFailTimeout)
 
-	def open(self, mode = 'r', encoding = None, errors = 'replace'):
+	def open(self, mode='r', encoding=None, errors='replace'):
 		truncate = False
 		if mode in ('w', 'wb') and os.path.exists(self._filename):
 			if (mode == 'w'):
@@ -251,12 +251,12 @@ class LockableFile(File):
 
 
 class TextFile(LockableFile):
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename, lockFailTimeout=2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
 		self._lines = []
 		self._lineSeperator = u'\n'
 
-	def open(self, mode = 'r', encoding='utf-8', errors='replace'):
+	def open(self, mode='r', encoding='utf-8', errors='replace'):
 		#self._fileHandle = LockableFile.open(mode, encoding, errors)
 		#self._lockFile(mode)
 		#return self._fileHandle
@@ -619,7 +619,7 @@ class IniFile(ConfigFile):
 				if not line or line[0] in self._commentChars:
 					continue
 				if line.startswith('['):
-					section = line.split('[',1)[1].split(']',1)[0].strip()
+					section = line.split('[', 1)[1].split(']', 1)[0].strip()
 					sectionSequence.append(section)
 				elif (line.find('=') != -1):
 					option = line.split('=')[0].strip()
@@ -857,7 +857,15 @@ class InfFile(ConfigFile):
 								if u"%s:%s" % (vendor, device) not in found:
 									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
 									found.append(u"%s:%s:%s" % (type, vendor, device))
-									self._devices.append( { 'path': path, 'class': deviceClass, 'vendor': vendor, 'device': device, 'type': type } )
+									self._devices.append(
+										{
+											'path': path,
+											'class': deviceClass,
+											'vendor': vendor,
+											'device': device,
+											'type': type
+										}
+									)
 						except IndexError:
 							logger.warning(u"Skipping bad line '%s' in file %s" % (line, self._filename))
 			except Exception as e:
@@ -942,13 +950,13 @@ UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):
-	sectionRegex     = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex   = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
-	usbDeviceRegex   = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
-	filesRegex       = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	configsRegex     = re.compile('^config\.(.+)$', re.IGNORECASE)
+	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
+	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
+	filesRegex = re.compile('^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
+	configsRegex = re.compile('^config\.(.+)$', re.IGNORECASE)
 	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	dllEntryRegex    = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
+	dllEntryRegex = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -1039,7 +1047,12 @@ class TxtSetupOemFile(ConfigFile):
 		if not self._defaultComponentIds:
 			# Missing default component will cause problems in windows textmode setup
 			logger.info(u"No default component ids found, using '%s' as default component id" % self._componentOptions[0]['componentId'])
-			self._defaultComponentIds.append({ 'componentName': self._componentOptions[0]['componentName'], 'componentId': self._componentOptions[0]['componentId'] })
+			self._defaultComponentIds.append(
+				{
+					'componentName': self._componentOptions[0]['componentName'],
+					'componentId': self._componentOptions[0]['componentId']
+				}
+			)
 		files = []
 		for f in self._files:
 			if (f['fileType'] == 'dll'):
@@ -1096,7 +1109,14 @@ class TxtSetupOemFile(ConfigFile):
 					description = description[1:-1]
 				if not componentName in self._componentNames:
 					self._componentNames.append(componentName)
-				self._componentOptions.append({"componentName": componentName, "description": description, "componentId": componentId, "optionName": optionName })
+				self._componentOptions.append(
+					{
+						"componentName": componentName,
+						"description": description,
+						"componentId": componentId,
+						"optionName": optionName
+					}
+				)
 
 		logger.info(u"Component names found: %s" % self._componentNames)
 		logger.info(u"Component options found: %s" % self._componentOptions)
@@ -1108,7 +1128,12 @@ class TxtSetupOemFile(ConfigFile):
 				continue
 			for line in lines:
 				(componentName, componentId) = line.split('=', 1)
-				self._defaultComponentIds.append({ 'componentName': componentName.strip(), 'componentId': componentId.strip() })
+				self._defaultComponentIds.append(
+					{
+						'componentName': componentName.strip(),
+						'componentId': componentId.strip()
+					}
+				)
 
 		if self._defaultComponentIds:
 			logger.info(u"Found default component ids: %s" % self._defaultComponentIds)
@@ -1120,7 +1145,7 @@ class TxtSetupOemFile(ConfigFile):
 			if not match:
 				continue
 			componentName = match.group(1)
-			componentId   = match.group(2)
+			componentId = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			found = []
 			for line in lines:
@@ -1144,8 +1169,17 @@ class TxtSetupOemFile(ConfigFile):
 				if match.group(4):
 					extra = forceUnicode(match.group(4))
 				logger.debug(u"   Found %s device: %s:%s, service name: %s" % (u'PCI', vendor, device, serviceName))
-				self._devices.append( { 'vendor': vendor, 'device': device, 'extra': extra, 'type': u'PCI', 'serviceName': serviceName, \
-							'componentName': componentName, 'componentId': componentId } )
+				self._devices.append(
+					{
+						'vendor': vendor,
+						'device': device,
+						'extra': extra,
+						'type': u'PCI',
+						'serviceName': serviceName,
+						'componentName': componentName,
+						'componentId': componentId
+					}
+				)
 				if not serviceName in self._serviceNames:
 					self._serviceNames.append(serviceName)
 
@@ -1173,7 +1207,14 @@ class TxtSetupOemFile(ConfigFile):
 				if tf.startswith(u'\\'): tf = tf[1:]
 				dd = dd.strip()
 				if dd.startswith(u'\\'): dd = dd[1:]
-				self._driverDisks.append({"diskName": diskName, "description": desc, "tagfile": tf, "driverDir": dd })
+				self._driverDisks.append(
+					{
+						"diskName": diskName,
+						"description": desc,
+						"tagfile": tf,
+						"driverDir": dd
+					}
+				)
 		if not self._driverDisks:
 			raise Exception(u"No driver disks found in txtsetup file '%s'" % self._filename)
 		logger.info(u"Found driver disks: %s" % self._driverDisks)
@@ -1185,7 +1226,7 @@ class TxtSetupOemFile(ConfigFile):
 			if not match:
 				continue
 			componentName = match.group(1)#.lower()
-			componentId   = match.group(2)
+			componentId = match.group(2)
 			logger.info(u"Found files section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
 				(fileType, value) = line.split(u'=', 1)
@@ -1196,7 +1237,16 @@ class TxtSetupOemFile(ConfigFile):
 				optionName = None
 				if (len(parts) > 2):
 					optionName = parts[2].strip()
-				self._files.append({ 'fileType': fileType, 'diskName': diskName, 'filename': filename, 'componentName': componentName, 'componentId': componentId, 'optionName': optionName })
+				self._files.append(
+					{
+						'fileType': fileType,
+						'diskName': diskName,
+						'filename': filename,
+						'componentName': componentName,
+						'componentId': componentId,
+						'optionName': optionName
+					}
+				)
 		logger.debug(u"Found files: %s" % self._files)
 
 		# Search for configs
@@ -1214,7 +1264,15 @@ class TxtSetupOemFile(ConfigFile):
 				valueName = valueName.strip()
 				valueType = valueType.strip()
 				value = value.strip()
-				self._configs.append({ 'keyName': keyName.strip(), 'valueName': valueName.strip(), 'valueType': valueType.strip(), 'value': value.strip(), 'componentId': componentId })
+				self._configs.append(
+					{
+						'keyName': keyName.strip(),
+						'valueName': valueName.strip(),
+						'valueType': valueType.strip(),
+						'value': value.strip(),
+						'componentId': componentId
+					}
+				)
 		logger.debug(u"Found configs: %s" % self._configs)
 		self._parsed = True
 
