@@ -1446,10 +1446,11 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 				value = u'on'
 			else:
 				value = u'off'
-		elif self.key in (u'filename', u'ddns-domainname') or \
-			 re.match('.*[\'/\\\].*', value) or \
-			 re.match('^\w+\.\w+$', value) or \
-			 self.key.endswith(u'-name'):
+		elif (self.key in (u'filename', u'ddns-domainname') or
+				re.match('.*[\'/\\\].*', value) or
+				re.match('^\w+\.\w+$', value) or
+				self.key.endswith(u'-name')):
+
 			value = u'"%s"' % value
 		return u"%s%s %s;" % (self.getShifting(), self.key, value)
 
@@ -1466,31 +1467,34 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			self.value = [self.value]
 
 	def asText(self):
+		# TODO: nicer string building!
 		text = u"%soption %s " % (self.getShifting(), self.key)
 		for i in range(len(self.value)):
 			value = self.value[i]
-			if re.match('.*[\'/\\\].*', value) or \
-			   re.match('^\w+\.\w+$', value) or \
-			   self.key.endswith(u'-name') or \
-			   self.key.endswith(u'-domain') or \
-			   self.key.endswith(u'-identifier') or \
-			   self.key.endswith(u'-search') or \
-			   self.key.endswith(u'merit-dump') or \
-			   self.key.endswith(u'nds-context') or \
-			   self.key.endswith(u'netbios-scope') or \
-			   self.key.endswith(u'nwip-domain') or \
-			   self.key.endswith(u'nwip-suboptions') or \
-			   self.key.endswith(u'nis-domain') or \
-			   self.key.endswith(u'nisplus-domain') or \
-			   self.key.endswith(u'root-path') or \
-			   self.key.endswith(u'uap-servers') or \
-			   self.key.endswith(u'user-class') or \
-			   self.key.endswith(u'vendor-encapsulated-options') or \
-			   self.key.endswith(u'circuit-id') or \
-			   self.key.endswith(u'remote-id') or \
-			   self.key.endswith(u'fqdn.fqdn') or \
-			   self.key.endswith(u'ddns-rev-domainname'):
+			if (re.match('.*[\'/\\\].*', value) or
+				re.match('^\w+\.\w+$', value) or
+				self.key.endswith(u'-name') or
+				self.key.endswith(u'-domain') or
+				self.key.endswith(u'-identifier') or
+				self.key.endswith(u'-search') or
+				self.key.endswith(u'merit-dump') or
+				self.key.endswith(u'nds-context') or
+				self.key.endswith(u'netbios-scope') or
+				self.key.endswith(u'nwip-domain') or
+				self.key.endswith(u'nwip-suboptions') or
+				self.key.endswith(u'nis-domain') or
+				self.key.endswith(u'nisplus-domain') or
+				self.key.endswith(u'root-path') or
+				self.key.endswith(u'uap-servers') or
+				self.key.endswith(u'user-class') or
+				self.key.endswith(u'vendor-encapsulated-options') or
+				self.key.endswith(u'circuit-id') or
+				self.key.endswith(u'remote-id') or
+				self.key.endswith(u'fqdn.fqdn') or
+				self.key.endswith(u'ddns-rev-domainname')):
+
 				value = u'"%s"' % value
+
 			if i + 1 < len(self.value):
 				value += u', '
 			text += value
