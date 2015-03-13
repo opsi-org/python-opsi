@@ -764,7 +764,7 @@ class InfFile(ConfigFile):
 					sectionFound = False
 				continue
 			if sectionFound:
-				if (line.find('=') == -1):
+				if '=' not in line:
 					continue
 				name = line.split(u'=')[1].split(u',')[0].strip()
 				name = strings.get(name.replace('%', '').lower(), name)
@@ -826,7 +826,7 @@ class InfFile(ConfigFile):
 				else:
 					if isDeviceSection(section) and not section in sectionsParsed:
 						try:
-							if (line.find('=') == -1) or (line.find(',') == -1):
+							if '=' not in line or ',' not in line:
 								continue
 							devString = line.split(u'=')[1].split(u',')[1].strip()
 							logger.debug2(u"      - Processing device string: %s" % devString)
@@ -997,12 +997,12 @@ class TxtSetupOemFile(ConfigFile):
 		device = None
 		for d in self._devices:
 			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
-				if (architecture == 'x86'):
-					if (d['componentId'].lower().find('amd64') != -1) or (d['componentId'].lower().find('x64') != -1):
+				if architecture == 'x86':
+					if 'amd64' in d['componentId'].lower() or 'x64' in d['componentId'].lower():
 						logger.debug(u"Skipping device with component id '%s' which does not seem to match architecture '%s'" % (d['componentId'], architecture))
 						continue
-				elif (architecture == 'x64'):
-					if (d['componentId'].lower().find('i386') != -1) or (d['componentId'].lower().find('x86') != -1):
+				elif architecture == 'x64':
+					if 'i386' in d['componentId'].lower() or 'x86' in d['componentId'].lower():
 						logger.debug(u"Skipping device with component id '%s' which does not seem to match architecture '%s'" % (d['componentId'], architecture))
 						continue
 				device = d
@@ -1100,12 +1100,12 @@ class TxtSetupOemFile(ConfigFile):
 				continue
 			componentName = section#.lower()
 			for line in lines:
-				if (line.find(u'=') == -1):
+				if u'=' not in line:
 					continue
 				optionName = None
 				(componentId, value) = line.split('=', 1)
 				componentId = componentId.strip()
-				if (value.find(u',') != -1):
+				if u',' in value:
 					(description, optionName) = value.split(',', 1)
 					optionName = optionName.strip()
 				else:
@@ -1203,8 +1203,9 @@ class TxtSetupOemFile(ConfigFile):
 				continue
 
 			for line in lines:
-				if (line.find(u'=') == -1):
+				if u'=' not in line:
 					continue
+
 				(diskName, value) = line.split('=', 1)
 				diskName = diskName.strip()
 				(desc, tf, dd) = value.split(',', 2)
