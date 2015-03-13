@@ -347,20 +347,20 @@ class ChangelogFile(TextFile):
 					continue
 
 				if line.startswith(' --'):
-					if line.find('  ') == -1:
+					if '  ' not in line:
 						raise Exception(u"maintainer must be separated from date using two spaces")
 					if not currentEntry or currentEntry['date']:
 						raise Exception(u"found trailer out of release")
 
 					(maintainer, date) = line[3:].strip().split(u'  ', 1)
 					email = u''
-					if maintainer.find('<') != -1:
+					if '<' in maintainer:
 						(maintainer, email) = maintainer.split(u'<', 1)
 						maintainer = maintainer.strip()
 						email = email.strip().replace(u'<', u'').replace(u'>', u'')
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
-					if date.find(u'+') != -1:
+					if u'+' in date:
 						date = date.split(u'+')[0]
 					currentEntry['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
 					changelog = []
@@ -621,7 +621,7 @@ class IniFile(ConfigFile):
 				if line.startswith('['):
 					section = line.split('[', 1)[1].split(']', 1)[0].strip()
 					sectionSequence.append(section)
-				elif line.find('=') != -1:
+				elif '=' in line:
 					option = line.split('=')[0].strip()
 					if sectionSequence[-1] not in optionSequence:
 						optionSequence[sectionSequence[-1]] = []
