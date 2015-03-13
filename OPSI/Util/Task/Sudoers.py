@@ -105,6 +105,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 		Add single entry if missing.
 
 	"""
+	entries = [element.strip() for element in entries]
 	lines = []
 	ttyPatchRequired = True
 	servicePatchRequired = True
@@ -119,7 +120,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 			lines.append(line)
 
 	# Stripping is important to avoid problems with newlines.
-	entriesToAdd = set(e.strip() for e in entries) - set(l.strip() for l in lines)
+	entriesToAdd = set(entries) - set(l.strip() for l in lines)
 
 	ttyPatchRequired = ttyPatchRequired and distributionRequiresNoTtyPatch()
 	modifyFile = ttyPatchRequired or servicePatchRequired or entriesToAdd
@@ -128,7 +129,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 
 	if entriesToAdd:
 		for entry in entries:
-			lines.append("{0}\n".format(entry.strip()))
+			lines.append("{0}\n".format(entry))
 
 	if ttyPatchRequired:
 		lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
