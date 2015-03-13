@@ -1550,7 +1550,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		del self.components[index]
 
 		index = -1
-		if self.lineRefs.has_key(component.startLine):
+		if component.startLine in self.lineRefs:
 			for i in range(len(self.lineRefs[component.startLine])):
 				if self.lineRefs[component.startLine][i] == component:
 					index = i
@@ -1567,8 +1567,9 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		if inherit and (self.type != inherit) and self.parentBlock:
 			for (key, value) in self.parentBlock.getOptions_hash(inherit).items():
-				if not options.has_key(key):
+				if key not in options:
 					options[key] = value
+
 		return options
 
 	def getOptions(self, inherit=None):
@@ -1592,7 +1593,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		if inherit and self.type != inherit and self.parentBlock:
 			for (key, value) in self.parentBlock.getParameters_hash(inherit).items():
-				if not parameters.has_key(key):
+				if key not in parameters:
 					parameters[key] = value
 		return parameters
 
@@ -1798,7 +1799,7 @@ class DHCPDConfFile(TextFile):
 		blockParameters = parentBlock.getParameters_hash(inherit='global')
 		if blockParameters:
 			for (key, value) in blockParameters.items():
-				if parameters.has_key(key) and (parameters[key] == value):
+				if key in parameters and parameters[key] == value:
 					del parameters[key]
 
 		hostBlock = DHCPDConf_Block(
@@ -1873,7 +1874,7 @@ class DHCPDConfFile(TextFile):
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
 		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit='global').items():
-			if not parameters.has_key(key):
+			if key not in parameters:
 				continue
 
 			if parameters[key] == value:
