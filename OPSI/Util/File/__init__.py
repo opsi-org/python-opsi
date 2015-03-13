@@ -1447,7 +1447,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 				value = u'on'
 			else:
 				value = u'off'
-		elif self.key in [u'filename', u'ddns-domainname'] or \
+		elif self.key in (u'filename', u'ddns-domainname') or \
 			 re.match('.*[\'/\\\].*', value) or \
 			 re.match('^\w+\.\w+$', value) or \
 			 self.key.endswith(u'-name'):
