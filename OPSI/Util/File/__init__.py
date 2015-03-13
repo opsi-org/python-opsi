@@ -1187,7 +1187,7 @@ class TxtSetupOemFile(ConfigFile):
 						'componentId': componentId
 					}
 				)
-				if not serviceName in self._serviceNames:
+				if serviceName not in self._serviceNames:
 					self._serviceNames.append(serviceName)
 
 		if not self._devices:
