@@ -238,7 +238,7 @@ class LockableFile(File):
 
 		File.close(self)
 		# File lock failed => raise IOError
-		raise IOError("Failed to lock file '%s' after %d millis" % (self._filename,  self._lockFailTimeout))
+		raise IOError("Failed to lock file '%s' after %d millis" % (self._filename, self._lockFailTimeout))
 
 	def _unlockFile(self):
 		if not self._fileHandle:
@@ -313,7 +313,7 @@ class ChangelogFile(TextFile):
 	'''
 	releaseLineRegex = re.compile('^\s*(\S+)\s+\(([^\)]+)\)\s+([^\;]+)\;\s+urgency\=(\S+)\s*$')
 
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
 		self._entries = []
@@ -340,7 +340,7 @@ class ChangelogFile(TextFile):
 						'release': match.group(3),
 						'urgency': match.group(4),
 						'changelog': [],
-						'maintainerName':  u'',
+						'maintainerName': u'',
 						'maintainerEmail': u'',
 						'date': None
 					}
@@ -405,6 +405,7 @@ class ChangelogFile(TextFile):
 					self._lines.append(u'')
 				self._lines.append(u' -- %s <%s>  %s' % (entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])))
 				self._lines.append(u'')
+
 			self.open('w')
 			self.writelines()
 			self.close()
@@ -437,12 +438,12 @@ class ChangelogFile(TextFile):
 		entry['changelog']       = forceUnicodeList(entry['changelog'])
 		entry['maintainerName']  = forceUnicode(entry['maintainerName'])
 		entry['maintainerEmail'] = forceEmailAddress(entry['maintainerEmail'])
-		entry['date']            = forceTime(entry['date'])
+		entry['date'] = forceTime(entry['date'])
 		self._entries.append(entry)
 
 
 class ConfigFile(TextFile):
-	def __init__(self, filename, lockFailTimeout = 2000, commentChars=[';', '#'], lstrip = True):
+	def __init__(self, filename, lockFailTimeout=2000, commentChars=[';', '#'], lstrip=True):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
 		self._lstrip = forceBool(lstrip)
@@ -459,10 +460,12 @@ class ConfigFile(TextFile):
 			l = line.strip()
 			if not l or l[0] in self._commentChars:
 				continue
+
 			if self._lstrip:
 				line = line.strip()
 			else:
 				line = line.rstrip()
+
 			for cc in self._commentChars:
 				if cc not in line:
 					continue
@@ -477,17 +480,20 @@ class ConfigFile(TextFile):
 					if (len(parts[i]) > 0) and (parts[i][-1] == '\\'):
 						# escaped comment
 						continue
-					if (i == len(parts)-1):
+
+					if (i == len(parts) - 1):
 						break
+
 					if not (quote % 2) and not (doublequote % 2):
 						cut = i
 						break
+
 				if (cut > -1):
 					line = cc.join(parts[:cut+1])
+
 			if not line:
 				continue
-			#for cc in self._commentChars:
-			#	line = line.replace(u'\\' + cc, cc)
+
 			lines.append(line)
 		self._parsed = True
 		return lines
@@ -496,8 +502,8 @@ class ConfigFile(TextFile):
 class IniFile(ConfigFile):
 	optionMatch = re.compile('^([^\:\=]+)\s*([\:\=].*)$')
 
-	def __init__(self, filename, lockFailTimeout = 2000, ignoreCase = True, raw = True):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
+	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
 		self._ignoreCase = forceBool(ignoreCase)
 		self._raw = forceBool(raw)
 		self._configParser = None
@@ -531,7 +537,7 @@ class IniFile(ConfigFile):
 					currentComments.append(u'')
 				continue
 			if line.startswith('['):
-				currentSection = line.split('[',1)[1].split(']',1)[0].strip()
+				currentSection = line.split('[', 1)[1].split(']', 1)[0].strip()
 				if returnComments:
 					comments[currentSection] = {'[]': currentComments}
 					currentComments = []
@@ -560,9 +566,9 @@ class IniFile(ConfigFile):
 						cut = i
 						break
 				if (cut > -1):
-					line = cc.join(parts[:cut+1])
+					line = cc.join(parts[:cut + 1])
 					if returnComments:
-						comment = cc + cc.join(parts[cut+1:])
+						comment = cc + cc.join(parts[cut + 1:])
 			if self._ignoreCase or comment:
 				match = self.optionMatch.search(line)
 				if match:
@@ -583,8 +589,9 @@ class IniFile(ConfigFile):
 			self._configParser = ConfigParser.RawConfigParser()
 		else:
 			self._configParser = ConfigParser.SafeConfigParser()
+
 		try:
-			self._configParser.readfp( StringIO.StringIO(u'\r\n'.join(lines)) )
+			self._configParser.readfp(StringIO.StringIO(u'\r\n'.join(lines)))
 		except Exception as e:
 			raise Exception(u"Failed to parse ini file '%s': %s" % (self._filename, e))
 
@@ -660,16 +667,16 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
-	sectionRegex       = re.compile('\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex     = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	sectionRegex = re.compile('\[\s*([^\]]+)\s*\]')
+	pciDeviceRegex = re.compile('VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
 	hdaudioDeviceRegex = re.compile('HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	usbDeviceRegex     = re.compile('USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
-	acpiDeviceRegex    = re.compile('ACPI\\\(\S+)_-_(\S+)', re.IGNORECASE)
-	varRegex           = re.compile('\%([^\%]+)\%')
-	classRegex         = re.compile('class\s*=')
+	usbDeviceRegex = re.compile('USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
+	acpiDeviceRegex = re.compile('ACPI\\\(\S+)_-_(\S+)', re.IGNORECASE)
+	varRegex = re.compile('\%([^\%]+)\%')
+	classRegex = re.compile('class\s*=')
 
-	def __init__(self, filename, lockFailTimeout = 2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
+	def __init__(self, filename, lockFailTimeout=2000):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
 		self._sourceDisksNames = []
 		self._devices = []
 
@@ -681,7 +688,7 @@ class InfFile(ConfigFile):
 	def getSourceDisksNames(self):
 		return self._sourceDisksNames
 
-	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
+	def isDeviceKnown(self, vendorId, deviceId, deviceType=None):
 		try:
 			vendorId = forceHardwareVendorId(vendorId)
 			deviceId = forceHardwareDeviceId(deviceId)
@@ -857,8 +864,8 @@ class InfFile(ConfigFile):
 
 class PciidsFile(ConfigFile):
 
-	def __init__(self, filename, lockFailTimeout = 2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'], lstrip = False)
+	def __init__(self, filename, lockFailTimeout=2000):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'], lstrip=False)
 		self._devices = {}
 		self._vendors = {}
 		self._subDevices = {}
@@ -940,8 +947,8 @@ class TxtSetupOemFile(ConfigFile):
 	hardwareIdsRegex = re.compile('^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
 	dllEntryRegex    = re.compile('^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
 
-	def __init__(self, filename, lockFailTimeout = 2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars = [';', '#'])
+	def __init__(self, filename, lockFailTimeout=2000):
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
 		self._devices = []
 		self._files = []
 		self._componentNames = []
@@ -956,7 +963,7 @@ class TxtSetupOemFile(ConfigFile):
 		return self._devices
 
 	@requiresParsing
-	def isDeviceKnown(self, vendorId, deviceId, deviceType = None):
+	def isDeviceKnown(self, vendorId, deviceId, deviceType=None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		for d in self._devices:
@@ -965,7 +972,7 @@ class TxtSetupOemFile(ConfigFile):
 		return False
 
 	@requiresParsing
-	def getDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
+	def getDevice(self, vendorId, deviceId, deviceType=None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		architecture = forceArchitecture(architecture)
@@ -987,13 +994,13 @@ class TxtSetupOemFile(ConfigFile):
 			raise Exception(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
 		return device
 
-	def getFilesForDevice(self, vendorId, deviceId, deviceType = None, fileTypes = [], architecture='x86'):
+	def getFilesForDevice(self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		fileTypes = forceUnicodeLowerList(fileTypes)
 		architecture = forceArchitecture(architecture)
 
-		device = self.getDevice(vendorId = vendorId, deviceId = deviceId, deviceType = deviceType, architecture = architecture)
+		device = self.getDevice(vendorId=vendorId, deviceId=deviceId, deviceType=deviceType, architecture=architecture)
 
 		files = []
 		diskDriverDirs = {}
@@ -1010,11 +1017,11 @@ class TxtSetupOemFile(ConfigFile):
 			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
 		return files
 
-	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType = None, architecture='x86'):
+	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType=None, architecture='x86'):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 
-		device = self.getDevice(vendorId = vendorId, deviceId = deviceId, deviceType = deviceType, architecture = architecture)
+		device = self.getDevice(vendorId=vendorId, deviceId=deviceId, deviceType=deviceType, architecture=architecture)
 
 		for componentOptions in self._componentOptions:
 			if (componentOptions['componentName'] == device['componentName']) and (componentOptions["componentId"] == device['componentId']):
@@ -1281,7 +1288,7 @@ class TxtSetupOemFile(ConfigFile):
 
 
 class ZsyncFile(LockableFile):
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename, lockFailTimeout=2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
 		self._header = {}
 		self._data = ''
@@ -1432,7 +1439,7 @@ class DHCPDConf_EmptyLine(DHCPDConf_Component):
 
 
 class DHCPDConf_Block(DHCPDConf_Component):
-	def __init__(self, startLine, parentBlock, type, settings = []):
+	def __init__(self, startLine, parentBlock, type, settings=[]):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.type = type
 		self.settings = settings
@@ -1472,7 +1479,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		if index >= 0:
 			del self.lineRefs[component.startLine][index]
 
-	def getOptions_hash(self, inherit = None):
+	def getOptions_hash(self, inherit=None):
 		options = {}
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Option):
@@ -1485,7 +1492,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 					options[key] = value
 		return options
 
-	def getOptions(self, inherit = None):
+	def getOptions(self, inherit=None):
 		options = []
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Option):
@@ -1497,7 +1504,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		return options
 
-	def getParameters_hash(self, inherit = None):
+	def getParameters_hash(self, inherit=None):
 		parameters = {}
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Parameter):
@@ -1518,7 +1525,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		return parameters
 
-	def getBlocks(self, type, recursive = False):
+	def getBlocks(self, type, recursive=False):
 		blocks = []
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Block):
@@ -1570,7 +1577,7 @@ class DHCPDConf_GlobalBlock(DHCPDConf_Block):
 
 class DHCPDConfFile(TextFile):
 
-	def __init__(self, filename, lockFailTimeout = 2000):
+	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 
 		self._currentLine = 0
@@ -1653,7 +1660,7 @@ class DHCPDConfFile(TextFile):
 		parameters = forceDict(parameters)
 
 		existingHost = None
-		for block in self._globalBlock.getBlocks('host', recursive = True):
+		for block in self._globalBlock.getBlocks('host', recursive=True):
 			if (block.settings[1].lower() == hostname):
 				existingHost = block
 			else:
@@ -1676,7 +1683,7 @@ class DHCPDConfFile(TextFile):
 		parentBlock = self._globalBlock
 
 		# Search the right subnet block
-		for block in self._globalBlock.getBlocks('subnet', recursive = True):
+		for block in self._globalBlock.getBlocks('subnet', recursive=True):
 			if ipAddressInNetwork(ipAddress, u'%s/%s' % (block.settings[1], block.settings[3])):
 				logger.debug(u"Choosing subnet %s/%s for host %s" % (block.settings[1], block.settings[3], hostname))
 				parentBlock = block
@@ -1686,7 +1693,7 @@ class DHCPDConfFile(TextFile):
 		bestMatchCount = 0
 		for block in parentBlock.getBlocks('group'):
 			matchCount = 0
-			blockParameters = block.getParameters_hash(inherit = 'global')
+			blockParameters = block.getParameters_hash(inherit='global')
 			if blockParameters:
 				# Block has parameters set, check if they match the hosts parameters
 				for (key, value) in blockParameters.items():
@@ -1705,22 +1712,23 @@ class DHCPDConfFile(TextFile):
 			parentBlock = bestGroup
 
 		# Remove parameters which are already defined in parents
-		blockParameters = parentBlock.getParameters_hash(inherit = 'global')
+		blockParameters = parentBlock.getParameters_hash(inherit='global')
 		if blockParameters:
 			for (key, value) in blockParameters.items():
 				if parameters.has_key(key) and (parameters[key] == value):
 					del parameters[key]
 
 		hostBlock = DHCPDConf_Block(
-					startLine = -1,
-					parentBlock = parentBlock,
-					type = 'host',
-					settings = ['host', hostname] )
-		hostBlock.addComponent( DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = 'fixed-address', value = fixedAddress ) )
-		hostBlock.addComponent( DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = 'hardware', value = "ethernet %s" % hardwareAddress ) )
+			startLine=-1,
+			parentBlock=parentBlock,
+			type='host',
+			settings=['host', hostname]
+		)
+		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='fixed-address', value=fixedAddress))
+		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='hardware', value="ethernet %s" % hardwareAddress))
 		for (key, value) in parameters.items():
 			hostBlock.addComponent(
-				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
+				DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
 
 		parentBlock.addComponent(hostBlock)
 
@@ -1728,7 +1736,7 @@ class DHCPDConfFile(TextFile):
 	def getHost(self, hostname):
 		hostname = forceHostname(hostname)
 
-		for block in self._globalBlock.getBlocks('host', recursive = True):
+		for block in self._globalBlock.getBlocks('host', recursive=True):
 			if (block.settings[1] == hostname):
 				return block.getParameters_hash()
 		return None
@@ -1739,7 +1747,7 @@ class DHCPDConfFile(TextFile):
 
 		logger.notice(u"Deleting host '%s' from dhcpd config file '%s'" % (hostname, self._filename))
 		hostBlocks = []
-		for block in self._globalBlock.getBlocks('host', recursive = True):
+		for block in self._globalBlock.getBlocks('host', recursive=True):
 			if (block.settings[1] == hostname):
 				hostBlocks.append(block)
 			else:
@@ -1761,7 +1769,7 @@ class DHCPDConfFile(TextFile):
 		logger.notice(u"Modifying host '%s' in dhcpd config file '%s'" % (hostname, self.filename))
 
 		hostBlocks = []
-		for block in self._globalBlock.getBlocks('host', recursive = True):
+		for block in self._globalBlock.getBlocks('host', recursive=True):
 			if (block.settings[1] == hostname):
 				hostBlocks.append(block)
 			else:
@@ -1779,7 +1787,7 @@ class DHCPDConfFile(TextFile):
 		for (key, value) in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
-		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit = 'global').items():
+		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit='global').items():
 			if not parameters.has_key(key):
 				continue
 			if (parameters[key] == value):
@@ -1787,7 +1795,8 @@ class DHCPDConfFile(TextFile):
 
 		for (key, value) in parameters.items():
 			hostBlock.addComponent(
-				DHCPDConf_Parameter( startLine = -1, parentBlock = hostBlock, key = key, value = value ) )
+				DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value)
+			)
 
 	def _getNewData(self):
 		if (self._currentLine >= len(self._lines)):
@@ -1800,8 +1809,8 @@ class DHCPDConfFile(TextFile):
 		logger.debug(u"_parse_emptyline")
 		self._currentBlock.addComponent(
 			DHCPDConf_EmptyLine(
-				startLine   = self._currentLine,
-				parentBlock = self._currentBlock
+				startLine=self._currentLine,
+				parentBlock=self._currentBlock
 			)
 		)
 		self._data = self._data[:self._currentIndex]
@@ -1810,9 +1819,9 @@ class DHCPDConfFile(TextFile):
 		logger.debug(u"_parse_comment")
 		self._currentBlock.addComponent(
 			DHCPDConf_Comment(
-				startLine   = self._currentLine,
-				parentBlock = self._currentBlock,
-				data        = self._data.strip()[1:]
+				startLine=self._currentLine,
+				parentBlock=self._currentBlock,
+				data=self._data.strip()[1:]
 			)
 		)
 		self._data = self._data[:self._currentIndex]
@@ -1830,10 +1839,10 @@ class DHCPDConfFile(TextFile):
 				value = value[1:-1]
 			self._currentBlock.addComponent(
 				DHCPDConf_Parameter(
-					startLine   = self._currentLine,
-					parentBlock = self._currentBlock,
-					key         = key,
-					value       = value
+					startLine=self._currentLine,
+					parentBlock=self._currentBlock,
+					key=key,
+					value=value
 				)
 			)
 			return
@@ -1876,10 +1885,10 @@ class DHCPDConfFile(TextFile):
 
 		self._currentBlock.addComponent(
 			DHCPDConf_Option(
-				startLine   = self._currentLine,
-				parentBlock = self._currentBlock,
-				key         = key,
-				value       = values
+				startLine=self._currentLine,
+				parentBlock=self._currentBlock,
+				key=key,
+				value=values
 			)
 		)
 
@@ -1892,10 +1901,10 @@ class DHCPDConfFile(TextFile):
 		# The first value is the block type
 		# Example: subnet 194.31.185.0 netmask 255.255.255.0 => type is subnet
 		block = DHCPDConf_Block(
-			startLine   = self._currentLine,
-			parentBlock = self._currentBlock,
-			type        = data.split()[0].strip(),
-			settings    = data.split()
+			startLine=self._currentLine,
+			parentBlock=self._currentBlock,
+			type=data.split()[0].strip(),
+			settings=data.split()
 		)
 		self._currentBlock.addComponent(block)
 		self._currentBlock = block
