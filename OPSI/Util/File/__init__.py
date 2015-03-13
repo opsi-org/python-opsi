@@ -1097,7 +1097,7 @@ class TxtSetupOemFile(ConfigFile):
 		for (section, lines) in sections.items():
 			if section.lower() not in ('computer', 'display', 'keyboard', 'mouse', 'scsi'):
 				continue
-			componentName = section#.lower()
+			componentName = section
 			for line in lines:
 				if u'=' not in line:
 					continue
