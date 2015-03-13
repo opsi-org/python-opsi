@@ -39,15 +39,6 @@ import StringIO
 import threading
 import time
 
-if os.name == 'posix':
-	import fcntl
-	import grp
-	import pwd
-elif os.name == 'nt':
-	import win32con
-	import win32file
-	import pywintypes
-
 from OPSI.Logger import Logger
 from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
 	forceArchitecture, forceBool, forceDict,
@@ -58,7 +49,16 @@ from OPSI.Types import (BackendBadValueError, BackendMissingDataError,
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
-__version__ = "4.0.6.1"
+if os.name == 'posix':
+	import fcntl
+	import grp
+	import pwd
+elif os.name == 'nt':
+	import win32con
+	import win32file
+	import pywintypes
+
+__version__ = "4.0.6.3"
 
 logger = Logger()
 
