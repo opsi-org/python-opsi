@@ -1238,7 +1238,7 @@ class TxtSetupOemFile(ConfigFile):
 			match = re.search(self.filesRegex, section)
 			if not match:
 				continue
-			componentName = match.group(1)#.lower()
+			componentName = match.group(1)
 			componentId = match.group(2)
 			logger.info(u"Found files section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
 			for line in lines:
