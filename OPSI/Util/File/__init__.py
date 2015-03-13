@@ -1435,9 +1435,9 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 		self.key = key
 		self.value = value
 		if type(self.value) in (unicode, str):
-			if self.value.lower() in [u'yes', u'true', u'on']:
+			if self.value.lower() in (u'yes', u'true', u'on'):
 				self.value = True
-			elif self.value.lower() in [u'no', u'false', u'off']:
+			elif self.value.lower() in (u'no', u'false', u'off'):
 				self.value = False
 
 	def asText(self):
