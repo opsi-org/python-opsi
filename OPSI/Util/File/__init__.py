@@ -1214,9 +1214,12 @@ class TxtSetupOemFile(ConfigFile):
 				if desc.startswith(u'"') and desc.endswith(u'"'):
 					desc = desc[1:-1]
 				tf = tf.strip()
-				if tf.startswith(u'\\'): tf = tf[1:]
+				if tf.startswith(u'\\'):
+					tf = tf[1:]
 				dd = dd.strip()
-				if dd.startswith(u'\\'): dd = dd[1:]
+				if dd.startswith(u'\\'):
+					dd = dd[1:]
+
 				self._driverDisks.append(
 					{
 						"diskName": diskName,
