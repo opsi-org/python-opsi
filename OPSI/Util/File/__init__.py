@@ -429,14 +429,17 @@ class ChangelogFile(TextFile):
 	def addEntry(self, entry):
 		entry = forceDict(entry)
 		for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
-			if not entry.has_key(key):
-				raise Exception(u"Missing key '%s' in entry %s" % (key, entry))
-		entry['package']         = forceProductId(entry['package'])
-		entry['version']         = forceUnicode(entry['version'])
-		entry['release']         = forceUnicode(entry['release'])
-		entry['urgency']         = forceUnicode(entry['urgency'])
-		entry['changelog']       = forceUnicodeList(entry['changelog'])
-		entry['maintainerName']  = forceUnicode(entry['maintainerName'])
+			try:
+				entry[key]
+			except KeyError:
+				raise KeyError(u"Missing key '%s' in entry %s" % (key, entry))
+
+		entry['package'] = forceProductId(entry['package'])
+		entry['version'] = forceUnicode(entry['version'])
+		entry['release'] = forceUnicode(entry['release'])
+		entry['urgency'] = forceUnicode(entry['urgency'])
+		entry['changelog'] = forceUnicodeList(entry['changelog'])
+		entry['maintainerName'] = forceUnicode(entry['maintainerName'])
 		entry['maintainerEmail'] = forceEmailAddress(entry['maintainerEmail'])
 		entry['date'] = forceTime(entry['date'])
 		self._entries.append(entry)
