@@ -1026,7 +1026,7 @@ class TxtSetupOemFile(ConfigFile):
 			diskDriverDirs[d["diskName"]] = d["driverDir"]
 
 		for f in self._files:
-			if (f['componentName'] != device['componentName']) or (f['componentId'] != device['componentId']):
+			if f['componentName'] != device['componentName'] or f['componentId'] != device['componentId']:
 				continue
 			if fileTypes and f['fileType'] not in fileTypes:
 				continue
