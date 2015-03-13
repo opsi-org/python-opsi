@@ -786,7 +786,7 @@ class InfFile(ConfigFile):
 							if match:
 								var = match.group(1).lower()
 								if var in strings:
-									deviceClass = deviceClass.replace(u'%'+var+u'%', strings[var])
+									deviceClass = deviceClass.replace(u'%{0}%'.format(var), strings[var])
 
 				elif section.lower() == u'manufacturer':
 					if line and u'=' in line:
