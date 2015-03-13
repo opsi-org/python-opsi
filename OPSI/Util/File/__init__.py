@@ -1155,7 +1155,6 @@ class TxtSetupOemFile(ConfigFile):
 			componentName = match.group(1)
 			componentId = match.group(2)
 			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
-			found = []
 			for line in lines:
 				if not re.search('[iI][dD]\s*=', line):
 					continue
