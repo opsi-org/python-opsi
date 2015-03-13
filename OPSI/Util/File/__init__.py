@@ -1340,7 +1340,7 @@ class TxtSetupOemFile(ConfigFile):
 						line += u'&DEV_%s' % dev['device']
 					if dev['extra']:
 						line += dev['extra']
-					if (dev['type'] == 'USB'):
+					if dev['type'] == 'USB':
 						line = line.replace(u'VEN_', u'VID_').replace(u'DEV_', u'PID_')
 					line += '", "%s"' % dev['serviceName']
 					lines.append(line + u'\r\n')
@@ -1392,7 +1392,7 @@ class ZsyncFile(LockableFile):
 			self.parse()
 		f = open(self._filename, 'wb')
 		for (k, v) in self._header.items():
-			if (k.lower() == 'mtime'):
+			if k.lower() == 'mtime':
 				continue
 			f.write('%s: %s\n' % (k, v))
 		f.write('\n')
@@ -1411,7 +1411,7 @@ class DHCPDConf_Component(object):
 		if not self.parentBlock:
 			return shifting
 		parentBlock = self.parentBlock.parentBlock
-		while(parentBlock):
+		while parentBlock:
 			shifting += u'\t'
 			parentBlock = parentBlock.parentBlock
 		return shifting
@@ -1492,7 +1492,7 @@ class DHCPDConf_Option(DHCPDConf_Component):
 			   self.key.endswith(u'fqdn.fqdn') or \
 			   self.key.endswith(u'ddns-rev-domainname'):
 				value = u'"%s"' % value
-			if (i+1 < len(self.value)):
+			if i + 1 < len(self.value):
 				value += u', '
 			text += value
 		return text + u';'
@@ -1540,17 +1540,19 @@ class DHCPDConf_Block(DHCPDConf_Component):
 	def removeComponent(self, component):
 		index = -1
 		for i in range(len(self.components)):
-			if (self.components[i] == component):
+			if self.components[i] == component:
 				index = i
 				break
+
 		if index < 0:
 			raise BackendMissingDataError(u"Component '{0}' not found".format(component))
+
 		del self.components[index]
 
 		index = -1
 		if self.lineRefs.has_key(component.startLine):
 			for i in range(len(self.lineRefs[component.startLine])):
-				if (self.lineRefs[component.startLine][i] == component):
+				if self.lineRefs[component.startLine][i] == component:
 					index = i
 					break
 		if index >= 0:
@@ -1576,7 +1578,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 				continue
 			options.append(component)
 
-		if inherit and (self.type != inherit) and self.parentBlock:
+		if inherit and self.type != inherit and self.parentBlock:
 			options.extend(self.parentBlock.getOptions(inherit))
 
 		return options
@@ -1588,7 +1590,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 				continue
 			parameters[component.key] = component.value
 
-		if inherit and (self.type != inherit) and self.parentBlock:
+		if inherit and self.type != inherit and self.parentBlock:
 			for (key, value) in self.parentBlock.getParameters_hash(inherit).items():
 				if not parameters.has_key(key):
 					parameters[key] = value
@@ -1597,7 +1599,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 	def getParameters(self, inherit=None):
 		parameters = []
 
-		if inherit and (self.type != inherit) and self.parentBlock:
+		if inherit and self.type != inherit and self.parentBlock:
 			parameters.extend(self.parentBlock.getParameters(inherit))
 
 		return parameters
@@ -1607,7 +1609,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Block):
 				continue
-			if (component.type == type):
+			if component.type == type:
 				blocks.append(component)
 			if recursive:
 				blocks.extend(component.getBlocks(type, recursive))
@@ -1621,14 +1623,17 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		notWritten = self.components
 		lineNumber = self.startLine
-		if (lineNumber < 1): lineNumber = 1
-		while (lineNumber <= self.endLine):
-			if not self.lineRefs.has_key(lineNumber) or not self.lineRefs[lineNumber]:
+		if lineNumber < 1:
+			lineNumber = 1
+
+		while lineNumber <= self.endLine:
+			if lineNumber not in self.lineRefs.has_key() or not self.lineRefs[lineNumber]:
 				lineNumber += 1
 				continue
+
 			for i in range(len(self.lineRefs[lineNumber])):
 				compText = self.lineRefs[lineNumber][i].asText()
-				if (i > 0) and isinstance(self.lineRefs[lineNumber][i], DHCPDConf_Comment):
+				if i > 0 and isinstance(self.lineRefs[lineNumber][i], DHCPDConf_Comment):
 					compText = u' ' + compText.lstrip()
 				text += compText
 				# Mark component as written
@@ -1707,13 +1712,13 @@ class DHCPDConfFile(TextFile):
 					break
 				continue
 			minIndex = 0
-			if   (self._currentToken == '#'):
+			if self._currentToken == '#':
 				self._parse_comment()
-			elif (self._currentToken == ';'):
+			elif self._currentToken == ';':
 				self._parse_semicolon()
-			elif (self._currentToken == '{'):
+			elif self._currentToken == '{':
 				self._parse_lbracket()
-			elif (self._currentToken == '}'):
+			elif self._currentToken == '}':
 				self._parse_rbracket()
 		self._parsed = True
 
@@ -1742,10 +1747,11 @@ class DHCPDConfFile(TextFile):
 				existingHost = block
 			else:
 				for (key, value) in block.getParameters_hash().items():
-					if (key == 'fixed-address') and (value.lower() == fixedAddress):
+					if key == 'fixed-address' and value.lower() == fixedAddress:
 						raise BackendBadValueError(u"Host '%s' uses the same fixed address" % block.settings[1])
-					elif (key == 'hardware') and (value.lower() == 'ethernet %s' % hardwareAddress):
+					elif key == 'hardware' and value.lower() == 'ethernet %s' % hardwareAddress:
 						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
+
 		if existingHost:
 			logger.info(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
 			self.deleteHost(hostname)
@@ -1776,12 +1782,12 @@ class DHCPDConfFile(TextFile):
 				for (key, value) in blockParameters.items():
 					if not parameters.has_key(key):
 						continue
-					if (parameters[key] == value):
+					if parameters[key] == value:
 						matchCount += 1
 					else:
 						matchCount -= 1
 
-			if (matchCount > bestMatchCount) or (matchCount >= 0 and not bestGroup):
+			if matchCount > bestMatchCount or matchCount >= 0 and not bestGroup:
 				matchCount = bestMatchCount
 				bestGroup = block
 
@@ -1814,7 +1820,7 @@ class DHCPDConfFile(TextFile):
 		hostname = forceHostname(hostname)
 
 		for block in self._globalBlock.getBlocks('host', recursive=True):
-			if (block.settings[1] == hostname):
+			if block.settings[1] == hostname:
 				return block.getParameters_hash()
 		return None
 
@@ -1825,12 +1831,13 @@ class DHCPDConfFile(TextFile):
 		logger.notice(u"Deleting host '%s' from dhcpd config file '%s'" % (hostname, self._filename))
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive=True):
-			if (block.settings[1] == hostname):
+			if block.settings[1] == hostname:
 				hostBlocks.append(block)
 			else:
 				for (key, value) in block.getParameters_hash().items():
-					if (key == 'fixed-address') and (value == hostname):
+					if key == 'fixed-address' and value == hostname:
 						hostBlocks.append(block)
+
 		if not hostBlocks:
 			logger.warning(u"Failed to remove host '%s': not found" % hostname)
 			return
@@ -1847,15 +1854,16 @@ class DHCPDConfFile(TextFile):
 
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive=True):
-			if (block.settings[1] == hostname):
+			if block.settings[1] == hostname:
 				hostBlocks.append(block)
 			else:
 				for (key, value) in block.getParameters_hash().items():
-					if (key == 'fixed-address') and (value == hostname):
+					if key == 'fixed-address' and value == hostname:
 						hostBlocks.append(block)
-					elif (key == 'hardware') and (value.lower() == parameters.get('hardware')):
+					elif key == 'hardware' and value.lower() == parameters.get('hardware'):
 						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
-		if (len(hostBlocks) != 1):
+
+		if len(hostBlocks) != 1:
 			raise BackendBadValueError(u"Host '%s' found %d times" % (hostname, len(hostBlocks)))
 
 		hostBlock = hostBlocks[0]
@@ -1867,7 +1875,8 @@ class DHCPDConfFile(TextFile):
 		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit='global').items():
 			if not parameters.has_key(key):
 				continue
-			if (parameters[key] == value):
+
+			if parameters[key] == value:
 				del parameters[key]
 
 		for (key, value) in parameters.items():
@@ -1876,7 +1885,7 @@ class DHCPDConfFile(TextFile):
 			)
 
 	def _getNewData(self):
-		if (self._currentLine >= len(self._lines)):
+		if self._currentLine >= len(self._lines):
 			return False
 		self._data += self._lines[self._currentLine]
 		self._currentLine += 1
@@ -1909,11 +1918,12 @@ class DHCPDConfFile(TextFile):
 		self._data = self._data[self._currentIndex+1:]
 
 		key = data.split()[0]
-		if (key != 'option'):
+		if key != 'option':
 			# Parameter
 			value = u' '.join(data.split()[1:]).strip()
-			if (len(value) > 1) and value.startswith('"') and value.endswith('"'):
+			if len(value) > 1 and value.startswith('"') and value.endswith('"'):
 				value = value[1:-1]
+
 			self._currentBlock.addComponent(
 				DHCPDConf_Parameter(
 					startLine=self._currentLine,
@@ -1927,29 +1937,29 @@ class DHCPDConfFile(TextFile):
 		# Option
 		key = data.split()[1]
 		value = u' '.join(data.split()[2:]).strip()
-		if (len(value) > 1) and value.startswith('"') and value.endswith('"'):
+		if len(value) > 1 and value.startswith('"') and value.endswith('"'):
 			value = value[1:-1]
 		values = []
 		quote = u''
 		current = u''
 		for l in value:
-			if   (l == u'"'):
-				if   (quote == u'"'):
+			if l == u'"':
+				if quote == u'"':
 					quote = u''
-				elif (quote == u"'"):
+				elif quote == u"'":
 					current += l
 				else:
 					quote = u'"'
-			elif (l == u"'"):
-				if   (quote == u"'"):
+			elif l == u"'":
+				if quote == u"'":
 					quote = u''
-				elif (quote == u'"'):
+				elif quote == u'"':
 					current += l
 				else:
 					quote = u"'"
 			elif re.search('\s', l):
 				current += l
-			elif (l == u','):
+			elif l == u',':
 				if quote:
 					current += l
 				else:
