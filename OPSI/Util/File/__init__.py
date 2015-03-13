@@ -919,8 +919,9 @@ class PciidsFile(ConfigFile):
 					break
 
 				if line.startswith(u'\t'):
-					if not currentVendorId or not self._devices.has_key(currentVendorId):
+					if not currentVendorId or currentVendorId not in self._devices:
 						raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
+
 					if line.startswith(u'\t\t'):
 						if not currentDeviceId or not self._subDevices.has_key(currentVendorId) or not self._subDevices[currentVendorId].has_key(currentDeviceId):
 							raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
@@ -931,8 +932,8 @@ class PciidsFile(ConfigFile):
 					else:
 						(deviceId, deviceName) = line.lstrip().split(None, 1)
 						currentDeviceId = deviceId = forceHardwareDeviceId(deviceId)
-						if deviceId not in self._subDevices[vendorId]:
-							self._subDevices[vendorId][deviceId] = {}
+						if deviceId not in self._subDevices[currentVendorId]:
+							self._subDevices[currentVendorId][deviceId] = {}
 						self._devices[currentVendorId][deviceId] = deviceName.strip()
 				else:
 					(vendorId, vendorName) = line.split(None, 1)
@@ -1343,9 +1344,10 @@ class TxtSetupOemFile(ConfigFile):
 
 		configComponents = {}
 		for config in self._configs:
-			if not configComponents.has_key(config['componentId']):
+			if config['componentId'] not in configComponents:
 				configComponents[config['componentId']] = []
 			configComponents[config['componentId']].append(config)
+
 		for (componentId, configs) in configComponents.items():
 			lines.append(u'\r\n')
 			lines.append(u'[Config.%s]\r\n' % componentId)
