@@ -146,7 +146,7 @@ class File(object):
 		self._fileHandle = None
 
 	def __getattr__(self, attr):
-		if self.__dict__.has_key(attr):
+		if attr in self.__dict__:
 			return self.__dict__[attr]
 		elif self.__dict__['_fileHandle']:
 			return getattr(self.__dict__['_fileHandle'], attr)
@@ -623,7 +623,7 @@ class IniFile(ConfigFile):
 					sectionSequence.append(section)
 				elif line.find('=') != -1:
 					option = line.split('=')[0].strip()
-					if not optionSequence.has_key(sectionSequence[-1]):
+					if sectionSequence[-1] not in optionSequence:
 						optionSequence[sectionSequence[-1]] = []
 					optionSequence[sectionSequence[-1]].append(option)
 		else:
@@ -788,7 +788,7 @@ class InfFile(ConfigFile):
 							match = re.search(self.varRegex, deviceClass)
 							if match:
 								var = match.group(1).lower()
-								if strings.has_key(var):
+								if var in strings:
 									deviceClass = deviceClass.replace(u'%'+var+u'%', strings[var])
 
 				elif section.lower() == u'manufacturer':
@@ -923,7 +923,7 @@ class PciidsFile(ConfigFile):
 						raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
 
 					if line.startswith(u'\t\t'):
-						if not currentDeviceId or not self._subDevices.has_key(currentVendorId) or not self._subDevices[currentVendorId].has_key(currentDeviceId):
+						if not currentDeviceId or currentVendorId not in self._subDevices or currentDeviceId not in self._subDevices[currentVendorId]:
 							raise Exception(u"Parse error in file '%s': %s" % (self._filename, line))
 						(subVendorId, subDeviceId, subName) = line.lstrip().split(None, 2)
 						subVendorId = forceHardwareVendorId(subVendorId)
@@ -1030,7 +1030,7 @@ class TxtSetupOemFile(ConfigFile):
 				continue
 			if fileTypes and f['fileType'] not in fileTypes:
 				continue
-			if not diskDriverDirs.has_key(f['diskName']):
+			if f['diskName'] not in diskDriverDirs:
 				raise Exception(u"Driver disk for file %s not found in txtsetup.oem file '%s'" % (f, self._filename))
 			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
 		return files
@@ -1533,7 +1533,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 	def addComponent(self, component):
 		self.components.append(component)
-		if not self.lineRefs.has_key(component.startLine):
+		if component.startLine not in self.lineRefs:
 			self.lineRefs[component.startLine] = []
 		self.lineRefs[component.startLine].append(component)
 
@@ -1781,8 +1781,9 @@ class DHCPDConfFile(TextFile):
 			if blockParameters:
 				# Block has parameters set, check if they match the hosts parameters
 				for (key, value) in blockParameters.items():
-					if not parameters.has_key(key):
+					if key not in parameters:
 						continue
+
 					if parameters[key] == value:
 						matchCount += 1
 					else:
