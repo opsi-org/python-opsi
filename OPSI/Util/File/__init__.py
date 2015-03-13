@@ -937,10 +937,16 @@ class PciidsFile(ConfigFile):
 				else:
 					(vendorId, vendorName) = line.split(None, 1)
 					currentVendorId = vendorId = forceHardwareVendorId(vendorId)
-					if not self._devices.has_key(vendorId):
+					try:
+						self._devices[vendorId]
+					except KeyError:
 						self._devices[vendorId] = {}
-					if not self._subDevices.has_key(vendorId):
+
+					try:
+						self._subDevices[vendorId]
+					except KeyError:
 						self._subDevices[vendorId] = {}
+
 					self._vendors[vendorId] = vendorName.strip()
 			except Exception as e:
 				logger.error(e)
