@@ -1744,7 +1744,7 @@ class DHCPDConfFile(TextFile):
 
 		existingHost = None
 		for block in self._globalBlock.getBlocks('host', recursive=True):
-			if (block.settings[1].lower() == hostname):
+			if block.settings[1].lower() == hostname:
 				existingHost = block
 			else:
 				for (key, value) in block.getParameters_hash().items():
