@@ -765,7 +765,7 @@ class InfFile(ConfigFile):
 					continue
 				name = line.split(u'=')[1].split(u',')[0].strip()
 				name = strings.get(name.replace('%', '').lower(), name)
-				if not name in self._sourceDisksNames:
+				if name not in self._sourceDisksNames:
 					self._sourceDisksNames.append(name)
 
 		# Get devices
@@ -796,7 +796,7 @@ class InfFile(ConfigFile):
 		devSections = []
 		for deviceSection in deviceSections:
 			for i in deviceSection.split('.'):
-				if not i in devSections:
+				if i not in devSections:
 					devSections.append(i)
 		deviceSections = devSections
 		logger.debug2(u"      - Device sections: %s" % ', '.join(deviceSections))
@@ -805,7 +805,7 @@ class InfFile(ConfigFile):
 			if section in deviceSections:
 				return True
 			for s in section.split(u'.'):
-				if not s in deviceSections:
+				if s not in deviceSections:
 					return False
 			return True
 
@@ -821,7 +821,7 @@ class InfFile(ConfigFile):
 					section = match.group(1)
 					if isDeviceSection(section): logger.debug2(u"   - Parsing device section: %s" % section)
 				else:
-					if isDeviceSection(section) and not section in sectionsParsed:
+					if isDeviceSection(section) and section not in sectionsParsed:
 						try:
 							if '=' not in line or ',' not in line:
 								continue
@@ -1094,7 +1094,7 @@ class TxtSetupOemFile(ConfigFile):
 		# Search for component options
 		logger.info(u"Searching for component names and options")
 		for (section, lines) in sections.items():
-			if not section.lower() in ('computer', 'display', 'keyboard', 'mouse', 'scsi'):
+			if section.lower() not in ('computer', 'display', 'keyboard', 'mouse', 'scsi'):
 				continue
 			componentName = section#.lower()
 			for line in lines:
