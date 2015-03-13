@@ -550,12 +550,12 @@ class IniFile(ConfigFile):
 				continue
 			comment = None
 			for cc in self._commentChars:
-				index = line.find(cc)
+				if cc not in line:
+					continue
+
 				parts = line.split(cc)
 				quote = 0
 				doublequote = 0
-				if (index == -1):
-					continue
 				cut = -1
 				for i in range(len(parts)):
 					quote += parts[i].count("'")
