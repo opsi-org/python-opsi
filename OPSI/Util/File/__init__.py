@@ -1269,7 +1269,7 @@ class TxtSetupOemFile(ConfigFile):
 			match = re.search(self.configsRegex, section)
 			if not match:
 				continue
-			componentId   = match.group(1)
+			componentId = match.group(1)
 			logger.info(u"Found configs section '%s', component id '%s'" % (section, componentId))
 			for line in lines:
 				value = line.split(u'=', 1)[1]
@@ -1455,7 +1455,7 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 		return u"%s%s %s;" % (self.getShifting(), self.key, value)
 
 	def asHash(self):
-		return { self.key: self.value }
+		return {self.key: self.value}
 
 
 class DHCPDConf_Option(DHCPDConf_Component):
@@ -1464,7 +1464,8 @@ class DHCPDConf_Option(DHCPDConf_Component):
 		self.key = key
 		self.value = value
 		if not type(self.value) is list:
-			self.value = [ self.value ]
+			self.value = [self.value]
+
 	def asText(self):
 		text = u"%soption %s " % (self.getShifting(), self.key)
 		for i in range(len(self.value)):
@@ -1497,7 +1498,7 @@ class DHCPDConf_Option(DHCPDConf_Component):
 		return text + u';'
 
 	def asHash(self):
-		return { self.key: self.value }
+		return {self.key: self.value}
 
 
 class DHCPDConf_Comment(DHCPDConf_Component):
@@ -1839,7 +1840,7 @@ class DHCPDConfFile(TextFile):
 
 	@requiresParsing
 	def modifyHost(self, hostname, parameters):
-		hostname   = forceHostname(hostname)
+		hostname = forceHostname(hostname)
 		parameters = forceDict(parameters)
 
 		logger.notice(u"Modifying host '%s' in dhcpd config file '%s'" % (hostname, self.filename))
@@ -1928,8 +1929,8 @@ class DHCPDConfFile(TextFile):
 		value = u' '.join(data.split()[2:]).strip()
 		if (len(value) > 1) and value.startswith('"') and value.endswith('"'):
 			value = value[1:-1]
-		values  = []
-		quote   = u''
+		values = []
+		quote = u''
 		current = u''
 		for l in value:
 			if   (l == u'"'):
@@ -1956,6 +1957,7 @@ class DHCPDConfFile(TextFile):
 					current = u''
 			else:
 				current += l
+
 		if current:
 			values.append(current.strip())
 
